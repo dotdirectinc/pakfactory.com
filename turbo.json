@@ -1,0 +1,41 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET",
+        "NEXT_PUBLIC_SANITY_API_VERSION",
+        "NEXT_PUBLIC_SANITY_STUDIO_URL",
+        "SANITY_API_READ_TOKEN",
+        "SANITY_STUDIO_PROJECT_ID",
+        "SANITY_STUDIO_DATASET",
+        "SANITY_STUDIO_PREVIEW_URL"
+      ]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET",
+        "NEXT_PUBLIC_SANITY_API_VERSION",
+        "NEXT_PUBLIC_SANITY_STUDIO_URL",
+        "SANITY_API_READ_TOKEN",
+        "SANITY_STUDIO_PROJECT_ID",
+        "SANITY_STUDIO_DATASET",
+        "SANITY_STUDIO_PREVIEW_URL"
+      ]
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

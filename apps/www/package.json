@@ -1,0 +1,40 @@
+{
+  "name": "@pakfactory/www",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pakfactory/sanity": "*",
+    "@pakfactory/ui": "*",
+    "@portabletext/react": "^6.0.3",
+    "@portabletext/types": "^4.0.2",
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/visual-editing": "^5.3.3",
+    "embla-carousel-react": "^8.6.0",
+    "lucide-react": "^0.468.0",
+    "next": "^16.2.3",
+    "next-sanity": "^12.2.2",
+    "radix-ui": "^1.4.3",
+    "react": "^19.0.0",
+    "react-aria-components": "^1.16.0",
+    "react-dom": "^19.0.0",
+    "react-use": "^17.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^16.2.3",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.3"
+  }
+}

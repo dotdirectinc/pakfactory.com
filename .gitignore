@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Next.js
+.next
+out
+
+# Build
+dist
+
+# Turbo
+.turbo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Sanity
+sanity.schema.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+!.vscode/settings.json
