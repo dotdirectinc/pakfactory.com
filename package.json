@@ -16,6 +16,7 @@
     "build:studio": "turbo run build --filter=@pakfactory/studio",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "versions:apps": "npm pkg get name version versionCode --workspace=@pakfactory/www --workspace=@pakfactory/blog --workspace=@pakfactory/studio",
     "seed:demo": "npm run seed:demo --workspace=@pakfactory/sanity",
     "migrate:product-single-refs": "npm run migrate:product-single-refs --workspace=@pakfactory/sanity",
     "clean": "turbo run clean && rm -rf node_modules"

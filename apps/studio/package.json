@@ -1,6 +1,7 @@
 {
   "name": "@pakfactory/studio",
   "version": "0.0.0",
+  "versionCode": 1,
   "private": true,
   "scripts": {
     "dev": "sanity dev --port 3333",
