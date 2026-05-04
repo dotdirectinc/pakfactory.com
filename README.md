@@ -12,12 +12,41 @@ Private Turborepo workspace that powers Pakfactory’s marketing site, blog, and
 | `packages/sanity` | `@pakfactory/sanity` | Shared GROQ queries, schemas, and maintenance scripts. |
 | `packages/ui` | `@pakfactory/ui` | Shared UI primitives (Tailwind + Radix-style components). |
 
-**Stack highlights:** Node **≥ 20.19**, npm **10.9.2**, Turborepo, Next.js **16**, React **19**, Sanity **5**, Tailwind **4**.
+**Stack highlights:** Node **≥ 20.19**, **pnpm 9.15.0** (see root `package.json` `packageManager`), Turborepo, Next.js **16**, React **19**, Sanity **5**, Tailwind **4**.
+
+## AI IDE setup
+
+The monorepo ships **versioned** AI assistant context so **Claude Code**, **Cursor**, and other tools stay aligned with the stack, domain rules (no Shopify/cart assumptions), and blog conventions.
+
+**Hierarchy**
+
+1. **[`AGENTS.md`](./AGENTS.md)** — canonical stack, domain rules, MCP expectations, ADR summary skeleton, JIRA defaults, and verification checklist.
+2. **[`CLAUDE.md`](./CLAUDE.md)** — Claude Code entry point; references `AGENTS.md` and registers in-repo **skills** under [`.claude/skills/`](./.claude/skills/).
+3. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor rules (`.mdc`); [`pakfactory-stack.mdc`](./.cursor/rules/pakfactory-stack.mdc) reinforces `AGENTS.md` for every session.
+4. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog-only overrides (routes, Sanity query patterns, AEO/GEO targets).
+5. **`apps/blog/.cursor/rules/blog.mdc`** — applies when editing files under `apps/blog/`.
+
+**Per tool**
+
+- **Claude Code:** reads root **`CLAUDE.md`** automatically; skills live in **`.claude/skills/<name>/SKILL.md`** (active skills are listed in `CLAUDE.md`).
+- **Cursor:** loads **`.cursor/rules/*.mdc`**; workspace policy remains in [`workspace-instructions.mdc`](./.cursor/rules/workspace-instructions.mdc).
+
+**Verification prompts** (expect refusal or correction per [`AGENTS.md`](./AGENTS.md))
+
+After `git pull`, ask your assistant:
+
+| Prompt | Expected behavior |
+|--------|---------------------|
+| “Add a cart button to the blog post page.” | Refuse cart UX; suggest quote / RFQ / contact CTA — not Shopify. |
+| “Install this dependency: `npm install foo`.” | Correct to **`pnpm add`** (scoped with `--filter` when adding to one app). |
+| “Update `packages/ui/src/components/button.tsx` for a new variant.” | Push back — primitives unchanged unless fixing an assigned bug; style in app code. |
+| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; metadata + `Article` JSON-LD per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
+| “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) **20.19+** (see root `package.json` `engines`)
-- npm **10.x** (repo pins `packageManager`; use `corepack enable` if you rely on Corepack)
+- **pnpm 9.15.0** — enable via Corepack: `corepack enable && corepack prepare pnpm@9.15.0 --activate`
 - A [Sanity](https://www.sanity.io/) project (project ID, dataset, and API tokens as below)
 
 ## Setup
@@ -25,7 +54,7 @@ Private Turborepo workspace that powers Pakfactory’s marketing site, blog, and
 1. **Clone** the repository and install dependencies from the **repository root**:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. **Environment variables** — copy the example file and fill in your Sanity (and optional registry) values:
@@ -40,7 +69,7 @@ Private Turborepo workspace that powers Pakfactory’s marketing site, blog, and
    - `NEXT_PUBLIC_SANITY_STUDIO_URL` (e.g. `http://localhost:3333`)
    - `SANITY_API_READ_TOKEN` — viewer token so draft content can load in dev on the Next apps
    - For Studio: `SANITY_STUDIO_PREVIEW_URL` (e.g. `http://localhost:3000`) and matching `SANITY_STUDIO_*` project/dataset if you do not rely solely on `NEXT_PUBLIC_*` names
-   - `SANITY_API_WRITE_TOKEN` — **only** for scripts that write to the dataset (`npm run seed:demo`, migrations)
+   - `SANITY_API_WRITE_TOKEN` — **only** for scripts that write to the dataset (`pnpm run seed:demo`, migrations)
 
    **Where `.env.local` lives**
 
@@ -56,23 +85,25 @@ All commands run from the **repository root**.
 
 | Command | What it does |
 |---------|----------------|
-| `npm run dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
-| `npm run dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
-| `npm run dev:blog` | Blog → [http://localhost:3001](http://localhost:3001) |
-| `npm run dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
+| `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
+| `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
+| `pnpm dev:blog` | Blog → [http://localhost:3001](http://localhost:3001) |
+| `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 
-Production-style serve (after build): each app has `npm run start` inside its workspace; from root, build first then start the app you need.
+Production-style serve (after build): each app has `pnpm run start` inside its workspace; from root, build first then start the app you need.
 
-To **deploy hosted Studio**, use `npm run deploy --workspace=@pakfactory/studio` (Sanity CLI; requires project auth).
+To **deploy hosted Studio**, use `pnpm --filter @pakfactory/studio run deploy` (Sanity CLI; requires project auth).
+
+**Vercel:** after switching to pnpm, set the project install command to `pnpm install --frozen-lockfile` in the Vercel dashboard if it still defaults to npm.
 
 ## Build, lint, and typecheck
 
 | Command | What it does |
 |---------|----------------|
-| `npm run build` | Builds all workspaces. |
-| `npm run build:www` / `build:blog` / `build:studio` | Builds a single app. |
-| `npm run lint` | Runs lint across the monorepo. |
-| `npm run typecheck` | Runs TypeScript checks (depends on upstream builds where configured in `turbo.json`). |
+| `pnpm build` | Builds all workspaces. |
+| `pnpm build:www` / `build:blog` / `build:studio` | Builds a single app. |
+| `pnpm lint` | Runs lint across the monorepo. |
+| `pnpm typecheck` | Runs TypeScript checks (depends on upstream builds where configured in `turbo.json`). |
 
 Turborepo passes through the Sanity-related `env` keys listed in `turbo.json` for `dev` and `build` so caching stays correct when those values change.
 
@@ -86,28 +117,26 @@ Each app workspace has:
 Print current app versions from the repo root:
 
 ```bash
-npm run versions:apps
+pnpm run versions:apps
 ```
 
 ## Content and data scripts
 
 | Command | What it does |
 |---------|----------------|
-| `npm run seed:demo` | Seeds demo documents (requires `SANITY_API_WRITE_TOKEN` and project/dataset env). |
-| `npm run migrate:product-single-refs` | Data migration helper in `@pakfactory/sanity`. |
+| `pnpm run seed:demo` | Seeds demo documents (requires `SANITY_API_WRITE_TOKEN` and project/dataset env). |
+| `pnpm run migrate:product-single-refs` | Data migration helper in `@pakfactory/sanity`. |
 
 Additional migration scripts may exist under `packages/sanity/scripts`; see `packages/sanity/package.json` for the full list.
 
 ## Clean
 
 ```bash
-npm run clean
+pnpm run clean
 ```
 
-Removes build artifacts via Turbo and deletes root `node_modules` (re-run `npm install` afterward).
+Removes build artifacts via Turbo and deletes root `node_modules` (re-run `pnpm install` afterward).
 
 ## License and access
 
 This repository is **private**. Do not commit real tokens; keep secrets in `.env.local` (gitignored).
-
-Testing vercel dev hook 3

@@ -86,13 +86,14 @@ export const ProductCapabilitiesView: UserViewComponent = ({documentId}) => {
       return;
     }
     setRows(null);
+    const params = {
+      ...(refs.landingPageId ? {landingPageId: refs.landingPageId} : {}),
+      ...(refs.collectionId ? {collectionId: refs.collectionId} : {}),
+    };
     const sub = documentStore
       .listenQuery(
         CAPABILITIES_QUERY,
-        {
-          landingPageId: refs.landingPageId,
-          collectionId: refs.collectionId,
-        },
+        params,
         {
           tag: 'product-capabilities',
           throttleTime: 300,

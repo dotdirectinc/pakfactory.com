@@ -1,0 +1,17 @@
+---
+description: PakFactory stack and domain rules; canonical content lives in AGENTS.md
+alwaysApply: true
+---
+
+# PakFactory stack (Cursor)
+
+Read [`AGENTS.md`](../../AGENTS.md) at the repository root for full stack, domain, MCP, ADR summary, and JIRA defaults.
+
+**Non‑negotiable highlights:**
+
+- **Package manager:** **pnpm 9.x** only — never `npm install` or `yarn` at the repo root for this project.
+- **Stack:** Turborepo monorepo; Next.js 16 (App Router); React 19; Tailwind 4; Sanity 5; Node ≥ 20.19.
+- **Domain:** This is **not** a Shopify storefront. No carts, checkout, or generic e‑commerce PDP flows unless explicitly requested. Prefer quote / RFQ / consultative CTAs.
+- **UI primitives:** Do not edit `packages/ui/src/components` or shared `globals.css` for new features; do not change global shell (`layout.tsx`, navbar) unless the task asks. See [`workspace-instructions.mdc`](workspace-instructions.mdc).
+
+For blog-specific routes, queries, and schema rules, when editing `apps/blog/**` Cursor also applies [`apps/blog/.cursor/rules/blog.mdc`](../../apps/blog/.cursor/rules/blog.mdc).
