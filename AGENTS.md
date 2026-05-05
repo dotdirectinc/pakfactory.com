@@ -44,6 +44,7 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 | [`apps/studio`](apps/studio) | Sanity Studio (port **3333**) |
 | [`packages/sanity`](packages/sanity) | Shared schemas, GROQ queries, scripts |
 | [`packages/ui`](packages/ui) | Shared shadcn-style UI primitives |
+| [`packages/seo`](packages/seo) | Typed JSON-LD / schema.org generators (`@pakfactory/seo`) |
 
 ## UI and design system (preserve primitives)
 
@@ -79,7 +80,7 @@ Do not put secrets or proprietary source into MCP prompts.
 
 The blog prioritizes **AEO** (Answer Engine Optimization) and **GEO** (Generative Engine Optimization):
 
-- **Structured data**: Post pages should expose accurate **`Article`** JSON-LD and complete **Open Graph** / Twitter metadata (see [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md)).
+- **Structured data**: Post pages should expose accurate JSON-LD (**`BlogPosting`** / related types) via **`@pakfactory/seo`** — do not duplicate schema builders in app routes. Complete **Open Graph** / Twitter metadata (see [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md)).
 - **Content**: Clear headings, factual lead paragraphs, entity-rich copy where appropriate; optional **FAQ** JSON-LD when the page answers concrete questions.
 
 Details and naming conventions: [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md).

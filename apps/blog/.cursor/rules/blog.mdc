@@ -12,7 +12,7 @@ When editing files under **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../
 
 - **Routes:** `/` and `/[slug]` today; prefer Server Components; `revalidate = 60` by default.
 - **Sanity:** queries only from `@pakfactory/sanity/queries`; `getSanityClient()` + `isSanityConfigured()`; no inline GROQ in pages.
-- **AEO/GEO:** post pages should implement `generateMetadata` (OG + Twitter), `Article` JSON-LD, optional `FAQPage` JSON-LD for FAQ sections; entity-clear author.
+- **AEO/GEO:** post pages should implement `generateMetadata` (OG + Twitter), **`BlogPosting`** JSON-LD via **`@pakfactory/seo`**, optional `FAQPage` later; entity-clear author.
 - **Naming:** kebab-case `.tsx`; colocate in `_components/` under the route.
 - **Tailwind:** no new tokens in `globals.css`; use `@pakfactory/ui` patterns.
 

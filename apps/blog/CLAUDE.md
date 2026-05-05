@@ -25,11 +25,11 @@ Use **Server Components** by default. Do not replace content navigation with cli
 Every post detail route should:
 
 1. **`generateMetadata`**: full **title**, **description**, **Open Graph** (`og:title`, `og:description`, `og:image`, `og:type=article`), and **Twitter** card fields aligned with the content.
-2. **`Article` JSON-LD**: `<script type="application/ld+json">` in a server component with at least `@type`, `headline`, `datePublished`, `dateModified` (if available), `author`, `image`, `mainEntityOfPage`, `publisher` where applicable.
-3. **GEO-friendly body structure**: answer-first lead paragraph; descriptive **H2**/**H3**; optional **FAQ** section with matching **`FAQPage`** JSON-LD when the page lists Q&A pairs.
+2. **JSON-LD**: `<script type="application/ld+json">` using **`@pakfactory/seo`** (`blogPosting`, `organization`, `person`, `breadcrumbList`, `serializeJsonLd`, etc.) — **never** hand-author schema.org objects inline in route files.
+3. **GEO-friendly body structure**: answer-first lead paragraph; descriptive **H2**/**H3**; optional **FAQ** section with matching **`FAQPage`** JSON-LD when the page lists Q&A pairs (add a generator in `@pakfactory/seo` when needed).
 4. **Author**: surface author name (and bio link when content model supports it) for entity clarity.
 
- Until implemented in code, treat this section as the **contract** for AI-generated implementations.
+Canonical URL base: **`NEXT_PUBLIC_SITE_URL`** (see repo root `.env.example`). Treat this section as the **contract** for AI-generated implementations.
 
 ## Components and files
 

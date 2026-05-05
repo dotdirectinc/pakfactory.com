@@ -1,6 +1,16 @@
 import { notFound } from "next/navigation";
+import {
+  blogPosting,
+  breadcrumbList,
+  jsonLdGraph,
+  organization,
+  person,
+  serializeJsonLd,
+} from "@pakfactory/seo";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
+import { sanityImageUrl } from "@/lib/sanity-image";
+import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
 import { POST_BY_SLUG_QUERY } from "@pakfactory/sanity/queries";
 
 type Post = {
@@ -8,11 +18,74 @@ type Post = {
   title: string;
   slug: string;
   publishedAt?: string;
-  author?: { name?: string };
+  mainImage?: unknown;
+  author?: {
+    name?: string;
+    slug?: string | null;
+    image?: unknown;
+  };
   body?: unknown;
 };
 
 export const revalidate = 60;
+
+function buildJsonLd(post: Post) {
+  const siteUrl = normalizeSiteUrl(getSiteUrl());
+  const postUrl = `${siteUrl}/${post.slug}`;
+  const orgId = `${siteUrl}#organization`;
+  const authorId = `${postUrl}#author`;
+
+  const org = organization({
+    name: "PakFactory",
+    url: siteUrl,
+    id: orgId,
+  });
+
+  const mainImageUrl = sanityImageUrl(post.mainImage);
+  const authorImageUrl = post.author
+    ? sanityImageUrl(post.author.image)
+    : undefined;
+
+  const authorNode =
+    post.author?.name != null && post.author.name !== ""
+      ? person({
+          id: authorId,
+          name: post.author.name,
+          image: authorImageUrl,
+        })
+      : null;
+
+  const publisherRef = { "@id": orgId };
+  const authorRef =
+    authorNode !== null ? { "@id": authorId } : undefined;
+
+  const article = blogPosting({
+    id: postUrl,
+    url: postUrl,
+    headline: post.title,
+    datePublished: post.publishedAt
+      ? new Date(post.publishedAt).toISOString()
+      : undefined,
+    ...(mainImageUrl ? { image: mainImageUrl } : {}),
+    ...(authorRef ? { author: authorRef } : {}),
+    publisher: publisherRef,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": postUrl,
+    },
+  });
+
+  const crumbs = breadcrumbList([
+    { name: "Blog", url: `${siteUrl}/` },
+    { name: post.title, url: postUrl },
+  ]);
+
+  const nodes: Record<string, unknown>[] = [org];
+  if (authorNode) nodes.push(authorNode);
+  nodes.push(article, crumbs);
+
+  return serializeJsonLd(jsonLdGraph(nodes));
+}
 
 export default async function PostPage({
   params,
@@ -28,16 +101,24 @@ export default async function PostPage({
 
   if (!post) notFound();
 
+  const jsonLd = buildJsonLd(post);
+
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <article>
-        <h1 className="text-4xl font-bold tracking-tight">{post.title}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {post.author?.name}
-          {post.publishedAt &&
-            ` · ${new Date(post.publishedAt).toLocaleDateString()}`}
-        </p>
-      </article>
-    </main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
+      />
+      <main className="mx-auto max-w-3xl px-6 py-12">
+        <article>
+          <h1 className="text-4xl font-bold tracking-tight">{post.title}</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {post.author?.name}
+            {post.publishedAt &&
+              ` · ${new Date(post.publishedAt).toLocaleDateString()}`}
+          </p>
+        </article>
+      </main>
+    </>
   );
 }
