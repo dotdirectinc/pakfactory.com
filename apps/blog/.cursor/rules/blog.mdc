@@ -1,0 +1,19 @@
+---
+description: Blog app — routes, Sanity queries, AEO/GEO; full detail in apps/blog/CLAUDE.md
+globs: apps/blog/**/*
+alwaysApply: false
+---
+
+# Blog app (`@pakfactory/blog`)
+
+When editing files under **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md) and repo root [`AGENTS.md`](../../../../AGENTS.md).
+
+**Quick rules:**
+
+- **Routes:** `/` and `/[slug]` today; prefer Server Components; `revalidate = 60` by default.
+- **Sanity:** queries only from `@pakfactory/sanity/queries`; `getSanityClient()` + `isSanityConfigured()`; no inline GROQ in pages.
+- **AEO/GEO:** post pages should implement `generateMetadata` (OG + Twitter), **`BlogPosting`** JSON-LD via **`@pakfactory/seo`**, optional `FAQPage` later; entity-clear author.
+- **Naming:** kebab-case `.tsx`; colocate in `_components/` under the route.
+- **Tailwind:** no new tokens in `globals.css`; use `@pakfactory/ui` patterns.
+
+**Skills:** `seo-content-writer`, `on-page-seo-auditor`, `geo-content-optimizer` (see root `CLAUDE.md`).

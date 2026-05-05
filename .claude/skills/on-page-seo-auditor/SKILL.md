@@ -1,0 +1,56 @@
+---
+name: on-page-seo-auditor
+description: >-
+  Audits on-page SEO for Next.js blog routes and related TSX: metadata, JSON-LD, headings,
+  OG/Twitter tags, and content structure. Outputs actionable findings with file references.
+---
+
+# On-page SEO auditor — PakFactory blog
+
+## When to use
+
+- Before publishing or after edits to **`apps/blog`** routes, layouts, or shared SEO helpers.
+- When reviewing whether a page meets the **AEO/GEO** contract in **[apps/blog/CLAUDE.md](../../../apps/blog/CLAUDE.md)**.
+
+## What to review
+
+### Metadata (Next.js App Router)
+
+- Presence of **`generateMetadata`** (or equivalent static **`metadata` export**) on post templates.
+- **Title** unique per URL; length roughly **50–60** visible chars for primary keyword clarity.
+- **Meta description** present; ~**150–160** chars; matches page intent without keyword stuffing.
+
+### Social
+
+- **Open Graph**: `og:title`, `og:description`, `og:image` (absolute URL where required), `og:type` (`article` for posts).
+- **Twitter**: card type + title/description/image aligned with OG.
+
+### Structured data
+
+- **`Article`** JSON-LD includes `@context`, `@type`, `headline`, `datePublished`, `dateModified` (if applicable), `author`, `image`, `mainEntityOfPage`, `publisher` when available.
+- **`FAQPage`** JSON-LD only when visible FAQ content exists on-page (no invisible stuffing).
+
+### Content structure
+
+- Single logical **H1** per view (usually post title).
+- Heading hierarchy **H2 → H3** without skips where possible.
+- Images have **descriptive `alt`** tied to content.
+
+### Domain guardrails
+
+- Flag any **cart/checkout/Shopify** assumptions — PakFactory is **not** a generic storefront (see **[AGENTS.md](../../../AGENTS.md)**).
+
+## Output format
+
+Emit sections:
+
+1. **Summary** — Pass / Needs work (3 bullets max).
+2. **Findings** — Table: Severity | Area | File | Issue | Suggestion.
+3. **Structured data snippet** — Note missing or invalid JSON-LD fields.
+4. **Next steps** — Ordered checklist for implementers.
+
+Use **`file:line`** only when the tool actually resolved lines; otherwise use **file path + symbol** (e.g. `generateMetadata`).
+
+## Alignment
+
+- Sanity data paths must match **`@pakfactory/sanity`** — no inline GROQ in page files per **[apps/blog/CLAUDE.md](../../../apps/blog/CLAUDE.md)**.

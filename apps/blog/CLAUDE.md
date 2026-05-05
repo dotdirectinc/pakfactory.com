@@ -1,0 +1,42 @@
+# CLAUDE.md — `@pakfactory/blog`
+
+Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md). This file adds **blog-app** conventions only.
+
+## Routes (Next.js App Router)
+
+| Route | File | Notes |
+|-------|------|--------|
+| `/` | [`src/app/page.tsx`](./src/app/page.tsx) | Post index; `revalidate = 60` |
+| `/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
+| Future | `src/app/category/[slug]/...` | Reserved for category archives — no client-only routing for primary content |
+
+Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
+
+## Sanity query patterns
+
+- Import queries from **`@pakfactory/sanity/queries`** only — do **not** inline raw GROQ strings in route files.
+- All shared queries must use **`defineQuery`** in `packages/sanity`.
+- Use **`getSanityClient()`** from [`src/sanity/client.ts`](./src/sanity/client.ts).
+- Guard fetches with **`isSanityConfigured()`** from [`src/sanity/env.ts`](./src/sanity/env.ts) when the app must render without env (see index page pattern).
+- Default caching: **`export const revalidate = 60`** unless product requires a different TTL.
+
+## AEO / GEO — metadata and schema (targets for new/updated post pages)
+
+Every post detail route should:
+
+1. **`generateMetadata`**: full **title**, **description**, **Open Graph** (`og:title`, `og:description`, `og:image`, `og:type=article`), and **Twitter** card fields aligned with the content.
+2. **JSON-LD**: `<script type="application/ld+json">` using **`@pakfactory/seo`** (`blogPosting`, `organization`, `person`, `breadcrumbList`, `serializeJsonLd`, etc.) — **never** hand-author schema.org objects inline in route files.
+3. **GEO-friendly body structure**: answer-first lead paragraph; descriptive **H2**/**H3**; optional **FAQ** section with matching **`FAQPage`** JSON-LD when the page lists Q&A pairs (add a generator in `@pakfactory/seo` when needed).
+4. **Author**: surface author name (and bio link when content model supports it) for entity clarity.
+
+Canonical URL base: **`NEXT_PUBLIC_SITE_URL`** (see repo root `.env.example`). Treat this section as the **contract** for AI-generated implementations.
+
+## Components and files
+
+- **File naming:** kebab-case for components (e.g. `post-header.tsx`, `portable-body.tsx`).
+- **Colocation:** put route-specific components under `src/app/<segment>/_components/`; share across routes via **`@pakfactory/ui`** or small shared modules under `src/components/` only when reused.
+- **Styling:** use tokens from **`@pakfactory/ui/globals.css`**; do not extend `globals.css` with new tokens or `@theme` blocks for features.
+
+## Active skills (Claude Code)
+
+For blog writing and SEO tasks, prefer the in-repo skills registered in root [`CLAUDE.md`](../../CLAUDE.md): **seo-content-writer**, **on-page-seo-auditor**, **geo-content-optimizer**.
