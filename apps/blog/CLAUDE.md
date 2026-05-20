@@ -6,8 +6,8 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 | Route | File | Notes |
 |-------|------|--------|
-| `/` | [`src/app/page.tsx`](./src/app/page.tsx) | Post index; `revalidate = 60` |
-| `/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
+| `/blog` (`basePath`) | [`src/app/page.tsx`](./src/app/page.tsx) | Post index; `revalidate = 60` |
+| `/blog/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
 | Future | `src/app/category/[slug]/...` | Reserved for category archives — no client-only routing for primary content |
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
