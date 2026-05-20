@@ -29,3 +29,7 @@ Thumbs.db
 # IDE
 .vscode
 !.vscode/settings.json
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
