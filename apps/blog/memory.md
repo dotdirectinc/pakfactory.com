@@ -18,14 +18,16 @@ Last updated: 2026-05-19.
 | Local default origin includes `/blog` | `src/lib/site.ts` |
 | Env example | root `.env.example` |
 
-### Vercel project (dashboard — ops)
+### Vercel project (dashboard + `vercel.json`)
 
 | Setting | Value |
 |---------|--------|
 | Root Directory | `apps/blog` |
-| Include files outside root | On |
-| Install | `pnpm install --frozen-lockfile` |
-| Build | `pnpm build --filter=@pakfactory/blog` |
+| Include files outside root | **On** |
+| Install | `pnpm install --frozen-lockfile` (`vercel.json`) |
+| Build | `pnpm turbo run build --filter=@pakfactory/blog` (`vercel.json`) |
+| Ignore unchanged | `npx turbo-ignore @pakfactory/blog` (`vercel.json`) |
+| Framework | Next.js — deployment is managed; no `start` on Vercel |
 | Production `NEXT_PUBLIC_SITE_URL` | `https://pakfactory.com/blog` |
 
 Preview deployments: enable on PRs; set preview Sanity vars as needed.

@@ -4,8 +4,6 @@ import { BLOG_BASE_PATH } from "./src/lib/base-path";
 
 loadEnvConfig(`${process.cwd()}/../..`);
 
-loadEnvConfig(`${process.cwd()}/../..`);
-
 const nextConfig: NextConfig = {
   basePath: BLOG_BASE_PATH,
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo"],

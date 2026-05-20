@@ -99,19 +99,33 @@ To **deploy hosted Studio**, use `pnpm --filter @pakfactory/studio run deploy` (
 
 ### Blog app on Vercel (`apps/blog`, PROD-1496)
 
-Create a **separate** Vercel project from `apps/www`:
+Create a **separate** Vercel project from `apps/www`. Build/install commands are defined in [`apps/blog/vercel.json`](apps/blog/vercel.json) (Vercel reads them when Root Directory is `apps/blog`).
 
-| Setting | Value |
-|---------|--------|
+| Dashboard setting | Value |
+|-------------------|--------|
 | Root Directory | `apps/blog` |
-| Include files outside root | **On** (workspace packages) |
-| Install Command | `pnpm install --frozen-lockfile` |
-| Build Command | `pnpm build --filter=@pakfactory/blog` |
-| Node.js | 20.x |
+| Include files outside root | **On** (required for `packages/*`) |
+| Framework Preset | Next.js (or leave auto) |
+| Node.js Version | **20.x** |
+| Install Command | *(from `vercel.json`)* `pnpm install --frozen-lockfile` |
+| Build Command | *(from `vercel.json`)* `pnpm turbo run build --filter=@pakfactory/blog` |
+| Output Directory | *(default)* `.next` |
+| Development Command | `pnpm dev` (optional; local only) |
 
-**Production env (minimum):** `NEXT_PUBLIC_SANITY_*`, `SANITY_API_READ_TOKEN`, `NEXT_PUBLIC_SITE_URL=https://pakfactory.com/blog`.
+**Production environment variables (minimum):**
 
-**Domains:** attach `blog.pakfactory.com` on this project; [`apps/blog/vercel.json`](apps/blog/vercel.json) 301s that host to `https://pakfactory.com/blog`. Serve `/blog` on the marketing domain via this deployment’s `basePath` (or www rewrites to the blog project).
+| Variable | Example |
+|----------|---------|
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | your project id |
+| `NEXT_PUBLIC_SANITY_DATASET` | `production` |
+| `NEXT_PUBLIC_SANITY_API_VERSION` | `2025-09-25` |
+| `NEXT_PUBLIC_SANITY_STUDIO_URL` | hosted Studio URL |
+| `SANITY_API_READ_TOKEN` | viewer token |
+| `NEXT_PUBLIC_SITE_URL` | `https://pakfactory.com/blog` |
+
+**Domains:** attach `blog.pakfactory.com`; `vercel.json` 301s that host to `https://pakfactory.com/blog`. Map `pakfactory.com/blog` to this project (path + domain) or add www rewrites.
+
+**Deploy:** push to the linked branch — Vercel runs install → turbo build (including `@pakfactory/seo`, `@pakfactory/sanity`, `@pakfactory/ui` typecheck per `turbo.json`) → Next.js deploy. No custom `start` command on Vercel.
 
 ## Build, lint, and typecheck
 

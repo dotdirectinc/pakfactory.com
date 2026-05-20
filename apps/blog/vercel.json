@@ -1,5 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm turbo run build --filter=@pakfactory/blog",
+  "ignoreCommand": "npx turbo-ignore @pakfactory/blog",
   "redirects": [
     {
       "source": "/:path*",
