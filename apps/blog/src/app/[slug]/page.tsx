@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   blogPosting,
@@ -10,6 +11,10 @@ import {
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
+import {
+  getBlogRobotsDirective,
+  robotsDirectiveToMetadata,
+} from "@/lib/seo";
 import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
 import { POST_BY_SLUG_QUERY } from "@pakfactory/sanity/queries";
 
@@ -17,6 +22,7 @@ type Post = {
   _id: string;
   title: string;
   slug: string;
+  excerpt?: string;
   publishedAt?: string;
   mainImage?: unknown;
   author?: {
@@ -28,6 +34,51 @@ type Post = {
 };
 
 export const revalidate = 60;
+
+async function fetchPostBySlug(slug: string): Promise<Post | null> {
+  if (!isSanityConfigured()) return null;
+  return getSanityClient()
+    .fetch<Post | null>(POST_BY_SLUG_QUERY, { slug })
+    .catch(() => null);
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await fetchPostBySlug(slug);
+
+  if (!post) {
+    return { title: "Post not found" };
+  }
+
+  const siteUrl = normalizeSiteUrl(getSiteUrl());
+  const postUrl = `${siteUrl}/${post.slug}`;
+  const description = post.excerpt?.trim();
+  const imageUrl = sanityImageUrl(post.mainImage);
+
+  return {
+    title: post.title,
+    ...(description ? { description } : {}),
+    robots: robotsDirectiveToMetadata(getBlogRobotsDirective({ kind: "post" })),
+    alternates: { canonical: postUrl },
+    openGraph: {
+      title: post.title,
+      ...(description ? { description } : {}),
+      url: postUrl,
+      type: "article",
+      ...(imageUrl ? { images: [{ url: imageUrl }] } : {}),
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title: post.title,
+      ...(description ? { description } : {}),
+      ...(imageUrl ? { images: [imageUrl] } : {}),
+    },
+  };
+}
 
 function buildJsonLd(post: Post) {
   const siteUrl = normalizeSiteUrl(getSiteUrl());
@@ -93,11 +144,7 @@ export default async function PostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = isSanityConfigured()
-    ? await getSanityClient()
-        .fetch<Post | null>(POST_BY_SLUG_QUERY, { slug })
-        .catch(() => null)
-    : null;
+  const post = await fetchPostBySlug(slug);
 
   if (!post) notFound();
 

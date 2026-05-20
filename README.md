@@ -11,6 +11,7 @@ Private Turborepo workspace that powers Pakfactory’s marketing site, blog, and
 | `apps/studio` | `@pakfactory/studio` | Sanity Studio for editors (port **3333**). |
 | `packages/sanity` | `@pakfactory/sanity` | Shared GROQ queries, schemas, and maintenance scripts. |
 | `packages/ui` | `@pakfactory/ui` | Shared UI primitives (Tailwind + Radix-style components). |
+| `packages/seo` | `@pakfactory/seo` | JSON-LD / schema.org generators for blog and marketing pages. |
 
 **Stack highlights:** Node **≥ 20.19**, **pnpm 9.15.0** (see root `package.json` `packageManager`), Turborepo, Next.js **16**, React **19**, Sanity **5**, Tailwind **4**.
 
@@ -87,14 +88,30 @@ All commands run from the **repository root**.
 |---------|----------------|
 | `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
 | `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
-| `pnpm dev:blog` | Blog → [http://localhost:3001](http://localhost:3001) |
+| `pnpm dev:blog` | Blog → [http://localhost:3001/blog](http://localhost:3001/blog) (`PORT=4000` overrides port only) |
 | `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 
 Production-style serve (after build): each app has `pnpm run start` inside its workspace; from root, build first then start the app you need.
 
 To **deploy hosted Studio**, use `pnpm --filter @pakfactory/studio run deploy` (Sanity CLI; requires project auth).
 
-**Vercel:** after switching to pnpm, set the project install command to `pnpm install --frozen-lockfile` in the Vercel dashboard if it still defaults to npm.
+**Vercel:** use `pnpm install --frozen-lockfile` if the dashboard still defaults to npm.
+
+### Blog app on Vercel (`apps/blog`, PROD-1496)
+
+Create a **separate** Vercel project from `apps/www`:
+
+| Setting | Value |
+|---------|--------|
+| Root Directory | `apps/blog` |
+| Include files outside root | **On** (workspace packages) |
+| Install Command | `pnpm install --frozen-lockfile` |
+| Build Command | `pnpm build --filter=@pakfactory/blog` |
+| Node.js | 20.x |
+
+**Production env (minimum):** `NEXT_PUBLIC_SANITY_*`, `SANITY_API_READ_TOKEN`, `NEXT_PUBLIC_SITE_URL=https://pakfactory.com/blog`.
+
+**Domains:** attach `blog.pakfactory.com` on this project; [`apps/blog/vercel.json`](apps/blog/vercel.json) 301s that host to `https://pakfactory.com/blog`. Serve `/blog` on the marketing domain via this deployment’s `basePath` (or www rewrites to the blog project).
 
 ## Build, lint, and typecheck
 

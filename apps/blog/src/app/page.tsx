@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
+import {
+  getListingRobotsFromSearchParams,
+  robotsDirectiveToMetadata,
+} from "@/lib/seo";
 import { POSTS_QUERY } from "@pakfactory/sanity/queries";
 import { Button } from "@pakfactory/ui/components/button";
 
@@ -14,6 +19,24 @@ type PostListItem = {
 };
 
 export const revalidate = 60;
+
+const INDEX_TITLE = "PakFactory Blog";
+const INDEX_DESCRIPTION = "Packaging insights, guides, and stories.";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const sp = await searchParams;
+  const directive = getListingRobotsFromSearchParams("blog_index", sp);
+
+  return {
+    title: INDEX_TITLE,
+    description: INDEX_DESCRIPTION,
+    robots: robotsDirectiveToMetadata(directive),
+  };
+}
 
 export default async function BlogIndex() {
   const posts = isSanityConfigured()

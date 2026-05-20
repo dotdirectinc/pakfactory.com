@@ -12,6 +12,7 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
   _id,
   title,
   "slug": slug.current,
+  excerpt,
   body,
   publishedAt,
   mainImage,
