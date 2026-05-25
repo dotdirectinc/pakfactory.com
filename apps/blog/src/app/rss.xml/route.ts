@@ -5,7 +5,8 @@ import { getSiteUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
 
-export const revalidate = BLOG_REVALIDATE_SECONDS;
+/** Must be a literal — see `BLOG_REVALIDATE_SECONDS` in `@/lib/blog-cache`. */
+export const revalidate = 60;
 
 async function fetchRssPosts(): Promise<RssPostItem[]> {
   if (!isSanityConfigured()) return [];
