@@ -3,7 +3,7 @@ import { BLOG_BASE_PATH } from "@/lib/base-path";
 /**
  * Public site origin for the blog app (JSON-LD, canonical URLs).
  * Must include `basePath` — set `NEXT_PUBLIC_SITE_URL` in repo root `.env.local`
- * (e.g. `https://pakfactory.com/blog` or `http://localhost:3001/blog`).
+ * (e.g. `https://pakfactory.com/blog` or `http://localhost:3003/blog`).
  */
 function readEnv(key: string): string {
   const v = process.env[key];
@@ -11,7 +11,7 @@ function readEnv(key: string): string {
 }
 
 function defaultLocalOrigin(): string {
-  const port = process.env.PORT?.trim() || "3001";
+  const port = process.env.PORT?.trim() || "3003";
   return `http://localhost:${port}${BLOG_BASE_PATH}`;
 }
 

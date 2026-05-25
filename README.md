@@ -77,8 +77,9 @@ After `git pull`, ask your assistant:
    **Where `.env.local` lives**
 
    - **`apps/www`** loads env from the **repository root** (see `apps/www/next.config.ts`).
-   - **`apps/studio`** and **`packages/sanity`** scripts expect variables available in the shell or in a root `.env.local` when you use tooling that loads it.
-   - **`apps/blog`** uses Next.js default resolution: place **`apps/blog/.env.local`** with the same Sanity variables, or keep a single root `.env.local` and symlink/copy into `apps/blog` so both apps see the same config.
+   - **`apps/studio`** reads **`apps/studio/.env.local`** when you run `pnpm dev:studio` (Vite does not use root `.env.local` automatically). Keep `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET` in sync with root — e.g. `8293wrxp` + `development` after `pnpm seed`.
+   - **`apps/blog`** — root `.env.local` via `next.config.ts` + Turbo `dotEnv`, plus **`apps/blog/.env.local`** for overrides (port, Sanity copy). See [`apps/blog/.env.example`](apps/blog/.env.example) and [`apps/blog/memory.md`](apps/blog/memory.md) (local dev / empty home troubleshooting).
+   - **`packages/sanity`** scripts load **repo root** `.env.local`.
 
    Optional (premium shadcn studio registry): `EMAIL` and `LICENSE_KEY` as in `.env.example`.
 
@@ -90,7 +91,8 @@ All commands run from the **repository root**.
 |---------|----------------|
 | `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
 | `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
-| `pnpm dev:blog` | Blog → [http://localhost:3001/blog](http://localhost:3001/blog) (`PORT=4000` overrides port only) |
+| `pnpm dev:blog` | Blog → [http://localhost:3003/blog](http://localhost:3003/blog) (default port **3003**; set `PORT` to override) |
+| `pnpm seed:blog-dev` | Extra blog test posts + industries into Sanity **`development`** (after full studio seed) |
 | `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 
 Production-style serve (after build): each app has `pnpm run start` inside its workspace; from root, build first then start the app you need.
@@ -119,7 +121,7 @@ Create a **separate** Vercel project from `apps/www`. Build/install commands are
 | Variable | Example |
 |----------|---------|
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | your project id |
-| `NEXT_PUBLIC_SANITY_DATASET` | `production` |
+| `NEXT_PUBLIC_SANITY_DATASET` | `development` (local dev; use `production` on Vercel prod) |
 | `NEXT_PUBLIC_SANITY_API_VERSION` | `2025-09-25` |
 | `NEXT_PUBLIC_SANITY_STUDIO_URL` | hosted Studio URL |
 | `SANITY_API_READ_TOKEN` | viewer token |

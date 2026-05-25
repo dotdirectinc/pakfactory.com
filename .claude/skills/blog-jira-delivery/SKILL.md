@@ -56,7 +56,7 @@ pnpm --filter @pakfactory/blog typecheck
 pnpm build:blog
 ```
 
-Optional: `curl -sI http://localhost:3001/blog/...` for status/robots.
+Local verify: `http://localhost:3003/blog` — env/seed troubleshooting in [`apps/blog/memory.md`](../../../apps/blog/memory.md) § Local dev.
 
 ## Phase 6 — Commit + Jira handoff
 

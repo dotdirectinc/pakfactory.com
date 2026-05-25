@@ -23,7 +23,7 @@ export function getSanityDataset(): string {
   return (
     readEnv("NEXT_PUBLIC_SANITY_DATASET") ||
     readEnv("SANITY_STUDIO_DATASET") ||
-    "production"
+    "development"
   );
 }
 

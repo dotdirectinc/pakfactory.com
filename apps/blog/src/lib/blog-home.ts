@@ -1,5 +1,10 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import {
+  getSanityDataset,
+  getSanityProjectId,
+  isSanityConfigured,
+} from "@/sanity/env";
 import {
   FEATURED_HOME_POST_QUERY,
   INDUSTRIES_FOR_BLOG_HOME_QUERY,
@@ -68,28 +73,57 @@ export type BlogHomeData = {
   categoryRows: HomeCategoryRow[];
 };
 
+async function fetchSafe<T>(
+  label: string,
+  run: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.error(`[blog-home] ${label} failed:`, err);
+    }
+    return fallback;
+  }
+}
+
 async function fetchFeatured(): Promise<HomePostCard | null> {
-  const pinned = await getSanityClient()
-    .fetch<HomePostCard | null>(FEATURED_HOME_POST_QUERY)
-    .catch(() => null);
+  const pinned = await fetchSafe(
+    "featured",
+    () => getSanityClient().fetch<HomePostCard | null>(FEATURED_HOME_POST_QUERY),
+    null,
+  );
   if (pinned) return pinned;
 
-  const latestOne = await getSanityClient()
-    .fetch<HomePostCard[]>(LATEST_HOME_POSTS_QUERY, { excludeId: null })
-    .catch(() => []);
+  const latestOne = await fetchSafe(
+    "latest (featured fallback)",
+    () =>
+      getSanityClient().fetch<HomePostCard[]>(LATEST_HOME_POSTS_QUERY, {
+        excludeId: null,
+      }),
+    [],
+  );
   return latestOne[0] ?? null;
 }
 
 async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
-  return getSanityClient()
-    .fetch<HomePostCard[]>(LATEST_HOME_POSTS_QUERY, { excludeId })
-    .catch(() => []);
+  return fetchSafe(
+    "latest sidebar",
+    () =>
+      getSanityClient().fetch<HomePostCard[]>(LATEST_HOME_POSTS_QUERY, {
+        excludeId,
+      }),
+    [],
+  );
 }
 
 async function fetchIndustries(): Promise<HomeIndustryPill[]> {
-  const fromCms = await getSanityClient()
-    .fetch<HomeIndustryPill[]>(INDUSTRIES_FOR_BLOG_HOME_QUERY)
-    .catch(() => []);
+  const fromCms = await fetchSafe(
+    "industries",
+    () => getSanityClient().fetch<HomeIndustryPill[]>(INDUSTRIES_FOR_BLOG_HOME_QUERY),
+    [],
+  );
 
   const seen = new Set<string>();
   const merged: HomeIndustryPill[] = [];
@@ -106,9 +140,14 @@ async function fetchCategoryRows(): Promise<HomeCategoryRow[]> {
   const client = getSanityClient();
   return Promise.all(
     HOME_CATEGORY_SLUGS.map(async (slug) => {
-      const posts = await client
-        .fetch<HomePostCard[]>(POSTS_BY_CATEGORY_SLUG_QUERY, { categorySlug: slug })
-        .catch(() => []);
+      const posts = await fetchSafe(
+        `category:${slug}`,
+        () =>
+          client.fetch<HomePostCard[]>(POSTS_BY_CATEGORY_SLUG_QUERY, {
+            categorySlug: slug,
+          }),
+        [],
+      );
       return {
         slug,
         title: CATEGORY_TITLES[slug],
@@ -118,7 +157,28 @@ async function fetchCategoryRows(): Promise<HomeCategoryRow[]> {
   );
 }
 
+/** Dev-only context when the home page renders with zero CMS posts. */
+export type BlogHomeDebugInfo = {
+  configured: boolean;
+  projectId: string;
+  dataset: string;
+  hasReadToken: boolean;
+};
+
+export function getBlogHomeDebugInfo(): BlogHomeDebugInfo {
+  return {
+    configured: isSanityConfigured(),
+    projectId: getSanityProjectId() || "(missing)",
+    dataset: getSanityDataset(),
+    hasReadToken: Boolean(process.env.SANITY_API_READ_TOKEN?.trim()),
+  };
+}
+
 export async function fetchBlogHomeData(): Promise<BlogHomeData> {
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+
   if (!isSanityConfigured()) {
     return {
       featured: null,

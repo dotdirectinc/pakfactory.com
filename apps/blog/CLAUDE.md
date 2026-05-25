@@ -16,7 +16,8 @@ Use **Server Components** by default. Do not replace content navigation with cli
 
 - Next.js **`basePath`** is **`/blog`** ([`src/lib/base-path.ts`](./src/lib/base-path.ts) — keep in sync with `next.config.ts`).
 - App routes remain `/` and `/[slug]` in code; public URLs are **`/blog`** and **`/blog/[slug]`** (Next prefixes `basePath` on links automatically).
-- **`getSiteUrl()`** in [`src/lib/site.ts`](./src/lib/site.ts) must return the **full public origin including `/blog`** (e.g. `http://localhost:3001/blog`, `https://pakfactory.com/blog`). Set **`NEXT_PUBLIC_SITE_URL`** in root `.env.local`.
+- **`getSiteUrl()`** in [`src/lib/site.ts`](./src/lib/site.ts) must return the **full public origin including `/blog`** (e.g. `http://localhost:3003/blog`, `https://pakfactory.com/blog`). Set **`NEXT_PUBLIC_SITE_URL`** in root or `apps/blog/.env.local`.
+- **Local dev URL:** [http://localhost:3003/blog](http://localhost:3003/blog) (default `PORT=3003` in `package.json`). Ops, env, and seed: [`memory.md`](./memory.md) § Local dev.
 - Use `getSiteUrl()` + `normalizeSiteUrl()` for canonicals, Open Graph URLs, and JSON-LD — never hardcode `localhost:3001` without `/blog`.
 - Vercel deployment checklist: [`memory.md`](./memory.md).
 
@@ -52,6 +53,7 @@ Canonical URL base: **`NEXT_PUBLIC_SITE_URL`** (must include `/blog` path prefix
 - **File naming:** kebab-case for components (e.g. `post-header.tsx`, `portable-body.tsx`).
 - **Colocation:** put route-specific components under `src/app/<segment>/_components/`; share across routes via **`@pakfactory/ui`** or small shared modules under `src/components/` only when reused.
 - **Styling:** use tokens from **`@pakfactory/ui/globals.css`**; do not extend `globals.css` with new tokens or `@theme` blocks for features.
+- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in app `_components/` with `className` only.
 
 ## Active skills (Claude Code)
 

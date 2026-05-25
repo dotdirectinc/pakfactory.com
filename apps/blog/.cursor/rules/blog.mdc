@@ -17,6 +17,7 @@ When editing **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), 
 - **AEO/GEO:** `generateMetadata` (OG + Twitter) on posts; **`BlogPosting`** JSON-LD via **`@pakfactory/seo`** + `serializeJsonLd` — never inline schema objects.
 - **Naming:** kebab-case `.tsx`; colocate in `_components/` under the route.
 - **Tailwind:** no new tokens in `globals.css`; use `@pakfactory/ui` patterns.
+- **UI primitives:** prefer `Card`, `Button`, `Badge`, `Input` from `@pakfactory/ui` for marketing bands and CTAs — not raw bordered `div`s when a primitive fits (see `apps/blog/CLAUDE.md`).
 
 **Skills:** `seo-content-writer`, `on-page-seo-auditor`, `geo-content-optimizer` (root `CLAUDE.md`).
 

@@ -5,6 +5,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
+      "dotEnv": [".env.local", ".env"],
       "env": [
         "NEXT_PUBLIC_SANITY_PROJECT_ID",
         "NEXT_PUBLIC_SANITY_DATASET",
@@ -14,7 +15,8 @@
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL",
-        "NEXT_PUBLIC_SITE_URL"
+        "NEXT_PUBLIC_SITE_URL",
+        "PORT"
       ]
     },
     "build": {

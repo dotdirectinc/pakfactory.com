@@ -1,4 +1,12 @@
 import Link from "next/link";
+import { Button } from "@pakfactory/ui/components/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@pakfactory/ui/components/card";
 
 function wwwOrigin(): string {
   const www = process.env.NEXT_PUBLIC_WWW_URL?.replace(/\/$/, "");
@@ -41,18 +49,18 @@ export function HomeConversionPillars() {
       </h2>
       <ul className="grid gap-6 md:grid-cols-3">
         {PILLARS.map((pillar) => (
-          <li
-            key={pillar.title}
-            className="rounded-lg border bg-muted/20 p-6"
-          >
-            <h3 className="text-lg font-semibold">{pillar.title}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{pillar.description}</p>
-            <Link
-              href={pillar.href}
-              className="mt-4 inline-block text-sm font-medium text-primary hover:underline"
-            >
-              {pillar.cta} →
-            </Link>
+          <li key={pillar.title}>
+            <Card className="h-full bg-muted/20">
+              <CardHeader>
+                <CardTitle className="text-lg">{pillar.title}</CardTitle>
+                <CardDescription>{pillar.description}</CardDescription>
+              </CardHeader>
+              <CardFooter className="pt-0">
+                <Button variant="link" className="h-auto p-0" asChild>
+                  <Link href={pillar.href}>{pillar.cta} →</Link>
+                </Button>
+              </CardFooter>
+            </Card>
           </li>
         ))}
       </ul>

@@ -3,8 +3,11 @@
  * ─────────────────────────────
  * Populates all document types with realistic sample data.
  *
- * Usage:
- *   SANITY_TOKEN=<your-editor-token> node scripts/seed.mjs
+ * Usage (from repo root):
+ *   pnpm --filter @pakfactory/studio run seed
+ *
+ * Reads `NEXT_PUBLIC_SANITY_*` / `SANITY_STUDIO_*` and token from repo root `.env.local`.
+ * Default dataset: `development` (override via env). Legacy: `SANITY_TOKEN=<token> node scripts/seed.mjs`
  *
  * Get a token: sanity.io/manage → project → API → Tokens → Add API token (Editor)
  *
@@ -12,14 +15,30 @@
  */
 
 import { createClient } from '@sanity/client'
+import { config as loadEnv } from 'dotenv'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const PROJECT_ID = '8293wrxp'
-const DATASET = 'development'
-const TOKEN = process.env.SANITY_TOKEN
+const __dirname = dirname(fileURLToPath(import.meta.url))
+loadEnv({ path: join(__dirname, '../../../.env.local') })
+loadEnv({ path: join(__dirname, '../../../.env') })
+
+const PROJECT_ID =
+  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
+  process.env.SANITY_STUDIO_PROJECT_ID ||
+  '8293wrxp'
+const DATASET =
+  process.env.NEXT_PUBLIC_SANITY_DATASET ||
+  process.env.SANITY_STUDIO_DATASET ||
+  'development'
+const TOKEN =
+  process.env.SANITY_API_WRITE_TOKEN ||
+  process.env.SANITY_TOKEN ||
+  process.env.SANITY_API_READ_TOKEN
 
 if (!TOKEN) {
-  console.error('❌  SANITY_TOKEN env var is required.')
-  console.error('   Run: SANITY_TOKEN=<token> node scripts/seed.mjs')
+  console.error('❌  Missing Sanity write token.')
+  console.error('   Set SANITY_API_WRITE_TOKEN (or SANITY_TOKEN) in repo root .env.local')
   process.exit(1)
 }
 

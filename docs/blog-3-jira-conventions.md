@@ -47,7 +47,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **`basePath`:** `/blog` — keep [`BLOG_BASE_PATH`](../apps/blog/src/lib/base-path.ts) in sync with `next.config.ts`.
 - **`NEXT_PUBLIC_SITE_URL`:** must include the path prefix (e.g. `https://pakfactory.com/blog`, `http://localhost:3001/blog`) for canonicals and JSON-LD.
 - **Vercel:** separate project, root `apps/blog`, install/build in [`apps/blog/vercel.json`](../apps/blog/vercel.json). Ops checklist: [`apps/blog/memory.md`](../apps/blog/memory.md).
-- **Local URLs:** index `http://localhost:3001/blog`, post `http://localhost:3001/blog/<slug>`.
+- **Local URLs:** index `http://localhost:3003/blog`, post `http://localhost:3003/blog/<slug>` (default `PORT=3003`; see [`apps/blog/memory.md`](../apps/blog/memory.md)).
 
 ## PROD-1497 — Blog home
 
@@ -57,7 +57,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Categories (row order):** packaging-news → trends → business-strategy → sustainability → design-inspiration; 3 posts each; “View All →” → `/category/[slug]` (archive in PROD-1499).
 - **Industries:** up to 10 from `industry` docs + static fallback; links to `{NEXT_PUBLIC_WWW_URL}/industries/{slug}`.
 - **JSON-LD:** `blog()` + `organization()` from `@pakfactory/seo`.
-- **Reuse:** `NewsletterCtaBand`, `GlobalRfqCta` from 404 work.
+- **Reuse:** `NewsletterCtaBand`, `GlobalRfqCta` from 404 work; marketing bands use `@pakfactory/ui` `Card` / `Button` / `Badge`.
+- **Local CMS:** dataset **`development`**; seed with `pnpm --filter @pakfactory/studio run seed` + `pnpm seed:blog-dev`. Blog env: root `.env.local` + [`apps/blog/.env.local`](../apps/blog/.env.local) — details in [`apps/blog/memory.md`](../apps/blog/memory.md) § Local dev.
 
 ## PROD-1506 — 404 and recovery rail
 
