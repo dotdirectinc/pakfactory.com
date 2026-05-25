@@ -1,22 +1,12 @@
-import { defineCliConfig } from "sanity/cli";
-
-const projectId =
-  process.env.SANITY_STUDIO_PROJECT_ID ||
-  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
-  "";
-const dataset =
-  process.env.SANITY_STUDIO_DATASET ||
-  process.env.NEXT_PUBLIC_SANITY_DATASET ||
-  "production";
+import { defineCliConfig } from 'sanity/cli'
 
 export default defineCliConfig({
-  api: { projectId, dataset },
-  deployment: {
-    /**
-     * Auto-updates: hosted Studio tracks latest (or your chosen channel in sanity.io/manage).
-     * Add `appId` from the Studio tab in sanity.io/manage for fine-grained version selection.
-     * @see https://www.sanity.io/docs/studio/latest-version-of-sanity
-     */
-    autoUpdates: true,
+  api: {
+    projectId: process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp',
+    dataset: process.env.SANITY_STUDIO_DATASET || 'development',
   },
-});
+  studioHost: 'pakfactory-2',
+  // Deploy the admin workspace by default until per-channel deploy strategy is decided
+  // @ts-expect-error — unstable API, not yet in CliConfig types
+  unstable_deployOnlyStudioWorkspace: true,
+})
