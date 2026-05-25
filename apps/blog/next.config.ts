@@ -10,7 +10,7 @@ const repoRoot = join(appDir, "../..");
 
 const { combinedEnv, loadedEnvFiles } = loadEnvConfig(repoRoot);
 
-// Ensure server/runtime sees vars (Turbo does not load root .env.local unless turbo.json dotEnv is set).
+// Ensure server/runtime sees vars (Turbo does not inject .env files into tasks).
 for (const [key, value] of Object.entries(combinedEnv)) {
   if (typeof value === "string" && process.env[key] === undefined) {
     process.env[key] = value;

@@ -209,7 +209,7 @@ The blog app must see Sanity credentials at **runtime**. Three layers work toget
 
 | Layer | File / config | Role |
 |-------|----------------|------|
-| Turbo | `turbo.json` → `dev.dotEnv: [".env.local", ".env"]` | Injects **repo root** `.env.local` into `pnpm dev:blog` |
+| Turbo | `turbo.json` → `dev.env` | Declares env keys for hashing only (Turbo does not load `.env` files) |
 | Next | `apps/blog/next.config.ts` | `loadEnvConfig(repoRoot)` via `import.meta.url` (not `process.cwd()`) |
 | Override | `apps/blog/.env.local` | Optional; **recommended** copy of `NEXT_PUBLIC_SANITY_*` + `SANITY_API_READ_TOKEN` |
 

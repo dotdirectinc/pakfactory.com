@@ -5,7 +5,6 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "dotEnv": [".env.local", ".env"],
       "env": [
         "NEXT_PUBLIC_SANITY_PROJECT_ID",
         "NEXT_PUBLIC_SANITY_DATASET",

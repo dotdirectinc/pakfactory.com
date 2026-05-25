@@ -78,7 +78,7 @@ After `git pull`, ask your assistant:
 
    - **`apps/www`** loads env from the **repository root** (see `apps/www/next.config.ts`).
    - **`apps/studio`** reads **`apps/studio/.env.local`** when you run `pnpm dev:studio` (Vite does not use root `.env.local` automatically). Keep `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET` in sync with root — e.g. `8293wrxp` + `development` after `pnpm seed`.
-   - **`apps/blog`** — root `.env.local` via `next.config.ts` + Turbo `dotEnv`, plus **`apps/blog/.env.local`** for overrides (port, Sanity copy). See [`apps/blog/.env.example`](apps/blog/.env.example) and [`apps/blog/memory.md`](apps/blog/memory.md) (local dev / empty home troubleshooting).
+   - **`apps/blog`** — root `.env.local` via `next.config.ts` (`loadEnvConfig`), plus **`apps/blog/.env.local`** for overrides (port, Sanity copy). See [`apps/blog/.env.example`](apps/blog/.env.example) and [`apps/blog/memory.md`](apps/blog/memory.md) (local dev / empty home troubleshooting).
    - **`packages/sanity`** scripts load **repo root** `.env.local`.
 
    Optional (premium shadcn studio registry): `EMAIL` and `LICENSE_KEY` as in `.env.example`.
