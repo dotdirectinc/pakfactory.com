@@ -9,7 +9,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1487](https://dotdirect.atlassian.net/browse/PROD-1487) | T0.2 — `@pakfactory/seo` | Done | [`packages/seo`](../packages/seo/), [`packages/seo/CLAUDE.md`](../packages/seo/CLAUDE.md) |
 | [PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516) | Standardize AI IDE config | Done | [`AGENTS.md`](../AGENTS.md), [`CLAUDE.md`](../CLAUDE.md), [`.cursor/rules/`](../.cursor/rules/), [`.claude/skills/`](../.claude/skills/) |
 | [PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495) | T5.2 — Listing `noindex` rules | Done | [`apps/blog/src/lib/seo.ts`](../apps/blog/src/lib/seo.ts), [`apps/blog/CLAUDE.md`](../apps/blog/CLAUDE.md) |
-| [PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496) | T5.3 — Vercel + `basePath` `/blog` | Done | [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/memory.md`](../apps/blog/memory.md) |
+| [PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496) | T5.3 — Vercel blog deployment (root URLs) | Done | [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/memory.md`](../apps/blog/memory.md) |
 | [PROD-1506](https://dotdirect.atlassian.net/browse/PROD-1506) | S2.10 — Blog 404 + recovery rail | Done | [`apps/blog/src/app/not-found.tsx`](../apps/blog/src/app/not-found.tsx), [`apps/blog/src/app/_components/`](../apps/blog/src/app/_components/) |
 | [PROD-1497](https://dotdirect.atlassian.net/browse/PROD-1497) | S2.1 — Blog home page | Done | [`apps/blog/src/app/page.tsx`](../apps/blog/src/app/page.tsx), [`apps/blog/src/lib/blog-home.ts`](../apps/blog/src/lib/blog-home.ts) |
 | [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) | S2.9 — RSS feed | In Progress | [`apps/blog/src/app/rss.xml/route.ts`](../apps/blog/src/app/rss.xml/route.ts), [`apps/blog/src/lib/rss.ts`](../apps/blog/src/lib/rss.ts) |
@@ -45,14 +45,16 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 ## PROD-1496 — URLs and deployment
 
-- **`basePath`:** `/blog` — keep [`BLOG_BASE_PATH`](../apps/blog/src/lib/base-path.ts) in sync with `next.config.ts`.
-- **`NEXT_PUBLIC_SITE_URL`:** must include the path prefix (e.g. `https://pakfactory.com/blog`, `http://localhost:3001/blog`) for canonicals and JSON-LD.
+- **No `basePath`:** `apps/blog` serves at the deployment root (`/`, `/[slug]`, `/rss.xml`). Jira “/blog” refers to the monorepo app path, not a URL prefix.
+- **`NEXT_PUBLIC_SITE_URL`:** blog origin only (e.g. `https://blog.pakfactory.com`, `http://localhost:3003`) for canonicals and JSON-LD.
+- **`NEXT_PUBLIC_WWW_URL`:** main marketing site for organization JSON-LD and outbound industry links.
 - **Vercel:** separate project, root `apps/blog`, install/build in [`apps/blog/vercel.json`](../apps/blog/vercel.json). Ops checklist: [`apps/blog/memory.md`](../apps/blog/memory.md).
-- **Local URLs:** index `http://localhost:3003/blog`, post `http://localhost:3003/blog/<slug>` (default `PORT=3003`; see [`apps/blog/memory.md`](../apps/blog/memory.md)).
+- **404:** unknown routes use [`not-found.tsx`](../apps/blog/src/app/not-found.tsx) via `notFound()` — not Vercel platform 404.
+- **Local URLs:** `http://localhost:3003`, `http://localhost:3003/<slug>` (default `PORT=3003`).
 
 ## PROD-1497 — Blog home
 
-- **Route:** `apps/blog/src/app/page.tsx` (public `/blog`).
+- **Route:** `apps/blog/src/app/page.tsx` (public `/` on the blog host).
 - **Title:** `PakFactory Blog — Packaging Insights, Trends & Industry News`.
 - **Hero:** `post.featuredOnHome` (studio) + 4 latest; fallback featured = newest published.
 - **Categories (row order):** packaging-news → trends → business-strategy → sustainability → design-inspiration; 3 posts each; “View All →” → `/category/[slug]` (archive in PROD-1499).
@@ -72,11 +74,11 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 ## PROD-1505 — RSS feed
 
-- **Route:** `apps/blog/src/app/rss.xml/route.ts` → public **`/blog/rss.xml`** (respects `basePath`).
+- **Route:** `apps/blog/src/app/rss.xml/route.ts` → public **`/rss.xml`**.
 - **Format:** RSS 2.0, `Content-Type: application/xml; charset=utf-8`.
 - **Items:** latest **20** published posts — title, link, excerpt (CDATA), `pubDate`, `category`, `dc:creator` (author).
 - **GROQ:** `BLOG_RSS_POSTS_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts).
-- **Autodiscovery:** `metadata.alternates.types['application/rss+xml']` in [`apps/blog/src/app/layout.tsx`](../apps/blog/src/app/layout.tsx) (`url: '/rss.xml'` → `/blog/rss.xml`).
+- **Autodiscovery:** `metadata.alternates.types['application/rss+xml']` in [`apps/blog/src/app/layout.tsx`](../apps/blog/src/app/layout.tsx) (`url: '/rss.xml'`).
 - **Revalidation:** `BLOG_REVALIDATE_SECONDS` (60) in [`apps/blog/src/lib/blog-cache.ts`](../apps/blog/src/lib/blog-cache.ts); tag `blog-posts` reserved for Sanity webhooks.
 
 ## JIRA workflow (Product project)

@@ -91,7 +91,7 @@ All commands run from the **repository root**.
 |---------|----------------|
 | `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
 | `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
-| `pnpm dev:blog` | Blog → [http://localhost:3003/blog](http://localhost:3003/blog) (default port **3003**; set `PORT` to override) |
+| `pnpm dev:blog` | Blog → [http://localhost:3003](http://localhost:3003) (default port **3003**; set `PORT` to override) |
 | `pnpm seed:blog-dev` | Extra blog test posts + industries into Sanity **`development`** (after full studio seed) |
 | `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 
@@ -125,9 +125,9 @@ Create a **separate** Vercel project from `apps/www`. Build/install commands are
 | `NEXT_PUBLIC_SANITY_API_VERSION` | `2025-09-25` |
 | `NEXT_PUBLIC_SANITY_STUDIO_URL` | hosted Studio URL |
 | `SANITY_API_READ_TOKEN` | viewer token |
-| `NEXT_PUBLIC_SITE_URL` | `https://pakfactory.com/blog` |
+| `NEXT_PUBLIC_SITE_URL` | Blog deployment origin (e.g. `https://blog.pakfactory.com`) |
 
-**Domains:** attach `blog.pakfactory.com`; `vercel.json` 301s that host to `https://pakfactory.com/blog`. Map `pakfactory.com/blog` to this project (path + domain) or add www rewrites.
+**Domains:** point the blog Vercel project at your blog hostname (e.g. `blog.pakfactory.com`). Routes are at **/** on that host, not under `/blog/`.
 
 **Deploy:** push to the linked branch — Vercel runs install → turbo build (including `@pakfactory/seo`, `@pakfactory/sanity`, `@pakfactory/ui` typecheck per `turbo.json`) → Next.js deploy. No custom `start` command on Vercel.
 

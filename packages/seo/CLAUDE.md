@@ -8,7 +8,7 @@ Inherits [`AGENTS.md`](../../AGENTS.md). This package is the **only** place for 
 - **Apps consume** via `workspace:*` and `transpilePackages` in Next config; do not copy generators into `apps/*`.
 - **Generators:** `organization`, `person`, `blogPosting`, `newsArticle`, `breadcrumbList`, `collectionPage`.
 - **Embedding:** apps call `serializeJsonLd(jsonLdGraph([...nodes]))` in a server component `<script type="application/ld+json">`.
-- **URLs:** callers pass **absolute** canonical URLs (include blog `basePath` when building from `getSiteUrl()`).
+- **URLs:** callers pass **absolute** canonical URLs (from `getSiteUrl()` on the blog app).
 - **Extend here first** when adding new schema types (e.g. `FAQPage`); then wire the app route.
 
 ## Consumers

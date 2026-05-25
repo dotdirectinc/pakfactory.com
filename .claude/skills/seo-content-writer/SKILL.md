@@ -33,7 +33,7 @@ description: >-
 
 - Lead paragraph answers the reader’s implied question in **plain language**.
 - Entities named explicitly (product types, materials, industries) where truthful.
-- Internal link placeholders for the blog must respect **`basePath` `/blog`** (public paths like `/blog/<slug>`; use `getSiteUrl()` when absolute URLs are needed).
+- Internal link placeholders for the blog use root paths (`/<slug>`); use `getSiteUrl()` when absolute URLs are needed.
 
 ## Repo alignment
 

@@ -28,7 +28,7 @@ description: >-
 ### Structured data
 
 - **`BlogPosting`** (via **`@pakfactory/seo`**) in `@graph` with `@context`, `headline`, `datePublished`, `author`, `image`, `mainEntityOfPage`, `publisher` when available — **never** inline hand-built JSON-LD in routes.
-- Canonical/OG/JSON-LD URLs must use **`getSiteUrl()`** (includes **`/blog`** `basePath`, PROD-1496).
+- Canonical/OG/JSON-LD URLs must use **`getSiteUrl()`** (blog origin at deployment root, PROD-1496).
 - **`FAQPage`** JSON-LD only when visible FAQ content exists on-page (add generator in `@pakfactory/seo` when needed).
 
 ### Robots (listing pages, PROD-1495)

@@ -2,8 +2,6 @@ import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BLOG_BASE_PATH } from "./src/lib/base-path";
-
 /** Repo root — do not use `process.cwd()` (Turbo may start Next from another directory). */
 const appDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(appDir, "../..");
@@ -34,7 +32,6 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const nextConfig: NextConfig = {
-  basePath: BLOG_BASE_PATH,
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo"],
   images: {
     remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],

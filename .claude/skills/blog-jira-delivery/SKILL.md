@@ -35,7 +35,7 @@ Produce a short markdown plan:
 | Routes / files | Table of deliverables |
 | Reuse | Prior `_components` (404 rail, newsletter, RFQ, etc.) |
 | Out of scope | Copy from Jira |
-| Verify | `pnpm build:blog`, curl URLs with `/blog` basePath |
+| Verify | `pnpm build:blog`, curl `http://localhost:3003/` and `/unknown-slug` |
 
 ## Phase 3 — Document before code
 
@@ -56,7 +56,7 @@ pnpm --filter @pakfactory/blog typecheck
 pnpm build:blog
 ```
 
-Local verify: `http://localhost:3003/blog` — env/seed troubleshooting in [`apps/blog/memory.md`](../../../apps/blog/memory.md) § Local dev.
+Local verify: `http://localhost:3003` — env/seed troubleshooting in [`apps/blog/memory.md`](../../../apps/blog/memory.md) § Local dev.
 
 ## Phase 6 — Commit + Jira handoff
 

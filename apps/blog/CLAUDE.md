@@ -6,19 +6,21 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 | Route | File | Notes |
 |-------|------|--------|
-| `/blog` (`basePath`) | [`src/app/page.tsx`](./src/app/page.tsx) | Post index; `revalidate = 60` |
-| `/blog/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
+| `/` | [`src/app/page.tsx`](./src/app/page.tsx) | Blog home; `revalidate = 60` |
+| `/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
+| `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
 | Future | `src/app/category/[slug]/...` | Reserved for category archives — no client-only routing for primary content |
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
 
-## Public URLs and `basePath` (PROD-1496)
+## Public URLs (PROD-1496 / PROD-1497)
 
-- Next.js **`basePath`** is **`/blog`** ([`src/lib/base-path.ts`](./src/lib/base-path.ts) — keep in sync with `next.config.ts`).
-- App routes remain `/` and `/[slug]` in code; public URLs are **`/blog`** and **`/blog/[slug]`** (Next prefixes `basePath` on links automatically).
-- **`getSiteUrl()`** in [`src/lib/site.ts`](./src/lib/site.ts) must return the **full public origin including `/blog`** (e.g. `http://localhost:3003/blog`, `https://pakfactory.com/blog`). Set **`NEXT_PUBLIC_SITE_URL`** in root or `apps/blog/.env.local`.
-- **Local dev URL:** [http://localhost:3003/blog](http://localhost:3003/blog) (default `PORT=3003` in `package.json`). Ops, env, and seed: [`memory.md`](./memory.md) § Local dev.
-- Use `getSiteUrl()` + `normalizeSiteUrl()` for canonicals, Open Graph URLs, and JSON-LD — never hardcode `localhost:3001` without `/blog`.
+- **`apps/blog`** is a **standalone** Next app: routes are at the **deployment root** (`/`, `/[slug]`, `/rss.xml`). There is **no** Next.js `basePath` URL prefix.
+- Jira “`/blog` home page” means the **monorepo app** `apps/blog/`, not a `/blog/` path on the domain.
+- **`getSiteUrl()`** in [`src/lib/site.ts`](./src/lib/site.ts) is the blog origin only (e.g. `http://localhost:3003`, `https://blog.pakfactory.com`). Set **`NEXT_PUBLIC_SITE_URL`** in root or `apps/blog/.env.local`.
+- **`getWwwUrl()`** — main marketing site for organization JSON-LD and industry links (`NEXT_PUBLIC_WWW_URL`).
+- **Local dev:** [http://localhost:3003](http://localhost:3003) (default `PORT=3003`). Ops, env, seed: [`memory.md`](./memory.md) § Local dev.
+- Unknown routes: `[slug]` and `[...segments]` call `notFound()` → [`not-found.tsx`](./src/app/not-found.tsx) (not Vercel platform 404).
 - Vercel deployment checklist: [`memory.md`](./memory.md).
 
 ## Listing robots (PROD-1495)

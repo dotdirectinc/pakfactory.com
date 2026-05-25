@@ -16,7 +16,7 @@ import {
   getListingRobotsFromSearchParams,
   robotsDirectiveToMetadata,
 } from "@/lib/seo";
-import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
+import { getSiteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -65,7 +65,7 @@ export default async function BlogHomePage() {
   const jsonLd = jsonLdGraph([
     organization({
       name: "PakFactory",
-      url: siteUrl.replace(/\/blog\/?$/, "") || siteUrl,
+      url: normalizeSiteUrl(getWwwUrl()),
       id: orgId,
     }),
     blog({
@@ -104,7 +104,7 @@ export default async function BlogHomePage() {
               {debug.configured ? "yes" : "no"}
             </p>
             <p className="mt-2 text-muted-foreground">
-              Use <strong>http://localhost:3003/blog</strong> (not :3001). After
+              Use <strong>http://localhost:3003</strong> (not :3001). After
               changing <code>.env.local</code>, stop the dev server, run{" "}
               <code>rm -rf apps/blog/.next</code>, then <code>pnpm dev:blog</code>.
               Seed data: <code>pnpm seed:blog-dev</code> on dataset{" "}

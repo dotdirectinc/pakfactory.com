@@ -7,17 +7,17 @@ Last updated: 2026-05-25.
 ## PROD-1496 — Vercel deployment (approach A, implemented in repo)
 
 **Jira:** [PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496) — T5.3 Configure Vercel deployment for `apps/blog`  
-**Routing:** `basePath: '/blog'` — public URLs live under `/blog` on the deployment origin.
+**Routing:** Blog app serves at **deployment root** (`/`, `/[slug]`, `/rss.xml`). No Next.js `basePath`. Jira “/blog home” = `apps/blog/`, not a URL prefix.
 
 ### What was shipped (code)
 
 | Deliverable | Location |
 |-------------|----------|
-| `basePath` `/blog` | `next.config.ts` + `src/lib/base-path.ts` |
-| Host redirect `blog.pakfactory.com` → `pakfactory.com/blog` | `vercel.json` |
+| Root routes (no `basePath`) | `next.config.ts` — home at `/` |
+| Unknown paths → app 404 | `not-found.tsx`, `[slug]` + `[...segments]` → `notFound()` |
 | Turbo: blog build after workspace typechecks | `turbo.json` → `@pakfactory/blog#build` |
 | `NEXT_PUBLIC_SITE_URL` in Turbo build/dev env | `turbo.json` |
-| Local default origin includes `/blog` | `src/lib/site.ts` |
+| Local default origin (no path prefix) | `src/lib/site.ts` |
 | Env example | root `.env.example` |
 
 ### Vercel project (dashboard + `vercel.json`)
@@ -30,7 +30,7 @@ Last updated: 2026-05-25.
 | Build | `pnpm turbo run build --filter=@pakfactory/blog` (`vercel.json`) |
 | Ignore unchanged | `npx turbo-ignore @pakfactory/blog` (`vercel.json`) |
 | Framework | Next.js — deployment is managed; no `start` on Vercel |
-| Production `NEXT_PUBLIC_SITE_URL` | `https://pakfactory.com/blog` |
+| Production `NEXT_PUBLIC_SITE_URL` | Blog origin, e.g. `https://blog.pakfactory.com` |
 
 Preview deployments: enable on PRs; set preview Sanity vars as needed.
 
@@ -38,11 +38,11 @@ Preview deployments: enable on PRs; set preview Sanity vars as needed.
 
 | URL | Purpose |
 |-----|---------|
-| `http://localhost:3003/blog` | Index (default dev port; override with `PORT`) |
-| `http://localhost:3003/blog/<slug>` | Post |
-| `http://localhost:3003/blog/rss.xml` | RSS 2.0 feed (PROD-1505) |
+| `http://localhost:3003` | Home (default dev port; override with `PORT`) |
+| `http://localhost:3003/<slug>` | Post |
+| `http://localhost:3003/rss.xml` | RSS 2.0 feed (PROD-1505) |
 
-Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003/blog` in root or `apps/blog/.env.local` for canonical/JSON-LD (or rely on default in `site.ts`, which uses `PORT` default **3003**).
+Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003` in root or `apps/blog/.env.local` for canonical/JSON-LD (or rely on default in `site.ts`).
 
 ### Verification
 
@@ -50,22 +50,22 @@ Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003/blog` in root or `apps/blog/.env
 pnpm build:blog
 pnpm dev:blog
 
-curl -sI http://localhost:3003/blog | head -5
-curl -sI 'http://localhost:3003/blog?page=2' | grep -i robots
+curl -sI http://localhost:3003 | head -5
+curl -sI 'http://localhost:3003?page=2' | grep -i robots
 ```
 
 After deploy:
 
 ```bash
-curl -sI https://blog.pakfactory.com/ | grep -i location
-curl -sI 'https://pakfactory.com/blog/' | head -5
+curl -sI https://blog.pakfactory.com/ | head -5
+curl -sI https://blog.pakfactory.com/unknown-slug | head -8
 ```
 
 ### Ops follow-up
 
 - [ ] Create Vercel project + env vars in dashboard  
 - [ ] DNS for `blog.pakfactory.com`  
-- [ ] Confirm `pakfactory.com/blog` is routed to this deployment (domain/path on blog project or www multi-zone rewrite)  
+- [ ] Attach blog hostname to this Vercel project (routes at `/` on that host)  
 - [ ] Green production + preview builds  
 
 ---
@@ -101,12 +101,13 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 **Filter query keys** (non-empty value → filtered): `tag`, `category`, `q`, `query`, `author`, `year`, `month`.  
 **Not a filter:** `page` (pagination only) — parsed via `parseListingPage()`.
 
-### Routes (with `basePath`)
+### Routes
 
 | App path | Public URL (local) | Robots |
 |----------|-------------------|--------|
-| `/` | `/blog` | From `searchParams` |
-| `/[slug]` | `/blog/[slug]` | Always index, follow |
+| `/` | `/` | From `searchParams` |
+| `/[slug]` | `/[slug]` | Always index, follow |
+| `[...segments]` | unknown multi-segment | → `notFound()` |
 
 ### Related docs
 
@@ -140,7 +141,7 @@ No `viewCount` on studio `post` yet. Rail uses posts with `publishedAt` in the c
 
 ```bash
 pnpm dev:blog
-curl -sI http://localhost:3003/blog/this-slug-does-not-exist | head -8
+curl -sI http://localhost:3003/this-slug-does-not-exist | head -8
 # Expect HTTP 404 and robots noindex on HTML (check page source or metadata)
 ```
 
@@ -175,7 +176,7 @@ curl -sI http://localhost:3003/blog/this-slug-does-not-exist | head -8
 
 ```bash
 pnpm dev:blog
-open http://localhost:3003/blog
+open http://localhost:3003
 pnpm build:blog
 ```
 
@@ -198,8 +199,8 @@ Marketing bands use `@pakfactory/ui` **`Card`**, **`Button`**, **`Badge`**, **`I
 | Item | Value |
 |------|--------|
 | `apps/blog/package.json` | `next dev --port ${PORT:-3003}` |
-| `site.ts` fallback origin | `http://localhost:3003/blog` when `NEXT_PUBLIC_SITE_URL` unset |
-| Public URL | **`http://localhost:3003/blog`** only (`basePath` `/blog`; root `/` on the blog app returns 404) |
+| `site.ts` fallback origin | `http://localhost:3003` when `NEXT_PUBLIC_SITE_URL` unset |
+| Public URL | **`http://localhost:3003/`** (home at root; do not append `/blog`) |
 
 Do not use port **3001** unless you set `PORT=3001` explicitly (another service may already use 3001).
 
@@ -239,7 +240,7 @@ After seeding, refresh Studio (`pnpm dev:studio`) and blog home.
 
 ### Troubleshooting empty home page
 
-1. Open **`http://localhost:3003/blog`** (not `:3001`, not `localhost:3000/blog`).
+1. Open **`http://localhost:3003`** (not `:3001`, not `localhost:3000`).
 2. Confirm banner shows **Project: `8293wrxp`**, **Token: set**, **Configured: yes**.
 3. If not: sync env into `apps/blog/.env.local` from root (see `apps/blog/.env.example`).
 4. Stop dev server → `rm -rf apps/blog/.next` → `pnpm dev:blog`.
@@ -258,7 +259,7 @@ Remove or narrow the banner once local CMS connection is stable.
 
 ---
 
-## PROD-1505 — RSS feed (`/blog/rss.xml`)
+## PROD-1505 — RSS feed (`/rss.xml`)
 
 **Jira:** [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) — S2.9 Build RSS feed
 
@@ -271,6 +272,6 @@ Remove or narrow the banner once local CMS connection is stable.
 | Shared revalidate | `src/lib/blog-cache.ts` (`BLOG_REVALIDATE_SECONDS = 60`) |
 
 ```bash
-curl -s http://localhost:3003/blog/rss.xml | head -20
-curl -sI http://localhost:3003/blog/rss.xml | grep -i content-type
+curl -s http://localhost:3003/rss.xml | head -20
+curl -sI http://localhost:3003/rss.xml | grep -i content-type
 ```

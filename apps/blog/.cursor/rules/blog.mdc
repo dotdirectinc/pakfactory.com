@@ -1,5 +1,5 @@
 ---
-description: Blog app — routes, Sanity, AEO/GEO, basePath, robots; see apps/blog/CLAUDE.md
+description: Blog app — routes, Sanity, AEO/GEO, robots; see apps/blog/CLAUDE.md
 globs: apps/blog/**/*
 alwaysApply: false
 ---
@@ -10,7 +10,7 @@ When editing **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), 
 
 **Quick rules:**
 
-- **`basePath` `/blog`:** public URLs are `/blog` and `/blog/[slug]`; `NEXT_PUBLIC_SITE_URL` must include `/blog`; use `getSiteUrl()` for canonicals and JSON-LD (PROD-1496).
+- **Root URLs:** home `/`, posts `/[slug]`; `NEXT_PUBLIC_SITE_URL` is the blog origin (no `/blog` path prefix); use `getSiteUrl()` for canonicals and JSON-LD.
 - **Routes:** App Router `/` + `/[slug]`; Server Components; `revalidate = 60` by default.
 - **Sanity:** queries only from `@pakfactory/sanity/queries`; `getSanityClient()` + `isSanityConfigured()`; no inline GROQ in pages.
 - **Robots (PROD-1495):** posts always index; listings use `getListingRobotsFromSearchParams` — page ≥2 or filters → noindex, follow.
