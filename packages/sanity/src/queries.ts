@@ -16,8 +16,14 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
   body,
   publishedAt,
   mainImage,
-  "author": author->{name, "slug": slug.current, image}
+  "author": author->{name, "slug": slug.current, photo}
 }`;
+
+export {
+  BLOG_CATEGORIES_QUERY,
+  POPULAR_POSTS_THIS_MONTH_QUERY,
+  POPULAR_POSTS_LATEST_QUERY,
+} from "./queries/blog";
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,

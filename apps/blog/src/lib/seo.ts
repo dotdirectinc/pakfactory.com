@@ -10,6 +10,7 @@ export type BlogRobotsDirective = {
 
 export type BlogRobotsInput =
   | { kind: "post" }
+  | { kind: "error" }
   | {
       kind: BlogListingKind;
       /** 1-based page number. Defaults to 1. */
@@ -67,6 +68,10 @@ export function hasListingFilters(searchParams: SearchParams): boolean {
 export function getBlogRobotsDirective(input: BlogRobotsInput): BlogRobotsDirective {
   if (input.kind === "post") {
     return { index: true, follow: true };
+  }
+
+  if (input.kind === "error") {
+    return { index: false, follow: true };
   }
 
   const pageNumber = input.pageNumber ?? 1;

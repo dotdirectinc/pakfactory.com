@@ -111,3 +111,40 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 
 - `CLAUDE.md` — AEO/GEO metadata contract for post pages.
 - `.cursor/rules/blog.mdc` — quick rules for this app.
+
+---
+
+## PROD-1506 — Blog 404 + recovery rail (implemented)
+
+**Jira:** [PROD-1506](https://dotdirect.atlassian.net/browse/PROD-1506) — S2.10 Blog 404 page
+
+**Schema source:** `apps/studio/schemas` (`post`, `blogCategory`, `author.photo`) — not `studio-old` or stub `packages/sanity` post schema.
+
+### What was shipped
+
+| Deliverable | Location |
+|-------------|----------|
+| Global 404 | `src/app/not-found.tsx` — `noindex, follow` via `getBlogRobotsDirective({ kind: 'error' })` |
+| Blog GROQ | `packages/sanity/src/queries/blog.ts` — categories + popular posts (month window, `publishedAt` fallback) |
+| Data helpers | `src/lib/blog-data.ts`, `src/lib/blog-categories.ts` (studio slug fallback) |
+| Recovery rail (reuse PROD-1503) | `src/app/_components/` — search, chips, popular rail, RFQ CTA, newsletter |
+| Newsletter API | `src/app/api/newsletter/route.ts` — needs `NEWSLETTER_WEBHOOK_URL` |
+| Author image field | `POST_BY_SLUG_QUERY` uses `author.photo` (studio `author` schema) |
+
+### Popular posts
+
+No `viewCount` on studio `post` yet. Rail uses posts with `publishedAt` in the current UTC month; if fewer than three, fills from latest published.
+
+### Verification
+
+```bash
+pnpm dev:blog
+curl -sI http://localhost:3001/blog/this-slug-does-not-exist | head -8
+# Expect HTTP 404 and robots noindex on HTML (check page source or metadata)
+```
+
+### Ops follow-up
+
+- [ ] Set `NEWSLETTER_WEBHOOK_URL` in Vercel when S2.1 webhook is ready
+- [ ] Optional `NEXT_PUBLIC_WWW_URL` for quote CTA host
+- [ ] Seed categories: `SANITY_TOKEN=… node apps/studio/scripts/seed.mjs` (blogCategory block)

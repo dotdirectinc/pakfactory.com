@@ -10,6 +10,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516) | Standardize AI IDE config | Done | [`AGENTS.md`](../AGENTS.md), [`CLAUDE.md`](../CLAUDE.md), [`.cursor/rules/`](../.cursor/rules/), [`.claude/skills/`](../.claude/skills/) |
 | [PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495) | T5.2 — Listing `noindex` rules | Done | [`apps/blog/src/lib/seo.ts`](../apps/blog/src/lib/seo.ts), [`apps/blog/CLAUDE.md`](../apps/blog/CLAUDE.md) |
 | [PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496) | T5.3 — Vercel + `basePath` `/blog` | Done | [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/memory.md`](../apps/blog/memory.md) |
+| [PROD-1506](https://dotdirect.atlassian.net/browse/PROD-1506) | S2.10 — Blog 404 + recovery rail | Done | [`apps/blog/src/app/not-found.tsx`](../apps/blog/src/app/not-found.tsx), [`apps/blog/src/app/_components/`](../apps/blog/src/app/_components/) |
 
 ## PROD-1486 — pnpm only
 
@@ -46,6 +47,15 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **`NEXT_PUBLIC_SITE_URL`:** must include the path prefix (e.g. `https://pakfactory.com/blog`, `http://localhost:3001/blog`) for canonicals and JSON-LD.
 - **Vercel:** separate project, root `apps/blog`, install/build in [`apps/blog/vercel.json`](../apps/blog/vercel.json). Ops checklist: [`apps/blog/memory.md`](../apps/blog/memory.md).
 - **Local URLs:** index `http://localhost:3001/blog`, post `http://localhost:3001/blog/<slug>`.
+
+## PROD-1506 — 404 and recovery rail
+
+- **404 route:** App Router `not-found.tsx`; unknown post slugs already call `notFound()` from `[slug]/page.tsx`.
+- **Robots:** `getBlogRobotsDirective({ kind: 'error' })` → **`noindex, follow`**.
+- **GROQ:** [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts) — field names match **`apps/studio`** schemas (`blogCategory`, `post.publishedAt`, `author.photo`).
+- **Reuse:** `_components/blog-search-form`, `category-chips`, `popular-posts-rail` for search zero-results (PROD-1503).
+- **Popular rail:** current UTC month by `publishedAt`, then latest published (no `viewCount` until studio adds it).
+- **Newsletter:** `POST /api/newsletter` when `NEWSLETTER_WEBHOOK_URL` is set.
 
 ## JIRA workflow (Product project)
 

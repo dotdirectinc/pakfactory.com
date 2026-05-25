@@ -28,7 +28,7 @@ type Post = {
   author?: {
     name?: string;
     slug?: string | null;
-    image?: unknown;
+    photo?: unknown;
   };
   body?: unknown;
 };
@@ -94,7 +94,7 @@ function buildJsonLd(post: Post) {
 
   const mainImageUrl = sanityImageUrl(post.mainImage);
   const authorImageUrl = post.author
-    ? sanityImageUrl(post.author.image)
+    ? sanityImageUrl(post.author.photo)
     : undefined;
 
   const authorNode =
