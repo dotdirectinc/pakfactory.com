@@ -2,6 +2,7 @@ export type {
   ArticleLikeInput,
   BlogPostingInput,
   BreadcrumbItem,
+  BlogInput,
   CollectionPageInput,
   JsonLdDocument,
   NewsArticleInput,
@@ -10,6 +11,7 @@ export type {
 } from "./types";
 export { SCHEMA_CONTEXT } from "./types";
 
+export { blog } from "./generators/blog";
 export { blogPosting } from "./generators/blogPosting";
 export { breadcrumbList } from "./generators/breadcrumbList";
 export { collectionPage } from "./generators/collectionPage";

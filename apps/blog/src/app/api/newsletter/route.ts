@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const webhook = process.env.NEWSLETTER_WEBHOOK_URL?.trim();
+  const webhook =
+    process.env.NEWSLETTER_WEBHOOK_URL?.trim() ||
+    process.env.NEXT_PUBLIC_NEWSLETTER_WEBHOOK_URL?.trim();
   if (!webhook) {
     return NextResponse.json(
       { message: "Newsletter is not configured yet." },

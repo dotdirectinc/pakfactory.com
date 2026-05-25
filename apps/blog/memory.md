@@ -148,3 +148,37 @@ curl -sI http://localhost:3001/blog/this-slug-does-not-exist | head -8
 - [ ] Set `NEWSLETTER_WEBHOOK_URL` in Vercel when S2.1 webhook is ready
 - [ ] Optional `NEXT_PUBLIC_WWW_URL` for quote CTA host
 - [ ] Seed categories: `SANITY_TOKEN=… node apps/studio/scripts/seed.mjs` (blogCategory block)
+
+---
+
+## PROD-1497 — Blog home page (implemented)
+
+**Jira:** [PROD-1497](https://dotdirect.atlassian.net/browse/PROD-1497) — S2.1 Build `/blog` home page
+
+**Schema source:** `apps/studio` — `post.featuredOnHome`, `post.category`, `blogCategory`, `industry`.
+
+### What was shipped
+
+| Deliverable | Location |
+|-------------|----------|
+| Home page rebuild | `src/app/page.tsx` — hero, industries, 5 category rows, newsletter, pillars, RFQ |
+| Home data + order | `src/lib/blog-home.ts` — category slug order per AC |
+| GROQ | `packages/sanity/src/queries/blog.ts` — featured, latest, by category, industries |
+| Components | `home-hero`, `home-industry-strip`, `home-category-row`, `home-conversion-pillars`, `post-card` |
+| Studio pin field | `apps/studio/schemas/post.ts` — `featuredOnHome` |
+| Blog JSON-LD | `@pakfactory/seo` — `blog()` generator |
+| Seed | `featuredOnHome: true` on `post-paperboard-guide` |
+
+### Verify
+
+```bash
+pnpm dev:blog
+open http://localhost:3001/blog
+pnpm build:blog
+```
+
+### Ops follow-up
+
+- [ ] Deploy studio schema (`featuredOnHome`) before editors can pin hero post in production dataset
+- [ ] Confirm www industry URLs (`/industries/{slug}`) match marketing routes
+- [ ] Category archive routes (PROD-1499) for “View All →” links

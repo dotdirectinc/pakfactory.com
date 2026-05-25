@@ -21,8 +21,12 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
 
 export {
   BLOG_CATEGORIES_QUERY,
+  FEATURED_HOME_POST_QUERY,
+  INDUSTRIES_FOR_BLOG_HOME_QUERY,
+  LATEST_HOME_POSTS_QUERY,
   POPULAR_POSTS_THIS_MONTH_QUERY,
   POPULAR_POSTS_LATEST_QUERY,
+  POSTS_BY_CATEGORY_SLUG_QUERY,
 } from "./queries/blog";
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{

@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import {
+  blog,
+  jsonLdGraph,
+  organization,
+  serializeJsonLd,
+} from "@pakfactory/seo";
+import { HomeCategoryRowSection } from "@/app/_components/home-category-row";
+import { HomeConversionPillars } from "@/app/_components/home-conversion-pillars";
+import { HomeHero } from "@/app/_components/home-hero";
+import { HomeIndustryStrip } from "@/app/_components/home-industry-strip";
+import { GlobalRfqCta } from "@/app/_components/global-rfq-cta";
+import { NewsletterCtaBand } from "@/app/_components/newsletter-cta-band";
+import { fetchBlogHomeData } from "@/lib/blog-home";
 import {
   getListingRobotsFromSearchParams,
   robotsDirectiveToMetadata,
 } from "@/lib/seo";
-import { POSTS_QUERY } from "@pakfactory/sanity/queries";
-import { Button } from "@pakfactory/ui/components/button";
-
-type PostListItem = {
-  _id: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  publishedAt?: string;
-  author?: { name?: string };
-};
+import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
-const INDEX_TITLE = "PakFactory Blog";
-const INDEX_DESCRIPTION = "Packaging insights, guides, and stories.";
+const HOME_TITLE = "PakFactory Blog — Packaging Insights, Trends & Industry News";
+const HOME_DESCRIPTION =
+  "Curated packaging insights across trends, sustainability, business strategy, design, and industry news from PakFactory.";
 
 export async function generateMetadata({
   searchParams,
@@ -32,51 +33,66 @@ export async function generateMetadata({
   const directive = getListingRobotsFromSearchParams("blog_index", sp);
 
   return {
-    title: INDEX_TITLE,
-    description: INDEX_DESCRIPTION,
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     robots: robotsDirectiveToMetadata(directive),
+    openGraph: {
+      title: HOME_TITLE,
+      description: HOME_DESCRIPTION,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: HOME_TITLE,
+      description: HOME_DESCRIPTION,
+    },
   };
 }
 
-export default async function BlogIndex() {
-  const posts = isSanityConfigured()
-    ? await getSanityClient()
-        .fetch<PostListItem[]>(POSTS_QUERY)
-        .catch(() => [])
-    : [];
+export default async function BlogHomePage() {
+  const data = await fetchBlogHomeData();
+  const siteUrl = normalizeSiteUrl(getSiteUrl());
+  const orgId = `${siteUrl}#organization`;
+  const blogId = `${siteUrl}#blog`;
+
+  const jsonLd = jsonLdGraph([
+    organization({
+      name: "PakFactory",
+      url: siteUrl.replace(/\/blog\/?$/, "") || siteUrl,
+      id: orgId,
+    }),
+    blog({
+      name: "PakFactory Blog",
+      url: siteUrl,
+      description: HOME_DESCRIPTION,
+      id: blogId,
+      publisher: { "@id": orgId },
+    }),
+  ]);
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <header className="mb-10 flex items-center justify-between">
-        <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
-        <Button variant="outline">Subscribe</Button>
-      </header>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+      />
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <header className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            PakFactory Blog
+          </h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">{HOME_DESCRIPTION}</p>
+        </header>
 
-      {posts.length === 0 ? (
-        <p className="text-muted-foreground">
-          No posts yet. Create one in the Studio to see it here.
-        </p>
-      ) : (
-        <ul className="space-y-8">
-          {posts.map((post) => (
-            <li key={post._id} className="border-b pb-6">
-              <Link href={`/${post.slug}`} className="group">
-                <h2 className="text-2xl font-semibold group-hover:underline">
-                  {post.title}
-                </h2>
-                {post.excerpt && (
-                  <p className="mt-2 text-muted-foreground">{post.excerpt}</p>
-                )}
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {post.author?.name}
-                  {post.publishedAt &&
-                    ` · ${new Date(post.publishedAt).toLocaleDateString()}`}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+        <HomeHero featured={data.featured} latest={data.latest} />
+        <HomeIndustryStrip industries={data.industries} />
+        {data.categoryRows.map((row) => (
+          <HomeCategoryRowSection key={row.slug} row={row} />
+        ))}
+        <NewsletterCtaBand className="border-t py-10" />
+        <HomeConversionPillars />
+        <GlobalRfqCta className="pb-10" />
+      </main>
+    </>
   );
 }

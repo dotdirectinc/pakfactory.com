@@ -998,6 +998,7 @@ const posts = [
     _id: 'post-paperboard-guide', _type: 'post',
     title: 'The Complete Guide to Paperboard Types for Packaging',
     slug: slug('complete-guide-paperboard-types-packaging'),
+    featuredOnHome: true,
     publishedAt: '2026-04-15T09:00:00Z',
     category: ref('bcat-business-strategy'),
     author: ref('author-sarah-chen'),

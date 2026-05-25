@@ -47,6 +47,16 @@ export type CollectionPageInput = {
   id?: string;
 };
 
+export type BlogInput = {
+  name: string;
+  /** Canonical URL of the blog home */
+  url: string;
+  description?: string;
+  /** Publisher Organization node or @id reference */
+  publisher?: Record<string, unknown>;
+  id?: string;
+};
+
 /** Shared shape for BlogPosting / NewsArticle generators */
 export type ArticleLikeInput = {
   /** Canonical URL of the article */
