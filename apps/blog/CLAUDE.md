@@ -7,6 +7,8 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | Route | File | Notes |
 |-------|------|--------|
 | `/` | [`src/app/page.tsx`](./src/app/page.tsx) | Blog home; `revalidate = 60` |
+| `/all` | [`src/app/all/page.tsx`](./src/app/all/page.tsx) | All posts archive page 1 (PROD-1498) |
+| `/all/page/[n]` | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx) | Archive pagination; page 1 → `/all` |
 | `/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
 | `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
 | Future | `src/app/category/[slug]/...` | Reserved for category archives — no client-only routing for primary content |

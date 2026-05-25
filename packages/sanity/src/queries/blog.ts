@@ -73,7 +73,23 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
-/** Latest 20 published posts for RSS 2.0 (`/blog/rss.xml`, PROD-1505). */
+/** Total published posts (all archive pagination). */
+export const BLOG_ALL_POSTS_COUNT_QUERY = /* groq */ `count(*[
+  _type == "post"
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+])`;
+
+/** Paginated all-posts archive (PROD-1498) — `$start` inclusive, `$end` exclusive. */
+export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
+  _type == "post"
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Latest 20 published posts for RSS 2.0 (`/rss.xml`, PROD-1505). */
 export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   _type == "post"
   && defined(slug.current)

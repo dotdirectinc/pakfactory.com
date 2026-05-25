@@ -47,6 +47,19 @@ export type CollectionPageInput = {
   id?: string;
 };
 
+export type ItemListEntry = {
+  name: string;
+  /** Absolute URL of the list item */
+  url: string;
+};
+
+export type ItemListInput = {
+  items: readonly ItemListEntry[];
+  name?: string;
+  /** Stable node id */
+  id?: string;
+};
+
 export type BlogInput = {
   name: string;
   /** Canonical URL of the blog home */

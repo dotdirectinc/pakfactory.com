@@ -12,7 +12,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496) | T5.3 — Vercel blog deployment (root URLs) | Done | [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/memory.md`](../apps/blog/memory.md) |
 | [PROD-1506](https://dotdirect.atlassian.net/browse/PROD-1506) | S2.10 — Blog 404 + recovery rail | Done | [`apps/blog/src/app/not-found.tsx`](../apps/blog/src/app/not-found.tsx), [`apps/blog/src/app/_components/`](../apps/blog/src/app/_components/) |
 | [PROD-1497](https://dotdirect.atlassian.net/browse/PROD-1497) | S2.1 — Blog home page | Done | [`apps/blog/src/app/page.tsx`](../apps/blog/src/app/page.tsx), [`apps/blog/src/lib/blog-home.ts`](../apps/blog/src/lib/blog-home.ts) |
-| [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) | S2.9 — RSS feed | In Progress | [`apps/blog/src/app/rss.xml/route.ts`](../apps/blog/src/app/rss.xml/route.ts), [`apps/blog/src/lib/rss.ts`](../apps/blog/src/lib/rss.ts) |
+| [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) | S2.9 — RSS feed | Done | [`apps/blog/src/app/rss.xml/route.ts`](../apps/blog/src/app/rss.xml/route.ts), [`apps/blog/src/lib/rss.ts`](../apps/blog/src/lib/rss.ts) |
+| [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) | S2.2 — All posts archive | In Progress | [`apps/blog/src/app/all/`](../apps/blog/src/app/all/), [`apps/blog/src/lib/blog-archive.ts`](../apps/blog/src/lib/blog-archive.ts) |
 
 ## PROD-1486 — pnpm only
 
@@ -71,6 +72,15 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Reuse:** `_components/blog-search-form`, `category-chips`, `popular-posts-rail` for search zero-results (PROD-1503).
 - **Popular rail:** current UTC month by `publishedAt`, then latest published (no `viewCount` until studio adds it).
 - **Newsletter:** `POST /api/newsletter` when `NEWSLETTER_WEBHOOK_URL` is set.
+
+## PROD-1498 — All posts archive
+
+- **Routes:** `/all` (page 1), `/all/page/[n]` (page 2+); `/all/page/1` redirects to `/all`.
+- **Pagination:** 12 posts per page, newest first; out-of-range → `notFound()`.
+- **Robots:** `getAllArchiveRobots(page)` — page 1 **index**, page 2+ **noindex, follow** (`all_archive` kind in `seo.ts`).
+- **Sidebar:** `ArchiveFilterSidebar` — categories link to `/category/[slug]` (PROD-1499); no filter query logic on this route.
+- **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList` via `@pakfactory/seo` (`itemList` generator added in package).
+- **GROQ:** `BLOG_ALL_POSTS_COUNT_QUERY`, `BLOG_ALL_POSTS_PAGE_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts).
 
 ## PROD-1505 — RSS feed
 

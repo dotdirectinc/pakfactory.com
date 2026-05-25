@@ -259,6 +259,25 @@ Remove or narrow the banner once local CMS connection is stable.
 
 ---
 
+## PROD-1498 — All posts archive (`/all`)
+
+**Jira:** [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) — S2.2 All posts archive with pagination
+
+| Deliverable | Location |
+|-------------|----------|
+| Page 1 | `src/app/all/page.tsx` |
+| Page 2+ | `src/app/all/page/[n]/page.tsx` |
+| Data | `src/lib/blog-archive.ts` |
+| JSON-LD | `src/lib/all-archive-jsonld.ts` |
+| UI | `_components/all-posts-archive.tsx`, `archive-filter-sidebar.tsx`, `archive-pagination.tsx` |
+
+```bash
+open http://localhost:3003/all
+curl -sI http://localhost:3003/all/page/99 | head -5  # expect 404 when out of range
+```
+
+---
+
 ## PROD-1505 — RSS feed (`/rss.xml`)
 
 **Jira:** [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) — S2.9 Build RSS feed

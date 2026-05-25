@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 
 /** Listing archive types that share pagination / filter robots rules. */
-export type BlogListingKind = "blog_index" | "category" | "tag" | "author";
+export type BlogListingKind =
+  | "blog_index"
+  | "all_archive"
+  | "category"
+  | "tag"
+  | "author";
 
 export type BlogRobotsDirective = {
   index: boolean;
@@ -89,6 +94,15 @@ export function robotsDirectiveToMetadata(
     index: directive.index,
     follow: directive.follow,
   };
+}
+
+/** Robots for `/all` archive (path-based pagination, PROD-1498). */
+export function getAllArchiveRobots(pageNumber: number): BlogRobotsDirective {
+  return getBlogRobotsDirective({
+    kind: "all_archive",
+    pageNumber,
+    hasActiveFilters: false,
+  });
 }
 
 /** Build listing robots from Next.js `searchParams` on archive routes. */

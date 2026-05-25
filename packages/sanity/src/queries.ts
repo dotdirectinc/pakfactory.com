@@ -20,6 +20,8 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
 }`;
 
 export {
+  BLOG_ALL_POSTS_COUNT_QUERY,
+  BLOG_ALL_POSTS_PAGE_QUERY,
   BLOG_CATEGORIES_QUERY,
   BLOG_RSS_POSTS_QUERY,
   FEATURED_HOME_POST_QUERY,
