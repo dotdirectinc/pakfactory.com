@@ -26,6 +26,7 @@ The monorepo ships **versioned** AI assistant context so **Claude Code**, **Curs
 3. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor rules (`.mdc`); [`pakfactory-stack.mdc`](./.cursor/rules/pakfactory-stack.mdc) reinforces `AGENTS.md` for every session.
 4. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog-only overrides (routes, Sanity query patterns, AEO/GEO targets).
 5. **`apps/blog/.cursor/rules/blog.mdc`** — applies when editing files under `apps/blog/`.
+6. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — maps completed Jira tickets (PROD-1480, PROD-1516, etc.) to binding code patterns.
 
 **Per tool**
 
@@ -41,7 +42,8 @@ After `git pull`, ask your assistant:
 | “Add a cart button to the blog post page.” | Refuse cart UX; suggest quote / RFQ / contact CTA — not Shopify. |
 | “Install this dependency: `npm install foo`.” | Correct to **`pnpm add`** (scoped with `--filter` when adding to one app). |
 | “Update `packages/ui/src/components/button.tsx` for a new variant.” | Push back — primitives unchanged unless fixing an assigned bug; style in app code. |
-| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; metadata + `Article` JSON-LD per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
+| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; URLs via `getSiteUrl()` with `/blog` prefix per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
+| “Index page 2 of the blog with ?page=2.” | Apply **`noindex, follow`** via `getListingRobotsFromSearchParams` in `apps/blog/src/lib/seo.ts` (PROD-1495). |
 | “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
 
 ## Prerequisites

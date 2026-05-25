@@ -34,6 +34,7 @@ description: >-
 
 - Maintain **[AGENTS.md](../../../AGENTS.md)** domain rules — quote/RFQ positioning, no carts.
 - Do not recommend changing **`packages/ui`** primitives for GEO; focus on copy, headings, and metadata/schema implemented in **`apps/blog`**.
+- JSON-LD and canonical URLs: **`@pakfactory/seo`** only; absolute URLs via **`getSiteUrl()`** (includes blog **`/blog`** prefix per PROD-1496).
 
 ## Pairing
 

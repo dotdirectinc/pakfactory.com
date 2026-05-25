@@ -5,9 +5,9 @@ alwaysApply: true
 
 # Workspace instructions
 
-Follow **[AGENTS.md](../../AGENTS.md)** at the repository root for all product, engineering, collaboration, and **MCP** defaults (including Context7 via `resolve-library-id` then `query-docs`), when that file exists.
+Follow **[AGENTS.md](../../AGENTS.md)** at the repository root for all product, engineering, collaboration, and **MCP** defaults (including Context7 via `resolve-library-id` then `query-docs`).
 
-Do not contradict `AGENTS.md`. If something tool-specific is needed, keep it minimal here and expand only in `AGENTS.md`.
+Do not contradict `AGENTS.md`. Blog 3.0 ticket → code map: **[docs/blog-3-jira-conventions.md](../../docs/blog-3-jira-conventions.md)**. If something tool-specific is needed, keep it minimal here and expand only in `AGENTS.md`.
 
 ## Preserve shared UI primitives (no preemptive changes)
 

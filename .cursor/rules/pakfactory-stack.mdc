@@ -5,7 +5,7 @@ alwaysApply: true
 
 # PakFactory stack (Cursor)
 
-Read [`AGENTS.md`](../../AGENTS.md) at the repository root for full stack, domain, MCP, ADR summary, and JIRA defaults.
+Read [`AGENTS.md`](../../AGENTS.md) at the repository root for full stack, domain, MCP, ADR summary, and JIRA defaults. Blog 3.0 shipped rules (PROD-1480 epic): [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md).
 
 **Non‑negotiable highlights:**
 

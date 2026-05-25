@@ -85,6 +85,20 @@ The blog prioritizes **AEO** (Answer Engine Optimization) and **GEO** (Generativ
 
 Details and naming conventions: [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md).
 
+## Blog 3.0 — implemented dev conventions (Jira)
+
+Shipped prerequisites are documented in **[`docs/blog-3-jira-conventions.md`](docs/blog-3-jira-conventions.md)** (ticket → file mapping). AI and humans must follow these when touching the blog or shared packages:
+
+| Area | Rule |
+|------|------|
+| **Package manager** ([PROD-1486](https://dotdirect.atlassian.net/browse/PROD-1486)) | **pnpm 9** only; `workspace:*` for `@pakfactory/*`; ADR-002 |
+| **JSON-LD** ([PROD-1487](https://dotdirect.atlassian.net/browse/PROD-1487)) | Use **`@pakfactory/seo`** only — see [`packages/seo/CLAUDE.md`](packages/seo/CLAUDE.md) |
+| **AI IDE config** ([PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516)) | This file + [`CLAUDE.md`](CLAUDE.md) + [`.cursor/rules/`](.cursor/rules/) + [`.claude/skills/`](.claude/skills/) |
+| **Listing robots** ([PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495)) | `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` — paginated/filtered listings **noindex, follow**; posts **index, follow** |
+| **Deploy & URLs** ([PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496)) | Blog `basePath` **`/blog`**; `NEXT_PUBLIC_SITE_URL` includes `/blog`; Vercel ops in [`apps/blog/memory.md`](apps/blog/memory.md) |
+
+Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.net/browse/PROD-1480).
+
 ## ADR summary (draft — confirm links)
 
 <!-- TODO content owner: replace placeholder links with real ADR doc URLs or in-repo paths -->
@@ -97,17 +111,18 @@ Details and naming conventions: [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md).
 | **Shared UI** | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks. | *TBD* |
 | **Package manager** | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`. | *TBD* |
 
-## JIRA defaults (draft)
-
-<!-- confirm with PM — values below are conventions only until ratified -->
+## JIRA defaults (Product / Blog 3.0)
 
 | Item | Convention |
 |------|------------|
-| **Project key** | `PAK` |
-| **Issue prefix** | `PAK-123` |
-| **Branches** | `feat/PAK-123-short-slug`, `fix/PAK-123-short-slug` |
-| **Commits** | Include reference: `Refs: PAK-123` or `PAK-123: summary` per team habit |
-| **PR titles** | `[PAK-123] Short description` |
+| **Project key** | `PROD` |
+| **Issue prefix** | `PROD-123` |
+| **Branches** | `feat/PROD-123-short-slug`, `fix/PROD-123-short-slug` |
+| **Commits** | `PROD-123: summary` or trailer `Refs: PROD-123` |
+| **PR titles** | `[PROD-123] Short description` |
+| **Blog 3.0 epic** | [PROD-1480](https://dotdirect.atlassian.net/browse/PROD-1480) — tech prerequisites |
+
+Full ticket-to-code mapping: [`docs/blog-3-jira-conventions.md`](docs/blog-3-jira-conventions.md).
 
 ## AI verification checklist
 

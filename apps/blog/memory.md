@@ -2,6 +2,8 @@
 
 Last updated: 2026-05-19.
 
+**AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
+
 ## PROD-1496 — Vercel deployment (approach A, implemented in repo)
 
 **Jira:** [PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496) — T5.3 Configure Vercel deployment for `apps/blog`  

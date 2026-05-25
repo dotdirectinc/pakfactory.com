@@ -1,19 +1,23 @@
 ---
-description: Blog app — routes, Sanity queries, AEO/GEO; full detail in apps/blog/CLAUDE.md
+description: Blog app — routes, Sanity, AEO/GEO, basePath, robots; see apps/blog/CLAUDE.md
 globs: apps/blog/**/*
 alwaysApply: false
 ---
 
 # Blog app (`@pakfactory/blog`)
 
-When editing files under **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md) and repo root [`AGENTS.md`](../../../../AGENTS.md).
+When editing **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), repo [`AGENTS.md`](../../../../AGENTS.md), and [`docs/blog-3-jira-conventions.md`](../../../../docs/blog-3-jira-conventions.md).
 
 **Quick rules:**
 
-- **Routes:** `/` and `/[slug]` today; prefer Server Components; `revalidate = 60` by default.
+- **`basePath` `/blog`:** public URLs are `/blog` and `/blog/[slug]`; `NEXT_PUBLIC_SITE_URL` must include `/blog`; use `getSiteUrl()` for canonicals and JSON-LD (PROD-1496).
+- **Routes:** App Router `/` + `/[slug]`; Server Components; `revalidate = 60` by default.
 - **Sanity:** queries only from `@pakfactory/sanity/queries`; `getSanityClient()` + `isSanityConfigured()`; no inline GROQ in pages.
-- **AEO/GEO:** post pages should implement `generateMetadata` (OG + Twitter), **`BlogPosting`** JSON-LD via **`@pakfactory/seo`**, optional `FAQPage` later; entity-clear author.
+- **Robots (PROD-1495):** posts always index; listings use `getListingRobotsFromSearchParams` — page ≥2 or filters → noindex, follow.
+- **AEO/GEO:** `generateMetadata` (OG + Twitter) on posts; **`BlogPosting`** JSON-LD via **`@pakfactory/seo`** + `serializeJsonLd` — never inline schema objects.
 - **Naming:** kebab-case `.tsx`; colocate in `_components/` under the route.
 - **Tailwind:** no new tokens in `globals.css`; use `@pakfactory/ui` patterns.
 
-**Skills:** `seo-content-writer`, `on-page-seo-auditor`, `geo-content-optimizer` (see root `CLAUDE.md`).
+**Skills:** `seo-content-writer`, `on-page-seo-auditor`, `geo-content-optimizer` (root `CLAUDE.md`).
+
+**Ops:** [`apps/blog/memory.md`](../../memory.md) for Vercel/DNS.

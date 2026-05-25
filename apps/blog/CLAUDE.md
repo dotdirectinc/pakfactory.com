@@ -12,6 +12,20 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
 
+## Public URLs and `basePath` (PROD-1496)
+
+- Next.js **`basePath`** is **`/blog`** ([`src/lib/base-path.ts`](./src/lib/base-path.ts) — keep in sync with `next.config.ts`).
+- App routes remain `/` and `/[slug]` in code; public URLs are **`/blog`** and **`/blog/[slug]`** (Next prefixes `basePath` on links automatically).
+- **`getSiteUrl()`** in [`src/lib/site.ts`](./src/lib/site.ts) must return the **full public origin including `/blog`** (e.g. `http://localhost:3001/blog`, `https://pakfactory.com/blog`). Set **`NEXT_PUBLIC_SITE_URL`** in root `.env.local`.
+- Use `getSiteUrl()` + `normalizeSiteUrl()` for canonicals, Open Graph URLs, and JSON-LD — never hardcode `localhost:3001` without `/blog`.
+- Vercel deployment checklist: [`memory.md`](./memory.md).
+
+## Listing robots (PROD-1495)
+
+- Use **`getBlogRobotsDirective`** / **`getListingRobotsFromSearchParams`** from [`src/lib/seo.ts`](./src/lib/seo.ts) in **`generateMetadata`** on listing routes (index today; future category/tag/author archives).
+- **Post pages:** always **index, follow** (`kind: 'post'`).
+- **Listings:** page **1** with no filter query params → **index, follow**; page **≥ 2** or any filter param (`tag`, `category`, `q`, `query`, `author`, `year`, `month`) → **noindex, follow**. Pagination uses **`page` only** — `page` is not a filter.
+
 ## Sanity query patterns
 
 - Import queries from **`@pakfactory/sanity/queries`** only — do **not** inline raw GROQ strings in route files.
@@ -29,7 +43,9 @@ Every post detail route should:
 3. **GEO-friendly body structure**: answer-first lead paragraph; descriptive **H2**/**H3**; optional **FAQ** section with matching **`FAQPage`** JSON-LD when the page lists Q&A pairs (add a generator in `@pakfactory/seo` when needed).
 4. **Author**: surface author name (and bio link when content model supports it) for entity clarity.
 
-Canonical URL base: **`NEXT_PUBLIC_SITE_URL`** (see repo root `.env.example`). Treat this section as the **contract** for AI-generated implementations.
+Canonical URL base: **`NEXT_PUBLIC_SITE_URL`** (must include `/blog` path prefix). Treat this section as the **contract** for AI-generated implementations.
+
+**Jira map:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md).
 
 ## Components and files
 
