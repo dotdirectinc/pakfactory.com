@@ -28,6 +28,7 @@ export type HomePostCard = {
   excerpt?: string;
   publishedAt?: string;
   mainImage?: unknown;
+  categorySlug?: string;
   categoryTitle?: string;
   authorName?: string;
 };

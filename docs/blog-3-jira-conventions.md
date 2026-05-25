@@ -14,6 +14,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1497](https://dotdirect.atlassian.net/browse/PROD-1497) | S2.1 — Blog home page | Done | [`apps/blog/src/app/page.tsx`](../apps/blog/src/app/page.tsx), [`apps/blog/src/lib/blog-home.ts`](../apps/blog/src/lib/blog-home.ts) |
 | [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) | S2.9 — RSS feed | Done | [`apps/blog/src/app/rss.xml/route.ts`](../apps/blog/src/app/rss.xml/route.ts), [`apps/blog/src/lib/rss.ts`](../apps/blog/src/lib/rss.ts) |
 | [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) | S2.2 — All posts archive | Request For Approval | [`apps/blog/src/app/all/`](../apps/blog/src/app/all/), [`apps/blog/src/lib/blog-archive.ts`](../apps/blog/src/lib/blog-archive.ts) |
+| [PROD-1499](https://dotdirect.atlassian.net/browse/PROD-1499) | S2.3 — Category archives | Request For Approval | [`apps/blog/src/app/category/`](../apps/blog/src/app/category/), [`apps/blog/src/lib/blog-category-archive.ts`](../apps/blog/src/lib/blog-category-archive.ts) |
 
 ## PROD-1486 — pnpm only
 
@@ -72,6 +73,17 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Reuse:** `_components/blog-search-form`, `category-chips`, `popular-posts-rail` for search zero-results (PROD-1503).
 - **Popular rail:** current UTC month by `publishedAt`, then latest published (no `viewCount` until studio adds it).
 - **Newsletter:** `POST /api/newsletter` when `NEWSLETTER_WEBHOOK_URL` is set.
+
+## PROD-1499 — Category archives
+
+- **Routes:** `/category/[slug]` (page 1), `/category/[slug]/page/[n]` (page 2+); filters in query (`tag`, `author`, `year`, `month`, `sort`).
+- **Post detail:** `/category/[slug]/[postSlug]` — canonical path; `postDetailHref()` in [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts). Legacy `/{postSlug}` **301** redirects when `categorySlug` is set.
+- **CMS:** `blogCategory.description` via `pt::text`; 5 allowed slugs match studio validation.
+- **Layout:** sidebar filters + 3-column grid (12/page); **Packaging News** uses `PostCard` `headline` variant.
+- **Robots:** `getCategoryListingRobots` — page 1 unfiltered **index**; page 2+ or any filter param **noindex, follow**.
+- **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList`; item URLs use category-scoped post paths.
+- **Unknown slug:** `notFound()`.
+- **`sanity-image.ts`:** `import "server-only"` — prevents `require is not defined` if image URL builder leaks to client.
 
 ## PROD-1498 — All posts archive
 

@@ -9,22 +9,6 @@ export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && de
   "slug": slug.current
 }`;
 
-/** Posts published in the current calendar month (UTC), newest first. */
-export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
-  _type == "post"
-  && defined(slug.current)
-  && defined(publishedAt)
-  && publishedAt <= now()
-  && publishedAt >= $monthStart
-] | order(publishedAt desc)[0...3]{
-  _id,
-  title,
-  "slug": slug.current,
-  excerpt,
-  publishedAt,
-  mainImage
-}`;
-
 const POST_CARD_FIELDS = /* groq */ `{
   _id,
   title,
@@ -32,9 +16,32 @@ const POST_CARD_FIELDS = /* groq */ `{
   excerpt,
   publishedAt,
   mainImage,
+  "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "authorName": author->name
 }`;
+
+const POST_DETAIL_FIELDS = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  excerpt,
+  body,
+  publishedAt,
+  mainImage,
+  "categorySlug": category->slug.current,
+  "categoryTitle": category->title,
+  "author": author->{name, "slug": slug.current, photo}
+}`;
+
+/** Posts published in the current calendar month (UTC), newest first. */
+export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
+  _type == "post"
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+  && publishedAt >= $monthStart
+] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
 /** CMS-pinned hero post (`featuredOnHome` on `apps/studio/schemas/post`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
@@ -62,6 +69,80 @@ export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
   && defined(publishedAt)
   && publishedAt <= now()
 ] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+
+/** Post detail under a category URL (PROD-1499). */
+export const POST_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
+  _type == "post"
+  && slug.current == $postSlug
+  && category->slug.current == $categorySlug
+][0]${POST_DETAIL_FIELDS}`;
+
+/** Category landing document (PROD-1499). */
+export const BLOG_CATEGORY_BY_SLUG_QUERY = /* groq */ `*[_type == "blogCategory" && slug.current == $slug][0]{
+  _id,
+  title,
+  "slug": slug.current,
+  "descriptionText": pt::text(description),
+  metaTitle,
+  metaDescription,
+  "ogImageUrl": ogImage.asset->url
+}`;
+
+const CATEGORY_POST_FILTER = /* groq */ `_type == "post"
+  && category->slug.current == $categorySlug
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+  && ($tagSlug == null || $tagSlug in tags[]->slug.current)
+  && ($authorSlug == null || author->slug.current == $authorSlug)
+  && ($yearStart == null || publishedAt >= $yearStart)
+  && ($yearEnd == null || publishedAt < $yearEnd)`;
+
+export const BLOG_CATEGORY_POSTS_COUNT_QUERY = /* groq */ `count(*[
+  ${CATEGORY_POST_FILTER}
+])`;
+
+export const BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
+  ${CATEGORY_POST_FILTER}
+] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
+  ${CATEGORY_POST_FILTER}
+] | order(publishedAt asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
+  ${CATEGORY_POST_FILTER}
+] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Tags used by published posts in a category (sidebar facets). */
+export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && _id in *[
+    _type == "post"
+    && category->slug.current == $categorySlug
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ].tags[]._ref
+] | order(title asc){
+  _id,
+  title,
+  "slug": slug.current
+}`;
+
+/** Authors with published posts in a category (sidebar facets). */
+export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
+  _type == "author"
+  && _id in *[
+    _type == "post"
+    && category->slug.current == $categorySlug
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ].author._ref
+] | order(name asc){
+  _id,
+  name,
+  "slug": slug.current
+}`;
 
 /** Industry pills for blog home (studio `industry` documents). */
 export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
@@ -100,6 +181,7 @@ export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   "slug": slug.current,
   excerpt,
   publishedAt,
+  "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "authorName": author->name
 }`;
@@ -110,11 +192,4 @@ export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-] | order(publishedAt desc)[0...3]{
-  _id,
-  title,
-  "slug": slug.current,
-  excerpt,
-  publishedAt,
-  mainImage
-}`;
+] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;

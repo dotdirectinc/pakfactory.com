@@ -1,3 +1,5 @@
+import "server-only";
+
 import imageUrlBuilder from "@sanity/image-url";
 import { getSanityDataset, getSanityProjectId } from "@/sanity/env";
 

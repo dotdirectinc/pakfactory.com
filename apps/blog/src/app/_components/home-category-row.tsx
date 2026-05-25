@@ -26,7 +26,7 @@ export function HomeCategoryRowSection({ row }: HomeCategoryRowSectionProps) {
         <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {row.posts.map((post) => (
             <li key={post._id}>
-              <PostCard post={post} />
+              <PostCard post={post} categorySlug={row.slug} />
             </li>
           ))}
         </ul>

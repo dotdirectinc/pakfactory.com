@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PopularPostCard } from "@/lib/blog-data";
+import { postDetailHref } from "@/lib/blog-post-url";
 
 type PopularPostsRailProps = {
   posts: PopularPostCard[];
@@ -23,7 +24,10 @@ export function PopularPostsRail({
       <ul className="mt-4 space-y-4">
         {posts.map((post) => (
           <li key={post._id}>
-            <Link href={`/${post.slug}`} className="group block">
+            <Link
+              href={postDetailHref(post.slug, post.categorySlug)}
+              className="group block"
+            >
               <span className="font-medium group-hover:underline">{post.title}</span>
               {post.excerpt && (
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

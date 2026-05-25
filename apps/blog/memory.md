@@ -188,7 +188,7 @@ Marketing bands use `@pakfactory/ui` **`Card`**, **`Button`**, **`Badge`**, **`I
 
 - [ ] Deploy studio schema (`featuredOnHome`) before editors can pin hero post in production dataset
 - [ ] Confirm www industry URLs (`/industries/{slug}`) match marketing routes
-- [ ] Category archive routes (PROD-1499) for “View All →” links
+- [x] Category archive routes (PROD-1499) — `/category/[slug]`, “View All →” links
 
 ---
 
@@ -256,6 +256,31 @@ After seeding, refresh Studio (`pnpm dev:studio`) and blog home.
 | `getBlogHomeDebugInfo()` | `blog-home.ts` — project/dataset/token for banner |
 
 Remove or narrow the banner once local CMS connection is stable.
+
+---
+
+## PROD-1499 — Category archives (`/category/[slug]`)
+
+**Jira:** [PROD-1499](https://dotdirect.atlassian.net/browse/PROD-1499) — S2.3 Category landing pages — **Request For Approval** (2026-05-19)
+
+| Deliverable | Location |
+|-------------|----------|
+| Page 1 | `src/app/category/[slug]/page.tsx` |
+| Page 2+ | `src/app/category/[slug]/page/[n]/page.tsx` |
+| Post detail | `src/app/category/[slug]/[postSlug]/page.tsx` |
+| Post URLs | `src/lib/blog-post-url.ts` (`postDetailHref`) |
+| Shared post logic | `src/lib/blog-post.ts`, `blog-post-article.tsx` |
+| Data | `src/lib/blog-category-archive.ts` |
+| JSON-LD | `src/lib/category-archive-jsonld.ts` |
+| UI | `category-archive-view`, `category-filter-sidebar`, `category-active-filters`, `PostCard` `headline` variant |
+
+**QA (post URL bugfix):** From `/category/business-strategy`, cards link to `/category/business-strategy/{postSlug}` (not `/{postSlug}`). Legacy `/{postSlug}` redirects when category is known.
+
+```bash
+open http://localhost:3003/category/packaging-news
+open http://localhost:3003/category/business-strategy/tco-folding-cartons-vs-rigid
+open http://localhost:3003/category/trends?tag=some-tag
+```
 
 ---
 

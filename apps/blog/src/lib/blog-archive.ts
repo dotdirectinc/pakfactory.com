@@ -6,7 +6,11 @@ import {
   BLOG_ALL_POSTS_PAGE_QUERY,
 } from "@pakfactory/sanity/queries";
 
-export const ALL_ARCHIVE_PAGE_SIZE = 12;
+/** Shared listing page size (all archive + category archives). */
+export const LISTING_PAGE_SIZE = 12;
+
+/** @deprecated Use LISTING_PAGE_SIZE */
+export const ALL_ARCHIVE_PAGE_SIZE = LISTING_PAGE_SIZE;
 
 export type AllArchivePageData = {
   posts: HomePostCard[];
@@ -24,7 +28,7 @@ export function parseArchivePageParam(raw: string): number | null {
 
 export function getTotalArchivePages(totalCount: number): number {
   if (totalCount === 0) return 1;
-  return Math.ceil(totalCount / ALL_ARCHIVE_PAGE_SIZE);
+  return Math.ceil(totalCount / LISTING_PAGE_SIZE);
 }
 
 export function isArchivePageOutOfRange(
@@ -36,8 +40,8 @@ export function isArchivePageOutOfRange(
 }
 
 export function archivePageSlice(pageNumber: number): { start: number; end: number } {
-  const start = (pageNumber - 1) * ALL_ARCHIVE_PAGE_SIZE;
-  return { start, end: start + ALL_ARCHIVE_PAGE_SIZE };
+  const start = (pageNumber - 1) * LISTING_PAGE_SIZE;
+  return { start, end: start + LISTING_PAGE_SIZE };
 }
 
 export function archivePageHref(pageNumber: number): string {

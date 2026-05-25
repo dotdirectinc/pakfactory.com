@@ -17,6 +17,7 @@ export type PopularPostCard = {
   excerpt?: string;
   publishedAt?: string;
   mainImage?: unknown;
+  categorySlug?: string;
 };
 
 function monthStartIso(): string {

@@ -11,7 +11,9 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/all/page/[n]` | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx) | Archive pagination; page 1 → `/all` |
 | `/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
 | `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
-| Future | `src/app/category/[slug]/...` | Reserved for category archives — no client-only routing for primary content |
+| `/category/[slug]` | [`src/app/category/[slug]/page.tsx`](./src/app/category/[slug]/page.tsx) | Category archive page 1 (PROD-1499) |
+| `/category/[slug]/page/[n]` | [`src/app/category/[slug]/page/[n]/page.tsx`](./src/app/category/[slug]/page/[n]/page.tsx) | Category pagination + query filters |
+| `/category/[slug]/[postSlug]` | [`src/app/category/[slug]/[postSlug]/page.tsx`](./src/app/category/[slug]/[postSlug]/page.tsx) | Post detail under category |
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
 

@@ -1,3 +1,4 @@
+import { postDetailHref } from "@/lib/blog-post-url";
 import { normalizeSiteUrl } from "@/lib/site";
 
 export type RssPostItem = {
@@ -5,6 +6,7 @@ export type RssPostItem = {
   slug: string;
   excerpt?: string;
   publishedAt?: string;
+  categorySlug?: string;
   categoryTitle?: string;
   authorName?: string;
 };
@@ -33,7 +35,7 @@ function formatRssPubDate(iso?: string): string {
 }
 
 function buildItemXml(siteUrl: string, post: RssPostItem): string {
-  const link = `${siteUrl}/${post.slug}`;
+  const link = `${siteUrl}${postDetailHref(post.slug, post.categorySlug)}`;
   const title = escapeXml(post.title);
   const description = post.excerpt?.trim()
     ? `<description>${cdata(post.excerpt.trim())}</description>`

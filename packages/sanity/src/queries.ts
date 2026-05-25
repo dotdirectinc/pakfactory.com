@@ -16,12 +16,22 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
   body,
   publishedAt,
   mainImage,
+  "categorySlug": category->slug.current,
+  "categoryTitle": category->title,
   "author": author->{name, "slug": slug.current, photo}
 }`;
 
 export {
   BLOG_ALL_POSTS_COUNT_QUERY,
   BLOG_ALL_POSTS_PAGE_QUERY,
+  BLOG_CATEGORY_AUTHORS_FACET_QUERY,
+  BLOG_CATEGORY_BY_SLUG_QUERY,
+  BLOG_CATEGORY_POSTS_COUNT_QUERY,
+  BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY,
+  BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY,
+  BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY,
+  BLOG_CATEGORY_TAGS_FACET_QUERY,
+  POST_BY_CATEGORY_AND_SLUG_QUERY,
   BLOG_CATEGORIES_QUERY,
   BLOG_RSS_POSTS_QUERY,
   FEATURED_HOME_POST_QUERY,

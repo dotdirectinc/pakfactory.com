@@ -1,21 +1,69 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { HomePostCard } from "@/lib/blog-home";
+import { postDetailHref } from "@/lib/blog-post-url";
 import { sanityImageUrl } from "@/lib/sanity-image";
 
 type PostCardProps = {
   post: HomePostCard;
-  variant?: "default" | "compact" | "featured";
+  /** When set, links to `/category/{slug}/{postSlug}` (overrides `post.categorySlug`). */
+  categorySlug?: string;
+  variant?: "default" | "compact" | "featured" | "headline";
 };
 
-export function PostCard({ post, variant = "default" }: PostCardProps) {
+function formatPostDate(iso?: string): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+}
+
+export function PostCard({
+  post,
+  categorySlug: categorySlugProp,
+  variant = "default",
+}: PostCardProps) {
+  const href = postDetailHref(
+    post.slug,
+    categorySlugProp ?? post.categorySlug,
+  );
   const imageUrl = sanityImageUrl(post.mainImage, variant === "featured" ? 900 : 400);
   const isFeatured = variant === "featured";
   const isCompact = variant === "compact";
+  const isHeadline = variant === "headline";
+  const formattedDate = formatPostDate(post.publishedAt);
+
+  if (isHeadline) {
+    return (
+      <article className="border-b border-border pb-4 last:border-b-0">
+        <Link href={href} className="group block space-y-1">
+          {formattedDate && (
+            <time
+              dateTime={post.publishedAt}
+              className="text-xs font-semibold uppercase tracking-wide text-primary"
+            >
+              {formattedDate}
+            </time>
+          )}
+          <h3 className="text-lg font-bold leading-snug tracking-tight group-hover:underline sm:text-xl">
+            {post.title}
+          </h3>
+          {post.excerpt && (
+            <p className="line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
+          )}
+        </Link>
+      </article>
+    );
+  }
 
   return (
     <article className={isFeatured ? "space-y-3" : isCompact ? "space-y-1" : "space-y-2"}>
-      <Link href={`/${post.slug}`} className="group block">
+      <Link href={href} className="group block">
         {imageUrl && (
           <div
             className={
