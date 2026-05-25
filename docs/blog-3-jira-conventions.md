@@ -13,7 +13,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1506](https://dotdirect.atlassian.net/browse/PROD-1506) | S2.10 — Blog 404 + recovery rail | Done | [`apps/blog/src/app/not-found.tsx`](../apps/blog/src/app/not-found.tsx), [`apps/blog/src/app/_components/`](../apps/blog/src/app/_components/) |
 | [PROD-1497](https://dotdirect.atlassian.net/browse/PROD-1497) | S2.1 — Blog home page | Done | [`apps/blog/src/app/page.tsx`](../apps/blog/src/app/page.tsx), [`apps/blog/src/lib/blog-home.ts`](../apps/blog/src/lib/blog-home.ts) |
 | [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) | S2.9 — RSS feed | Done | [`apps/blog/src/app/rss.xml/route.ts`](../apps/blog/src/app/rss.xml/route.ts), [`apps/blog/src/lib/rss.ts`](../apps/blog/src/lib/rss.ts) |
-| [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) | S2.2 — All posts archive | In Progress | [`apps/blog/src/app/all/`](../apps/blog/src/app/all/), [`apps/blog/src/lib/blog-archive.ts`](../apps/blog/src/lib/blog-archive.ts) |
+| [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) | S2.2 — All posts archive | Request For Approval | [`apps/blog/src/app/all/`](../apps/blog/src/app/all/), [`apps/blog/src/lib/blog-archive.ts`](../apps/blog/src/lib/blog-archive.ts) |
 
 ## PROD-1486 — pnpm only
 
