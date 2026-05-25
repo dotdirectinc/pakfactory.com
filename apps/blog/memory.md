@@ -40,6 +40,7 @@ Preview deployments: enable on PRs; set preview Sanity vars as needed.
 |-----|---------|
 | `http://localhost:3003/blog` | Index (default dev port; override with `PORT`) |
 | `http://localhost:3003/blog/<slug>` | Post |
+| `http://localhost:3003/blog/rss.xml` | RSS 2.0 feed (PROD-1505) |
 
 Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003/blog` in root or `apps/blog/.env.local` for canonical/JSON-LD (or rely on default in `site.ts`, which uses `PORT` default **3003**).
 
@@ -254,3 +255,22 @@ After seeding, refresh Studio (`pnpm dev:studio`) and blog home.
 | `getBlogHomeDebugInfo()` | `blog-home.ts` — project/dataset/token for banner |
 
 Remove or narrow the banner once local CMS connection is stable.
+
+---
+
+## PROD-1505 — RSS feed (`/blog/rss.xml`)
+
+**Jira:** [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) — S2.9 Build RSS feed
+
+| Deliverable | Location |
+|-------------|----------|
+| Route handler | `src/app/rss.xml/route.ts` |
+| XML builder | `src/lib/rss.ts` |
+| GROQ | `BLOG_RSS_POSTS_QUERY` in `@pakfactory/sanity/queries` |
+| Autodiscovery | `src/app/layout.tsx` → `metadata.alternates.types` |
+| Shared revalidate | `src/lib/blog-cache.ts` (`BLOG_REVALIDATE_SECONDS = 60`) |
+
+```bash
+curl -s http://localhost:3003/blog/rss.xml | head -20
+curl -sI http://localhost:3003/blog/rss.xml | grep -i content-type
+```

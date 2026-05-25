@@ -21,6 +21,7 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
 
 export {
   BLOG_CATEGORIES_QUERY,
+  BLOG_RSS_POSTS_QUERY,
   FEATURED_HOME_POST_QUERY,
   INDUSTRIES_FOR_BLOG_HOME_QUERY,
   LATEST_HOME_POSTS_QUERY,

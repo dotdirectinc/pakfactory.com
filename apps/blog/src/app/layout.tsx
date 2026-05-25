@@ -4,6 +4,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "PakFactory Blog",
   description: "Packaging insights, guides, and stories.",
+  alternates: {
+    types: {
+      "application/rss+xml": [
+        {
+          url: "/rss.xml",
+          title: "PakFactory Blog",
+        },
+      ],
+    },
+  },
 };
 
 export default function RootLayout({

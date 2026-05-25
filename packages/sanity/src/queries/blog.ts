@@ -73,6 +73,21 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
+/** Latest 20 published posts for RSS 2.0 (`/blog/rss.xml`, PROD-1505). */
+export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
+  _type == "post"
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc)[0...20]{
+  title,
+  "slug": slug.current,
+  excerpt,
+  publishedAt,
+  "categoryTitle": category->title,
+  "authorName": author->name
+}`;
+
 /** Latest published posts when the month window returns fewer than three. */
 export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
   _type == "post"
