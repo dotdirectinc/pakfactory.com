@@ -1,8 +1,27 @@
 # Blog app — working memory
 
-Last updated: 2026-05-25.
+Last updated: 2026-05-27.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
+
+## Route build progress (vs BA target — `docs/route-design-ba.png`)
+
+Snapshot 2026-05-27. Compare the table below against the BA screenshot on every route task (route-design conformance rule in `CLAUDE.md`).
+
+| BA route | Status |
+|----------|--------|
+| `/` home | ✅ PROD-1497 |
+| `/all` (+ pagination) | ✅ PROD-1498 |
+| `/{category}` archive (+ pagination) | ✅ PROD-1499 |
+| `/{slug}` single post | ✅ resolves via `[category]` (PROD-1597); full page rebuild → PROD-1502 |
+| `/tag/{slug}` | ✅ PROD-1500 |
+| `/author/{slug}` | ✅ PROD-1501 |
+| `/rss.xml` | ✅ PROD-1505 |
+| `/sitemap.xml` | ✅ PROD-1596 (utility; not on BA tree) |
+| `/search` (+ `?q=`) | ⬜ not built |
+| `/contribute` | ⬜ not built |
+
+URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
 
 ## PROD-1496 — Vercel deployment (approach A, implemented in repo)
 
