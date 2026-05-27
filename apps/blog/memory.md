@@ -434,26 +434,32 @@ curl -s http://localhost:3003/tag/beauty | grep -i 'tracking-wide'              
 
 ---
 
-## PROD-1597 — Remove `/category/` prefix from blog URLs (implemented)
+## PROD-1597 — Blog URL scheme: no `/category/` prefix; posts canonical at `/{slug}`
 
-**Jira:** [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) — requirement update for PROD-1499.
+**Jira:** [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) — requirement update for PROD-1499. **Rescoped 2026-05-27** (see [[post-url-is-always-root-slug]]).
 
-**New scheme:** category archives at `/{category}`; posts at `/{category}/{post-slug}`. No `/category/` prefix, **no bare root post route** (the old `[slug]` redirect route is deleted).
+**Scheme:** category archives at `/{category}`; a post's **only** URL is `/{slug}` (root). Category/tag/search/home are discovery paths, never URL scoping. The first implementation made posts `/{category}/{post-slug}`; that was reverted — bare-root post is now canonical, scoped URL 301s to it.
 
 | Concern | Location |
 |---------|----------|
-| Route tree | `src/app/[category]/page.tsx` (archive), `[category]/page/[n]/` (pagination), `[category]/[postSlug]/` (post) |
-| Param name | `category` (was `slug`); post page aliases `category: categorySlug` |
-| URL builders | `categoryHref(slug)` + `postDetailHref(post, cat)` in `src/lib/blog-post-url.ts`; `categoryPageHref` in `src/lib/blog-category-archive.ts` |
-| 301 redirects | `next.config.ts` `redirects()` — `/category/:c[/page/:n][/:post]` → new paths (permanent) |
+| Root resolver | `src/app/[category]/page.tsx` — known category slug → archive; else → post by slug (`/{slug}`); else `notFound()` |
+| Category pagination | `[category]/page/[n]/` (unchanged) |
+| Legacy scoped post → redirect | `[category]/[postSlug]/page.tsx` — `permanentRedirect('/'+postSlug)` (308), guarded to known categories |
+| URL builders | `categoryHref(slug)` → `/{category}`, `tagHref(slug)` → `/tag/{slug}`, `postDetailHref(slug)` → **`/{slug}`** in `src/lib/blog-post-url.ts` |
+| Redirects | `next.config.ts` `redirects()` — `/category/:c` → `/:c`, `…/page/:n` → `/:c/page/:n`, `/category/:c/:post` → **`/:post`** (permanent) |
 
-**Guards:** `[category]/page.tsx` `notFound()`s unknown/reserved single segments via `isKnownCategorySlug` (static routes `/all`, `/rss.xml`, `/api`, etc. win over the dynamic segment anyway). A post slug must never equal a category slug or reserved segment.
+**Guards:** unknown/reserved single segments → `notFound()` (static routes `/all`, `/tag`, `/rss.xml`, `/sitemap.xml`, `/api` win over the dynamic segment). A post slug must never equal a category slug or reserved segment — recommend Studio validation (follow-up).
 
-**Derived surfaces auto-update** through the two helpers: canonicals, breadcrumb/collection JSON-LD, RSS `<link>`, and the sitemap (`BLOG_SITEMAP_POSTS_QUERY` via `postDetailHref`).
+**Derived surfaces auto-update** via `postDetailHref` → `/{slug}`: canonicals, breadcrumb/collection JSON-LD (breadcrumb still shows category context), RSS `<link>`, sitemap. All absolute via `absoluteUrl()`.
 
 ### Verification
 
 ```bash
 pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
-# /trends, /trends/{post}, /trends/page/2 resolve; /category/trends/{post} 301s; bare /{post} 404s.
+# /{slug} → 200 (canonical /blog/{slug}); /{category}/{slug} → 308 → /{slug};
+# /{category} archive → 200; unknown → 404; sitemap/RSS/cards emit /{slug}.
 ```
+
+### Also (home) — Browse by Industries from the industry tag group
+
+`home-industry-strip` + `blog-home.ts` now source industry pills from `BLOG_INDUSTRY_TAGS_QUERY` (`blogTag` where `tagGroup == "industry"`) and link to `/tag/{slug}` via `tagHref()` — replacing the old `industry`-doc query + hardcoded fallback + www links.

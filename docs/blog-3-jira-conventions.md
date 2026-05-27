@@ -17,6 +17,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1499](https://dotdirect.atlassian.net/browse/PROD-1499) | S2.3 — Category archives | Request For Approval | [`apps/blog/src/app/category/`](../apps/blog/src/app/category/), [`apps/blog/src/lib/blog-category-archive.ts`](../apps/blog/src/lib/blog-category-archive.ts) |
 | [PROD-1596](https://dotdirect.atlassian.net/browse/PROD-1596) | Centralize blog URL base (subpath readiness) | Request For Approval | [`apps/blog/src/lib/site.ts`](../apps/blog/src/lib/site.ts), [`apps/blog/src/app/sitemap.ts`](../apps/blog/src/app/sitemap.ts) |
 | [PROD-1500](https://dotdirect.atlassian.net/browse/PROD-1500) | S2.4 — Tag archives `/tag/[slug]` | Request For Approval | [`apps/blog/src/app/tag/`](../apps/blog/src/app/tag/), [`apps/blog/src/lib/blog-tag-archive.ts`](../apps/blog/src/lib/blog-tag-archive.ts) |
+| [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) | Blog URL scheme — no `/category/`; posts at `/{slug}` | Request For Approval | [`apps/blog/src/app/[category]/`](../apps/blog/src/app/), [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts) |
 
 ## PROD-1486 — pnpm only
 
