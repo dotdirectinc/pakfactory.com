@@ -9,7 +9,7 @@ import {
 import type { HomePostCard } from "@/lib/blog-home";
 import { archivePageHref } from "@/lib/blog-archive";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { getSiteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 
 const ARCHIVE_TITLE = "All posts";
 
@@ -17,9 +17,8 @@ export function buildAllArchiveJsonLd(
   posts: HomePostCard[],
   pageNumber: number,
 ): string {
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
   const wwwUrl = normalizeSiteUrl(getWwwUrl());
-  const pageUrl = `${siteUrl}${archivePageHref(pageNumber)}`;
+  const pageUrl = absoluteUrl(archivePageHref(pageNumber));
   const orgId = `${wwwUrl}#organization`;
   const collectionId = `${pageUrl}#collection`;
   const itemListId = `${pageUrl}#itemlist`;
@@ -39,7 +38,7 @@ export function buildAllArchiveJsonLd(
   });
 
   const crumbs = breadcrumbList([
-    { name: "Blog", url: `${siteUrl}/` },
+    { name: "Blog", url: absoluteUrl("/") },
     { name: ARCHIVE_TITLE, url: pageUrl },
   ]);
 
@@ -48,7 +47,7 @@ export function buildAllArchiveJsonLd(
     name: ARCHIVE_TITLE,
     items: posts.map((post) => ({
       name: post.title,
-      url: `${siteUrl}${postDetailHref(post.slug, post.categorySlug)}`,
+      url: absoluteUrl(postDetailHref(post.slug, post.categorySlug)),
     })),
   });
 

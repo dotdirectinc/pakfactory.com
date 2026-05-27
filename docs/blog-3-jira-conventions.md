@@ -15,6 +15,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) | S2.9 — RSS feed | Done | [`apps/blog/src/app/rss.xml/route.ts`](../apps/blog/src/app/rss.xml/route.ts), [`apps/blog/src/lib/rss.ts`](../apps/blog/src/lib/rss.ts) |
 | [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) | S2.2 — All posts archive | Request For Approval | [`apps/blog/src/app/all/`](../apps/blog/src/app/all/), [`apps/blog/src/lib/blog-archive.ts`](../apps/blog/src/lib/blog-archive.ts) |
 | [PROD-1499](https://dotdirect.atlassian.net/browse/PROD-1499) | S2.3 — Category archives | Request For Approval | [`apps/blog/src/app/category/`](../apps/blog/src/app/category/), [`apps/blog/src/lib/blog-category-archive.ts`](../apps/blog/src/lib/blog-category-archive.ts) |
+| [PROD-1596](https://dotdirect.atlassian.net/browse/PROD-1596) | Centralize blog URL base (subpath readiness) | Request For Approval | [`apps/blog/src/lib/site.ts`](../apps/blog/src/lib/site.ts), [`apps/blog/src/app/sitemap.ts`](../apps/blog/src/app/sitemap.ts) |
 
 ## PROD-1486 — pnpm only
 
@@ -102,6 +103,15 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **GROQ:** `BLOG_RSS_POSTS_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts).
 - **Autodiscovery:** `metadata.alternates.types['application/rss+xml']` in [`apps/blog/src/app/layout.tsx`](../apps/blog/src/app/layout.tsx) (`url: '/rss.xml'`).
 - **Revalidation:** `BLOG_REVALIDATE_SECONDS` (60) in [`apps/blog/src/lib/blog-cache.ts`](../apps/blog/src/lib/blog-cache.ts); tag `blog-posts` reserved for Sanity webhooks.
+
+## PROD-1596 — Blog URL base (subpath readiness)
+
+- **Origin only:** `NEXT_PUBLIC_SITE_URL` is scheme + host, **no path**. The blog path prefix lives in `BLOG_BASE_PATH` (`NEXT_PUBLIC_BLOG_BASE_PATH`), `''` today.
+- **Build absolute URLs via [`apps/blog/src/lib/site.ts`](../apps/blog/src/lib/site.ts) only:** `absoluteUrl(path)` (canonical, JSON-LD, RSS, sitemap), `siteBaseUrl()` (blog root / entity ids), `sitePath(path)` (relative metadata `url`s). **Never** concatenate `getSiteUrl()` with a raw path — `basePath` does not prefix hand-built strings.
+- **Routes stay flat** at the app root; the `/blog` prefix is `basePath` config, never an `app/blog/` folder (Next.js **multi-zones**).
+- **Sitemap:** [`apps/blog/src/app/sitemap.ts`](../apps/blog/src/app/sitemap.ts) (served at `/sitemap.xml` today, `/blog/sitemap.xml` under subpath) lists home + `/all` + categories + posts; paginated/filtered (`noindex`) listings excluded. GROQ `BLOG_SITEMAP_POSTS_QUERY`.
+- **Subpath flip (out of scope here, needs www zone + DNS):** set `basePath: '/blog'` in `next.config.ts` **and** `NEXT_PUBLIC_BLOG_BASE_PATH=/blog`; `apps/www` rewrites `/blog/*` → blog zone.
+- Supersedes the old "`NEXT_PUBLIC_SITE_URL` must include `/blog`" note in `apps/blog/CLAUDE.md`.
 
 ## JIRA workflow (Product project)
 

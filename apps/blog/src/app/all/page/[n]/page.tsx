@@ -11,7 +11,7 @@ import {
   getAllArchiveRobots,
   robotsDirectiveToMetadata,
 } from "@/lib/seo";
-import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -29,8 +29,7 @@ export async function generateMetadata({
     return { title: "All posts | PakFactory Blog" };
   }
 
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
-  const canonical = `${siteUrl}${archivePageHref(pageNumber)}`;
+  const canonical = absoluteUrl(archivePageHref(pageNumber));
   const title = `All posts — Page ${pageNumber} | PakFactory Blog`;
 
   return {

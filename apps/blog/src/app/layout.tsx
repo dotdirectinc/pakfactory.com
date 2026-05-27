@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { sitePath } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
     types: {
       "application/rss+xml": [
         {
-          url: "/rss.xml",
+          url: sitePath("/rss.xml"),
           title: "PakFactory Blog",
         },
       ],

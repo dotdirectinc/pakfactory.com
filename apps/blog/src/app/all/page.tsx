@@ -5,7 +5,7 @@ import {
   getAllArchiveRobots,
   robotsDirectiveToMetadata,
 } from "@/lib/seo";
-import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -14,8 +14,7 @@ const ARCHIVE_DESCRIPTION =
   "Browse every PakFactory blog article in chronological order.";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
-  const canonical = `${siteUrl}/all`;
+  const canonical = absoluteUrl("/all");
 
   return {
     title: ARCHIVE_TITLE,

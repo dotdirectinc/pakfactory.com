@@ -1,7 +1,7 @@
 import { BLOG_RSS_POSTS_QUERY } from "@pakfactory/sanity/queries";
 import { BLOG_REVALIDATE_SECONDS } from "@/lib/blog-cache";
 import { buildRssFeedXml, type RssPostItem } from "@/lib/rss";
-import { getSiteUrl } from "@/lib/site";
+import { siteBaseUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
 
@@ -17,7 +17,7 @@ async function fetchRssPosts(): Promise<RssPostItem[]> {
 
 export async function GET() {
   const posts = await fetchRssPosts();
-  const xml = buildRssFeedXml(getSiteUrl(), posts);
+  const xml = buildRssFeedXml(siteBaseUrl(), posts);
 
   return new Response(xml, {
     status: 200,

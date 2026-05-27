@@ -8,7 +8,7 @@ import {
   serializeJsonLd,
 } from "@pakfactory/seo";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { getSiteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
@@ -39,8 +39,7 @@ export type BlogPostDetail = {
 };
 
 export function postCanonicalUrl(post: BlogPostDetail): string {
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
-  return `${siteUrl}${postDetailHref(post.slug, post.categorySlug)}`;
+  return absoluteUrl(postDetailHref(post.slug, post.categorySlug));
 }
 
 export async function fetchPostBySlug(slug: string): Promise<BlogPostDetail | null> {
@@ -90,7 +89,6 @@ export function buildPostMetadata(post: BlogPostDetail): Metadata {
 }
 
 export function buildPostJsonLd(post: BlogPostDetail): string {
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
   const wwwUrl = normalizeSiteUrl(getWwwUrl());
   const postUrl = postCanonicalUrl(post);
   const orgId = `${wwwUrl}#organization`;
@@ -137,12 +135,12 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
   });
 
   const crumbs = breadcrumbList([
-    { name: "Blog", url: `${siteUrl}/` },
+    { name: "Blog", url: absoluteUrl("/") },
     ...(post.categorySlug && post.categoryTitle
       ? [
           {
             name: post.categoryTitle,
-            url: `${siteUrl}/category/${post.categorySlug}`,
+            url: absoluteUrl(`/category/${post.categorySlug}`),
           },
         ]
       : []),

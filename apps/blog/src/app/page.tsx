@@ -16,7 +16,7 @@ import {
   getListingRobotsFromSearchParams,
   robotsDirectiveToMetadata,
 } from "@/lib/seo";
-import { getSiteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import { getWwwUrl, normalizeSiteUrl, siteBaseUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -58,7 +58,7 @@ export default async function BlogHomePage() {
     data.categoryRows.reduce((n, row) => n + row.posts.length, 0);
   const showDevEmptyHint =
     process.env.NODE_ENV === "development" && postCount === 0;
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
+  const siteUrl = siteBaseUrl();
   const orgId = `${siteUrl}#organization`;
   const blogId = `${siteUrl}#blog`;
 

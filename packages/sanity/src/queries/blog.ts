@@ -195,3 +195,16 @@ export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
   && defined(publishedAt)
   && publishedAt <= now()
 ] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+
+/** Published posts for the XML sitemap — slug, category for canonical path, and lastmod. */
+export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
+  _type == "post"
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc){
+  "slug": slug.current,
+  "categorySlug": category->slug.current,
+  publishedAt,
+  _updatedAt
+}`;

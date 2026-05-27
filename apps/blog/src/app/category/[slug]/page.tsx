@@ -10,7 +10,7 @@ import {
 } from "@/lib/blog-category-archive";
 import { isKnownCategorySlug } from "@/lib/blog-categories";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
-import { getSiteUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -31,8 +31,7 @@ export async function generateMetadata({
   const data = await fetchCategoryArchivePage(slug, 1, filters);
   if (!data) return { title: "Category not found" };
 
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
-  const canonical = `${siteUrl}${categoryPageHref(slug, 1, filters)}`;
+  const canonical = absoluteUrl(categoryPageHref(slug, 1, filters));
   const title =
     data.category.metaTitle?.trim() ||
     `${data.category.title} | PakFactory Blog`;

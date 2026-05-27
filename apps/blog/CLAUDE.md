@@ -17,12 +17,14 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
 
-## Public URLs (PROD-1496 / PROD-1497)
+## Public URLs (PROD-1496 / PROD-1497 / PROD-1596)
 
-- **`apps/blog`** is a **standalone** Next app: routes are at the **deployment root** (`/`, `/[slug]`, `/rss.xml`). There is **no** Next.js `basePath` URL prefix.
-- Jira “`/blog` home page” means the **monorepo app** `apps/blog/`, not a `/blog/` path on the domain.
-- **`getSiteUrl()`** in [`src/lib/site.ts`](./src/lib/site.ts) is the blog origin only (e.g. `http://localhost:3003`, `https://blog.pakfactory.com`). Set **`NEXT_PUBLIC_SITE_URL`** in root or `apps/blog/.env.local`.
-- **`getWwwUrl()`** — main marketing site for organization JSON-LD and industry links (`NEXT_PUBLIC_WWW_URL`).
+- **`apps/blog`** routes are flat at the app root (`/`, `/[slug]`, `/category/[slug]`, `/rss.xml`, `/sitemap.xml`). **Do not** nest routes under an `app/blog/` folder — the `/blog` path prefix is a **config** concern (`basePath`), not a directory concern.
+- **Today:** origin-root (subdomain-compatible). `basePath` is **unset** and `BLOG_BASE_PATH` is `''`.
+- **Future (subpath):** blog served at `pakfactory.com/blog` via Next.js **multi-zones** (`www` at root rewrites `/blog/*` → blog zone). Flip = set `basePath: '/blog'` in `next.config.ts` **and** `NEXT_PUBLIC_BLOG_BASE_PATH=/blog`; `next/link` + every canonical/JSON-LD/RSS/sitemap then gains the prefix automatically.
+- **Build absolute URLs only via [`src/lib/site.ts`](./src/lib/site.ts):** `absoluteUrl(path)` (canonicals, JSON-LD, RSS, sitemap) and `sitePath(path)` (relative metadata `url`s). **Never** concatenate `getSiteUrl()` with a raw path — `basePath` does not touch hand-built strings, so the prefix would be skipped under subpath hosting.
+- **`getSiteUrl()`** / **`NEXT_PUBLIC_SITE_URL`** is the **origin only** (scheme + host, no path), e.g. `http://localhost:3003`, `https://blog.pakfactory.com`. `siteBaseUrl()` = origin + `BLOG_BASE_PATH`.
+- **`getWwwUrl()`** — main marketing site for organization JSON-LD and industry links (`NEXT_PUBLIC_WWW_URL`); **not** blog-prefixed.
 - **Local dev:** [http://localhost:3003](http://localhost:3003) (default `PORT=3003`). Ops, env, seed: [`memory.md`](./memory.md) § Local dev.
 - Unknown routes: `[slug]` and `[...segments]` call `notFound()` → [`not-found.tsx`](./src/app/not-found.tsx) (not Vercel platform 404).
 - Vercel deployment checklist: [`memory.md`](./memory.md).
@@ -50,7 +52,7 @@ Every post detail route should:
 3. **GEO-friendly body structure**: answer-first lead paragraph; descriptive **H2**/**H3**; optional **FAQ** section with matching **`FAQPage`** JSON-LD when the page lists Q&A pairs (add a generator in `@pakfactory/seo` when needed).
 4. **Author**: surface author name (and bio link when content model supports it) for entity clarity.
 
-Canonical URL base: **`NEXT_PUBLIC_SITE_URL`** (must include `/blog` path prefix). Treat this section as the **contract** for AI-generated implementations.
+Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.ts) (origin `NEXT_PUBLIC_SITE_URL` + `BLOG_BASE_PATH`) — never hardcode the `/blog` prefix. Treat this section as the **contract** for AI-generated implementations.
 
 **Jira map:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md).
 

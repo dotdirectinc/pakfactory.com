@@ -348,3 +348,46 @@ explicitly (else it matches all types and breaks orderings — e.g. `author` has
 
 **Front-end note:** facet query projects `"ungrouped"` for unclassified tags; treat it as
 "no group" at render (or filter it out of the facet query later).
+
+---
+
+## PROD-1596 — Centralize blog URL base (subpath readiness)
+
+**Jira:** [PROD-1596](https://dotdirect.atlassian.net/browse/PROD-1596) — Centralize blog URL base for subpath readiness — child of PROD-1482 (Blog App Routes)
+
+**Why:** Product direction is to host the blog at **`pakfactory.com/blog`** (subpath; `www` at root) via Next.js **multi-zones**, while keeping origin-root/subdomain working today. `basePath` prefixes `next/link` + framework assets but **not** hand-built absolute URLs, so canonicals/JSON-LD/RSS would emit wrong paths under `/blog`. One source of truth makes the flip a config change.
+
+### What was shipped
+
+| Deliverable | Location |
+|-------------|----------|
+| `BLOG_BASE_PATH` + `absoluteUrl()` / `siteBaseUrl()` / `sitePath()` | `src/lib/site.ts` |
+| Canonicals + OG via helper | `app/page.tsx`, `app/all/page.tsx`, `app/all/page/[n]`, `app/category/[slug]/page.tsx`, `app/category/[slug]/page/[n]` |
+| JSON-LD via helper | `lib/category-archive-jsonld.ts`, `lib/all-archive-jsonld.ts`, `lib/blog-post.ts` (post + breadcrumbs) |
+| RSS channel/item links | `app/rss.xml/route.ts` passes `siteBaseUrl()`; `lib/rss.ts` unchanged |
+| RSS autodiscovery (relative) | `app/layout.tsx` → `sitePath("/rss.xml")` |
+| **New** XML sitemap | `app/sitemap.ts` (+ `BLOG_SITEMAP_POSTS_QUERY` in `@pakfactory/sanity/queries`) |
+| Env docs | root + `apps/blog/.env.example` → `NEXT_PUBLIC_BLOG_BASE_PATH` |
+
+### Contract
+
+- **`NEXT_PUBLIC_SITE_URL` = origin only** (scheme + host, no path).
+- Build absolute URLs **only** via `absoluteUrl(path)`; relative metadata `url`s via `sitePath(path)`. Never `${getSiteUrl()}${path}`.
+- Routes stay **flat** at app root — the `/blog` prefix is `basePath`, never an `app/blog/` folder.
+
+### The flip (when www multi-zone lands — out of scope here)
+
+1. `next.config.ts`: `basePath: '/blog'` (+ `assetPrefix` if zones are separate deployments).
+2. Env: `NEXT_PUBLIC_BLOG_BASE_PATH=/blog`.
+3. `apps/www`: rewrite `/blog/*` → blog zone.
+4. Result: `next/link`, canonicals, JSON-LD, RSS, and `/blog/sitemap.xml` all gain `/blog` automatically.
+
+### Verification
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+# Default (no env): origin-root, byte-identical to pre-PROD-1596 output.
+curl -s http://localhost:3003/sitemap.xml | head -20
+# With NEXT_PUBLIC_BLOG_BASE_PATH=/blog set: every <loc>/<link>/canonical gains /blog
+# (verified against the running dev server — sitemap, RSS, and canonicals all prefixed).
+```

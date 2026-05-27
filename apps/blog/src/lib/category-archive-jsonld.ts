@@ -11,7 +11,7 @@ import type { CategoryDocument } from "@/lib/blog-category-archive";
 import { categoryPageHref } from "@/lib/blog-category-archive";
 import type { CategoryListFilters } from "@/lib/blog-category-archive";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { getSiteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 
 export function buildCategoryArchiveJsonLd(
   category: CategoryDocument,
@@ -19,9 +19,8 @@ export function buildCategoryArchiveJsonLd(
   pageNumber: number,
   filters: CategoryListFilters,
 ): string {
-  const siteUrl = normalizeSiteUrl(getSiteUrl());
   const wwwUrl = normalizeSiteUrl(getWwwUrl());
-  const pageUrl = `${siteUrl}${categoryPageHref(category.slug, pageNumber, filters)}`;
+  const pageUrl = absoluteUrl(categoryPageHref(category.slug, pageNumber, filters));
   const orgId = `${wwwUrl}#organization`;
   const collectionId = `${pageUrl}#collection`;
   const itemListId = `${pageUrl}#itemlist`;
@@ -44,7 +43,7 @@ export function buildCategoryArchiveJsonLd(
   });
 
   const crumbs = breadcrumbList([
-    { name: "Blog", url: `${siteUrl}/` },
+    { name: "Blog", url: absoluteUrl("/") },
     { name: category.title, url: pageUrl },
   ]);
 
@@ -53,7 +52,7 @@ export function buildCategoryArchiveJsonLd(
     name: category.title,
     items: posts.map((post) => ({
       name: post.title,
-      url: `${siteUrl}${postDetailHref(post.slug, category.slug)}`,
+      url: absoluteUrl(postDetailHref(post.slug, category.slug)),
     })),
   });
 
