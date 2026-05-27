@@ -11,15 +11,21 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/all/page/[n]` | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx) | Archive pagination; page 1 → `/all` |
 | `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
 | `/sitemap.xml` | [`src/app/sitemap.ts`](./src/app/sitemap.ts) | XML sitemap (PROD-1596) |
-| `/[category]` | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx) | Category archive page 1 (PROD-1499 / PROD-1597) |
+| `/[category]` | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx) | **Resolver:** known category slug → archive; else → **single post** `/{slug}` (PROD-1597) |
 | `/[category]/page/[n]` | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx) | Category pagination + query filters |
-| `/[category]/[postSlug]` | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | Single post (canonical post URL; PROD-1597) |
+| `/[category]/[postSlug]` | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | **Legacy scoped post** → permanent redirect to `/{postSlug}` (PROD-1597) |
 | `/tag/[slug]` | [`src/app/tag/[slug]/page.tsx`](./src/app/tag/%5Bslug%5D/page.tsx) | Tag archive page 1 (PROD-1500); axis-aware kicker + sidebar |
 | `/tag/[slug]/page/[n]` | [`src/app/tag/[slug]/page/[n]/page.tsx`](./src/app/tag/%5Bslug%5D/page/%5Bn%5D/page.tsx) | Tag pagination + filters; page 1 → `/tag/[slug]` |
 
-**URL scheme (PROD-1597):** no `/category/` prefix and no bare root post route. Posts are `/{category}/{post-slug}`; old `/category/...` URLs **301** via `next.config.ts`. Build category links with `categoryHref()` and post links with `postDetailHref()` from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `api`, `search`, `tag`, `author`, `contribute`).
+**URL scheme (PROD-1597, updated 2026-05-27):** no `/category/` prefix. A **post's only URL is `/{slug}`** (root) — category/tag/search/home are *discovery paths*, never URL scoping. The single root segment `/[category]` resolves to a category archive (known slug) or otherwise a post. Legacy `/{category}/{post-slug}` and `/category/...` URLs **permanently redirect** (route-level `permanentRedirect` + `next.config.ts`). Build category links with `categoryHref()`, tag links with `tagHref()`, and post links with `postDetailHref()` (always returns `/{slug}`) from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `sitemap.xml`, `api`, `search`, `tag`, `author`, `contribute`).
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
+
+> **Route-design conformance (required).** Two references exist:
+> - **BA expectation (target):** [`docs/route-design-ba.png`](../../docs/route-design-ba.png) — the Business Analyst's intended route tree. Treat as the spec.
+> - **Actual (current):** the Routes table above — a living reflection of what is implemented; update it whenever a route ships.
+>
+> On **every route task** (and whenever a new task could change the route tree), **compare the Routes table against `docs/route-design-ba.png`**. If they are inconsistent — or the proposed work would introduce a mismatch (new top-level segment, different nesting, category-as-page vs prefix, post-URL shape, a folder-based `/blog` prefix, a path colliding with a reserved segment, a BA route still missing, etc.) — **stop and notify the requester to confirm before creating files**. Do not silently reconcile the difference either way. Keep the Routes table in sync in the same change once a route is approved.
 
 ## Public URLs (PROD-1496 / PROD-1497 / PROD-1596)
 

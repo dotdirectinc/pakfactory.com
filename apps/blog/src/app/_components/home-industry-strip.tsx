@@ -1,21 +1,13 @@
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { HomeIndustryPill } from "@/lib/blog-home";
-
-function wwwOrigin(): string {
-  const www = process.env.NEXT_PUBLIC_WWW_URL?.replace(/\/$/, "");
-  return www || "https://www.pakfactory.com";
-}
-
-function industryHref(slug: string): string {
-  return `${wwwOrigin()}/industries/${slug}`;
-}
+import { tagHref } from "@/lib/blog-post-url";
 
 type HomeIndustryStripProps = {
   industries: HomeIndustryPill[];
 };
 
-/** De-emphasised industry pills linking to www (out of blog route scope). */
+/** Industry-axis tag pills (tagGroup == "industry") linking to their `/tag/{slug}` archives. */
 export function HomeIndustryStrip({ industries }: HomeIndustryStripProps) {
   if (industries.length === 0) return null;
 
@@ -35,7 +27,7 @@ export function HomeIndustryStrip({ industries }: HomeIndustryStripProps) {
           {industries.map((ind) => (
             <li key={ind._id ?? ind.slug}>
               <Badge variant="outline" asChild className="font-normal text-muted-foreground">
-                <Link href={industryHref(ind.slug)}>{ind.title}</Link>
+                <Link href={tagHref(ind.slug)}>{ind.title}</Link>
               </Badge>
             </li>
           ))}

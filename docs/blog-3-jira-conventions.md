@@ -78,12 +78,12 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 ## PROD-1499 — Category archives
 
-- **Routes:** `/category/[slug]` (page 1), `/category/[slug]/page/[n]` (page 2+); filters in query (`tag`, `author`, `year`, `month`, `sort`).
-- **Post detail:** `/category/[slug]/[postSlug]` — canonical path; `postDetailHref()` in [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts). Legacy `/{postSlug}` **301** redirects when `categorySlug` is set.
+- **Routes:** `/[category]` (page 1), `/[category]/page/[n]` (page 2+); filters in query (`tag`, `author`, `year`, `month`, `sort`). *(URL scheme updated by PROD-1597 — see below; the `/category/` prefix shown originally is gone.)*
+- **Post detail:** canonical post URL is **`/{slug}`** (root), not category-scoped — see PROD-1597 below. `postDetailHref()` in [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts) returns `/{slug}`.
 - **CMS:** `blogCategory.description` via `pt::text`; 5 allowed slugs match studio validation.
 - **Layout:** sidebar filters + 3-column grid (12/page); **Packaging News** uses `PostCard` `headline` variant.
 - **Robots:** `getCategoryListingRobots` — page 1 unfiltered **index**; page 2+ or any filter param **noindex, follow**.
-- **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList`; item URLs use category-scoped post paths.
+- **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList`; item URLs are root post paths (`/{slug}`, PROD-1597).
 - **Unknown slug:** `notFound()`.
 - **`sanity-image.ts`:** `import "server-only"` — prevents `require is not defined` if image URL builder leaks to client.
 
@@ -122,6 +122,16 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Robots:** `getTagListingRobots(page, sp, hasPosts)` — page 1 unfiltered + ≥1 post **index**; **empty tag**, page ≥2, or any filter **noindex, follow** (empty→noindex is tag-specific).
 - **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList`; post item URLs via `absoluteUrl(postDetailHref(slug, categorySlug))` (posts span categories).
 - **Unknown slug / out-of-range page → `notFound()`.**
+
+## PROD-1597 — Blog URL scheme (current source of truth)
+
+- **No `/category/` prefix.** Category archives at `/{category}`; category pagination `/{category}/page/{n}`.
+- **A post's only URL is `/{slug}`** (root). Category, tag, search, and home are **discovery paths only** — they never scope the post URL. (Updated 2026-05-27; reverts the earlier category-scoped `/{category}/{post}` post URL.)
+- **Single root segment `/[category]` is a resolver:** known category slug → archive; otherwise → post by slug; otherwise `notFound()`. Reserved/physical routes (`/all`, `/tag`, `/rss.xml`, `/sitemap.xml`, `/api`, future `/search`, `/author`, `/contribute`) win over the dynamic segment.
+- **Permanent redirects:** legacy `/{category}/{postSlug}` → `/{postSlug}` (route-level `permanentRedirect`, 308); `/category/:cat`, `/category/:cat/page/:n`, `/category/:cat/:postSlug` → de-prefixed / root post (`next.config.ts`).
+- **Links:** `categoryHref()` → `/{category}`, `tagHref()` → `/tag/{slug}`, `postDetailHref()` → `/{slug}` (in `apps/blog/src/lib/blog-post-url.ts`). Never hardcode paths. Canonical/JSON-LD/RSS/sitemap derive from `postDetailHref` + `absoluteUrl()`, so they emit `/{slug}` automatically.
+- **Breadcrumb** still shows category context: Blog → Category (`/{category}`) → Post (`/{slug}`).
+- **Collision rule:** a post slug must never equal a category slug or a reserved root segment.
 
 ## JIRA workflow (Product project)
 

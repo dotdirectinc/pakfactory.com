@@ -156,6 +156,17 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
+/** Industry-axis blog tags for the home "Browse by Industries" strip (link to /tag/{slug}). */
+export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && tagGroup == "industry"
+  && defined(slug.current)
+] | order(coalesce(order, 999) asc, title asc){
+  _id,
+  title,
+  "slug": slug.current
+}`;
+
 /** Total published posts (all archive pagination). */
 export const BLOG_ALL_POSTS_COUNT_QUERY = /* groq */ `count(*[
   _type == "post"

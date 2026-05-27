@@ -36,9 +36,10 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],
   },
-  // PROD-1597: the `/category/` prefix was removed — archives now live at
-  // `/{category}` and posts at `/{category}/{postSlug}`. 301 the old indexed
-  // URLs. More specific (pagination) first. basePath is applied automatically.
+  // PROD-1597: the `/category/` prefix was removed — archives live at `/{category}`.
+  // Posts are canonical at `/{postSlug}` (root); category/tag/search are discovery
+  // only, never URL scoping. Permanently redirect old indexed URLs. More specific
+  // (pagination) first. basePath is applied automatically.
   async redirects() {
     return [
       {
@@ -47,8 +48,9 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        // Legacy `/category/{cat}/{post}` → canonical root post URL.
         source: "/category/:category/:postSlug",
-        destination: "/:category/:postSlug",
+        destination: "/:postSlug",
         permanent: true,
       },
       {

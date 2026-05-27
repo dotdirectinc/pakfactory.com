@@ -1,40 +1,18 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { BlogPostArticle } from "@/app/_components/blog-post-article";
-import {
-  buildPostJsonLd,
-  buildPostMetadata,
-  fetchPostByCategoryAndSlug,
-} from "@/lib/blog-post";
+import { notFound, permanentRedirect } from "next/navigation";
 import { isKnownCategorySlug } from "@/lib/blog-categories";
 
-export const revalidate = 60;
-
+/**
+ * Legacy category-scoped post URL (`/{category}/{postSlug}`, PROD-1597).
+ * Posts are now canonical at `/{postSlug}` (root) — permanently redirect.
+ * `permanentRedirect` emits 308 (App Router's permanent redirect; SEO-equivalent
+ * to 301). Only known-category two-segment paths redirect; anything else 404s.
+ */
 type PageProps = {
   params: Promise<{ category: string; postSlug: string }>;
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { category: categorySlug, postSlug } = await params;
-  if (!isKnownCategorySlug(categorySlug)) {
-    return { title: "Post not found" };
-  }
-
-  const post = await fetchPostByCategoryAndSlug(categorySlug, postSlug);
-  if (!post) return { title: "Post not found" };
-
-  return buildPostMetadata(post);
-}
-
-export default async function CategoryPostPage({ params }: PageProps) {
-  const { category: categorySlug, postSlug } = await params;
-
-  if (!isKnownCategorySlug(categorySlug)) notFound();
-
-  const post = await fetchPostByCategoryAndSlug(categorySlug, postSlug);
-  if (!post) notFound();
-
-  const jsonLd = buildPostJsonLd(post);
-
-  return <BlogPostArticle post={post} jsonLd={jsonLd} />;
+export default async function LegacyCategoryPostRedirect({ params }: PageProps) {
+  const { category, postSlug } = await params;
+  if (!isKnownCategorySlug(category)) notFound();
+  permanentRedirect(`/${postSlug}`);
 }

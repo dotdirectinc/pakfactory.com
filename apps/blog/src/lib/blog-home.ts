@@ -6,8 +6,8 @@ import {
   isSanityConfigured,
 } from "@/sanity/env";
 import {
+  BLOG_INDUSTRY_TAGS_QUERY,
   FEATURED_HOME_POST_QUERY,
-  INDUSTRIES_FOR_BLOG_HOME_QUERY,
   LATEST_HOME_POSTS_QUERY,
   POSTS_BY_CATEGORY_SLUG_QUERY,
 } from "@pakfactory/sanity/queries";
@@ -33,25 +33,12 @@ export type HomePostCard = {
   authorName?: string;
 };
 
+/** Industry pill — an industry-axis `blogTag`; links to `/tag/{slug}`. */
 export type HomeIndustryPill = {
   _id?: string;
   title: string;
   slug: string;
 };
-
-/** Static pills when fewer than 10 `industry` docs exist (slugs match studio seed / www). */
-export const BLOG_HOME_INDUSTRY_FALLBACK: HomeIndustryPill[] = [
-  { title: "Apparel & Fashion", slug: "apparel-fashion" },
-  { title: "Food & Beverage", slug: "food-beverage" },
-  { title: "Cosmetics & Beauty", slug: "cosmetics-beauty" },
-  { title: "Electronics & Tech", slug: "electronics-tech" },
-  { title: "Health & Wellness", slug: "health-wellness" },
-  { title: "Pharma & Healthcare", slug: "pharma-healthcare" },
-  { title: "Home & Garden", slug: "home-garden" },
-  { title: "Pet Products", slug: "pet-products" },
-  { title: "Cannabis", slug: "cannabis" },
-  { title: "Luxury & Spirits", slug: "luxury-spirits" },
-];
 
 export type HomeCategoryRow = {
   slug: (typeof HOME_CATEGORY_SLUGS)[number];
@@ -119,22 +106,13 @@ async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
   );
 }
 
+/** Industry-axis `blogTag` pills (tagGroup == "industry"), ordered by `order` then title. */
 async function fetchIndustries(): Promise<HomeIndustryPill[]> {
-  const fromCms = await fetchSafe(
+  return fetchSafe(
     "industries",
-    () => getSanityClient().fetch<HomeIndustryPill[]>(INDUSTRIES_FOR_BLOG_HOME_QUERY),
+    () => getSanityClient().fetch<HomeIndustryPill[]>(BLOG_INDUSTRY_TAGS_QUERY),
     [],
   );
-
-  const seen = new Set<string>();
-  const merged: HomeIndustryPill[] = [];
-  for (const row of [...fromCms, ...BLOG_HOME_INDUSTRY_FALLBACK]) {
-    if (merged.length >= 10) break;
-    if (seen.has(row.slug)) continue;
-    seen.add(row.slug);
-    merged.push(row);
-  }
-  return merged;
 }
 
 async function fetchCategoryRows(): Promise<HomeCategoryRow[]> {
@@ -184,7 +162,7 @@ export async function fetchBlogHomeData(): Promise<BlogHomeData> {
     return {
       featured: null,
       latest: [],
-      industries: BLOG_HOME_INDUSTRY_FALLBACK.slice(0, 10),
+      industries: [],
       categoryRows: HOME_CATEGORY_SLUGS.map((slug) => ({
         slug,
         title: CATEGORY_TITLES[slug],

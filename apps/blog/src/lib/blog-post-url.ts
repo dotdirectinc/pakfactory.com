@@ -3,13 +3,20 @@ export function categoryHref(categorySlug: string): string {
   return `/${categorySlug}`;
 }
 
-/** Canonical post detail path — always under `/{categorySlug}/{postSlug}` when category is known. */
+/** Canonical tag archive path — `/tag/{tagSlug}` (PROD-1500). */
+export function tagHref(tagSlug: string): string {
+  return `/tag/${tagSlug}`;
+}
+
+/**
+ * Canonical post detail path — **always** `/{postSlug}` (root level).
+ * A post has exactly one URL; category/tag/search/home are discovery paths only,
+ * never URL scoping. The optional `categorySlug` is accepted for call-site
+ * compatibility but intentionally ignored. (Reverts PROD-1597's scoped scheme.)
+ */
 export function postDetailHref(
   postSlug: string,
-  categorySlug?: string | null,
+  _categorySlug?: string | null,
 ): string {
-  if (categorySlug) {
-    return `/${categorySlug}/${postSlug}`;
-  }
   return `/${postSlug}`;
 }
