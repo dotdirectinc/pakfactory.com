@@ -123,10 +123,12 @@ export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
     && defined(publishedAt)
     && publishedAt <= now()
   ].tags[]._ref
-] | order(title asc){
+] | order(coalesce(order, 999) asc, title asc){
   _id,
   title,
-  "slug": slug.current
+  "slug": slug.current,
+  tagGroup,
+  order
 }`;
 
 /** Authors with published posts in a category (sidebar facets). */

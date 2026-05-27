@@ -319,3 +319,32 @@ curl -sI http://localhost:3003/all/page/99 | head -5  # expect 404 when out of r
 curl -s http://localhost:3003/rss.xml | head -20
 curl -sI http://localhost:3003/rss.xml | grep -i content-type
 ```
+
+## Tag grouping — `tagGroup` axes (Studio taxonomy, no ticket yet)
+
+Tags stay **flat** (`blogTag`, URL `/blog/tag/{slug}`). Grouping is a **pure classification**
+on a `tagGroup` string field — no nested document types, no grouping encoded in slugs or titles.
+
+| Concern | Location |
+|---------|----------|
+| **Source of truth** — axis vocabulary | `TAG_GROUPS` in `apps/studio/schemas/blogTag.ts` |
+| Ungrouped sentinel value (`"ungrouped"`) | `TAG_GROUP_UNGROUPED` in same file |
+| `tagGroup` + `order` fields (radio, `initialValue: 'ungrouped'`) | `apps/studio/schemas/blogTag.ts` |
+| Studio browse lists (per-axis + Ungrouped + All) | `apps/studio/structure/index.ts` (imports `TAG_GROUPS`) |
+| Seeded tag → axis assignments | `apps/studio/scripts/seed.mjs` (`blogTags`) |
+| Front-end facet projection (`tagGroup`, `order`) | `BLOG_CATEGORY_TAGS_FACET_QUERY` in `@pakfactory/sanity/queries`; type `CategoryFacetTag` in `src/lib/blog-category-archive.ts` |
+
+**Current axes (7 of 11):** `material`, `packaging-type`, `finish`, `industry`, `channel`,
+`design-style`, `topic`. The canonical 11-axis Tagging Reference is not yet in-repo; add the
+remaining 4 to `TAG_GROUPS` when finalized.
+
+**To add/rename an axis:** edit `TAG_GROUPS` only — the dropdown, the Studio sub-list, and the
+facet projection all derive from it. Never change an existing `value` after tags use it (orphans
+them into Ungrouped); renaming `title` is safe.
+
+**Gotcha:** `S.documentTypeList('blogTag').filter(...)` **replaces** the built-in `_type`
+constraint, so every custom tag filter in `structure/index.ts` must include `_type == "blogTag"`
+explicitly (else it matches all types and breaks orderings — e.g. `author` has no `title`).
+
+**Front-end note:** facet query projects `"ungrouped"` for unclassified tags; treat it as
+"no group" at render (or filter it out of the facet query later).

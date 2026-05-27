@@ -40,7 +40,13 @@ export type CategoryDocument = {
   ogImageUrl?: string;
 };
 
-export type CategoryFacetTag = { _id?: string; title: string; slug: string };
+export type CategoryFacetTag = {
+  _id?: string;
+  title: string;
+  slug: string;
+  tagGroup?: string;
+  order?: number;
+};
 export type CategoryFacetAuthor = { _id?: string; name: string; slug: string };
 
 export type CategoryListFilters = {
