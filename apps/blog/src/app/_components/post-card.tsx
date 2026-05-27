@@ -6,7 +6,7 @@ import { sanityImageUrl } from "@/lib/sanity-image";
 
 type PostCardProps = {
   post: HomePostCard;
-  /** When set, links to `/category/{slug}/{postSlug}` (overrides `post.categorySlug`). */
+  /** When set, links to `/{slug}/{postSlug}` (overrides `post.categorySlug`). */
   categorySlug?: string;
   variant?: "default" | "compact" | "featured" | "headline";
 };

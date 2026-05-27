@@ -11,11 +11,11 @@ import { isKnownCategorySlug } from "@/lib/blog-categories";
 export const revalidate = 60;
 
 type PageProps = {
-  params: Promise<{ slug: string; postSlug: string }>;
+  params: Promise<{ category: string; postSlug: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug: categorySlug, postSlug } = await params;
+  const { category: categorySlug, postSlug } = await params;
   if (!isKnownCategorySlug(categorySlug)) {
     return { title: "Post not found" };
   }
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CategoryPostPage({ params }: PageProps) {
-  const { slug: categorySlug, postSlug } = await params;
+  const { category: categorySlug, postSlug } = await params;
 
   if (!isKnownCategorySlug(categorySlug)) notFound();
 

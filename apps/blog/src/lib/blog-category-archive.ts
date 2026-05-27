@@ -147,7 +147,7 @@ export function categoryPageHref(
   pageNumber: number,
   filters: CategoryListFilters,
 ): string {
-  const base = pageNumber <= 1 ? `/category/${categorySlug}` : `/category/${categorySlug}/page/${pageNumber}`;
+  const base = pageNumber <= 1 ? `/${categorySlug}` : `/${categorySlug}/page/${pageNumber}`;
   const params = new URLSearchParams();
   if (filters.tag) params.set("tag", filters.tag);
   if (filters.author) params.set("author", filters.author);

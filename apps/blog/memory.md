@@ -391,3 +391,29 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 # With NEXT_PUBLIC_BLOG_BASE_PATH=/blog set: every <loc>/<link>/canonical gains /blog
 # (verified against the running dev server — sitemap, RSS, and canonicals all prefixed).
 ```
+
+---
+
+## PROD-1597 — Remove `/category/` prefix from blog URLs (implemented)
+
+**Jira:** [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) — requirement update for PROD-1499.
+
+**New scheme:** category archives at `/{category}`; posts at `/{category}/{post-slug}`. No `/category/` prefix, **no bare root post route** (the old `[slug]` redirect route is deleted).
+
+| Concern | Location |
+|---------|----------|
+| Route tree | `src/app/[category]/page.tsx` (archive), `[category]/page/[n]/` (pagination), `[category]/[postSlug]/` (post) |
+| Param name | `category` (was `slug`); post page aliases `category: categorySlug` |
+| URL builders | `categoryHref(slug)` + `postDetailHref(post, cat)` in `src/lib/blog-post-url.ts`; `categoryPageHref` in `src/lib/blog-category-archive.ts` |
+| 301 redirects | `next.config.ts` `redirects()` — `/category/:c[/page/:n][/:post]` → new paths (permanent) |
+
+**Guards:** `[category]/page.tsx` `notFound()`s unknown/reserved single segments via `isKnownCategorySlug` (static routes `/all`, `/rss.xml`, `/api`, etc. win over the dynamic segment anyway). A post slug must never equal a category slug or reserved segment.
+
+**Derived surfaces auto-update** through the two helpers: canonicals, breadcrumb/collection JSON-LD, RSS `<link>`, and the sitemap (`BLOG_SITEMAP_POSTS_QUERY` via `postDetailHref`).
+
+### Verification
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+# /trends, /trends/{post}, /trends/page/2 resolve; /category/trends/{post} 301s; bare /{post} 404s.
+```

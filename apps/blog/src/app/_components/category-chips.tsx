@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { BlogCategoryChip } from "@/lib/blog-categories";
+import { categoryHref } from "@/lib/blog-post-url";
 
 type CategoryChipsProps = {
   categories: BlogCategoryChip[];
@@ -16,7 +17,7 @@ export function CategoryChips({ categories, className }: CategoryChipsProps) {
         {categories.map((cat) => (
           <li key={cat._id ?? cat.slug}>
             <Badge variant="secondary" asChild>
-              <Link href={`/category/${cat.slug}`}>{cat.title}</Link>
+              <Link href={categoryHref(cat.slug)}>{cat.title}</Link>
             </Badge>
           </li>
         ))}

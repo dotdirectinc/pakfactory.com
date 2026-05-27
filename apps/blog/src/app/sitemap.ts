@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { BLOG_SITEMAP_POSTS_QUERY } from "@pakfactory/sanity/queries";
 import { fetchBlogCategories } from "@/lib/blog-data";
-import { postDetailHref } from "@/lib/blog-post-url";
+import { categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const categories = await fetchBlogCategories();
   for (const category of categories) {
     entries.push({
-      url: absoluteUrl(`/category/${category.slug}`),
+      url: absoluteUrl(categoryHref(category.slug)),
       changeFrequency: "weekly",
       priority: 0.7,
     });

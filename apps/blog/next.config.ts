@@ -36,6 +36,28 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],
   },
+  // PROD-1597: the `/category/` prefix was removed — archives now live at
+  // `/{category}` and posts at `/{category}/{postSlug}`. 301 the old indexed
+  // URLs. More specific (pagination) first. basePath is applied automatically.
+  async redirects() {
+    return [
+      {
+        source: "/category/:category/page/:n",
+        destination: "/:category/page/:n",
+        permanent: true,
+      },
+      {
+        source: "/category/:category/:postSlug",
+        destination: "/:category/:postSlug",
+        permanent: true,
+      },
+      {
+        source: "/category/:category",
+        destination: "/:category",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

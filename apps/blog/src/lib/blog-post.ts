@@ -7,7 +7,7 @@ import {
   person,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { postDetailHref } from "@/lib/blog-post-url";
+import { categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
@@ -140,7 +140,7 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
       ? [
           {
             name: post.categoryTitle,
-            url: absoluteUrl(`/category/${post.categorySlug}`),
+            url: absoluteUrl(categoryHref(post.categorySlug)),
           },
         ]
       : []),

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@pakfactory/ui/components/card";
 import type { BlogCategoryChip } from "@/lib/blog-categories";
+import { categoryHref } from "@/lib/blog-post-url";
 
 type ArchiveFilterSidebarProps = {
   categories: BlogCategoryChip[];
@@ -39,7 +40,7 @@ export function ArchiveFilterSidebar({ categories }: ArchiveFilterSidebarProps) 
                 {categories.map((cat) => (
                   <li key={cat._id ?? cat.slug}>
                     <Link
-                      href={`/category/${cat.slug}`}
+                      href={categoryHref(cat.slug)}
                       className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                     >
                       {cat.title}

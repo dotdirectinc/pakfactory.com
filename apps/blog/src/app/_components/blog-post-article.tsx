@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { BlogPostDetail } from "@/lib/blog-post";
+import { categoryHref } from "@/lib/blog-post-url";
 
 type BlogPostArticleProps = {
   post: BlogPostDetail;
@@ -22,7 +23,7 @@ export function BlogPostArticle({ post, jsonLd }: BlogPostArticleProps) {
             <>
               <span className="mx-2">/</span>
               <Link
-                href={`/category/${post.categorySlug}`}
+                href={categoryHref(post.categorySlug)}
                 className="hover:text-foreground"
               >
                 {post.categoryTitle}

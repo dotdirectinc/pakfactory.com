@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@pakfactory/ui/compone
 import { Input } from "@pakfactory/ui/components/input";
 import { Label } from "@pakfactory/ui/components/label";
 import type { BlogCategoryChip } from "@/lib/blog-categories";
+import { categoryHref } from "@/lib/blog-post-url";
 import {
   categoryPageHref,
   type CategoryFacetAuthor,
@@ -44,7 +45,7 @@ export function CategoryFilterSidebar({
             {allCategories.map((cat) => (
               <li key={cat._id ?? cat.slug}>
                 <Link
-                  href={`/category/${cat.slug}`}
+                  href={categoryHref(cat.slug)}
                   className={
                     cat.slug === categorySlug
                       ? "font-medium text-foreground underline-offset-4 hover:underline"

@@ -10,13 +10,14 @@ import {
   parseCategoryFilters,
 } from "@/lib/blog-category-archive";
 import { isKnownCategorySlug } from "@/lib/blog-categories";
+import { categoryHref } from "@/lib/blog-post-url";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
 type PageProps = {
-  params: Promise<{ slug: string; n: string }>;
+  params: Promise<{ category: string; n: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -24,18 +25,18 @@ export async function generateMetadata({
   params,
   searchParams,
 }: PageProps): Promise<Metadata> {
-  const { slug, n: raw } = await params;
+  const { category, n: raw } = await params;
   const pageNumber = parseArchivePageParam(raw);
-  if (!isKnownCategorySlug(slug) || pageNumber === null || pageNumber === 1) {
+  if (!isKnownCategorySlug(category) || pageNumber === null || pageNumber === 1) {
     return { title: "Category | PakFactory Blog" };
   }
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
-  const data = await fetchCategoryArchivePage(slug, pageNumber, filters);
+  const data = await fetchCategoryArchivePage(category, pageNumber, filters);
   if (!data) return { title: "Category not found" };
 
-  const canonical = absoluteUrl(categoryPageHref(slug, pageNumber, filters));
+  const canonical = absoluteUrl(categoryPageHref(category, pageNumber, filters));
   const title = `${data.category.title} — Page ${pageNumber} | PakFactory Blog`;
   const description =
     data.category.metaDescription?.trim() ||
@@ -56,16 +57,16 @@ export default async function CategoryArchivePaginatedPage({
   params,
   searchParams,
 }: PageProps) {
-  const { slug, n: raw } = await params;
+  const { category, n: raw } = await params;
   const pageNumber = parseArchivePageParam(raw);
 
-  if (!isKnownCategorySlug(slug)) notFound();
+  if (!isKnownCategorySlug(category)) notFound();
   if (pageNumber === null) notFound();
-  if (pageNumber === 1) redirect(`/category/${slug}`);
+  if (pageNumber === 1) redirect(categoryHref(category));
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
-  const data = await fetchCategoryArchivePage(slug, pageNumber, filters);
+  const data = await fetchCategoryArchivePage(category, pageNumber, filters);
 
   if (!data) notFound();
   if (isArchivePageOutOfRange(pageNumber, data.totalCount)) notFound();

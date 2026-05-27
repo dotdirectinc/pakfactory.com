@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { HomeCategoryRow } from "@/lib/blog-home";
 import { PostCard } from "@/app/_components/post-card";
+import { categoryHref } from "@/lib/blog-post-url";
 
 type HomeCategoryRowSectionProps = {
   row: HomeCategoryRow;
@@ -14,7 +15,7 @@ export function HomeCategoryRowSection({ row }: HomeCategoryRowSectionProps) {
           {row.title}
         </h2>
         <Link
-          href={`/category/${row.slug}`}
+          href={categoryHref(row.slug)}
           className="shrink-0 text-sm font-medium text-primary hover:underline"
         >
           View All →

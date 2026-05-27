@@ -9,24 +9,25 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/` | [`src/app/page.tsx`](./src/app/page.tsx) | Blog home; `revalidate = 60` |
 | `/all` | [`src/app/all/page.tsx`](./src/app/all/page.tsx) | All posts archive page 1 (PROD-1498) |
 | `/all/page/[n]` | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx) | Archive pagination; page 1 → `/all` |
-| `/[slug]` | [`src/app/[slug]/page.tsx`](./src/app/[slug]/page.tsx) | Single post |
 | `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
-| `/category/[slug]` | [`src/app/category/[slug]/page.tsx`](./src/app/category/[slug]/page.tsx) | Category archive page 1 (PROD-1499) |
-| `/category/[slug]/page/[n]` | [`src/app/category/[slug]/page/[n]/page.tsx`](./src/app/category/[slug]/page/[n]/page.tsx) | Category pagination + query filters |
-| `/category/[slug]/[postSlug]` | [`src/app/category/[slug]/[postSlug]/page.tsx`](./src/app/category/[slug]/[postSlug]/page.tsx) | Post detail under category |
+| `/[category]` | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx) | Category archive page 1 (PROD-1499 / PROD-1597) |
+| `/[category]/page/[n]` | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx) | Category pagination + query filters |
+| `/[category]/[postSlug]` | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | Single post (canonical post URL; PROD-1597) |
+
+**URL scheme (PROD-1597):** no `/category/` prefix and no bare root post route. Posts are `/{category}/{post-slug}`; old `/category/...` URLs **301** via `next.config.ts`. Build category links with `categoryHref()` and post links with `postDetailHref()` from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `api`, `search`, `tag`, `author`, `contribute`).
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
 
 ## Public URLs (PROD-1496 / PROD-1497 / PROD-1596)
 
-- **`apps/blog`** routes are flat at the app root (`/`, `/[slug]`, `/category/[slug]`, `/rss.xml`, `/sitemap.xml`). **Do not** nest routes under an `app/blog/` folder — the `/blog` path prefix is a **config** concern (`basePath`), not a directory concern.
+- **`apps/blog`** routes are flat at the app root (`/`, `/[category]`, `/[category]/[postSlug]`, `/all`, `/rss.xml`, `/sitemap.xml`). **Do not** nest routes under an `app/blog/` folder — the `/blog` path prefix is a **config** concern (`basePath`), not a directory concern.
 - **Today:** origin-root (subdomain-compatible). `basePath` is **unset** and `BLOG_BASE_PATH` is `''`.
 - **Future (subpath):** blog served at `pakfactory.com/blog` via Next.js **multi-zones** (`www` at root rewrites `/blog/*` → blog zone). Flip = set `basePath: '/blog'` in `next.config.ts` **and** `NEXT_PUBLIC_BLOG_BASE_PATH=/blog`; `next/link` + every canonical/JSON-LD/RSS/sitemap then gains the prefix automatically.
 - **Build absolute URLs only via [`src/lib/site.ts`](./src/lib/site.ts):** `absoluteUrl(path)` (canonicals, JSON-LD, RSS, sitemap) and `sitePath(path)` (relative metadata `url`s). **Never** concatenate `getSiteUrl()` with a raw path — `basePath` does not touch hand-built strings, so the prefix would be skipped under subpath hosting.
 - **`getSiteUrl()`** / **`NEXT_PUBLIC_SITE_URL`** is the **origin only** (scheme + host, no path), e.g. `http://localhost:3003`, `https://blog.pakfactory.com`. `siteBaseUrl()` = origin + `BLOG_BASE_PATH`.
 - **`getWwwUrl()`** — main marketing site for organization JSON-LD and industry links (`NEXT_PUBLIC_WWW_URL`); **not** blog-prefixed.
 - **Local dev:** [http://localhost:3003](http://localhost:3003) (default `PORT=3003`). Ops, env, seed: [`memory.md`](./memory.md) § Local dev.
-- Unknown routes: `[slug]` and `[...segments]` call `notFound()` → [`not-found.tsx`](./src/app/not-found.tsx) (not Vercel platform 404).
+- Unknown routes: `[category]` (unknown/reserved single segment) and `[...segments]` call `notFound()` → [`not-found.tsx`](./src/app/not-found.tsx) (not Vercel platform 404).
 - Vercel deployment checklist: [`memory.md`](./memory.md).
 
 ## Listing robots (PROD-1495)

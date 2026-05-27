@@ -79,8 +79,8 @@ export function siteBaseUrl(): string {
 
 /**
  * Absolute blog URL for a root-relative path (canonicals, JSON-LD, RSS, sitemap).
- * `absoluteUrl('/category/x')` → `https://origin/category/x` today,
- * `https://origin/blog/category/x` under subpath hosting.
+ * `absoluteUrl('/trends/x')` → `https://origin/trends/x` today,
+ * `https://origin/blog/trends/x` under subpath hosting.
  */
 export function absoluteUrl(path = "/"): string {
   return `${siteBaseUrl()}${withLeadingSlash(path)}`;

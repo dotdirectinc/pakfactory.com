@@ -15,7 +15,7 @@ import { absoluteUrl } from "@/lib/site";
 export const revalidate = 60;
 
 type PageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ category: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -23,15 +23,15 @@ export async function generateMetadata({
   params,
   searchParams,
 }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  if (!isKnownCategorySlug(slug)) return { title: "Category not found" };
+  const { category } = await params;
+  if (!isKnownCategorySlug(category)) return { title: "Category not found" };
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
-  const data = await fetchCategoryArchivePage(slug, 1, filters);
+  const data = await fetchCategoryArchivePage(category, 1, filters);
   if (!data) return { title: "Category not found" };
 
-  const canonical = absoluteUrl(categoryPageHref(slug, 1, filters));
+  const canonical = absoluteUrl(categoryPageHref(category, 1, filters));
   const title =
     data.category.metaTitle?.trim() ||
     `${data.category.title} | PakFactory Blog`;
@@ -62,12 +62,12 @@ export async function generateMetadata({
 }
 
 export default async function CategoryArchivePage({ params, searchParams }: PageProps) {
-  const { slug } = await params;
-  if (!isKnownCategorySlug(slug)) notFound();
+  const { category } = await params;
+  if (!isKnownCategorySlug(category)) notFound();
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
-  const data = await fetchCategoryArchivePage(slug, 1, filters);
+  const data = await fetchCategoryArchivePage(category, 1, filters);
 
   if (!data) notFound();
 
