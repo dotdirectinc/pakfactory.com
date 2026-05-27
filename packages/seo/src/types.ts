@@ -30,6 +30,12 @@ export type PersonInput = {
   image?: string;
   /** Stable node id for @graph linking */
   id?: string;
+  /** Role / title, e.g. "Senior Packaging Engineer" */
+  jobTitle?: string;
+  /** Short plain-text bio */
+  description?: string;
+  /** Absolute profile URLs (e.g. LinkedIn) for E-E-A-T */
+  sameAs?: string[];
 };
 
 export type BreadcrumbItem = {

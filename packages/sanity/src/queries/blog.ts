@@ -292,3 +292,43 @@ export const BLOG_TAG_AUTHORS_FACET_QUERY = /* groq */ `*[
   name,
   "slug": slug.current
 }`;
+
+// ── Author profiles (PROD-1501) — /author/{slug} ────────────────────────────
+
+/** Author profile by slug — bio/credentials are portable text; linkedIn → Person sameAs. */
+export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.current == $slug][0]{
+  _id,
+  name,
+  "slug": slug.current,
+  role,
+  bio,
+  "bioText": pt::text(bio),
+  credentials,
+  linkedIn,
+  photo
+}`;
+
+const AUTHOR_POST_FILTER = /* groq */ `_type == "post"
+  && author->slug.current == $authorSlug
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()`;
+
+export const AUTHOR_POSTS_COUNT_QUERY = /* groq */ `count(*[
+  ${AUTHOR_POST_FILTER}
+])`;
+
+/** Paginated author posts (newest first) — `$start` inclusive, `$end` exclusive. */
+export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
+  ${AUTHOR_POST_FILTER}
+] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Authors with at least one published post (sitemap). */
+export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
+  _type == "author"
+  && defined(slug.current)
+  && count(*[_type == "post" && author._ref == ^._id && defined(publishedAt) && publishedAt <= now()]) > 0
+]{
+  "slug": slug.current,
+  _updatedAt
+}`;

@@ -463,3 +463,34 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 ### Also (home) — Browse by Industries from the industry tag group
 
 `home-industry-strip` + `blog-home.ts` now source industry pills from `BLOG_INDUSTRY_TAGS_QUERY` (`blogTag` where `tagGroup == "industry"`) and link to `/tag/{slug}` via `tagHref()` — replacing the old `industry`-doc query + hardcoded fallback + www links.
+
+---
+
+## PROD-1501 — Author profile pages (`/author/[slug]`)
+
+**Jira:** [PROD-1501](https://dotdirect.atlassian.net/browse/PROD-1501) — S2.5, child of PROD-1482.
+
+**Schema:** `author` (name, slug, photo, role, bio[PT], credentials[PT], linkedIn). Per AC only **LinkedIn** is rendered (personalSite/xHandle ignored).
+
+| Deliverable | Location |
+|-------------|----------|
+| Page | `src/app/author/[slug]/page.tsx` — indexable, Person JSON-LD, SSR first 12 |
+| Load More API | `src/app/api/author/[slug]/posts/route.ts` — `?offset=`, 12/page, server-resolved `imageUrl` |
+| Data | `src/lib/blog-author.ts` (`AUTHOR_PAGE_SIZE=12`, `fetchAuthorPostsPage`, client-safe `AuthorPostCard`) |
+| JSON-LD | `src/lib/author-jsonld.ts` — `Person` + `sameAs`→LinkedIn + breadcrumb; `authorPersonId(slug)` shared |
+| PT renderer | `_components/portable-text.tsx` (`@portabletext/react`, added as blog dep) |
+| UI | `_components/author-header.tsx` (photo/role/H1/bio/credentials/LinkedIn), `_components/author-posts-loader.tsx` (`"use client"`) |
+| Person schema fields | `packages/seo` `person()` extended: `jobTitle`, `description`, `sameAs[]` |
+| Article back-ref | `blog-post.ts` — post `Article.author` `@id` = `authorPersonId(slug)` (author page node) |
+| Sitemap | `AUTHORS_FOR_SITEMAP_QUERY` → author URLs in `sitemap.ts` |
+
+**Load More pattern:** SSR renders first 12; the client loader appends via `fetch('/api/author/{slug}/posts?offset=N')` — **no `/page/N` URLs**. The client grid imports `AuthorPostCard` as a **type-only** import so it never pulls the `server-only` `sanity-image` builder; the API/page resolve `imageUrl` server-side.
+
+### Verification
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+# /author/marcus-wright → 200, robots index,follow, Person JSON-LD w/ sameAs (LinkedIn).
+# A post by that author: Article.author @id == /blog/author/{slug}#person.
+# /api/author/{slug}/posts?offset=12 → {posts, hasMore}; unknown author → 404.
+```

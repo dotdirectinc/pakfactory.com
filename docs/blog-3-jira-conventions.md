@@ -18,6 +18,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1596](https://dotdirect.atlassian.net/browse/PROD-1596) | Centralize blog URL base (subpath readiness) | Request For Approval | [`apps/blog/src/lib/site.ts`](../apps/blog/src/lib/site.ts), [`apps/blog/src/app/sitemap.ts`](../apps/blog/src/app/sitemap.ts) |
 | [PROD-1500](https://dotdirect.atlassian.net/browse/PROD-1500) | S2.4 — Tag archives `/tag/[slug]` | Request For Approval | [`apps/blog/src/app/tag/`](../apps/blog/src/app/tag/), [`apps/blog/src/lib/blog-tag-archive.ts`](../apps/blog/src/lib/blog-tag-archive.ts) |
 | [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) | Blog URL scheme — no `/category/`; posts at `/{slug}` | Request For Approval | [`apps/blog/src/app/[category]/`](../apps/blog/src/app/), [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts) |
+| [PROD-1501](https://dotdirect.atlassian.net/browse/PROD-1501) | S2.5 — Author profile pages `/author/[slug]` | Request For Approval | [`apps/blog/src/app/author/`](../apps/blog/src/app/author/), [`apps/blog/src/lib/blog-author.ts`](../apps/blog/src/lib/blog-author.ts) |
 
 ## PROD-1486 — pnpm only
 
@@ -133,6 +134,15 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Links:** `categoryHref()` → `/{category}`, `tagHref()` → `/tag/{slug}`, `postDetailHref()` → `/{slug}` (in `apps/blog/src/lib/blog-post-url.ts`). Never hardcode paths. Canonical/JSON-LD/RSS/sitemap derive from `postDetailHref` + `absoluteUrl()`, so they emit `/{slug}` automatically.
 - **Breadcrumb** still shows category context: Blog → Category (`/{category}`) → Post (`/{slug}`).
 - **Collision rule:** a post slug must never equal a category slug or a reserved root segment.
+
+## PROD-1501 — Author profiles
+
+- **Route:** `/author/[slug]` (indexable; `author` is a reserved root segment). Header: circular photo, role, name (H1), bio + credentials (portable text), **LinkedIn only** (personalSite/xHandle ignored per UX spec).
+- **Posts:** first 12 SSR in a 3-col grid; **"Load More (12)"** appends via client fetch to `GET /api/author/[slug]/posts?offset=N` — **no `/page/N` URLs**. Images resolved server-side; the client grid imports `AuthorPostCard` as a **type-only** import to avoid the `server-only` image builder.
+- **JSON-LD:** `Person` (`jobTitle`=role, `description`=bio text, `sameAs`=[LinkedIn]) + `BreadcrumbList`, via `@pakfactory/seo` `person()` (extended with `jobTitle`/`description`/`sameAs`). `authorPersonId(slug)` = `…/author/{slug}#person`.
+- **Article back-ref:** every post's `Article.author` `@id` is `authorPersonId(post.author.slug)`, so posts link back to the author page (`blog-post.ts`).
+- **Sitemap:** authors with ≥1 published post (`AUTHORS_FOR_SITEMAP_QUERY`).
+- **Unknown slug → `notFound()`.** Portable text rendered via `_components/portable-text.tsx` (`@portabletext/react`).
 
 ## JIRA workflow (Product project)
 

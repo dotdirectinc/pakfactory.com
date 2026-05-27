@@ -16,6 +16,8 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/[category]/[postSlug]` | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | **Legacy scoped post** → permanent redirect to `/{postSlug}` (PROD-1597) |
 | `/tag/[slug]` | [`src/app/tag/[slug]/page.tsx`](./src/app/tag/%5Bslug%5D/page.tsx) | Tag archive page 1 (PROD-1500); axis-aware kicker + sidebar |
 | `/tag/[slug]/page/[n]` | [`src/app/tag/[slug]/page/[n]/page.tsx`](./src/app/tag/%5Bslug%5D/page/%5Bn%5D/page.tsx) | Tag pagination + filters; page 1 → `/tag/[slug]` |
+| `/author/[slug]` | [`src/app/author/[slug]/page.tsx`](./src/app/author/%5Bslug%5D/page.tsx) | Author profile (PROD-1501); SSR 12 + client "Load More", Person JSON-LD |
+| `/api/author/[slug]/posts` | [`src/app/api/author/[slug]/posts/route.ts`](./src/app/api/author/%5Bslug%5D/posts/route.ts) | Load-More feed (JSON, 12/page, `?offset=`) |
 
 **URL scheme (PROD-1597, updated 2026-05-27):** no `/category/` prefix. A **post's only URL is `/{slug}`** (root) — category/tag/search/home are *discovery paths*, never URL scoping. The single root segment `/[category]` resolves to a category archive (known slug) or otherwise a post. Legacy `/{category}/{post-slug}` and `/category/...` URLs **permanently redirect** (route-level `permanentRedirect` + `next.config.ts`). Build category links with `categoryHref()`, tag links with `tagHref()`, and post links with `postDetailHref()` (always returns `/{slug}`) from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `sitemap.xml`, `api`, `search`, `tag`, `author`, `contribute`).
 

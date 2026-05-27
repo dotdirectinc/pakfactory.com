@@ -7,7 +7,8 @@ import {
   person,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { categoryHref, postDetailHref } from "@/lib/blog-post-url";
+import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
+import { authorPersonId } from "@/lib/author-jsonld";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
@@ -92,7 +93,11 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
   const wwwUrl = normalizeSiteUrl(getWwwUrl());
   const postUrl = postCanonicalUrl(post);
   const orgId = `${wwwUrl}#organization`;
-  const authorId = `${postUrl}#author`;
+  // Reference the author's profile-page Person node (PROD-1501) so every post's
+  // Article.author links back to /author/{slug}; fall back to a per-post node.
+  const authorSlug = post.author?.slug ?? undefined;
+  const authorPageUrl = authorSlug ? absoluteUrl(authorHref(authorSlug)) : undefined;
+  const authorId = authorSlug ? authorPersonId(authorSlug) : `${postUrl}#author`;
 
   const org = organization({
     name: "PakFactory",
@@ -110,6 +115,7 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
       ? person({
           id: authorId,
           name: post.author.name,
+          ...(authorPageUrl ? { url: authorPageUrl } : {}),
           image: authorImageUrl,
         })
       : null;

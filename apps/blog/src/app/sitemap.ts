@@ -1,7 +1,10 @@
 import type { MetadataRoute } from "next";
-import { BLOG_SITEMAP_POSTS_QUERY } from "@pakfactory/sanity/queries";
+import {
+  AUTHORS_FOR_SITEMAP_QUERY,
+  BLOG_SITEMAP_POSTS_QUERY,
+} from "@pakfactory/sanity/queries";
 import { fetchBlogCategories } from "@/lib/blog-data";
-import { categoryHref, postDetailHref } from "@/lib/blog-post-url";
+import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl } from "@/lib/site";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
@@ -49,6 +52,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ...(lastmod ? { lastModified: new Date(lastmod) } : {}),
         changeFrequency: "monthly",
         priority: 0.6,
+      });
+    }
+
+    const authors = await getSanityClient()
+      .fetch<{ slug: string; _updatedAt?: string }[]>(AUTHORS_FOR_SITEMAP_QUERY)
+      .catch(() => [] as { slug: string; _updatedAt?: string }[]);
+
+    for (const author of authors) {
+      entries.push({
+        url: absoluteUrl(authorHref(author.slug)),
+        ...(author._updatedAt ? { lastModified: new Date(author._updatedAt) } : {}),
+        changeFrequency: "weekly",
+        priority: 0.5,
       });
     }
   }
