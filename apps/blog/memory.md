@@ -394,6 +394,46 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 
 ---
 
+## PROD-1500 — Tag archives (`/tag/[slug]`)
+
+**Jira:** [PROD-1500](https://dotdirect.atlassian.net/browse/PROD-1500) — S2.4 Build `/blog/tag/[slug]` tag pages — child of PROD-1482
+
+**Schema:** flat `blogTag` (`title`, `slug`, `tagGroup`, `order`, `description`, `meta*`, `ogImage`); `post.tags[]->blogTag`. Axis vocabulary = `tagGroup` (see [Tag grouping](#tag-grouping--taggroup-axes-studio-taxonomy-no-ticket-yet) section). **No schema edits** — T1.2 already added `tagGroup`.
+
+### What was shipped
+
+| Deliverable | Location |
+|-------------|----------|
+| Page 1 | `src/app/tag/[slug]/page.tsx` |
+| Page 2+ (`/page/1` → `/tag/[slug]`) | `src/app/tag/[slug]/page/[n]/page.tsx` |
+| Data | `src/lib/blog-tag-archive.ts` |
+| Axis labels (mirror of studio `TAG_GROUPS`) | `src/lib/tag-groups.ts` |
+| JSON-LD | `src/lib/tag-archive-jsonld.ts` |
+| Robots (empty→noindex) | `getTagListingRobots()` in `src/lib/seo.ts` |
+| UI | `_components/tag-archive-view`, `tag-filter-sidebar`, `tag-active-filters`, `tag-archive-pagination`; reuse `PostCard` |
+| GROQ | `BLOG_TAG_BY_SLUG_QUERY`, `BLOG_TAG_POSTS_{COUNT,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY`, `BLOG_TAG_COOCCURRING_TAGS_QUERY`, `BLOG_TAG_AUTHORS_FACET_QUERY` in `@pakfactory/sanity/queries` |
+
+### Behavior
+
+- **Kicker:** `tagGroupTitle(tag.tagGroup)` → e.g. `INDUSTRY`; omitted when `ungrouped`/unknown.
+- **Sidebar:** co-occurring tags (other tags on this tag's posts) grouped by axis; **the current tag's own axis row is hidden** (e.g. Industry hidden on `/tag/beauty`); empty axes omitted. Plus author + date + sort. Filter state (`author`, `year`, `month`, `sort`) in URL — **`tag` is the page, not a filter**.
+- **Robots:** page 1 unfiltered **with ≥1 post → index, follow**; **empty tag / page ≥2 / any filter → noindex, follow**. The empty→noindex clause is unique to tags (`getTagListingRobots`).
+- **Posts** span categories; each `PostCard` links via its own `post.categorySlug` (`/{category}/{post}`).
+- **Unknown tag slug → `notFound()`**; out-of-range page → `notFound()`.
+
+### Verification (against running dev server)
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+curl -sI -o /dev/null -w "%{http_code}" http://localhost:3003/tag/sustainability   # 200
+curl -s http://localhost:3003/tag/does-not-exist | head -1                          # 404 page
+curl -s http://localhost:3003/tag/foil-stamp | grep robots                          # noindex (0 posts)
+curl -s 'http://localhost:3003/tag/sustainability?year=2099' | grep robots          # noindex (filtered)
+curl -s http://localhost:3003/tag/beauty | grep -i 'tracking-wide'                  # kicker "Industry"
+```
+
+---
+
 ## PROD-1597 — Remove `/category/` prefix from blog URLs (implemented)
 
 **Jira:** [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) — requirement update for PROD-1499.

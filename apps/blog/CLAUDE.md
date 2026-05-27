@@ -10,9 +10,12 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/all` | [`src/app/all/page.tsx`](./src/app/all/page.tsx) | All posts archive page 1 (PROD-1498) |
 | `/all/page/[n]` | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx) | Archive pagination; page 1 → `/all` |
 | `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
+| `/sitemap.xml` | [`src/app/sitemap.ts`](./src/app/sitemap.ts) | XML sitemap (PROD-1596) |
 | `/[category]` | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx) | Category archive page 1 (PROD-1499 / PROD-1597) |
 | `/[category]/page/[n]` | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx) | Category pagination + query filters |
 | `/[category]/[postSlug]` | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | Single post (canonical post URL; PROD-1597) |
+| `/tag/[slug]` | [`src/app/tag/[slug]/page.tsx`](./src/app/tag/%5Bslug%5D/page.tsx) | Tag archive page 1 (PROD-1500); axis-aware kicker + sidebar |
+| `/tag/[slug]/page/[n]` | [`src/app/tag/[slug]/page/[n]/page.tsx`](./src/app/tag/%5Bslug%5D/page/%5Bn%5D/page.tsx) | Tag pagination + filters; page 1 → `/tag/[slug]` |
 
 **URL scheme (PROD-1597):** no `/category/` prefix and no bare root post route. Posts are `/{category}/{post-slug}`; old `/category/...` URLs **301** via `next.config.ts`. Build category links with `categoryHref()` and post links with `postDetailHref()` from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `api`, `search`, `tag`, `author`, `contribute`).
 

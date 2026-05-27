@@ -105,6 +105,24 @@ export function getAllArchiveRobots(pageNumber: number): BlogRobotsDirective {
   });
 }
 
+/**
+ * Robots for `/tag/{slug}` archives (PROD-1500). Like other listings, but an
+ * **empty** tag (no published posts) is `noindex` even on page 1 to avoid
+ * indexing thin/empty pages.
+ */
+export function getTagListingRobots(
+  pageNumber: number,
+  searchParams: SearchParams,
+  hasPosts: boolean,
+): BlogRobotsDirective {
+  if (!hasPosts) return { index: false, follow: true };
+  return getBlogRobotsDirective({
+    kind: "tag",
+    pageNumber,
+    hasActiveFilters: hasListingFilters(searchParams),
+  });
+}
+
 /** Build listing robots from Next.js `searchParams` on archive routes. */
 export function getListingRobotsFromSearchParams(
   kind: BlogListingKind,

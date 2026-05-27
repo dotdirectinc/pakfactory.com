@@ -208,3 +208,76 @@ export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
   publishedAt,
   _updatedAt
 }`;
+
+// ── Tag archives (PROD-1500) — /tag/{slug} ──────────────────────────────────
+
+/** Tag landing document by slug. `description` is plain text (not portable text). */
+export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug][0]{
+  _id,
+  title,
+  "slug": slug.current,
+  "descriptionText": description,
+  tagGroup,
+  metaTitle,
+  metaDescription,
+  "ogImageUrl": ogImage.asset->url
+}`;
+
+/** Published posts carrying $tagSlug, with optional author/date narrowing (tag is the page, not a filter). */
+const TAG_POST_FILTER = /* groq */ `_type == "post"
+  && $tagSlug in tags[]->slug.current
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+  && ($authorSlug == null || author->slug.current == $authorSlug)
+  && ($yearStart == null || publishedAt >= $yearStart)
+  && ($yearEnd == null || publishedAt < $yearEnd)`;
+
+export const BLOG_TAG_POSTS_COUNT_QUERY = /* groq */ `count(*[
+  ${TAG_POST_FILTER}
+])`;
+
+export const BLOG_TAG_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_TAG_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(publishedAt asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by axis in the sidebar. */
+export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && slug.current != $tagSlug
+  && _id in *[
+    _type == "post"
+    && $tagSlug in tags[]->slug.current
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ].tags[]._ref
+] | order(coalesce(order, 999) asc, title asc){
+  _id,
+  title,
+  "slug": slug.current,
+  tagGroup,
+  order
+}`;
+
+/** Authors with published posts carrying $tagSlug (sidebar facet). */
+export const BLOG_TAG_AUTHORS_FACET_QUERY = /* groq */ `*[
+  _type == "author"
+  && _id in *[
+    _type == "post"
+    && $tagSlug in tags[]->slug.current
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ].author._ref
+] | order(name asc){
+  _id,
+  name,
+  "slug": slug.current
+}`;
