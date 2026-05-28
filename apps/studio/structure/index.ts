@@ -9,6 +9,7 @@ import {
   UserIcon,
 } from '@sanity/icons'
 import type { DividerBuilder, ListItemBuilder, StructureBuilder } from 'sanity/structure'
+import { TAG_GROUPS, TAG_GROUP_UNGROUPED } from '../schemas/blogTag'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED BUILDING BLOCKS
@@ -49,11 +50,52 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
     S.listItem()
       .title('Tags')
       .icon(TagIcon)
-      .schemaType('blogTag')
       .child(
-        S.documentTypeList('blogTag')
+        S.list()
           .title('Tags')
-          .defaultOrdering([{ field: 'title', direction: 'asc' }])
+          .items([
+            // One sub-list per classification axis (tagGroup). Tags stay flat;
+            // this only groups how they're browsed in Studio.
+            ...TAG_GROUPS.map(({ value, title }) =>
+              S.listItem()
+                .title(title)
+                .icon(TagIcon)
+                .schemaType('blogTag')
+                .child(
+                  S.documentTypeList('blogTag')
+                    .title(title)
+                    .filter('_type == "blogTag" && tagGroup == $tagGroup')
+                    .params({ tagGroup: value })
+                    .defaultOrdering([
+                      { field: 'order', direction: 'asc' },
+                      { field: 'title', direction: 'asc' },
+                    ])
+                )
+            ),
+
+            S.divider(),
+
+            // Catch-all for tags with no axis assigned yet (un-backfilled docs).
+            S.listItem()
+              .title('Ungrouped')
+              .schemaType('blogTag')
+              .child(
+                S.documentTypeList('blogTag')
+                  .title('Ungrouped')
+                  .filter('_type == "blogTag" && (!defined(tagGroup) || tagGroup == $ungrouped)')
+                  .params({ ungrouped: TAG_GROUP_UNGROUPED })
+                  .defaultOrdering([{ field: 'title', direction: 'asc' }])
+              ),
+
+            S.listItem()
+              .title('All Tags')
+              .schemaType('blogTag')
+              .child(
+                S.documentTypeList('blogTag')
+                  .title('All Tags')
+                  .defaultOrdering([{ field: 'title', direction: 'asc' }])
+              ),
+          ])
       ),
 
     S.listItem()

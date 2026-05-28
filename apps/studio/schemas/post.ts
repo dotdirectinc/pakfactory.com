@@ -50,6 +50,15 @@ export const post = defineType({
       rows: 3,
       group: 'overview',
     }),
+    defineField({
+      name: 'featuredOnHome',
+      title: 'Feature on blog home',
+      type: 'boolean',
+      group: 'overview',
+      description:
+        'Pin this post as the hero feature on /blog. Only one post should be enabled at a time.',
+      initialValue: false,
+    }),
 
     // ── Body ────────────────────────────────────────────────────────────────
     defineField({

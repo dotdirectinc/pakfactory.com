@@ -7,7 +7,8 @@
     "build": "sanity build",
     "deploy": "sanity deploy",
     "start": "sanity start --port 3333",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "seed:blog-dev": "node scripts/seed-blog-dev.mjs"
   },
   "dependencies": {
     "@sanity/vision": "^5.24.0",
