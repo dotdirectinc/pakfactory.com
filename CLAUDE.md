@@ -16,6 +16,7 @@ These skills are **versioned in-repo** under [`.claude/skills/`](.claude/skills/
 | **seo-content-writer** | [`.claude/skills/seo-content-writer/SKILL.md`](.claude/skills/seo-content-writer/SKILL.md) | Produces on-brand, structured long-form content for the blog and Sanity-friendly output (headings, lead, FAQ, author). |
 | **on-page-seo-auditor** | [`.claude/skills/on-page-seo-auditor/SKILL.md`](.claude/skills/on-page-seo-auditor/SKILL.md) | Audits existing pages and TSX for metadata, JSON-LD, OG, and content structure with file/line style feedback. |
 | **geo-content-optimizer** | [`.claude/skills/geo-content-optimizer/SKILL.md`](.claude/skills/geo-content-optimizer/SKILL.md) | Rewrites for **GEO** (generative/answer engines): clear answers first, entity-rich copy, FAQ JSON-LD when appropriate. |
+| **blog-jira-delivery** | [`.claude/skills/blog-jira-delivery/SKILL.md`](.claude/skills/blog-jira-delivery/SKILL.md) | Blog 3.0 Jira stories: plan → `memory.md` → implement (`apps/studio` schemas) → build → commit → Jira Request For Approval. |
 
 Invoke them by name when the task matches; they align with the blog’s AEO/GEO requirements in [`AGENTS.md`](./AGENTS.md) and [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
 
@@ -27,4 +28,6 @@ Invoke them by name when the task matches; they align with the blog’s AEO/GEO 
 
 ## JIRA workflow
 
-Use the **JIRA defaults** table in [`AGENTS.md`](./AGENTS.md). When creating branches or PR titles, match the documented conventions once confirmed by PM.
+Use the **PROD** project defaults in [`AGENTS.md`](./AGENTS.md) and the Blog 3.0 ticket map in [`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md). Completed prerequisite work includes **PROD-1486** (pnpm), **PROD-1487** (`@pakfactory/seo`), **PROD-1516** (this AI config), **PROD-1495** (listing robots), **PROD-1496** (blog Vercel + root URLs).
+
+When editing **`packages/seo`**, also read [`packages/seo/CLAUDE.md`](./packages/seo/CLAUDE.md).

@@ -27,8 +27,14 @@ description: >-
 
 ### Structured data
 
-- **`Article`** JSON-LD includes `@context`, `@type`, `headline`, `datePublished`, `dateModified` (if applicable), `author`, `image`, `mainEntityOfPage`, `publisher` when available.
-- **`FAQPage`** JSON-LD only when visible FAQ content exists on-page (no invisible stuffing).
+- **`BlogPosting`** (via **`@pakfactory/seo`**) in `@graph` with `@context`, `headline`, `datePublished`, `author`, `image`, `mainEntityOfPage`, `publisher` when available — **never** inline hand-built JSON-LD in routes.
+- Canonical/OG/JSON-LD URLs must use **`getSiteUrl()`** (blog origin at deployment root, PROD-1496).
+- **`FAQPage`** JSON-LD only when visible FAQ content exists on-page (add generator in `@pakfactory/seo` when needed).
+
+### Robots (listing pages, PROD-1495)
+
+- Post detail: **index, follow** (`getBlogRobotsDirective({ kind: 'post' })`).
+- Blog index / archives: page 1 unfiltered → index; page ≥2 or filter query params → **noindex, follow** (`getListingRobotsFromSearchParams`).
 
 ### Content structure
 

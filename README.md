@@ -11,6 +11,7 @@ Private Turborepo workspace that powers Pakfactory’s marketing site, blog, and
 | `apps/studio` | `@pakfactory/studio` | Sanity Studio for editors (port **3333**). |
 | `packages/sanity` | `@pakfactory/sanity` | Shared GROQ queries, schemas, and maintenance scripts. |
 | `packages/ui` | `@pakfactory/ui` | Shared UI primitives (Tailwind + Radix-style components). |
+| `packages/seo` | `@pakfactory/seo` | JSON-LD / schema.org generators for blog and marketing pages. |
 
 **Stack highlights:** Node **≥ 20.19**, **pnpm 9.15.0** (see root `package.json` `packageManager`), Turborepo, Next.js **16**, React **19**, Sanity **5**, Tailwind **4**.
 
@@ -25,6 +26,7 @@ The monorepo ships **versioned** AI assistant context so **Claude Code**, **Curs
 3. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor rules (`.mdc`); [`pakfactory-stack.mdc`](./.cursor/rules/pakfactory-stack.mdc) reinforces `AGENTS.md` for every session.
 4. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog-only overrides (routes, Sanity query patterns, AEO/GEO targets).
 5. **`apps/blog/.cursor/rules/blog.mdc`** — applies when editing files under `apps/blog/`.
+6. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — maps completed Jira tickets (PROD-1480, PROD-1516, etc.) to binding code patterns.
 
 **Per tool**
 
@@ -40,7 +42,8 @@ After `git pull`, ask your assistant:
 | “Add a cart button to the blog post page.” | Refuse cart UX; suggest quote / RFQ / contact CTA — not Shopify. |
 | “Install this dependency: `npm install foo`.” | Correct to **`pnpm add`** (scoped with `--filter` when adding to one app). |
 | “Update `packages/ui/src/components/button.tsx` for a new variant.” | Push back — primitives unchanged unless fixing an assigned bug; style in app code. |
-| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; metadata + `Article` JSON-LD per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
+| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; URLs via `getSiteUrl()` with `/blog` prefix per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
+| “Index page 2 of the blog with ?page=2.” | Apply **`noindex, follow`** via `getListingRobotsFromSearchParams` in `apps/blog/src/lib/seo.ts` (PROD-1495). |
 | “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
 
 ## Prerequisites
@@ -74,8 +77,9 @@ After `git pull`, ask your assistant:
    **Where `.env.local` lives**
 
    - **`apps/www`** loads env from the **repository root** (see `apps/www/next.config.ts`).
-   - **`apps/studio`** and **`packages/sanity`** scripts expect variables available in the shell or in a root `.env.local` when you use tooling that loads it.
-   - **`apps/blog`** uses Next.js default resolution: place **`apps/blog/.env.local`** with the same Sanity variables, or keep a single root `.env.local` and symlink/copy into `apps/blog` so both apps see the same config.
+   - **`apps/studio`** reads **`apps/studio/.env.local`** when you run `pnpm dev:studio` (Vite does not use root `.env.local` automatically). Keep `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET` in sync with root — e.g. `8293wrxp` + `development` after `pnpm seed`.
+   - **`apps/blog`** — root `.env.local` via `next.config.ts` (`loadEnvConfig`), plus **`apps/blog/.env.local`** for overrides (port, Sanity copy). See [`apps/blog/.env.example`](apps/blog/.env.example) and [`apps/blog/memory.md`](apps/blog/memory.md) (local dev / empty home troubleshooting).
+   - **`packages/sanity`** scripts load **repo root** `.env.local`.
 
    Optional (premium shadcn studio registry): `EMAIL` and `LICENSE_KEY` as in `.env.example`.
 
@@ -87,14 +91,45 @@ All commands run from the **repository root**.
 |---------|----------------|
 | `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
 | `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
-| `pnpm dev:blog` | Blog → [http://localhost:3001](http://localhost:3001) |
+| `pnpm dev:blog` | Blog → [http://localhost:3003](http://localhost:3003) (default port **3003**; set `PORT` to override) |
+| `pnpm seed:blog-dev` | Extra blog test posts + industries into Sanity **`development`** (after full studio seed) |
 | `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 
 Production-style serve (after build): each app has `pnpm run start` inside its workspace; from root, build first then start the app you need.
 
 To **deploy hosted Studio**, use `pnpm --filter @pakfactory/studio run deploy` (Sanity CLI; requires project auth).
 
-**Vercel:** after switching to pnpm, set the project install command to `pnpm install --frozen-lockfile` in the Vercel dashboard if it still defaults to npm.
+**Vercel:** use `pnpm install --frozen-lockfile` if the dashboard still defaults to npm.
+
+### Blog app on Vercel (`apps/blog`, PROD-1496)
+
+Create a **separate** Vercel project from `apps/www`. Build/install commands are defined in [`apps/blog/vercel.json`](apps/blog/vercel.json) (Vercel reads them when Root Directory is `apps/blog`).
+
+| Dashboard setting | Value |
+|-------------------|--------|
+| Root Directory | `apps/blog` |
+| Include files outside root | **On** (required for `packages/*`) |
+| Framework Preset | Next.js (or leave auto) |
+| Node.js Version | **20.x** |
+| Install Command | *(from `vercel.json`)* `pnpm install --frozen-lockfile` |
+| Build Command | *(from `vercel.json`)* `pnpm turbo run build --filter=@pakfactory/blog` |
+| Output Directory | *(default)* `.next` |
+| Development Command | `pnpm dev` (optional; local only) |
+
+**Production environment variables (minimum):**
+
+| Variable | Example |
+|----------|---------|
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | your project id |
+| `NEXT_PUBLIC_SANITY_DATASET` | `development` (local dev; use `production` on Vercel prod) |
+| `NEXT_PUBLIC_SANITY_API_VERSION` | `2025-09-25` |
+| `NEXT_PUBLIC_SANITY_STUDIO_URL` | hosted Studio URL |
+| `SANITY_API_READ_TOKEN` | viewer token |
+| `NEXT_PUBLIC_SITE_URL` | Blog deployment origin (e.g. `https://blog.pakfactory.com`) |
+
+**Domains:** point the blog Vercel project at your blog hostname (e.g. `blog.pakfactory.com`). Routes are at **/** on that host, not under `/blog/`.
+
+**Deploy:** push to the linked branch — Vercel runs install → turbo build (including `@pakfactory/seo`, `@pakfactory/sanity`, `@pakfactory/ui` typecheck per `turbo.json`) → Next.js deploy. No custom `start` command on Vercel.
 
 ## Build, lint, and typecheck
 
