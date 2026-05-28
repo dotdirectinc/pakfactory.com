@@ -16,6 +16,7 @@ import {
 } from "@/lib/blog-post";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
+import { redirectOrNotFound } from "@/lib/blog-redirects";
 
 export const revalidate = 60;
 
@@ -94,8 +95,12 @@ export default async function CategoryOrPostPage({
   }
 
   const post = await fetchPostBySlug(category);
-  if (!post) notFound();
+  if (post) {
+    const jsonLd = buildPostJsonLd(post);
+    return <BlogPostArticle post={post} jsonLd={jsonLd} />;
+  }
 
-  const jsonLd = buildPostJsonLd(post);
-  return <BlogPostArticle post={post} jsonLd={jsonLd} />;
+  // Neither a category nor a live post — apply a CMS redirect if one exists
+  // (e.g. an old slug that moved), otherwise render the 404.
+  return redirectOrNotFound(`/${category}`);
 }

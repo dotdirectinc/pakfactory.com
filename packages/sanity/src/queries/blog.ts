@@ -9,6 +9,18 @@ export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && de
   "slug": slug.current
 }`;
 
+/**
+ * Active CMS redirects (`apps/studio/schemas/redirect`). Applied at request time
+ * on would-be-404s. `type` is "301" | "302"; the blog maps 301→308 / 302→307.
+ */
+export const BLOG_REDIRECTS_QUERY = /* groq */ `*[
+  _type == "redirect" && isActive == true && defined(from) && defined(to)
+]{
+  "from": from,
+  "to": to,
+  "type": type
+}`;
+
 const POST_CARD_FIELDS = /* groq */ `{
   _id,
   title,

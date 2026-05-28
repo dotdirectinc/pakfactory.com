@@ -3,3 +3,6 @@ export const BLOG_REVALIDATE_SECONDS = 60;
 
 /** Shared cache tag for post-derived routes (RSS, listings) when using `cacheTag` / webhooks. */
 export const BLOG_POSTS_CACHE_TAG = "blog-posts";
+
+/** Cache tag for the CMS redirect map; revalidated by the Sanity webhook on redirect/post changes. */
+export const BLOG_REDIRECTS_CACHE_TAG = "blog-redirects";
