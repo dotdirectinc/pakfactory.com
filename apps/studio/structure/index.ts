@@ -1,4 +1,5 @@
 import {
+  ArrowRightIcon,
   CogIcon,
   ComponentIcon,
   DocumentTextIcon,
@@ -138,6 +139,19 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
                     { field: 'internalTitle', direction: 'asc' },
                   ])
               ),
+          ])
+      ),
+
+    S.listItem()
+      .title('Redirects')
+      .icon(ArrowRightIcon)
+      .schemaType('redirect')
+      .child(
+        S.documentTypeList('redirect')
+          .title('Redirects')
+          .defaultOrdering([
+            { field: 'isActive', direction: 'desc' },
+            { field: '_updatedAt', direction: 'desc' },
           ])
       ),
   ]

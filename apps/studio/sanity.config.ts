@@ -1,8 +1,9 @@
 import { defineConfig } from 'sanity'
-import type { Template } from 'sanity'
+import type { DocumentActionComponent, DocumentActionsContext, Template } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schemaTypes } from './schemas'
+import { publishWithRedirect } from './actions/publishWithRedirect'
 import {
   adminStructure,
   blogStructure,
@@ -85,6 +86,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
 
 const schema = { types: schemaTypes, templates: (prev: Template[]) => [...prev, ...productTemplates] }
 
+// Replace the default publish action on posts so slug changes auto-create redirects.
+const documentActions = (
+  prev: DocumentActionComponent[],
+  context: DocumentActionsContext,
+): DocumentActionComponent[] =>
+  context.schemaType === 'post'
+    ? prev.map((action) => (action.action === 'publish' ? publishWithRedirect : action))
+    : prev
+
 export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
   {
@@ -94,6 +104,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
+    document: { actions: documentActions },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
       visionTool(),
@@ -108,6 +119,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
+    document: { actions: documentActions },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
       visionTool(),

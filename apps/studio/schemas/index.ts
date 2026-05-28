@@ -17,6 +17,7 @@ import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { page } from './page'
 import { post } from './post'
+import { redirect } from './redirect'
 import { settings } from './settings'
 
 export const schemaTypes = [
@@ -48,6 +49,7 @@ export const schemaTypes = [
   widgetEmbed,
   page,
   post,
+  redirect,
 
   // Singleton
   settings,
