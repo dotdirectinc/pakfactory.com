@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-05-27.
+Last updated: 2026-05-28.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -512,4 +512,47 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 # /author/marcus-wright → 200, robots index,follow, Person JSON-LD w/ sameAs (LinkedIn).
 # A post by that author: Article.author @id == /blog/author/{slug}#person.
 # /api/author/{slug}/posts?offset=12 → {posts, hasMore}; unknown author → 404.
+```
+
+---
+
+## PROD-1602 — CMS redirects (auto slug-change → 301, no deploy)
+
+**Jira:** [PROD-1602](https://dotdirect.atlassian.net/browse/PROD-1602) — T1.7, child of PROD-1601 (content-team Studio fields). Split across two branches: Studio side on `feature/sanity-studio-ux` (`9f9acea`), blog side on `feature/blog` (`b1fb80c`). WordPress "Redirection plugin" analogue — changing a published post slug auto-creates a 301; the old URL redirects within the cache window with **no deploy**.
+
+### Blog side (this branch)
+
+| Deliverable | Location |
+|-------------|----------|
+| Active-redirect GROQ | `BLOG_REDIRECTS_QUERY` in `@pakfactory/sanity/queries` |
+| Cached map + resolver | `src/lib/blog-redirects.ts` — `unstable_cache` (60s TTL + `blog-redirects` tag), `resolveRedirect` (bounded chain-follow + loop guard), `redirectOrNotFound` |
+| Resolver hook | `src/app/[category]/page.tsx` — redirect check before `notFound()` |
+| Catch-all hook | `src/app/[...segments]/page.tsx` — multi-segment legacy URLs |
+| Webhook | `src/app/api/revalidate/route.ts` — secret-validated → `revalidateTag` on redirect/post |
+| Cache tag | `BLOG_REDIRECTS_CACHE_TAG` in `src/lib/blog-cache.ts` |
+
+### Studio side (`feature/sanity-studio-ux`)
+
+`redirect` document (`from`/`to`/`type`/`notes`/`isActive`, unique-`from` + no-self-redirect), Redirects desk list, and the `publishWithRedirect` action (idempotent create, chain collapse, deletes rows whose source becomes the new live path → no self-loops).
+
+### Status codes (Next 16)
+
+CMS stores `301`/`302`; apply maps **301 → 308** (`permanentRedirect`) / **302 → 307** (`redirect`) — a Server Component can only emit 307/308, and 308 is SEO-equivalent to 301. `revalidateTag` now requires `(tag, profile)`; the **60s `unstable_cache` TTL is the freshness floor**, the webhook is best-effort instant invalidation.
+
+### Cost
+
+Redirect lookup runs **only on would-be-404s** (zero cost on valid pages); Sanity is read once per cache window, never per request.
+
+### Ops follow-ups
+
+- Set `SANITY_REVALIDATE_SECRET`; configure a Sanity webhook (`8293wrxp`) → `POST /api/revalidate` filtered `_type == "redirect" || _type == "post"`.
+- `sanity deploy` so the team Studio gets the schema + publish action.
+
+### Verification (live, 8293wrxp/development)
+
+```bash
+# create redirect /legacy-redirect-test → /all (type 301), then:
+curl -sI http://localhost:3003/legacy-redirect-test   # 308 → /all
+curl -sI http://localhost:3003/unknown-xyz            # 404
+curl -sI http://localhost:3003/trends                 # 200 (live page, no cost)
 ```

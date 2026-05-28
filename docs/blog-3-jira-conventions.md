@@ -19,6 +19,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1500](https://dotdirect.atlassian.net/browse/PROD-1500) | S2.4 — Tag archives `/tag/[slug]` | Request For Approval | [`apps/blog/src/app/tag/`](../apps/blog/src/app/tag/), [`apps/blog/src/lib/blog-tag-archive.ts`](../apps/blog/src/lib/blog-tag-archive.ts) |
 | [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) | Blog URL scheme — no `/category/`; posts at `/{slug}` | Request For Approval | [`apps/blog/src/app/[category]/`](../apps/blog/src/app/), [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts) |
 | [PROD-1501](https://dotdirect.atlassian.net/browse/PROD-1501) | S2.5 — Author profile pages `/author/[slug]` | Request For Approval | [`apps/blog/src/app/author/`](../apps/blog/src/app/author/), [`apps/blog/src/lib/blog-author.ts`](../apps/blog/src/lib/blog-author.ts) |
+| [PROD-1602](https://dotdirect.atlassian.net/browse/PROD-1602) | T1.7 — CMS redirects (auto slug-change → 301, no deploy) | Request For Approval | [`apps/blog/src/lib/blog-redirects.ts`](../apps/blog/src/lib/blog-redirects.ts); studio (`feature/sanity-studio-ux`): `apps/studio/schemas/redirect.ts` + `apps/studio/actions/publishWithRedirect.ts` |
 
 ## PROD-1486 — pnpm only
 
@@ -153,3 +154,14 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | **Branches** | `feat/PROD-123-short-slug`, `fix/PROD-123-short-slug` |
 | **Commits** | `PROD-123: summary` or trailer `Refs: PROD-123` |
 | **PR titles** | `[PROD-123] Short description` |
+
+## PROD-1602 — CMS redirects (auto slug-change → 301)
+
+Feature split across two branches (one ticket): **Studio** on `feature/sanity-studio-ux` (`9f9acea`), **blog apply** on `feature/blog` (`b1fb80c`).
+
+- **Schema:** `apps/studio/schemas/redirect.ts` — `from` (unique, leading `/`), `to`, `type` (`301`/`302`), `notes`, `isActive`. Registered in `schemas/index.ts`; Redirects desk list in `structure/index.ts`.
+- **Auto-create:** `apps/studio/actions/publishWithRedirect.ts` wraps publish on `post` — diff old vs new slug → create/patch a `301`; idempotent, collapses chains, deletes rows whose `from` becomes the new live path (no self-loops). Guardrails: skip reserved segments + category-slug collisions (PROD-1597).
+- **Apply (blog):** redirect lookup runs **only before `notFound()`** in the `[category]` resolver and `[...segments]` catch-all (404-triggered). `src/lib/blog-redirects.ts` caches the active-redirect map (`unstable_cache`, 60s TTL + `blog-redirects` tag) and maps **301 → 308** / **302 → 307** (Server Components can't emit 301/302; 308 ≈ 301 for SEO).
+- **Freshness:** `SANITY_REVALIDATE_SECRET`-guarded webhook at `src/app/api/revalidate/route.ts` → `revalidateTag` on `redirect`/`post` changes. Next 16 `revalidateTag(tag, profile)`; the 60s TTL is the guaranteed floor.
+- **Precedence:** `next.config.ts` structural redirects (PROD-1597) > CMS redirects > 404. Keep structural rules in code; CMS handles editorial + auto slug-change.
+- **GROQ:** `BLOG_REDIRECTS_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts).
