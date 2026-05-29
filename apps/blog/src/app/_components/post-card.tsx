@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { HomePostCard } from "@/lib/blog-home";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageAlt, sanityImageUrl } from "@/lib/sanity-image";
 
 type PostCardProps = {
   post: HomePostCard;
@@ -76,7 +76,7 @@ export function PostCard({
           >
             <Image
               src={imageUrl}
-              alt=""
+              alt={sanityImageAlt(post.mainImage) ?? ""}
               fill
               className="object-cover transition-transform group-hover:scale-[1.02]"
               sizes={isFeatured ? "(max-width: 1024px) 100vw, 50vw" : "200px"}

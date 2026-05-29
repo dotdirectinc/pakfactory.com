@@ -27,7 +27,11 @@ const POST_CARD_FIELDS = /* groq */ `{
   "slug": slug.current,
   excerpt,
   publishedAt,
-  mainImage,
+  mainImage{
+    ...,
+    "alt": coalesce(alt, asset->altText),
+    "caption": coalesce(caption, asset->description)
+  },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "authorName": author->name
@@ -40,7 +44,11 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   excerpt,
   body,
   publishedAt,
-  mainImage,
+  mainImage{
+    ...,
+    "alt": coalesce(alt, asset->altText),
+    "caption": coalesce(caption, asset->description)
+  },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "author": author->{name, "slug": slug.current, photo}

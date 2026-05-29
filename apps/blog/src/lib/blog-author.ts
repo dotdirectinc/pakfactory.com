@@ -1,6 +1,6 @@
 import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageAlt, sanityImageUrl } from "@/lib/sanity-image";
 import { getSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
 import {
@@ -23,6 +23,7 @@ export type AuthorPostCard = {
   excerpt?: string;
   publishedAt?: string;
   imageUrl?: string;
+  imageAlt?: string;
   categoryTitle?: string;
 };
 
@@ -36,6 +37,7 @@ function toAuthorPostCard(post: HomePostCard): AuthorPostCard {
     excerpt: post.excerpt,
     publishedAt: post.publishedAt,
     imageUrl: sanityImageUrl(post.mainImage, 400),
+    imageAlt: sanityImageAlt(post.mainImage),
     categoryTitle: post.categoryTitle,
   };
 }

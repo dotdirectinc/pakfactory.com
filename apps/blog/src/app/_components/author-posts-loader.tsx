@@ -20,7 +20,7 @@ function PostTile({ post }: { post: AuthorPostCard }) {
           <div className="relative mb-2 aspect-[16/10] overflow-hidden rounded-md bg-muted">
             <Image
               src={post.imageUrl}
-              alt=""
+              alt={post.imageAlt ?? ""}
               fill
               className="object-cover transition-transform group-hover:scale-[1.02]"
               sizes="(max-width: 1024px) 50vw, 320px"
