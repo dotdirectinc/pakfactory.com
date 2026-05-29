@@ -256,11 +256,19 @@ These approaches look easy but cause long-term problems:
 
 ## Image Asset (Library)
 
-When editors upload an image  type, Sanity should require these fields *on the asset itself* (not per use):
+Image metadata is captured *on the asset itself* (not per use) through the **Media** library tool, so the same image carries its metadata everywhere it's reused:
 
-- [ ] **Alt text** — required. Description for screen readers and SEO.
+- [ ] **Alt text** — required. Description for screen readers and SEO. Set once on the asset; an individual placement can override it when needed.
 - [ ] **Caption** — optional, displayed under the image if set.
-- [ ] **Filename** — should be descriptive on upload (editors should be coached on this, but enforcement is hard).
+- [ ] **Filename** — name the file descriptively *before* you upload it. The filename becomes part of the image URL and is a (minor) image-SEO signal, so it's worth getting right.
+
+### Naming files (coaching, not enforced)
+
+Upload-time enforcement isn't practical, so descriptive filenames are a habit we coach rather than a hard gate:
+
+- ✅ **Do:** lowercase, hyphen-separated, describe the subject — `kraft-mailer-box-eco.jpg`, `rigid-box-magnetic-closure.png`, `corrugated-vs-folding-carton.jpg`.
+- ❌ **Avoid:** camera/screenshot defaults and opaque IDs — `IMG_4827.jpg`, `DSC00031.JPG`, `Screenshot 2026-05-12 at 3.41.10 PM.png`, `e9c1f0a2-3b7d-4f...jpg`, `final_v2 (1).png`.
+- Keep it short and specific: no spaces (use hyphens), include the product / material / topic when relevant, skip filler words.
 
 ---
 
