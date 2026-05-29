@@ -2,6 +2,7 @@ import { defineConfig } from 'sanity'
 import type { DocumentActionComponent, DocumentActionsContext, Template } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
+import { media } from 'sanity-plugin-media'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import {
@@ -107,6 +108,7 @@ export default defineConfig([
     document: { actions: documentActions },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
+      media(),
       visionTool(),
     ],
   },
@@ -122,6 +124,7 @@ export default defineConfig([
     document: { actions: documentActions },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
+      media(),
       visionTool(),
     ],
   },
@@ -136,6 +139,7 @@ export default defineConfig([
     schema,
     plugins: [
       structureTool({ structure: websiteStructure, defaultDocumentNode }),
+      media(),
       visionTool(),
     ],
   },
@@ -150,6 +154,7 @@ export default defineConfig([
     schema,
     plugins: [
       structureTool({ structure: academyStructure, defaultDocumentNode }),
+      media(),
       visionTool(),
     ],
   },

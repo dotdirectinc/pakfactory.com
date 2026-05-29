@@ -80,6 +80,21 @@ export const post = defineType({
       type: 'image',
       group: 'assets',
       options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text override',
+          type: 'string',
+          description:
+            'Optional. Falls back to the alt text set on the image asset in the Media library.',
+        }),
+        defineField({
+          name: 'caption',
+          title: 'Caption',
+          type: 'string',
+          description: 'Optional short caption shown below the image in the frontend.',
+        }),
+      ],
     }),
 
     // ── Taxonomy ────────────────────────────────────────────────────────────
@@ -141,6 +156,15 @@ export const post = defineType({
       type: 'image',
       group: 'seo',
       options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text override',
+          type: 'string',
+          description:
+            'Optional. Falls back to the alt text set on the image asset in the Media library.',
+        }),
+      ],
     }),
   ],
   preview: {
