@@ -44,7 +44,7 @@ export async function generateMetadata({
     title,
     description,
     robots: robotsDirectiveToMetadata(
-      getTagListingRobots(pageNumber, sp, data.totalCount > 0),
+      getTagListingRobots(pageNumber, sp, data.totalCount > 0, data.tag),
     ),
     alternates: { canonical },
     openGraph: { title, description, url: canonical, type: "website" },

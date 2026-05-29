@@ -28,7 +28,7 @@ export async function generateMetadata({
 
   const canonical = absoluteUrl(tagPageHref(slug, 1, filters));
   const title =
-    data.tag.metaTitle?.trim() || `${data.tag.title} | PakFactory Blog`;
+    data.tag.metaTitle?.trim() || `Posts about ${data.tag.title} | PakFactory Blog`;
   const description =
     data.tag.metaDescription?.trim() ||
     data.tag.descriptionText?.trim().slice(0, 160) ||
@@ -38,7 +38,7 @@ export async function generateMetadata({
     title,
     description,
     robots: robotsDirectiveToMetadata(
-      getTagListingRobots(1, sp, data.totalCount > 0),
+      getTagListingRobots(1, sp, data.totalCount > 0, data.tag),
     ),
     alternates: { canonical },
     openGraph: {

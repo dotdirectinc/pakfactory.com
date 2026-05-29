@@ -33,6 +33,9 @@ export type TagDocument = {
   tagGroup?: string;
   metaTitle?: string;
   metaDescription?: string;
+  allowIndex?: boolean;
+  allowFollow?: boolean;
+  noImageIndex?: boolean;
   ogImageUrl?: string;
 };
 

@@ -11,6 +11,14 @@ export type BlogListingKind =
 export type BlogRobotsDirective = {
   index: boolean;
   follow: boolean;
+  noImageIndex?: boolean;
+};
+
+/** Per-document SEO overrides that layer on top of the rule-based directive. */
+export type DocSeoOverrides = {
+  allowIndex?: boolean;
+  allowFollow?: boolean;
+  noImageIndex?: boolean;
 };
 
 export type BlogRobotsInput =
@@ -93,6 +101,7 @@ export function robotsDirectiveToMetadata(
   return {
     index: directive.index,
     follow: directive.follow,
+    ...(directive.noImageIndex ? { noimageindex: true } : {}),
   };
 }
 
@@ -114,13 +123,27 @@ export function getTagListingRobots(
   pageNumber: number,
   searchParams: SearchParams,
   hasPosts: boolean,
+  tag?: DocSeoOverrides,
 ): BlogRobotsDirective {
-  if (!hasPosts) return { index: false, follow: true };
-  return getBlogRobotsDirective({
-    kind: "tag",
-    pageNumber,
-    hasActiveFilters: hasListingFilters(searchParams),
-  });
+  const base = !hasPosts
+    ? { index: false, follow: true }
+    : getBlogRobotsDirective({
+        kind: "tag",
+        pageNumber,
+        hasActiveFilters: hasListingFilters(searchParams),
+      });
+
+  // Per-tag overrides only tighten: tags default to noindex unless explicitly
+  // opted in (spec § 4); follow defaults ON; noImageIndex defaults OFF.
+  const allowIndex = tag?.allowIndex === true;
+  const allowFollow = tag?.allowFollow !== false;
+  const noImageIndex = tag?.noImageIndex === true;
+
+  return {
+    index: base.index && allowIndex,
+    follow: base.follow && allowFollow,
+    ...(noImageIndex ? { noImageIndex: true } : {}),
+  };
 }
 
 /** Build listing robots from Next.js `searchParams` on archive routes. */

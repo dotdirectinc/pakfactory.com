@@ -251,6 +251,9 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
   tagGroup,
   metaTitle,
   metaDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
   "ogImageUrl": ogImage.asset->url
 }`;
 
