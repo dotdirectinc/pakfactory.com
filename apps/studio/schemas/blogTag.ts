@@ -45,7 +45,7 @@ export const blogTag = defineType({
     // ── Overview ────────────────────────────────────────────────────────────
     defineField({
       name: 'title',
-      title: 'Title',
+      title: 'Name',
       type: 'string',
       group: 'overview',
       validation: (Rule) => Rule.required(),
@@ -97,7 +97,10 @@ export const blogTag = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      validation: (Rule) => Rule.max(60),
+      description:
+        'Optional. Falls back to `Posts about {name} | PakFactory Blog` on the tag archive.',
+      validation: (Rule) =>
+        Rule.max(60).warning('Aim for 60 characters or fewer for best display in search results.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -105,7 +108,35 @@ export const blogTag = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      validation: (Rule) => Rule.max(160),
+      description:
+        'Optional. Falls back to the tag description, then to an auto-generated description.',
+      validation: (Rule) =>
+        Rule.max(160).warning('Aim for 160 characters or fewer for best display in search results.'),
+    }),
+    defineField({
+      name: 'allowIndex',
+      title: 'Allow search engines to index this tag page',
+      type: 'boolean',
+      group: 'seo',
+      description:
+        'Default OFF — tag archives are often SEO-thin. Flip ON only for tags with ≥5–10 posts and clear SEO value.',
+      initialValue: false,
+    }),
+    defineField({
+      name: 'allowFollow',
+      title: 'Allow search engines to follow links on this tag page',
+      type: 'boolean',
+      group: 'seo',
+      description: 'Default ON — post links from the tag page still pass authority.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'noImageIndex',
+      title: 'Prevent images on this tag page from appearing in Google Images',
+      type: 'boolean',
+      group: 'seo',
+      description: 'Default OFF.',
+      initialValue: false,
     }),
     defineField({
       name: 'ogImage',
