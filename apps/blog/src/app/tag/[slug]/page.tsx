@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { TagArchiveView } from "@/app/_components/tag-archive-view";
+import { TagArchiveView } from "@/components/tag/tag-archive-view";
 import {
   fetchTagArchivePage,
   parseTagFilters,

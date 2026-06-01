@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { HomeCategoryRow } from "@/lib/blog-home";
-import { PostCard } from "@/app/_components/post-card";
+import { PostCard } from "@/components/post/post-card";
 import { categoryHref } from "@/lib/blog-post-url";
 
 type HomeCategoryRowSectionProps = {

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { TagActiveFilters } from "@/app/_components/tag-active-filters";
-import { TagArchivePagination } from "@/app/_components/tag-archive-pagination";
-import { TagFilterSidebar } from "@/app/_components/tag-filter-sidebar";
-import { PostCard } from "@/app/_components/post-card";
+import { TagActiveFilters } from "@/components/tag/tag-active-filters";
+import { TagArchivePagination } from "@/components/tag/tag-archive-pagination";
+import { TagFilterSidebar } from "@/components/tag/tag-filter-sidebar";
+import { PostCard } from "@/components/post/post-card";
 import { buildTagArchiveJsonLd } from "@/lib/tag-archive-jsonld";
 import type { TagArchivePageData } from "@/lib/blog-tag-archive";
 import { tagGroupTitle } from "@/lib/tag-groups";

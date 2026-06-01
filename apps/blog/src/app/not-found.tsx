@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@pakfactory/ui/components/button";
-import { BlogSearchForm } from "@/app/_components/blog-search-form";
-import { CategoryChips } from "@/app/_components/category-chips";
-import { GlobalRfqCta } from "@/app/_components/global-rfq-cta";
-import { NewsletterCtaBand } from "@/app/_components/newsletter-cta-band";
-import { PopularPostsRail } from "@/app/_components/popular-posts-rail";
+import { BlogSearchForm } from "@/components/shared/blog-search-form";
+import { CategoryChips } from "@/components/category/category-chips";
+import { GlobalRfqCta } from "@/components/shared/global-rfq-cta";
+import { NewsletterCtaBand } from "@/components/shared/newsletter-cta-band";
+import { PopularPostsRail } from "@/components/post/popular-posts-rail";
 import { fetchBlogCategories, fetchPopularPostsThisMonth } from "@/lib/blog-data";
 import {
   getBlogRobotsDirective,

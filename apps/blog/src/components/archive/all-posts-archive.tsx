@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArchiveFilterSidebar } from "@/app/_components/archive-filter-sidebar";
-import { ArchivePagination } from "@/app/_components/archive-pagination";
-import { PostCard } from "@/app/_components/post-card";
+import { ArchiveFilterSidebar } from "@/components/archive/archive-filter-sidebar";
+import { ArchivePagination } from "@/components/archive/archive-pagination";
+import { PostCard } from "@/components/post/post-card";
 import { buildAllArchiveJsonLd } from "@/lib/all-archive-jsonld";
 import type { AllArchivePageData } from "@/lib/blog-archive";
 import { fetchBlogCategories } from "@/lib/blog-data";

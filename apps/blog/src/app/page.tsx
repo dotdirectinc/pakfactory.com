@@ -5,12 +5,12 @@ import {
   organization,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { HomeCategoryRowSection } from "@/app/_components/home-category-row";
-import { HomeConversionPillars } from "@/app/_components/home-conversion-pillars";
-import { HomeHero } from "@/app/_components/home-hero";
-import { HomeIndustryStrip } from "@/app/_components/home-industry-strip";
-import { GlobalRfqCta } from "@/app/_components/global-rfq-cta";
-import { NewsletterCtaBand } from "@/app/_components/newsletter-cta-band";
+import { HomeCategoryRowSection } from "@/components/home/home-category-row";
+import { HomeConversionPillars } from "@/components/home/home-conversion-pillars";
+import { HomeHero } from "@/components/home/home-hero";
+import { HomeIndustryStrip } from "@/components/home/home-industry-strip";
+import { GlobalRfqCta } from "@/components/shared/global-rfq-cta";
+import { NewsletterCtaBand } from "@/components/shared/newsletter-cta-band";
 import { fetchBlogHomeData, getBlogHomeDebugInfo } from "@/lib/blog-home";
 import {
   getListingRobotsFromSearchParams,

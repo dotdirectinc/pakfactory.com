@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { CategoryActiveFilters } from "@/app/_components/category-active-filters";
-import { CategoryArchivePagination } from "@/app/_components/category-archive-pagination";
-import { CategoryFilterSidebar } from "@/app/_components/category-filter-sidebar";
-import { PostCard } from "@/app/_components/post-card";
+import { CategoryActiveFilters } from "@/components/category/category-active-filters";
+import { CategoryArchivePagination } from "@/components/category/category-archive-pagination";
+import { CategoryFilterSidebar } from "@/components/category/category-filter-sidebar";
+import { PostCard } from "@/components/post/post-card";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
 import type { CategoryArchivePageData } from "@/lib/blog-category-archive";
 import { PACKAGING_NEWS_SLUG } from "@/lib/blog-categories";

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AllPostsArchive } from "@/app/_components/all-posts-archive";
+import { AllPostsArchive } from "@/components/archive/all-posts-archive";
 import { fetchAllArchivePage } from "@/lib/blog-archive";
 import {
   getAllArchiveRobots,
