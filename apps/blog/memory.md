@@ -13,7 +13,7 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/` home | ✅ PROD-1497 |
 | `/all` (+ pagination) | ✅ PROD-1498 |
 | `/{category}` archive (+ pagination) | ✅ PROD-1499 |
-| `/{slug}` single post | ✅ resolves via `[category]` (PROD-1597); full page rebuild → PROD-1502 |
+| `/{slug}` single post | ✅ resolves via `[category]` (PROD-1597); full page rebuild → PROD-1502, **blocked on PROD-1490** schema rebuild (see [`docs/blog-content-spec-gap-analysis.md`](../../docs/blog-content-spec-gap-analysis.md)) |
 | `/tag/{slug}` | ✅ PROD-1500 |
 | `/author/{slug}` | ✅ PROD-1501 |
 | `/rss.xml` | ✅ PROD-1505 |
