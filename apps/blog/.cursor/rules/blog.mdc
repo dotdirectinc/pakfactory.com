@@ -15,7 +15,7 @@ When editing **`apps/blog/`**, follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), 
 - **Sanity:** queries only from `@pakfactory/sanity/queries`; `getSanityClient()` + `isSanityConfigured()`; no inline GROQ in pages.
 - **Robots (PROD-1495):** posts always index; listings use `getListingRobotsFromSearchParams` — page ≥2 or filters → noindex, follow.
 - **AEO/GEO:** `generateMetadata` (OG + Twitter) on posts; **`BlogPosting`** JSON-LD via **`@pakfactory/seo`** + `serializeJsonLd` — never inline schema objects.
-- **Naming:** kebab-case `.tsx`; colocate in `_components/` under the route.
+- **Components (PROD-1609):** kebab-case `.tsx`; live in `src/components/{area}/` (`post`/`home`/`category`/`tag`/`author`/`archive`/`shared`), imported via `@/components/{area}/{file}` — *not* under `app/_components/`. Cross-cutting → `shared/`.
 - **Tailwind:** no new tokens in `globals.css`; use `@pakfactory/ui` patterns.
 - **UI primitives:** prefer `Card`, `Button`, `Badge`, `Input` from `@pakfactory/ui` for marketing bands and CTAs — not raw bordered `div`s when a primitive fits (see `apps/blog/CLAUDE.md`).
 

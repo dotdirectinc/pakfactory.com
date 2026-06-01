@@ -71,9 +71,17 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 ## Components and files
 
 - **File naming:** kebab-case for components (e.g. `post-header.tsx`, `portable-body.tsx`).
-- **Colocation:** put route-specific components under `src/app/<segment>/_components/`; share across routes via **`@pakfactory/ui`** or small shared modules under `src/components/` only when reused.
+- **Location & layout (PROD-1609):** blog-domain components live under **`src/components/{area}/`** — *outside* `app/`, so no `_components` underscore prefix (that convention is only needed to keep a folder inside `app/` from becoming a route). Pages import them via the **`@/components/{area}/{file}`** alias. Bucket by domain area:
+  - **`post/`** — `post-card`, `blog-post-article`, `portable-text`, `popular-posts-rail`
+  - **`home/`** — `home-hero`, `home-category-row`, `home-conversion-pillars`, `home-industry-strip`
+  - **`category/`** — `category-archive-view`, `category-archive-pagination`, `category-filter-sidebar`, `category-active-filters`, `category-chips`
+  - **`tag/`** — `tag-archive-view`, `tag-archive-pagination`, `tag-filter-sidebar`, `tag-active-filters`
+  - **`author/`** — `author-header`, `author-posts-loader`
+  - **`archive/`** — `all-posts-archive`, `archive-filter-sidebar`, `archive-pagination`
+  - **`shared/`** — cross-cutting components reused across areas (`blog-search-form`, `newsletter-cta-band`, `global-rfq-cta`)
+  - Place a new file by its **dominant use** (e.g. `category-chips` → `category/` even when reused on 404/search); truly cross-cutting → `shared/`. Share generic primitives via **`@pakfactory/ui`**. Do **not** reintroduce an `app/_components/` folder.
 - **Styling:** use tokens from **`@pakfactory/ui/globals.css`**; do not extend `globals.css` with new tokens or `@theme` blocks for features.
-- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in app `_components/` with `className` only.
+- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in `src/components/{area}/` with `className` only.
 
 ## Active skills (Claude Code)
 
