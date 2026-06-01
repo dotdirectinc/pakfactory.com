@@ -110,6 +110,8 @@ Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.ne
 | **Web framework** | **Next.js App Router** for www + blog; server components by default. | *TBD* |
 | **Shared UI** | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks. | *TBD* |
 | **Package manager** | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`. | *TBD* |
+| **ADR-003 — Redirect strategy** | 404-triggered cached map + tag-revalidated webhook; auto-create on slug change via a Studio document action. Build-time `redirects()` rejected (needs redeploy); Edge Config + middleware deferred (no hot-path cost vs. always-on middleware). | [`docs/adr/0003-redirect-strategy.md`](docs/adr/0003-redirect-strategy.md) |
+| **ADR-004 — Media library** | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md) |
 
 ## JIRA defaults (Product / Blog 3.0)
 
