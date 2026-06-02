@@ -16,11 +16,11 @@ function quoteHref(): string {
   return DEFAULT_QUOTE_HREF;
 }
 
-type GlobalRfqCtaProps = {
+type RfqCtaProps = {
   className?: string;
 };
 
-export function GlobalRfqCta({ className }: GlobalRfqCtaProps) {
+export function RfqCta({ className }: RfqCtaProps) {
   return (
     <section
       className={className}

@@ -1,13 +1,13 @@
 import { Input } from "@pakfactory/ui/components/input";
 import { Button } from "@pakfactory/ui/components/button";
 
-type BlogSearchFormProps = {
+type SearchFormProps = {
   defaultQuery?: string;
   className?: string;
 };
 
 /** Inline GET search — targets `/search` (PROD-1503). Reuse on 404 and zero-results. */
-export function BlogSearchForm({ defaultQuery = "", className }: BlogSearchFormProps) {
+export function SearchForm({ defaultQuery = "", className }: SearchFormProps) {
   return (
     <form action="/search" method="get" className={className}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

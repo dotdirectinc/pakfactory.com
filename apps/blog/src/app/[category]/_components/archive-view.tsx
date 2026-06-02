@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { CategoryActiveFilters } from "@/components/category/category-active-filters";
-import { CategoryArchivePagination } from "@/components/category/category-archive-pagination";
-import { CategoryFilterSidebar } from "@/components/category/category-filter-sidebar";
-import { PostCard } from "@/components/post/post-card";
+import { ActiveFilters } from "@/components/active-filters";
+import { Pagination } from "@/components/pagination";
+import { CategoryFilterSidebar } from "@/app/[category]/_components/filter-sidebar";
+import { PostCard } from "@/components/post-card";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
-import type { CategoryArchivePageData } from "@/lib/blog-category-archive";
+import {
+  categoryPageHref,
+  type CategoryArchivePageData,
+  type CategoryListFilters,
+} from "@/lib/blog-category-archive";
 import { PACKAGING_NEWS_SLUG } from "@/lib/blog-categories";
 import { fetchBlogCategories } from "@/lib/blog-data";
 
@@ -53,10 +57,16 @@ export async function CategoryArchiveView({ data }: CategoryArchiveViewProps) {
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_240px]">
           <div>
-            <CategoryActiveFilters
-              categorySlug={data.category.slug}
+            <ActiveFilters
               pageNumber={data.pageNumber}
               filters={data.filters}
+              hrefFor={(page, filters) =>
+                categoryPageHref(
+                  data.category.slug,
+                  page,
+                  filters as CategoryListFilters,
+                )
+              }
               tags={data.tags}
               authors={data.authors}
             />
@@ -87,11 +97,13 @@ export async function CategoryArchiveView({ data }: CategoryArchiveViewProps) {
               </ul>
             )}
 
-            <CategoryArchivePagination
-              categorySlug={data.category.slug}
+            <Pagination
               pageNumber={data.pageNumber}
               totalPages={data.totalPages}
-              filters={data.filters}
+              hrefForPage={(page) =>
+                categoryPageHref(data.category.slug, page, data.filters)
+              }
+              ariaLabel="Category archive pagination"
             />
           </div>
 

@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArchiveFilterSidebar } from "@/components/archive/archive-filter-sidebar";
-import { ArchivePagination } from "@/components/archive/archive-pagination";
-import { PostCard } from "@/components/post/post-card";
+import { ArchiveFilterSidebar } from "@/app/all/_components/filter-sidebar";
+import { Pagination } from "@/components/pagination";
+import { PostCard } from "@/components/post-card";
 import { buildAllArchiveJsonLd } from "@/lib/all-archive-jsonld";
-import type { AllArchivePageData } from "@/lib/blog-archive";
+import { archivePageHref, type AllArchivePageData } from "@/lib/blog-archive";
 import { fetchBlogCategories } from "@/lib/blog-data";
 
 type AllPostsArchiveProps = {
@@ -56,9 +56,11 @@ export async function AllPostsArchive({ data }: AllPostsArchiveProps) {
                 ))}
               </ul>
             )}
-            <ArchivePagination
+            <Pagination
               pageNumber={data.pageNumber}
               totalPages={data.totalPages}
+              hrefForPage={(page) => archivePageHref(page)}
+              ariaLabel="Archive pagination"
             />
           </div>
           <ArchiveFilterSidebar categories={categories} />

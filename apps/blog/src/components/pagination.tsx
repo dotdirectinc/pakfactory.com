@@ -1,35 +1,33 @@
 import Link from "next/link";
-import {
-  categoryPageHref,
-  type CategoryListFilters,
-} from "@/lib/blog-category-archive";
 
-type CategoryArchivePaginationProps = {
-  categorySlug: string;
+type PaginationProps = {
   pageNumber: number;
   totalPages: number;
-  filters: CategoryListFilters;
+  /** Build the href for a given page number. */
+  hrefForPage: (page: number) => string;
+  ariaLabel?: string;
 };
 
-export function CategoryArchivePagination({
-  categorySlug,
+/**
+ * Shared prev/next pager used by every archive (all posts, category, tag).
+ * Callers supply `hrefForPage` so the component stays agnostic of the route's
+ * URL scheme and filters.
+ */
+export function Pagination({
   pageNumber,
   totalPages,
-  filters,
-}: CategoryArchivePaginationProps) {
+  hrefForPage,
+  ariaLabel = "Pagination",
+}: PaginationProps) {
   if (totalPages <= 1) return null;
 
-  const prevHref =
-    pageNumber > 1 ? categoryPageHref(categorySlug, pageNumber - 1, filters) : null;
-  const nextHref =
-    pageNumber < totalPages
-      ? categoryPageHref(categorySlug, pageNumber + 1, filters)
-      : null;
+  const prevHref = pageNumber > 1 ? hrefForPage(pageNumber - 1) : null;
+  const nextHref = pageNumber < totalPages ? hrefForPage(pageNumber + 1) : null;
 
   return (
     <nav
       className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-8"
-      aria-label="Category archive pagination"
+      aria-label={ariaLabel}
     >
       {prevHref ? (
         <Link

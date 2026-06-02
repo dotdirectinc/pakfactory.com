@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { TagActiveFilters } from "@/components/tag/tag-active-filters";
-import { TagArchivePagination } from "@/components/tag/tag-archive-pagination";
-import { TagFilterSidebar } from "@/components/tag/tag-filter-sidebar";
-import { PostCard } from "@/components/post/post-card";
+import { ActiveFilters } from "@/components/active-filters";
+import { Pagination } from "@/components/pagination";
+import { TagFilterSidebar } from "@/app/tag/[slug]/_components/filter-sidebar";
+import { PostCard } from "@/components/post-card";
 import { buildTagArchiveJsonLd } from "@/lib/tag-archive-jsonld";
-import type { TagArchivePageData } from "@/lib/blog-tag-archive";
+import {
+  tagPageHref,
+  type TagArchivePageData,
+  type TagListFilters,
+} from "@/lib/blog-tag-archive";
 import { tagGroupTitle } from "@/lib/tag-groups";
 
 type TagArchiveViewProps = {
@@ -56,10 +60,12 @@ export function TagArchiveView({ data }: TagArchiveViewProps) {
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_240px]">
           <div>
-            <TagActiveFilters
-              tagSlug={data.tag.slug}
+            <ActiveFilters
               pageNumber={data.pageNumber}
               filters={data.filters}
+              hrefFor={(page, filters) =>
+                tagPageHref(data.tag.slug, page, filters as TagListFilters)
+              }
               authors={data.authors}
             />
 
@@ -77,11 +83,13 @@ export function TagArchiveView({ data }: TagArchiveViewProps) {
               </ul>
             )}
 
-            <TagArchivePagination
-              tagSlug={data.tag.slug}
+            <Pagination
               pageNumber={data.pageNumber}
               totalPages={data.totalPages}
-              filters={data.filters}
+              hrefForPage={(page) =>
+                tagPageHref(data.tag.slug, page, data.filters)
+              }
+              ariaLabel="Tag archive pagination"
             />
           </div>
 

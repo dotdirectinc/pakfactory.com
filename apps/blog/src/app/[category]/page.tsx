@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BlogPostArticle } from "@/components/post/blog-post-article";
-import { CategoryArchiveView } from "@/components/category/category-archive-view";
+import { BlogPostArticle } from "@/app/[category]/_components/blog-post-article";
+import { CategoryArchiveView } from "@/app/[category]/_components/archive-view";
 import {
   categoryPageHref,
   fetchCategoryArchivePage,

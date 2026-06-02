@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BlogPortableText } from "@/components/post/portable-text";
+import { BlogPortableText } from "@/components/portable-text";
 import type { AuthorDoc } from "@/lib/blog-author";
 import { sanityImageUrl } from "@/lib/sanity-image";
 

@@ -5,12 +5,12 @@ import {
   organization,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { HomeCategoryRowSection } from "@/components/home/home-category-row";
-import { HomeConversionPillars } from "@/components/home/home-conversion-pillars";
-import { HomeHero } from "@/components/home/home-hero";
-import { HomeIndustryStrip } from "@/components/home/home-industry-strip";
-import { GlobalRfqCta } from "@/components/shared/global-rfq-cta";
-import { NewsletterCtaBand } from "@/components/shared/newsletter-cta-band";
+import { HomeCategoryRowSection } from "@/app/_components/category-row";
+import { HomeConversionPillars } from "@/app/_components/conversion-pillars";
+import { HomeHero } from "@/app/_components/hero";
+import { HomeIndustryStrip } from "@/app/_components/industry-strip";
+import { RfqCta } from "@/components/rfq-cta";
+import { NewsletterCtaBand } from "@/components/newsletter-cta-band";
 import { fetchBlogHomeData, getBlogHomeDebugInfo } from "@/lib/blog-home";
 import {
   getListingRobotsFromSearchParams,
@@ -120,7 +120,7 @@ export default async function BlogHomePage() {
         ))}
         <NewsletterCtaBand className="border-t py-10" />
         <HomeConversionPillars />
-        <GlobalRfqCta className="pb-10" />
+        <RfqCta className="pb-10" />
       </main>
     </>
   );
