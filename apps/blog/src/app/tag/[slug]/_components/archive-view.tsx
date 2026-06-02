@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ActiveFilters } from "@/components/active-filters";
 import { Pagination } from "@/components/pagination";
-import { TagFilterSidebar } from "@/app/tag/[slug]/_components/filter-sidebar";
 import { PostCard } from "@/components/post-card";
 import { buildTagArchiveJsonLd } from "@/lib/tag-archive-jsonld";
 import {
@@ -58,50 +57,36 @@ export function TagArchiveView({ data }: TagArchiveViewProps) {
           </p>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_240px]">
-          <div>
-            <ActiveFilters
-              pageNumber={data.pageNumber}
-              filters={data.filters}
-              hrefFor={(page, filters) =>
-                tagPageHref(data.tag.slug, page, filters as TagListFilters)
-              }
-              authors={data.authors}
-            />
+        {/* Tag archives are unfiltered (no sidebar) — full-width grid. */}
+        <ActiveFilters
+          pageNumber={data.pageNumber}
+          filters={data.filters}
+          hrefFor={(page, filters) =>
+            tagPageHref(data.tag.slug, page, filters as TagListFilters)
+          }
+          authors={data.authors}
+        />
 
-            {data.posts.length === 0 ? (
-              <p className="text-muted-foreground">
-                No posts match your filters for this tag.
-              </p>
-            ) : (
-              <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {data.posts.map((post) => (
-                  <li key={post._id}>
-                    <PostCard post={post} />
-                  </li>
-                ))}
-              </ul>
-            )}
+        {data.posts.length === 0 ? (
+          <p className="text-muted-foreground">
+            No posts match your filters for this tag.
+          </p>
+        ) : (
+          <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {data.posts.map((post) => (
+              <li key={post._id}>
+                <PostCard post={post} />
+              </li>
+            ))}
+          </ul>
+        )}
 
-            <Pagination
-              pageNumber={data.pageNumber}
-              totalPages={data.totalPages}
-              hrefForPage={(page) =>
-                tagPageHref(data.tag.slug, page, data.filters)
-              }
-              ariaLabel="Tag archive pagination"
-            />
-          </div>
-
-          <TagFilterSidebar
-            tagSlug={data.tag.slug}
-            currentTagGroup={data.tag.tagGroup}
-            cooccurringTags={data.cooccurringTags}
-            authors={data.authors}
-            filters={data.filters}
-            pageNumber={data.pageNumber}
-          />
-        </div>
+        <Pagination
+          pageNumber={data.pageNumber}
+          totalPages={data.totalPages}
+          hrefForPage={(page) => tagPageHref(data.tag.slug, page, data.filters)}
+          ariaLabel="Tag archive pagination"
+        />
       </div>
     </>
   );

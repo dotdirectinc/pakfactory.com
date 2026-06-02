@@ -3,11 +3,11 @@ import type { HomeCategoryRow } from "@/lib/blog-home";
 import { PostCard } from "@/components/post-card";
 import { categoryHref } from "@/lib/blog-post-url";
 
-type HomeCategoryRowSectionProps = {
+type CategoryRowSectionProps = {
   row: HomeCategoryRow;
 };
 
-export function HomeCategoryRowSection({ row }: HomeCategoryRowSectionProps) {
+export function CategoryRowSection({ row }: CategoryRowSectionProps) {
   return (
     <section className="border-b py-10" aria-labelledby={`category-${row.slug}`}>
       <div className="mb-6 flex items-end justify-between gap-4">

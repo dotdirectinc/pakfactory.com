@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ActiveFilters } from "@/components/active-filters";
 import { Pagination } from "@/components/pagination";
-import { CategoryFilterSidebar } from "@/app/[category]/_components/filter-sidebar";
+import { FilterSidebar } from "@/components/filter-sidebar";
 import { PostCard } from "@/components/post-card";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
 import {
@@ -107,14 +107,26 @@ export async function CategoryArchiveView({ data }: CategoryArchiveViewProps) {
             />
           </div>
 
-          <CategoryFilterSidebar
-            categorySlug={data.category.slug}
-            categoryTitle={data.category.title}
-            allCategories={allCategories}
+          <FilterSidebar
+            categories={allCategories}
+            currentCategorySlug={data.category.slug}
+            scopeLabel={data.category.title}
             tags={data.tags}
             authors={data.authors}
             filters={data.filters}
-            pageNumber={data.pageNumber}
+            facetHref={(filters) =>
+              categoryPageHref(data.category.slug, 1, filters as CategoryListFilters)
+            }
+            sortFormAction={
+              categoryPageHref(data.category.slug, data.pageNumber, {
+                sort: data.filters.sort,
+              }).split("?")[0]!
+            }
+            dateFormAction={categoryPageHref(data.category.slug, 1, {
+              tag: data.filters.tag,
+              author: data.filters.author,
+              sort: data.filters.sort,
+            })}
           />
         </div>
       </div>

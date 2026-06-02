@@ -3,12 +3,12 @@ import { Badge } from "@pakfactory/ui/components/badge";
 import type { HomeIndustryPill } from "@/lib/blog-home";
 import { tagHref } from "@/lib/blog-post-url";
 
-type HomeIndustryStripProps = {
+type TagStripProps = {
   industries: HomeIndustryPill[];
 };
 
 /** Industry-axis tag pills (tagGroup == "industry") linking to their `/tag/{slug}` archives. */
-export function HomeIndustryStrip({ industries }: HomeIndustryStripProps) {
+export function TagStrip({ industries }: TagStripProps) {
   if (industries.length === 0) return null;
 
   return (

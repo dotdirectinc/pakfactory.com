@@ -5,10 +5,10 @@ import {
   organization,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { HomeCategoryRowSection } from "@/app/_components/category-row";
+import { CategoryRowSection } from "@/components/category-row";
 import { HomeConversionPillars } from "@/app/_components/conversion-pillars";
 import { HomeHero } from "@/app/_components/hero";
-import { HomeIndustryStrip } from "@/app/_components/industry-strip";
+import { TagStrip } from "@/components/tag-strip";
 import { RfqCta } from "@/components/rfq-cta";
 import { NewsletterCtaBand } from "@/components/newsletter-cta-band";
 import { fetchBlogHomeData, getBlogHomeDebugInfo } from "@/lib/blog-home";
@@ -114,9 +114,9 @@ export default async function BlogHomePage() {
         )}
 
         <HomeHero featured={data.featured} latest={data.latest} />
-        <HomeIndustryStrip industries={data.industries} />
+        <TagStrip industries={data.industries} />
         {data.categoryRows.map((row) => (
-          <HomeCategoryRowSection key={row.slug} row={row} />
+          <CategoryRowSection key={row.slug} row={row} />
         ))}
         <NewsletterCtaBand className="border-t py-10" />
         <HomeConversionPillars />

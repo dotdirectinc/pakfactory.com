@@ -71,16 +71,16 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 ## Components and files
 
 - **File naming:** kebab-case, **page-agnostic** — name a component for what it *does*, never which page renders it (`post-card.tsx`, `pagination.tsx`, `filter-sidebar.tsx`, `rfq-cta.tsx`; **not** `home-hero.tsx`, `category-archive-pagination.tsx`).
-- **Location & layout (organize by reusability, not by page — supersedes PROD-1609):** governed by the management-root rules [`components-by-reusability`](../../.claude/rules/components-by-reusability.md) and [`clean-src-structure`](../../.claude/rules/clean-src-structure.md). `src/` stays to **`app/ components/ lib/`** only.
-  - **`src/components/` = cross-page shared only**, flat and role-named, imported via **`@/components/{file}`**. A component used by **2+ routes** lives here. Current set: `post-card`, `portable-text`, `pagination`, `active-filters`, `category-chips`, `popular-posts-rail`, `search-form`, `rfq-cta`, `newsletter-cta-band`.
-    - `pagination` is route-agnostic — callers pass `hrefForPage(page)`. `active-filters` is shared by category + tag — callers pass `hrefFor(page, filters)`; tag archives omit `tags` so no tag chip renders.
+- **Location & layout (organize by reusability, not by page — supersedes PROD-1609):** governed by the management-root rules [`components-by-reusability`](../../.claude/rules/components-by-reusability.md) and [`clean-src-structure`](../../.claude/rules/clean-src-structure.md). `src/` stays to **`app/ components/ lib/`** only. **Baseline: bias to shared** — default to `src/components/`; colocate only when provably single-route. When the design (e.g. `docs/route-design-ba` / blog wireframe) shows reuse, promote proactively and generalize props — don't wait for a literal 2nd import.
+  - **`src/components/` = cross-page shared only**, flat and role-named, imported via **`@/components/{file}`**. Current set: `post-card`, `portable-text`, `pagination`, `active-filters`, `filter-sidebar`, `category-row`, `tag-strip`, `category-chips`, `popular-posts-rail`, `search-form`, `rfq-cta`, `newsletter-cta-band`.
+    - Route-agnostic via callbacks: `pagination` (`hrefForPage(page)`), `active-filters` (`hrefFor(page, filters)`), `filter-sidebar` (`facetHref` + form actions). `filter-sidebar` is the faceted "Filter results" sidebar (category now, search next); tag archives are **unfiltered (no sidebar)**. `category-row` is the home "Browse by Topics" post-list section; `tag-strip` is the "Browse by Industries" strip (prop still `industries` — generalize when a 2nd consumer lands).
   - **Page-specific (single-route) components colocate** under **`app/<route>/_components/`** (the `_` keeps the folder out of routing), imported via **`@/app/<route>/_components/{file}`**. Current colocations:
-    - `app/_components/` (home) — `hero`, `category-row`, `conversion-pillars`, `industry-strip`
-    - `app/all/_components/` — `all-posts-archive`, `filter-sidebar`
-    - `app/[category]/_components/` — `archive-view`, `filter-sidebar`, `blog-post-article`
+    - `app/_components/` (home) — `hero`, `conversion-pillars`
+    - `app/all/_components/` — `all-posts-archive`, `filter-sidebar` (the `/all` "Browse" category-**nav**, distinct from the shared faceted filter)
+    - `app/[category]/_components/` — `archive-view`, `blog-post-article`
     - `app/author/[slug]/_components/` — `author-header`, `posts-loader`
-    - `app/tag/[slug]/_components/` — `archive-view`, `filter-sidebar`
-  - **Promote, don't duplicate:** when a second route needs a colocated component, lift it into `src/components/` with a clear name and generalize its props. Share generic primitives via **`@pakfactory/ui`**. (The three `filter-sidebar`s have diverged and stay colocated for now — unify when they converge.)
+    - `app/tag/[slug]/_components/` — `archive-view`
+  - **Promote, don't duplicate:** when design or a second route needs a colocated component, lift it into `src/components/` with a clear name and generalize its props. Share generic primitives via **`@pakfactory/ui`**.
 - **Styling:** use tokens from **`@pakfactory/ui/globals.css`**; do not extend `globals.css` with new tokens or `@theme` blocks for features.
 - **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in `src/components/` (shared) or `app/<route>/_components/` (page-specific) with `className` only.
 
