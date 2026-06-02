@@ -51,8 +51,8 @@ Use **Server Components** by default. Do not replace content navigation with cli
 
 - Import queries from **`@pakfactory/sanity/queries`** only — do **not** inline raw GROQ strings in route files.
 - All shared queries must use **`defineQuery`** in `packages/sanity`.
-- Use **`getSanityClient()`** from [`src/sanity/client.ts`](./src/sanity/client.ts).
-- Guard fetches with **`isSanityConfigured()`** from [`src/sanity/env.ts`](./src/sanity/env.ts) when the app must render without env (see index page pattern).
+- Use **`getSanityClient()`** from [`src/lib/sanity/client.ts`](./src/lib/sanity/client.ts).
+- Guard fetches with **`isSanityConfigured()`** from [`src/lib/sanity/env.ts`](./src/lib/sanity/env.ts) when the app must render without env (see index page pattern).
 - Default caching: **`export const revalidate = 60`** unless product requires a different TTL.
 
 ## AEO / GEO — metadata and schema (targets for new/updated post pages)
@@ -70,18 +70,19 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 
 ## Components and files
 
-- **File naming:** kebab-case for components (e.g. `post-header.tsx`, `portable-body.tsx`).
-- **Location & layout (PROD-1609):** blog-domain components live under **`src/components/{area}/`** — *outside* `app/`, so no `_components` underscore prefix (that convention is only needed to keep a folder inside `app/` from becoming a route). Pages import them via the **`@/components/{area}/{file}`** alias. Bucket by domain area:
-  - **`post/`** — `post-card`, `blog-post-article`, `portable-text`, `popular-posts-rail`
-  - **`home/`** — `home-hero`, `home-category-row`, `home-conversion-pillars`, `home-industry-strip`
-  - **`category/`** — `category-archive-view`, `category-archive-pagination`, `category-filter-sidebar`, `category-active-filters`, `category-chips`
-  - **`tag/`** — `tag-archive-view`, `tag-archive-pagination`, `tag-filter-sidebar`, `tag-active-filters`
-  - **`author/`** — `author-header`, `author-posts-loader`
-  - **`archive/`** — `all-posts-archive`, `archive-filter-sidebar`, `archive-pagination`
-  - **`shared/`** — cross-cutting components reused across areas (`blog-search-form`, `newsletter-cta-band`, `global-rfq-cta`)
-  - Place a new file by its **dominant use** (e.g. `category-chips` → `category/` even when reused on 404/search); truly cross-cutting → `shared/`. Share generic primitives via **`@pakfactory/ui`**. Do **not** reintroduce an `app/_components/` folder.
+- **File naming:** kebab-case, **page-agnostic** — name a component for what it *does*, never which page renders it (`post-card.tsx`, `pagination.tsx`, `filter-sidebar.tsx`, `rfq-cta.tsx`; **not** `home-hero.tsx`, `category-archive-pagination.tsx`).
+- **Location & layout (organize by reusability, not by page — supersedes PROD-1609):** governed by the management-root rules [`components-by-reusability`](../../.claude/rules/components-by-reusability.md) and [`clean-src-structure`](../../.claude/rules/clean-src-structure.md). `src/` stays to **`app/ components/ lib/`** only.
+  - **`src/components/` = cross-page shared only**, flat and role-named, imported via **`@/components/{file}`**. A component used by **2+ routes** lives here. Current set: `post-card`, `portable-text`, `pagination`, `active-filters`, `category-chips`, `popular-posts-rail`, `search-form`, `rfq-cta`, `newsletter-cta-band`.
+    - `pagination` is route-agnostic — callers pass `hrefForPage(page)`. `active-filters` is shared by category + tag — callers pass `hrefFor(page, filters)`; tag archives omit `tags` so no tag chip renders.
+  - **Page-specific (single-route) components colocate** under **`app/<route>/_components/`** (the `_` keeps the folder out of routing), imported via **`@/app/<route>/_components/{file}`**. Current colocations:
+    - `app/_components/` (home) — `hero`, `category-row`, `conversion-pillars`, `industry-strip`
+    - `app/all/_components/` — `all-posts-archive`, `filter-sidebar`
+    - `app/[category]/_components/` — `archive-view`, `filter-sidebar`, `blog-post-article`
+    - `app/author/[slug]/_components/` — `author-header`, `posts-loader`
+    - `app/tag/[slug]/_components/` — `archive-view`, `filter-sidebar`
+  - **Promote, don't duplicate:** when a second route needs a colocated component, lift it into `src/components/` with a clear name and generalize its props. Share generic primitives via **`@pakfactory/ui`**. (The three `filter-sidebar`s have diverged and stay colocated for now — unify when they converge.)
 - **Styling:** use tokens from **`@pakfactory/ui/globals.css`**; do not extend `globals.css` with new tokens or `@theme` blocks for features.
-- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in `src/components/{area}/` with `className` only.
+- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in `src/components/` (shared) or `app/<route>/_components/` (page-specific) with `className` only.
 
 ## Active skills (Claude Code)
 
