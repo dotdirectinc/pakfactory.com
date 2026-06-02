@@ -1,7 +1,7 @@
 import { Breadcrumb } from "@/components/breadcrumb";
 import { ArchiveFilterSidebar } from "@/app/all/_components/filter-sidebar";
 import { Pagination } from "@/components/pagination";
-import { PostCard } from "@/components/post-card";
+import { PostCard } from "@/components/post/post-card";
 import { buildAllArchiveJsonLd } from "@/lib/all-archive-jsonld";
 import { archivePageHref, type AllArchivePageData } from "@/lib/blog-archive";
 import { fetchBlogCategories } from "@/lib/blog-data";

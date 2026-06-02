@@ -1,7 +1,7 @@
 import { Breadcrumb } from "@/components/breadcrumb";
 import { ActiveFilters } from "@/components/active-filters";
 import { Pagination } from "@/components/pagination";
-import { PostCard } from "@/components/post-card";
+import { PostCard } from "@/components/post/post-card";
 import { buildTagArchiveJsonLd } from "@/lib/tag-archive-jsonld";
 import {
   tagPageHref,

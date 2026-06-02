@@ -1,5 +1,5 @@
 import type { HomePostCard } from "@/lib/blog-home";
-import { PostCard } from "@/components/post-card";
+import { PostCard } from "@/components/post/post-card";
 
 type HomeHeroProps = {
   featured: HomePostCard | null;

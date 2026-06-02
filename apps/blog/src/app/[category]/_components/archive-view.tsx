@@ -2,7 +2,7 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { ActiveFilters } from "@/components/active-filters";
 import { Pagination } from "@/components/pagination";
 import { FilterSidebar } from "@/components/filter-sidebar";
-import { PostCard } from "@/components/post-card";
+import { PostCard } from "@/components/post/post-card";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
 import {
   categoryPageHref,

@@ -5,10 +5,10 @@ import {
   organization,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { CategoryPostsRow } from "@/components/category-posts-row";
+import { CategoryPostsRow } from "@/components/category/category-posts-row";
 import { HomeConversionPillars } from "@/app/_components/conversion-pillars";
 import { HomeHero } from "@/app/_components/hero";
-import { TagStrip } from "@/components/tag-strip";
+import { TagStrip } from "@/components/tag/tag-strip";
 import { RfqCta } from "@/components/rfq-cta";
 import { NewsletterCtaBand } from "@/components/newsletter-cta-band";
 import { fetchBlogHomeData, getBlogHomeDebugInfo } from "@/lib/blog-home";

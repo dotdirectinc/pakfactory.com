@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@pakfactory/ui/components/button";
 import { SearchForm } from "@/components/search-form";
-import { CategoryChips } from "@/components/category-chips";
+import { CategoryChips } from "@/components/category/category-chips";
 import { RfqCta } from "@/components/rfq-cta";
 import { NewsletterCtaBand } from "@/components/newsletter-cta-band";
-import { PopularPostsRail } from "@/components/popular-posts-rail";
+import { PostPopularRail } from "@/components/post/post-popular-rail";
 import { fetchBlogCategories, fetchPopularPostsThisMonth } from "@/lib/blog-data";
 import {
   getBlogRobotsDirective,
@@ -43,7 +43,7 @@ export default async function NotFound() {
       <div className="mt-10 space-y-10">
         <SearchForm />
         <CategoryChips categories={categories} />
-        <PopularPostsRail posts={popularPosts} />
+        <PostPopularRail posts={popularPosts} />
         <RfqCta />
         <NewsletterCtaBand />
       </div>

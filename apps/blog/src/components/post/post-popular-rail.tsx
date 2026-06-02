@@ -2,18 +2,18 @@ import Link from "next/link";
 import type { PopularPostCard } from "@/lib/blog-data";
 import { postDetailHref } from "@/lib/blog-post-url";
 
-type PopularPostsRailProps = {
+type PostPopularRailProps = {
   posts: PopularPostCard[];
   title?: string;
   className?: string;
 };
 
 /** Server rail for 404 / search zero-results (PROD-1506, PROD-1503). */
-export function PopularPostsRail({
+export function PostPopularRail({
   posts,
   title = "Popular this month",
   className,
-}: PopularPostsRailProps) {
+}: PostPopularRailProps) {
   if (posts.length === 0) return null;
 
   return (
