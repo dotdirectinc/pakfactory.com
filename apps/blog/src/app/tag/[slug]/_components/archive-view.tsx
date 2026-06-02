@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Breadcrumb } from "@/components/breadcrumb";
 import { ActiveFilters } from "@/components/active-filters";
 import { Pagination } from "@/components/pagination";
 import { PostCard } from "@/components/post-card";
@@ -35,12 +35,9 @@ export function TagArchiveView({ data }: TagArchiveViewProps) {
       />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8">
-          <Link
-            href="/"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            ← Blog home
-          </Link>
+          <Breadcrumb
+            items={[{ label: "Blog", href: "/" }, { label: data.tag.title }]}
+          />
           {kicker && (
             <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-primary">
               {kicker}

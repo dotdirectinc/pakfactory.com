@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Breadcrumb } from "@/components/breadcrumb";
 import { ArchiveFilterSidebar } from "@/app/all/_components/filter-sidebar";
 import { Pagination } from "@/components/pagination";
 import { PostCard } from "@/components/post-card";
@@ -26,12 +26,7 @@ export async function AllPostsArchive({ data }: AllPostsArchiveProps) {
       />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8">
-          <Link
-            href="/"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            ← Blog home
-          </Link>
+          <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "All posts" }]} />
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
             {heading}
           </h1>

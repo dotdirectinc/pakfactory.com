@@ -5,7 +5,7 @@ import {
   organization,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { CategoryRowSection } from "@/components/category-row";
+import { CategoryPostsRow } from "@/components/category-posts-row";
 import { HomeConversionPillars } from "@/app/_components/conversion-pillars";
 import { HomeHero } from "@/app/_components/hero";
 import { TagStrip } from "@/components/tag-strip";
@@ -114,9 +114,9 @@ export default async function BlogHomePage() {
         )}
 
         <HomeHero featured={data.featured} latest={data.latest} />
-        <TagStrip industries={data.industries} />
+        <TagStrip tags={data.industries} heading="Browse by Industries" />
         {data.categoryRows.map((row) => (
-          <CategoryRowSection key={row.slug} row={row} />
+          <CategoryPostsRow key={row.slug} row={row} />
         ))}
         <NewsletterCtaBand className="border-t py-10" />
         <HomeConversionPillars />

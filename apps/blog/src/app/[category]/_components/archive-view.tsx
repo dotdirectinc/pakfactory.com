@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Breadcrumb } from "@/components/breadcrumb";
 import { ActiveFilters } from "@/components/active-filters";
 import { Pagination } from "@/components/pagination";
 import { FilterSidebar } from "@/components/filter-sidebar";
@@ -38,12 +38,9 @@ export async function CategoryArchiveView({ data }: CategoryArchiveViewProps) {
       />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8">
-          <Link
-            href="/"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            ← Blog home
-          </Link>
+          <Breadcrumb
+            items={[{ label: "Blog", href: "/" }, { label: data.category.title }]}
+          />
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{heading}</h1>
           {data.category.descriptionText?.trim() && (
             <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
