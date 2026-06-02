@@ -11,8 +11,8 @@ import {
   parseListingPage,
   type BlogRobotsDirective,
 } from "@/lib/seo";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_TAG_AUTHORS_FACET_QUERY,
   BLOG_TAG_BY_SLUG_QUERY,

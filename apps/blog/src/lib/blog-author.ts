@@ -1,8 +1,8 @@
 import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
 import { sanityImageAlt, sanityImageUrl } from "@/lib/sanity-image";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   AUTHOR_BY_SLUG_QUERY,
   AUTHOR_POSTS_COUNT_QUERY,

@@ -1,10 +1,10 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { getSanityClient } from "@/sanity/client";
+import { getSanityClient } from "@/lib/sanity/client";
 import {
   getSanityDataset,
   getSanityProjectId,
   isSanityConfigured,
-} from "@/sanity/env";
+} from "@/lib/sanity/env";
 import {
   BLOG_INDUSTRY_TAGS_QUERY,
   FEATURED_HOME_POST_QUERY,

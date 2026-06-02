@@ -2,8 +2,8 @@ import { BLOG_RSS_POSTS_QUERY } from "@pakfactory/sanity/queries";
 import { BLOG_REVALIDATE_SECONDS } from "@/lib/blog-cache";
 import { buildRssFeedXml, type RssPostItem } from "@/lib/rss";
 import { siteBaseUrl } from "@/lib/site";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 
 /** Must be a literal — see `BLOG_REVALIDATE_SECONDS` in `@/lib/blog-cache`. */
 export const revalidate = 60;

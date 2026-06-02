@@ -1,7 +1,7 @@
 import "server-only";
 
 import imageUrlBuilder from "@sanity/image-url";
-import { getSanityDataset, getSanityProjectId } from "@/sanity/env";
+import { getSanityDataset, getSanityProjectId } from "@/lib/sanity/env";
 
 type UrlForSource = Parameters<
   ReturnType<typeof imageUrlBuilder>["image"]

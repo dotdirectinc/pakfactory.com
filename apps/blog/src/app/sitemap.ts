@@ -6,8 +6,8 @@ import {
 import { fetchBlogCategories } from "@/lib/blog-data";
 import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl } from "@/lib/site";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 
 export const revalidate = 60;
 

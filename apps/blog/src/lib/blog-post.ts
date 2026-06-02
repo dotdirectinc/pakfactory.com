@@ -10,8 +10,8 @@ import {
 import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { authorPersonId } from "@/lib/author-jsonld";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import {
   getBlogRobotsDirective,

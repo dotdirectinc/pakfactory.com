@@ -1,6 +1,6 @@
 import type { HomePostCard } from "@/lib/blog-home";
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_ALL_POSTS_COUNT_QUERY,
   BLOG_ALL_POSTS_PAGE_QUERY,

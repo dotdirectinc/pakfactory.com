@@ -1,5 +1,5 @@
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_CATEGORIES_QUERY,
   POPULAR_POSTS_LATEST_QUERY,
