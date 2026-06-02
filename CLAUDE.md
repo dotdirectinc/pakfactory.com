@@ -4,6 +4,12 @@ Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack,
 
 ## Inheritance
 
+- Inherits **cross-worktree policies** from the pakFactory management root (parent folder):
+  - @../.claude/rules/monorepo-workspace.md
+  - @../.claude/rules/confirm-approved-features.md
+  - @../.claude/rules/single-app-commits-and-branches.md
+  - @../.claude/rules/clean-src-structure.md
+  - @../.claude/rules/components-by-reusability.md
 - Inherits from **user-global** `~/.claude/CLAUDE.md` (if present) and this repository’s [`AGENTS.md`](./AGENTS.md).
 - For work under **`apps/blog`**, also read [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
 
