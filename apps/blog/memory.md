@@ -556,3 +556,52 @@ curl -sI http://localhost:3003/legacy-redirect-test   # 308 → /all
 curl -sI http://localhost:3003/unknown-xyz            # 404
 curl -sI http://localhost:3003/trends                 # 200 (live page, no cost)
 ```
+
+## PROD-1609 — Component architecture: schema-grouped shared components (implemented)
+
+**Jira:** [PROD-1609](https://dotdirect.atlassian.net/browse/PROD-1609) — Request For Approval. Supersedes the original "move components into `app/_components/`" and the interim by-area-bucket plans.
+
+### Final structure
+
+```
+apps/blog/src/
+├─ app/                       routes; route-private UI in app/<route>/_components/
+├─ components/                cross-page SHARED only, grouped by the Sanity schema rendered
+│  ├─ post/      post-card, post-popular-rail
+│  ├─ category/  category-chips, category-posts-row
+│  ├─ tag/       tag-strip
+│  └─ (root)     pagination, active-filters, filter-sidebar, search-form,
+│                breadcrumb, portable-text, rfq-cta, newsletter-cta-band   ← generic / no schema
+└─ lib/          everything non-visual (incl. lib/sanity/{client,env})
+```
+
+### Conventions (binding — see `CLAUDE.md` § Components and files + management-root rules)
+
+- **`src/` = `app/ components/ lib/` only** (`clean-src-structure`). Sanity client/env live at `lib/sanity/`, not `src/sanity/`.
+- **Group shared components by the schema they render**, named `{schema}-{component}` (`post/post-card`); generic/schema-less components stay flat at the `components/` root, role-named. Folder reflects the **data model**, never the route (`category-chips` is in `category/` though only used on 404).
+- **Colocate single-route components** in `app/<route>/_components/` (`hero`, `archive-view`, `blog-post-article`, `author-header`, `posts-loader`, the `/all` browse-nav). Colocated files keep role names (the `{schema}-{component}` rule is for the shared set).
+- **Bias to shared / design-for-reuse:** promote to `components/` when the design (the Eric/Marketing blog wireframe) shows cross-page use — don't wait for a literal 2nd import. Generalize route coupling to callbacks (`pagination.hrefForPage`, `active-filters.hrefFor`, `filter-sidebar.facetHref` + form actions).
+
+### Notable decisions
+
+- **filter-sidebar** unified into one route-agnostic shared component (category now, search next). **Tag archives dropped the sidebar** (wireframe: tag pages are unfiltered) → full-width grid.
+- **tag-strip** is generic (prop `tags`); "industry" is just the `industry` tag group — home feeds it the industry-axis tags as "Browse by Industries".
+- **breadcrumb** added (shared) replacing the ad-hoc "← Blog home" links on listing pages; currently roots at `Blog` (→ `/`).
+- **category-posts-row** (a category's post grid) renamed from `category-row` to disambiguate from **category-chips** (category links).
+- **post-popular-rail** renamed from `popular-posts-rail` for schema-first naming.
+
+### Commits (branch `feature/blog`)
+
+| SHA | What |
+|-----|------|
+| `159ef27` | move Sanity client/env → `src/lib/sanity` |
+| `04d1cfa` | components by reusability — colocate page-specific, merge pagination/active-filters |
+| `12688a6` | wire workspace rules; supersede PROD-1609 layout |
+| `4ddc5e8` | promote shared per wireframe (category-row, tag-strip, filter-sidebar); drop tag sidebar |
+| `6a1a0a2` | generic tag-strip + shared Breadcrumb; rename → category-posts-row |
+| `7712623` | group shared components by schema (`{schema}-{component}`) |
+
+### Follow-ups (not done)
+
+- Generic shared pieces the wireframe implies but we haven't built: blog-detail widgets (TOC, TL;DR, FAQ, comparison-table, chart, stat-callout, citations, author-bio-box), the Contribute pitch form, a featured-post hero. Add `breadcrumb` to detail/author/contribute once built; optionally add a www "Home" crumb for a full trail.
+- Colocated components don't follow `{schema}-{component}` (intentional — that rule is for the shared set); revisit only if a convention for colocated names is wanted.
