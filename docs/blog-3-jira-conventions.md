@@ -19,6 +19,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-1500](https://dotdirect.atlassian.net/browse/PROD-1500) | S2.4 — Tag archives `/tag/[slug]` | Request For Approval | [`apps/blog/src/app/tag/`](../apps/blog/src/app/tag/), [`apps/blog/src/lib/blog-tag-archive.ts`](../apps/blog/src/lib/blog-tag-archive.ts) |
 | [PROD-1597](https://dotdirect.atlassian.net/browse/PROD-1597) | Blog URL scheme — no `/category/`; posts at `/{slug}` | Request For Approval | [`apps/blog/src/app/[category]/`](../apps/blog/src/app/), [`apps/blog/next.config.ts`](../apps/blog/next.config.ts), [`apps/blog/src/lib/blog-post-url.ts`](../apps/blog/src/lib/blog-post-url.ts) |
 | [PROD-1501](https://dotdirect.atlassian.net/browse/PROD-1501) | S2.5 — Author profile pages `/author/[slug]` | Request For Approval | [`apps/blog/src/app/author/`](../apps/blog/src/app/author/), [`apps/blog/src/lib/blog-author.ts`](../apps/blog/src/lib/blog-author.ts) |
+| [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) | S2.8 — Contributor page `/contribute` | Request For Approval | [`apps/blog/src/app/contribute/`](../apps/blog/src/app/contribute/), [`apps/blog/src/app/api/contribute/route.ts`](../apps/blog/src/app/api/contribute/route.ts), [`packages/seo/src/generators/webPage.ts`](../packages/seo/src/generators/webPage.ts) |
 | [PROD-1502](https://dotdirect.atlassian.net/browse/PROD-1502) | S2.6 — Single post page rebuild | **Blocked on PROD-1490** (schema gaps — see [`docs/blog-content-spec-gap-analysis.md`](./blog-content-spec-gap-analysis.md)) | — |
 | [PROD-1602](https://dotdirect.atlassian.net/browse/PROD-1602) | T1.7 — CMS redirects (auto slug-change → 301, no deploy) | Request For Approval | [`apps/blog/src/lib/blog-redirects.ts`](../apps/blog/src/lib/blog-redirects.ts); studio (`feature/sanity-studio-ux`): `apps/studio/schemas/redirect.ts` + `apps/studio/actions/publishWithRedirect.ts` |
 | [PROD-1604](https://dotdirect.atlassian.net/browse/PROD-1604) | T1.7 — Shared media library (asset-level alt/caption) | Request For Approval | studio (`feature/sanity-studio-ux`): [`apps/studio/sanity.config.ts`](../apps/studio/sanity.config.ts), [`apps/studio/schemas/post.ts`](../apps/studio/schemas/post.ts); blog read path: [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts), [`apps/blog/src/lib/sanity-image.ts`](../apps/blog/src/lib/sanity-image.ts) |
@@ -33,7 +34,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 ## PROD-1487 — `@pakfactory/seo`
 
 - All JSON-LD for blog (and future `apps/www` schema) must use generators from **`@pakfactory/seo`**.
-- Export surface: `blogPosting`, `newsArticle`, `organization`, `person`, `breadcrumbList`, `collectionPage`, `jsonLdGraph`, `serializeJsonLd`.
+- Export surface: `blogPosting`, `newsArticle`, `organization`, `person`, `breadcrumbList`, `collectionPage`, `webPage`, `jsonLdGraph`, `serializeJsonLd`.
 - Do **not** hand-build schema.org objects in route files.
 
 ## PROD-1516 — AI IDE config
@@ -190,6 +191,16 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 - **Robots layering:** `BlogRobotsDirective` gained optional `noImageIndex`; `getTagListingRobots(page, sp, hasPosts, tag?)` in [`apps/blog/src/lib/seo.ts`](../apps/blog/src/lib/seo.ts) layers per-tag overrides over the PROD-1500 baseline — **tags default to `noindex`** unless `allowIndex === true`; `follow` defaults ON; `noImageIndex` passes through to Next's metadata robots via `robotsDirectiveToMetadata`. Wider posture shift than PROD-1500's "empty tags noindex" guard: any tag missing the new fields is now `noindex` until an editor opts in.
 - **Metadata template:** tag page-1 title fallback now reads `Posts about {Name} | PakFactory Blog` (spec § 4). Description cascade (`metaDescription → description → auto`) was already correct.
 - **Consumers updated:** [`apps/blog/src/app/tag/[slug]/page.tsx`](../apps/blog/src/app/tag/[slug]/page.tsx) and [`apps/blog/src/app/tag/[slug]/page/[n]/page.tsx`](../apps/blog/src/app/tag/[slug]/page/[n]/page.tsx) pass `data.tag` to `getTagListingRobots`.
+
+## PROD-1504 — `/contribute` contributor page
+
+- **Route:** `apps/blog/src/app/contribute/page.tsx` → public **`/contribute`** (reserved root segment; static route beats `[category]` resolver). `revalidate = 60`.
+- **Robots:** **index, follow** (unlike `/search`). Title: **`Contribute to the PakFactory Blog`**.
+- **Layout:** two columns — positioning copy (left) + pitch form (right). Draft copy flagged for content-team review.
+- **Form:** name, email, org (optional), LinkedIn (optional), subject matter (5 categories + Other), role (radio), pitch angle, outline, qualifications (optional). Native validation + honeypot `website`.
+- **Submit:** client → **`POST /api/contribute`** → `CONTRIBUTE_WEBHOOK_URL || NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL` (503 when unset). Payload includes `source: "blog-contribute"`.
+- **JSON-LD:** `webPage()` + `breadcrumbList()` from `@pakfactory/seo` via `serializeJsonLd(jsonLdGraph([...]))`.
+- **Subject options:** `HOME_CATEGORY_SLUGS` order + `other` — [`apps/blog/src/lib/contribute-options.ts`](../apps/blog/src/lib/contribute-options.ts).
 
 ## PROD-1503 — `/blog/search` page
 

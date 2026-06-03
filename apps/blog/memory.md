@@ -19,9 +19,42 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/rss.xml` | ✅ PROD-1505 |
 | `/sitemap.xml` | ✅ PROD-1596 (utility; not on BA tree) |
 | `/search` (+ `?q=`) | ✅ PROD-1503 |
-| `/contribute` | ⬜ not built |
+| `/contribute` | ✅ PROD-1504 |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
+
+## PROD-1504 — `/contribute` contributor page (implemented)
+
+**Jira:** [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) — S2.8 Build `/blog/contribute`. Public route **`/contribute`** (reserved segment; indexable).
+
+| Deliverable | Location |
+|-------------|----------|
+| Page + metadata + JSON-LD | `src/app/contribute/page.tsx` |
+| Pitch form (client) | `src/app/contribute/_components/contribute-form.tsx` |
+| Webhook proxy | `src/app/api/contribute/route.ts` |
+| Subject/role options | `src/lib/contribute-options.ts` |
+| `webPage` generator | `packages/seo/src/generators/webPage.ts` |
+
+### Decisions
+
+- **Submit:** internal `/api/contribute` proxy (mirrors newsletter), not direct client POST to n8n.
+- **Subject dropdown:** five home category slugs + **Other** (`HOME_CATEGORY_SLUGS` order).
+- **Roles:** industry expert, brand/manufacturer, agency/consultant, freelance writer, academic/researcher.
+- **Positioning copy:** on-brand draft in page — **content-team review** pending.
+- **Qualifications:** optional; honeypot field `website` rejected server-side.
+
+### Verify
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+curl -sI "http://localhost:3003/contribute" | grep -i robots
+curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
+```
+
+### Ops follow-up
+
+- [ ] Set `CONTRIBUTE_WEBHOOK_URL` (or `NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL`) in Vercel when n8n → Zoho flow is ready
+- [ ] Content-team review of left-column positioning copy
 
 ## PROD-1503 — `/search` page (implemented)
 

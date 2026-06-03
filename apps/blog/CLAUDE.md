@@ -12,6 +12,7 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/rss.xml` | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts) | RSS 2.0 |
 | `/sitemap.xml` | [`src/app/sitemap.ts`](./src/app/sitemap.ts) | XML sitemap (PROD-1596) |
 | `/search` | [`src/app/search/page.tsx`](./src/app/search/page.tsx) | Keyword search (PROD-1503); Sanity `match`, relevance default; always `noindex, follow`; `?q=&page=&year=&month=&sort=` |
+| `/contribute` | [`src/app/contribute/page.tsx`](./src/app/contribute/page.tsx) | Contributor pitch form (PROD-1504); **index, follow**; `WebPage` JSON-LD; POST `/api/contribute` |
 | `/[category]` | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx) | **Resolver:** known category slug → archive; else → **single post** `/{slug}` (PROD-1597) |
 | `/[category]/page/[n]` | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx) | Category pagination + query filters |
 | `/[category]/[postSlug]` | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | **Legacy scoped post** → permanent redirect to `/{postSlug}` (PROD-1597) |

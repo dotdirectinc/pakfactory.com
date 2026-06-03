@@ -53,6 +53,17 @@ export type CollectionPageInput = {
   id?: string;
 };
 
+export type WebPageInput = {
+  name: string;
+  /** Canonical URL of the page */
+  url: string;
+  description?: string;
+  /** Publisher site or parent WebSite node / @id reference */
+  isPartOf?: Record<string, unknown>;
+  /** Stable node id */
+  id?: string;
+};
+
 export type ItemListEntry = {
   name: string;
   /** Absolute URL of the list item */
