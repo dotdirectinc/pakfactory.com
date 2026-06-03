@@ -166,6 +166,54 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
+/**
+ * Keyword search (PROD-1503) — Sanity built-in `match`. `$searchTerm` is the
+ * tokenized query (each token suffixed with `*` for prefix matching), built in
+ * `apps/blog/src/lib/blog-search.ts`. Matches title, excerpt, body text, and
+ * tag titles. `$yearStart`/`$yearEnd` narrow by publish date (nullable).
+ */
+const SEARCH_POST_FILTER = /* groq */ `_type == "post"
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+  && (
+    title match $searchTerm
+    || excerpt match $searchTerm
+    || pt::text(body) match $searchTerm
+    || count(tags[@->title match $searchTerm]) > 0
+  )
+  && ($yearStart == null || publishedAt >= $yearStart)
+  && ($yearEnd == null || publishedAt < $yearEnd)`;
+
+export const BLOG_SEARCH_POSTS_COUNT_QUERY = /* groq */ `count(*[
+  ${SEARCH_POST_FILTER}
+])`;
+
+/**
+ * Relevance-ordered (default): field-weighted score on title/excerpt/body.
+ * Tags stay in the filter for recall but are not boosted — `score()` rejects
+ * dereferencing expressions like `tags[@->title match ...]`.
+ */
+export const BLOG_SEARCH_POSTS_PAGE_RELEVANCE_QUERY = /* groq */ `*[
+  ${SEARCH_POST_FILTER}
+] | score(
+    boost(title match $searchTerm, 5),
+    boost(excerpt match $searchTerm, 2),
+    pt::text(body) match $searchTerm
+  ) | order(_score desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
+  ${SEARCH_POST_FILTER}
+] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_SEARCH_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
+  ${SEARCH_POST_FILTER}
+] | order(publishedAt asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+export const BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
+  ${SEARCH_POST_FILTER}
+] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+
 /** Industry pills for blog home (studio `industry` documents). */
 export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   _type == "industry"

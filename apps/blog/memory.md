@@ -18,10 +18,50 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/author/{slug}` | ✅ PROD-1501 |
 | `/rss.xml` | ✅ PROD-1505 |
 | `/sitemap.xml` | ✅ PROD-1596 (utility; not on BA tree) |
-| `/search` (+ `?q=`) | ⬜ not built |
+| `/search` (+ `?q=`) | ✅ PROD-1503 |
 | `/contribute` | ⬜ not built |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
+
+## PROD-1503 — `/search` page (implemented)
+
+**Jira:** [PROD-1503](https://dotdirect.atlassian.net/browse/PROD-1503) — S2.7 Build `/blog/search`. Faceted-listing pattern mirroring the category archive. Uses **Sanity built-in `match`** (no external search infra, per AC).
+
+| Deliverable | Location |
+|-------------|----------|
+| Route + metadata (always `noindex, follow`) | `src/app/search/page.tsx` |
+| Three-state view + search-tuned sidebar | `src/app/search/_components/search-view.tsx` |
+| Data lib (parse, tokenize, fetch, href, robots) | `src/lib/blog-search.ts` |
+| GROQ (count + 4 sort variants) | `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` in `@pakfactory/sanity/queries` |
+
+### Decisions (Richard, 2026-06-02)
+
+- **Filter sidebar:** Categories (nav → `categoryHref`) + Sort + Date. No tag/author facets.
+- **Order:** **relevance** default (Sanity `score()`), re-sortable to newest/oldest/title.
+- **Match scope:** title (boost 5) + excerpt (boost 2) + body `pt::text` in `score()`; **tags match in the filter for recall but are NOT boosted** — `score()` rejects dereference expressions (`tags[@->title match …]` → "score() function received unexpected expression"). Confirmed via probe against `development`.
+- **Empty state:** `CategoryChips` (the 5 categories) as "Popular topics".
+
+### States (all `noindex, follow`)
+
+1. **Empty** (`searchTerm` null): `SearchForm` + Popular-topics `CategoryChips`.
+2. **Results** (`totalCount > 0`): count + prefilled `SearchForm` + `PostCard` grid + `Pagination` + `SearchSidebar`.
+3. **Zero-results** (`totalCount === 0`): message + `SearchForm` + `PostPopularRail` ("Popular this month", 3 posts).
+
+### Notes / follow-ups
+
+- `searchTerm` is the query tokenized with a `*` suffix per token (prefix match), built in `buildSearchTerm()`.
+- Pagination is **query-string only** (`?q=&page=&year=&month=&sort=`) via `searchPageHref()`; relevance + page 1 omitted from the URL.
+- **Sidebar is route-private**, not the shared `FilterSidebar` (which is category-tuned: assumes "newest" default and doesn't preserve `q`). _Future: generalize the two behind one component (growing-learner candidate)._
+- `/search` is a reserved segment (won't collide with `[category]`); static route wins over the dynamic segment.
+
+### Verify
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+curl -s "http://localhost:3003/search?q=box" | grep -o "<article" | wc -l        # >0 (relevance)
+curl -sI "http://localhost:3003/search?q=box" ; curl -s … | grep robots          # noindex, follow
+curl -s "http://localhost:3003/search?q=zzzznomatch99"                           # zero-results + Popular this month
+```
 
 ## PROD-1496 — Vercel deployment (approach A, implemented in repo)
 
