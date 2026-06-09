@@ -10,7 +10,7 @@ import {
 import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { authorPersonId } from "@/lib/author-jsonld";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
-import { getSanityClient } from "@/lib/sanity/client";
+import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import {
@@ -45,7 +45,8 @@ export function postCanonicalUrl(post: BlogPostDetail): string {
 
 export async function fetchPostBySlug(slug: string): Promise<BlogPostDetail | null> {
   if (!isSanityConfigured()) return null;
-  return getSanityClient()
+  const client = await getPreviewableSanityClient();
+  return client
     .fetch<BlogPostDetail | null>(POST_BY_SLUG_QUERY, { slug })
     .catch(() => null);
 }
@@ -55,7 +56,8 @@ export async function fetchPostByCategoryAndSlug(
   postSlug: string,
 ): Promise<BlogPostDetail | null> {
   if (!isSanityConfigured()) return null;
-  return getSanityClient()
+  const client = await getPreviewableSanityClient();
+  return client
     .fetch<BlogPostDetail | null>(POST_BY_CATEGORY_AND_SLUG_QUERY, {
       categorySlug,
       postSlug,

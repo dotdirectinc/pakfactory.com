@@ -17,6 +17,7 @@
     "@portabletext/react": "^6.0.3",
     "@portabletext/types": "^4.0.2",
     "@sanity/image-url": "^2.1.1",
+    "@sanity/visual-editing": "^5.3.3",
     "next": "^16.2.3",
     "next-sanity": "^12.2.2",
     "react": "^19.0.0",
