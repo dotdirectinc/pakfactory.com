@@ -1,5 +1,4 @@
 import { createClient, type SanityClient } from "next-sanity";
-import { draftMode } from "next/headers";
 import {
   getSanityApiVersion,
   getSanityDataset,
@@ -72,6 +71,9 @@ export async function getPreviewableSanityClient(): Promise<SanityClient> {
       "Sanity is not configured. Set NEXT_PUBLIC_SANITY_PROJECT_ID (recommended) or SANITY_STUDIO_PROJECT_ID in repo root .env.local, then restart the dev server.",
     );
   }
+  // Lazily import next/headers so this module stays importable from client
+  // components (a top-level `next/headers` import would break the build).
+  const { draftMode } = await import("next/headers");
   const isDraft = (await draftMode()).isEnabled;
   if (isDraft) {
     if (!readToken()) {
