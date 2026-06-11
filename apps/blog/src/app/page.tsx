@@ -11,9 +11,10 @@ import {categoryHref} from '@/lib/blog-post-url';
 import {toPostCardDataList} from '@/lib/post-card-data';
 import {HomeConversionPillars} from '@/components/home/home-conversion-pillars';
 import {PostFeaturedSection} from '@/components/post/post-featured-section';
+import {PostSpotlightSection} from '@/components/post/post-spotlight-section';
 import {TagStrip} from '@/components/tag/tag-strip';
 import {RfqCta} from '@/components/common/rfq-cta';
-import {NewsletterCtaBand} from '@/components/common/newsletter-cta-band';
+import {CtaNewsletter} from '@/components/common/cta-newsletter';
 import {fetchBlogHomeData, getBlogHomeDebugInfo} from '@/lib/blog-home';
 import {
     getListingRobotsFromSearchParams,
@@ -143,8 +144,9 @@ export default async function BlogHomePage() {
                         }),
                     }))}
                 />
-                {/* <NewsletterCtaBand className="border-t py-10" />
-                <HomeConversionPillars />
+                <PostSpotlightSection borderBottom />
+                <CtaNewsletter />
+                {/* <HomeConversionPillars />
                 <RfqCta className="pb-10" /> */}
             </main>
         </>

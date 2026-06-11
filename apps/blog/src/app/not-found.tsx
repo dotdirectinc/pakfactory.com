@@ -4,7 +4,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { SearchForm } from "@/components/common/search-form";
 import { CategoryChips } from "@/components/category/category-chips";
 import { RfqCta } from "@/components/common/rfq-cta";
-import { NewsletterCtaBand } from "@/components/common/newsletter-cta-band";
+import { CtaNewsletter } from "@/components/common/cta-newsletter";
 import { PostList } from "@/components/post/post-list";
 import { toPostCardDataListFromPopular } from "@/lib/post-card-data";
 import { fetchBlogCategories, fetchPopularPostsThisMonth } from "@/lib/blog-data";
@@ -52,7 +52,7 @@ export default async function NotFound() {
           headingId="popular-posts-heading"
         />
         <RfqCta />
-        <NewsletterCtaBand />
+        <CtaNewsletter />
       </div>
     </main>
   );

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { AllPostsArchive } from "@/components/post/all-posts-archive";
+import { AllArchiveView } from "@/components/post/all-archive-view";
 import {
   archivePageHref,
   fetchAllArchivePage,
@@ -65,5 +65,5 @@ export default async function AllPostsPaginatedPage({
   const data = await fetchAllArchivePage(pageNumber);
   if (isArchivePageOutOfRange(pageNumber, data.totalCount)) notFound();
 
-  return <AllPostsArchive data={data} />;
+  return <AllArchiveView data={data} />;
 }

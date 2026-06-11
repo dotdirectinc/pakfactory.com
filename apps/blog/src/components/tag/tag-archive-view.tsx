@@ -1,6 +1,7 @@
 import { ActiveFilters } from "@/components/common/active-filters";
-import { PostArchive } from "@/components/post/post-archive";
+import { ArchiveLayout } from "@/components/common/archive-layout";
 import { PostList } from "@/components/post/post-list";
+import { pagedHeading, postCountLabel } from "@/lib/archive-format";
 import { toPostCardDataList } from "@/lib/post-card-data";
 import { buildTagArchiveJsonLd } from "@/lib/tag-archive-jsonld";
 import {
@@ -17,13 +18,10 @@ export function TagArchiveView({ data }: { data: TagArchivePageData }) {
     data.pageNumber,
     data.filters,
   );
-  const heading =
-    data.pageNumber > 1
-      ? `${data.tag.title} — Page ${data.pageNumber}`
-      : data.tag.title;
+  const heading = pagedHeading(data.tag.title, data.pageNumber);
 
   return (
-    <PostArchive
+    <ArchiveLayout
       jsonLd={jsonLd}
       crumbs={[{ label: "Blog", href: "/" }, { label: data.tag.title }]}
       kicker={tagGroupTitle(data.tag.tagGroup) || undefined}
@@ -36,7 +34,7 @@ export function TagArchiveView({ data }: { data: TagArchivePageData }) {
             </p>
           )}
           <p className="mt-3 text-sm text-muted-foreground">
-            {data.totalCount === 1 ? "1 post" : `${data.totalCount} posts`}
+            {postCountLabel(data.totalCount)}
           </p>
         </>
       }
@@ -62,6 +60,6 @@ export function TagArchiveView({ data }: { data: TagArchivePageData }) {
         columns={4}
         emptyMessage="No posts match your filters for this tag."
       />
-    </PostArchive>
+    </ArchiveLayout>
   );
 }

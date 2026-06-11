@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PostArticle } from "@/components/post/post-article";
+import Link from "next/link";
 import { CategoryArchiveView } from "@/components/category/category-archive-view";
 import {
   categoryPageHref,
@@ -9,6 +9,7 @@ import {
   parseCategoryFilters,
 } from "@/lib/blog-category-archive";
 import { isKnownCategorySlug } from "@/lib/blog-categories";
+import { categoryHref } from "@/lib/blog-post-url";
 import {
   buildPostJsonLd,
   buildPostMetadata,
@@ -97,7 +98,40 @@ export default async function CategoryOrPostPage({
   const post = await fetchPostBySlug(category);
   if (post) {
     const jsonLd = buildPostJsonLd(post);
-    return <PostArticle post={post} jsonLd={jsonLd} />;
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLd }}
+        />
+        <main className="mx-auto max-w-3xl px-6 py-12">
+          <nav className="mb-8 text-sm text-muted-foreground">
+            <Link href="/" className="hover:text-foreground">
+              Blog
+            </Link>
+            {post.categorySlug && post.categoryTitle && (
+              <>
+                <span className="mx-2">/</span>
+                <Link
+                  href={categoryHref(post.categorySlug)}
+                  className="hover:text-foreground"
+                >
+                  {post.categoryTitle}
+                </Link>
+              </>
+            )}
+          </nav>
+          <article>
+            <h1 className="text-4xl font-bold tracking-tight">{post.title}</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {post.author?.name}
+              {post.publishedAt &&
+                ` · ${new Date(post.publishedAt).toLocaleDateString()}`}
+            </p>
+          </article>
+        </main>
+      </>
+    );
   }
 
   // Neither a category nor a live post — apply a CMS redirect if one exists

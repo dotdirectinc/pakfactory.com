@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { Breadcrumb } from "@/components/common/breadcrumb";
 import { Pagination } from "@/components/common/pagination";
 
-type PostArchiveProps = {
+type ArchiveLayoutProps = {
   /** Pre-serialized JSON-LD string for this archive. */
   jsonLd: string;
   crumbs: ComponentProps<typeof Breadcrumb>["items"];
@@ -28,12 +28,12 @@ type PostArchiveProps = {
 };
 
 /**
- * Shared layout shell for every post archive (category, tag, all, search).
+ * Shared layout shell for post archives (category, tag, all).
  * Owns the common chrome — JSON-LD, container, header, two-col vs full-width
  * layout, pagination. Takes primitives + slots only; never imports lib data
  * types, so the dependency stays shared → feature.
  */
-export function PostArchive({
+export function ArchiveLayout({
   jsonLd,
   crumbs,
   kicker,
@@ -44,7 +44,7 @@ export function PostArchive({
   columns = "lg:grid-cols-[minmax(0,1fr)_240px]",
   children,
   pagination,
-}: PostArchiveProps) {
+}: ArchiveLayoutProps) {
   const body = (
     <>
       {filters}
