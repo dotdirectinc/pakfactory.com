@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./schemas": "./src/schemas/index.ts",
     "./queries": "./src/queries.ts",
     "./product-page-collections": "./src/productPageCollections.ts"
   },

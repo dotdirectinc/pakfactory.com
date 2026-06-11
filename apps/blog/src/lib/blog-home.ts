@@ -31,6 +31,8 @@ export type HomePostCard = {
   categorySlug?: string;
   categoryTitle?: string;
   authorName?: string;
+  authorImageUrl?: string;
+  readingTimeMinutes?: number;
 };
 
 /** Industry pill — an industry-axis `blogTag`; links to `/tag/{slug}`. */

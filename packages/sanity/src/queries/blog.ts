@@ -34,7 +34,9 @@ const POST_CARD_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name
+  "authorName": author->name,
+  "authorImageUrl": author->photo.asset->url,
+  "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238)
 }`;
 
 const POST_DETAIL_FIELDS = /* groq */ `{

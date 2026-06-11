@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { AllPostsArchive } from "@/app/all/_components/all-posts-archive";
+import { AllPostsArchive } from "@/components/post/all-posts-archive";
 import {
   archivePageHref,
   fetchAllArchivePage,

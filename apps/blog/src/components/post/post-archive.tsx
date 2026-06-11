@@ -1,0 +1,94 @@
+import type { ComponentProps, ReactNode } from "react";
+import { Breadcrumb } from "@/components/common/breadcrumb";
+import { Pagination } from "@/components/common/pagination";
+
+type PostArchiveProps = {
+  /** Pre-serialized JSON-LD string for this archive. */
+  jsonLd: string;
+  crumbs: ComponentProps<typeof Breadcrumb>["items"];
+  /** Optional uppercase eyebrow above the heading (e.g. tag group). */
+  kicker?: string;
+  heading: string;
+  /** Description / count markup — caller owns the exact copy + spacing. */
+  intro?: ReactNode;
+  /** Filter chips slot, rendered above the posts region. */
+  filters?: ReactNode;
+  /** Right rail. When omitted, the posts region is full-width. */
+  sidebar?: ReactNode;
+  /** Two-column grid template when a sidebar is present. */
+  columns?: string;
+  /** The posts list/grid — caller chooses columns, card variant, empty state. */
+  children: ReactNode;
+  pagination: {
+    pageNumber: number;
+    totalPages: number;
+    hrefForPage: (page: number) => string;
+    ariaLabel?: string;
+  };
+};
+
+/**
+ * Shared layout shell for every post archive (category, tag, all, search).
+ * Owns the common chrome — JSON-LD, container, header, two-col vs full-width
+ * layout, pagination. Takes primitives + slots only; never imports lib data
+ * types, so the dependency stays shared → feature.
+ */
+export function PostArchive({
+  jsonLd,
+  crumbs,
+  kicker,
+  heading,
+  intro,
+  filters,
+  sidebar,
+  columns = "lg:grid-cols-[minmax(0,1fr)_240px]",
+  children,
+  pagination,
+}: PostArchiveProps) {
+  const body = (
+    <>
+      {filters}
+      {children}
+      <Pagination
+        pageNumber={pagination.pageNumber}
+        totalPages={pagination.totalPages}
+        hrefForPage={pagination.hrefForPage}
+        ariaLabel={pagination.ariaLabel}
+      />
+    </>
+  );
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
+      />
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mb-8">
+          <Breadcrumb items={crumbs} />
+          {kicker && (
+            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-primary">
+              {kicker}
+            </p>
+          )}
+          <h1
+            className={`${kicker ? "mt-1" : "mt-3"} text-3xl font-bold tracking-tight sm:text-4xl`}
+          >
+            {heading}
+          </h1>
+          {intro}
+        </div>
+
+        {sidebar ? (
+          <div className={`grid gap-10 ${columns}`}>
+            <div>{body}</div>
+            {sidebar}
+          </div>
+        ) : (
+          body
+        )}
+      </div>
+    </>
+  );
+}

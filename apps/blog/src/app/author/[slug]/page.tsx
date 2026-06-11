@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AuthorHeader } from "@/app/author/[slug]/_components/author-header";
-import { AuthorPostsLoader } from "@/app/author/[slug]/_components/posts-loader";
+import { AuthorHeader } from "@/components/author/author-header";
+import { AuthorPostsLoader } from "@/components/author/author-posts-loader";
 import { buildAuthorJsonLd } from "@/lib/author-jsonld";
 import {
   fetchAuthorBySlug,

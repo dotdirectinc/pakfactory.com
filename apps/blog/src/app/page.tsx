@@ -1,127 +1,152 @@
-import type { Metadata } from "next";
+import type {Metadata} from 'next';
 import {
-  blog,
-  jsonLdGraph,
-  organization,
-  serializeJsonLd,
-} from "@pakfactory/seo";
-import { CategoryPostsRow } from "@/components/category/category-posts-row";
-import { HomeConversionPillars } from "@/app/_components/conversion-pillars";
-import { HomeHero } from "@/app/_components/hero";
-import { TagStrip } from "@/components/tag/tag-strip";
-import { RfqCta } from "@/components/rfq-cta";
-import { NewsletterCtaBand } from "@/components/newsletter-cta-band";
-import { fetchBlogHomeData, getBlogHomeDebugInfo } from "@/lib/blog-home";
+    blog,
+    jsonLdGraph,
+    organization,
+    serializeJsonLd,
+} from '@pakfactory/seo';
+import {pageDielineOuterClass} from '@/components/common/page-dieline-section';
+import {PostCategorySection} from '@/components/post/post-category-section';
+import {categoryHref} from '@/lib/blog-post-url';
+import {toPostCardDataList} from '@/lib/post-card-data';
+import {HomeConversionPillars} from '@/components/home/home-conversion-pillars';
+import {PostFeaturedSection} from '@/components/post/post-featured-section';
+import {TagStrip} from '@/components/tag/tag-strip';
+import {RfqCta} from '@/components/common/rfq-cta';
+import {NewsletterCtaBand} from '@/components/common/newsletter-cta-band';
+import {fetchBlogHomeData, getBlogHomeDebugInfo} from '@/lib/blog-home';
 import {
-  getListingRobotsFromSearchParams,
-  robotsDirectiveToMetadata,
-} from "@/lib/seo";
-import { getWwwUrl, normalizeSiteUrl, siteBaseUrl } from "@/lib/site";
+    getListingRobotsFromSearchParams,
+    robotsDirectiveToMetadata,
+} from '@/lib/seo';
+import {getWwwUrl, normalizeSiteUrl, siteBaseUrl} from '@/lib/site';
 
 export const revalidate = 60;
 
-const HOME_TITLE = "PakFactory Blog — Packaging Insights, Trends & Industry News";
+const HOME_TITLE =
+    'PakFactory Blog — Packaging Insights, Trends & Industry News';
 const HOME_DESCRIPTION =
-  "Curated packaging insights across trends, sustainability, business strategy, design, and industry news from PakFactory.";
+    'Curated packaging insights across trends, sustainability, business strategy, design, and industry news from PakFactory.';
 
 export async function generateMetadata({
-  searchParams,
+    searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
-  const sp = await searchParams;
-  const directive = getListingRobotsFromSearchParams("blog_index", sp);
+    const sp = await searchParams;
+    const directive = getListingRobotsFromSearchParams('blog_index', sp);
 
-  return {
-    title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
-    robots: robotsDirectiveToMetadata(directive),
-    openGraph: {
-      title: HOME_TITLE,
-      description: HOME_DESCRIPTION,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title: HOME_TITLE,
-      description: HOME_DESCRIPTION,
-    },
-  };
+    return {
+        title: HOME_TITLE,
+        description: HOME_DESCRIPTION,
+        robots: robotsDirectiveToMetadata(directive),
+        openGraph: {
+            title: HOME_TITLE,
+            description: HOME_DESCRIPTION,
+            type: 'website',
+        },
+        twitter: {
+            card: 'summary',
+            title: HOME_TITLE,
+            description: HOME_DESCRIPTION,
+        },
+    };
 }
 
 export default async function BlogHomePage() {
-  const data = await fetchBlogHomeData();
-  const debug = getBlogHomeDebugInfo();
-  const postCount =
-    (data.featured ? 1 : 0) +
-    data.latest.length +
-    data.categoryRows.reduce((n, row) => n + row.posts.length, 0);
-  const showDevEmptyHint =
-    process.env.NODE_ENV === "development" && postCount === 0;
-  const siteUrl = siteBaseUrl();
-  const orgId = `${siteUrl}#organization`;
-  const blogId = `${siteUrl}#blog`;
+    const data = await fetchBlogHomeData();
+    const debug = getBlogHomeDebugInfo();
+    const postCount =
+        (data.featured ? 1 : 0) +
+        data.latest.length +
+        data.categoryRows.reduce((n, row) => n + row.posts.length, 0);
+    const showDevEmptyHint =
+        process.env.NODE_ENV === 'development' && postCount === 0;
+    const siteUrl = siteBaseUrl();
+    const orgId = `${siteUrl}#organization`;
+    const blogId = `${siteUrl}#blog`;
 
-  const jsonLd = jsonLdGraph([
-    organization({
-      name: "PakFactory",
-      url: normalizeSiteUrl(getWwwUrl()),
-      id: orgId,
-    }),
-    blog({
-      name: "PakFactory Blog",
-      url: siteUrl,
-      description: HOME_DESCRIPTION,
-      id: blogId,
-      publisher: { "@id": orgId },
-    }),
-  ]);
+    const jsonLd = jsonLdGraph([
+        organization({
+            name: 'PakFactory',
+            url: normalizeSiteUrl(getWwwUrl()),
+            id: orgId,
+        }),
+        blog({
+            name: 'PakFactory Blog',
+            url: siteUrl,
+            description: HOME_DESCRIPTION,
+            id: blogId,
+            publisher: {'@id': orgId},
+        }),
+    ]);
 
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
-      />
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <header className="mb-10">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            PakFactory Blog
-          </h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">{HOME_DESCRIPTION}</p>
-        </header>
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{__html: serializeJsonLd(jsonLd)}}
+            />
+            <main className={pageDielineOuterClass()}>
+                {/* <header className="mb-10">
+                    <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                        PakFactory Blog
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-muted-foreground">
+                        {HOME_DESCRIPTION}
+                    </p>
+                </header> */}
 
-        {showDevEmptyHint && (
-          <div
-            className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
-            role="status"
-          >
-            <p className="font-medium">No posts loaded from Sanity</p>
-            <p className="mt-1 text-muted-foreground">
-              Project: <code>{debug.projectId}</code> · Dataset:{" "}
-              <code>{debug.dataset}</code> · Token:{" "}
-              {debug.hasReadToken ? "set" : "missing"} · Configured:{" "}
-              {debug.configured ? "yes" : "no"}
-            </p>
-            <p className="mt-2 text-muted-foreground">
-              Use <strong>http://localhost:3003</strong> (not :3001). After
-              changing <code>.env.local</code>, stop the dev server, run{" "}
-              <code>rm -rf apps/blog/.next</code>, then <code>pnpm dev:blog</code>.
-              Seed data: <code>pnpm seed:blog-dev</code> on dataset{" "}
-              <code>development</code>.
-            </p>
-          </div>
-        )}
+                {showDevEmptyHint && (
+                    <div
+                        className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
+                        role="status"
+                    >
+                        <p className="font-medium">
+                            No posts loaded from Sanity
+                        </p>
+                        <p className="mt-1 text-muted-foreground">
+                            Project: <code>{debug.projectId}</code> · Dataset:{' '}
+                            <code>{debug.dataset}</code> · Token:{' '}
+                            {debug.hasReadToken ? 'set' : 'missing'} ·
+                            Configured: {debug.configured ? 'yes' : 'no'}
+                        </p>
+                        <p className="mt-2 text-muted-foreground">
+                            Use <strong>http://localhost:3003</strong> (not
+                            :3001). After changing <code>.env.local</code>, stop
+                            the dev server, run{' '}
+                            <code>rm -rf apps/blog/.next</code>, then{' '}
+                            <code>pnpm dev:blog</code>. Seed data:{' '}
+                            <code>pnpm seed:blog-dev</code> on dataset{' '}
+                            <code>development</code>.
+                        </p>
+                    </div>
+                )}
 
-        <HomeHero featured={data.featured} latest={data.latest} />
-        <TagStrip tags={data.industries} heading="Browse by Industries" />
-        {data.categoryRows.map((row) => (
-          <CategoryPostsRow key={row.slug} row={row} />
-        ))}
-        <NewsletterCtaBand className="border-t py-10" />
-        <HomeConversionPillars />
-        <RfqCta className="pb-10" />
-      </main>
-    </>
-  );
+                <PostFeaturedSection
+                    featured={data.featured}
+                    latest={data.latest}
+                    borderBottom
+                />
+                {/* <TagStrip
+                    tags={data.industries}
+                    heading="Browse by Industries"
+                /> */}
+                <PostCategorySection
+                    borderBottom
+                    rows={data.categoryRows.map((row) => ({
+                        slug: row.slug,
+                        title: row.title,
+                        viewAllHref: categoryHref(row.slug),
+                        posts: toPostCardDataList(row.posts, {
+                            categorySlug: row.slug,
+                        }),
+                    }))}
+                />
+                {/* <NewsletterCtaBand className="border-t py-10" />
+                <HomeConversionPillars />
+                <RfqCta className="pb-10" /> */}
+            </main>
+        </>
+    );
 }

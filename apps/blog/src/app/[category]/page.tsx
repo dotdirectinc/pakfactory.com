@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BlogPostArticle } from "@/app/[category]/_components/blog-post-article";
-import { CategoryArchiveView } from "@/app/[category]/_components/archive-view";
+import { PostArticle } from "@/components/post/post-article";
+import { CategoryArchiveView } from "@/components/category/category-archive-view";
 import {
   categoryPageHref,
   fetchCategoryArchivePage,
@@ -97,7 +97,7 @@ export default async function CategoryOrPostPage({
   const post = await fetchPostBySlug(category);
   if (post) {
     const jsonLd = buildPostJsonLd(post);
-    return <BlogPostArticle post={post} jsonLd={jsonLd} />;
+    return <PostArticle post={post} jsonLd={jsonLd} />;
   }
 
   // Neither a category nor a live post — apply a CMS redirect if one exists

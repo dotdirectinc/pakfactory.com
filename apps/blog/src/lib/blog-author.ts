@@ -1,6 +1,7 @@
 import type { PortableTextBlock } from "@portabletext/types";
+import type { PostCardData } from "@/components/post/post-card";
 import type { HomePostCard } from "@/lib/blog-home";
-import { sanityImageAlt, sanityImageUrl } from "@/lib/sanity-image";
+import { toPostCardData } from "@/lib/post-card-data";
 import { getSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
@@ -12,35 +13,7 @@ import {
 /** Posts shown per "page" (initial SSR batch and each Load More click). */
 export const AUTHOR_PAGE_SIZE = 12;
 
-/**
- * Client-safe post card for the author "Load More" grid — image URL is resolved
- * server-side so the client loader never imports the `server-only` image builder.
- */
-export type AuthorPostCard = {
-  _id: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  publishedAt?: string;
-  imageUrl?: string;
-  imageAlt?: string;
-  categoryTitle?: string;
-};
-
-export type AuthorPostsResult = { posts: AuthorPostCard[]; hasMore: boolean };
-
-function toAuthorPostCard(post: HomePostCard): AuthorPostCard {
-  return {
-    _id: post._id,
-    title: post.title,
-    slug: post.slug,
-    excerpt: post.excerpt,
-    publishedAt: post.publishedAt,
-    imageUrl: sanityImageUrl(post.mainImage, 400),
-    imageAlt: sanityImageAlt(post.mainImage),
-    categoryTitle: post.categoryTitle,
-  };
-}
+export type AuthorPostsResult = { posts: PostCardData[]; hasMore: boolean };
 
 export type AuthorDoc = {
   _id?: string;
@@ -98,5 +71,8 @@ export async function fetchAuthorPostsPage(
     fetchAuthorPosts(authorSlug, start, end),
     fetchAuthorPostsCount(authorSlug),
   ]);
-  return { posts: rows.map(toAuthorPostCard), hasMore: end < total };
+  return {
+    posts: rows.map((post) => toPostCardData(post)),
+    hasMore: end < total,
+  };
 }

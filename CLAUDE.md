@@ -2,14 +2,15 @@
 
 Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack, domain rules, repo layout, MCP usage, ADR summary, JIRA defaults, and verification. This file adds **Claude Code–specific** configuration only.
 
+**Before building, read the ADRs.** Decisions are tool-agnostic and live in the register at [`docs/adr/README.md`](docs/adr/README.md) (e.g. ADR-005 component organization, ADR-006 design tokens) — the *same* canon Cursor follows. Using Claude Code never changes the rules; if a task would contradict an ADR, stop and flag it rather than diverging. See `AGENTS.md` § "Decision compliance".
+
 ## Inheritance
 
 - Inherits **cross-worktree policies** from the pakFactory management root (parent folder):
   - @../.claude/rules/monorepo-workspace.md
   - @../.claude/rules/confirm-approved-features.md
   - @../.claude/rules/single-app-commits-and-branches.md
-  - @../.claude/rules/clean-src-structure.md
-  - @../.claude/rules/components-by-reusability.md
+- **Component organization & clean-`src/` structure:** canonical in **[`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)** (the former management-root `clean-src-structure` / `components-by-reusability` rule drafts are superseded by it; see the [ADR register](docs/adr/)).
 - Inherits from **user-global** `~/.claude/CLAUDE.md` (if present) and this repository’s [`AGENTS.md`](./AGENTS.md).
 - For work under **`apps/blog`**, also read [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
 

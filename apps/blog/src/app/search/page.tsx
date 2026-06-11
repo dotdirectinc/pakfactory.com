@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SearchView } from "@/app/search/_components/search-view";
+import { SearchView } from "@/components/search/search-view";
 import {
   fetchSearchPage,
   getSearchRobots,
