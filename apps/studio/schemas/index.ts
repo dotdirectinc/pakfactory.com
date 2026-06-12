@@ -15,6 +15,14 @@ import { blogTag } from './blogTag'
 import { bodyImage } from './bodyImage'
 import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
+import { solution } from './solution'
+import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticPages'
+import { expertiseStage } from './expertiseStage'
+import { caseStudy } from './caseStudy'
+import { glossaryTerm, guide, helpArticle } from './resources'
+import { blogSettings } from './blogSettings'
+import { blogHomePage } from './blogHomePage'
+import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
 import { post } from './post'
 import { redirect } from './redirect'
@@ -40,6 +48,17 @@ export const schemaTypes = [
   // Product layer
   product,
 
+  // Solutions & Core Entities
+  solution,
+  expertiseStage,
+  caseStudy,
+  solutionsSettings,
+
+  // Resources
+  glossaryTerm,
+  guide,
+  helpArticle,
+
   // Editorial
   author,
   blogCategory,
@@ -51,6 +70,12 @@ export const schemaTypes = [
   post,
   redirect,
 
-  // Singleton
+  // Singletons
   settings,
+  blogSettings,
+  blogHomePage,
+  aboutPage,
+  contactPage,
+  privacyPolicy,
+  termsOfService,
 ]

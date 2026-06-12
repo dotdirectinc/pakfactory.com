@@ -84,6 +84,25 @@ export const redirect = defineType({
       description: 'Why this redirect exists (e.g. "Auto-created from slug change").',
     }),
     defineField({
+      name: 'channel',
+      title: 'Channel',
+      type: 'string',
+      description: 'Which content channel this redirect belongs to. Used to filter redirects per workspace.',
+      options: {
+        list: [
+          { title: 'Blog', value: 'blog' },
+          { title: 'Website', value: 'website' },
+          { title: 'Products', value: 'products' },
+          { title: 'Solutions', value: 'solutions' },
+          { title: 'Expertise', value: 'expertise' },
+        ],
+        layout: 'dropdown',
+      },
+      initialValue: 'blog',
+      validation: (Rule) => Rule.required(),
+    }),
+
+    defineField({
       name: 'isActive',
       title: 'Active',
       type: 'boolean',
@@ -92,12 +111,13 @@ export const redirect = defineType({
     }),
   ],
   preview: {
-    select: { from: 'from', to: 'to', type: 'type', isActive: 'isActive' },
-    prepare({ from, to, type, isActive }) {
+    select: { from: 'from', to: 'to', type: 'type', isActive: 'isActive', channel: 'channel' },
+    prepare({ from, to, type, isActive, channel }) {
       const state = isActive === false ? ' · inactive' : ''
+      const ch = channel ? ` [${channel}]` : ''
       return {
         title: `${from || '—'} → ${to || '—'}`,
-        subtitle: `${type || '301'}${state}`,
+        subtitle: `${type || '301'}${ch}${state}`,
       }
     },
   },

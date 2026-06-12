@@ -10,6 +10,7 @@ export const post = defineType({
     { name: 'assets',    title: 'Assets'                   },
     { name: 'taxonomy',  title: 'Taxonomy'                 },
     { name: 'related',   title: 'Related'                  },
+    { name: 'faq',       title: 'FAQ'                      },
     { name: 'seo',       title: 'SEO'                      },
   ],
   fields: [
@@ -50,16 +51,6 @@ export const post = defineType({
       rows: 3,
       group: 'overview',
     }),
-    defineField({
-      name: 'featuredOnHome',
-      title: 'Feature on blog home',
-      type: 'boolean',
-      group: 'overview',
-      description:
-        'Pin this post as the hero feature on /blog. Only one post should be enabled at a time.',
-      initialValue: false,
-    }),
-
     // ── Body ────────────────────────────────────────────────────────────────
     defineField({
       name: 'body',
@@ -107,6 +98,17 @@ export const post = defineType({
       description: 'Every post belongs to exactly one category.',
       validation: (Rule) => Rule.required(),
     }),
+
+    defineField({
+      name: 'featuredInCategory',
+      title: 'Feature in category',
+      type: 'boolean',
+      group: 'taxonomy',
+      description:
+        'Pin this post as the featured post on its category landing page. Only one post per category should be enabled at a time.',
+      initialValue: false,
+    }),
+
     defineField({
       name: 'tags',
       title: 'Tags',
@@ -132,6 +134,65 @@ export const post = defineType({
       type: 'array',
       group: 'related',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
+    }),
+
+    // ── FAQ ─────────────────────────────────────────────────────────────────
+    defineField({
+      name: 'faqItems',
+      title: 'FAQ items',
+      type: 'array',
+      group: 'faq',
+      description:
+        'Questions and answers displayed in the FAQ section. Used to generate FAQPage JSON-LD for SEO rich snippets and AI citation engines.',
+      of: [
+        {
+          type: 'object',
+          name: 'faqItem',
+          title: 'FAQ item',
+          fields: [
+            defineField({
+              name: 'question',
+              title: 'Question',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'answer',
+              title: 'Answer',
+              type: 'array',
+              description: 'Keep answers concise — 2–4 sentences. Supports bold, italic, and links.',
+              of: [
+                {
+                  type: 'block',
+                  styles: [{ title: 'Normal', value: 'normal' }],
+                  lists: [],
+                  marks: {
+                    decorators: [
+                      { title: 'Strong', value: 'strong' },
+                      { title: 'Emphasis', value: 'em' },
+                    ],
+                    annotations: [
+                      {
+                        name: 'link',
+                        type: 'object',
+                        title: 'Link',
+                        fields: [
+                          defineField({ name: 'href', type: 'url', title: 'URL' }),
+                        ],
+                      },
+                    ],
+                  },
+                },
+              ],
+              validation: (Rule) => Rule.required(),
+            }),
+          ],
+          preview: {
+            select: { title: 'question' },
+            prepare: ({ title }) => ({ title: title || 'Untitled question' }),
+          },
+        },
+      ],
     }),
 
     // ── SEO ─────────────────────────────────────────────────────────────────
