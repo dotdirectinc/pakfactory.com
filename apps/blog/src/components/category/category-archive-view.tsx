@@ -1,7 +1,8 @@
 import { ActiveFilters } from "@/components/common/active-filters";
+import { ArchiveLayout } from "@/components/common/archive-layout";
 import { FilterSidebar } from "@/components/common/filter-sidebar";
-import { PostArchive } from "@/components/post/post-archive";
 import { PostList } from "@/components/post/post-list";
+import { pagedHeading, postCountLabel } from "@/lib/archive-format";
 import { toPostCardDataList } from "@/lib/post-card-data";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
 import {
@@ -25,13 +26,10 @@ export async function CategoryArchiveView({
     data.filters,
   );
   const isPackagingNews = data.category.slug === PACKAGING_NEWS_SLUG;
-  const heading =
-    data.pageNumber > 1
-      ? `${data.category.title} — Page ${data.pageNumber}`
-      : data.category.title;
+  const heading = pagedHeading(data.category.title, data.pageNumber);
 
   return (
-    <PostArchive
+    <ArchiveLayout
       jsonLd={jsonLd}
       crumbs={[{ label: "Blog", href: "/" }, { label: data.category.title }]}
       heading={heading}
@@ -43,7 +41,7 @@ export async function CategoryArchiveView({
             </p>
           )}
           <p className="mt-3 text-sm text-muted-foreground">
-            {data.totalCount === 1 ? "1 post" : `${data.totalCount} posts`}
+            {postCountLabel(data.totalCount)}
           </p>
         </>
       }
@@ -97,6 +95,6 @@ export async function CategoryArchiveView({
         columns={3}
         emptyMessage="No posts match your filters in this category."
       />
-    </PostArchive>
+    </ArchiveLayout>
   );
 }

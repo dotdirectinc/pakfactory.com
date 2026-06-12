@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {MessageSquareText} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
+import {FooterWordmark} from '@/components/common/footer-wordmark';
 import {PageDielineSection} from '@/components/common/page-dieline-section';
 import {categoryHref} from '@/lib/blog-post-url';
 import {getWwwUrl} from '@/lib/site';
@@ -157,11 +158,7 @@ export function SiteFooter() {
         <footer className="bg-background">
             <PageDielineSection innerClassName="px-0">
                 {/* Giant wordmark */}
-                <div className="flex justify-center overflow-hidden px-8 py-7">
-                    <p className="select-none text-center text-[clamp(3rem,12vw,9.5rem)] font-bold leading-none tracking-tight text-foreground/35">
-                        PAKFACTORY
-                    </p>
-                </div>
+                <FooterWordmark />
 
                 {/* Collaboration CTA */}
                 <div className="border-t border-dashed border-border px-8 py-10 text-center">

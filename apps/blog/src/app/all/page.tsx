@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AllPostsArchive } from "@/components/post/all-posts-archive";
+import { AllArchiveView } from "@/components/post/all-archive-view";
 import { fetchAllArchivePage } from "@/lib/blog-archive";
 import {
   getAllArchiveRobots,
@@ -37,5 +37,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AllPostsPage() {
   const data = await fetchAllArchivePage(1);
-  return <AllPostsArchive data={data} />;
+  return <AllArchiveView data={data} />;
 }

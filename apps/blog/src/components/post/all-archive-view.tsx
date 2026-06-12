@@ -1,19 +1,19 @@
 import { ArchiveFilterSidebar } from "@/components/common/archive-filter-sidebar";
-import { PostArchive } from "@/components/post/post-archive";
+import { ArchiveLayout } from "@/components/common/archive-layout";
 import { PostList } from "@/components/post/post-list";
+import { pagedHeading } from "@/lib/archive-format";
 import { toPostCardDataList } from "@/lib/post-card-data";
 import { buildAllArchiveJsonLd } from "@/lib/all-archive-jsonld";
 import { archivePageHref, type AllArchivePageData } from "@/lib/blog-archive";
 import { fetchBlogCategories } from "@/lib/blog-data";
 
-export async function AllPostsArchive({ data }: { data: AllArchivePageData }) {
+export async function AllArchiveView({ data }: { data: AllArchivePageData }) {
   const categories = await fetchBlogCategories();
   const jsonLd = buildAllArchiveJsonLd(data.posts, data.pageNumber);
-  const heading =
-    data.pageNumber > 1 ? `All posts — Page ${data.pageNumber}` : "All posts";
+  const heading = pagedHeading("All posts", data.pageNumber);
 
   return (
-    <PostArchive
+    <ArchiveLayout
       jsonLd={jsonLd}
       crumbs={[{ label: "Blog", href: "/" }, { label: "All posts" }]}
       heading={heading}
@@ -39,6 +39,6 @@ export async function AllPostsArchive({ data }: { data: AllArchivePageData }) {
         columns={2}
         emptyMessage="No published posts yet."
       />
-    </PostArchive>
+    </ArchiveLayout>
   );
 }

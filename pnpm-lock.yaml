@@ -41,6 +41,9 @@ importers:
       geist:
         specifier: ^1.4.2
         version: 1.7.2(next@16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.5)
@@ -4976,6 +4979,9 @@ packages:
   groq@5.23.0:
     resolution: {integrity: sha512-9RNUKenNcWwLW7ndAzCerNfuYSYgohovkPuPJvDWj2fNzoNo9LoymdS7YKOIAmFUC/w4tE1EZkN0vrJyI9cv9w==}
     engines: {node: '>=20.19 <22 || >=22.12'}
+
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   gunzip-maybe@1.4.2:
     resolution: {integrity: sha512-4haO1M4mLO91PW57BMsDFf75UmwoRX0GkdD+Faw+Lr+r/OZrOCS0pIBwOL1xCKQqnQzbNFGgK2V2CpBUPeFNTw==}
@@ -13219,6 +13225,8 @@ snapshots:
   groq@3.99.0: {}
 
   groq@5.23.0: {}
+
+  gsap@3.15.0: {}
 
   gunzip-maybe@1.4.2:
     dependencies:
