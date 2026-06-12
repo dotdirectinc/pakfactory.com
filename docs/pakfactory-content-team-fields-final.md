@@ -2,8 +2,7 @@
 
 A complete list of every document type and field the content team will see in Sanity Studio. Use this as a planning reference for what editors need to fill out when publishing a post, managing authors, organizing categories, etc.
 
-This is a content-side checklist, not a developer spec. It answers: *"What does the writer need to click on and fill in?"*
-
+This is a content-side checklist, not a developer spec. It answers: _"What does the writer need to click on and fill in?"_
 
 ## Document Types Overview
 
@@ -31,13 +30,13 @@ The essentials of the post itself.
 - [ ] **Excerpt / summary** — 1-2 sentence summary shown on listing pages and used as fallback meta description.
 - [ ] **Featured image** — the main hero image. Required field. Should include alt text.
 - [ ] **Body** — the rich text content. Sanity calls this "Portable Text." Supports:
-  - Headings (H2, H3, H4 — H1 is reserved for post title)
-  - Bold, italic, underline, strike
-  - Lists (bulleted and numbered)
-  - Inline images (with their own alt text)
-  - Links (open in new tab, add "nofollow" to link, add "sponsored" to link, add "ugc" to link). [Example](https://www.wpbeginner.com/wp-content/uploads/2020/11/nofollow-option-all-in-one-seo.png)
-  - Block quotes
-  - Code blocks (rarely needed for packaging content, but available)
+    - Headings (H2, H3, H4 — H1 is reserved for post title)
+    - Bold, italic, underline, strike
+    - Lists (bulleted and numbered)
+    - Inline images (with their own alt text)
+    - Links (open in new tab, add "nofollow" to link, add "sponsored" to link, add "ugc" to link). [Example](https://www.wpbeginner.com/wp-content/uploads/2020/11/nofollow-option-all-in-one-seo.png)
+    - Block quotes
+    - Code blocks (rarely needed for packaging content, but available)
 
 ### Tab 2: Categorization
 
@@ -73,19 +72,19 @@ The editor-controlled SEO overrides. All fields are optional with smart defaults
 
 How the post looks when shared on social platforms.
 
-- [ ] **Social image (OG image)** *(optional)* — custom image for social shares. Falls back to featured image. Recommended 1200×630px.
-- [ ] **Social title (OG title)** *(optional)* — punchier headline for social. Falls back to meta title, then post title.
-- [ ] **Social description (OG description)** *(optional)* — falls back to meta description.
+- [ ] **Social image (OG image)** _(optional)_ — custom image for social shares. Falls back to featured image. Recommended 1200×630px.
+- [ ] **Social title (OG title)** _(optional)_ — punchier headline for social. Falls back to meta title, then post title.
+- [ ] **Social description (OG description)** _(optional)_ — falls back to meta description.
 
 ### Tab 6: Schema & AI Optimization
 
 Fields that power structured data and answer-engine optimization.
 
-- [ ] **TL;DR / Key takeaways** *(optional but recommended)* — short summary of the post's key points. Rich text. Renders at the top of the post AND injected into JSON-LD schema for AI engines.
-- [ ] **FAQ section** *(optional)* — first-class array of question/answer pairs. Each pair has a question (string) and answer (rich text). Renders as a visible FAQ section AND emits FAQPage schema.
-- [ ] **HowTo steps** *(optional)* — only used for tutorial posts. Fields for step name, instructions, image per step, plus total time and required supplies/tools.
-- [ ] **Citations / sources** *(optional)* — array of references used in the post. Each entry: label, URL, optional publication name and author. Renders as visible footnotes AND emits citation schema.
-- [ ] **Speakable selectors** *(optional, advanced)* — mark specific paragraphs as "speakable" for voice assistant readouts. Most posts won't need this; [Example](https://developers.google.com/search/docs/appearance/structured-data/speakable).
+- [ ] **TL;DR / Key takeaways** _(optional but recommended)_ — short summary of the post's key points. Rich text. Renders at the top of the post AND injected into JSON-LD schema for AI engines.
+- [ ] **FAQ section** _(optional)_ — first-class array of question/answer pairs. Each pair has a question (string) and answer (rich text). Renders as a visible FAQ section AND emits FAQPage schema.
+- [ ] **HowTo steps** _(optional)_ — only used for tutorial posts. Fields for step name, instructions, image per step, plus total time and required supplies/tools.
+- [ ] **Citations / sources** _(optional)_ — array of references used in the post. Each entry: label, URL, optional publication name and author. Renders as visible footnotes AND emits citation schema.
+- [ ] **Speakable selectors** _(optional, advanced)_ — mark specific paragraphs as "speakable" for voice assistant readouts. Most posts won't need this; [Example](https://developers.google.com/search/docs/appearance/structured-data/speakable).
 
 ---
 
@@ -99,17 +98,17 @@ Set up once per writer. Becomes the source of truth for that person across all t
 - [ ] **Photo** — headshot. Used on profile page and optionally in post bylines.
 - [ ] **Short bio** — 1-3 sentence intro shown on posts.
 - [ ] **Long bio** — fuller bio shown on the author's profile page.
-- [ ] **Credentials** *(optional)* — degrees, certifications, awards. Boosts E-E-A-T signals for AI search.
+- [ ] **Credentials** _(optional)_ — degrees, certifications, awards. Boosts E-E-A-T signals for AI search.
 - [ ] **Social profiles** — array of social URLs (LinkedIn, X, Instagram, personal site, etc.). Used in Person schema's `sameAs` array.
-[Example](https://developers.google.com/search/docs/appearance/structured-data/article#use-the-appropriate-type)
+      [Example](https://developers.google.com/search/docs/appearance/structured-data/article#use-the-appropriate-type)
 
 ### SEO fields (for the author profile page)
 
 All optional with smart fallbacks. Default template: `[Name], [Job Title] | PakFactory Blog`.
 
-- [ ] **Meta title** *(optional)* — falls back to auto-generated template
-- [ ] **Meta description** *(optional)* — falls back to short bio
-- [ ] **OG image** *(optional)* — falls back to author photo, then global default
+- [ ] **Meta title** _(optional)_ — falls back to auto-generated template
+- [ ] **Meta description** _(optional)_ — falls back to short bio
+- [ ] **OG image** _(optional)_ — falls back to author photo, then global default
 - [ ] **Index toggle** — default ON (auto-OFF if Active toggle is OFF)
 - [ ] **Follow toggle** — default ON
 - [ ] **No image index toggle** — default OFF
@@ -130,15 +129,15 @@ Set up once per category. Editors will mostly leave these alone after setup. Eac
 
 All optional with smart fallbacks. Default template: `[Name] — Custom Packaging Insights | PakFactory Blog`. Categories are SEO-critical hub pages — encourage editors to write custom meta titles and descriptions for them.
 
-- [ ] **Meta title** *(optional but recommended)* — falls back to auto-generated template
-- [ ] **Meta description** *(optional but recommended)* — falls back to category description
-- [ ] **OG image** *(optional)* — falls back to Featured image / banner
-- [ ] **OG title** *(optional)* — falls back to meta title
-- [ ] **OG description** *(optional)* — falls back to meta description
+- [ ] **Meta title** _(optional but recommended)_ — falls back to auto-generated template
+- [ ] **Meta description** _(optional but recommended)_ — falls back to category description
+- [ ] **OG image** _(optional)_ — falls back to Featured image / banner
+- [ ] **OG title** _(optional)_ — falls back to meta title
+- [ ] **OG description** _(optional)_ — falls back to meta description
 - [ ] **Index toggle** — default ON; flip OFF only if a category is being phased out
 - [ ] **Follow toggle** — default ON
 - [ ] **No image index toggle** — default OFF
-- [ ] **Canonical URL** *(optional, rare)* — for cases where category content is syndicated elsewhere
+- [ ] **Canonical URL** _(optional, rare)_ — for cases where category content is syndicated elsewhere
 
 ---
 
@@ -150,14 +149,14 @@ Tags are lighter than categories. Editors create them on the fly when writing po
 
 - [ ] **Name** — e.g. "Recyclable materials". Required.
 - [ ] **Slug** — auto-generated. Required.
-- [ ] **Description** *(optional)* — short blurb shown on the tag's archive page. Helps avoid the "thin content" issue.
+- [ ] **Description** _(optional)_ — short blurb shown on the tag's archive page. Helps avoid the "thin content" issue.
 
 ### SEO fields (for the tag archive page)
 
 Default template: `Posts about [Tag name] | PakFactory Blog`. Tags default to `noindex` to prevent low-value archive pages from getting indexed — flip ON only for tags with sufficient content depth (≥5-10 posts) and clear SEO value.
 
-- [ ] **Meta title** *(optional)* — falls back to auto-generated template
-- [ ] **Meta description** *(optional)* — falls back to tag description, then auto-generated
+- [ ] **Meta title** _(optional)_ — falls back to auto-generated template
+- [ ] **Meta description** _(optional)_ — falls back to tag description, then auto-generated
 - [ ] **Index toggle** — default **OFF** (intentional — see auto-indexing rules below)
 - [ ] **Follow toggle** — default ON (post links from the tag page still pass authority)
 - [ ] **No image index toggle** — default OFF
@@ -177,32 +176,38 @@ A single document containing global settings. Only admins should edit. The conte
 Many of these are developer-set-once-and-forget, but listing them so the team knows what's there:
 
 ### Identity
+
 - [ ] Site name, tagline, default meta title template, default meta description
 - [ ] PakFactory Organization details (legal name, logo, founding date, contact info)
 - [ ] Social profile URLs (LinkedIn, Instagram, Facebook, etc.)
 
 ### Default SEO
+
 - [ ] Default Open Graph image (used when a post has none)
 - [ ] Default Twitter card type
 - [ ] Default robots directive
 
 ### Integrations
+
 - [ ] GTM container ID
 - [ ] Search Console / Bing verification tokens
 - [ ] IndexNow API key
 
 ### Crawler Controls
+
 - [ ] Editable `robots.txt` content
 - [ ] Editable `llms.txt` content
 - [ ] **Auto-noindex threshold for tag pages** — number of posts below which tag pages are automatically `noindex` (recommended: 3)
 
 ### SEO Title Templates
+
 - [ ] Default post title template (e.g. `%title% | PakFactory Blog`)
 - [ ] Default category title template (e.g. `%name% — Custom Packaging Insights | PakFactory Blog`)
 - [ ] Default author title template (e.g. `%name%, %job_title% | PakFactory Blog`)
 - [ ] Default tag title template (e.g. `Posts about %name% | PakFactory Blog`)
 
 ### AI Controls
+
 - [ ] Global "Allow AI training" default
 - [ ] Global "Allow AI answering" default
 
@@ -251,12 +256,11 @@ These approaches look easy but cause long-term problems:
 - ❌ **Rich-text tables (typing tables in the body editor).** Limited styling, awkward mobile behavior, often produce malformed HTML. Use the Comparison Table block.
 - ❌ **Charts rendered to `<canvas>` only.** Canvas is a pixel buffer — invisible to crawlers. Use SVG, or pair canvas with an HTML table fallback.
 
-
 ---
 
 ## Image Asset (Library)
 
-When editors upload an image  type, Sanity should require these fields *on the asset itself* (not per use):
+When editors upload an image type, Sanity should require these fields _on the asset itself_ (not per use):
 
 - [ ] **Alt text** — required. Description for screen readers and SEO.
 - [ ] **Caption** — optional, displayed under the image if set.
@@ -326,7 +330,6 @@ Site Settings
 └─ 🔌 Integrations  (GTM container ID, Search Console verification, Bing verification, IndexNow API key)
 ```
 
-
 ---
 
 ## Reference Docs
@@ -335,4 +338,3 @@ Site Settings
 - `pakfactory-redirect-management-spec.md` — redirect system
 - `pakfactory-structured-data-spec.md` — JSON-LD implementation
 - `pakfactory-data-visualization-spec.md` — data viz blocks (tables, charts, stat callouts)
-

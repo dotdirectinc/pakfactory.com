@@ -13,7 +13,7 @@ Inherits [`AGENTS.md`](../../AGENTS.md). This package is the **only** place for 
 
 ## Consumers
 
-| App | Usage |
-|-----|--------|
+| App         | Usage                                                                    |
+| ----------- | ------------------------------------------------------------------------ |
 | `apps/blog` | Post detail `@graph` (BlogPosting, Organization, Person, BreadcrumbList) |
-| `apps/www` | Future marketing schema — import from this package, do not duplicate |
+| `apps/www`  | Future marketing schema — import from this package, do not duplicate     |

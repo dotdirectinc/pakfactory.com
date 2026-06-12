@@ -1,14 +1,20 @@
 import { defineConfig } from 'sanity'
-import type { Template } from 'sanity'
+import type { DocumentActionComponent, DocumentActionsContext, Template } from 'sanity'
 import { structureTool } from 'sanity/structure'
+import { presentationTool } from 'sanity/presentation'
 import { visionTool } from '@sanity/vision'
+import { media } from 'sanity-plugin-media'
+import { websiteLocations, blogLocations } from './presentation/locations'
 import { schemaTypes } from './schemas'
+import { publishWithRedirect } from './actions/publishWithRedirect'
 import {
   adminStructure,
   blogStructure,
   websiteStructure,
+  solutionsStructure,
   academyStructure,
 } from './structure'
+import { BlogCategoryPostsView } from './components/BlogCategoryPostsView'
 import { RelatedPostsView } from './components/RelatedPostsView'
 import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
@@ -17,6 +23,16 @@ import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapab
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
 const dataset = process.env.SANITY_STUDIO_DATASET || 'development'
+
+// ── Presentation (live site preview) ─────────────────────────────────────────
+// Per-workspace: the Website workspace previews apps/www, Blog previews apps/blog.
+// Origins are env-overridable (set in the Studio env, exposed via SANITY_STUDIO_*).
+// Each surface must run @sanity/visual-editing + a draft-mode enable route for the
+// overlays to work; apps/www already does, apps/blog wiring lands on the blog branch.
+const WWW_PREVIEW_ORIGIN =
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000'
+const BLOG_PREVIEW_ORIGIN =
+  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003'
 
 const productTemplates: Template[] = [
   {
@@ -53,7 +69,7 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   if (schemaType === 'blogCategory') {
     return S.document().views([
       S.view.form().title('Edit'),
-      S.view.component(RelatedPostsView).title('Related Posts'),
+      S.view.component(BlogCategoryPostsView).title('Posts'),
     ])
   }
   if (schemaType === 'blogTag') {
@@ -85,6 +101,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
 
 const schema = { types: schemaTypes, templates: (prev: Template[]) => [...prev, ...productTemplates] }
 
+// Replace the default publish action on posts so slug changes auto-create redirects.
+const documentActions = (
+  prev: DocumentActionComponent[],
+  context: DocumentActionsContext,
+): DocumentActionComponent[] =>
+  context.schemaType === 'post'
+    ? prev.map((action) => (action.action === 'publish' ? publishWithRedirect : action))
+    : prev
+
 export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
   {
@@ -94,8 +119,10 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
+    document: { actions: documentActions },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
+      media(),
       visionTool(),
     ],
   },
@@ -108,8 +135,19 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
+    document: { actions: documentActions },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
+      presentationTool({
+        name: 'preview',
+        title: 'Preview',
+        previewUrl: {
+          origin: BLOG_PREVIEW_ORIGIN,
+          previewMode: { enable: '/api/draft-mode/enable' },
+        },
+        resolve: { locations: blogLocations },
+      }),
+      media(),
       visionTool(),
     ],
   },
@@ -124,21 +162,23 @@ export default defineConfig([
     schema,
     plugins: [
       structureTool({ structure: websiteStructure, defaultDocumentNode }),
+      presentationTool({
+        name: 'preview',
+        title: 'Preview',
+        previewUrl: {
+          origin: WWW_PREVIEW_ORIGIN,
+          previewMode: { enable: '/api/draft-mode/enable' },
+        },
+        resolve: { locations: websiteLocations },
+      }),
+      media(),
       visionTool(),
     ],
   },
 
-  // ── Academy — placeholder, Knowledge Library + Settings only ──────────────
-  {
-    name: 'academy',
-    title: 'Academy',
-    basePath: '/academy',
-    projectId,
-    dataset,
-    schema,
-    plugins: [
-      structureTool({ structure: academyStructure, defaultDocumentNode }),
-      visionTool(),
-    ],
-  },
+  // ── Solutions — add back when Solutions workflow is defined ──────────────
+  // { name: 'solutions', title: 'Solutions', basePath: '/solutions', ... }
+
+  // ── Academy — add back when Academy schema is built ───────────────────────
+  // { name: 'academy', title: 'Academy', basePath: '/academy', ... }
 ])

@@ -8,18 +8,18 @@ Last updated: 2026-05-28.
 
 Snapshot 2026-05-27. Compare the table below against the BA screenshot on every route task (route-design conformance rule in `CLAUDE.md`).
 
-| BA route | Status |
-|----------|--------|
-| `/` home | ✅ PROD-1497 |
-| `/all` (+ pagination) | ✅ PROD-1498 |
-| `/{category}` archive (+ pagination) | ✅ PROD-1499 |
-| `/{slug}` single post | ✅ resolves via `[category]` (PROD-1597); full page rebuild → PROD-1502, **blocked on PROD-1490** schema rebuild (see [`docs/blog-content-spec-gap-analysis.md`](../../docs/blog-content-spec-gap-analysis.md)) |
-| `/tag/{slug}` | ✅ PROD-1500 |
-| `/author/{slug}` | ✅ PROD-1501 |
-| `/rss.xml` | ✅ PROD-1505 |
-| `/sitemap.xml` | ✅ PROD-1596 (utility; not on BA tree) |
-| `/search` (+ `?q=`) | ✅ PROD-1503 |
-| `/contribute` | ✅ PROD-1504 |
+| BA route                             | Status                                                                                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/` home                             | ✅ PROD-1497                                                                                                                                                                                                    |
+| `/all` (+ pagination)                | ✅ PROD-1498                                                                                                                                                                                                    |
+| `/{category}` archive (+ pagination) | ✅ PROD-1499                                                                                                                                                                                                    |
+| `/{slug}` single post                | ✅ resolves via `[category]` (PROD-1597); full page rebuild → PROD-1502, **blocked on PROD-1490** schema rebuild (see [`docs/blog-content-spec-gap-analysis.md`](../../docs/blog-content-spec-gap-analysis.md)) |
+| `/tag/{slug}`                        | ✅ PROD-1500                                                                                                                                                                                                    |
+| `/author/{slug}`                     | ✅ PROD-1501                                                                                                                                                                                                    |
+| `/rss.xml`                           | ✅ PROD-1505                                                                                                                                                                                                    |
+| `/sitemap.xml`                       | ✅ PROD-1596 (utility; not on BA tree)                                                                                                                                                                          |
+| `/search` (+ `?q=`)                  | ✅ PROD-1503                                                                                                                                                                                                    |
+| `/contribute`                        | ✅ PROD-1504                                                                                                                                                                                                    |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
 
@@ -27,13 +27,13 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 **Jira:** [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) — S2.8 Build `/blog/contribute`. Public route **`/contribute`** (reserved segment; indexable).
 
-| Deliverable | Location |
-|-------------|----------|
-| Page + metadata + JSON-LD | `src/app/contribute/page.tsx` |
-| Pitch form (client) | `src/app/contribute/_components/contribute-form.tsx` |
-| Webhook proxy | `src/app/api/contribute/route.ts` |
-| Subject/role options | `src/lib/contribute-options.ts` |
-| `webPage` generator | `packages/seo/src/generators/webPage.ts` |
+| Deliverable               | Location                                             |
+| ------------------------- | ---------------------------------------------------- |
+| Page + metadata + JSON-LD | `src/app/contribute/page.tsx`                        |
+| Pitch form (client)       | `src/app/contribute/_components/contribute-form.tsx` |
+| Webhook proxy             | `src/app/api/contribute/route.ts`                    |
+| Subject/role options      | `src/lib/contribute-options.ts`                      |
+| `webPage` generator       | `packages/seo/src/generators/webPage.ts`             |
 
 ### Decisions
 
@@ -60,12 +60,12 @@ curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
 
 **Jira:** [PROD-1503](https://dotdirect.atlassian.net/browse/PROD-1503) — S2.7 Build `/blog/search`. Faceted-listing pattern mirroring the category archive. Uses **Sanity built-in `match`** (no external search infra, per AC).
 
-| Deliverable | Location |
-|-------------|----------|
-| Route + metadata (always `noindex, follow`) | `src/app/search/page.tsx` |
-| Three-state view + search-tuned sidebar | `src/app/search/_components/search-view.tsx` |
-| Data lib (parse, tokenize, fetch, href, robots) | `src/lib/blog-search.ts` |
-| GROQ (count + 4 sort variants) | `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` in `@pakfactory/sanity/queries` |
+| Deliverable                                     | Location                                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Route + metadata (always `noindex, follow`)     | `src/app/search/page.tsx`                                                                                           |
+| Three-state view + search-tuned sidebar         | `src/app/search/_components/search-view.tsx`                                                                        |
+| Data lib (parse, tokenize, fetch, href, robots) | `src/lib/blog-search.ts`                                                                                            |
+| GROQ (count + 4 sort variants)                  | `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` in `@pakfactory/sanity/queries` |
 
 ### Decisions (Richard, 2026-06-02)
 
@@ -103,36 +103,36 @@ curl -s "http://localhost:3003/search?q=zzzznomatch99"                          
 
 ### What was shipped (code)
 
-| Deliverable | Location |
-|-------------|----------|
-| Root routes (no `basePath`) | `next.config.ts` — home at `/` |
-| Unknown paths → app 404 | `not-found.tsx`, `[slug]` + `[...segments]` → `notFound()` |
-| Turbo: blog build after workspace typechecks | `turbo.json` → `@pakfactory/blog#build` |
-| `NEXT_PUBLIC_SITE_URL` in Turbo build/dev env | `turbo.json` |
-| Local default origin (no path prefix) | `src/lib/site.ts` |
-| Env example | root `.env.example` |
+| Deliverable                                   | Location                                                   |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| Root routes (no `basePath`)                   | `next.config.ts` — home at `/`                             |
+| Unknown paths → app 404                       | `not-found.tsx`, `[slug]` + `[...segments]` → `notFound()` |
+| Turbo: blog build after workspace typechecks  | `turbo.json` → `@pakfactory/blog#build`                    |
+| `NEXT_PUBLIC_SITE_URL` in Turbo build/dev env | `turbo.json`                                               |
+| Local default origin (no path prefix)         | `src/lib/site.ts`                                          |
+| Env example                                   | root `.env.example`                                        |
 
 ### Vercel project (dashboard + `vercel.json`)
 
-| Setting | Value |
-|---------|--------|
-| Root Directory | `apps/blog` |
-| Include files outside root | **On** |
-| Install | `pnpm install --frozen-lockfile` (`vercel.json`) |
-| Build | `pnpm turbo run build --filter=@pakfactory/blog` (`vercel.json`) |
-| Ignore unchanged | `npx turbo-ignore @pakfactory/blog` (`vercel.json`) |
-| Framework | Next.js — deployment is managed; no `start` on Vercel |
-| Production `NEXT_PUBLIC_SITE_URL` | Blog origin, e.g. `https://blog.pakfactory.com` |
+| Setting                           | Value                                                            |
+| --------------------------------- | ---------------------------------------------------------------- |
+| Root Directory                    | `apps/blog`                                                      |
+| Include files outside root        | **On**                                                           |
+| Install                           | `pnpm install --frozen-lockfile` (`vercel.json`)                 |
+| Build                             | `pnpm turbo run build --filter=@pakfactory/blog` (`vercel.json`) |
+| Ignore unchanged                  | `npx turbo-ignore @pakfactory/blog` (`vercel.json`)              |
+| Framework                         | Next.js — deployment is managed; no `start` on Vercel            |
+| Production `NEXT_PUBLIC_SITE_URL` | Blog origin, e.g. `https://blog.pakfactory.com`                  |
 
 Preview deployments: enable on PRs; set preview Sanity vars as needed.
 
 ### Local URLs
 
-| URL | Purpose |
-|-----|---------|
-| `http://localhost:3003` | Home (default dev port; override with `PORT`) |
-| `http://localhost:3003/<slug>` | Post |
-| `http://localhost:3003/rss.xml` | RSS 2.0 feed (PROD-1505) |
+| URL                             | Purpose                                       |
+| ------------------------------- | --------------------------------------------- |
+| `http://localhost:3003`         | Home (default dev port; override with `PORT`) |
+| `http://localhost:3003/<slug>`  | Post                                          |
+| `http://localhost:3003/rss.xml` | RSS 2.0 feed (PROD-1505)                      |
 
 Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003` in root or `apps/blog/.env.local` for canonical/JSON-LD (or rely on default in `site.ts`).
 
@@ -155,10 +155,10 @@ curl -sI https://blog.pakfactory.com/unknown-slug | head -8
 
 ### Ops follow-up
 
-- [ ] Create Vercel project + env vars in dashboard  
-- [ ] DNS for `blog.pakfactory.com`  
-- [ ] Attach blog hostname to this Vercel project (routes at `/` on that host)  
-- [ ] Green production + preview builds  
+- [ ] Create Vercel project + env vars in dashboard
+- [ ] DNS for `blog.pakfactory.com`
+- [ ] Attach blog hostname to this Vercel project (routes at `/` on that host)
+- [ ] Green production + preview builds
 
 ---
 
@@ -172,21 +172,21 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 
 ### What was shipped
 
-| Deliverable | Location |
-|-------------|----------|
-| Robots utility | `src/lib/seo.ts` |
-| Index listing metadata | `src/app/page.tsx` — `generateMetadata` + `searchParams` |
-| Post metadata (indexable + OG/Twitter) | `src/app/[slug]/page.tsx` — `generateMetadata` |
-| Excerpt for post descriptions | `packages/sanity/src/queries.ts` — `POST_BY_SLUG_QUERY` includes `excerpt` |
+| Deliverable                            | Location                                                                   |
+| -------------------------------------- | -------------------------------------------------------------------------- |
+| Robots utility                         | `src/lib/seo.ts`                                                           |
+| Index listing metadata                 | `src/app/page.tsx` — `generateMetadata` + `searchParams`                   |
+| Post metadata (indexable + OG/Twitter) | `src/app/[slug]/page.tsx` — `generateMetadata`                             |
+| Excerpt for post descriptions          | `packages/sanity/src/queries.ts` — `POST_BY_SLUG_QUERY` includes `excerpt` |
 
 ### `getBlogRobotsDirective()` rules
 
-| Input | `index` | `follow` |
-|-------|---------|----------|
-| `kind: 'post'` | `true` | `true` |
-| Listing, page 1, no filters | `true` | `true` |
-| Listing, page ≥ 2 | `false` | `true` |
-| Listing, any active filter query param | `false` | `true` |
+| Input                                  | `index` | `follow` |
+| -------------------------------------- | ------- | -------- |
+| `kind: 'post'`                         | `true`  | `true`   |
+| Listing, page 1, no filters            | `true`  | `true`   |
+| Listing, page ≥ 2                      | `false` | `true`   |
+| Listing, any active filter query param | `false` | `true`   |
 
 **Listing kinds:** `blog_index`, `category`, `tag`, `author` (latter three ready for future archive routes).
 
@@ -195,11 +195,11 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 
 ### Routes
 
-| App path | Public URL (local) | Robots |
-|----------|-------------------|--------|
-| `/` | `/` | From `searchParams` |
-| `/[slug]` | `/[slug]` | Always index, follow |
-| `[...segments]` | unknown multi-segment | → `notFound()` |
+| App path        | Public URL (local)    | Robots               |
+| --------------- | --------------------- | -------------------- |
+| `/`             | `/`                   | From `searchParams`  |
+| `/[slug]`       | `/[slug]`             | Always index, follow |
+| `[...segments]` | unknown multi-segment | → `notFound()`       |
 
 ### Related docs
 
@@ -216,14 +216,14 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 
 ### What was shipped
 
-| Deliverable | Location |
-|-------------|----------|
-| Global 404 | `src/app/not-found.tsx` — `noindex, follow` via `getBlogRobotsDirective({ kind: 'error' })` |
-| Blog GROQ | `packages/sanity/src/queries/blog.ts` — categories + popular posts (month window, `publishedAt` fallback) |
-| Data helpers | `src/lib/blog-data.ts`, `src/lib/blog-categories.ts` (studio slug fallback) |
-| Recovery rail (reuse PROD-1503) | `src/app/_components/` — search, chips, popular rail, RFQ CTA, newsletter |
-| Newsletter API | `src/app/api/newsletter/route.ts` — needs `NEWSLETTER_WEBHOOK_URL` |
-| Author image field | `POST_BY_SLUG_QUERY` uses `author.photo` (studio `author` schema) |
+| Deliverable                     | Location                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Global 404                      | `src/app/not-found.tsx` — `noindex, follow` via `getBlogRobotsDirective({ kind: 'error' })`               |
+| Blog GROQ                       | `packages/sanity/src/queries/blog.ts` — categories + popular posts (month window, `publishedAt` fallback) |
+| Data helpers                    | `src/lib/blog-data.ts`, `src/lib/blog-categories.ts` (studio slug fallback)                               |
+| Recovery rail (reuse PROD-1503) | `src/app/_components/` — search, chips, popular rail, RFQ CTA, newsletter                                 |
+| Newsletter API                  | `src/app/api/newsletter/route.ts` — needs `NEWSLETTER_WEBHOOK_URL`                                        |
+| Author image field              | `POST_BY_SLUG_QUERY` uses `author.photo` (studio `author` schema)                                         |
 
 ### Popular posts
 
@@ -254,15 +254,15 @@ curl -sI http://localhost:3003/this-slug-does-not-exist | head -8
 
 ### What was shipped
 
-| Deliverable | Location |
-|-------------|----------|
-| Home page rebuild | `src/app/page.tsx` — hero, industries, 5 category rows, newsletter, pillars, RFQ |
-| Home data + order | `src/lib/blog-home.ts` — category slug order per AC |
-| GROQ | `packages/sanity/src/queries/blog.ts` — featured, latest, by category, industries |
-| Components | `home-hero`, `home-industry-strip`, `home-category-row`, `home-conversion-pillars`, `post-card` |
-| Studio pin field | `apps/studio/schemas/post.ts` — `featuredOnHome` |
-| Blog JSON-LD | `@pakfactory/seo` — `blog()` generator |
-| Seed | `featuredOnHome: true` on `post-paperboard-guide` |
+| Deliverable       | Location                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| Home page rebuild | `src/app/page.tsx` — hero, industries, 5 category rows, newsletter, pillars, RFQ                |
+| Home data + order | `src/lib/blog-home.ts` — category slug order per AC                                             |
+| GROQ              | `packages/sanity/src/queries/blog.ts` — featured, latest, by category, industries               |
+| Components        | `home-hero`, `home-industry-strip`, `home-category-row`, `home-conversion-pillars`, `post-card` |
+| Studio pin field  | `apps/studio/schemas/post.ts` — `featuredOnHome`                                                |
+| Blog JSON-LD      | `@pakfactory/seo` — `blog()` generator                                                          |
+| Seed              | `featuredOnHome: true` on `post-paperboard-guide`                                               |
 
 ### Verify
 
@@ -288,11 +288,11 @@ Marketing bands use `@pakfactory/ui` **`Card`**, **`Button`**, **`Badge`**, **`I
 
 ### Default port
 
-| Item | Value |
-|------|--------|
-| `apps/blog/package.json` | `next dev --port ${PORT:-3003}` |
-| `site.ts` fallback origin | `http://localhost:3003` when `NEXT_PUBLIC_SITE_URL` unset |
-| Public URL | **`http://localhost:3003/`** (home at root; do not append `/blog`) |
+| Item                      | Value                                                              |
+| ------------------------- | ------------------------------------------------------------------ |
+| `apps/blog/package.json`  | `next dev --port ${PORT:-3003}`                                    |
+| `site.ts` fallback origin | `http://localhost:3003` when `NEXT_PUBLIC_SITE_URL` unset          |
+| Public URL                | **`http://localhost:3003/`** (home at root; do not append `/blog`) |
 
 Do not use port **3001** unless you set `PORT=3001` explicitly (another service may already use 3001).
 
@@ -300,31 +300,31 @@ Do not use port **3001** unless you set `PORT=3001` explicitly (another service 
 
 The blog app must see Sanity credentials at **runtime**. Three layers work together:
 
-| Layer | File / config | Role |
-|-------|----------------|------|
-| Turbo | `turbo.json` → `dev.env` | Declares env keys for hashing only (Turbo does not load `.env` files) |
-| Next | `apps/blog/next.config.ts` | `loadEnvConfig(repoRoot)` via `import.meta.url` (not `process.cwd()`) |
-| Override | `apps/blog/.env.local` | Optional; **recommended** copy of `NEXT_PUBLIC_SANITY_*` + `SANITY_API_READ_TOKEN` |
+| Layer    | File / config              | Role                                                                               |
+| -------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| Turbo    | `turbo.json` → `dev.env`   | Declares env keys for hashing only (Turbo does not load `.env` files)              |
+| Next     | `apps/blog/next.config.ts` | `loadEnvConfig(repoRoot)` via `import.meta.url` (not `process.cwd()`)              |
+| Override | `apps/blog/.env.local`     | Optional; **recommended** copy of `NEXT_PUBLIC_SANITY_*` + `SANITY_API_READ_TOKEN` |
 
 **Studio is different:** `apps/studio/.env.local` is read by Vite only — keep `SANITY_STUDIO_PROJECT_ID` / `SANITY_STUDIO_DATASET` aligned with root (see `apps/studio/.env.example`).
 
-**Symptom:** dev yellow banner — *Project: (missing) · Token: missing · Configured: no* → blog never loaded root `.env.local`. Fix `apps/blog/.env.local` and restart.
+**Symptom:** dev yellow banner — _Project: (missing) · Token: missing · Configured: no_ → blog never loaded root `.env.local`. Fix `apps/blog/.env.local` and restart.
 
 ### Sanity dataset (local)
 
-| Setting | Local dev value |
-|---------|------------------|
-| Project | `8293wrxp` (team project; match root `.env.local`) |
+| Setting | Local dev value                                         |
+| ------- | ------------------------------------------------------- |
+| Project | `8293wrxp` (team project; match root `.env.local`)      |
 | Dataset | **`development`** (not `production` for day-to-day dev) |
 
 Root `.env.example` defaults to `development`. Production dataset is for Vercel prod / preview only.
 
 ### Seed commands
 
-| Command | What it writes |
-|---------|----------------|
+| Command                                     | What it writes                                                                                                                                  |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm --filter @pakfactory/studio run seed` | Full catalog (~163 docs): capabilities, products, blog taxonomy, 3 base posts, settings. Idempotent `createOrReplace`. Reads root `.env.local`. |
-| `pnpm seed:blog-dev` | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries. Script: `apps/studio/scripts/seed-blog-dev.mjs`. |
+| `pnpm seed:blog-dev`                        | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries. Script: `apps/studio/scripts/seed-blog-dev.mjs`.                     |
 
 Token: `SANITY_API_WRITE_TOKEN`, `SANITY_TOKEN`, or `SANITY_API_READ_TOKEN` (repo scripts accept any of these for local dev).
 
@@ -341,11 +341,11 @@ After seeding, refresh Studio (`pnpm dev:studio`) and blog home.
 
 ### Dev-only home diagnostics
 
-| Item | Location |
-|------|----------|
-| Yellow empty-state banner | `page.tsx` when zero posts in development |
-| `noStore()` in dev | `blog-home.ts` — avoids stale empty RSC cache |
-| `getBlogHomeDebugInfo()` | `blog-home.ts` — project/dataset/token for banner |
+| Item                      | Location                                          |
+| ------------------------- | ------------------------------------------------- |
+| Yellow empty-state banner | `page.tsx` when zero posts in development         |
+| `noStore()` in dev        | `blog-home.ts` — avoids stale empty RSC cache     |
+| `getBlogHomeDebugInfo()`  | `blog-home.ts` — project/dataset/token for banner |
 
 Remove or narrow the banner once local CMS connection is stable.
 
@@ -355,16 +355,16 @@ Remove or narrow the banner once local CMS connection is stable.
 
 **Jira:** [PROD-1499](https://dotdirect.atlassian.net/browse/PROD-1499) — S2.3 Category landing pages — **Request For Approval** (2026-05-19)
 
-| Deliverable | Location |
-|-------------|----------|
-| Page 1 | `src/app/category/[slug]/page.tsx` |
-| Page 2+ | `src/app/category/[slug]/page/[n]/page.tsx` |
-| Post detail | `src/app/category/[slug]/[postSlug]/page.tsx` |
-| Post URLs | `src/lib/blog-post-url.ts` (`postDetailHref`) |
-| Shared post logic | `src/lib/blog-post.ts`, `blog-post-article.tsx` |
-| Data | `src/lib/blog-category-archive.ts` |
-| JSON-LD | `src/lib/category-archive-jsonld.ts` |
-| UI | `category-archive-view`, `category-filter-sidebar`, `category-active-filters`, `PostCard` `headline` variant |
+| Deliverable       | Location                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| Page 1            | `src/app/category/[slug]/page.tsx`                                                                           |
+| Page 2+           | `src/app/category/[slug]/page/[n]/page.tsx`                                                                  |
+| Post detail       | `src/app/category/[slug]/[postSlug]/page.tsx`                                                                |
+| Post URLs         | `src/lib/blog-post-url.ts` (`postDetailHref`)                                                                |
+| Shared post logic | `src/lib/blog-post.ts`, `blog-post-article.tsx`                                                              |
+| Data              | `src/lib/blog-category-archive.ts`                                                                           |
+| JSON-LD           | `src/lib/category-archive-jsonld.ts`                                                                         |
+| UI                | `category-archive-view`, `category-filter-sidebar`, `category-active-filters`, `PostCard` `headline` variant |
 
 **QA (post URL bugfix):** From `/category/business-strategy`, cards link to `/category/business-strategy/{postSlug}` (not `/{postSlug}`). Legacy `/{postSlug}` redirects when category is known.
 
@@ -380,13 +380,13 @@ open http://localhost:3003/category/trends?tag=some-tag
 
 **Jira:** [PROD-1498](https://dotdirect.atlassian.net/browse/PROD-1498) — S2.2 All posts archive with pagination
 
-| Deliverable | Location |
-|-------------|----------|
-| Page 1 | `src/app/all/page.tsx` |
-| Page 2+ | `src/app/all/page/[n]/page.tsx` |
-| Data | `src/lib/blog-archive.ts` |
-| JSON-LD | `src/lib/all-archive-jsonld.ts` |
-| UI | `_components/all-posts-archive.tsx`, `archive-filter-sidebar.tsx`, `archive-pagination.tsx` |
+| Deliverable | Location                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| Page 1      | `src/app/all/page.tsx`                                                                      |
+| Page 2+     | `src/app/all/page/[n]/page.tsx`                                                             |
+| Data        | `src/lib/blog-archive.ts`                                                                   |
+| JSON-LD     | `src/lib/all-archive-jsonld.ts`                                                             |
+| UI          | `_components/all-posts-archive.tsx`, `archive-filter-sidebar.tsx`, `archive-pagination.tsx` |
 
 ```bash
 open http://localhost:3003/all
@@ -399,12 +399,12 @@ curl -sI http://localhost:3003/all/page/99 | head -5  # expect 404 when out of r
 
 **Jira:** [PROD-1505](https://dotdirect.atlassian.net/browse/PROD-1505) — S2.9 Build RSS feed
 
-| Deliverable | Location |
-|-------------|----------|
-| Route handler | `src/app/rss.xml/route.ts` |
-| XML builder | `src/lib/rss.ts` |
-| GROQ | `BLOG_RSS_POSTS_QUERY` in `@pakfactory/sanity/queries` |
-| Autodiscovery | `src/app/layout.tsx` → `metadata.alternates.types` |
+| Deliverable       | Location                                                 |
+| ----------------- | -------------------------------------------------------- |
+| Route handler     | `src/app/rss.xml/route.ts`                               |
+| XML builder       | `src/lib/rss.ts`                                         |
+| GROQ              | `BLOG_RSS_POSTS_QUERY` in `@pakfactory/sanity/queries`   |
+| Autodiscovery     | `src/app/layout.tsx` → `metadata.alternates.types`       |
 | Shared revalidate | `src/lib/blog-cache.ts` (`BLOG_REVALIDATE_SECONDS = 60`) |
 
 ```bash
@@ -417,14 +417,14 @@ curl -sI http://localhost:3003/rss.xml | grep -i content-type
 Tags stay **flat** (`blogTag`, URL `/blog/tag/{slug}`). Grouping is a **pure classification**
 on a `tagGroup` string field — no nested document types, no grouping encoded in slugs or titles.
 
-| Concern | Location |
-|---------|----------|
-| **Source of truth** — axis vocabulary | `TAG_GROUPS` in `apps/studio/schemas/blogTag.ts` |
-| Ungrouped sentinel value (`"ungrouped"`) | `TAG_GROUP_UNGROUPED` in same file |
-| `tagGroup` + `order` fields (radio, `initialValue: 'ungrouped'`) | `apps/studio/schemas/blogTag.ts` |
-| Studio browse lists (per-axis + Ungrouped + All) | `apps/studio/structure/index.ts` (imports `TAG_GROUPS`) |
-| Seeded tag → axis assignments | `apps/studio/scripts/seed.mjs` (`blogTags`) |
-| Front-end facet projection (`tagGroup`, `order`) | `BLOG_CATEGORY_TAGS_FACET_QUERY` in `@pakfactory/sanity/queries`; type `CategoryFacetTag` in `src/lib/blog-category-archive.ts` |
+| Concern                                                          | Location                                                                                                                        |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Source of truth** — axis vocabulary                            | `TAG_GROUPS` in `apps/studio/schemas/blogTag.ts`                                                                                |
+| Ungrouped sentinel value (`"ungrouped"`)                         | `TAG_GROUP_UNGROUPED` in same file                                                                                              |
+| `tagGroup` + `order` fields (radio, `initialValue: 'ungrouped'`) | `apps/studio/schemas/blogTag.ts`                                                                                                |
+| Studio browse lists (per-axis + Ungrouped + All)                 | `apps/studio/structure/index.ts` (imports `TAG_GROUPS`)                                                                         |
+| Seeded tag → axis assignments                                    | `apps/studio/scripts/seed.mjs` (`blogTags`)                                                                                     |
+| Front-end facet projection (`tagGroup`, `order`)                 | `BLOG_CATEGORY_TAGS_FACET_QUERY` in `@pakfactory/sanity/queries`; type `CategoryFacetTag` in `src/lib/blog-category-archive.ts` |
 
 **Current axes (7 of 11):** `material`, `packaging-type`, `finish`, `industry`, `channel`,
 `design-style`, `topic`. The canonical 11-axis Tagging Reference is not yet in-repo; add the
@@ -451,15 +451,15 @@ explicitly (else it matches all types and breaks orderings — e.g. `author` has
 
 ### What was shipped
 
-| Deliverable | Location |
-|-------------|----------|
-| `BLOG_BASE_PATH` + `absoluteUrl()` / `siteBaseUrl()` / `sitePath()` | `src/lib/site.ts` |
-| Canonicals + OG via helper | `app/page.tsx`, `app/all/page.tsx`, `app/all/page/[n]`, `app/category/[slug]/page.tsx`, `app/category/[slug]/page/[n]` |
-| JSON-LD via helper | `lib/category-archive-jsonld.ts`, `lib/all-archive-jsonld.ts`, `lib/blog-post.ts` (post + breadcrumbs) |
-| RSS channel/item links | `app/rss.xml/route.ts` passes `siteBaseUrl()`; `lib/rss.ts` unchanged |
-| RSS autodiscovery (relative) | `app/layout.tsx` → `sitePath("/rss.xml")` |
-| **New** XML sitemap | `app/sitemap.ts` (+ `BLOG_SITEMAP_POSTS_QUERY` in `@pakfactory/sanity/queries`) |
-| Env docs | root + `apps/blog/.env.example` → `NEXT_PUBLIC_BLOG_BASE_PATH` |
+| Deliverable                                                         | Location                                                                                                               |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `BLOG_BASE_PATH` + `absoluteUrl()` / `siteBaseUrl()` / `sitePath()` | `src/lib/site.ts`                                                                                                      |
+| Canonicals + OG via helper                                          | `app/page.tsx`, `app/all/page.tsx`, `app/all/page/[n]`, `app/category/[slug]/page.tsx`, `app/category/[slug]/page/[n]` |
+| JSON-LD via helper                                                  | `lib/category-archive-jsonld.ts`, `lib/all-archive-jsonld.ts`, `lib/blog-post.ts` (post + breadcrumbs)                 |
+| RSS channel/item links                                              | `app/rss.xml/route.ts` passes `siteBaseUrl()`; `lib/rss.ts` unchanged                                                  |
+| RSS autodiscovery (relative)                                        | `app/layout.tsx` → `sitePath("/rss.xml")`                                                                              |
+| **New** XML sitemap                                                 | `app/sitemap.ts` (+ `BLOG_SITEMAP_POSTS_QUERY` in `@pakfactory/sanity/queries`)                                        |
+| Env docs                                                            | root + `apps/blog/.env.example` → `NEXT_PUBLIC_BLOG_BASE_PATH`                                                         |
 
 ### Contract
 
@@ -494,16 +494,16 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 
 ### What was shipped
 
-| Deliverable | Location |
-|-------------|----------|
-| Page 1 | `src/app/tag/[slug]/page.tsx` |
-| Page 2+ (`/page/1` → `/tag/[slug]`) | `src/app/tag/[slug]/page/[n]/page.tsx` |
-| Data | `src/lib/blog-tag-archive.ts` |
-| Axis labels (mirror of studio `TAG_GROUPS`) | `src/lib/tag-groups.ts` |
-| JSON-LD | `src/lib/tag-archive-jsonld.ts` |
-| Robots (empty→noindex) | `getTagListingRobots()` in `src/lib/seo.ts` |
-| UI | `_components/tag-archive-view`, `tag-filter-sidebar`, `tag-active-filters`, `tag-archive-pagination`; reuse `PostCard` |
-| GROQ | `BLOG_TAG_BY_SLUG_QUERY`, `BLOG_TAG_POSTS_{COUNT,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY`, `BLOG_TAG_COOCCURRING_TAGS_QUERY`, `BLOG_TAG_AUTHORS_FACET_QUERY` in `@pakfactory/sanity/queries` |
+| Deliverable                                 | Location                                                                                                                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Page 1                                      | `src/app/tag/[slug]/page.tsx`                                                                                                                                                                  |
+| Page 2+ (`/page/1` → `/tag/[slug]`)         | `src/app/tag/[slug]/page/[n]/page.tsx`                                                                                                                                                         |
+| Data                                        | `src/lib/blog-tag-archive.ts`                                                                                                                                                                  |
+| Axis labels (mirror of studio `TAG_GROUPS`) | `src/lib/tag-groups.ts`                                                                                                                                                                        |
+| JSON-LD                                     | `src/lib/tag-archive-jsonld.ts`                                                                                                                                                                |
+| Robots (empty→noindex)                      | `getTagListingRobots()` in `src/lib/seo.ts`                                                                                                                                                    |
+| UI                                          | `_components/tag-archive-view`, `tag-filter-sidebar`, `tag-active-filters`, `tag-archive-pagination`; reuse `PostCard`                                                                         |
+| GROQ                                        | `BLOG_TAG_BY_SLUG_QUERY`, `BLOG_TAG_POSTS_{COUNT,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY`, `BLOG_TAG_COOCCURRING_TAGS_QUERY`, `BLOG_TAG_AUTHORS_FACET_QUERY` in `@pakfactory/sanity/queries` |
 
 ### Behavior
 
@@ -532,13 +532,13 @@ curl -s http://localhost:3003/tag/beauty | grep -i 'tracking-wide'              
 
 **Scheme:** category archives at `/{category}`; a post's **only** URL is `/{slug}` (root). Category/tag/search/home are discovery paths, never URL scoping. The first implementation made posts `/{category}/{post-slug}`; that was reverted — bare-root post is now canonical, scoped URL 301s to it.
 
-| Concern | Location |
-|---------|----------|
-| Root resolver | `src/app/[category]/page.tsx` — known category slug → archive; else → post by slug (`/{slug}`); else `notFound()` |
-| Category pagination | `[category]/page/[n]/` (unchanged) |
-| Legacy scoped post → redirect | `[category]/[postSlug]/page.tsx` — `permanentRedirect('/'+postSlug)` (308), guarded to known categories |
-| URL builders | `categoryHref(slug)` → `/{category}`, `tagHref(slug)` → `/tag/{slug}`, `postDetailHref(slug)` → **`/{slug}`** in `src/lib/blog-post-url.ts` |
-| Redirects | `next.config.ts` `redirects()` — `/category/:c` → `/:c`, `…/page/:n` → `/:c/page/:n`, `/category/:c/:post` → **`/:post`** (permanent) |
+| Concern                       | Location                                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root resolver                 | `src/app/[category]/page.tsx` — known category slug → archive; else → post by slug (`/{slug}`); else `notFound()`                           |
+| Category pagination           | `[category]/page/[n]/` (unchanged)                                                                                                          |
+| Legacy scoped post → redirect | `[category]/[postSlug]/page.tsx` — `permanentRedirect('/'+postSlug)` (308), guarded to known categories                                     |
+| URL builders                  | `categoryHref(slug)` → `/{category}`, `tagHref(slug)` → `/tag/{slug}`, `postDetailHref(slug)` → **`/{slug}`** in `src/lib/blog-post-url.ts` |
+| Redirects                     | `next.config.ts` `redirects()` — `/category/:c` → `/:c`, `…/page/:n` → `/:c/page/:n`, `/category/:c/:post` → **`/:post`** (permanent)       |
 
 **Guards:** unknown/reserved single segments → `notFound()` (static routes `/all`, `/tag`, `/rss.xml`, `/sitemap.xml`, `/api` win over the dynamic segment). A post slug must never equal a category slug or reserved segment — recommend Studio validation (follow-up).
 
@@ -564,17 +564,17 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 
 **Schema:** `author` (name, slug, photo, role, bio[PT], credentials[PT], linkedIn). Per AC only **LinkedIn** is rendered (personalSite/xHandle ignored).
 
-| Deliverable | Location |
-|-------------|----------|
-| Page | `src/app/author/[slug]/page.tsx` — indexable, Person JSON-LD, SSR first 12 |
-| Load More API | `src/app/api/author/[slug]/posts/route.ts` — `?offset=`, 12/page, server-resolved `imageUrl` |
-| Data | `src/lib/blog-author.ts` (`AUTHOR_PAGE_SIZE=12`, `fetchAuthorPostsPage`, client-safe `AuthorPostCard`) |
-| JSON-LD | `src/lib/author-jsonld.ts` — `Person` + `sameAs`→LinkedIn + breadcrumb; `authorPersonId(slug)` shared |
-| PT renderer | `_components/portable-text.tsx` (`@portabletext/react`, added as blog dep) |
-| UI | `_components/author-header.tsx` (photo/role/H1/bio/credentials/LinkedIn), `_components/author-posts-loader.tsx` (`"use client"`) |
-| Person schema fields | `packages/seo` `person()` extended: `jobTitle`, `description`, `sameAs[]` |
-| Article back-ref | `blog-post.ts` — post `Article.author` `@id` = `authorPersonId(slug)` (author page node) |
-| Sitemap | `AUTHORS_FOR_SITEMAP_QUERY` → author URLs in `sitemap.ts` |
+| Deliverable          | Location                                                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Page                 | `src/app/author/[slug]/page.tsx` — indexable, Person JSON-LD, SSR first 12                                                       |
+| Load More API        | `src/app/api/author/[slug]/posts/route.ts` — `?offset=`, 12/page, server-resolved `imageUrl`                                     |
+| Data                 | `src/lib/blog-author.ts` (`AUTHOR_PAGE_SIZE=12`, `fetchAuthorPostsPage`, client-safe `AuthorPostCard`)                           |
+| JSON-LD              | `src/lib/author-jsonld.ts` — `Person` + `sameAs`→LinkedIn + breadcrumb; `authorPersonId(slug)` shared                            |
+| PT renderer          | `_components/portable-text.tsx` (`@portabletext/react`, added as blog dep)                                                       |
+| UI                   | `_components/author-header.tsx` (photo/role/H1/bio/credentials/LinkedIn), `_components/author-posts-loader.tsx` (`"use client"`) |
+| Person schema fields | `packages/seo` `person()` extended: `jobTitle`, `description`, `sameAs[]`                                                        |
+| Article back-ref     | `blog-post.ts` — post `Article.author` `@id` = `authorPersonId(slug)` (author page node)                                         |
+| Sitemap              | `AUTHORS_FOR_SITEMAP_QUERY` → author URLs in `sitemap.ts`                                                                        |
 
 **Load More pattern:** SSR renders first 12; the client loader appends via `fetch('/api/author/{slug}/posts?offset=N')` — **no `/page/N` URLs**. The client grid imports `AuthorPostCard` as a **type-only** import so it never pulls the `server-only` `sanity-image` builder; the API/page resolve `imageUrl` server-side.
 
@@ -595,14 +595,14 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 
 ### Blog side (this branch)
 
-| Deliverable | Location |
-|-------------|----------|
-| Active-redirect GROQ | `BLOG_REDIRECTS_QUERY` in `@pakfactory/sanity/queries` |
+| Deliverable           | Location                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Active-redirect GROQ  | `BLOG_REDIRECTS_QUERY` in `@pakfactory/sanity/queries`                                                                                                       |
 | Cached map + resolver | `src/lib/blog-redirects.ts` — `unstable_cache` (60s TTL + `blog-redirects` tag), `resolveRedirect` (bounded chain-follow + loop guard), `redirectOrNotFound` |
-| Resolver hook | `src/app/[category]/page.tsx` — redirect check before `notFound()` |
-| Catch-all hook | `src/app/[...segments]/page.tsx` — multi-segment legacy URLs |
-| Webhook | `src/app/api/revalidate/route.ts` — secret-validated → `revalidateTag` on redirect/post |
-| Cache tag | `BLOG_REDIRECTS_CACHE_TAG` in `src/lib/blog-cache.ts` |
+| Resolver hook         | `src/app/[category]/page.tsx` — redirect check before `notFound()`                                                                                           |
+| Catch-all hook        | `src/app/[...segments]/page.tsx` — multi-segment legacy URLs                                                                                                 |
+| Webhook               | `src/app/api/revalidate/route.ts` — secret-validated → `revalidateTag` on redirect/post                                                                      |
+| Cache tag             | `BLOG_REDIRECTS_CACHE_TAG` in `src/lib/blog-cache.ts`                                                                                                        |
 
 ### Studio side (`feature/sanity-studio-ux`)
 
@@ -665,14 +665,14 @@ apps/blog/src/
 
 ### Commits (branch `feature/blog`)
 
-| SHA | What |
-|-----|------|
-| `159ef27` | move Sanity client/env → `src/lib/sanity` |
-| `04d1cfa` | components by reusability — colocate page-specific, merge pagination/active-filters |
-| `12688a6` | wire workspace rules; supersede PROD-1609 layout |
+| SHA       | What                                                                                     |
+| --------- | ---------------------------------------------------------------------------------------- |
+| `159ef27` | move Sanity client/env → `src/lib/sanity`                                                |
+| `04d1cfa` | components by reusability — colocate page-specific, merge pagination/active-filters      |
+| `12688a6` | wire workspace rules; supersede PROD-1609 layout                                         |
 | `4ddc5e8` | promote shared per wireframe (category-row, tag-strip, filter-sidebar); drop tag sidebar |
-| `6a1a0a2` | generic tag-strip + shared Breadcrumb; rename → category-posts-row |
-| `7712623` | group shared components by schema (`{schema}-{component}`) |
+| `6a1a0a2` | generic tag-strip + shared Breadcrumb; rename → category-posts-row                       |
+| `7712623` | group shared components by schema (`{schema}-{component}`)                               |
 
 ### Follow-ups (not done)
 

@@ -6,9 +6,9 @@ This file is the **single source of truth** for product context, stack constrain
 
 The development tool does not change the rules. Whether you build through **Claude Code, Cursor, or any other assistant**, you work from the **same canon**: this `AGENTS.md` plus the **ADR register at [`docs/adr/`](docs/adr/)** (start at [`docs/adr/README.md`](docs/adr/README.md)).
 
-- **Before implementing any feature or change, read the relevant ADRs.** They are binding and tool-agnostic — they define *how we organize code, name things, place components, and handle the design system* (e.g. ADR-005 component organization, ADR-006 design tokens).
+- **Before implementing any feature or change, read the relevant ADRs.** They are binding and tool-agnostic — they define _how we organize code, name things, place components, and handle the design system_ (e.g. ADR-005 component organization, ADR-006 design tokens).
 - **If a task would contradict an ADR, stop and flag it.** Change a decision by writing a new ADR that supersedes the old one — never by diverging in code or in a tool-specific file.
-- **Tool files (`CLAUDE.md`, `.cursor/rules/*`, `.cursor/TECH_LEAD.md`) describe only *how to drive that tool*.** They must point here for decisions and never restate or fork them. Two developers on two tools should produce code that looks like it came from one team.
+- **Tool files (`CLAUDE.md`, `.cursor/rules/*`, `.cursor/TECH_LEAD.md`) describe only _how to drive that tool_.** They must point here for decisions and never restate or fork them. Two developers on two tools should produce code that looks like it came from one team.
 
 ## Identity
 
@@ -22,14 +22,14 @@ The development tool does not change the rules. Whether you build through **Clau
 
 ## Stack constraints (binding)
 
-| Area | Choice |
-|------|--------|
+| Area                | Choice                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | **Package manager** | **pnpm 9.x** only (`package.json` `packageManager`). Do **not** use npm or yarn for installs or scripts at the repo root. |
-| **Runtime** | Node **≥ 20.19** |
-| **Monorepo** | Turborepo (`turbo.json`) |
-| **Apps** | Next.js **16** (App Router), React **19**, Tailwind **4** |
-| **CMS** | Sanity **5**, GROQ via `defineQuery`, schemas via `defineType` / `defineField` |
-| **Language** | TypeScript **5** |
+| **Runtime**         | Node **≥ 20.19**                                                                                                          |
+| **Monorepo**        | Turborepo (`turbo.json`)                                                                                                  |
+| **Apps**            | Next.js **16** (App Router), React **19**, Tailwind **4**                                                                 |
+| **CMS**             | Sanity **5**, GROQ via `defineQuery`, schemas via `defineType` / `defineField`                                            |
+| **Language**        | TypeScript **5**                                                                                                          |
 
 Install from repo root: `pnpm install`. Add a dependency to a workspace: `pnpm add <pkg> --filter @pakfactory/blog` (example).
 
@@ -45,14 +45,14 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 
 ## Repo layout
 
-| Path | Role |
-|------|------|
-| [`apps/www`](apps/www) | Main marketing site (port **3000**) |
-| [`apps/blog`](apps/blog) | Blog app — Platform Evolution stream #1 (port **3001**) |
-| [`apps/studio`](apps/studio) | Sanity Studio (port **3333**) |
-| [`packages/sanity`](packages/sanity) | Shared schemas, GROQ queries, scripts |
-| [`packages/ui`](packages/ui) | Shared shadcn-style UI primitives |
-| [`packages/seo`](packages/seo) | Typed JSON-LD / schema.org generators (`@pakfactory/seo`) |
+| Path                                 | Role                                                      |
+| ------------------------------------ | --------------------------------------------------------- |
+| [`apps/www`](apps/www)               | Main marketing site (port **3000**)                       |
+| [`apps/blog`](apps/blog)             | Blog app — Platform Evolution stream #1 (port **3001**)   |
+| [`apps/studio`](apps/studio)         | Sanity Studio (port **3333**)                             |
+| [`packages/sanity`](packages/sanity) | Shared schemas, GROQ queries, scripts                     |
+| [`packages/ui`](packages/ui)         | Shared shadcn-style UI primitives                         |
+| [`packages/seo`](packages/seo)       | Typed JSON-LD / schema.org generators (`@pakfactory/seo`) |
 
 ## UI and design system (preserve primitives)
 
@@ -97,41 +97,59 @@ Details and naming conventions: [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md).
 
 Shipped prerequisites are documented in **[`docs/blog-3-jira-conventions.md`](docs/blog-3-jira-conventions.md)** (ticket → file mapping). AI and humans must follow these when touching the blog or shared packages:
 
-| Area | Rule |
-|------|------|
-| **Package manager** ([PROD-1486](https://dotdirect.atlassian.net/browse/PROD-1486)) | **pnpm 9** only; `workspace:*` for `@pakfactory/*`; ADR-002 |
-| **JSON-LD** ([PROD-1487](https://dotdirect.atlassian.net/browse/PROD-1487)) | Use **`@pakfactory/seo`** only — see [`packages/seo/CLAUDE.md`](packages/seo/CLAUDE.md) |
-| **AI IDE config** ([PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516)) | This file + [`CLAUDE.md`](CLAUDE.md) + [`.cursor/rules/`](.cursor/rules/) + [`.claude/skills/`](.claude/skills/) |
-| **Listing robots** ([PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495)) | `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` — paginated/filtered listings **noindex, follow**; posts **index, follow** |
-| **Deploy & URLs** ([PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496)) | Blog app at deployment **root** (no URL `/blog` prefix); `NEXT_PUBLIC_SITE_URL` = blog origin; Vercel ops in [`apps/blog/memory.md`](apps/blog/memory.md) |
+| Area                                                                                | Rule                                                                                                                                                      |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Package manager** ([PROD-1486](https://dotdirect.atlassian.net/browse/PROD-1486)) | **pnpm 9** only; `workspace:*` for `@pakfactory/*`; ADR-002                                                                                               |
+| **JSON-LD** ([PROD-1487](https://dotdirect.atlassian.net/browse/PROD-1487))         | Use **`@pakfactory/seo`** only — see [`packages/seo/CLAUDE.md`](packages/seo/CLAUDE.md)                                                                   |
+| **AI IDE config** ([PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516))   | This file + [`CLAUDE.md`](CLAUDE.md) + [`.cursor/rules/`](.cursor/rules/) + [`.claude/skills/`](.claude/skills/)                                          |
+| **Listing robots** ([PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495))  | `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` — paginated/filtered listings **noindex, follow**; posts **index, follow**                         |
+| **Deploy & URLs** ([PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496))   | Blog app at deployment **root** (no URL `/blog` prefix); `NEXT_PUBLIC_SITE_URL` = blog origin; Vercel ops in [`apps/blog/memory.md`](apps/blog/memory.md) |
 
 Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.net/browse/PROD-1480).
+
+<<<<<<< HEAD
 
 ## ADR summary
 
 The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — read it for any "why was this chosen?" question. Foundational platform decisions that predate the register are summarized below; numbered ADRs link out.
 
-| ADR | Decision | Link |
-|-----|----------|------|
-| **Monorepo orchestration** | Use **Turborepo** for tasks, caching, and env passthrough across apps and packages. | *foundational* |
-| **CMS** | **Sanity** as structured content layer with shared package `@pakfactory/sanity`. | *foundational* |
-| **Web framework** | **Next.js App Router** for www + blog; server components by default. | *foundational* |
-| **Shared UI** | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks. | *foundational* |
-| **Package manager** | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`. | *foundational* |
-| **ADR-003 — Redirect strategy** | 404-triggered cached map + tag-revalidated webhook; auto-create on slug change via a Studio document action. Build-time `redirects()` rejected (needs redeploy); Edge Config + middleware deferred (no hot-path cost vs. always-on middleware). | [`docs/adr/0003-redirect-strategy.md`](docs/adr/0003-redirect-strategy.md) |
-| **ADR-004 — Media library** | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md) |
-| **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred. | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md) |
-| **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens. | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
+| ADR                                  | Decision                                                                                                                                                                                                                                         | Link                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Monorepo orchestration**           | Use **Turborepo** for tasks, caching, and env passthrough across apps and packages.                                                                                                                                                              | _foundational_                                                                           |
+| **CMS**                              | **Sanity** as structured content layer with shared package `@pakfactory/sanity`.                                                                                                                                                                 | _foundational_                                                                           |
+| **Web framework**                    | **Next.js App Router** for www + blog; server components by default.                                                                                                                                                                             | _foundational_                                                                           |
+| **Shared UI**                        | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks.                                                                                                                                                | _foundational_                                                                           |
+| **Package manager**                  | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`.                                                                                                                                          | _foundational_                                                                           |
+| **ADR-003 — Redirect strategy**      | 404-triggered cached map + tag-revalidated webhook; auto-create on slug change via a Studio document action. Build-time `redirects()` rejected (needs redeploy); Edge Config + middleware deferred (no hot-path cost vs. always-on middleware).  | [`docs/adr/0003-redirect-strategy.md`](docs/adr/0003-redirect-strategy.md)               |
+| **ADR-004 — Media library**          | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md)     |
+| **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
+| **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                                                            | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
+
+=======
+
+## ADR summary (draft — confirm links)
+
+<!-- TODO content owner: replace placeholder links with real ADR doc URLs or in-repo paths -->
+
+| ADR                        | Decision                                                                                                | Link  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
+| **Monorepo orchestration** | Use **Turborepo** for tasks, caching, and env passthrough across apps and packages.                     | _TBD_ |
+| **CMS**                    | **Sanity** as structured content layer with shared package `@pakfactory/sanity`.                        | _TBD_ |
+| **Web framework**          | **Next.js App Router** for www + blog; server components by default.                                    | _TBD_ |
+| **Shared UI**              | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks.       | _TBD_ |
+| **Package manager**        | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`. | _TBD_ |
+
+> > > > > > > feature/sanity-studio-ux
 
 ## JIRA defaults (Product / Blog 3.0)
 
-| Item | Convention |
-|------|------------|
-| **Project key** | `PROD` |
-| **Issue prefix** | `PROD-123` |
-| **Branches** | `feat/PROD-123-short-slug`, `fix/PROD-123-short-slug` |
-| **Commits** | `PROD-123: summary` or trailer `Refs: PROD-123` |
-| **PR titles** | `[PROD-123] Short description` |
+| Item              | Convention                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| **Project key**   | `PROD`                                                                             |
+| **Issue prefix**  | `PROD-123`                                                                         |
+| **Branches**      | `feat/PROD-123-short-slug`, `fix/PROD-123-short-slug`                              |
+| **Commits**       | `PROD-123: summary` or trailer `Refs: PROD-123`                                    |
+| **PR titles**     | `[PROD-123] Short description`                                                     |
 | **Blog 3.0 epic** | [PROD-1480](https://dotdirect.atlassian.net/browse/PROD-1480) — tech prerequisites |
 
 Full ticket-to-code mapping: [`docs/blog-3-jira-conventions.md`](docs/blog-3-jira-conventions.md).
