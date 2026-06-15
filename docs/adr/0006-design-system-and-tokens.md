@@ -21,6 +21,6 @@ An app's own `globals.css` (e.g. `apps/blog/src/app/globals.css`) is just `@impo
 ## Consequences
 
 - `apps/www` inherits the same tokens automatically when it consumes `@pakfactory/ui/globals.css`, keeping blog and marketing visually consistent.
-- The `PageDielineSection` primitive currently lives in `apps/blog/src/components/common/`; promote it to `@pakfactory/ui` when `www` adopts the dieline layout (Tier 3 per [ADR-005](0005-component-organization.md)).
+- The `PageDielineSection` primitive currently lives in `apps/blog/src/components/layout/` (per [ADR-008](0008-component-archetype-grouping.md)); promote it to `@pakfactory/ui` when `www` adopts the dieline layout (cross-app tier per [ADR-005](0005-component-organization.md)).
 - New shared deps introduced: `geist`, `lucide-react`.
 - Future visual changes go through the token layer here, not per-app overrides.

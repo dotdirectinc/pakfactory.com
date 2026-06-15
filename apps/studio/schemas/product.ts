@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { createInheritedSpecInput } from '../components/InheritedSpecInput'
+import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 
 export const product = defineType({
   name: 'product',
@@ -98,7 +99,7 @@ export const product = defineType({
       type: 'array',
       group: 'basic',
       description: 'First image = hero.',
-      of: [{ type: 'image', options: { hotspot: true } }],
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
 
     // ─── CLASSIFICATION ───────────────────────────────────────────────────────
@@ -251,7 +252,7 @@ export const product = defineType({
       title: 'Showcase images',
       type: 'array',
       group: 'page',
-      of: [{ type: 'image', options: { hotspot: true } }],
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
 
     // ─── RELATED ──────────────────────────────────────────────────────────────
@@ -294,13 +295,14 @@ export const product = defineType({
       group: 'seo',
       validation: (Rule) => Rule.max(160),
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
-    }),
+    })),
   ],
 
   preview: {

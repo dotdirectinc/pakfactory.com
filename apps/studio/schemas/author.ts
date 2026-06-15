@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
 
 export const author = defineType({
   name: 'author',
@@ -26,14 +27,15 @@ export const author = defineType({
       description: 'Used in the URL: /blog/author/{slug}',
       validation: (Rule) => Rule.required(),
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'photo',
       title: 'Profile photo',
       type: 'image',
       group: 'overview',
+      mediaTags: [MEDIA_TAG.blog],
       options: { hotspot: true },
       description: 'Square crop recommended. Min 400×400px.',
-    }),
+    })),
     defineField({
       name: 'role',
       title: 'Title / Role',

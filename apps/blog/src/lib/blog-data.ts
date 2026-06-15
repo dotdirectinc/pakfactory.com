@@ -1,4 +1,5 @@
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_CATEGORIES_QUERY,
@@ -30,7 +31,7 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
     return [...BLOG_CATEGORY_FALLBACK];
   }
   const rows = await getSanityClient()
-    .fetch<BlogCategoryChip[]>(BLOG_CATEGORIES_QUERY)
+    .fetch<BlogCategoryChip[]>(BLOG_CATEGORIES_QUERY, blogLanguageParams())
     .catch(() => []);
   if (rows.length > 0) return rows;
   return [...BLOG_CATEGORY_FALLBACK];
@@ -43,13 +44,19 @@ export async function fetchPopularPostsThisMonth(): Promise<PopularPostCard[]> {
   const monthStart = monthStartIso();
 
   const thisMonth = await client
-    .fetch<PopularPostCard[]>(POPULAR_POSTS_THIS_MONTH_QUERY, { monthStart })
+    .fetch<PopularPostCard[]>(
+      POPULAR_POSTS_THIS_MONTH_QUERY,
+      blogLanguageParams({ monthStart }),
+    )
     .catch(() => []);
 
   if (thisMonth.length >= 3) return thisMonth.slice(0, 3);
 
   const latest = await client
-    .fetch<PopularPostCard[]>(POPULAR_POSTS_LATEST_QUERY)
+    .fetch<PopularPostCard[]>(
+      POPULAR_POSTS_LATEST_QUERY,
+      blogLanguageParams(),
+    )
     .catch(() => []);
 
   const seen = new Set(thisMonth.map((p) => p._id));

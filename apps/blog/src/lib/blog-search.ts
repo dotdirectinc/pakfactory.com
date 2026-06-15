@@ -6,6 +6,7 @@ import {
 } from "@/lib/blog-archive";
 import { parseListingPage, type BlogRobotsDirective } from "@/lib/seo";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_SEARCH_POSTS_COUNT_QUERY,
@@ -163,7 +164,7 @@ export async function fetchSearchPage(
   }
 
   const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
-  const groqParams = { searchTerm, yearStart, yearEnd };
+  const groqParams = blogLanguageParams({ searchTerm, yearStart, yearEnd });
 
   let totalCount = 0;
   if (isSanityConfigured()) {

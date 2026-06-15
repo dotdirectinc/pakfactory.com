@@ -8,7 +8,7 @@ export const POSTS_QUERY = /* groq */ `*[_type == "post" && defined(slug.current
   "author": author->{name, "slug": slug.current}
 }`;
 
-export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current == $slug][0]{
+export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current == $slug && language == $language][0]{
   _id,
   title,
   "slug": slug.current,
@@ -24,6 +24,9 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current 
 export {
     BLOG_ALL_POSTS_COUNT_QUERY,
     BLOG_ALL_POSTS_PAGE_QUERY,
+    BLOG_HOME_PAGE_BUILDER_QUERY,
+    BLOG_PAGE_BY_SLUG_QUERY,
+    BLOG_LANDING_PAGES_SITEMAP_QUERY,
     BLOG_CATEGORY_AUTHORS_FACET_QUERY,
     BLOG_CATEGORY_BY_SLUG_QUERY,
     BLOG_CATEGORY_POSTS_COUNT_QUERY,

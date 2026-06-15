@@ -1,11 +1,14 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogHomePageParams, blogLanguageParams } from "@/lib/blog-language";
 import {
   getSanityDataset,
   getSanityProjectId,
   isSanityConfigured,
 } from "@/lib/sanity/env";
+import type { PageBuilderBlock } from "@/components/blocks/registry";
 import {
+  BLOG_HOME_PAGE_BUILDER_QUERY,
   BLOG_INDUSTRY_TAGS_QUERY,
   FEATURED_HOME_POST_QUERY,
   LATEST_HOME_POSTS_QUERY,
@@ -81,7 +84,11 @@ async function fetchSafe<T>(
 async function fetchFeatured(): Promise<HomePostCard | null> {
   const pinned = await fetchSafe(
     "featured",
-    () => getSanityClient().fetch<HomePostCard | null>(FEATURED_HOME_POST_QUERY),
+    () =>
+      getSanityClient().fetch<HomePostCard | null>(
+        FEATURED_HOME_POST_QUERY,
+        blogLanguageParams(),
+      ),
     null,
   );
   if (pinned) return pinned;
@@ -89,9 +96,10 @@ async function fetchFeatured(): Promise<HomePostCard | null> {
   const latestOne = await fetchSafe(
     "latest (featured fallback)",
     () =>
-      getSanityClient().fetch<HomePostCard[]>(LATEST_HOME_POSTS_QUERY, {
-        excludeId: null,
-      }),
+      getSanityClient().fetch<HomePostCard[]>(
+        LATEST_HOME_POSTS_QUERY,
+        blogLanguageParams({ excludeId: null }),
+      ),
     [],
   );
   return latestOne[0] ?? null;
@@ -101,9 +109,10 @@ async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
   return fetchSafe(
     "latest sidebar",
     () =>
-      getSanityClient().fetch<HomePostCard[]>(LATEST_HOME_POSTS_QUERY, {
-        excludeId,
-      }),
+      getSanityClient().fetch<HomePostCard[]>(
+        LATEST_HOME_POSTS_QUERY,
+        blogLanguageParams({ excludeId }),
+      ),
     [],
   );
 }
@@ -112,7 +121,11 @@ async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
 async function fetchIndustries(): Promise<HomeIndustryPill[]> {
   return fetchSafe(
     "industries",
-    () => getSanityClient().fetch<HomeIndustryPill[]>(BLOG_INDUSTRY_TAGS_QUERY),
+    () =>
+      getSanityClient().fetch<HomeIndustryPill[]>(
+        BLOG_INDUSTRY_TAGS_QUERY,
+        blogLanguageParams(),
+      ),
     [],
   );
 }
@@ -124,9 +137,10 @@ async function fetchCategoryRows(): Promise<HomeCategoryRow[]> {
       const posts = await fetchSafe(
         `category:${slug}`,
         () =>
-          client.fetch<HomePostCard[]>(POSTS_BY_CATEGORY_SLUG_QUERY, {
-            categorySlug: slug,
-          }),
+          client.fetch<HomePostCard[]>(
+            POSTS_BY_CATEGORY_SLUG_QUERY,
+            blogLanguageParams({ categorySlug: slug }),
+          ),
         [],
       );
       return {
@@ -153,6 +167,29 @@ export function getBlogHomeDebugInfo(): BlogHomeDebugInfo {
     dataset: getSanityDataset(),
     hasReadToken: Boolean(process.env.SANITY_API_READ_TOKEN?.trim()),
   };
+}
+
+/**
+ * Sanity-driven page builder for the homepage. Returns the home singleton's
+ * `pageBuilder` array (ADR-009 `blogPage` with `pageRole == home`), or empty
+ * when unpopulated / Sanity is not configured.
+ */
+export async function fetchBlogHomePageBuilder(): Promise<PageBuilderBlock[]> {
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+  if (!isSanityConfigured()) return [];
+
+  const doc = await fetchSafe(
+    "pageBuilder",
+    () =>
+      getSanityClient().fetch<{ pageBuilder?: PageBuilderBlock[] | null } | null>(
+        BLOG_HOME_PAGE_BUILDER_QUERY,
+        blogHomePageParams(),
+      ),
+    null,
+  );
+  return doc?.pageBuilder ?? [];
 }
 
 export async function fetchBlogHomeData(): Promise<BlogHomeData> {

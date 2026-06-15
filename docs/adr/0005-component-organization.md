@@ -1,6 +1,8 @@
 # ADR-005: Component organization — feature/domain grouping, routing-only `app/`
 
-**Status:** Accepted (2026-06-10). **Revised same day (D6):** the original draft kept a colocation tier (`app/<route>/_components/`); we removed it in favour of a **routing-only `app/`** with all components under `src/components/`. Implemented in `apps/blog`; `apps/www` remediation deferred. Background analysis: [`docs/component-organization-audit.md`](../component-organization-audit.md) (this ADR is canonical; the audit is the reasoning behind it).
+> **⚠️ Grouping axis superseded by [ADR-008](0008-component-archetype-grouping.md) (2026-06-12) for `apps/blog`.** `apps/blog/src/components/` is now grouped by **archetype/layer** (`blocks/ layout/ views/ modules/ ui/`), not feature/domain, to support the Sanity page-builder. The **routing-only `app/`** rule, the **naming rules (D5)**, and the **`@pakfactory/ui`** tier below all still hold. This ADR remains the record for `apps/www` until that app is remediated.
+
+**Status:** Superseded (grouping axis) by ADR-008 for `apps/blog`; otherwise Accepted (2026-06-10). **Revised same day (D6):** the original draft kept a colocation tier (`app/<route>/_components/`); we removed it in favour of a **routing-only `app/`** with all components under `src/components/`. Implemented in `apps/blog`; `apps/www` remediation deferred. Background analysis: [`docs/component-organization-audit.md`](../component-organization-audit.md) (this ADR is canonical; the audit is the reasoning behind it).
 
 ## Context
 

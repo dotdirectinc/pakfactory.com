@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 export const productCategory = defineType({
   name: 'productCategory',
@@ -33,17 +34,18 @@ export const productCategory = defineType({
       group: 'basic',
       rows: 3,
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'heroImage',
       title: 'Hero image',
       type: 'image',
       group: 'basic',
+      mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
       description: 'Used as the hero visual on the category landing page.',
       fields: [
         defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
       ],
-    }),
+    })),
     defineField({
       name: 'order',
       title: 'Display order',
@@ -68,13 +70,14 @@ export const productCategory = defineType({
       group: 'seo',
       validation: (Rule) => Rule.max(160),
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
-    }),
+    })),
   ],
   preview: {
     select: { title: 'title', media: 'heroImage' },

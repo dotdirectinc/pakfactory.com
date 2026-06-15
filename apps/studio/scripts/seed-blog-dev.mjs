@@ -16,8 +16,11 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-loadEnv({ path: join(__dirname, '../../../.env.local') })
-loadEnv({ path: join(__dirname, '../../../.env') })
+const repoRoot = join(__dirname, '../../..')
+loadEnv({ path: join(repoRoot, '.env.local') })
+loadEnv({ path: join(repoRoot, '.env') })
+// Blog app env overrides root when root token is for a different project host.
+loadEnv({ path: join(repoRoot, 'apps/blog/.env.local'), override: true })
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
@@ -27,13 +30,16 @@ const DATASET =
   process.env.NEXT_PUBLIC_SANITY_DATASET ||
   process.env.SANITY_STUDIO_DATASET ||
   'development'
+// Root .env.local may carry a stale SANITY_API_WRITE_TOKEN for another project
+// host; apps/blog/.env.local is loaded last and its SANITY_API_READ_TOKEN is the
+// working token for project 8293wrxp in local dev.
 const TOKEN =
+  process.env.SANITY_API_READ_TOKEN ||
   process.env.SANITY_API_WRITE_TOKEN ||
-  process.env.SANITY_TOKEN ||
-  process.env.SANITY_API_READ_TOKEN
+  process.env.SANITY_TOKEN
 
 if (!TOKEN) {
-  console.error('❌  Missing Sanity token in repo root .env.local')
+  console.error('❌  Missing Sanity token in repo root .env.local or apps/blog/.env.local')
   process.exit(1)
 }
 
@@ -47,6 +53,7 @@ const client = createClient({
 
 const ref = (id) => ({ _type: 'reference', _ref: id, _key: id })
 const slug = (s) => ({ _type: 'slug', current: s })
+const key = () => Math.random().toString(36).slice(2, 10)
 const block = (text) => ({
   _type: 'block',
   _key: Math.random().toString(36).slice(2),
@@ -79,6 +86,7 @@ function postDoc({
   return {
     _id,
     _type: 'post',
+    language: 'en',
     title,
     slug: slug(slugCurrent),
     publishedAt,
@@ -229,18 +237,112 @@ const extraPosts = [
   }),
 ]
 
-const allDocs = [...extraIndustries, ...extraPosts]
+/** Default homepage layout for local QA. */
+const blogHomePageDoc = {
+  _id: 'blogHomePage',
+  _type: 'blogPage',
+  pageRole: 'home',
+  language: 'en',
+  title: 'Blog Homepage',
+  pageBuilder: [
+    {
+      _key: key(),
+      _type: 'postFeaturedRow',
+      featuredPost: ref('post-dev-pn-1'),
+      latestPostsCount: 4,
+    },
+    {
+      _key: key(),
+      _type: 'postCategoryRow',
+      category: ref('bcat-packaging-news'),
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'postCategoryRow',
+      category: ref('bcat-trends'),
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'postCategoryRow',
+      category: ref('bcat-business-strategy'),
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'postCategoryRow',
+      category: ref('bcat-sustainability'),
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'postCategoryRow',
+      category: ref('bcat-design-inspiration'),
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'ctaNewsletter',
+      heading: 'Get the latest packaging digest',
+      body: 'Subscribe now for latest packaging news, trends and more.',
+    },
+  ],
+}
+
+const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc]
+
+async function publishDocument(documentId) {
+  try {
+    await client.request({
+      uri: `/data/actions/${DATASET}`,
+      method: 'POST',
+      body: {
+        actions: [
+          {
+            actionType: 'sanity.action.document.publish',
+            draftId: `drafts.${documentId}`,
+            publishedId: documentId,
+          },
+        ],
+      },
+    })
+    return true
+  } catch (err) {
+    // Document may already be published or draft may not exist yet.
+    console.warn(`  ⚠  Publish skipped for ${documentId}: ${err.message}`)
+    return false
+  }
+}
 
 async function seed() {
   console.log(`\n🌱  Blog dev seed → ${DATASET} (${PROJECT_ID}) — ${allDocs.length} documents\n`)
+
+  // ADR-009: `_type` is immutable — replace legacy blogHomePage with blogPage home singleton.
+  for (const id of [
+    'blogHomePage',
+    'drafts.blogHomePage',
+    'blogPage-packaging-guide',
+    'drafts.blogPage-packaging-guide',
+  ]) {
+    try {
+      await client.delete(id)
+      console.log(`  ↻  Removed legacy doc ${id}`)
+    } catch {
+      // already absent
+    }
+  }
 
   const tx = client.transaction()
   allDocs.forEach((doc) => tx.createOrReplace(doc))
   await tx.commit()
 
+  await publishDocument('blogHomePage')
+
   console.log(`  ✓  Industries added/updated : ${extraIndustries.length}`)
   console.log(`  ✓  Posts added/updated      : ${extraPosts.length}`)
-  console.log('\n✅  Blog dev seed complete. Refresh Studio and http://localhost:3001/blog\n')
+  console.log('  ✓  Blog Homepage pageBuilder : 1 document (blogHomePage / blogPage home)')
+  console.log('\n✅  Blog dev seed complete. Refresh Studio and http://localhost:3003\n')
 }
 
 seed().catch((err) => {

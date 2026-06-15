@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 export const productStyleCategory = defineType({
   name: 'productStyleCategory',
@@ -94,29 +95,31 @@ export const productStyleCategory = defineType({
           rows: 4,
           description: 'Supporting copy below the headline on the style category landing page.',
         }),
-        defineField({
+        defineField(taggedImageField({
           name: 'image',
           title: 'Hero image',
           type: 'image',
+          mediaTags: [MEDIA_TAG.product],
           options: { hotspot: true },
           description: 'Primary hero visual. Also used as the collection card image when no banner image is set.',
           fields: [
             defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
           ],
-        }),
+        })),
       ],
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'bannerImage',
       title: 'Banner image',
       type: 'image',
       group: 'landing',
+      mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
       description: 'Optional override for product-line cards and the collection page hero image. Falls back to hero image when empty.',
       fields: [
         defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
       ],
-    }),
+    })),
 
     // ─── CAPABILITIES ─────────────────────────────────────────────────────────
 
@@ -147,13 +150,14 @@ export const productStyleCategory = defineType({
       group: 'seo',
       validation: (Rule) => Rule.max(160),
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
-    }),
+    })),
   ],
   preview: {
     select: {

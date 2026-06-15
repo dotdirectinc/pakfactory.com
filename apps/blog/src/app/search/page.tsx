@@ -8,11 +8,11 @@ import {
 } from "@pakfactory/ui/components/card";
 import { Input } from "@pakfactory/ui/components/input";
 import { Label } from "@pakfactory/ui/components/label";
-import { Breadcrumb } from "@/components/common/breadcrumb";
-import { SearchForm } from "@/components/common/search-form";
-import { CategoryChips } from "@/components/category/category-chips";
-import { PostList } from "@/components/post/post-list";
-import { Pagination } from "@/components/common/pagination";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { SearchForm } from "@/components/modules/search-form";
+import { CategoryChips } from "@/components/ui/category-chips";
+import { PostList } from "@/components/modules/post-list";
+import { Pagination } from "@/components/modules/pagination";
 import {
   toPostCardDataList,
   toPostCardDataListFromPopular,

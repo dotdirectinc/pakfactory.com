@@ -5,17 +5,12 @@ import {
     organization,
     serializeJsonLd,
 } from '@pakfactory/seo';
-import {pageDielineOuterClass} from '@/components/common/page-dieline-section';
-import {PostCategorySection} from '@/components/post/post-category-section';
-import {categoryHref} from '@/lib/blog-post-url';
-import {toPostCardDataList} from '@/lib/post-card-data';
-import {HomeConversionPillars} from '@/components/home/home-conversion-pillars';
-import {PostFeaturedSection} from '@/components/post/post-featured-section';
-import {PostSpotlightSection} from '@/components/post/post-spotlight-section';
-import {TagStrip} from '@/components/tag/tag-strip';
-import {RfqCta} from '@/components/common/rfq-cta';
-import {CtaNewsletter} from '@/components/common/cta-newsletter';
-import {fetchBlogHomeData, getBlogHomeDebugInfo} from '@/lib/blog-home';
+import {pageDielineOuterClass} from '@/components/layout/page-dieline-section';
+import { BlockRenderer } from '@/components/blocks/block-renderer';
+import {
+    fetchBlogHomePageBuilder,
+    getBlogHomeDebugInfo,
+} from '@/lib/blog-home';
 import {
     getListingRobotsFromSearchParams,
     robotsDirectiveToMetadata,
@@ -55,14 +50,11 @@ export async function generateMetadata({
 }
 
 export default async function BlogHomePage() {
-    const data = await fetchBlogHomeData();
     const debug = getBlogHomeDebugInfo();
-    const postCount =
-        (data.featured ? 1 : 0) +
-        data.latest.length +
-        data.categoryRows.reduce((n, row) => n + row.posts.length, 0);
+    const blocks = await fetchBlogHomePageBuilder();
     const showDevEmptyHint =
-        process.env.NODE_ENV === 'development' && postCount === 0;
+        process.env.NODE_ENV === 'development' && blocks.length === 0;
+
     const siteUrl = siteBaseUrl();
     const orgId = `${siteUrl}#organization`;
     const blogId = `${siteUrl}#blog`;
@@ -89,22 +81,13 @@ export default async function BlogHomePage() {
                 dangerouslySetInnerHTML={{__html: serializeJsonLd(jsonLd)}}
             />
             <main className={pageDielineOuterClass()}>
-                {/* <header className="mb-10">
-                    <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                        PakFactory Blog
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-muted-foreground">
-                        {HOME_DESCRIPTION}
-                    </p>
-                </header> */}
-
                 {showDevEmptyHint && (
                     <div
                         className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
                         role="status"
                     >
                         <p className="font-medium">
-                            No posts loaded from Sanity
+                            Homepage page builder is empty
                         </p>
                         <p className="mt-1 text-muted-foreground">
                             Project: <code>{debug.projectId}</code> · Dataset:{' '}
@@ -113,41 +96,14 @@ export default async function BlogHomePage() {
                             Configured: {debug.configured ? 'yes' : 'no'}
                         </p>
                         <p className="mt-2 text-muted-foreground">
-                            Use <strong>http://localhost:3003</strong> (not
-                            :3001). After changing <code>.env.local</code>, stop
-                            the dev server, run{' '}
-                            <code>rm -rf apps/blog/.next</code>, then{' '}
-                            <code>pnpm dev:blog</code>. Seed data:{' '}
+                            Open Studio → Pages → Homepage, or run{' '}
                             <code>pnpm seed:blog-dev</code> on dataset{' '}
                             <code>development</code>.
                         </p>
                     </div>
                 )}
 
-                <PostFeaturedSection
-                    featured={data.featured}
-                    latest={data.latest}
-                    borderBottom
-                />
-                {/* <TagStrip
-                    tags={data.industries}
-                    heading="Browse by Industries"
-                /> */}
-                <PostCategorySection
-                    borderBottom
-                    rows={data.categoryRows.map((row) => ({
-                        slug: row.slug,
-                        title: row.title,
-                        viewAllHref: categoryHref(row.slug),
-                        posts: toPostCardDataList(row.posts, {
-                            categorySlug: row.slug,
-                        }),
-                    }))}
-                />
-                <PostSpotlightSection borderBottom />
-                <CtaNewsletter />
-                {/* <HomeConversionPillars />
-                <RfqCta className="pb-10" /> */}
+                <BlockRenderer blocks={blocks} />
             </main>
         </>
     );

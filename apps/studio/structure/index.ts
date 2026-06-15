@@ -3,6 +3,7 @@ import {
   CogIcon,
   ComponentIcon,
   DocumentTextIcon,
+  DocumentsIcon,
   FolderIcon,
   PackageIcon,
   ColorWheelIcon,
@@ -14,10 +15,13 @@ import {
   EnvelopeIcon,
   HelpCircleIcon,
   HomeIcon,
+  ImagesIcon,
   LockIcon,
   StarIcon,
 } from '@sanity/icons'
 import type { DividerBuilder, ListItemBuilder, StructureBuilder } from 'sanity/structure'
+import { MediaToolRedirect } from '../components/MediaToolRedirect'
+import { BLOG_HOME_PAGE_IDS, SUPPORTED_LANGUAGES } from '../lib/languages'
 import { TAG_GROUPS, TAG_GROUP_UNGROUPED } from '../schemas/blogTag'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,7 +29,78 @@ import { TAG_GROUPS, TAG_GROUP_UNGROUPED } from '../schemas/blogTag'
 // Set to false to revert all workspaces to Global Settings only.
 // ─────────────────────────────────────────────────────────────────────────────
 const WORKSPACE_SETTINGS = true
-import { TAG_GROUPS, TAG_GROUP_UNGROUPED } from '../schemas/blogTag'
+
+/** Flip true when design ships landing/static Studio lists (ADR-009 Studio UX gate). */
+const BLOG_STUDIO_LANDING_PAGES = false
+
+function mediaLibraryItem(S: StructureBuilder): ListItemBuilder {
+  return S.listItem()
+    .id('mediaLibrary')
+    .title('Media Library')
+    .icon(ImagesIcon)
+    .child(S.component(MediaToolRedirect).title('Media Library'))
+}
+
+function blogHomepageItem(S: StructureBuilder): ListItemBuilder {
+  return S.listItem()
+    .title('Homepage')
+    .icon(HomeIcon)
+    .child(
+      S.list()
+        .title('Homepage')
+        .items(
+          SUPPORTED_LANGUAGES.map(({ id, title }) =>
+            S.listItem()
+              .title(`Homepage (${title})`)
+              .id(`blogHomePage-${id}`)
+              .child(
+                S.editor()
+                  .id(BLOG_HOME_PAGE_IDS[id])
+                  .schemaType('blogPage')
+                  .documentId(BLOG_HOME_PAGE_IDS[id])
+              )
+          )
+        )
+    )
+}
+
+function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
+  const pageItems: ListItemBuilder[] = [blogHomepageItem(S)]
+
+  if (BLOG_STUDIO_LANDING_PAGES) {
+    pageItems.push(
+      S.listItem()
+        .title('Landing pages')
+        .icon(DocumentsIcon)
+        .schemaType('blogPage')
+        .child(
+          S.documentTypeList('blogPage')
+            .title('Landing pages')
+            .filter('_type == "blogPage" && pageRole == "landing"')
+            .defaultOrdering([{ field: 'title', direction: 'asc' }])
+        ),
+      S.listItem()
+        .title('Static pages')
+        .icon(DocumentTextIcon)
+        .schemaType('blogPage')
+        .child(
+          S.documentTypeList('blogPage')
+            .title('Static pages')
+            .filter('_type == "blogPage" && pageRole == "static"')
+            .defaultOrdering([{ field: 'title', direction: 'asc' }])
+        )
+    )
+  }
+
+  return S.listItem()
+    .title('Pages')
+    .icon(DocumentsIcon)
+    .child(
+      S.list()
+        .title('Pages')
+        .items(pageItems)
+    )
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED BUILDING BLOCKS
@@ -35,18 +110,6 @@ import { TAG_GROUPS, TAG_GROUP_UNGROUPED } from '../schemas/blogTag'
 
 export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
   return [
-    S.listItem()
-      .title('Blog Homepage')
-      .icon(HomeIcon)
-      .child(
-        S.editor()
-          .id('blogHomePage')
-          .schemaType('blogHomePage')
-          .documentId('blogHomePage')
-      ),
-
-    S.divider(),
-
     S.listItem()
       .title('Posts')
       .icon(DocumentTextIcon)
@@ -132,11 +195,11 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
           .title('Widgets')
           .items([
             S.listItem()
-              .title('CTA Blocks')
+              .title('Blocks')
               .schemaType('contentWidget')
               .child(
                 S.documentTypeList('contentWidget')
-                  .title('CTA Blocks')
+                  .title('Blocks')
                   .filter('widgetType == "cta"')
                   .defaultOrdering([{ field: 'internalTitle', direction: 'asc' }])
               ),
@@ -166,6 +229,8 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
               ),
           ])
       ),
+
+    blogPagesFolder(S),
 
   ]
 }
@@ -966,6 +1031,7 @@ export const blogStructure = (S: StructureBuilder) =>
     .title('Blog')
     .items([
       ...blogItems(S),
+      mediaLibraryItem(S),
       ...settingsItems(S, { blog: true }),
     ])
 
@@ -976,6 +1042,7 @@ export const websiteStructure = (S: StructureBuilder) =>
     .items([
       ...coreEntitiesItems(S, { hideCaseStudies: true, label: 'Core Pages' }),
       ...staticPagesItems(S),
+      mediaLibraryItem(S),
       ...settingsItems(S),
     ])
 

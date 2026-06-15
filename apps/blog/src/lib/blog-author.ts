@@ -1,8 +1,9 @@
 import type { PortableTextBlock } from "@portabletext/types";
-import type { PostCardData } from "@/components/post/post-card";
+import type { PostCardData } from "@/components/modules/post-card";
 import type { HomePostCard } from "@/lib/blog-home";
 import { toPostCardData } from "@/lib/post-card-data";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   AUTHOR_BY_SLUG_QUERY,
@@ -39,7 +40,7 @@ export async function fetchAuthorBySlug(slug: string): Promise<AuthorDoc | null>
 export async function fetchAuthorPostsCount(authorSlug: string): Promise<number> {
   if (!isSanityConfigured()) return 0;
   return getSanityClient()
-    .fetch<number>(AUTHOR_POSTS_COUNT_QUERY, { authorSlug })
+    .fetch<number>(AUTHOR_POSTS_COUNT_QUERY, blogLanguageParams({ authorSlug }))
     .catch(() => 0);
 }
 
@@ -51,7 +52,10 @@ export async function fetchAuthorPosts(
 ): Promise<HomePostCard[]> {
   if (!isSanityConfigured()) return [];
   return getSanityClient()
-    .fetch<HomePostCard[]>(AUTHOR_POSTS_PAGE_QUERY, { authorSlug, start, end })
+    .fetch<HomePostCard[]>(
+      AUTHOR_POSTS_PAGE_QUERY,
+      blogLanguageParams({ authorSlug, start, end }),
+    )
     .catch(() => []);
 }
 

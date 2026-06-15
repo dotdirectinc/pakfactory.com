@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { AllArchiveView } from "@/components/post/all-archive-view";
+import { AllArchiveView } from "@/components/views/all-archive-view";
 import {
   archivePageHref,
   fetchAllArchivePage,

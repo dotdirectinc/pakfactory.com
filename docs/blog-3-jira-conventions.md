@@ -99,7 +99,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Routes:** `/all` (page 1), `/all/page/[n]` (page 2+); `/all/page/1` redirects to `/all`.
 - **Pagination:** 12 posts per page, newest first; out-of-range → `notFound()`.
 - **Robots:** `getAllArchiveRobots(page)` — page 1 **index**, page 2+ **noindex, follow** (`all_archive` kind in `seo.ts`).
-- **Sidebar:** `ArchiveFilterSidebar` — categories link to `/category/[slug]` (PROD-1499); no filter query logic on this route.
+- **Sidebar:** `FilterArchiveSidebar` — categories link to `/category/[slug]` (PROD-1499); no filter query logic on this route.
 - **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList` via `@pakfactory/seo` (`itemList` generator added in package).
 - **GROQ:** `BLOG_ALL_POSTS_COUNT_QUERY`, `BLOG_ALL_POSTS_PAGE_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts).
 

@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { BulbOutlineIcon } from '@sanity/icons'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 export const solution = defineType({
   name: 'solution',
@@ -69,11 +70,12 @@ export const solution = defineType({
       description: 'Supporting line below the headline.',
     }),
 
-    defineField({
+    defineField(taggedImageField({
       name: 'heroImage',
       title: 'Hero image',
       type: 'image',
       group: 'landing',
+      mediaTags: [MEDIA_TAG.solution],
       options: { hotspot: true },
       fields: [
         defineField({
@@ -83,7 +85,7 @@ export const solution = defineType({
           validation: (Rule) => Rule.required(),
         }),
       ],
-    }),
+    })),
 
     defineField({
       name: 'intro',
@@ -179,14 +181,15 @@ export const solution = defineType({
       validation: (Rule) => Rule.max(160),
     }),
 
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.solution),
       description: 'Social share image. Recommended: 1200×630px.',
       options: { hotspot: true },
-    }),
+    })),
   ],
 
   preview: {

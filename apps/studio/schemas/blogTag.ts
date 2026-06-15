@@ -1,4 +1,6 @@
 import { defineField, defineType } from 'sanity'
+import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 /**
  * blogTag — flat tag document type
@@ -42,6 +44,7 @@ export const blogTag = defineType({
     { name: 'seo', title: 'SEO' },
   ],
   fields: [
+    defineField(languageField),
     // ── Overview ────────────────────────────────────────────────────────────
     defineField({
       name: 'title',
@@ -57,7 +60,8 @@ export const blogTag = defineType({
       group: 'overview',
       options: { source: 'title' },
       description: 'Used in the URL: /blog/tag/{slug}. Set once — changing breaks links.',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) =>
+        Rule.required().custom(uniqueSlugPerLanguage('blogTag')),
     }),
     defineField({
       name: 'tagGroup',
@@ -138,14 +142,15 @@ export const blogTag = defineType({
       description: 'Default OFF.',
       initialValue: false,
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.blog),
       options: { hotspot: true },
       description: 'Social share image. Falls back to site default if not set.',
-    }),
+    })),
   ],
   preview: {
     select: { title: 'title', slug: 'slug', tagGroup: 'tagGroup' },

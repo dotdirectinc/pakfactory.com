@@ -5,7 +5,9 @@
   "type": "module",
   "exports": {
     "./queries": "./src/queries.ts",
-    "./product-page-collections": "./src/productPageCollections.ts"
+    "./product-page-collections": "./src/productPageCollections.ts",
+    "./blog-reserved-slugs": "./src/blog-reserved-slugs.ts",
+    "./languages": "./src/languages.ts"
   },
   "scripts": {
     "lint": "eslint src",

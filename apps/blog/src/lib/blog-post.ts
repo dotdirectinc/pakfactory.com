@@ -11,6 +11,7 @@ import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { authorPersonId } from "@/lib/author-jsonld";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 import { getPreviewableSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import {
@@ -47,7 +48,7 @@ export async function fetchPostBySlug(slug: string): Promise<BlogPostDetail | nu
   if (!isSanityConfigured()) return null;
   const client = await getPreviewableSanityClient();
   return client
-    .fetch<BlogPostDetail | null>(POST_BY_SLUG_QUERY, { slug })
+    .fetch<BlogPostDetail | null>(POST_BY_SLUG_QUERY, blogLanguageParams({ slug }))
     .catch(() => null);
 }
 
@@ -58,10 +59,10 @@ export async function fetchPostByCategoryAndSlug(
   if (!isSanityConfigured()) return null;
   const client = await getPreviewableSanityClient();
   return client
-    .fetch<BlogPostDetail | null>(POST_BY_CATEGORY_AND_SLUG_QUERY, {
-      categorySlug,
-      postSlug,
-    })
+    .fetch<BlogPostDetail | null>(
+      POST_BY_CATEGORY_AND_SLUG_QUERY,
+      blogLanguageParams({ categorySlug, postSlug }),
+    )
     .catch(() => null);
 }
 

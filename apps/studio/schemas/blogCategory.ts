@@ -1,4 +1,6 @@
 import { defineField, defineType } from 'sanity'
+import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 export const blogCategory = defineType({
   name: 'blogCategory',
@@ -9,6 +11,7 @@ export const blogCategory = defineType({
     { name: 'seo', title: 'SEO' },
   ],
   fields: [
+    defineField(languageField),
     // ── Overview ────────────────────────────────────────────────────────────
     defineField({
       name: 'title',
@@ -25,7 +28,8 @@ export const blogCategory = defineType({
       options: { source: 'title' },
       description: 'Used in the URL: /blog/{slug}. Must match the CATEGORY_SLUGS constant in Next.js.',
       validation: (Rule) =>
-        Rule.required().custom((slug) => {
+        Rule.required()
+          .custom((slug) => {
           const allowed = [
             'trends',
             'sustainability',
@@ -37,7 +41,8 @@ export const blogCategory = defineType({
           return allowed.includes(slug.current)
             ? true
             : `Slug must be one of: ${allowed.join(', ')}. Adding a new category requires updating the Next.js CATEGORY_SLUGS constant too.`
-        }),
+        })
+          .custom(uniqueSlugPerLanguage('blogCategory')),
     }),
     defineField({
       name: 'description',
@@ -75,14 +80,15 @@ export const blogCategory = defineType({
       group: 'seo',
       validation: (Rule) => Rule.max(160),
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.blog),
       options: { hotspot: true },
       description: 'Social share image. Falls back to site default if not set.',
-    }),
+    })),
   ],
   preview: {
     select: { title: 'title', subtitle: 'slug' },

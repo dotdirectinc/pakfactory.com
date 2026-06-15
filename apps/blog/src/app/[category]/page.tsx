@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { CategoryArchiveView } from "@/components/category/category-archive-view";
+import { CategoryArchiveView } from "@/components/views/category-archive-view";
 import {
   categoryPageHref,
   fetchCategoryArchivePage,
@@ -15,6 +15,11 @@ import {
   buildPostMetadata,
   fetchPostBySlug,
 } from "@/lib/blog-post";
+import {
+  buildBlogPageMetadata,
+  fetchBlogPageBySlug,
+} from "@/lib/blog-page";
+import { BlogLandingView } from "@/components/views/blog-landing-view";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 import { redirectOrNotFound } from "@/lib/blog-redirects";
@@ -24,8 +29,9 @@ export const revalidate = 60;
 /**
  * Single root dynamic segment, resolved in order:
  *   1. known category slug  → category archive (`/{category}`)
- *   2. otherwise            → blog post by slug (`/{slug}`, the canonical post URL)
- *   3. neither              → notFound()
+ *   2. published blogPage   → CMS landing/static (`/{slug}`, ADR-009)
+ *   3. otherwise            → blog post by slug (`/{slug}`, the canonical post URL)
+ *   4. neither              → redirect map or notFound()
  * Reserved/physical routes (`/all`, `/tag`, `/rss.xml`, `/sitemap.xml`, `/api`)
  * are matched by Next before this dynamic segment.
  */
@@ -76,6 +82,9 @@ export async function generateMetadata({
     };
   }
 
+  const cmsPage = await fetchBlogPageBySlug(category);
+  if (cmsPage) return buildBlogPageMetadata(cmsPage);
+
   const post = await fetchPostBySlug(category);
   if (post) return buildPostMetadata(post);
   return { title: "Not found" };
@@ -93,6 +102,11 @@ export default async function CategoryOrPostPage({
     const data = await fetchCategoryArchivePage(category, 1, filters);
     if (!data) notFound();
     return <CategoryArchiveView data={data} />;
+  }
+
+  const cmsPage = await fetchBlogPageBySlug(category);
+  if (cmsPage) {
+    return <BlogLandingView page={cmsPage} />;
   }
 
   const post = await fetchPostBySlug(category);

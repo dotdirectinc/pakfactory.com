@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 
 export const capability = defineType({
   name: 'capability',
@@ -90,7 +91,7 @@ export const capability = defineType({
       type: 'array',
       group: 'basic',
       description: 'Add images in render order — first image = hero.',
-      of: [{ type: 'image', options: { hotspot: true } }],
+      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
     }),
 
     // ─── ATTRIBUTES TAB ───────────────────────────────────────────────────────
@@ -373,13 +374,14 @@ export const capability = defineType({
       group: 'seo',
       validation: (Rule) => Rule.max(160),
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
       group: 'seo',
+      mediaTags: ogMediaTags(MEDIA_TAG.capability),
       options: { hotspot: true },
-    }),
+    })),
   ],
 
   preview: {

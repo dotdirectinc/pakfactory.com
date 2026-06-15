@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { UserIcon, EnvelopeIcon, LockIcon, DocumentTextIcon } from '@sanity/icons'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC PAGE SINGLETONS
@@ -11,7 +12,13 @@ import { UserIcon, EnvelopeIcon, LockIcon, DocumentTextIcon } from '@sanity/icon
 const seoFields = [
   defineField({ name: 'metaTitle', title: 'Meta title', type: 'string', validation: (Rule) => Rule.max(60) }),
   defineField({ name: 'metaDescription', title: 'Meta description', type: 'text', rows: 2, validation: (Rule) => Rule.max(160) }),
-  defineField({ name: 'ogImage', title: 'OG image', type: 'image', options: { hotspot: true } }),
+  defineField(taggedImageField({
+    name: 'ogImage',
+    title: 'OG image',
+    type: 'image',
+    mediaTags: ogMediaTags(MEDIA_TAG.website),
+    options: { hotspot: true },
+  })),
 ]
 
 // ── About Us ──────────────────────────────────────────────────────────────────
@@ -47,13 +54,14 @@ export const aboutPage = defineType({
       group: 'content',
       of: [{ type: 'block' }],
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'heroImage',
       title: 'Hero image',
       type: 'image',
       group: 'content',
+      mediaTags: [MEDIA_TAG.website],
       options: { hotspot: true },
-    }),
+    })),
     ...seoFields.map((f) => ({ ...f, group: 'seo' })),
   ],
   preview: { prepare: () => ({ title: 'About Us' }) },

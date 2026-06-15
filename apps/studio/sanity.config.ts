@@ -4,9 +4,15 @@ import { structureTool } from 'sanity/structure'
 import { presentationTool } from 'sanity/presentation'
 import { visionTool } from '@sanity/vision'
 import { media } from 'sanity-plugin-media'
+import {
+  documentInternationalization,
+  useDeleteTranslationAction,
+  useDuplicateWithTranslationsAction,
+} from '@sanity/document-internationalization'
 import { websiteLocations, blogLocations } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
+import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import {
   adminStructure,
   blogStructure,
@@ -101,14 +107,37 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
 
 const schema = { types: schemaTypes, templates: (prev: Template[]) => [...prev, ...productTemplates] }
 
+const blogI18nPlugin = documentInternationalization({
+  supportedLanguages: [...SUPPORTED_LANGUAGES],
+  schemaTypes: [...BLOG_I18N_SCHEMA_TYPES],
+  languageField: 'language',
+  allowCreateMetaDoc: true,
+})
+
+function isBlogI18nSchemaType(schemaType: string): boolean {
+  return (BLOG_I18N_SCHEMA_TYPES as readonly string[]).includes(schemaType)
+}
+
 // Replace the default publish action on posts so slug changes auto-create redirects.
 const documentActions = (
   prev: DocumentActionComponent[],
   context: DocumentActionsContext,
-): DocumentActionComponent[] =>
-  context.schemaType === 'post'
-    ? prev.map((action) => (action.action === 'publish' ? publishWithRedirect : action))
-    : prev
+): DocumentActionComponent[] => {
+  let actions =
+    context.schemaType === 'post'
+      ? prev.map((action) => (action.action === 'publish' ? publishWithRedirect : action))
+      : prev
+
+  if (isBlogI18nSchemaType(context.schemaType)) {
+    actions = [
+      ...actions,
+      useDeleteTranslationAction,
+      useDuplicateWithTranslationsAction,
+    ]
+  }
+
+  return actions
+}
 
 export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
@@ -122,6 +151,7 @@ export default defineConfig([
     document: { actions: documentActions },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
+      blogI18nPlugin,
       media(),
       visionTool(),
     ],
@@ -138,6 +168,7 @@ export default defineConfig([
     document: { actions: documentActions },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
+      blogI18nPlugin,
       presentationTool({
         name: 'preview',
         title: 'Preview',

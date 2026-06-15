@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { TagArchiveView } from "@/components/tag/tag-archive-view";
+import { TagArchiveView } from "@/components/views/tag-archive-view";
 import {
   fetchTagArchivePage,
   isArchivePageOutOfRange,

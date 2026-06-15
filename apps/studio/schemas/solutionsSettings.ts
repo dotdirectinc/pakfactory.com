@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { CogIcon } from '@sanity/icons'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 export const solutionsSettings = defineType({
   name: 'solutionsSettings',
@@ -68,12 +69,13 @@ export const solutionsSettings = defineType({
           rows: 2,
           validation: (Rule) => Rule.max(160),
         }),
-        defineField({
+        defineField(taggedImageField({
           name: 'ogImage',
           title: 'Default OG image',
           type: 'image',
+          mediaTags: ogMediaTags(MEDIA_TAG.solution),
           options: { hotspot: true },
-        }),
+        })),
       ],
     }),
   ],

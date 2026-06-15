@@ -17,6 +17,7 @@ import {
   type BlogRobotsDirective,
 } from "@/lib/seo";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_CATEGORY_AUTHORS_FACET_QUERY,
@@ -122,13 +123,13 @@ function yearMonthBounds(
 
 function groqFilterParams(categorySlug: string, filters: CategoryListFilters) {
   const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
-  return {
+  return blogLanguageParams({
     categorySlug,
     tagSlug: filters.tag ?? null,
     authorSlug: filters.author ?? null,
     yearStart,
     yearEnd,
-  };
+  });
 }
 
 function postsPageQuery(sort: CategorySort): string {
@@ -186,7 +187,10 @@ export async function fetchCategoryBySlug(
   }
 
   const doc = await getSanityClient()
-    .fetch<CategoryDocument | null>(BLOG_CATEGORY_BY_SLUG_QUERY, { slug })
+    .fetch<CategoryDocument | null>(
+      BLOG_CATEGORY_BY_SLUG_QUERY,
+      blogLanguageParams({ slug }),
+    )
     .catch(() => null);
 
   if (doc?.slug) return doc;
@@ -245,14 +249,16 @@ export async function fetchCategoryArchivePage(
         })
         .catch(() => []),
       client
-        .fetch<CategoryFacetTag[]>(BLOG_CATEGORY_TAGS_FACET_QUERY, {
-          categorySlug,
-        })
+        .fetch<CategoryFacetTag[]>(
+          BLOG_CATEGORY_TAGS_FACET_QUERY,
+          blogLanguageParams({ categorySlug }),
+        )
         .catch(() => []),
       client
-        .fetch<CategoryFacetAuthor[]>(BLOG_CATEGORY_AUTHORS_FACET_QUERY, {
-          categorySlug,
-        })
+        .fetch<CategoryFacetAuthor[]>(
+          BLOG_CATEGORY_AUTHORS_FACET_QUERY,
+          blogLanguageParams({ categorySlug }),
+        )
         .catch(() => []),
     ]);
   }

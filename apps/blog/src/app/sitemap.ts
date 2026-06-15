@@ -1,12 +1,15 @@
 import type { MetadataRoute } from "next";
 import {
   AUTHORS_FOR_SITEMAP_QUERY,
+  BLOG_LANDING_PAGES_SITEMAP_QUERY,
   BLOG_SITEMAP_POSTS_QUERY,
 } from "@pakfactory/sanity/queries";
+import { blogPageDetailHref } from "@/lib/blog-page";
 import { fetchBlogCategories } from "@/lib/blog-data";
 import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl } from "@/lib/site";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 
 export const revalidate = 60;
@@ -42,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (isSanityConfigured()) {
     const posts = await getSanityClient()
-      .fetch<SitemapPost[]>(BLOG_SITEMAP_POSTS_QUERY)
+      .fetch<SitemapPost[]>(BLOG_SITEMAP_POSTS_QUERY, blogLanguageParams())
       .catch(() => [] as SitemapPost[]);
 
     for (const post of posts) {
@@ -56,7 +59,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     const authors = await getSanityClient()
-      .fetch<{ slug: string; _updatedAt?: string }[]>(AUTHORS_FOR_SITEMAP_QUERY)
+      .fetch<{ slug: string; _updatedAt?: string }[]>(
+        AUTHORS_FOR_SITEMAP_QUERY,
+        blogLanguageParams(),
+      )
       .catch(() => [] as { slug: string; _updatedAt?: string }[]);
 
     for (const author of authors) {
@@ -64,6 +70,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: absoluteUrl(authorHref(author.slug)),
         ...(author._updatedAt ? { lastModified: new Date(author._updatedAt) } : {}),
         changeFrequency: "weekly",
+        priority: 0.5,
+      });
+    }
+
+    const landingPages = await getSanityClient()
+      .fetch<
+        { slug: string; publishedAt?: string; _updatedAt?: string }[]
+      >(BLOG_LANDING_PAGES_SITEMAP_QUERY, blogLanguageParams())
+      .catch(() => [] as { slug: string; publishedAt?: string; _updatedAt?: string }[]);
+
+    for (const page of landingPages) {
+      const lastmod = page._updatedAt ?? page.publishedAt;
+      entries.push({
+        url: absoluteUrl(blogPageDetailHref(page.slug)),
+        ...(lastmod ? { lastModified: new Date(lastmod) } : {}),
+        changeFrequency: "monthly",
         priority: 0.5,
       });
     }

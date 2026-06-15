@@ -6,14 +6,14 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 | Route                      | File                                                                                         | Notes                                                                                                                   |
 | -------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `/`                        | [`src/app/page.tsx`](./src/app/page.tsx)                                                     | Blog home; `revalidate = 60`                                                                                            |
+| `/`                        | [`src/app/page.tsx`](./src/app/page.tsx)                                                     | Blog home; `BlockRenderer` + home singleton `pageBuilder`; `revalidate = 60`                       |
 | `/all`                     | [`src/app/all/page.tsx`](./src/app/all/page.tsx)                                             | All posts archive page 1 (PROD-1498)                                                                                    |
 | `/all/page/[n]`            | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx)                           | Archive pagination; page 1 → `/all`                                                                                     |
 | `/rss.xml`                 | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts)                                     | RSS 2.0                                                                                                                 |
 | `/sitemap.xml`             | [`src/app/sitemap.ts`](./src/app/sitemap.ts)                                                 | XML sitemap (PROD-1596)                                                                                                 |
 | `/search`                  | [`src/app/search/page.tsx`](./src/app/search/page.tsx)                                       | Keyword search (PROD-1503); Sanity `match`, relevance default; always `noindex, follow`; `?q=&page=&year=&month=&sort=` |
 | `/contribute`              | [`src/app/contribute/page.tsx`](./src/app/contribute/page.tsx)                               | Contributor pitch form (PROD-1504); **index, follow**; `WebPage` JSON-LD; POST `/api/contribute`                        |
-| `/[category]`              | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx)                           | **Resolver:** known category slug → archive; else → **single post** `/{slug}` (PROD-1597)                               |
+| `/[category]`              | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx)                           | **Resolver:** category archive → **CMS landing/static** (`blogPage`) → post `/{slug}` (ADR-009) |
 | `/[category]/page/[n]`     | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx)     | Category pagination + query filters                                                                                     |
 | `/[category]/[postSlug]`   | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | **Legacy scoped post** → permanent redirect to `/{postSlug}` (PROD-1597)                                                |
 | `/tag/[slug]`              | [`src/app/tag/[slug]/page.tsx`](./src/app/tag/%5Bslug%5D/page.tsx)                           | Tag archive page 1 (PROD-1500); axis-aware kicker + sidebar                                                             |
@@ -71,27 +71,62 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 
 **Jira map:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md).
 
+## Blog pages (ADR-009)
+
+**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
+
+**Studio:** Blog workspace → **Pages → Homepage** (`BLOG_STUDIO_LANDING_PAGES = false` in [`structure/index.ts`](../../apps/studio/structure/index.ts)). Sidebar order: Posts, Categories, Authors, Tags, Widgets, then Pages (no divider after Pages). Landing/static lists inside Pages stay hidden until design ships; backend resolver remains active when docs exist.
+
+**Resolver (`/{segment}`):** category → published `blogPage` → post → redirect/404. Landing URLs are **`/{slug}`** at root. `/contribute` remains a code route.
+
+**Landing fetch:** `BLOG_PAGE_BY_SLUG_QUERY` → [`fetchBlogPageBySlug()`](./src/lib/blog-page.ts) → [`BlogLandingView`](./src/components/views/blog-landing-view.tsx) + `BlockRenderer`.
+
+## Homepage page builder (shipped)
+
+The blog home is a **Sanity-driven page builder**: home singleton (`blogPage`, `pageRole: home`, id `blogHomePage`), drag-reorderable **`pageBuilder`** (`pageBuilderHome` schema), each block rendered by a matching component in `components/blocks/`.
+
+**Data flow:** Studio → `BLOG_HOME_PAGE_BUILDER_QUERY` → [`fetchBlogHomePageBuilder()`](./src/lib/blog-home.ts) → [`BlockRenderer`](./src/components/blocks/block-renderer.tsx) via [`registry.ts`](./src/components/blocks/registry.ts).
+
+**Block types** — `components/blocks/` mirrors [`apps/studio/schemas/blocks/`](../../apps/studio/schemas/blocks/) 1:1:
+
+| `_type` | File | Component | Home | Landing |
+| --- | --- | --- | --- | --- |
+| `postFeaturedRow` | `post-featured-row` | `PostFeaturedRow` | yes | no |
+| `postCategoryRow` | `post-category-row` | `PostCategoryRow` | yes | no |
+| `postSpotlightRow` | `post-spotlight-row` | `PostSpotlightRow` | yes | no |
+| `tagStrip` | `tag-strip` | `TagStrip` | yes | yes |
+| `ctaNewsletter` | `cta-newsletter` | `CtaNewsletter` | yes | yes |
+| `ctaRfq` | `cta-rfq` | `CtaRfq` | yes | yes |
+| `ctaPillars` | `cta-pillars` | `CtaPillars` | yes | yes |
+| `richTextBand` | `rich-text-band` | `RichTextBand` | no | yes |
+
+**Add a block (4 places):** Studio schema + `blocks/index.ts` → component → `registry.ts` → GROQ branch in `PAGE_BUILDER_BLOCKS_PROJECTION` ([`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts)). Register new blocks in `insertMenu.groups` (home vs landing) in [`blocks/index.ts`](../../apps/studio/schemas/blocks/index.ts).
+
+**Insert menu (Studio):** **+ Add item** uses tabs **All** (always) + **Post** / **Tag** / **CTA** on the homepage (`pageBuilderLanding` adds **Content**). Grid view supports optional preview thumbnails: drop `{_type}.webp` in [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) and register the `_type` in [`page-builder-preview.ts`](../../apps/studio/schemas/blocks/page-builder-preview.ts); until then, block icons are shown.
+
+**Local ops:** Studio → **Pages → Homepage**. Seed: `pnpm seed:blog-dev` (home singleton only).
+
 ## Components and files
 
-- **File naming:** kebab-case, **file name === exported component** (ADR-005 D5). Named for **feature/domain** (`post-card`, `tag-strip`); generics live in **`common/`**; a single-route component may be route-descriptive (`category-archive-view` → `CategoryArchiveView`). Never a registry ID (`hero-section-32`).
-- **Location (ADR-005 + ADR-007):** canonical in **[ADR-005](../../docs/adr/0005-component-organization.md)** with **D6 revised by [ADR-007](../../docs/adr/0007-inline-single-route-page-views.md)** (rationale in background [`docs/component-organization-audit.md`](../../docs/component-organization-audit.md)). **`app/` holds routing files** (`page.tsx` / `route.ts` / `layout.tsx` / `sitemap.ts` …) and may inline a whole-page view's JSX directly in its `page.tsx` (ADR-007). **Every importable/shared component lives under `src/components/<feature>/`** (or `common/` for generics); no components are imported from `app/`. `src/` stays **`app/ components/ lib/`** only.
-    - **`src/components/` = all application UI**, **grouped by feature/domain** (not the page, not the Sanity schema). Imported via **`@/components/{feature}/{file}`** or **`@/components/common/{file}`** for generics:
-        - `post/` — `post-card`, `post-list`, `post-category-section`, `post-featured-section`, `all-archive-view` (post **detail** is inlined in `app/[category]/page.tsx` per ADR-007)
-        - `category/` — `category-chips`, `category-archive-view`
-        - `tag/` — `tag-strip`, `tag-archive-view`
-        - `author/` — `author-header`, `author-posts-loader`
-        - `home/` — `home-hero`, `home-conversion-pillars`
-        - `search/` — search is inlined in `app/search/page.tsx` per ADR-007 (single-route view)
-        - `contribute/` — `contribute-form`
-        - **`common/` (generic, feature-agnostic)** — `archive-layout`, `pagination`, `active-filters`, `filter-sidebar`, `archive-filter-sidebar`, `search-form`, `breadcrumb`, `portable-text`, `rfq-cta`, `newsletter-cta-band`
-        - Route-agnostic via callbacks: `pagination` (`hrefForPage(page)`), `active-filters` (`hrefFor(page, filters)`), `filter-sidebar` (`facetHref` + form actions). `filter-sidebar` is the faceted "Filter results" sidebar; `archive-filter-sidebar` is the `/all` "Browse" category-**nav** (distinct). `post-list` is the reusable grid/list of `post-card` items; `post-category-section` is the home category row (heading + "View all" + `post-list`). `tag-strip` renders any tag group's pills. `breadcrumb` composes the `@pakfactory/ui` breadcrumb primitive.
-    - **Single-route → inline; multi-route → component (ADR-007, revises ADR-005 D6).** A **whole-page view rendered by exactly one route** is written **inline in that route's `page.tsx`** (private sub-components/helpers in the same file) — e.g. the post detail in `[category]/page.tsx` and search in `search/page.tsx`. A view **shared by 2+ routes** stays a component in its feature folder: `category-archive-view`, `tag-archive-view`, and `all-archive-view` are each used by a page-1 route **and** its `/page/[n]` route. `app/` never holds an importable component or a `_components/` folder; if an inlined view later needs a second route, extract it to `src/components/<feature>/` then.
-    - **Don't duplicate:** when a second feature needs a component, generalize its props and (if cross-feature) move it to `common/`; share cross-app primitives via **`@pakfactory/ui`**.
+- **File naming:** kebab-case, **file name === exported component** (ADR-005 D5, still in force). Use a **prefix-first stem** (`post-featured-row`, `filter-active`, `site-nav`) so alphabetical sort clusters related files; see ADR-008 for recognized prefixes. Never a registry/positional ID (`hero-section-32`).
+- **Location (ADR-008, supersedes ADR-005 grouping; ADR-007 still in force):** canonical in **[ADR-008](../../docs/adr/0008-component-archetype-grouping.md)** (grouping axis), which retains **[ADR-005](../../docs/adr/0005-component-organization.md)** routing-only `app/` + naming, and **[ADR-007](../../docs/adr/0007-inline-single-route-page-views.md)** inline-single-route views. **`app/` holds routing files** (`page.tsx` / `route.ts` / `layout.tsx` / `sitemap.ts` …) and may inline a whole-page view's JSX directly in its `page.tsx` (ADR-007). **Every importable/shared component lives under `src/components/<archetype>/`**; no components are imported from `app/`. `src/` stays **`app/ components/ lib/`** only.
+    - **`src/components/` = all application UI**, **grouped by archetype/layer** (ADR-008) — not feature/domain, not the page, not the Sanity schema. Imported via **`@/components/{archetype}/{file}`**. Use the **ordered decision rule** in ADR-008 to pick a folder:
+        1. Sanity page-builder block → **`blocks/`**
+        2. Site chrome → **`layout/`**
+        3. Multi-route whole-page template → **`views/`** (single-route stays inline in `page.tsx`)
+        4. Sanity-data-driven building block → **`modules/`**
+        5. Presentational app-local primitive → **`ui/`** (cross-app → `@pakfactory/ui`)
+    - **Folder contents:**
+        - **`blocks/` — page-builder blocks**, one per Studio [`schemas/blocks/`](../../apps/studio/schemas/blocks/) type; targets of the `_type → component` resolver in [`registry.ts`](./src/components/blocks/registry.ts). Current blocks: `post-featured-row`, `post-category-row`, `post-spotlight-row`, `tag-strip`, `cta-newsletter`, `cta-rfq`, `cta-pillars`, `rich-text-band`. **Adding a block** — see [Homepage page builder (shipped)](#homepage-page-builder-shipped) above.
+        - **`layout/` — site chrome / page frame.** `site-nav`, `site-nav-categories`, `site-footer`, `footer-wordmark`, `breadcrumb`, `page-dieline-section`.
+        - **`views/` — multi-route route-level templates** (single-route views are inlined per ADR-007). `category-archive-view`, `all-archive-view`, `tag-archive-view`, `author-header`, `archive-layout`, `blog-landing-view`.
+        - **`modules/` — Sanity-data-driven reusable building blocks.** `post-card`, `post-list`, `filter-sidebar`, `filter-active`, `filter-archive-sidebar`, `pagination`, `search-form`, `author-posts-loader`, `contribute-form`.
+        - **`ui/` — app-local presentational primitives** (distinct from the cross-app **`@pakfactory/ui`** package; import `@/components/ui/*` vs `@pakfactory/ui/components/*`). `portable-text`, `category-chips`.
+        - Route-agnostic via callbacks: `pagination` (`hrefForPage(page)`), `filter-active` (`hrefFor(page, filters)`), `filter-sidebar` (`facetHref` + form actions). `filter-sidebar` is the faceted "Filter results" sidebar; `filter-archive-sidebar` is the `/all` "Browse" category-**nav** (distinct). `post-list` is the reusable grid/list of `post-card` items; `post-category-row` is one homepage category row (heading + "View all" + `post-list`). `tag-strip` renders any tag group's pills. `breadcrumb` composes the `@pakfactory/ui` breadcrumb primitive.
+    - **Single-route → inline; multi-route → component (ADR-007).** A **whole-page view rendered by exactly one route** is written **inline in that route's `page.tsx`** (private sub-components/helpers in the same file) — e.g. the post detail in `[category]/page.tsx` and search in `search/page.tsx`. A view **shared by 2+ routes** stays a component in **`components/views/`**: `category-archive-view`, `tag-archive-view`, and `all-archive-view` are each used by a page-1 route **and** its `/page/[n]` route. `app/` never holds an importable component or a `_components/` folder; if an inlined view later needs a second route, extract it to `src/components/views/` then.
+    - **Don't duplicate:** when a second feature needs a component, generalize its props and move it to the correct archetype folder (`modules/` for data-driven, `ui/` for presentational); share cross-app primitives via **`@pakfactory/ui`**.
 - **Styling:** use tokens from **`@pakfactory/ui/globals.css`**; do not extend `globals.css` with new tokens or `@theme` blocks for features.
-  <<<<<<< HEAD
-- # **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in `src/components/<feature>/` with `className` only.
-- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in app `_components/` with `className` only.
-    > > > > > > > feature/sanity-studio-ux
+- **UI primitives (`@pakfactory/ui`):** Prefer existing shadcn-style components for interactive and marketing surfaces — e.g. **`Card`** (+ `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`) for bands and pillar layouts, **`Button`** for CTAs, **`Badge`** for chips/pills, **`Input`** for forms. Avoid raw bordered `div`s when a matching primitive exists; keep one-off layout in `src/components/<archetype>/` with `className` only.
 
 ## Active skills (Claude Code)
 

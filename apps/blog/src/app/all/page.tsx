@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AllArchiveView } from "@/components/post/all-archive-view";
+import { AllArchiveView } from "@/components/views/all-archive-view";
 import { fetchAllArchivePage } from "@/lib/blog-archive";
 import {
   getAllArchiveRobots,

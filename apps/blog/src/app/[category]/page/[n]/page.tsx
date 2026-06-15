@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { CategoryArchiveView } from "@/components/category/category-archive-view";
+import { CategoryArchiveView } from "@/components/views/category-archive-view";
 import {
   categoryPageHref,
   fetchCategoryArchivePage,

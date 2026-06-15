@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { ContributeForm } from "@/components/contribute/contribute-form";
-import { Breadcrumb } from "@/components/common/breadcrumb";
+import { ContributeForm } from "@/components/modules/contribute-form";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
 import {
   Card,
   CardContent,

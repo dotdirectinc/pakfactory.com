@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { PostCardData } from "@/components/post/post-card";
+import type { PostCardData } from "@/components/modules/post-card";
 import type { PopularPostCard } from "@/lib/blog-data";
 import type { HomePostCard } from "@/lib/blog-home";
 import { postDetailHref } from "@/lib/blog-post-url";

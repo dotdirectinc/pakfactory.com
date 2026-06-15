@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@pakfactory/ui/components/button";
-import { SearchForm } from "@/components/common/search-form";
-import { CategoryChips } from "@/components/category/category-chips";
-import { RfqCta } from "@/components/common/rfq-cta";
-import { CtaNewsletter } from "@/components/common/cta-newsletter";
-import { PostList } from "@/components/post/post-list";
+import { SearchForm } from "@/components/modules/search-form";
+import { CategoryChips } from "@/components/ui/category-chips";
+import { CtaRfq } from "@/components/blocks/cta-rfq";
+import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
+import { PostList } from "@/components/modules/post-list";
 import { toPostCardDataListFromPopular } from "@/lib/post-card-data";
 import { fetchBlogCategories, fetchPopularPostsThisMonth } from "@/lib/blog-data";
 import {
@@ -51,7 +51,7 @@ export default async function NotFound() {
           heading="Popular this month"
           headingId="popular-posts-heading"
         />
-        <RfqCta />
+        <CtaRfq />
         <CtaNewsletter />
       </div>
     </main>

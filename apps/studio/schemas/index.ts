@@ -21,12 +21,13 @@ import { expertiseStage } from './expertiseStage'
 import { caseStudy } from './caseStudy'
 import { glossaryTerm, guide, helpArticle } from './resources'
 import { blogSettings } from './blogSettings'
-import { blogHomePage } from './blogHomePage'
+import { blogPage } from './blogPage'
 import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
 import { post } from './post'
 import { redirect } from './redirect'
 import { settings } from './settings'
+import { pageBuilderBlocks, pageBuilder, pageBuilderHome, pageBuilderLanding } from './blocks'
 
 export const schemaTypes = [
   // Capability layer
@@ -70,10 +71,16 @@ export const schemaTypes = [
   post,
   redirect,
 
+  // Page builder
+  ...pageBuilderBlocks,
+  pageBuilder,
+  pageBuilderHome,
+  pageBuilderLanding,
+
   // Singletons
   settings,
   blogSettings,
-  blogHomePage,
+  blogPage,
   aboutPage,
   contactPage,
   privacyPolicy,

@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
 
 /**
  * bodyImage — enriched image block for use inside Portable Text body fields.
@@ -17,8 +18,7 @@ export const bodyImage = defineType({
     defineField({
       name: 'asset',
       title: 'Image',
-      type: 'image',
-      options: { hotspot: true },
+      ...taggedImageType([MEDIA_TAG.blog], { hotspot: true }),
       validation: (Rule) => Rule.required(),
     }),
     defineField({

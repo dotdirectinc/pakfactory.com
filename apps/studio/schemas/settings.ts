@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 export const settings = defineType({
   name: 'settings',
@@ -19,12 +20,13 @@ export const settings = defineType({
       type: 'text',
       rows: 2,
     }),
-    defineField({
+    defineField(taggedImageField({
       name: 'defaultOgImage',
       title: 'Default OG image',
       type: 'image',
+      mediaTags: ogMediaTags(MEDIA_TAG.website),
       options: { hotspot: true },
-    }),
+    })),
     defineField({
       name: 'primaryCta',
       title: 'Primary CTA',

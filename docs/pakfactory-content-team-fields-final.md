@@ -258,13 +258,49 @@ These approaches look easy but cause long-term problems:
 
 ---
 
+## Localization (blog)
+
+Blog posts, pages, categories, and tags support **English and French** as separate documents linked in Studio — not the same as media library tags or post topic tags.
+
+| Topic | Guidance |
+| ----- | -------- |
+| **Where** | Blog workspace (and Admin workspace) — **Translations** panel on `post`, `blogPage`, `blogCategory`, `blogTag` |
+| **Workflow** | Create and publish the English document → open **Translations** → **French** → edit the duplicate → publish independently |
+| **Slugs** | May match across languages (e.g. `/packaging-news` in EN and FR); must be unique within the same language |
+| **Homepage** | **Pages → Homepage → Homepage (English)** (`blogHomePage`) and **Homepage (French)** (`blogHomePage-fr`) |
+| **Authors** | Shared across languages — one author profile referenced by posts in any locale |
+| **Public site** | Still **English only** until French URL routes ship; French content is for authoring and preview in Studio |
+
+Run `pnpm --filter @pakfactory/studio migrate:blog-i18n-en` once per dataset to backfill `language: en` on existing documents.
+
+---
+
 ## Image Asset (Library)
 
-When editors upload an image type, Sanity should require these fields _on the asset itself_ (not per use):
+When editors upload or select an image, these fields live **on the asset itself** (not per use), so metadata follows the image wherever it is reused:
 
-- [ ] **Alt text** — required. Description for screen readers and SEO.
-- [ ] **Caption** — optional, displayed under the image if set.
-- [ ] **Filename** — should be descriptive on upload (editors should be coached on this, but enforcement is hard).
+- [ ] **Alt text** — required on the asset. Description for screen readers and SEO. Per-use overrides on post `mainImage` / `ogImage` are optional and fall back to the asset value.
+- [ ] **Caption** — optional, displayed under the image if set (stored as asset `description`).
+- [ ] **Filename** — should be descriptive on upload (editors should be coached on this; enforcement is a soft signal in the Media tool).
+
+### Media tags (asset organization)
+
+Media tags are **not** blog post tags. They are labels on the image asset in the Media library (`opt.media.tags`) used to browse and filter assets across the whole project.
+
+| Tag | Auto-applied when uploading from |
+| --- | -------------------------------- |
+| `blog` | Posts, inline body images, authors, blog categories/tags/pages, blog settings |
+| `website` | Marketing pages, static pages (About, Contact, Legal), global settings |
+| `product` | Products, product lines, product styles |
+| `capability` | Capabilities and capability types |
+| `solution` | Solution pages and solutions settings |
+| `og-social` | Any OG / default social share image field (paired with the channel tag above) |
+
+**How tags get applied:** When you pick or upload an image inside a document field, Studio automatically applies the matching tag(s). You can also tag assets manually in the **Media Library** (left nav or top **Media** tab).
+
+**Finding assets:** Open **Media Library** → use the tag facet in search to filter (e.g. `blog` only, or `og-social` for all social crops). All workspaces share the same asset pool; tags are how we group by channel, not by Studio workspace.
+
+**Manual tagging:** You can add or remove tags on any asset in the Media tool. Create, rename, and delete tags there — do not use the hidden `media.tag` document list in Structure.
 
 ---
 

@@ -1,4 +1,6 @@
 import {defineField, defineType} from 'sanity';
+import {languageField, uniqueSlugPerLanguage} from '../lib/i18n-fields';
+import {MEDIA_TAG, ogMediaTags, taggedImageField} from '../lib/media-tags';
 
 export const post = defineType({
     name: 'post',
@@ -14,6 +16,7 @@ export const post = defineType({
         {name: 'seo', title: 'SEO'},
     ],
     fields: [
+        defineField(languageField),
         // ── Overview ────────────────────────────────────────────────────────────
         defineField({
             name: 'title',
@@ -28,7 +31,8 @@ export const post = defineType({
             type: 'slug',
             group: 'overview',
             options: {source: 'title'},
-            validation: (Rule) => Rule.required(),
+            validation: (Rule) =>
+                Rule.required().custom(uniqueSlugPerLanguage('post')),
         }),
         defineField({
             name: 'publishedAt',
@@ -71,11 +75,12 @@ export const post = defineType({
         }),
 
         // ── Assets ──────────────────────────────────────────────────────────────
-        defineField({
+        defineField(taggedImageField({
             name: 'mainImage',
             title: 'Main image',
             type: 'image',
             group: 'assets',
+            mediaTags: [MEDIA_TAG.blog],
             options: {hotspot: true},
             fields: [
                 defineField({
@@ -93,7 +98,7 @@ export const post = defineType({
                         'Optional short caption shown below the image in the frontend.',
                 }),
             ],
-        }),
+        })),
 
         // ── Taxonomy ────────────────────────────────────────────────────────────
         defineField({
@@ -227,11 +232,12 @@ export const post = defineType({
             group: 'seo',
             validation: (Rule) => Rule.max(160),
         }),
-        defineField({
+        defineField(taggedImageField({
             name: 'ogImage',
             title: 'OG image',
             type: 'image',
             group: 'seo',
+            mediaTags: ogMediaTags(MEDIA_TAG.blog),
             options: {hotspot: true},
             fields: [
                 defineField({
@@ -242,7 +248,7 @@ export const post = defineType({
                         'Optional. Falls back to the alt text set on the image asset in the Media library.',
                 }),
             ],
-        }),
+        })),
     ],
     preview: {
         select: {

@@ -1,5 +1,6 @@
 import type { HomePostCard } from "@/lib/blog-home";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_ALL_POSTS_COUNT_QUERY,
@@ -51,7 +52,7 @@ export function archivePageHref(pageNumber: number): string {
 async function fetchPostCount(): Promise<number> {
   if (!isSanityConfigured()) return 0;
   return getSanityClient()
-    .fetch<number>(BLOG_ALL_POSTS_COUNT_QUERY)
+    .fetch<number>(BLOG_ALL_POSTS_COUNT_QUERY, blogLanguageParams())
     .catch(() => 0);
 }
 
@@ -71,7 +72,10 @@ export async function fetchAllArchivePage(
 
   const { start, end } = archivePageSlice(pageNumber);
   const posts = await getSanityClient()
-    .fetch<HomePostCard[]>(BLOG_ALL_POSTS_PAGE_QUERY, { start, end })
+    .fetch<HomePostCard[]>(
+      BLOG_ALL_POSTS_PAGE_QUERY,
+      blogLanguageParams({ start, end }),
+    )
     .catch(() => []);
 
   return { posts, totalCount, pageNumber, totalPages };

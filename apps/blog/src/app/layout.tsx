@@ -2,8 +2,8 @@ import type {Metadata} from 'next';
 import {draftMode} from 'next/headers';
 import {GeistSans} from 'geist/font/sans';
 import {VisualEditing} from 'next-sanity/visual-editing';
-import {SiteFooter} from '@/components/common/site-footer';
-import {SiteNav} from '@/components/common/site-nav';
+import {SiteFooter} from '@/components/layout/site-footer';
+import {SiteNav} from '@/components/layout/site-nav';
 import {sitePath} from '@/lib/site';
 import './globals.css';
 

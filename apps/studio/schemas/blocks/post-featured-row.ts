@@ -1,0 +1,44 @@
+import {defineField, defineType} from 'sanity';
+import {StarIcon} from '@sanity/icons';
+import { blockRowIcon } from './page-builder-preview';
+
+/**
+ * postFeaturedRow — page-leading Featured Post: one pinned featured post plus a
+ * column of the latest posts. Page-builder block
+ * (apps/blog components/blocks/post-featured-row).
+ */
+export const postFeaturedRow = defineType({
+    name: 'postFeaturedRow',
+    title: 'Post — Featured Post',
+    type: 'object',
+    icon: StarIcon,
+    fields: [
+        defineField({
+            name: 'featuredPost',
+            title: 'Featured post',
+            type: 'reference',
+            to: [{type: 'post'}],
+            description:
+                'The hero post shown at the top of the section. Leave empty to fall back to the most recent post.',
+        }),
+        defineField({
+            name: 'latestPostsCount',
+            title: 'Latest posts count',
+            type: 'number',
+            description:
+                'How many posts to show in the "Latest posts" column beside the hero.',
+            initialValue: 4,
+            validation: (Rule) => Rule.min(1).max(8).integer(),
+        }),
+    ],
+    preview: {
+        select: {title: 'featuredPost.title'},
+        prepare({title}) {
+            return {
+        media: blockRowIcon('postFeaturedRow'),
+                title: 'Post — Featured Post',
+                subtitle: title || 'Latest post (auto)',
+            };
+        },
+    },
+});

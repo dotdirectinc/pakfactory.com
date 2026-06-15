@@ -12,6 +12,7 @@ import {
   type BlogRobotsDirective,
 } from "@/lib/seo";
 import { getSanityClient } from "@/lib/sanity/client";
+import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_TAG_AUTHORS_FACET_QUERY,
@@ -118,12 +119,12 @@ function yearMonthBounds(
 
 function groqFilterParams(tagSlug: string, filters: TagListFilters) {
   const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
-  return {
+  return blogLanguageParams({
     tagSlug,
     authorSlug: filters.author ?? null,
     yearStart,
     yearEnd,
-  };
+  });
 }
 
 function postsPageQuery(sort: TagSort): string {
@@ -155,7 +156,10 @@ export function tagPageHref(
 export async function fetchTagBySlug(slug: string): Promise<TagDocument | null> {
   if (!isSanityConfigured()) return null;
   const doc = await getSanityClient()
-    .fetch<TagDocument | null>(BLOG_TAG_BY_SLUG_QUERY, { slug })
+    .fetch<TagDocument | null>(
+      BLOG_TAG_BY_SLUG_QUERY,
+      blogLanguageParams({ slug }),
+    )
     .catch(() => null);
   return doc?.slug ? doc : null;
 }
@@ -209,10 +213,16 @@ export async function fetchTagArchivePage(
         })
         .catch(() => []),
       client
-        .fetch<TagFacet[]>(BLOG_TAG_COOCCURRING_TAGS_QUERY, { tagSlug })
+        .fetch<TagFacet[]>(
+          BLOG_TAG_COOCCURRING_TAGS_QUERY,
+          blogLanguageParams({ tagSlug }),
+        )
         .catch(() => []),
       client
-        .fetch<TagFacetAuthor[]>(BLOG_TAG_AUTHORS_FACET_QUERY, { tagSlug })
+        .fetch<TagFacetAuthor[]>(
+          BLOG_TAG_AUTHORS_FACET_QUERY,
+          blogLanguageParams({ tagSlug }),
+        )
         .catch(() => []),
     ]);
   }
