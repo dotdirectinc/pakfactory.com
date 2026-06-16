@@ -10,6 +10,8 @@ Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack,
     - @../.claude/rules/monorepo-workspace.md
     - @../.claude/rules/confirm-approved-features.md
     - @../.claude/rules/single-app-commits-and-branches.md
+- **Commit-scope mode (in-repo, overrides the single-app rule when active):**
+    - @.claude/rules/commit-mode.md — toggle between `one-app-per-commit` and `mix-commiter` (mutually exclusive). The active mode lives in `.claude/commit-mode`; check it with `./.claude/commit-mode.sh`. When `mix-commiter` is active, the single-app-commits rule above is **paused**.
 - **Component organization & clean-`src/` structure:** canonical in **[`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)** (the former management-root `clean-src-structure` / `components-by-reusability` rule drafts are superseded by it; see the [ADR register](docs/adr/)).
 - Inherits from **user-global** `~/.claude/CLAUDE.md` (if present) and this repository’s [`AGENTS.md`](./AGENTS.md).
 - For work under **`apps/blog`**, also read [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
