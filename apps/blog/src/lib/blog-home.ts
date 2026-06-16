@@ -1,5 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { getSanityClient } from "@/lib/sanity/client";
+import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { blogHomePageParams, blogLanguageParams } from "@/lib/blog-language";
 import {
   getSanityDataset,
@@ -82,10 +82,11 @@ async function fetchSafe<T>(
 }
 
 async function fetchFeatured(): Promise<HomePostCard | null> {
+  const client = await getPreviewableSanityClient();
   const pinned = await fetchSafe(
     "featured",
     () =>
-      getSanityClient().fetch<HomePostCard | null>(
+      client.fetch<HomePostCard | null>(
         FEATURED_HOME_POST_QUERY,
         blogLanguageParams(),
       ),
@@ -96,7 +97,7 @@ async function fetchFeatured(): Promise<HomePostCard | null> {
   const latestOne = await fetchSafe(
     "latest (featured fallback)",
     () =>
-      getSanityClient().fetch<HomePostCard[]>(
+      client.fetch<HomePostCard[]>(
         LATEST_HOME_POSTS_QUERY,
         blogLanguageParams({ excludeId: null }),
       ),
@@ -106,10 +107,11 @@ async function fetchFeatured(): Promise<HomePostCard | null> {
 }
 
 async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
+  const client = await getPreviewableSanityClient();
   return fetchSafe(
     "latest sidebar",
     () =>
-      getSanityClient().fetch<HomePostCard[]>(
+      client.fetch<HomePostCard[]>(
         LATEST_HOME_POSTS_QUERY,
         blogLanguageParams({ excludeId }),
       ),
@@ -119,10 +121,11 @@ async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
 
 /** Industry-axis `blogTag` pills (tagGroup == "industry"), ordered by `order` then title. */
 async function fetchIndustries(): Promise<HomeIndustryPill[]> {
+  const client = await getPreviewableSanityClient();
   return fetchSafe(
     "industries",
     () =>
-      getSanityClient().fetch<HomeIndustryPill[]>(
+      client.fetch<HomeIndustryPill[]>(
         BLOG_INDUSTRY_TAGS_QUERY,
         blogLanguageParams(),
       ),
@@ -131,7 +134,7 @@ async function fetchIndustries(): Promise<HomeIndustryPill[]> {
 }
 
 async function fetchCategoryRows(): Promise<HomeCategoryRow[]> {
-  const client = getSanityClient();
+  const client = await getPreviewableSanityClient();
   return Promise.all(
     HOME_CATEGORY_SLUGS.map(async (slug) => {
       const posts = await fetchSafe(
@@ -173,6 +176,11 @@ export function getBlogHomeDebugInfo(): BlogHomeDebugInfo {
  * Sanity-driven page builder for the homepage. Returns the home singleton's
  * `pageBuilder` array (ADR-009 `blogPage` with `pageRole == home`), or empty
  * when unpopulated / Sanity is not configured.
+ *
+ * Uses the draft-mode-aware client so that under the Studio Presentation tool
+ * (draft mode on) the blocks render with the `drafts` perspective + stega,
+ * letting visual-editing overlays resolve each widget. Outside draft mode this
+ * returns the published client, so normal traffic is unchanged.
  */
 export async function fetchBlogHomePageBuilder(): Promise<PageBuilderBlock[]> {
   if (process.env.NODE_ENV === "development") {
@@ -180,10 +188,11 @@ export async function fetchBlogHomePageBuilder(): Promise<PageBuilderBlock[]> {
   }
   if (!isSanityConfigured()) return [];
 
+  const client = await getPreviewableSanityClient();
   const doc = await fetchSafe(
     "pageBuilder",
     () =>
-      getSanityClient().fetch<{ pageBuilder?: PageBuilderBlock[] | null } | null>(
+      client.fetch<{ pageBuilder?: PageBuilderBlock[] | null } | null>(
         BLOG_HOME_PAGE_BUILDER_QUERY,
         blogHomePageParams(),
       ),
