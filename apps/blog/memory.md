@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-05-28.
+Last updated: 2026-06-18.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -678,3 +678,31 @@ apps/blog/src/
 
 - Generic shared pieces the wireframe implies but we haven't built: blog-detail widgets (TOC, TL;DR, FAQ, comparison-table, chart, stat-callout, citations, author-bio-box), the Contribute pitch form, a featured-post hero. Add `breadcrumb` to detail/author/contribute once built; optionally add a www "Home" crumb for a full trail.
 - Colocated components don't follow `{schema}-{component}` (intentional — that rule is for the shared set); revisit only if a convention for colocated names is wanted.
+
+## PROD-1775 — Studio Presentation / visual editing on the deployed Vercel staging (in progress)
+
+**Jira:** [PROD-1775](https://dotdirect.atlassian.net/browse/PROD-1775) — bug. **Goal:** the deployed Studio's Preview tab loads the deployed blog (`https://pakfactory-blog.vercel.app`) with working visual-editing overlays + "documents on this page", matching local dev.
+
+### Shipped
+
+| Concern | Where / value |
+| --- | --- |
+| **CORS** | `https://pakfactory-blog.vercel.app` added to project `8293wrxp` (allow credentials). **Admin-only** — the robot deploy/editor/viewer tokens all lack the `sanity.project.cors` grant (verified: all 401). |
+| **Studio preview origin** | `apps/studio/.env.production` (committed, public `SANITY_STUDIO_*` only) → `SANITY_STUDIO_PREVIEW_URL_BLOG=https://pakfactory-blog.vercel.app`. Vite **production** builds (`sanity build`/`deploy`) load `.env.production` over `.env.local` (verified Vite 7.3.2: `.env.[mode]` > `.env.local`); `sanity dev` keeps localhost. **Deploy trap:** `source`ing `.env.local` for the token injects `…=http://localhost:3003` into the shell, which beats `.env.production` (shell var wins) → bakes localhost. Extract only the token. |
+| **Draft-aware render** | `fetchBlogHomePageBuilder()` → **`getPreviewableSanityClient()`** (commit `6d9068d`). |
+| **Studio host** | now **`pakfactory.sanity.studio`** (appId `wzfe5kfkev9dwchv1b07110h`, commit `dafb66e`). Old `pakfactory` (project `ix8fju7k`, appId `dyspvqz55…`) undeployed; `pakfactory-2` removed. |
+| **Vercel env (staging)** | `SANITY_API_READ_TOKEN` set (required by `/api/draft-mode/enable`); dataset `development` (matches the Studio's edited dataset). |
+
+### Root cause of "No matching documents" / no overlays on deployed
+
+Presentation discovers documents + draws overlays from **stega-encoded content**, which `getSanityClient()` emits only under the `drafts` perspective. In **dev** that's automatic (`useDraftsInDev`); in **production** it's published / no-stega. Only `blog-post.ts` used the previewable client (pre-existing, commit `46efab4`), so every other deployed route — including the page-builder home — rendered with no stega → Presentation had nothing to resolve. Fix = route preview-relevant fetches through `getPreviewableSanityClient()` (drafts+stega under draft mode, published otherwise — **anonymous traffic unchanged**; components are presentational so stega rides in the fetched strings, no page/component edits).
+
+### Remaining — the other 7 libs (NOT done; rollout paused)
+
+Still on the published client → not editable in Presentation: `blog-page`, `blog-category-archive`, `blog-tag-archive`, `blog-author`, `blog-archive`, `blog-search`, `blog-data`. **Skip `blog-redirects`** (runs inside `unstable_cache`, where `draftMode()` is illegal). Pattern: resolve `const client = await getPreviewableSanityClient()` once per fetcher (functions already `async`), replace `getSanityClient()`.
+
+### Known fragility — third-party cookies (the real blocker)
+
+Studio (`pakfactory.sanity.studio` → **302 → `www.sanity.io/@or35qxDdx/studio/<appId>`**) is **cross-site** with `pakfactory-blog.vercel.app`. Visual editing needs Next's `__prerender_bypass` draft cookie (Next correctly sets it `SameSite=None; Secure` in prod), but browsers block third-party cookies — so preview dies whenever the manual "allow third-party cookies" exception resets (recurred overnight 2026-06-17). The `*.sanity.studio` → `www.sanity.io` redirect is **intrinsic to CLI v6 hosting** and not avoidable; renaming the host does not change it.
+
+**Permanent fix (recommended, ADR candidate):** make Studio + blog **same-site** — self-host Studio at `studio.pakfactory.com` + serve blog at `blog.pakfactory.com` (both under `pakfactory.com`) → draft cookie first-party → preview works in every browser. Alternative: embed Studio in the Next app at `/studio` (same-origin).
