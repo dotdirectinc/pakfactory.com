@@ -32,7 +32,9 @@ type PostCardProps = {
     | "featured"
     | "horizontal"
     | "headline"
-    | "rail";
+    | "rail"
+    | "categoryHero";
+  showFeaturedBadge?: boolean;
 };
 
 function authorInitials(name?: string): string {
@@ -57,6 +59,26 @@ function CategoryBadge({ title }: { title: string }) {
       {title}
     </Badge>
   );
+}
+
+function FeaturedBadge() {
+  return (
+    <Badge className="w-fit border-transparent bg-primary/10 px-2 py-0.5 text-sm font-medium text-primary">
+      Featured
+    </Badge>
+  );
+}
+
+function CardBadge({
+  showFeaturedBadge,
+  categoryTitle,
+}: {
+  showFeaturedBadge?: boolean;
+  categoryTitle?: string;
+}) {
+  if (showFeaturedBadge) return <FeaturedBadge />;
+  if (categoryTitle) return <CategoryBadge title={categoryTitle} />;
+  return null;
 }
 
 function PostMeta({
@@ -161,8 +183,13 @@ function PostMeta({
   );
 }
 
-export function PostCard({ post, variant = "default" }: PostCardProps) {
+export function PostCard({
+  post,
+  variant = "default",
+  showFeaturedBadge = false,
+}: PostCardProps) {
   const isFeatured = variant === "featured";
+  const isCategoryHero = variant === "categoryHero";
   const isHorizontal = variant === "horizontal";
   const isCompact = variant === "compact";
   const isHeadline = variant === "headline";
@@ -226,12 +253,50 @@ export function PostCard({ post, variant = "default" }: PostCardProps) {
           </div>
         </Link>
         <div className="flex flex-col gap-3">
-          {post.categoryTitle && <CategoryBadge title={post.categoryTitle} />}
+          <CardBadge
+            showFeaturedBadge={showFeaturedBadge}
+            categoryTitle={post.categoryTitle}
+          />
           <Link href={post.href} className="group block">
             <h3 className="text-5xl font-semibold leading-none text-card-foreground group-hover:underline">
               {post.title}
             </h3>
           </Link>
+          <PostMeta post={post} tone="featured" />
+        </div>
+      </article>
+    );
+  }
+
+  if (isCategoryHero) {
+    return (
+      <article className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <Link href={post.href} className="group block min-w-0 flex-1">
+          <div className="relative min-h-[240px] overflow-hidden rounded-[14px] bg-muted lg:min-h-[400px]">
+            {post.imageUrl && (
+              <Image
+                src={post.imageUrl}
+                alt={post.imageAlt ?? ""}
+                fill
+                className="object-cover transition-transform group-hover:scale-[1.02]"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+              />
+            )}
+          </div>
+        </Link>
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <CardBadge showFeaturedBadge={showFeaturedBadge} />
+          <Link href={post.href} className="group block">
+            <h3 className="text-3xl font-semibold leading-10 text-card-foreground group-hover:underline sm:text-4xl">
+              {post.title}
+            </h3>
+          </Link>
+          {post.excerpt && (
+            <p className="line-clamp-2 text-base text-muted-foreground">
+              {post.excerpt}
+            </p>
+          )}
           <PostMeta post={post} tone="featured" />
         </div>
       </article>
@@ -255,7 +320,10 @@ export function PostCard({ post, variant = "default" }: PostCardProps) {
           </div>
         </Link>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          {post.categoryTitle && <CategoryBadge title={post.categoryTitle} />}
+          <CardBadge
+            showFeaturedBadge={showFeaturedBadge}
+            categoryTitle={post.categoryTitle}
+          />
           <Link href={post.href} className="group block">
             <h3 className="text-2xl font-medium leading-8 text-card-foreground group-hover:underline">
               {post.title}
@@ -295,7 +363,10 @@ export function PostCard({ post, variant = "default" }: PostCardProps) {
         </div>
       </Link>
       <div className="flex flex-col gap-3">
-        {post.categoryTitle && <CategoryBadge title={post.categoryTitle} />}
+        <CardBadge
+          showFeaturedBadge={showFeaturedBadge}
+          categoryTitle={post.categoryTitle}
+        />
         <Link href={post.href} className="group block">
           <h3 className="text-2xl font-medium leading-8 text-card-foreground group-hover:underline">
             {post.title}

@@ -23,6 +23,137 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
 
+---
+
+## Studio ↔ blog SEO/Social wiring (backlog — schema done, front-end pending)
+
+The Studio blog schemas were rebuilt against the BA "Blog CMS Field Spec" (2026-06) on the `feature/sanity-studio-ux` branch: all content types now declare SEO/Social via the shared helper [`apps/studio/lib/seo-fields.ts`](../../apps/studio/lib/seo-fields.ts). **The schemas are done; the blog-side GROQ projections + metadata fallbacks are not yet wired.** Contract: [`CLAUDE.md`](./CLAUDE.md) § "SEO & Social field contract". Work the checklist below when connecting Studio to the blog interface.
+
+**Field contract (recap):** field names identical across `post` / `blogCategory` / `blogTag` / `author` / `blogPage`. Robots = `allowIndex` / `allowFollow` / `noImageIndex` (NOT inverted `noindex`). `canonical` on `post` + `blogPage` only. Fallbacks resolve in GROQ/`generateMetadata`, never the schema.
+
+### A. `blogPage` `noindex` → `allowIndex` migration (breaking — do first)
+
+`blogPage` dropped the inverted `noindex` boolean for the `allowIndex`/`allowFollow`/`noImageIndex` trio. Two consumers still read the old field:
+
+- [x] [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts) — L175 projection `noindex,` → project `allowIndex, allowFollow, noImageIndex`; L190 filter `&& noindex != true` → `&& allowIndex != false`.
+- [x] [`src/lib/blog-page.ts`](./src/lib/blog-page.ts) — L17 type `noindex?: boolean` → the three booleans; L56 robots `page.noindex ? { index:false, follow:true } : undefined` → derive `{ index: allowIndex !== false, follow: allowFollow !== false }` (+ `noimageindex` when set).
+
+Degrades gracefully until done (field absent → page indexed), so no crash — but editor toggles are inert until wired.
+
+### B. Per-type SEO/Social projection + metadata fallbacks
+
+For each type, project the SEO/Social fields and resolve the fallback chain in `generateMetadata` (or a shared `resolveSeo()` helper):
+
+- [x] **`post`** — metadata via `buildDocMetadata` in `blog-post.ts`; GROQ projects SEO/social + `lastModified`. Tier 1 JSON-LD: `dateModified`, `NewsArticle` for `packaging-news`. Remaining PROD-1502: `tldr`, `relatedPosts`, FAQ UI.
+- [x] **`blogCategory`** — `buildCategoryArchiveMetadata` + GROQ SEO/social + `bannerImageUrl`.
+- [x] **`blogTag`** — `buildTagArchiveMetadata` + GROQ SEO/social; robots respect `allowIndex` default-off via `getTagListingRobots`.
+- [x] **`author`** — `buildAuthorMetadata`; GROQ `socialLinks`/`tagline`/`shortBio`; `author-jsonld.ts` `sameAs` + `author-header.tsx` updated.
+- [x] **`blogPage`** — `buildBlogPageMetadata`; home singleton SEO via `buildBlogHomeMetadata` + `srHeading` (`sr-only` H1 on `/`).
+
+Shared helper: [`src/lib/resolve-seo.ts`](./src/lib/resolve-seo.ts) (`buildDocMetadata`, `resolveCanonicalUrl`, `resolveDocRobots`). Global OG fallback: [`src/lib/blog-global-settings.ts`](./src/lib/blog-global-settings.ts).
+
+### C. Global + settings-driven defaults
+
+- [x] **OG image global default** — `BLOG_GLOBAL_SETTINGS_QUERY` + `fetchBlogGlobalSettings()` → `buildDocMetadata` / post JSON-LD org logo.
+- [ ] **Blog Settings token formats** — `blogSettings` now has `postDefaults`/`categoryDefaults`/`tagDefaults`/`authorDefaults` (metaTitle/metaDescription **format strings** with tokens, sitemap priority/changefreq, robots defaults). Resolve tokens at render when a doc's own `metaTitle`/`metaDescription` is blank.
+- [ ] **Sitemap** — read per-type `priority`/`changefreq` defaults from Blog Settings in `sitemap.ts`.
+
+### D. Dead-seed / removed-field cleanup
+
+Fields removed from schemas that may still be referenced in seeds/queries/front-end:
+
+- [ ] `post.featuredOnHome` (home is now the page builder — see `blog-home.ts`, `BLOG_FEATURED_HERO`, seed `featuredOnHome: true`).
+- [ ] `post.relatedCapabilities` / `post.relatedProducts`.
+- [ ] `author.credentials` / `author.linkedIn` / `author.personalSite` / `author.xHandle` (→ `socialLinks[]`). **Front-end updated**; verify seeds/scripts.
+- [ ] `blogCategory.order` / `blogTag.order` (Studio orderings switched to `title`; check front-end facet sorts that read `order`, e.g. `BLOG_CATEGORY_TAGS_FACET_QUERY`).
+
+> Studio-side schema changes live on `feature/sanity-studio-ux`; blog-side wiring lands on `feature/blog`. Run `sanity deploy` + a typegen refresh after the query projections change so generated types pick up the new fields.
+
+---
+
+## Blog frontend audit (2026-06-18)
+
+Documentation-only pass — preview, JSON-LD/AEO, and route architecture. Full JSON-LD tiers and per-route matrix: **[`docs/blog-jsonld-audit.md`](../../docs/blog-jsonld-audit.md)**.
+
+### Sanity Presentation preview
+
+Preview is a **data-layer + layout** concern — **routes do not need per-route draft-mode code.**
+
+| Layer | Status | Location |
+| --- | --- | --- |
+| Draft-mode enable/disable | Done | `src/app/api/draft-mode/enable/route.ts`, `disable/route.ts` |
+| Visual editing overlay | Done | `src/app/layout.tsx` — `{isDraft && <VisualEditing />}` |
+| Draft-aware client | Done | `src/lib/sanity/client.ts` — async `getSanityClient()` + `getPreviewableSanityClient()` alias |
+| Studio Presentation config | Done | `apps/studio/sanity.config.ts` — Blog workspace → blog origin + `/api/draft-mode/enable` |
+| Location resolvers | Done | `apps/studio/presentation/locations.ts` — `post`, `blogPage`, `blogCategory`, `blogTag`, `author` |
+
+**Flow:** Studio Presentation → `GET /api/draft-mode/enable` → `draftMode().isEnabled` → layout mounts `VisualEditing` → data libs call `getPreviewableSanityClient()` → Sanity `drafts` perspective + stega overlays.
+
+#### Client adoption matrix
+
+| Lib / data | Client | Previewable? |
+| --- | --- | --- |
+| `blog-post.ts` | `getSanityClient` (async, draft-aware) | Yes |
+| `blog-home.ts` (page builder) | `getPreviewableSanityClient` | Yes |
+| `blog-page.ts` (landing/static) | `getSanityClient` (async, draft-aware) | Yes |
+| category / tag / author / search | `getSanityClient` (async, draft-aware) | Yes (draft mode) |
+| redirects / sitemap / RSS | `getPublishedSanityClient` | No (correct) |
+
+### Preview client sharing (blog ↔ www)
+
+| Concern | `apps/blog` | `apps/www` |
+| --- | --- | --- |
+| Draft-mode check | Single async `getSanityClient()` + sync `getPublishedSanityClient()` | Same |
+| Stega + `drafts` | Draft mode only | Draft mode only |
+| `next/headers` | Lazy import in `getSanityClient` | Top-level in client module |
+
+**Phase 1 complete (2026-06-18):** blog converged on www API shape; sitemap/RSS/redirects use `getPublishedSanityClient()` only.
+
+**Phase 2 (optional, after both apps stabilize):** extract shared factory to new `@pakfactory/sanity-next` — `createSanityClient`, `createDraftAwareClient({ isDraftMode })`, shared caching. Apps keep env reading and image helpers local.
+
+**Do not:** relocate into `@pakfactory/sanity`; make sitemap/RSS/redirect fetches draft-aware.
+
+### Route architecture vs Studio blog workspace
+
+Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` segment resolves: category archive → `blogPage` → post → redirect/404.
+
+```
+/                          → home (page builder singleton)
+/all, /all/page/[n]        → all posts archive
+/tag/[slug], /tag/.../page/[n]
+/author/[slug]
+/search, /contribute
+/rss.xml, /sitemap.xml
+/[category]                → resolver: category | blogPage | post
+/[category]/page/[n]       → category pagination only
+/[category]/[postSlug]     → legacy 301 → /{postSlug}
+/[...segments]             → redirect map or 404
+```
+
+#### Simplifications worth doing (future, ordered)
+
+| # | Change | Rationale |
+| --- | --- | --- |
+| A | Extract `lib/blog-segment-resolver.ts` from `[category]/page.tsx` | Shared resolution for `generateMetadata` + page component |
+| B | Home metadata from `blogPage` home singleton | **Done** — `buildBlogHomeMetadata` + `srHeading` on `/` |
+| C | Shared `buildArchiveMetadata()` for page-1 + page-[n] routes | Optional; archives already share `ArchiveLayout` |
+| D | Post detail stub → PROD-1502 | Inline stub in `[category]/page.tsx`; don't refactor route shape until full rebuild |
+| E | Extend `blogLocations` for Presentation | **Done** — `blogPage`, `blogCategory`, `blogTag`, `author` |
+
+#### Do not simplify
+
+- Flat URL scheme (`/{postSlug}` canonical) — PROD-1597 product decision.
+- Separate static routes (`/search`, `/contribute`, `/all`) — reserved segments.
+- `revalidate = 60` per route — consistent caching contract.
+- Splitting `[category]` into separate `app/[slug]` and `app/[category]` folders without product sign-off.
+
+#### Recommended sequencing
+
+1. This audit doc + JSON-LD audit (done).
+2. Section B — SEO/Social GROQ + metadata fallbacks (**done** 2026-06-18).
+3. Preview phase 1 — converge client API; wire `blog-page.ts` + `blogLocations` (**done** 2026-06-18).
+4. PROD-1502 — post page; Tier 1 JSON-LD (`dateModified`, `NewsArticle`) **done**; Tier 3 AEO (`faqPage`, TL;DR) next. See [`docs/blog-jsonld-audit.md`](../../docs/blog-jsonld-audit.md).
+
 ## PROD-1504 — `/contribute` contributor page (implemented)
 
 **Jira:** [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) — S2.8 Build `/blog/contribute`. Public route **`/contribute`** (reserved segment; indexable).

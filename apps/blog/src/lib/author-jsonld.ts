@@ -27,8 +27,11 @@ export function buildAuthorJsonLd(author: AuthorDoc, photoUrl?: string): string 
     url: pageUrl,
     image: photoUrl,
     jobTitle: author.role,
-    description: author.bioText?.trim() || undefined,
-    sameAs: author.linkedIn ? [author.linkedIn] : undefined,
+    description: author.shortBio?.trim() || author.bioText?.trim() || undefined,
+    sameAs:
+      author.socialLinks?.filter((url) => url?.trim()).length
+        ? author.socialLinks.filter((url) => url?.trim())
+        : undefined,
   });
 
   const crumbs = breadcrumbList([

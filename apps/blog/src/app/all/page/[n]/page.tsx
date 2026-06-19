@@ -4,9 +4,12 @@ import { AllArchiveView } from "@/components/views/all-archive-view";
 import {
   archivePageHref,
   fetchAllArchivePage,
-  isArchivePageOutOfRange,
-  parseArchivePageParam,
 } from "@/lib/blog-archive";
+import {
+  isArchivePageOutOfRange,
+  paginatedListTitle,
+  resolvePaginationRoute,
+} from "@/lib/blog-archive-pagination";
 import {
   getAllArchiveRobots,
   robotsDirectiveToMetadata,
@@ -24,18 +27,18 @@ export async function generateMetadata({
   params: Promise<{ n: string }>;
 }): Promise<Metadata> {
   const { n: raw } = await params;
-  const pageNumber = parseArchivePageParam(raw);
-  if (pageNumber === null || pageNumber === 1) {
+  const pagination = resolvePaginationRoute(raw, "/all");
+  if (pagination.status !== "ok") {
     return { title: "All posts | PakFactory Blog" };
   }
 
-  const canonical = absoluteUrl(archivePageHref(pageNumber));
-  const title = `All posts — Page ${pageNumber} | PakFactory Blog`;
+  const canonical = absoluteUrl(archivePageHref(pagination.pageNumber));
+  const title = paginatedListTitle("All posts", pagination.pageNumber);
 
   return {
     title,
     description: ARCHIVE_DESCRIPTION,
-    robots: robotsDirectiveToMetadata(getAllArchiveRobots(pageNumber)),
+    robots: robotsDirectiveToMetadata(getAllArchiveRobots(pagination.pageNumber)),
     alternates: { canonical },
     openGraph: {
       title,
@@ -57,13 +60,14 @@ export default async function AllPostsPaginatedPage({
   params: Promise<{ n: string }>;
 }) {
   const { n: raw } = await params;
-  const pageNumber = parseArchivePageParam(raw);
+  const pagination = resolvePaginationRoute(raw, "/all");
+  if (pagination.status === "not-found") notFound();
+  if (pagination.status === "redirect") redirect(pagination.href);
 
-  if (pageNumber === null) notFound();
-  if (pageNumber === 1) redirect("/all");
-
-  const data = await fetchAllArchivePage(pageNumber);
-  if (isArchivePageOutOfRange(pageNumber, data.totalCount)) notFound();
+  const data = await fetchAllArchivePage(pagination.pageNumber);
+  if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount)) {
+    notFound();
+  }
 
   return <AllArchiveView data={data} />;
 }

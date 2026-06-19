@@ -17,6 +17,24 @@ export const redirect = defineType({
   type: 'document',
   fields: [
     defineField({
+      name: 'channel',
+      title: 'Channel',
+      type: 'string',
+      description: 'Which content channel this redirect belongs to. Choose this first — it filters redirects per workspace.',
+      options: {
+        list: [
+          { title: 'Blog', value: 'blog' },
+          { title: 'Website', value: 'website' },
+          { title: 'Products', value: 'products' },
+          { title: 'Solutions', value: 'solutions' },
+          { title: 'Expertise', value: 'expertise' },
+        ],
+        layout: 'dropdown',
+      },
+      initialValue: 'blog',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
       name: 'from',
       title: 'From URL',
       type: 'string',
@@ -83,25 +101,6 @@ export const redirect = defineType({
       rows: 2,
       description: 'Why this redirect exists (e.g. "Auto-created from slug change").',
     }),
-    defineField({
-      name: 'channel',
-      title: 'Channel',
-      type: 'string',
-      description: 'Which content channel this redirect belongs to. Used to filter redirects per workspace.',
-      options: {
-        list: [
-          { title: 'Blog', value: 'blog' },
-          { title: 'Website', value: 'website' },
-          { title: 'Products', value: 'products' },
-          { title: 'Solutions', value: 'solutions' },
-          { title: 'Expertise', value: 'expertise' },
-        ],
-        layout: 'dropdown',
-      },
-      initialValue: 'blog',
-      validation: (Rule) => Rule.required(),
-    }),
-
     defineField({
       name: 'isActive',
       title: 'Active',

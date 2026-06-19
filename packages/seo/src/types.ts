@@ -117,3 +117,13 @@ export type ArticleLikeInput = {
 export type BlogPostingInput = ArticleLikeInput;
 
 export type NewsArticleInput = ArticleLikeInput;
+
+export type FaqPageItem = {
+  question: string;
+  answer: string;
+};
+
+export type FaqPageInput = {
+  items: readonly FaqPageItem[];
+  id?: string;
+};

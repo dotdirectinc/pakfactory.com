@@ -27,7 +27,7 @@ import { page } from './page'
 import { post } from './post'
 import { redirect } from './redirect'
 import { settings } from './settings'
-import { pageBuilderBlocks, pageBuilder, pageBuilderHome, pageBuilderLanding } from './blocks'
+import { pageBuilderSections, pageBuilder, pageBuilderHome, pageBuilderLanding } from './sections'
 
 export const schemaTypes = [
   // Capability layer
@@ -72,7 +72,7 @@ export const schemaTypes = [
   redirect,
 
   // Page builder
-  ...pageBuilderBlocks,
+  ...pageBuilderSections,
   pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,

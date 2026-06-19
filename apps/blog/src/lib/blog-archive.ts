@@ -51,7 +51,8 @@ export function archivePageHref(pageNumber: number): string {
 
 async function fetchPostCount(): Promise<number> {
   if (!isSanityConfigured()) return 0;
-  return getSanityClient()
+  const client = await getSanityClient();
+  return client
     .fetch<number>(BLOG_ALL_POSTS_COUNT_QUERY, blogLanguageParams())
     .catch(() => 0);
 }
@@ -71,7 +72,8 @@ export async function fetchAllArchivePage(
   }
 
   const { start, end } = archivePageSlice(pageNumber);
-  const posts = await getSanityClient()
+  const client = await getSanityClient();
+  const posts = await client
     .fetch<HomePostCard[]>(
       BLOG_ALL_POSTS_PAGE_QUERY,
       blogLanguageParams({ start, end }),

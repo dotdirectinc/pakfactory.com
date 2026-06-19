@@ -1,12 +1,22 @@
 import { unstable_noStore as noStore } from "next/cache";
+import type { Metadata } from "next";
 import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { blogHomePageParams, blogLanguageParams } from "@/lib/blog-language";
+import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
+import {
+  buildDocMetadata,
+  type DocSeoFields,
+} from "@/lib/resolve-seo";
+import {
+  getListingRobotsFromSearchParams,
+  type BlogRobotsDirective,
+} from "@/lib/seo";
 import {
   getSanityDataset,
   getSanityProjectId,
   isSanityConfigured,
 } from "@/lib/sanity/env";
-import type { PageBuilderBlock } from "@/components/blocks/registry";
+import type { PageBuilderSection } from "@/components/sections/registry";
 import {
   BLOG_HOME_PAGE_BUILDER_QUERY,
   BLOG_INDUSTRY_TAGS_QUERY,
@@ -88,7 +98,7 @@ async function fetchFeatured(): Promise<HomePostCard | null> {
     () =>
       client.fetch<HomePostCard | null>(
         FEATURED_HOME_POST_QUERY,
-        blogLanguageParams(),
+        blogHomePageParams(),
       ),
     null,
   );
@@ -173,31 +183,75 @@ export function getBlogHomeDebugInfo(): BlogHomeDebugInfo {
 }
 
 /**
- * Sanity-driven page builder for the homepage. Returns the home singleton's
- * `pageBuilder` array (ADR-009 `blogPage` with `pageRole == home`), or empty
- * when unpopulated / Sanity is not configured.
- *
- * Uses the draft-mode-aware client so that under the Studio Presentation tool
- * (draft mode on) the blocks render with the `drafts` perspective + stega,
- * letting visual-editing overlays resolve each widget. Outside draft mode this
- * returns the published client, so normal traffic is unchanged.
+ * Homepage CMS document (ADR-009 `blogPage` with `pageRole == home`).
+ * Uses the draft-mode-aware client under Studio Presentation.
  */
-export async function fetchBlogHomePageBuilder(): Promise<PageBuilderBlock[]> {
+export type BlogHomePageDoc = DocSeoFields & {
+  title?: string | null;
+  srHeading?: string | null;
+  pageBuilder?: PageBuilderSection[] | null;
+};
+
+const HOME_TITLE_FALLBACK =
+  "PakFactory Blog — Packaging Insights, Trends & Industry News";
+const HOME_H1_FALLBACK = "PakFactory Blog";
+const HOME_DESCRIPTION_FALLBACK =
+  "Curated packaging insights across trends, sustainability, business strategy, design, and industry news from PakFactory.";
+
+/** Resolve the homepage sr-only H1: srHeading → title → siteTitle → fallback. */
+export function resolveHomePageH1(
+  home: BlogHomePageDoc | null | undefined,
+  settings?: { siteTitle?: string | null } | null,
+): string {
+  const fromSr = home?.srHeading?.trim();
+  if (fromSr) return fromSr;
+  const fromTitle = home?.title?.trim();
+  if (fromTitle) return fromTitle;
+  const fromSite = settings?.siteTitle?.trim();
+  if (fromSite) return fromSite;
+  return HOME_H1_FALLBACK;
+}
+
+export async function fetchBlogHomePage(): Promise<BlogHomePageDoc | null> {
   if (process.env.NODE_ENV === "development") {
     noStore();
   }
-  if (!isSanityConfigured()) return [];
+  if (!isSanityConfigured()) return null;
 
   const client = await getPreviewableSanityClient();
-  const doc = await fetchSafe(
-    "pageBuilder",
+  return fetchSafe(
+    "homePage",
     () =>
-      client.fetch<{ pageBuilder?: PageBuilderBlock[] | null } | null>(
+      client.fetch<BlogHomePageDoc | null>(
         BLOG_HOME_PAGE_BUILDER_QUERY,
         blogHomePageParams(),
       ),
     null,
   );
+}
+
+export async function buildBlogHomeMetadata(
+  home: BlogHomePageDoc | null,
+  robots: BlogRobotsDirective,
+): Promise<Metadata> {
+  const settings = await fetchBlogGlobalSettings();
+  return buildDocMetadata({
+    title: "PakFactory Blog",
+    descriptionFallback: HOME_DESCRIPTION_FALLBACK,
+    featuredImageUrl: home?.ogImageUrl,
+    selfCanonicalPath: "/",
+    defaultOgImageUrl: settings?.defaultOgImageUrl,
+    seo: home ?? {},
+    robots,
+    titleOverride: home?.metaTitle?.trim()
+      ? undefined
+      : HOME_TITLE_FALLBACK,
+  });
+}
+
+/** Homepage `pageBuilder` blocks only — see `fetchBlogHomePage` for SEO fields. */
+export async function fetchBlogHomePageBuilder(): Promise<PageBuilderSection[]> {
+  const doc = await fetchBlogHomePage();
   return doc?.pageBuilder ?? [];
 }
 

@@ -79,9 +79,7 @@ function postDoc({
   categoryId,
   authorId,
   excerpt,
-  featuredOnHome = false,
   tagIds = [],
-  capabilityIds = [],
 }) {
   return {
     _id,
@@ -90,10 +88,10 @@ function postDoc({
     title,
     slug: slug(slugCurrent),
     publishedAt,
-    featuredOnHome,
     category: ref(categoryId),
     author: ref(authorId),
     excerpt,
+    tldr: [block(excerpt)],
     body: [
       block(`${title} — development test copy for the PakFactory blog.`),
       block(
@@ -101,7 +99,6 @@ function postDoc({
       ),
     ],
     ...(tagIds.length ? { tags: tagIds.map((id) => ref(id)) } : {}),
-    ...(capabilityIds.length ? { relatedCapabilities: capabilityIds.map((id) => ref(id)) } : {}),
     metaTitle: `${title} | PakFactory Blog`,
     metaDescription: excerpt,
   }
@@ -244,6 +241,7 @@ const blogHomePageDoc = {
   pageRole: 'home',
   language: 'en',
   title: 'Blog Homepage',
+  srHeading: 'PakFactory Blog — Packaging Insights, Trends & Industry News',
   pageBuilder: [
     {
       _key: key(),
@@ -290,7 +288,20 @@ const blogHomePageDoc = {
   ],
 }
 
-const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc]
+/** Blog Settings singleton — nav category order for sub-navigation. */
+const blogSettingsDoc = {
+  _id: 'blogSettings',
+  _type: 'blogSettings',
+  categoryOrder: [
+    ref('bcat-packaging-news'),
+    ref('bcat-trends'),
+    ref('bcat-business-strategy'),
+    ref('bcat-sustainability'),
+    ref('bcat-design-inspiration'),
+  ],
+}
+
+const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc, blogSettingsDoc]
 
 async function publishDocument(documentId) {
   try {

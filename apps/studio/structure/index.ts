@@ -127,7 +127,7 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
       .child(
         S.documentTypeList('blogCategory')
           .title('Categories')
-          .defaultOrdering([{ field: 'order', direction: 'asc' }])
+          .defaultOrdering([{ field: 'title', direction: 'asc' }])
       ),
 
     S.listItem()
@@ -155,10 +155,7 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
                     .title(title)
                     .filter('_type == "blogTag" && tagGroup == $tagGroup')
                     .params({ tagGroup: value })
-                    .defaultOrdering([
-                      { field: 'order', direction: 'asc' },
-                      { field: 'title', direction: 'asc' },
-                    ])
+                    .defaultOrdering([{ field: 'title', direction: 'asc' }])
                 )
             ),
 
@@ -813,7 +810,7 @@ export function resourcesItems(S: StructureBuilder): (ListItemBuilder | DividerB
               .child(
                 S.documentTypeList('blogCategory')
                   .title('Categories')
-                  .defaultOrdering([{ field: 'order', direction: 'asc' }])
+                  .defaultOrdering([{ field: 'title', direction: 'asc' }])
               ),
             S.listItem()
               .title('Authors')
@@ -884,6 +881,8 @@ export function resourcesItems(S: StructureBuilder): (ListItemBuilder | DividerB
 interface SettingsOptions {
   blog?: boolean
   solutions?: boolean
+  /** Show the Media Library inside the Settings section (under the divider). */
+  media?: boolean
 }
 
 export function settingsItems(
@@ -895,6 +894,8 @@ export function settingsItems(
 
   return [
     S.divider().title('Settings'),
+
+    ...(options.media ? [mediaLibraryItem(S)] : []),
 
     S.listItem()
       .title('Redirects')
@@ -1031,8 +1032,7 @@ export const blogStructure = (S: StructureBuilder) =>
     .title('Blog')
     .items([
       ...blogItems(S),
-      mediaLibraryItem(S),
-      ...settingsItems(S, { blog: true }),
+      ...settingsItems(S, { blog: true, media: true }),
     ])
 
 /** Website — all content that makes up the website */

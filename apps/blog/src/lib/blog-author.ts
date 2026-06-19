@@ -1,10 +1,19 @@
+import type { Metadata } from "next";
 import type { PortableTextBlock } from "@portabletext/types";
 import type { PostCardData } from "@/components/modules/post-card";
 import type { HomePostCard } from "@/lib/blog-home";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import { toPostCardData } from "@/lib/post-card-data";
+import {
+  buildDocMetadata,
+  type DocSeoFields,
+} from "@/lib/resolve-seo";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import { getBlogRobotsDirective, type BlogRobotsDirective } from "@/lib/seo";
+import { sanityImageUrl } from "@/lib/sanity-image";
+import { authorHref } from "@/lib/blog-post-url";
 import {
   AUTHOR_BY_SLUG_QUERY,
   AUTHOR_POSTS_COUNT_QUERY,
@@ -16,22 +25,57 @@ export const AUTHOR_PAGE_SIZE = 12;
 
 export type AuthorPostsResult = { posts: PostCardData[]; hasMore: boolean };
 
-export type AuthorDoc = {
+export type AuthorDoc = DocSeoFields & {
   _id?: string;
   name: string;
   slug: string;
   role?: string;
+  tagline?: string;
+  shortBio?: string;
+  authorType?: "staff" | "guest";
   bio?: PortableTextBlock[];
   /** Plain-text bio (`pt::text`) for the Person schema description. */
   bioText?: string;
-  credentials?: PortableTextBlock[];
-  linkedIn?: string;
+  socialLinks?: string[];
   photo?: unknown;
 };
 
+export async function buildAuthorMetadata(
+  author: AuthorDoc,
+  robots: BlogRobotsDirective = getBlogRobotsDirective({ kind: "author" }),
+): Promise<Metadata> {
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "authorDefaults");
+  const photoUrl = sanityImageUrl(author.photo, 400);
+
+  return buildDocMetadata({
+    title: author.name,
+    descriptionFallback:
+      author.shortBio?.trim() ||
+      author.bioText?.trim().slice(0, 160) ||
+      author.role ||
+      `Articles by ${author.name} on PakFactory Blog.`,
+    featuredImageUrl: photoUrl,
+    selfCanonicalPath: authorHref(author.slug),
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
+    seo: author,
+    robots,
+    openGraphType: "profile",
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      name: author.name,
+      job_title: author.role,
+      shortBio: author.shortBio || author.bioText,
+      sitename: ctx.siteName,
+    },
+  });
+}
+
 export async function fetchAuthorBySlug(slug: string): Promise<AuthorDoc | null> {
   if (!isSanityConfigured()) return null;
-  const doc = await getSanityClient()
+  const client = await getSanityClient();
+  const doc = await client
     .fetch<AuthorDoc | null>(AUTHOR_BY_SLUG_QUERY, { slug })
     .catch(() => null);
   return doc?.slug ? doc : null;
@@ -39,7 +83,8 @@ export async function fetchAuthorBySlug(slug: string): Promise<AuthorDoc | null>
 
 export async function fetchAuthorPostsCount(authorSlug: string): Promise<number> {
   if (!isSanityConfigured()) return 0;
-  return getSanityClient()
+  const client = await getSanityClient();
+  return client
     .fetch<number>(AUTHOR_POSTS_COUNT_QUERY, blogLanguageParams({ authorSlug }))
     .catch(() => 0);
 }
@@ -51,7 +96,8 @@ export async function fetchAuthorPosts(
   end: number,
 ): Promise<HomePostCard[]> {
   if (!isSanityConfigured()) return [];
-  return getSanityClient()
+  const client = await getSanityClient();
+  return client
     .fetch<HomePostCard[]>(
       AUTHOR_POSTS_PAGE_QUERY,
       blogLanguageParams({ authorSlug, start, end }),

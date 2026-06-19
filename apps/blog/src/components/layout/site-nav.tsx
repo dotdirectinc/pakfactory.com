@@ -3,11 +3,16 @@ import { Search } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { SiteNavCategories } from "@/components/layout/site-nav-categories";
+import type { BlogCategoryChip } from "@/lib/blog-categories";
 import { getWwwUrl } from "@/lib/site";
 
 const QUOTE_HREF = `${getWwwUrl()}/contact`;
 
-export function SiteNav() {
+type SiteNavProps = {
+  categories: BlogCategoryChip[];
+};
+
+export function SiteNav({ categories }: SiteNavProps) {
   return (
     <header>
       {/* Top tier — PakFactory brand + search + quote CTA (Figma pro-blocks) */}
@@ -57,7 +62,7 @@ export function SiteNav() {
           >
             Blog
           </Link>
-          <SiteNavCategories />
+          <SiteNavCategories categories={categories} />
         </PageDielineSection>
       </div>
     </header>

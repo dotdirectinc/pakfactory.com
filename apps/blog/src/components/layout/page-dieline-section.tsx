@@ -22,6 +22,11 @@ export function pageFullBleedSectionContentClass(className?: string) {
   return pageDielineOuterClass(className);
 }
 
+/** Centered content column without dashed vertical guides (e.g. category header band). */
+export function pageDielineContentClass(className?: string) {
+  return cn("mx-auto w-full max-w-[var(--layout-max)] px-8", className);
+}
+
 /** Centered column with dashed vertical guides; default inner horizontal padding `px-8`. */
 export function pageDielineInnerClass(className?: string) {
   return cn(

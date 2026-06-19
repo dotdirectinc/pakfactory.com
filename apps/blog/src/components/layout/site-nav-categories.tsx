@@ -3,25 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@pakfactory/ui/lib/utils";
+import type { BlogCategoryChip } from "@/lib/blog-categories";
 import { categoryHref } from "@/lib/blog-post-url";
 
-const NAV_CATEGORIES = [
-  { slug: "packaging-news", title: "Packaging News" },
-  { slug: "trends", title: "Trends" },
-  { slug: "business-strategy", title: "Business Strategy" },
-  { slug: "sustainability", title: "Sustainability" },
-  { slug: "design-inspiration", title: "Design Inspiration" },
-] as const;
+type SiteNavCategoriesProps = {
+  categories: BlogCategoryChip[];
+};
 
-export function SiteNavCategories() {
+export function SiteNavCategories({ categories }: SiteNavCategoriesProps) {
   const pathname = usePathname();
+
+  if (categories.length === 0) return null;
 
   return (
     <nav
       className="hidden items-center gap-8 text-base font-medium md:flex"
       aria-label="Blog categories"
     >
-      {NAV_CATEGORIES.map(({ slug, title }) => {
+      {categories.map(({ slug, title }) => {
         const href = categoryHref(slug);
         const isActive =
           pathname === href || pathname.startsWith(`${href}/page/`);

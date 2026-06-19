@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
-import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { seoFields, socialFields } from '../lib/seo-fields'
 
 /**
  * blogTag — flat tag document type
@@ -40,34 +41,44 @@ export const blogTag = defineType({
   title: 'Blog Tag',
   type: 'document',
   groups: [
-    { name: 'overview', title: 'Overview', default: true },
+    { name: 'details', title: 'Details', default: true },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
     defineField(languageField),
-    // ── Overview ────────────────────────────────────────────────────────────
+
+    // ── Details ───────────────────────────────────────────────────────────────
     defineField({
       name: 'title',
       title: 'Name',
       type: 'string',
-      group: 'overview',
+      group: 'details',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'overview',
+      group: 'details',
       options: { source: 'title' },
       description: 'Used in the URL: /blog/tag/{slug}. Set once — changing breaks links.',
       validation: (Rule) =>
         Rule.required().custom(uniqueSlugPerLanguage('blogTag')),
     }),
     defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'text',
+      rows: 2,
+      group: 'details',
+      description: 'Short description shown on the /blog/tag/{slug} landing page; reduces thin-content risk.',
+    }),
+    defineField({
       name: 'tagGroup',
-      title: 'Group / axis',
+      title: 'Group',
       type: 'string',
-      group: 'overview',
+      group: 'details',
       description:
         'Classification axis used to group this flat tag in Studio and in on-page tag facets. Choose "Ungrouped" to leave it unclassified. Does not change the tag URL.',
       initialValue: TAG_GROUP_UNGROUPED,
@@ -79,78 +90,14 @@ export const blogTag = defineType({
         layout: 'radio',
       },
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'overview',
-      description: 'Order within the group. Lower = first.',
-    }),
-    defineField({
-      name: 'description',
-      title: 'Description',
-      type: 'text',
-      rows: 2,
-      group: 'overview',
-      description: 'Short description shown on the /blog/tag/{slug} landing page.',
-    }),
 
-    // ── SEO ──────────────────────────────────────────────────────────────────
-    defineField({
-      name: 'metaTitle',
-      title: 'Meta title',
-      type: 'string',
-      group: 'seo',
-      description:
-        'Optional. Falls back to `Posts about {name} | PakFactory Blog` on the tag archive.',
-      validation: (Rule) =>
-        Rule.max(60).warning('Aim for 60 characters or fewer for best display in search results.'),
-    }),
-    defineField({
-      name: 'metaDescription',
-      title: 'Meta description',
-      type: 'text',
-      rows: 3,
-      group: 'seo',
-      description:
-        'Optional. Falls back to the tag description, then to an auto-generated description.',
-      validation: (Rule) =>
-        Rule.max(160).warning('Aim for 160 characters or fewer for best display in search results.'),
-    }),
-    defineField({
-      name: 'allowIndex',
-      title: 'Allow search engines to index this tag page',
-      type: 'boolean',
-      group: 'seo',
-      description:
-        'Default OFF — tag archives are often SEO-thin. Flip ON only for tags with ≥5–10 posts and clear SEO value.',
-      initialValue: false,
-    }),
-    defineField({
-      name: 'allowFollow',
-      title: 'Allow search engines to follow links on this tag page',
-      type: 'boolean',
-      group: 'seo',
-      description: 'Default ON — post links from the tag page still pass authority.',
-      initialValue: true,
-    }),
-    defineField({
-      name: 'noImageIndex',
-      title: 'Prevent images on this tag page from appearing in Google Images',
-      type: 'boolean',
-      group: 'seo',
-      description: 'Default OFF.',
-      initialValue: false,
-    }),
-    defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
-      type: 'image',
-      group: 'seo',
-      mediaTags: ogMediaTags(MEDIA_TAG.blog),
-      options: { hotspot: true },
-      description: 'Social share image. Falls back to site default if not set.',
-    })),
+    // ── SEO ───────────────────────────────────────────────────────────────────
+    // Tags default to noindex (BA): archives are SEO-thin. Flip Allow indexing
+    // ON only for tags with ≥5 posts and clear SEO value.
+    ...seoFields({ group: 'seo', indexDefault: false }),
+
+    // ── Social ────────────────────────────────────────────────────────────────
+    ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),
   ],
   preview: {
     select: { title: 'title', slug: 'slug', tagGroup: 'tagGroup' },
@@ -170,11 +117,10 @@ export const blogTag = defineType({
       by: [{ field: 'title', direction: 'asc' }],
     },
     {
-      title: 'Group → order',
+      title: 'Group → title',
       name: 'groupOrder',
       by: [
         { field: 'tagGroup', direction: 'asc' },
-        { field: 'order', direction: 'asc' },
         { field: 'title', direction: 'asc' },
       ],
     },

@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
 import {
   getCategoryFallback,
@@ -10,6 +12,11 @@ import {
   LISTING_PAGE_SIZE,
   parseArchivePageParam,
 } from "@/lib/blog-archive";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
+import {
+  buildDocMetadata,
+  type DocSeoFields,
+} from "@/lib/resolve-seo";
 import {
   getBlogRobotsDirective,
   hasListingFilters,
@@ -31,14 +38,13 @@ import {
 
 export type CategorySort = "newest" | "oldest" | "title";
 
-export type CategoryDocument = {
+export type CategoryDocument = DocSeoFields & {
   _id?: string;
   title: string;
   slug: string;
+  description?: PortableTextBlock[];
   descriptionText?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  ogImageUrl?: string;
+  bannerImageUrl?: string;
 };
 
 export type CategoryFacetTag = {
@@ -46,7 +52,6 @@ export type CategoryFacetTag = {
   title: string;
   slug: string;
   tagGroup?: string;
-  order?: number;
 };
 export type CategoryFacetAuthor = { _id?: string; name: string; slug: string };
 
@@ -170,6 +175,36 @@ export function getCategoryListingRobots(
   });
 }
 
+export async function buildCategoryArchiveMetadata(
+  category: CategoryDocument,
+  selfCanonicalPath: string,
+  robots: BlogRobotsDirective,
+  options?: { titleOverride?: string; descriptionOverride?: string },
+): Promise<Metadata> {
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "categoryDefaults");
+  return buildDocMetadata({
+    title: category.title,
+    descriptionFallback:
+      category.descriptionText?.trim() ||
+      `Browse ${category.title} articles on PakFactory Blog.`,
+    featuredImageUrl: category.bannerImageUrl || category.ogImageUrl,
+    selfCanonicalPath,
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
+    seo: category,
+    robots,
+    titleOverride: options?.titleOverride,
+    descriptionOverride: options?.descriptionOverride,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      name: category.title,
+      description: category.descriptionText,
+      sitename: ctx.siteName,
+    },
+  });
+}
+
 export async function fetchCategoryBySlug(
   slug: string,
 ): Promise<CategoryDocument | null> {
@@ -186,7 +221,8 @@ export async function fetchCategoryBySlug(
       : null;
   }
 
-  const doc = await getSanityClient()
+  const client = await getSanityClient();
+  const doc = await client
     .fetch<CategoryDocument | null>(
       BLOG_CATEGORY_BY_SLUG_QUERY,
       blogLanguageParams({ slug }),
@@ -212,7 +248,8 @@ export async function fetchCategoryArchivePage(
   let totalCount = 0;
 
   if (isSanityConfigured()) {
-    totalCount = await getSanityClient()
+    const client = await getSanityClient();
+    totalCount = await client
       .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
       .catch(() => 0);
   }
@@ -239,7 +276,7 @@ export async function fetchCategoryArchivePage(
   if (isSanityConfigured()) {
     const start = (pageNumber - 1) * LISTING_PAGE_SIZE;
     const end = start + LISTING_PAGE_SIZE;
-    const client = getSanityClient();
+    const client = await getSanityClient();
     [posts, tags, authors] = await Promise.all([
       client
         .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {
