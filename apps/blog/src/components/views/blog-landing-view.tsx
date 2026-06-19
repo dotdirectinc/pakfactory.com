@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
 import { pageDielineOuterClass } from "@/components/layout/page-dieline-section";
-import { BlockRenderer } from "@/components/blocks/block-renderer";
+import { SectionRenderer } from "@/components/sections/section-renderer";
 import type { BlogPageRecord } from "@/lib/blog-page";
 import { absoluteUrl } from "@/lib/site";
 
@@ -37,7 +37,7 @@ export function BlogLandingView({ page }: BlogLandingViewProps) {
             <span className="text-foreground">{page.title}</span>
           </nav>
         </div>
-        <BlockRenderer blocks={blocks} />
+        <SectionRenderer sections={blocks} />
       </main>
     </>
   );

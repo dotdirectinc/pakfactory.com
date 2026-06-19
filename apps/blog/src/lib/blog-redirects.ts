@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { BLOG_REDIRECTS_QUERY } from "@pakfactory/sanity/queries";
-import { getSanityClient } from "@/lib/sanity/client";
+import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_REDIRECTS_CACHE_TAG,
@@ -26,7 +26,7 @@ function normalizePath(path: string): string {
 
 async function fetchRedirectRows(): Promise<RedirectRow[]> {
   if (!isSanityConfigured()) return [];
-  return getSanityClient()
+  return getPublishedSanityClient()
     .fetch<RedirectRow[]>(BLOG_REDIRECTS_QUERY)
     .catch(() => []);
 }

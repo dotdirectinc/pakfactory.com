@@ -7,9 +7,21 @@ type AuthorHeaderProps = {
   author: AuthorDoc;
 };
 
-/** Author profile header: circular photo, role, name (H1), bio, credentials, LinkedIn. */
+function socialLabel(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    if (host.includes("linkedin")) return "LinkedIn";
+    if (host.includes("twitter") || host === "x.com") return "X";
+    return host;
+  } catch {
+    return "Profile";
+  }
+}
+
+/** Author profile header: photo, role, name (H1), tagline, bio, social links. */
 export function AuthorHeader({ author }: AuthorHeaderProps) {
   const photoUrl = sanityImageUrl(author.photo, 240);
+  const socialLinks = author.socialLinks?.filter((url) => url?.trim()) ?? [];
 
   return (
     <header className="mb-10">
@@ -32,8 +44,17 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
           <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
             {author.name}
           </h1>
+          {author.tagline && (
+            <p className="mt-2 text-sm text-muted-foreground">{author.tagline}</p>
+          )}
         </div>
       </div>
+
+      {author.shortBio && (
+        <p className="mt-6 max-w-2xl text-base text-muted-foreground">
+          {author.shortBio}
+        </p>
+      )}
 
       {author.bio?.length ? (
         <PortableText
@@ -42,30 +63,21 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
         />
       ) : null}
 
-      {author.credentials?.length ? (
-        <section className="mt-6 max-w-2xl" aria-labelledby="author-credentials">
-          <h2
-            id="author-credentials"
-            className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            Credentials &amp; experience
-          </h2>
-          <PortableText
-            value={author.credentials}
-            className="mt-2 text-sm text-muted-foreground"
-          />
-        </section>
-      ) : null}
-
-      {author.linkedIn && (
-        <a
-          href={author.linkedIn}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-6 inline-flex text-sm font-medium text-primary hover:underline"
-        >
-          Connect on LinkedIn →
-        </a>
+      {socialLinks.length > 0 && (
+        <ul className="mt-6 flex flex-wrap gap-4">
+          {socialLinks.map((url) => (
+            <li key={url}>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                {socialLabel(url)} →
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </header>
   );

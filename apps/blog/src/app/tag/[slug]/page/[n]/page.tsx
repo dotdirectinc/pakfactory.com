@@ -2,14 +2,18 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { TagArchiveView } from "@/components/views/tag-archive-view";
 import {
+  buildTagArchiveMetadata,
   fetchTagArchivePage,
-  isArchivePageOutOfRange,
-  parseArchivePageParam,
   parseTagFilters,
   tagPageHref,
 } from "@/lib/blog-tag-archive";
-import { getTagListingRobots, robotsDirectiveToMetadata } from "@/lib/seo";
-import { absoluteUrl } from "@/lib/site";
+import {
+  isArchivePageOutOfRange,
+  paginatedEntityDescription,
+  paginatedListTitle,
+  resolvePaginationRoute,
+} from "@/lib/blog-archive-pagination";
+import { getTagListingRobots } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -23,33 +27,29 @@ export async function generateMetadata({
   searchParams,
 }: PageProps): Promise<Metadata> {
   const { slug, n: raw } = await params;
-  const pageNumber = parseArchivePageParam(raw);
-  if (pageNumber === null || pageNumber === 1) {
+  const pagination = resolvePaginationRoute(raw, `/tag/${slug}`);
+  if (pagination.status !== "ok") {
     return { title: "Tag | PakFactory Blog" };
   }
 
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
-  const data = await fetchTagArchivePage(slug, pageNumber, filters);
+  const data = await fetchTagArchivePage(slug, pagination.pageNumber, filters);
   if (!data) return { title: "Tag not found" };
 
-  const canonical = absoluteUrl(tagPageHref(slug, pageNumber, filters));
-  const title = `${data.tag.title} — Page ${pageNumber} | PakFactory Blog`;
-  const description =
-    data.tag.metaDescription?.trim() ||
-    data.tag.descriptionText?.trim().slice(0, 160) ||
-    `Page ${pageNumber} of articles tagged ${data.tag.title} on PakFactory Blog.`;
-
-  return {
-    title,
-    description,
-    robots: robotsDirectiveToMetadata(
-      getTagListingRobots(pageNumber, sp, data.totalCount > 0, data.tag),
-    ),
-    alternates: { canonical },
-    openGraph: { title, description, url: canonical, type: "website" },
-    twitter: { card: "summary", title, description },
-  };
+  return buildTagArchiveMetadata(
+    data.tag,
+    tagPageHref(slug, pagination.pageNumber, filters),
+    getTagListingRobots(pagination.pageNumber, sp, data.totalCount > 0, data.tag),
+    {
+      titleOverride: paginatedListTitle(data.tag.title, pagination.pageNumber),
+      descriptionOverride: paginatedEntityDescription(
+        data.tag.title,
+        data.tag.descriptionText,
+        pagination.pageNumber,
+      ),
+    },
+  );
 }
 
 export default async function TagArchivePaginatedPage({
@@ -57,17 +57,18 @@ export default async function TagArchivePaginatedPage({
   searchParams,
 }: PageProps) {
   const { slug, n: raw } = await params;
-  const pageNumber = parseArchivePageParam(raw);
-
-  if (pageNumber === null) notFound();
-  if (pageNumber === 1) redirect(`/tag/${slug}`);
+  const pagination = resolvePaginationRoute(raw, `/tag/${slug}`);
+  if (pagination.status === "not-found") notFound();
+  if (pagination.status === "redirect") redirect(pagination.href);
 
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
-  const data = await fetchTagArchivePage(slug, pageNumber, filters);
+  const data = await fetchTagArchivePage(slug, pagination.pageNumber, filters);
 
   if (!data) notFound();
-  if (isArchivePageOutOfRange(pageNumber, data.totalCount)) notFound();
+  if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount)) {
+    notFound();
+  }
 
   return <TagArchiveView data={data} />;
 }

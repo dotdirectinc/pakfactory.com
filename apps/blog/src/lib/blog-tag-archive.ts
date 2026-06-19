@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { HomePostCard } from "@/lib/blog-home";
 import {
   getTotalArchivePages,
@@ -5,6 +6,11 @@ import {
   LISTING_PAGE_SIZE,
   parseArchivePageParam,
 } from "@/lib/blog-archive";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
+import {
+  buildDocMetadata,
+  type DocSeoFields,
+} from "@/lib/resolve-seo";
 import {
   getBlogRobotsDirective,
   hasListingFilters,
@@ -26,18 +32,12 @@ import {
 
 export type TagSort = "newest" | "oldest" | "title";
 
-export type TagDocument = {
+export type TagDocument = DocSeoFields & {
   _id?: string;
   title: string;
   slug: string;
   descriptionText?: string;
   tagGroup?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  allowIndex?: boolean;
-  allowFollow?: boolean;
-  noImageIndex?: boolean;
-  ogImageUrl?: string;
 };
 
 export type TagFacet = {
@@ -45,7 +45,6 @@ export type TagFacet = {
   title: string;
   slug: string;
   tagGroup?: string;
-  order?: number;
 };
 export type TagFacetAuthor = { _id?: string; name: string; slug: string };
 
@@ -153,9 +152,40 @@ export function tagPageHref(
   return qs ? `${base}?${qs}` : base;
 }
 
+export async function buildTagArchiveMetadata(
+  tag: TagDocument,
+  selfCanonicalPath: string,
+  robots: BlogRobotsDirective,
+  options?: { titleOverride?: string; descriptionOverride?: string },
+): Promise<Metadata> {
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "tagDefaults");
+  return buildDocMetadata({
+    title: tag.title,
+    descriptionFallback:
+      tag.descriptionText?.trim() ||
+      `Browse articles tagged ${tag.title} on PakFactory Blog.`,
+    featuredImageUrl: tag.ogImageUrl,
+    selfCanonicalPath,
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
+    seo: tag,
+    robots,
+    titleOverride: options?.titleOverride,
+    descriptionOverride: options?.descriptionOverride,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      name: tag.title,
+      description: tag.descriptionText,
+      sitename: ctx.siteName,
+    },
+  });
+}
+
 export async function fetchTagBySlug(slug: string): Promise<TagDocument | null> {
   if (!isSanityConfigured()) return null;
-  const doc = await getSanityClient()
+  const client = await getSanityClient();
+  const doc = await client
     .fetch<TagDocument | null>(
       BLOG_TAG_BY_SLUG_QUERY,
       blogLanguageParams({ slug }),
@@ -176,7 +206,8 @@ export async function fetchTagArchivePage(
   let totalCount = 0;
 
   if (isSanityConfigured()) {
-    totalCount = await getSanityClient()
+    const client = await getSanityClient();
+    totalCount = await client
       .fetch<number>(BLOG_TAG_POSTS_COUNT_QUERY, groqParams)
       .catch(() => 0);
   }
@@ -203,7 +234,7 @@ export async function fetchTagArchivePage(
   if (isSanityConfigured()) {
     const start = (pageNumber - 1) * LISTING_PAGE_SIZE;
     const end = start + LISTING_PAGE_SIZE;
-    const client = getSanityClient();
+    const client = await getSanityClient();
     [posts, cooccurringTags, authors] = await Promise.all([
       client
         .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {

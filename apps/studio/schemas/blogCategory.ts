@@ -1,30 +1,33 @@
 import { defineField, defineType } from 'sanity'
 import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
-import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { seoFields, socialFields } from '../lib/seo-fields'
 
 export const blogCategory = defineType({
   name: 'blogCategory',
   title: 'Blog Category',
   type: 'document',
   groups: [
-    { name: 'overview', title: 'Overview', default: true },
+    { name: 'details', title: 'Details', default: true },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
     defineField(languageField),
-    // ── Overview ────────────────────────────────────────────────────────────
+
+    // ── Details ───────────────────────────────────────────────────────────────
     defineField({
       name: 'title',
-      title: 'Title',
+      title: 'Name',
       type: 'string',
-      group: 'overview',
+      group: 'details',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'overview',
+      group: 'details',
       options: { source: 'title' },
       description: 'Used in the URL: /blog/{slug}. Must match the CATEGORY_SLUGS constant in Next.js.',
       validation: (Rule) =>
@@ -48,47 +51,36 @@ export const blogCategory = defineType({
       name: 'description',
       title: 'Category description',
       type: 'array',
-      group: 'overview',
+      group: 'details',
       of: [{ type: 'block' }],
       description:
-        '100–200 words. This copy renders on the category landing page and is the primary on-page SEO signal for category-level keyword targeting. Do not leave blank.',
+        '100–200 words. Renders on the category landing page, is the primary on-page SEO signal, and the meta-description fallback. Do not leave blank.',
       validation: (Rule) => Rule.required(),
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'overview',
-      description: 'Controls order in nav/category strip. Lower = first.',
-      validation: (Rule) => Rule.required().integer().positive(),
-    }),
-
-    // ── SEO ──────────────────────────────────────────────────────────────────
-    defineField({
-      name: 'metaTitle',
-      title: 'Meta title',
-      type: 'string',
-      group: 'seo',
-      description: 'Defaults to "{Title} — PakFactory Blog". Override only if needed.',
-      validation: (Rule) => Rule.max(60),
-    }),
-    defineField({
-      name: 'metaDescription',
-      title: 'Meta description',
-      type: 'text',
-      rows: 3,
-      group: 'seo',
-      validation: (Rule) => Rule.max(160),
-    }),
     defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
+      name: 'bannerImage',
+      title: 'Featured image / banner',
       type: 'image',
-      group: 'seo',
-      mediaTags: ogMediaTags(MEDIA_TAG.blog),
+      group: 'details',
+      mediaTags: [MEDIA_TAG.blog],
       options: { hotspot: true },
-      description: 'Social share image. Falls back to site default if not set.',
+      description:
+        'Hero on the category landing page, and the default OG image for posts in this category (unless a post overrides it).',
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text override',
+          type: 'string',
+          description: 'Optional. Falls back to the alt text on the image asset.',
+        }),
+      ],
     })),
+
+    // ── SEO ───────────────────────────────────────────────────────────────────
+    ...seoFields({ group: 'seo' }),
+
+    // ── Social ────────────────────────────────────────────────────────────────
+    ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),
   ],
   preview: {
     select: { title: 'title', subtitle: 'slug' },
@@ -96,11 +88,4 @@ export const blogCategory = defineType({
       return { title, subtitle: subtitle?.current ? `/blog/${subtitle.current}` : 'No slug' }
     },
   },
-  orderings: [
-    {
-      title: 'Display order',
-      name: 'orderAsc',
-      by: [{ field: 'order', direction: 'asc' }],
-    },
-  ],
 })

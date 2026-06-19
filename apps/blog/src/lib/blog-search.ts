@@ -168,7 +168,8 @@ export async function fetchSearchPage(
 
   let totalCount = 0;
   if (isSanityConfigured()) {
-    totalCount = await getSanityClient()
+    const client = await getSanityClient();
+    totalCount = await client
       .fetch<number>(BLOG_SEARCH_POSTS_COUNT_QUERY, groqParams)
       .catch(() => 0);
   }
@@ -182,7 +183,8 @@ export async function fetchSearchPage(
   let posts: HomePostCard[] = [];
   if (isSanityConfigured()) {
     const { start, end } = archivePageSlice(pageNumber);
-    posts = await getSanityClient()
+    const client = await getSanityClient();
+    posts = await client
       .fetch<HomePostCard[]>(searchPageQuery(filters.sort), {
         ...groqParams,
         start,

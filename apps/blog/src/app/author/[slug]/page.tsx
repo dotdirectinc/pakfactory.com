@@ -4,13 +4,12 @@ import { AuthorHeader } from "@/components/views/author-header";
 import { AuthorPostsLoader } from "@/components/modules/author-posts-loader";
 import { buildAuthorJsonLd } from "@/lib/author-jsonld";
 import {
+  buildAuthorMetadata,
   fetchAuthorBySlug,
   fetchAuthorPostsPage,
 } from "@/lib/blog-author";
-import { authorHref } from "@/lib/blog-post-url";
 import { sanityImageUrl } from "@/lib/sanity-image";
-import { getBlogRobotsDirective, robotsDirectiveToMetadata } from "@/lib/seo";
-import { absoluteUrl } from "@/lib/site";
+import { getBlogRobotsDirective } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -23,33 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const author = await fetchAuthorBySlug(slug);
   if (!author) return { title: "Author not found" };
 
-  const canonical = absoluteUrl(authorHref(slug));
-  const title = `${author.name} | PakFactory Blog`;
-  const description =
-    author.bioText?.trim().slice(0, 160) ||
-    author.role ||
-    `Articles by ${author.name} on PakFactory Blog.`;
-  const photoUrl = sanityImageUrl(author.photo, 400);
-
-  return {
-    title,
-    description,
-    robots: robotsDirectiveToMetadata(getBlogRobotsDirective({ kind: "author" })),
-    alternates: { canonical },
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      type: "profile",
-      ...(photoUrl ? { images: [{ url: photoUrl }] } : {}),
-    },
-    twitter: {
-      card: photoUrl ? "summary_large_image" : "summary",
-      title,
-      description,
-      ...(photoUrl ? { images: [photoUrl] } : {}),
-    },
-  };
+  return buildAuthorMetadata(author, getBlogRobotsDirective({ kind: "author" }));
 }
 
 export default async function AuthorProfilePage({ params }: PageProps) {

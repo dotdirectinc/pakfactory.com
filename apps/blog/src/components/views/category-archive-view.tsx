@@ -1,100 +1,99 @@
-import { FilterActive } from "@/components/modules/filter-active";
-import { ArchiveLayout } from "@/components/views/archive-layout";
-import { FilterSidebar } from "@/components/modules/filter-sidebar";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { Pagination } from "@/components/modules/pagination";
 import { PostList } from "@/components/modules/post-list";
-import { pagedHeading, postCountLabel } from "@/lib/archive-format";
-import { toPostCardDataList } from "@/lib/post-card-data";
+import { CtaRfq } from "@/components/sections/cta-rfq";
+import { CategoryFeaturedSection } from "@/components/views/category-featured-section";
+import { CategoryHeader } from "@/components/views/category-header";
+import { CategoryLandingLayout } from "@/components/views/category-landing-layout";
+import { CategoryListingSection } from "@/components/views/category-listing-section";
+import { pagedHeading } from "@/lib/archive-format";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
 import {
   categoryPageHref,
   type CategoryArchivePageData,
-  type CategoryListFilters,
 } from "@/lib/blog-category-archive";
-import { PACKAGING_NEWS_SLUG } from "@/lib/blog-categories";
-import { fetchBlogCategories } from "@/lib/blog-data";
+import type { PostCardData } from "@/lib/post-card-data";
+import { toPostCardDataList } from "@/lib/post-card-data";
 
-export async function CategoryArchiveView({
+function previewFeaturedCards(
+  posts: CategoryArchivePageData["posts"],
+  categorySlug: string,
+): { hero: PostCardData | null; secondary: PostCardData[] } {
+  const cards = toPostCardDataList(posts.slice(0, 4), {
+    categorySlug,
+    imageWidth: 900,
+  });
+  return {
+    hero: cards[0] ?? null,
+    secondary: cards.slice(1, 4),
+  };
+}
+
+export function CategoryArchiveView({
   data,
 }: {
   data: CategoryArchivePageData;
 }) {
-  const allCategories = await fetchBlogCategories();
   const jsonLd = buildCategoryArchiveJsonLd(
     data.category,
     data.posts,
     data.pageNumber,
     data.filters,
   );
-  const isPackagingNews = data.category.slug === PACKAGING_NEWS_SLUG;
   const heading = pagedHeading(data.category.title, data.pageNumber);
+  const showFeatured = data.pageNumber === 1;
+  const { hero, secondary } = previewFeaturedCards(
+    data.posts,
+    data.category.slug,
+  );
+  const gridPosts = toPostCardDataList(data.posts, {
+    categorySlug: data.category.slug,
+  });
 
   return (
-    <ArchiveLayout
+    <CategoryLandingLayout
       jsonLd={jsonLd}
-      crumbs={[{ label: "Blog", href: "/" }, { label: data.category.title }]}
-      heading={heading}
-      intro={
-        <>
-          {data.category.descriptionText?.trim() && (
-            <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
-              {data.category.descriptionText.trim()}
-            </p>
-          )}
-          <p className="mt-3 text-sm text-muted-foreground">
-            {postCountLabel(data.totalCount)}
-          </p>
-        </>
-      }
-      filters={
-        <FilterActive
-          pageNumber={data.pageNumber}
-          filters={data.filters}
-          hrefFor={(page, filters) =>
-            categoryPageHref(data.category.slug, page, filters as CategoryListFilters)
-          }
-          tags={data.tags}
-          authors={data.authors}
+      breadcrumb={
+        <Breadcrumb
+          items={[
+            { label: "Blog", href: "/" },
+            { label: data.category.title },
+          ]}
         />
       }
-      sidebar={
-        <FilterSidebar
-          categories={allCategories}
-          currentCategorySlug={data.category.slug}
-          scopeLabel={data.category.title}
-          tags={data.tags}
-          authors={data.authors}
-          filters={data.filters}
-          facetHref={(filters) =>
-            categoryPageHref(data.category.slug, 1, filters as CategoryListFilters)
-          }
-          sortFormAction={
-            categoryPageHref(data.category.slug, data.pageNumber, {
-              sort: data.filters.sort,
-            }).split("?")[0]!
-          }
-          dateFormAction={categoryPageHref(data.category.slug, 1, {
-            tag: data.filters.tag,
-            author: data.filters.author,
-            sort: data.filters.sort,
-          })}
+      header={
+        <CategoryHeader
+          title={heading}
+          description={data.category.description}
+          descriptionText={data.category.descriptionText}
         />
       }
-      pagination={{
-        pageNumber: data.pageNumber,
-        totalPages: data.totalPages,
-        hrefForPage: (page) => categoryPageHref(data.category.slug, page, data.filters),
-        ariaLabel: "Category archive pagination",
-      }}
-    >
-      <PostList
-        posts={toPostCardDataList(data.posts, {
-          categorySlug: data.category.slug,
-        })}
-        variant={isPackagingNews ? "headline" : "default"}
-        layout={isPackagingNews ? "list" : "grid"}
-        columns={3}
-        emptyMessage="No posts match your filters in this category."
-      />
-    </ArchiveLayout>
+      featured={
+        showFeatured ? (
+          <CategoryFeaturedSection hero={hero} secondary={secondary} />
+        ) : undefined
+      }
+      listing={
+        <CategoryListingSection
+          pagination={
+            <Pagination
+              pageNumber={data.pageNumber}
+              totalPages={data.totalPages}
+              hrefForPage={(page) =>
+                categoryPageHref(data.category.slug, page, data.filters)
+              }
+              ariaLabel="Category archive pagination"
+            />
+          }
+        >
+          <PostList
+            posts={gridPosts}
+            columns={3}
+            emptyMessage="No posts match your filters in this category."
+          />
+        </CategoryListingSection>
+      }
+      cta={<CtaRfq />}
+    />
   );
 }

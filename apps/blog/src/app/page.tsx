@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type { Metadata } from "next";
 import {
     blog,
     jsonLdGraph,
@@ -6,22 +6,20 @@ import {
     serializeJsonLd,
 } from '@pakfactory/seo';
 import {pageDielineOuterClass} from '@/components/layout/page-dieline-section';
-import { BlockRenderer } from '@/components/blocks/block-renderer';
+import { SectionRenderer } from '@/components/sections/section-renderer';
 import {
-    fetchBlogHomePageBuilder,
+    buildBlogHomeMetadata,
+    fetchBlogHomePage,
     getBlogHomeDebugInfo,
+    resolveHomePageH1,
 } from '@/lib/blog-home';
-import {
-    getListingRobotsFromSearchParams,
-    robotsDirectiveToMetadata,
-} from '@/lib/seo';
+import { fetchBlogGlobalSettings } from '@/lib/blog-global-settings';
+import { getListingRobotsFromSearchParams } from '@/lib/seo';
 import {getWwwUrl, normalizeSiteUrl, siteBaseUrl} from '@/lib/site';
 
 export const revalidate = 60;
 
-const HOME_TITLE =
-    'PakFactory Blog — Packaging Insights, Trends & Industry News';
-const HOME_DESCRIPTION =
+const HOME_DESCRIPTION_FALLBACK =
     'Curated packaging insights across trends, sustainability, business strategy, design, and industry news from PakFactory.';
 
 export async function generateMetadata({
@@ -31,33 +29,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
     const sp = await searchParams;
     const directive = getListingRobotsFromSearchParams('blog_index', sp);
-
-    return {
-        title: HOME_TITLE,
-        description: HOME_DESCRIPTION,
-        robots: robotsDirectiveToMetadata(directive),
-        openGraph: {
-            title: HOME_TITLE,
-            description: HOME_DESCRIPTION,
-            type: 'website',
-        },
-        twitter: {
-            card: 'summary',
-            title: HOME_TITLE,
-            description: HOME_DESCRIPTION,
-        },
-    };
+    const home = await fetchBlogHomePage();
+    return buildBlogHomeMetadata(home, directive);
 }
 
 export default async function BlogHomePage() {
     const debug = getBlogHomeDebugInfo();
-    const blocks = await fetchBlogHomePageBuilder();
+    const [home, settings] = await Promise.all([
+        fetchBlogHomePage(),
+        fetchBlogGlobalSettings(),
+    ]);
+    const blocks = home?.pageBuilder ?? [];
+    const pageH1 = resolveHomePageH1(home, settings);
     const showDevEmptyHint =
         process.env.NODE_ENV === 'development' && blocks.length === 0;
 
     const siteUrl = siteBaseUrl();
     const orgId = `${siteUrl}#organization`;
     const blogId = `${siteUrl}#blog`;
+    const blogDescription =
+        home?.metaDescription?.trim() || HOME_DESCRIPTION_FALLBACK;
 
     const jsonLd = jsonLdGraph([
         organization({
@@ -66,9 +57,9 @@ export default async function BlogHomePage() {
             id: orgId,
         }),
         blog({
-            name: 'PakFactory Blog',
+            name: pageH1,
             url: siteUrl,
-            description: HOME_DESCRIPTION,
+            description: blogDescription,
             id: blogId,
             publisher: {'@id': orgId},
         }),
@@ -81,6 +72,7 @@ export default async function BlogHomePage() {
                 dangerouslySetInnerHTML={{__html: serializeJsonLd(jsonLd)}}
             />
             <main className={pageDielineOuterClass()}>
+                <h1 className="sr-only">{pageH1}</h1>
                 {showDevEmptyHint && (
                     <div
                         className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
@@ -103,7 +95,7 @@ export default async function BlogHomePage() {
                     </div>
                 )}
 
-                <BlockRenderer blocks={blocks} />
+                <SectionRenderer sections={blocks} />
             </main>
         </>
     );

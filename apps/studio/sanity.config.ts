@@ -143,7 +143,7 @@ export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
   {
     name: 'admin',
-    title: 'PakFactory (Admin)',
+    title: 'Global',
     basePath: '/admin',
     projectId,
     dataset,
@@ -170,8 +170,8 @@ export default defineConfig([
       structureTool({ structure: blogStructure, defaultDocumentNode }),
       blogI18nPlugin,
       presentationTool({
-        name: 'preview',
-        title: 'Preview',
+        name: 'presentation',
+        title: 'Presentation',
         previewUrl: {
           origin: BLOG_PREVIEW_ORIGIN,
           previewMode: { enable: '/api/draft-mode/enable' },
@@ -194,8 +194,8 @@ export default defineConfig([
     plugins: [
       structureTool({ structure: websiteStructure, defaultDocumentNode }),
       presentationTool({
-        name: 'preview',
-        title: 'Preview',
+        name: 'presentation',
+        title: 'Presentation',
         previewUrl: {
           origin: WWW_PREVIEW_ORIGIN,
           previewMode: { enable: '/api/draft-mode/enable' },

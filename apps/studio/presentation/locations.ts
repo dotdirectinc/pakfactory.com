@@ -15,14 +15,45 @@ import type { DocumentLocationResolvers } from 'sanity/presentation'
  */
 
 // ── Blog surface (apps/blog) ─────────────────────────────────────────────────
-// Blog posts route flat at /{slug} (apps/blog/src/app/[slug]); POST_BY_SLUG_QUERY
-// confirms `slug.current`. This mapping is exact and unblocked.
+// Blog posts route flat at /{slug}; landing pages at /{slug}; home at /.
 export const blogLocations: DocumentLocationResolvers = {
   post: defineLocations({
     select: { title: 'title', slug: 'slug.current' },
     resolve: (doc) =>
       doc?.slug
         ? { locations: [{ title: doc.title || 'Untitled post', href: `/${doc.slug}` }] }
+        : { locations: [] },
+  }),
+  blogPage: defineLocations({
+    select: { title: 'title', slug: 'slug.current', pageRole: 'pageRole' },
+    resolve: (doc) => {
+      if (doc?.pageRole === 'home') {
+        return { locations: [{ title: doc.title || 'Homepage', href: '/' }] }
+      }
+      return doc?.slug
+        ? { locations: [{ title: doc.title || 'Page', href: `/${doc.slug}` }] }
+        : { locations: [] }
+    },
+  }),
+  blogCategory: defineLocations({
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? { locations: [{ title: doc.title || 'Category', href: `/${doc.slug}` }] }
+        : { locations: [] },
+  }),
+  blogTag: defineLocations({
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? { locations: [{ title: doc.title || 'Tag', href: `/tag/${doc.slug}` }] }
+        : { locations: [] },
+  }),
+  author: defineLocations({
+    select: { title: 'name', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? { locations: [{ title: doc.title || 'Author', href: `/author/${doc.slug}` }] }
         : { locations: [] },
   }),
 }

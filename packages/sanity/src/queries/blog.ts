@@ -50,6 +50,16 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   excerpt,
   body,
   publishedAt,
+  lastModified,
+  canonical,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  "ogImageUrl": ogImage.asset->url,
   mainImage{
     ...,
     "alt": coalesce(alt, asset->altText),
@@ -57,7 +67,26 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "author": author->{name, "slug": slug.current, photo}
+  "author": author->{name, "slug": slug.current, photo, role},
+  tldr,
+  "tldrText": pt::text(tldr),
+  "faqItems": faqItems[]{
+    question,
+    answer,
+    "answerText": pt::text(answer)
+  },
+  "relatedPosts": select(
+    count(relatedPosts) > 0 => relatedPosts[]->${POST_CARD_FIELDS},
+    *[
+      _type == "post"
+      && language == $language
+      && category._ref == ^.category._ref
+      && _id != ^._id
+      && defined(slug.current)
+      && defined(publishedAt)
+      && publishedAt <= now()
+    ] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}
+  )
 }`;
 
 /** Posts published in the current calendar month (UTC), newest first. */
@@ -70,15 +99,11 @@ export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
   && publishedAt >= $monthStart
 ] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
-/** CMS-pinned hero post (`featuredOnHome` on `apps/studio/schemas/post`). */
+/** CMS-pinned hero post from the homepage page builder (`postFeaturedRow.featuredPost`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
-  _type == "post"
-  && language == $language
-  && featuredOnHome == true
-  && defined(slug.current)
-  && defined(publishedAt)
-  && publishedAt <= now()
-] | order(publishedAt desc)[0]${POST_CARD_FIELDS}`;
+  (_type == "blogPage" && _id == $homePageId && language == $language)
+  || (_type == "blogHomePage" && $language == "en")
+][0].pageBuilder[_type == "postFeaturedRow"][0].featuredPost->${POST_CARD_FIELDS}`;
 
 /** Latest posts for home hero sidebar (excludes featured id when provided). */
 export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
@@ -154,6 +179,17 @@ export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
   (_type == "blogPage" && _id == $homePageId && language == $language)
   || (_type == "blogHomePage" && $language == "en")
 ][0]{
+  title,
+  srHeading,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
   "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
 }`;
 
@@ -172,7 +208,12 @@ export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
   "slug": slug.current,
   metaTitle,
   metaDescription,
-  noindex,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
   "ogImageUrl": ogImage.asset->url,
   publishedAt,
   _updatedAt,
@@ -187,7 +228,7 @@ export const BLOG_LANDING_PAGES_SITEMAP_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-  && noindex != true
+  && allowIndex != false
 ]{
   "slug": slug.current,
   publishedAt,
@@ -213,14 +254,21 @@ export const POST_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
 ][0]${POST_DETAIL_FIELDS}`;
 
 /** Category landing document (PROD-1499). */
-export const BLOG_CATEGORY_BY_SLUG_QUERY = /* groq */ `*[_type == "blogCategory" && slug.current == $slug && language == $language][0]{
+export const BLOG_CATEGORY_BY_SLUG_QUERY = /* groq */ `*[_type == "blogCategory" && slug.current == $slug && (language == $language || !defined(language))][0]{
   _id,
   title,
   "slug": slug.current,
+  description,
   "descriptionText": pt::text(description),
   metaTitle,
   metaDescription,
-  "ogImageUrl": ogImage.asset->url
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  "ogImageUrl": ogImage.asset->url,
+  "bannerImageUrl": bannerImage.asset->url
 }`;
 
 const CATEGORY_POST_FILTER = /* groq */ `_type == "post"
@@ -261,12 +309,11 @@ export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
     && defined(publishedAt)
     && publishedAt <= now()
   ].tags[]._ref
-] | order(coalesce(order, 999) asc, title asc){
+] | order(title asc){
   _id,
   title,
   "slug": slug.current,
-  tagGroup,
-  order
+  tagGroup
 }`;
 
 /** Authors with published posts in a category (sidebar facets). */
@@ -338,7 +385,7 @@ export const BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
 export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   _type == "industry"
   && defined(slug.current)
-] | order(coalesce(order, 999) asc)[0...10]{
+] | order(title asc)[0...10]{
   _id,
   title,
   "slug": slug.current
@@ -350,7 +397,7 @@ export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
   && language == $language
   && tagGroup == "industry"
   && defined(slug.current)
-] | order(coalesce(order, 999) asc, title asc){
+] | order(title asc){
   _id,
   title,
   "slug": slug.current
@@ -425,10 +472,70 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
   tagGroup,
   metaTitle,
   metaDescription,
+  ogTitle,
+  ogDescription,
   allowIndex,
   allowFollow,
   noImageIndex,
   "ogImageUrl": ogImage.asset->url
+}`;
+
+/** Global Settings singleton — default OG + org logo for metadata fallbacks. */
+export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
+  siteTitle,
+  "defaultOgImageUrl": defaultOgImage.asset->url,
+  "organizationLogoUrl": organization.logo.asset->url
+}`;
+
+/** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */
+export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
+  postDefaults{
+    metaTitleFormat,
+    metaDescriptionFormat,
+    allowIndex,
+    allowFollow,
+    noImageIndex,
+    sitemapPriority,
+    sitemapChangefreq
+  },
+  categoryDefaults{
+    metaTitleFormat,
+    metaDescriptionFormat,
+    allowIndex,
+    allowFollow,
+    noImageIndex,
+    sitemapPriority,
+    sitemapChangefreq
+  },
+  tagDefaults{
+    metaTitleFormat,
+    metaDescriptionFormat,
+    allowIndex,
+    allowFollow,
+    noImageIndex,
+    sitemapPriority,
+    sitemapChangefreq
+  },
+  authorDefaults{
+    metaTitleFormat,
+    metaDescriptionFormat,
+    allowIndex,
+    allowFollow,
+    noImageIndex,
+    sitemapPriority,
+    sitemapChangefreq
+  }
+}`;
+
+/** Category nav order from Blog Settings `categoryOrder` (editor drag-and-drop). */
+export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `*[_id == "blogSettings"][0]{
+  _id,
+  "categories": categoryOrder[]->{
+    _id,
+    title,
+    "slug": slug.current,
+    language
+  }
 }`;
 
 /** Published posts carrying $tagSlug, with optional author/date narrowing (tag is the page, not a filter). */
@@ -470,12 +577,11 @@ export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
     && defined(publishedAt)
     && publishedAt <= now()
   ].tags[]._ref
-] | order(coalesce(order, 999) asc, title asc){
+] | order(title asc){
   _id,
   title,
   "slug": slug.current,
-  tagGroup,
-  order
+  tagGroup
 }`;
 
 /** Authors with published posts carrying $tagSlug (sidebar facet). */
@@ -496,17 +602,27 @@ export const BLOG_TAG_AUTHORS_FACET_QUERY = /* groq */ `*[
 
 // ── Author profiles (PROD-1501) — /author/{slug} ────────────────────────────
 
-/** Author profile by slug — bio/credentials are portable text; linkedIn → Person sameAs. */
+/** Author profile by slug — bio portable text; socialLinks → Person sameAs. */
 export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.current == $slug][0]{
   _id,
   name,
   "slug": slug.current,
   role,
+  tagline,
+  shortBio,
+  authorType,
   bio,
   "bioText": pt::text(bio),
-  credentials,
-  linkedIn,
-  photo
+  socialLinks,
+  photo,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  "ogImageUrl": ogImage.asset->url
 }`;
 
 const AUTHOR_POST_FILTER = /* groq */ `_type == "post"

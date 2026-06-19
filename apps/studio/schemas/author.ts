@@ -1,101 +1,114 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { seoFields, socialFields } from '../lib/seo-fields'
 
 export const author = defineType({
   name: 'author',
   title: 'Author',
   type: 'document',
   groups: [
-    { name: 'overview', title: 'Overview', default: true },
-    { name: 'credentials', title: 'Credentials' },
+    { name: 'profile', title: 'Profile', default: true },
+    { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // ── Overview ────────────────────────────────────────────────────────────
+    // ── Profile ───────────────────────────────────────────────────────────────
     defineField({
       name: 'name',
       title: 'Full name',
       type: 'string',
-      group: 'overview',
+      group: 'profile',
+      description: 'Full name as it appears in bylines (→ Person.name).',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'overview',
+      group: 'profile',
       options: { source: 'name' },
-      description: 'Used in the URL: /blog/author/{slug}',
+      description: 'The profile-page URL: /blog/author/{slug}.',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'authorType',
+      title: 'Author type',
+      type: 'string',
+      group: 'profile',
+      options: {
+        list: [
+          { title: 'Staff', value: 'staff' },
+          { title: 'Guest', value: 'guest' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'staff',
+      description:
+        'Staff → worksFor = PakFactory. Guest → bylined as "Guest contributor"; worksFor is omitted.',
       validation: (Rule) => Rule.required(),
     }),
     defineField(taggedImageField({
       name: 'photo',
-      title: 'Profile photo',
+      title: 'Photo',
       type: 'image',
-      group: 'overview',
+      group: 'profile',
       mediaTags: [MEDIA_TAG.blog],
       options: { hotspot: true },
-      description: 'Square crop recommended. Min 400×400px.',
+      description: 'Headshot (→ Person.image). Square crop recommended, min 400×400px.',
     })),
     defineField({
       name: 'role',
-      title: 'Title / Role',
+      title: 'Job title',
       type: 'string',
-      group: 'overview',
-      description: 'e.g. "Senior Packaging Engineer at PakFactory"',
+      group: 'profile',
+      description: 'e.g. "Senior Content Writer" (→ Person.jobTitle).',
+    }),
+    defineField({
+      name: 'tagline',
+      title: 'Tagline',
+      type: 'string',
+      group: 'profile',
+      description:
+        'One short experience/credibility line under the name, e.g. "10 years covering CPG packaging". Real-only; reconcile with the job title and bio.',
+    }),
+    defineField({
+      name: 'shortBio',
+      title: 'Short bio',
+      type: 'text',
+      rows: 3,
+      group: 'profile',
+      description: '1–3 sentence intro shown on posts (→ Person.description).',
     }),
     defineField({
       name: 'bio',
-      title: 'Bio',
+      title: 'Long bio',
       type: 'array',
-      group: 'overview',
-      description: '100–200 words. This renders on the author page and in post bylines.',
-      of: [{ type: 'block' }],
-    }),
-
-    // ── Credentials ──────────────────────────────────────────────────────────
-    defineField({
-      name: 'credentials',
-      title: 'Credentials & experience',
-      type: 'array',
-      group: 'credentials',
+      group: 'profile',
       description:
-        'Certifications, past roles, publications, industry experience. Free-form rich text — this feeds the Person schema for E-E-A-T signals.',
+        'Fuller bio on the profile page. This is where the author’s areas of expertise, background, and any real credentials are written — natural prose, real-only.',
       of: [{ type: 'block' }],
     }),
     defineField({
-      name: 'linkedIn',
-      title: 'LinkedIn URL',
-      type: 'url',
-      group: 'credentials',
-      description: 'Full URL — e.g. https://linkedin.com/in/jane-doe. Used as sameAs in Person schema.',
-      validation: (Rule) =>
-        Rule.uri({ scheme: ['https'] }).warning('Should be a full https:// LinkedIn URL'),
-    }),
-    defineField({
-      name: 'personalSite',
-      title: 'Personal site URL',
-      type: 'url',
-      group: 'credentials',
-      validation: (Rule) => Rule.uri({ scheme: ['https', 'http'] }),
-    }),
-    defineField({
-      name: 'xHandle',
-      title: 'X (Twitter) handle',
-      type: 'string',
-      group: 'credentials',
-      description: 'Handle without @, e.g. "janedoe"',
-      validation: (Rule) =>
-        Rule.custom((val) => {
-          if (!val) return true
-          return val.startsWith('@') ? 'Omit the @ — just the handle' : true
-        }),
+      name: 'socialLinks',
+      title: 'Social profiles',
+      type: 'array',
+      group: 'profile',
+      description:
+        'Social / external profile URLs (LinkedIn, X, personal site, etc.) → Person.sameAs. The main signal that disambiguates the author and links them to external authority.',
+      of: [{ type: 'url' }],
+      validation: (Rule) => Rule.unique(),
     }),
 
+    // ── SEO ───────────────────────────────────────────────────────────────────
+    ...seoFields({ group: 'seo' }),
+
+    // ── Social ────────────────────────────────────────────────────────────────
+    ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),
   ],
   preview: {
     select: { title: 'name', subtitle: 'role', media: 'photo' },
     prepare({ title, subtitle, media }) {
-      return { title, subtitle: subtitle || 'No role set', media }
+      return { title, subtitle: subtitle || 'No job title set', media }
     },
   },
   orderings: [

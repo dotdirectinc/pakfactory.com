@@ -1,7 +1,8 @@
 import { defineField, defineType } from 'sanity'
 import { DocumentsIcon, HomeIcon } from '@sanity/icons'
 import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
-import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { MEDIA_TAG } from '../lib/media-tags'
+import { seoFields, socialFields } from '../lib/seo-fields'
 
 /** Blocked slug values — keep aligned with @pakfactory/sanity/blog-reserved-slugs */
 const BLOCKED_SLUGS = [
@@ -37,8 +38,9 @@ export const blogPage = defineType({
   icon: DocumentsIcon,
   groups: [
     { name: 'overview', title: 'Overview', default: true },
-    { name: 'builder', title: 'Page builder' },
+    { name: 'builder', title: 'Page sections' },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
     defineField(languageField),
@@ -66,6 +68,15 @@ export const blogPage = defineType({
       type: 'string',
       group: 'overview',
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'srHeading',
+      title: 'H1 text (visually hidden)',
+      type: 'string',
+      group: 'overview',
+      description:
+        'The homepage H1. Rendered visually-hidden (sr-only) for SEO + screen readers, not shown visually. Defaults to the site name when blank.',
+      hidden: ({ document }) => document?.pageRole !== 'home',
     }),
     defineField({
       name: 'slug',
@@ -100,7 +111,7 @@ export const blogPage = defineType({
     }),
     defineField({
       name: 'pageBuilder',
-      title: 'Page blocks',
+      title: 'Page sections',
       type: 'pageBuilderHome',
       group: 'builder',
       description: 'Homepage block library (all page-builder blocks).',
@@ -108,43 +119,17 @@ export const blogPage = defineType({
     }),
     defineField({
       name: 'pageBuilderLanding',
-      title: 'Page blocks',
+      title: 'Page sections',
       type: 'pageBuilderLanding',
       group: 'builder',
       description: 'Landing/static block library (CTAs, tag strip, rich text).',
       hidden: ({ document }) => document?.pageRole === 'home',
     }),
-    defineField({
-      name: 'metaTitle',
-      title: 'Meta title',
-      type: 'string',
-      group: 'seo',
-      validation: (Rule) => Rule.max(60),
-    }),
-    defineField({
-      name: 'metaDescription',
-      title: 'Meta description',
-      type: 'text',
-      rows: 3,
-      group: 'seo',
-      validation: (Rule) => Rule.max(160),
-    }),
-    defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
-      type: 'image',
-      group: 'seo',
-      mediaTags: ogMediaTags(MEDIA_TAG.blog),
-      options: { hotspot: true },
-    })),
-    defineField({
-      name: 'noindex',
-      title: 'Noindex',
-      type: 'boolean',
-      group: 'seo',
-      description: 'When enabled, search engines should not index this page.',
-      initialValue: false,
-    }),
+    // ── SEO ───────────────────────────────────────────────────────────────────
+    ...seoFields({ group: 'seo' }),
+
+    // ── Social ────────────────────────────────────────────────────────────────
+    ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),
   ],
   preview: {
     select: {

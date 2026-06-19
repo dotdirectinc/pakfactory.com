@@ -36,3 +36,7 @@ export function isBlockedBlogPageSlug(slug: string | undefined | null): boolean 
   if (!slug) return false;
   return BLOG_PAGE_BLOCKED_SLUGS.includes(slug);
 }
+
+export function isKnownCategorySlug(slug: string): slug is BlogCategorySlug {
+  return (BLOG_CATEGORY_SLUGS as readonly string[]).includes(slug);
+}

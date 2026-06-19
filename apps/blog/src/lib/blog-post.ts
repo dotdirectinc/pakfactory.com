@@ -1,34 +1,46 @@
 import type { Metadata } from "next";
+import type { PortableTextBlock } from "@portabletext/types";
 import {
   blogPosting,
   breadcrumbList,
+  faqPage,
   jsonLdGraph,
+  newsArticle,
   organization,
   person,
   serializeJsonLd,
 } from "@pakfactory/seo";
+import type { HomePostCard } from "@/lib/blog-home";
 import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { authorPersonId } from "@/lib/author-jsonld";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
-import { getPreviewableSanityClient } from "@/lib/sanity/client";
+import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
-import {
-  getBlogRobotsDirective,
-  robotsDirectiveToMetadata,
-} from "@/lib/seo";
+import { getBlogRobotsDirective } from "@/lib/seo";
+import { buildDocMetadata, type DocSeoFields } from "@/lib/resolve-seo";
 import {
   POST_BY_CATEGORY_AND_SLUG_QUERY,
   POST_BY_SLUG_QUERY,
 } from "@pakfactory/sanity/queries";
 
-export type BlogPostDetail = {
+const PACKAGING_NEWS_CATEGORY_SLUG = "packaging-news";
+
+export type PostFaqItem = {
+  question?: string;
+  answer?: PortableTextBlock[];
+  answerText?: string;
+};
+
+export type BlogPostDetail = DocSeoFields & {
   _id: string;
   title: string;
   slug: string;
   excerpt?: string;
   publishedAt?: string;
+  lastModified?: string | null;
   mainImage?: unknown;
   categorySlug?: string;
   categoryTitle?: string;
@@ -36,8 +48,13 @@ export type BlogPostDetail = {
     name?: string;
     slug?: string | null;
     photo?: unknown;
+    role?: string;
   };
   body?: unknown;
+  tldr?: PortableTextBlock[];
+  tldrText?: string;
+  faqItems?: PostFaqItem[];
+  relatedPosts?: HomePostCard[];
 };
 
 export function postCanonicalUrl(post: BlogPostDetail): string {
@@ -46,7 +63,7 @@ export function postCanonicalUrl(post: BlogPostDetail): string {
 
 export async function fetchPostBySlug(slug: string): Promise<BlogPostDetail | null> {
   if (!isSanityConfigured()) return null;
-  const client = await getPreviewableSanityClient();
+  const client = await getSanityClient();
   return client
     .fetch<BlogPostDetail | null>(POST_BY_SLUG_QUERY, blogLanguageParams({ slug }))
     .catch(() => null);
@@ -57,7 +74,7 @@ export async function fetchPostByCategoryAndSlug(
   postSlug: string,
 ): Promise<BlogPostDetail | null> {
   if (!isSanityConfigured()) return null;
-  const client = await getPreviewableSanityClient();
+  const client = await getSanityClient();
   return client
     .fetch<BlogPostDetail | null>(
       POST_BY_CATEGORY_AND_SLUG_QUERY,
@@ -66,38 +83,35 @@ export async function fetchPostByCategoryAndSlug(
     .catch(() => null);
 }
 
-export function buildPostMetadata(post: BlogPostDetail): Metadata {
-  const postUrl = postCanonicalUrl(post);
-  const description = post.excerpt?.trim();
-  const imageUrl = sanityImageUrl(post.mainImage);
+export async function buildPostMetadata(post: BlogPostDetail): Promise<Metadata> {
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "postDefaults");
+  const featuredImageUrl = sanityImageUrl(post.mainImage);
 
-  return {
+  return buildDocMetadata({
     title: post.title,
-    ...(description ? { description } : {}),
-    robots: robotsDirectiveToMetadata(getBlogRobotsDirective({ kind: "post" })),
-    alternates: { canonical: postUrl },
-    openGraph: {
+    descriptionFallback: post.excerpt,
+    featuredImageUrl,
+    selfCanonicalPath: postDetailHref(post.slug, post.categorySlug),
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
+    seo: post,
+    robots: getBlogRobotsDirective({ kind: "post" }),
+    openGraphType: "article",
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
       title: post.title,
-      ...(description ? { description } : {}),
-      url: postUrl,
-      type: "article",
-      ...(imageUrl ? { images: [{ url: imageUrl }] } : {}),
+      excerpt: post.excerpt,
+      sitename: ctx.siteName,
     },
-    twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
-      title: post.title,
-      ...(description ? { description } : {}),
-      ...(imageUrl ? { images: [imageUrl] } : {}),
-    },
-  };
+  });
 }
 
-export function buildPostJsonLd(post: BlogPostDetail): string {
+export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
+  const ctx = await fetchSeoContext();
   const wwwUrl = normalizeSiteUrl(getWwwUrl());
   const postUrl = postCanonicalUrl(post);
   const orgId = `${wwwUrl}#organization`;
-  // Reference the author's profile-page Person node (PROD-1501) so every post's
-  // Article.author links back to /author/{slug}; fall back to a per-post node.
   const authorSlug = post.author?.slug ?? undefined;
   const authorPageUrl = authorSlug ? absoluteUrl(authorHref(authorSlug)) : undefined;
   const authorId = authorSlug ? authorPersonId(authorSlug) : `${postUrl}#author`;
@@ -106,6 +120,7 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
     name: "PakFactory",
     url: wwwUrl,
     id: orgId,
+    ...(ctx.organizationLogoUrl ? { logo: ctx.organizationLogoUrl } : {}),
   });
 
   const mainImageUrl = sanityImageUrl(post.mainImage);
@@ -127,21 +142,34 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
   const authorRef =
     authorNode !== null ? { "@id": authorId } : undefined;
 
-  const article = blogPosting({
+  const dateModifiedSource = post.lastModified ?? post.publishedAt;
+  const description =
+    post.tldrText?.trim() || post.excerpt?.trim() || undefined;
+
+  const articleInput = {
     id: postUrl,
     url: postUrl,
     headline: post.title,
+    description,
     datePublished: post.publishedAt
       ? new Date(post.publishedAt).toISOString()
+      : undefined,
+    dateModified: dateModifiedSource
+      ? new Date(dateModifiedSource).toISOString()
       : undefined,
     ...(mainImageUrl ? { image: mainImageUrl } : {}),
     ...(authorRef ? { author: authorRef } : {}),
     publisher: publisherRef,
     mainEntityOfPage: {
-      "@type": "WebPage",
+      "@type": "WebPage" as const,
       "@id": postUrl,
     },
-  });
+  };
+
+  const article =
+    post.categorySlug === PACKAGING_NEWS_CATEGORY_SLUG
+      ? newsArticle(articleInput)
+      : blogPosting(articleInput);
 
   const crumbs = breadcrumbList([
     { name: "Blog", url: absoluteUrl("/") },
@@ -159,6 +187,22 @@ export function buildPostJsonLd(post: BlogPostDetail): string {
   const nodes: Record<string, unknown>[] = [org];
   if (authorNode) nodes.push(authorNode);
   nodes.push(article, crumbs);
+
+  const faqItems = (post.faqItems ?? [])
+    .filter((item) => item.question?.trim() && item.answerText?.trim())
+    .map((item) => ({
+      question: item.question!.trim(),
+      answer: item.answerText!.trim(),
+    }));
+
+  if (faqItems.length > 0) {
+    nodes.push(
+      faqPage({
+        id: `${postUrl}#faq`,
+        items: faqItems,
+      }),
+    );
+  }
 
   return serializeJsonLd(jsonLdGraph(nodes));
 }

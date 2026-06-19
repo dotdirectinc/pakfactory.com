@@ -8,12 +8,15 @@ export type {
   ItemListInput,
   JsonLdDocument,
   NewsArticleInput,
+  FaqPageInput,
+  FaqPageItem,
   OrganizationInput,
   PersonInput,
   WebPageInput,
 } from "./types";
 export { SCHEMA_CONTEXT } from "./types";
 
+export { faqPage } from "./generators/faqPage";
 export { blog } from "./generators/blog";
 export { blogPosting } from "./generators/blogPosting";
 export { breadcrumbList } from "./generators/breadcrumbList";

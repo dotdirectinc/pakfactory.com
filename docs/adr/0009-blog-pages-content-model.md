@@ -42,7 +42,7 @@ Introduce **`blogPage`** document type with guard rails:
 ```text
 1. Static Next.js routes (win via App Router)
 2. Known category slug → category archive
-3. Published blogPage (landing | static) by slug → BlockRenderer
+3. Published blogPage (landing | static) by slug → SectionRenderer
 4. Post by slug → article
 5. Redirect map → else notFound()
 ```
@@ -52,7 +52,7 @@ Posts and `blogPage` slugs must not collide — Studio validation blocks categor
 ## Consequences
 
 - [`apps/studio/schemas/blogPage.ts`](../../apps/studio/schemas/blogPage.ts) replaces [`blogHomePage.ts`](../../apps/studio/schemas/blogHomePage.ts)
-- [`pageBuilderHome`](../../apps/studio/schemas/blocks/index.ts) / `pageBuilderLanding` replace single `pageBuilder` on non-home docs
+- [`pageBuilderHome`](../../apps/studio/schemas/sections/index.ts) / `pageBuilderLanding` replace single `pageBuilder` on non-home docs
 - GROQ: shared page-builder projection + `BLOG_PAGE_BY_SLUG_QUERY`, `BLOG_LANDING_PAGES_SITEMAP_QUERY` in [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts)
 - [`[category]/page.tsx`](../../apps/blog/src/app/[category]/page.tsx) resolves CMS landings before posts
 - Sitemap includes published landing/static pages
@@ -66,4 +66,4 @@ Blog workspace + `apps/blog` only. Does not change www `page` type or category a
 
 Landing and static page lists are **hidden inside Pages** until design ships (`BLOG_STUDIO_LANDING_PAGES = false` in [`apps/studio/structure/index.ts`](../../apps/studio/structure/index.ts)). Editors open **Pages → Homepage** (singleton); `pageRole` and `publishedAt` are hidden on the home singleton. Schema, GROQ, and the `/{slug}` resolver remain — flip the flag and re-seed sample landings to restore full Studio UX.
 
-**Insert menu:** Homepage `pageBuilderHome` uses `insertMenu.groups` tabs (Post / Tag / CTA; Studio always prepends All). Optional grid thumbnails: [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) + [`page-builder-preview.ts`](../../apps/studio/schemas/blocks/page-builder-preview.ts).
+**Insert menu:** Homepage `pageBuilderHome` uses `insertMenu.groups` tabs (Post / Tag / CTA; Studio always prepends All). Optional grid thumbnails: [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) + [`page-builder-preview.ts`](../../apps/studio/schemas/sections/page-builder-preview.ts).
