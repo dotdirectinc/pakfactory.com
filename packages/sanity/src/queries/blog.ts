@@ -48,7 +48,6 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   title,
   "slug": slug.current,
   excerpt,
-  body,
   publishedAt,
   lastModified,
   canonical,
@@ -67,9 +66,49 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "author": author->{name, "slug": slug.current, photo, role},
+  "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238),
+  "tags": tags[]->{
+    _id,
+    title,
+    "slug": slug.current,
+    tagGroup
+  },
+  "author": author->{
+    name,
+    "slug": slug.current,
+    photo,
+    role,
+    tagline,
+    shortBio
+  },
   tldr,
   "tldrText": pt::text(tldr),
+  body[]{
+    ...,
+    _type == "bodyImage" => {
+      ...,
+      alt,
+      caption,
+      link,
+      linkNofollow,
+      asset
+    },
+    _type == "widgetEmbed" => {
+      _key,
+      _type,
+      "widget": widget->{
+        widgetType,
+        headline,
+        subtext,
+        buttonLabel,
+        buttonUrl,
+        variant,
+        "productTitle": product->title,
+        "productSlug": product->slug.current,
+        "productExcerpt": product->excerpt
+      }
+    }
+  },
   "faqItems": faqItems[]{
     question,
     answer,
@@ -245,12 +284,23 @@ export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
   && publishedAt <= now()
 ] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
-/** Post detail under a category URL (PROD-1499). */
+/** Canonical post detail by slug (PROD-1502). */
+export const POST_BY_SLUG_QUERY = /* groq */ `*[
+  _type == "post"
+  && slug.current == $slug
+  && language == $language
+  && defined(publishedAt)
+  && publishedAt <= now()
+][0]${POST_DETAIL_FIELDS}`;
+
+/** Post detail under a category URL (legacy redirect route). */
 export const POST_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
   _type == "post"
   && language == $language
   && slug.current == $postSlug
   && category->slug.current == $categorySlug
+  && defined(publishedAt)
+  && publishedAt <= now()
 ][0]${POST_DETAIL_FIELDS}`;
 
 /** Category landing document (PROD-1499). */
@@ -277,10 +327,22 @@ const CATEGORY_POST_FILTER = /* groq */ `_type == "post"
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
+  && ($excludeFeatured != true || featuredInCategory != true)
   && ($tagSlug == null || $tagSlug in tags[]->slug.current)
   && ($authorSlug == null || author->slug.current == $authorSlug)
   && ($yearStart == null || publishedAt >= $yearStart)
   && ($yearEnd == null || publishedAt < $yearEnd)`;
+
+/** Posts pinned for the category featured band (`featuredInCategory`, max 4). */
+export const BLOG_CATEGORY_FEATURED_POSTS_QUERY = /* groq */ `*[
+  _type == "post"
+  && (language == $language || !defined(language))
+  && category->slug.current == $categorySlug
+  && featuredInCategory == true
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}`;
 
 export const BLOG_CATEGORY_POSTS_COUNT_QUERY = /* groq */ `count(*[
   ${CATEGORY_POST_FILTER}

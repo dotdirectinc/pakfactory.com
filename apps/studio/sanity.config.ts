@@ -139,6 +139,16 @@ const documentActions = (
   return actions
 }
 
+const blogNewDocumentOptions = (
+  prev: { templateId: string }[],
+  { creationContext }: { creationContext: { type: string } },
+) => {
+  if (creationContext.type === 'structure') {
+    return prev.filter((item) => item.templateId !== 'blogCategory')
+  }
+  return prev
+}
+
 export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
   {
@@ -148,7 +158,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    document: { actions: documentActions },
+    document: { actions: documentActions, newDocumentOptions: blogNewDocumentOptions },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
       blogI18nPlugin,
@@ -165,7 +175,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    document: { actions: documentActions },
+    document: { actions: documentActions, newDocumentOptions: blogNewDocumentOptions },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
       blogI18nPlugin,

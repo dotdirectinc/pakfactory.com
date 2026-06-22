@@ -54,6 +54,14 @@ const client = createClient({
 const ref = (id) => ({ _type: 'reference', _ref: id, _key: id })
 const slug = (s) => ({ _type: 'slug', current: s })
 const key = () => Math.random().toString(36).slice(2, 10)
+
+const BLOG_CATEGORY_IDS = [
+  'bcat-packaging-news',
+  'bcat-trends',
+  'bcat-business-strategy',
+  'bcat-sustainability',
+  'bcat-design-inspiration',
+]
 const block = (text) => ({
   _type: 'block',
   _key: Math.random().toString(36).slice(2),
@@ -326,6 +334,41 @@ async function publishDocument(documentId) {
   }
 }
 
+async function deleteOrphanCategoryPageDoc() {
+  const existing = await client.fetch(
+    `*[_id == "blogCategoryPage" || _id == "drafts.blogCategoryPage"][0]._id`,
+  )
+  if (!existing) return false
+
+  await client.delete(existing)
+  return true
+}
+
+async function migrateCategoryTaxonomyDocs() {
+  const categories = await client.fetch(
+    `*[_type == "blogCategory" && _id in $ids]{ _id, featuredSection, pageBuilder }`,
+    { ids: BLOG_CATEGORY_IDS },
+  )
+
+  const tx = client.transaction()
+  let patched = 0
+
+  for (const category of categories) {
+    if (category.featuredSection || category.pageBuilder?.length) {
+      tx.patch(category._id, (patch) =>
+        patch.unset(['featuredSection', 'pageBuilder']),
+      )
+      patched += 1
+    }
+  }
+
+  if (patched > 0) {
+    await tx.commit()
+  }
+
+  return patched
+}
+
 async function seed() {
   console.log(`\n🌱  Blog dev seed → ${DATASET} (${PROJECT_ID}) — ${allDocs.length} documents\n`)
 
@@ -350,9 +393,16 @@ async function seed() {
 
   await publishDocument('blogHomePage')
 
+  const categoryPageDeleted = await deleteOrphanCategoryPageDoc()
+  const categoriesPatched = await migrateCategoryTaxonomyDocs()
+
   console.log(`  ✓  Industries added/updated : ${extraIndustries.length}`)
   console.log(`  ✓  Posts added/updated      : ${extraPosts.length}`)
   console.log('  ✓  Blog Homepage pageBuilder : 1 document (blogHomePage / blogPage home)')
+  console.log(
+    `  ✓  Orphan category page doc  : ${categoryPageDeleted ? 'deleted' : 'none found'}`,
+  )
+  console.log(`  ✓  Category taxonomy cleanup : ${categoriesPatched} categories patched`)
   console.log('\n✅  Blog dev seed complete. Refresh Studio and http://localhost:3003\n')
 }
 

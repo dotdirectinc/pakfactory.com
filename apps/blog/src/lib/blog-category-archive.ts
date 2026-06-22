@@ -23,12 +23,13 @@ import {
   parseListingPage,
   type BlogRobotsDirective,
 } from "@/lib/seo";
-import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
+import { getSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   BLOG_CATEGORY_AUTHORS_FACET_QUERY,
   BLOG_CATEGORY_BY_SLUG_QUERY,
+  BLOG_CATEGORY_FEATURED_POSTS_QUERY,
   BLOG_CATEGORY_POSTS_COUNT_QUERY,
   BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY,
   BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY,
@@ -66,6 +67,7 @@ export type CategoryListFilters = {
 export type CategoryArchivePageData = {
   category: CategoryDocument;
   posts: HomePostCard[];
+  featuredPosts: HomePostCard[];
   totalCount: number;
   pageNumber: number;
   totalPages: number;
@@ -126,7 +128,17 @@ function yearMonthBounds(
   };
 }
 
-function groqFilterParams(categorySlug: string, filters: CategoryListFilters) {
+function hasActiveCategoryFilters(filters: CategoryListFilters): boolean {
+  return Boolean(
+    filters.tag || filters.author || filters.year || filters.month,
+  );
+}
+
+function groqFilterParams(
+  categorySlug: string,
+  filters: CategoryListFilters,
+  options?: { excludeFeatured?: boolean },
+) {
   const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
   return blogLanguageParams({
     categorySlug,
@@ -134,6 +146,7 @@ function groqFilterParams(categorySlug: string, filters: CategoryListFilters) {
     authorSlug: filters.author ?? null,
     yearStart,
     yearEnd,
+    excludeFeatured: options?.excludeFeatured ?? false,
   });
 }
 
@@ -244,14 +257,29 @@ export async function fetchCategoryArchivePage(
   const category = await fetchCategoryBySlug(categorySlug);
   if (!category) return null;
 
-  const groqParams = groqFilterParams(categorySlug, filters);
+  const excludeFeatured =
+    pageNumber === 1 && !hasActiveCategoryFilters(filters);
+  const groqParams = groqFilterParams(categorySlug, filters, {
+    excludeFeatured,
+  });
   let totalCount = 0;
+  let featuredPosts: HomePostCard[] = [];
 
   if (isSanityConfigured()) {
     const client = await getSanityClient();
-    totalCount = await client
-      .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
-      .catch(() => 0);
+    [totalCount, featuredPosts] = await Promise.all([
+      client
+        .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
+        .catch(() => 0),
+      excludeFeatured
+        ? client
+            .fetch<HomePostCard[]>(
+              BLOG_CATEGORY_FEATURED_POSTS_QUERY,
+              blogLanguageParams({ categorySlug }),
+            )
+            .catch(() => [])
+        : Promise.resolve([] as HomePostCard[]),
+    ]);
   }
 
   const totalPages = getTotalArchivePages(totalCount);
@@ -260,6 +288,7 @@ export async function fetchCategoryArchivePage(
     return {
       category,
       posts: [],
+      featuredPosts,
       totalCount,
       pageNumber,
       totalPages,
@@ -303,6 +332,7 @@ export async function fetchCategoryArchivePage(
   return {
     category,
     posts,
+    featuredPosts,
     totalCount,
     pageNumber,
     totalPages,

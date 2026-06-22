@@ -61,6 +61,7 @@ const block = (text) => ({
   markDefs: [],
   children: [{ _type: 'span', _key: Math.random().toString(36).slice(2), text, marks: [] }],
 })
+const key = () => Math.random().toString(36).slice(2, 10)
 
 // ─── Document collections ────────────────────────────────────────────────────
 
@@ -970,7 +971,7 @@ const blogCategories = [
     metaTitle: 'Packaging Industry News — PakFactory Blog',
     metaDescription: 'Timely packaging industry news — M&A, regulatory updates, product launches, material breakthroughs, and trade show coverage with editorial context from PakFactory.',
   },
-]
+].map((category) => ({ ...category }))
 
 const authors = [
   {

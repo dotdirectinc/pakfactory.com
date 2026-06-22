@@ -65,7 +65,9 @@ function blogHomepageItem(S: StructureBuilder): ListItemBuilder {
 }
 
 function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
-  const pageItems: ListItemBuilder[] = [blogHomepageItem(S)]
+  const pageItems: ListItemBuilder[] = [
+    blogHomepageItem(S),
+  ]
 
   if (BLOG_STUDIO_LANDING_PAGES) {
     pageItems.push(

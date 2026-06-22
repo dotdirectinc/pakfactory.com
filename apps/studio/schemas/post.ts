@@ -113,7 +113,7 @@ export const post = defineType({
             type: 'boolean',
             group: 'categorization',
             description:
-                'Pin this post as the featured post on its category landing page. Only one post per category should be enabled at a time.',
+                'Pin this post in the category featured band (hero + up to 3 cards). Mark at most 4 posts per category.',
             initialValue: false,
         }),
 
