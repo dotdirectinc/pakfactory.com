@@ -4,6 +4,7 @@ import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { SiteNavCategories } from "@/components/layout/site-nav-categories";
 import type { BlogCategoryChip } from "@/lib/blog-categories";
+import { READING_PROGRESS_SLOT_ID } from "@/lib/reading-progress";
 import { getWwwUrl } from "@/lib/site";
 
 const QUOTE_HREF = `${getWwwUrl()}/contact`;
@@ -14,7 +15,7 @@ type SiteNavProps = {
 
 export function SiteNav({ categories }: SiteNavProps) {
   return (
-    <header>
+    <header className="sticky -top-16 z-40">
       {/* Top tier — PakFactory brand + search + quote CTA (Figma pro-blocks) */}
       <div className="border-b border-dashed border-border bg-background">
         <PageDielineSection innerClassName="flex h-16 items-center justify-between">
@@ -54,15 +55,24 @@ export function SiteNav({ categories }: SiteNavProps) {
       </div>
 
       {/* Bottom tier — Blog label + category navigation (Figma Navbar) */}
-      <div className="border-b border-dashed border-border bg-background">
-        <PageDielineSection innerClassName="flex h-16 items-center gap-8">
-          <Link
-            href="/"
-            className="shrink-0 text-xl font-semibold tracking-tight text-foreground no-underline"
-          >
-            Blog
-          </Link>
-          <SiteNavCategories categories={categories} />
+      <div className="bg-background">
+        <div className="border-b border-dashed border-border">
+          <PageDielineSection innerClassName="flex h-16 items-center gap-8">
+            <Link
+              href="/"
+              className="shrink-0 text-xl font-semibold tracking-tight text-foreground no-underline"
+            >
+              Blog
+            </Link>
+            <SiteNavCategories categories={categories} />
+          </PageDielineSection>
+        </div>
+        <PageDielineSection innerClassName="px-0">
+          <div
+            id={READING_PROGRESS_SLOT_ID}
+            className="pointer-events-none w-full"
+            aria-hidden
+          />
         </PageDielineSection>
       </div>
     </header>

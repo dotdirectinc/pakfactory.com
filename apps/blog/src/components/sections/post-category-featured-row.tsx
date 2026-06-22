@@ -1,9 +1,14 @@
-import { PostCard, type PostCardData } from "@/components/modules/post-card";
+import { PostCard } from "@/components/modules/post-card";
 import { CategoryLandingSection } from "@/components/views/category-landing-layout";
+import type { HomePostCard } from "@/lib/blog-home";
+import { toPostCardDataList } from "@/lib/post-card-data";
 
-type CategoryFeaturedSectionProps = {
-  hero: PostCardData | null;
-  secondary: PostCardData[];
+const DEFAULT_HEADING = "Featured Posts";
+
+type PostCategoryFeaturedRowProps = {
+  heading?: string;
+  posts?: HomePostCard[];
+  categorySlug: string;
 };
 
 function FeaturedPlaceholder({ variant }: { variant: "hero" | "card" }) {
@@ -33,38 +38,47 @@ function FeaturedPlaceholder({ variant }: { variant: "hero" | "card" }) {
   );
 }
 
-/** Figma "Featured Posts" — hero + 3-card row (placeholder or preview cards in Phase 1). */
-export function CategoryFeaturedSection({
-  hero,
-  secondary,
-}: CategoryFeaturedSectionProps) {
+/**
+ * Category landing featured band (Figma hero + 3 cards).
+ * Posts resolve from `featuredInCategory` on post documents.
+ */
+export function PostCategoryFeaturedRow({
+  heading,
+  posts,
+  categorySlug,
+}: PostCategoryFeaturedRowProps) {
+  const cards = toPostCardDataList(posts ?? [], {
+    categorySlug,
+    imageWidth: 900,
+  });
+  const hero = cards[0] ?? null;
+  const secondary = cards.slice(1, 4);
   const secondarySlots = [0, 1, 2] as const;
+  const sectionHeading = heading?.trim() || DEFAULT_HEADING;
+
+  if (!hero && secondary.length === 0) return null;
 
   return (
     <CategoryLandingSection>
       <h2 className="text-2xl font-semibold leading-8 tracking-tight text-foreground">
-        Featured Posts
+        {sectionHeading}
       </h2>
-      <div className="mt-8 flex flex-col gap-10">
+      <div className="mt-12 flex flex-col gap-16">
         {hero ? (
           <PostCard post={hero} variant="categoryHero" showFeaturedBadge />
         ) : (
           <FeaturedPlaceholder variant="hero" />
         )}
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {secondarySlots.map((index) => {
-            const post = secondary[index];
-            return (
-              <li key={post?._id ?? `featured-placeholder-${index}`}>
-                {post ? (
-                  <PostCard post={post} showFeaturedBadge />
-                ) : (
-                  <FeaturedPlaceholder variant="card" />
-                )}
-              </li>
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+          {secondarySlots.map((slot) => {
+            const card = secondary[slot];
+            return card ? (
+              <PostCard key={card._id} post={card} showFeaturedBadge />
+            ) : (
+              <FeaturedPlaceholder key={slot} variant="card" />
             );
           })}
-        </ul>
+        </div>
       </div>
     </CategoryLandingSection>
   );

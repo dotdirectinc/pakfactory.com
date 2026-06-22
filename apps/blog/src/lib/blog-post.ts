@@ -34,6 +34,25 @@ export type PostFaqItem = {
   answerText?: string;
 };
 
+export type PostTag = {
+  _id?: string;
+  title: string;
+  slug: string;
+  tagGroup?: string;
+};
+
+export type PostBodyWidget = {
+  widgetType?: string;
+  headline?: string;
+  subtext?: string;
+  buttonLabel?: string;
+  buttonUrl?: string;
+  variant?: string;
+  productTitle?: string;
+  productSlug?: string;
+  productExcerpt?: string;
+};
+
 export type BlogPostDetail = DocSeoFields & {
   _id: string;
   title: string;
@@ -44,13 +63,17 @@ export type BlogPostDetail = DocSeoFields & {
   mainImage?: unknown;
   categorySlug?: string;
   categoryTitle?: string;
+  readingTimeMinutes?: number | null;
+  tags?: PostTag[];
   author?: {
     name?: string;
     slug?: string | null;
     photo?: unknown;
     role?: string;
+    tagline?: string;
+    shortBio?: string;
   };
-  body?: unknown;
+  body?: PortableTextBlock[];
   tldr?: PortableTextBlock[];
   tldrText?: string;
   faqItems?: PostFaqItem[];

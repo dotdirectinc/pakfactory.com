@@ -179,7 +179,7 @@ export const BlogCategoryPostsView: UserViewComponent = ({ documentId }) => {
       ) : (
         <>
           {/* Warning if multiple featured */}
-          {featured.length > 1 && (
+          {featured.length > 4 && (
             <div
               style={{
                 background: 'rgba(220,50,50,0.08)',
@@ -191,7 +191,7 @@ export const BlogCategoryPostsView: UserViewComponent = ({ documentId }) => {
                 marginBottom: '1rem',
               }}
             >
-              ⚠️ {featured.length} posts are marked as featured. Only the first will be shown on the category page. Turn off the toggle on the others.
+              ⚠️ {featured.length} posts are marked as featured. Only the first four will be shown on the category page. Turn off the toggle on the others.
             </div>
           )}
 

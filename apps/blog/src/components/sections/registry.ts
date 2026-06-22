@@ -14,18 +14,6 @@ import { TagStrip } from "@/components/sections/tag-strip";
 /**
  * Page-builder section registry — the single source of truth that maps a
  * Sanity section `_type` to its React component (ADR-008).
- *
- * Each key MUST match the `name` of a Studio section schema under
- * `apps/studio/schemas/sections/<stem>` so the array stays 1:1 with the Studio
- * section list. To add a section, touch exactly three places:
- *   1. Studio: add the `sections/<stem>` section schema (it auto-joins the
- *      `pageBuilder` array via `pageBuilderSections`).
- *   2. Frontend: add the section component in `components/sections/`.
- *   3. Here: add the section type + the `_type → component` entry below.
- *
- * Naming: one prefix-first stem per section (`post` / `cta` / `tag`).
- * `_type` (camelCase) ⇄ file (kebab-case) ⇄ component (PascalCase) are all
- * mechanical transforms of the same stem.
  */
 
 /** One resolved tag pill (from `tags[]->` in the home query). */
@@ -109,18 +97,8 @@ export type PageBuilderSection =
   | CtaPillarsSection
   | RichTextBandSection;
 
-/**
- * Props a section component receives: its section's content fields without the
- * Sanity envelope (`_type`/`_key`). The renderer spreads the full section in;
- * the extra envelope fields are harmless.
- */
 export type SectionProps<T extends PageBuilderSection> = Omit<T, "_type" | "_key">;
 
-/**
- * `_type → component`. Values keep their own section prop types; the
- * `satisfies Record<…, ComponentType<any>>` only guards that every value is a
- * component without widening each component's props.
- */
 export const SECTION_COMPONENTS = {
   postFeaturedRow: PostFeaturedRow,
   postCategoryRow: PostCategoryRow,
@@ -133,8 +111,6 @@ export const SECTION_COMPONENTS = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as const satisfies Record<PageBuilderSection["_type"], ComponentType<any>>;
 
-/** Union of valid section `_type`s, derived from the registry. */
 export type SectionType = keyof typeof SECTION_COMPONENTS;
 
-/** Ordered list of registered section types (handy for tests/menus). */
 export const SECTION_TYPES = Object.keys(SECTION_COMPONENTS) as SectionType[];

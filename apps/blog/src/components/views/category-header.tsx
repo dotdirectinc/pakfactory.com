@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { PortableTextBlock } from "@portabletext/types";
 import {
   pageDielineContentClass,
@@ -10,6 +11,7 @@ type CategoryHeaderProps = {
   description?: PortableTextBlock[];
   /** Plain-text fallback for SEO metadata or when portable text is unavailable. */
   descriptionText?: string;
+  bannerImageUrl?: string;
 };
 
 /**
@@ -20,9 +22,11 @@ export function CategoryHeader({
   title,
   description,
   descriptionText,
+  bannerImageUrl,
 }: CategoryHeaderProps) {
   const hasPortableDescription = Boolean(description?.length);
   const plainDescription = descriptionText?.trim();
+  const bannerSrc = bannerImageUrl?.trim();
 
   return (
     <section className="bg-accent" aria-labelledby="category-heading">
@@ -44,6 +48,18 @@ export function CategoryHeader({
               <p className="text-xl leading-7 text-muted-foreground">
                 {plainDescription}
               </p>
+            ) : null}
+            {bannerSrc ? (
+              <div className="relative mt-2 aspect-[21/9] max-w-full overflow-hidden rounded-[14px]">
+                <Image
+                  src={bannerSrc}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 880px) 100vw, 880px"
+                  priority
+                />
+              </div>
             ) : null}
           </div>
         </div>

@@ -5,22 +5,17 @@ type CategoryLandingLayoutProps = {
   jsonLd: string;
   breadcrumb: ReactNode;
   header: ReactNode;
-  featured?: ReactNode;
-  listing: ReactNode;
-  cta?: ReactNode;
+  children: ReactNode;
 };
 
 /**
- * Figma `blog_category` page shell — dieline column aligned with SiteNav/footer.
- * Phase 1: composes section slots; Phase 2 wires CMS data into each slot.
+ * Category archive shell — breadcrumb + document-driven header + fixed sections.
  */
 export function CategoryLandingLayout({
   jsonLd,
   breadcrumb,
   header,
-  featured,
-  listing,
-  cta,
+  children,
 }: CategoryLandingLayoutProps) {
   return (
     <>
@@ -31,21 +26,13 @@ export function CategoryLandingLayout({
       <main>
         <PageDielineSection innerClassName="py-3">{breadcrumb}</PageDielineSection>
         {header}
-        {featured}
-        {listing}
-        {cta ? (
-          <div className="border-b border-dashed border-border">
-            <PageDielineSection innerClassName="py-16 sm:py-24">
-              {cta}
-            </PageDielineSection>
-          </div>
-        ) : null}
+        {children}
       </main>
     </>
   );
 }
 
-/** Shared inner band for featured + listing sections (Figma dashed container). */
+/** Shared inner band for category landing sections (Figma dashed container). */
 export function CategoryLandingSection({
   children,
   className,

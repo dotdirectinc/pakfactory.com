@@ -8,19 +8,6 @@ export const POSTS_QUERY = /* groq */ `*[_type == "post" && defined(slug.current
   "author": author->{name, "slug": slug.current}
 }`;
 
-export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current == $slug && language == $language][0]{
-  _id,
-  title,
-  "slug": slug.current,
-  excerpt,
-  body,
-  publishedAt,
-  mainImage,
-  "categorySlug": category->slug.current,
-  "categoryTitle": category->title,
-  "author": author->{name, "slug": slug.current, photo}
-}`;
-
 export {
     BLOG_ALL_POSTS_COUNT_QUERY,
     BLOG_ALL_POSTS_PAGE_QUERY,
@@ -32,6 +19,7 @@ export {
     BLOG_LANDING_PAGES_SITEMAP_QUERY,
     BLOG_CATEGORY_AUTHORS_FACET_QUERY,
     BLOG_CATEGORY_BY_SLUG_QUERY,
+    BLOG_CATEGORY_FEATURED_POSTS_QUERY,
     BLOG_CATEGORY_POSTS_COUNT_QUERY,
     BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY,
     BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY,
@@ -42,6 +30,7 @@ export {
     BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY,
     BLOG_SEARCH_POSTS_PAGE_OLDEST_QUERY,
     BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY,
+    POST_BY_SLUG_QUERY,
     POST_BY_CATEGORY_AND_SLUG_QUERY,
     BLOG_CATEGORIES_QUERY,
     BLOG_REDIRECTS_QUERY,
