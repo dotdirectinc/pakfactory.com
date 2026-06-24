@@ -714,3 +714,31 @@ export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   "slug": slug.current,
   _updatedAt
 }`;
+
+/** Categories for sitemap — slug + lastmod. Separate from BLOG_CATEGORIES_QUERY to avoid changing its shape. */
+export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
+  _type == "blogCategory"
+  && defined(slug.current)
+  && language == $language
+] | order(title asc){
+  "slug": slug.current,
+  _updatedAt
+}`;
+
+/** Populated tags for sitemap — only tags with at least one published post and allowIndex != false. */
+export const TAGS_FOR_SITEMAP_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && defined(slug.current)
+  && language == $language
+  && allowIndex != false
+  && count(*[
+    _type == "post"
+    && language == $language
+    && defined(publishedAt)
+    && publishedAt <= now()
+    && ^._id in tags[]._ref
+  ]) > 0
+]{
+  "slug": slug.current,
+  _updatedAt
+}`;

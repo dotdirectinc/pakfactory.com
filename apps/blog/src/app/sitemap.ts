@@ -3,11 +3,12 @@ import {
   AUTHORS_FOR_SITEMAP_QUERY,
   BLOG_LANDING_PAGES_SITEMAP_QUERY,
   BLOG_SITEMAP_POSTS_QUERY,
+  CATEGORIES_FOR_SITEMAP_QUERY,
+  TAGS_FOR_SITEMAP_QUERY,
 } from "@pakfactory/sanity/queries";
 import { blogPageDetailHref } from "@/lib/blog-page";
-import { fetchBlogCategories } from "@/lib/blog-data";
 import { fetchBlogSettings } from "@/lib/blog-settings";
-import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
+import { authorHref, categoryHref, postDetailHref, tagHref } from "@/lib/blog-post-url";
 import { absoluteUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
@@ -19,6 +20,11 @@ type SitemapPost = {
   slug: string;
   categorySlug?: string;
   publishedAt?: string;
+  _updatedAt?: string;
+};
+
+type SitemapSlugEntry = {
+  slug: string;
   _updatedAt?: string;
 };
 
@@ -40,16 +46,16 @@ function toChangefreq(value?: string | null): Changefreq | undefined {
 }
 
 /**
- * XML sitemap for indexable blog routes (PROD-1596). All URLs flow through
- * `absoluteUrl()`, so when the blog moves to `pakfactory.com/blog` (basePath
- * `/blog`) this file is served at `/blog/sitemap.xml` and every entry gains the
- * `/blog` prefix automatically. Paginated (page ≥ 2) and filtered listings are
- * `noindex` and intentionally excluded.
+ * XML sitemap for indexable blog routes (PROD-1596, PROD-1510). All URLs flow
+ * through `absoluteUrl()`, so when the blog moves to `pakfactory.com/blog`
+ * (basePath `/blog`) every entry gains the prefix automatically.
+ * Paginated (page ≥ 2), filtered listings, and empty tag pages are excluded.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blogSettings = await fetchBlogSettings();
   const postSitemap = blogSettings?.postDefaults;
   const categorySitemap = blogSettings?.categoryDefaults;
+  const tagSitemap = blogSettings?.tagDefaults;
   const authorSitemap = blogSettings?.authorDefaults;
 
   const entries: MetadataRoute.Sitemap = [
@@ -61,21 +67,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const categories = await fetchBlogCategories();
-  for (const category of categories) {
-    entries.push({
-      url: absoluteUrl(categoryHref(category.slug)),
-      changeFrequency:
-        toChangefreq(categorySitemap?.sitemapChangefreq) ?? "weekly",
-      priority: categorySitemap?.sitemapPriority ?? 0.7,
-    });
-  }
-
   if (isSanityConfigured()) {
     const client = getPublishedSanityClient();
-    const posts = await client
-      .fetch<SitemapPost[]>(BLOG_SITEMAP_POSTS_QUERY, blogLanguageParams())
-      .catch(() => [] as SitemapPost[]);
+    const params = blogLanguageParams();
+
+    const [categories, posts, tags, authors, landingPages] = await Promise.all([
+      client
+        .fetch<SitemapSlugEntry[]>(CATEGORIES_FOR_SITEMAP_QUERY, params)
+        .catch(() => [] as SitemapSlugEntry[]),
+      client
+        .fetch<SitemapPost[]>(BLOG_SITEMAP_POSTS_QUERY, params)
+        .catch(() => [] as SitemapPost[]),
+      client
+        .fetch<SitemapSlugEntry[]>(TAGS_FOR_SITEMAP_QUERY, params)
+        .catch(() => [] as SitemapSlugEntry[]),
+      client
+        .fetch<SitemapSlugEntry[]>(AUTHORS_FOR_SITEMAP_QUERY, params)
+        .catch(() => [] as SitemapSlugEntry[]),
+      client
+        .fetch<{ slug: string; publishedAt?: string; _updatedAt?: string }[]>(
+          BLOG_LANDING_PAGES_SITEMAP_QUERY,
+          params,
+        )
+        .catch(() => [] as { slug: string; publishedAt?: string; _updatedAt?: string }[]),
+    ]);
+
+    for (const category of categories) {
+      entries.push({
+        url: absoluteUrl(categoryHref(category.slug)),
+        ...(category._updatedAt ? { lastModified: new Date(category._updatedAt) } : {}),
+        changeFrequency:
+          toChangefreq(categorySitemap?.sitemapChangefreq) ?? "weekly",
+        priority: categorySitemap?.sitemapPriority ?? 0.7,
+      });
+    }
 
     for (const post of posts) {
       const lastmod = post._updatedAt ?? post.publishedAt;
@@ -88,12 +113,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
 
-    const authors = await client
-      .fetch<{ slug: string; _updatedAt?: string }[]>(
-        AUTHORS_FOR_SITEMAP_QUERY,
-        blogLanguageParams(),
-      )
-      .catch(() => [] as { slug: string; _updatedAt?: string }[]);
+    for (const tag of tags) {
+      entries.push({
+        url: absoluteUrl(tagHref(tag.slug)),
+        ...(tag._updatedAt ? { lastModified: new Date(tag._updatedAt) } : {}),
+        changeFrequency: toChangefreq(tagSitemap?.sitemapChangefreq) ?? "weekly",
+        priority: tagSitemap?.sitemapPriority ?? 0.5,
+      });
+    }
 
     for (const author of authors) {
       entries.push({
@@ -104,12 +131,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: authorSitemap?.sitemapPriority ?? 0.3,
       });
     }
-
-    const landingPages = await client
-      .fetch<
-        { slug: string; publishedAt?: string; _updatedAt?: string }[]
-      >(BLOG_LANDING_PAGES_SITEMAP_QUERY, blogLanguageParams())
-      .catch(() => [] as { slug: string; publishedAt?: string; _updatedAt?: string }[]);
 
     for (const page of landingPages) {
       const lastmod = page._updatedAt ?? page.publishedAt;
