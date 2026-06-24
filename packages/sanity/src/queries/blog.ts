@@ -542,11 +542,13 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
   "ogImageUrl": ogImage.asset->url
 }`;
 
-/** Global Settings singleton — default OG + org logo for metadata fallbacks. */
+/** Global Settings singleton — default OG + org logo for metadata fallbacks + crawler text files. */
 export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   siteTitle,
   "defaultOgImageUrl": defaultOgImage.asset->url,
-  "organizationLogoUrl": organization.logo.asset->url
+  "organizationLogoUrl": organization.logo.asset->url,
+  robotsTxt,
+  llmsTxt
 }`;
 
 /** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */

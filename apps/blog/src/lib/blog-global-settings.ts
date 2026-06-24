@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { BLOG_GLOBAL_SETTINGS_QUERY } from "@pakfactory/sanity/queries";
+import { BLOG_GLOBAL_SETTINGS_CACHE_TAG } from "@/lib/blog-cache";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 
@@ -7,6 +8,8 @@ export type BlogGlobalSettings = {
   defaultOgImageUrl?: string | null;
   organizationLogoUrl?: string | null;
   siteTitle?: string | null;
+  robotsTxt?: string | null;
+  llmsTxt?: string | null;
 };
 
 async function loadBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {
@@ -22,8 +25,8 @@ async function loadBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {
 
 const getCachedBlogGlobalSettings = unstable_cache(
   loadBlogGlobalSettings,
-  ["blog-global-settings"],
-  { revalidate: 300, tags: ["blog-global-settings"] },
+  [BLOG_GLOBAL_SETTINGS_CACHE_TAG],
+  { revalidate: 300, tags: [BLOG_GLOBAL_SETTINGS_CACHE_TAG] },
 );
 
 /** Global Settings singleton — default OG image and org logo for metadata / JSON-LD. */

@@ -9,3 +9,6 @@ export const BLOG_REDIRECTS_CACHE_TAG = "blog-redirects";
 
 /** Cache tag for Blog Settings singleton (nav order, SEO defaults). */
 export const BLOG_SETTINGS_CACHE_TAG = "blog-settings";
+
+/** Cache tag for Global Settings singleton (org, OG defaults, robots.txt, llms.txt). */
+export const BLOG_GLOBAL_SETTINGS_CACHE_TAG = "blog-global-settings";
