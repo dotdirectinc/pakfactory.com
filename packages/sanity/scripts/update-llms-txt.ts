@@ -13,6 +13,14 @@
  *   NEXT_PUBLIC_BLOG_BASE_PATH   — Path prefix (e.g. /blog), empty for root
  *
  * Run: pnpm update:llms-txt  (from repo root)
+ *
+ * TODO (future automation): once PostHog / analytics data is available, replace
+ * the manual prompts with a quarterly GitHub Action / cron that:
+ *   1. Pulls top-5 categories by page-views over the trailing 90 days
+ *   2. Pulls top 10–20 posts by page-views over the trailing 90 days
+ *   3. Runs this script non-interactively (passing selections as args) and
+ *      commits the Sanity patch automatically
+ * Until then, run quarterly and curate manually.
  */
 
 import { createClient } from "@sanity/client";
