@@ -512,7 +512,7 @@ export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
 /** Published posts for the XML sitemap — slug, category for canonical path, and lastmod. */
 export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -705,11 +705,19 @@ export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
   ${AUTHOR_POST_FILTER}
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-/** Authors with at least one published post (sitemap). */
+/** Authors with at least one published post (sitemap).
+ * Posts with language null/missing are treated as belonging to the default
+ * language so authors seeded before the language field was added are included. */
 export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "author"
   && defined(slug.current)
-  && count(*[_type == "post" && language == $language && author._ref == ^._id && defined(publishedAt) && publishedAt <= now()]) > 0
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && author._ref == ^._id
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ]) > 0
 ]{
   "slug": slug.current,
   _updatedAt
@@ -733,7 +741,7 @@ export const TAGS_FOR_SITEMAP_QUERY = /* groq */ `*[
   && allowIndex != false
   && count(*[
     _type == "post"
-    && language == $language
+    && (!defined(language) || language == $language)
     && defined(publishedAt)
     && publishedAt <= now()
     && ^._id in tags[]._ref
