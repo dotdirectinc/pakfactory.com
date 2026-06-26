@@ -2,7 +2,7 @@ import {
   BLOG_SITEMAP_POST_COUNT_QUERY,
   BLOG_SITEMAP_TAG_COUNT_QUERY,
 } from "@pakfactory/sanity/queries";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -38,7 +38,7 @@ export async function GET() {
         loc: absoluteUrl(`/tags-sitemap/${i + 1}`),
       })),
     ],
-    absoluteUrl("/sitemap.xsl"),
+    sitemapXslUrl(),
   );
 
   return xmlResponse(xml, 300);

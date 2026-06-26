@@ -1,7 +1,7 @@
 import { AUTHORS_FOR_SITEMAP_QUERY } from "@pakfactory/sanity/queries";
 import { fetchBlogSettings } from "@/lib/blog-settings";
 import { authorHref } from "@/lib/blog-post-url";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -39,5 +39,5 @@ export async function GET() {
     }
   }
 
-  return xmlResponse(buildUrlset(entries, absoluteUrl("/sitemap.xsl")), 60);
+  return xmlResponse(buildUrlset(entries, sitemapXslUrl()), 60);
 }
