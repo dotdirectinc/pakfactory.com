@@ -26,17 +26,20 @@ export async function GET() {
     tagPages = Math.max(1, Math.ceil(tagCount / SITEMAP_GROUP_SIZE));
   }
 
-  const xml = buildSitemapIndex([
-    { loc: absoluteUrl("/pages-sitemap.xml") },
-    { loc: absoluteUrl("/categories-sitemap.xml") },
-    { loc: absoluteUrl("/authors-sitemap.xml") },
-    ...Array.from({ length: postPages }, (_, i) => ({
-      loc: absoluteUrl(`/posts-sitemap/${i + 1}`),
-    })),
-    ...Array.from({ length: tagPages }, (_, i) => ({
-      loc: absoluteUrl(`/tags-sitemap/${i + 1}`),
-    })),
-  ]);
+  const xml = buildSitemapIndex(
+    [
+      { loc: absoluteUrl("/pages-sitemap.xml") },
+      { loc: absoluteUrl("/categories-sitemap.xml") },
+      { loc: absoluteUrl("/authors-sitemap.xml") },
+      ...Array.from({ length: postPages }, (_, i) => ({
+        loc: absoluteUrl(`/posts-sitemap/${i + 1}`),
+      })),
+      ...Array.from({ length: tagPages }, (_, i) => ({
+        loc: absoluteUrl(`/tags-sitemap/${i + 1}`),
+      })),
+    ],
+    absoluteUrl("/sitemap.xsl"),
+  );
 
   return xmlResponse(xml, 300);
 }

@@ -54,5 +54,5 @@ export async function GET(
     }
   }
 
-  return xmlResponse(buildUrlset(entries), 60);
+  return xmlResponse(buildUrlset(entries, absoluteUrl("/sitemap.xsl")), 60);
 }

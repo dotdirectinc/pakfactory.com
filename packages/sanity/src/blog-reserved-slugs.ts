@@ -15,6 +15,7 @@ export const BLOG_RESERVED_SLUGS = [
   "rss.xml",
   "search",
   "sitemap.xml",
+  "sitemap.xsl",
   "tag",
   "tags-sitemap",
 ] as const;

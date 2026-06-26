@@ -14,7 +14,11 @@ export type SitemapUrlEntry = {
   priority?: number;
 };
 
-export function buildSitemapIndex(entries: SitemapIndexEntry[]): string {
+function xslPI(xslHref: string): string {
+  return `<?xml-stylesheet type="text/xsl" href="${xslHref}"?>\n`;
+}
+
+export function buildSitemapIndex(entries: SitemapIndexEntry[], xslHref?: string): string {
   const inner = entries
     .map((e) => {
       const lastmod = e.lastmod ? `\n    <lastmod>${e.lastmod}</lastmod>` : "";
@@ -23,13 +27,14 @@ export function buildSitemapIndex(entries: SitemapIndexEntry[]): string {
     .join("\n");
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    (xslHref ? xslPI(xslHref) : "") +
     `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     `${inner}\n` +
     `</sitemapindex>`
   );
 }
 
-export function buildUrlset(entries: SitemapUrlEntry[]): string {
+export function buildUrlset(entries: SitemapUrlEntry[], xslHref?: string): string {
   const inner = entries
     .map((e) => {
       const lines = [`    <loc>${e.loc}</loc>`];
@@ -41,6 +46,7 @@ export function buildUrlset(entries: SitemapUrlEntry[]): string {
     .join("\n");
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    (xslHref ? xslPI(xslHref) : "") +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     `${inner}\n` +
     `</urlset>`
