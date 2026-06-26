@@ -750,3 +750,61 @@ export const TAGS_FOR_SITEMAP_QUERY = /* groq */ `*[
   "slug": slug.current,
   _updatedAt
 }`;
+
+// ── Sitemap index pagination (PROD-1865) ─────────────────────────────────────
+
+/** Total published post count — used by the sitemap index to calculate page groups. */
+export const BLOG_SITEMAP_POST_COUNT_QUERY = /* groq */ `count(*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+])`;
+
+/** Total populated tag count — used by the sitemap index to calculate page groups. */
+export const BLOG_SITEMAP_TAG_COUNT_QUERY = /* groq */ `count(*[
+  _type == "blogTag"
+  && defined(slug.current)
+  && language == $language
+  && allowIndex != false
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(publishedAt)
+    && publishedAt <= now()
+    && ^._id in tags[]._ref
+  ]) > 0
+])`;
+
+/** Paginated posts for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
+export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc)[$start...$end]{
+  "slug": slug.current,
+  "categorySlug": category->slug.current,
+  publishedAt,
+  _updatedAt
+}`;
+
+/** Paginated populated tags for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
+export const BLOG_SITEMAP_TAGS_PAGE_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && defined(slug.current)
+  && language == $language
+  && allowIndex != false
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(publishedAt)
+    && publishedAt <= now()
+    && ^._id in tags[]._ref
+  ]) > 0
+] | order(title asc)[$start...$end]{
+  "slug": slug.current,
+  _updatedAt
+}`;

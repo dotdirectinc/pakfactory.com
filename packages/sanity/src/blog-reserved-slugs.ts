@@ -7,11 +7,16 @@ export const BLOG_RESERVED_SLUGS = [
   "all",
   "api",
   "author",
+  "authors-sitemap.xml",
+  "categories-sitemap.xml",
   "contribute",
+  "pages-sitemap.xml",
+  "posts-sitemap",
   "rss.xml",
   "search",
   "sitemap.xml",
   "tag",
+  "tags-sitemap",
 ] as const;
 
 /** Known category archive slugs (PROD-1597 / studio blogCategory validation). */

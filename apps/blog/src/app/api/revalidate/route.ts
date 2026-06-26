@@ -59,10 +59,15 @@ export async function POST(request: Request) {
   // the underlying unstable_cache TTL (BLOG_REVALIDATE_SECONDS) is the freshness floor.
   for (const tag of tags) revalidateTag(tag, "max");
 
-  // Sitemap regenerates on any content change that affects its entries.
+  // Sitemap index + all sub-sitemaps regenerate on any content change that affects entries.
   const sitemapTypes = ["post", "blogCategory", "blogTag", "author"];
   if (!type || sitemapTypes.includes(type)) {
     revalidatePath("/sitemap.xml");
+    revalidatePath("/pages-sitemap.xml");
+    revalidatePath("/categories-sitemap.xml");
+    revalidatePath("/authors-sitemap.xml");
+    revalidatePath("/posts-sitemap/1");
+    revalidatePath("/tags-sitemap/1");
   }
 
   return NextResponse.json({
