@@ -9,6 +9,8 @@ import { defineField, defineType } from 'sanity'
  * Supported types:
  *   - cta         → CTA Block (headline, subtext, button)
  *   - product-card → Product Card (reference to a product document)
+ *
+ * One-off callouts are authored inline via the `bodyCallout` block object instead.
  */
 export const contentWidget = defineType({
   name: 'contentWidget',

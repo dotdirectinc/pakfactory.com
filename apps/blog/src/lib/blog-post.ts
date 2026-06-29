@@ -53,6 +53,12 @@ export type PostBodyWidget = {
   productExcerpt?: string;
 };
 
+export type PostBodyCallout = {
+  calloutTone?: string;
+  calloutTitle?: string;
+  calloutBody?: PortableTextBlock[];
+};
+
 export type BlogPostDetail = DocSeoFields & {
   _id: string;
   title: string;

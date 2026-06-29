@@ -2,6 +2,7 @@ import {defineField, defineType} from 'sanity';
 import {languageField, uniqueSlugPerLanguage} from '../lib/i18n-fields';
 import {MEDIA_TAG, taggedImageField} from '../lib/media-tags';
 import {seoFields, socialFields} from '../lib/seo-fields';
+import {inlineBlocks} from './inline';
 
 export const post = defineType({
     name: 'post',
@@ -71,11 +72,25 @@ export const post = defineType({
             ],
         })),
         defineField({
+            name: 'legacyImageUrl',
+            title: 'Legacy image URL (S3)',
+            type: 'url',
+            group: 'content',
+            readOnly: true,
+            description:
+                'Read-only provenance from the WordPress → Sanity blog migration: the original S3 featured-image URL. Kept as a fallback while images are served from Sanity Media; removed once the S3 bucket is decommissioned. Set by the migration, not edited by hand.',
+        }),
+        defineField({
             name: 'body',
             title: 'Body',
             type: 'array',
             group: 'content',
-            of: [{type: 'block'}, {type: 'bodyImage'}, {type: 'widgetEmbed'}],
+            of: [
+                {type: 'block'},
+                {type: 'bodyImage'},
+                ...inlineBlocks.map((block) => ({type: block.name})),
+                {type: 'widgetEmbed'},
+            ],
         }),
 
         // ── Categorization ──────────────────────────────────────────────────────

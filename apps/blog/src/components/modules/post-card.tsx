@@ -197,7 +197,7 @@ export function PostCard({
 
   if (isRail) {
     return (
-      <article>
+      <div>
         <Link href={post.href} className="group block">
           <span className="font-medium group-hover:underline">{post.title}</span>
           {post.excerpt && (
@@ -206,7 +206,7 @@ export function PostCard({
             </p>
           )}
         </Link>
-      </article>
+      </div>
     );
   }
 
@@ -337,13 +337,13 @@ export function PostCard({
 
   if (isCompact) {
     return (
-      <article>
+      <div>
         <Link href={post.href} className="group block space-y-1">
           <h3 className="text-sm font-medium leading-snug group-hover:underline">
             {post.title}
           </h3>
         </Link>
-      </article>
+      </div>
     );
   }
 

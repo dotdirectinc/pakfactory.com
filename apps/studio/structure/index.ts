@@ -18,6 +18,7 @@ import {
   ImagesIcon,
   LockIcon,
   StarIcon,
+  ThLargeIcon,
 } from '@sanity/icons'
 import type { DividerBuilder, ListItemBuilder, StructureBuilder } from 'sanity/structure'
 import { MediaToolRedirect } from '../components/MediaToolRedirect'
@@ -39,6 +40,37 @@ function mediaLibraryItem(S: StructureBuilder): ListItemBuilder {
     .title('Media Library')
     .icon(ImagesIcon)
     .child(S.component(MediaToolRedirect).title('Media Library'))
+}
+
+function blogNavigationEditor(
+  S: StructureBuilder,
+  title: string,
+  paneId: string,
+): ReturnType<StructureBuilder['document']> {
+  return S.document()
+    .id(paneId)
+    .schemaType('blogNavigation')
+    .documentId('blogNavigation')
+    .title(title)
+    .views([S.view.form().id(paneId).title(title)])
+}
+
+function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
+  return S.listItem()
+    .title('Navigation')
+    .icon(ThLargeIcon)
+    .child(
+      S.list()
+        .title('Navigation')
+        .items([
+          S.listItem()
+            .title('Primary Navigation')
+            .child(blogNavigationEditor(S, 'Primary Navigation', 'blogNavigation-primary')),
+          S.listItem()
+            .title('Footer Navigation')
+            .child(blogNavigationEditor(S, 'Footer Navigation', 'blogNavigation-footer')),
+        ])
+    )
 }
 
 function blogHomepageItem(S: StructureBuilder): ListItemBuilder {
@@ -231,6 +263,7 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
 
     blogPagesFolder(S),
 
+    blogNavigationItem(S),
   ]
 }
 
@@ -1034,7 +1067,7 @@ export const blogStructure = (S: StructureBuilder) =>
     .title('Blog')
     .items([
       ...blogItems(S),
-      ...settingsItems(S, { blog: true, media: true }),
+      ...settingsItems(S, { blog: true }),
     ])
 
 /** Website — all content that makes up the website */

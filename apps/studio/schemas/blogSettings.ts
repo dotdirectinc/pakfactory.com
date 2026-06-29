@@ -2,8 +2,8 @@ import { defineField, defineType } from 'sanity'
 import { CogIcon } from '@sanity/icons'
 
 /**
- * Blog Settings (singleton) — per-document-type SEO/indexing DEFAULTS + blog
- * navigation. Overrides the Global Settings defaults where set; any individual
+ * Blog Settings (singleton) — per-document-type SEO/indexing DEFAULTS and general
+ * blog options. Overrides the Global Settings defaults where set; any individual
  * document overrides these on its own SEO tab.
  *
  * NOTE: the meta-title/description FORMATS use a token set. Resolving the tokens
@@ -99,26 +99,13 @@ export const blogSettings = defineType({
   type: 'document',
   icon: CogIcon,
   groups: [
-    { name: 'navigation', title: 'Navigation', default: true },
-    { name: 'post', title: 'Post defaults' },
+    { name: 'post', title: 'Post defaults', default: true },
     { name: 'category', title: 'Category defaults' },
     { name: 'tag', title: 'Tag defaults' },
     { name: 'author', title: 'Author defaults' },
     { name: 'general', title: 'General' },
   ],
   fields: [
-    // ── Navigation ────────────────────────────────────────────────────────────
-    defineField({
-      name: 'categoryOrder',
-      title: 'Category navigation order',
-      type: 'array',
-      group: 'navigation',
-      description:
-        'The categories shown in the nav / category strip, in order. Drag to reorder. (Replaces the per-category Display order.)',
-      of: [{ type: 'reference', to: [{ type: 'blogCategory' }] }],
-      validation: (Rule) => Rule.unique(),
-    }),
-
     // ── Per-type SEO defaults ─────────────────────────────────────────────────
     defineField({
       name: 'postDefaults',

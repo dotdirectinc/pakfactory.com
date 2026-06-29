@@ -3,119 +3,17 @@ import {MessageSquareText} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
-import {categoryHref} from '@/lib/blog-post-url';
+import {
+    getFallbackFooterColumns,
+    type BlogFooterColumns,
+    type BlogFooterLink,
+    type BlogFooterSection,
+} from '@/lib/blog-footer-nav';
 import {getWwwUrl} from '@/lib/site';
 
 const WWW = getWwwUrl();
 
-const BLOG_CATEGORIES = [
-    {slug: 'packaging-news', label: 'Packaging News'},
-    {slug: 'trends', label: 'Trends'},
-    {slug: 'business-strategy', label: 'Business Strategy'},
-    {slug: 'sustainability', label: 'Sustainability'},
-    {slug: 'design-inspiration', label: 'Design Inspiration'},
-] as const;
-
-type FooterLink = {label: string; href: string; external?: boolean};
-
-type FooterSection = {
-    title: string;
-    links: FooterLink[];
-};
-
-const FOOTER_COLUMNS: FooterSection[][] = [
-    [
-        {
-            title: 'Browse the Blog',
-            links: BLOG_CATEGORIES.map(({slug, label}) => ({
-                label,
-                href: categoryHref(slug),
-            })),
-        },
-        {
-            title: 'Explore PakFactory',
-            links: [
-                {label: 'About', href: `${WWW}/about`, external: true},
-                {
-                    label: 'Case Studies',
-                    href: `${WWW}/case-studies`,
-                    external: true,
-                },
-                {label: 'Resources', href: `${WWW}/resources`, external: true},
-                {label: 'Get a Quote', href: `${WWW}/contact`, external: true},
-                {label: 'Contribute to the Blog', href: '/contribute'},
-            ],
-        },
-    ],
-    [
-        {
-            title: 'Capabilities',
-            links: [
-                {
-                    label: 'Rigid Boxes',
-                    href: `${WWW}/capabilities`,
-                    external: true,
-                },
-                {
-                    label: 'Folding Cartons',
-                    href: `${WWW}/capabilities`,
-                    external: true,
-                },
-                {
-                    label: 'Custom Pouches',
-                    href: `${WWW}/capabilities`,
-                    external: true,
-                },
-                {
-                    label: 'Labels & Stickers',
-                    href: `${WWW}/capabilities`,
-                    external: true,
-                },
-                {
-                    label: 'View All',
-                    href: `${WWW}/capabilities`,
-                    external: true,
-                },
-            ],
-        },
-    ],
-    [
-        {
-            title: 'Our Services',
-            links: [
-                {
-                    label: 'Packaging Strategy',
-                    href: `${WWW}/solutions`,
-                    external: true,
-                },
-                {
-                    label: 'Packaging Design',
-                    href: `${WWW}/solutions`,
-                    external: true,
-                },
-                {
-                    label: 'Prototyping',
-                    href: `${WWW}/solutions`,
-                    external: true,
-                },
-                {
-                    label: 'Managed Manufacturing',
-                    href: `${WWW}/solutions`,
-                    external: true,
-                },
-                {label: 'Logistics', href: `${WWW}/solutions`, external: true},
-                {
-                    label: 'Packaging Fulfillment',
-                    href: `${WWW}/solutions`,
-                    external: true,
-                },
-                {label: 'View All', href: `${WWW}/solutions`, external: true},
-            ],
-        },
-    ],
-];
-
-function FooterLinkItem({link}: {link: FooterLink}) {
+function FooterLinkItem({link}: {link: BlogFooterLink}) {
     const className =
         'block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground';
 
@@ -134,7 +32,7 @@ function FooterLinkItem({link}: {link: FooterLink}) {
     );
 }
 
-function FooterSectionBlock({section}: {section: FooterSection}) {
+function FooterSectionBlock({section}: {section: BlogFooterSection}) {
     return (
         <div className="flex min-w-[200px] flex-1 flex-col gap-3">
             <p className="pb-2 text-lg font-medium leading-7 text-foreground">
@@ -151,7 +49,13 @@ function FooterSectionBlock({section}: {section: FooterSection}) {
     );
 }
 
-export function SiteFooter() {
+type SiteFooterProps = {
+    columns?: BlogFooterColumns;
+};
+
+export function SiteFooter({columns}: SiteFooterProps) {
+    const footerColumns =
+        columns && columns.length > 0 ? columns : getFallbackFooterColumns();
     const talkHref = `${WWW}/contact`;
 
     return (
@@ -185,7 +89,7 @@ export function SiteFooter() {
 
                 {/* Link columns */}
                 <div className="grid grid-cols-1 gap-0 border-t border-dashed border-border md:grid-cols-3">
-                    {FOOTER_COLUMNS.map((column, colIdx) => (
+                    {footerColumns.map((column, colIdx) => (
                         <div
                             key={colIdx}
                             className="flex flex-col gap-16 border-dashed border-border px-8 py-16 md:border-r md:last:border-r-0"
