@@ -14,6 +14,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { buildFooterNavigationSeed } from './footer-navigation-seed-data.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -296,20 +297,26 @@ const blogHomePageDoc = {
   ],
 }
 
-/** Blog Settings singleton — nav category order for sub-navigation. */
-const blogSettingsDoc = {
-  _id: 'blogSettings',
-  _type: 'blogSettings',
-  categoryOrder: [
-    ref('bcat-packaging-news'),
-    ref('bcat-trends'),
-    ref('bcat-business-strategy'),
-    ref('bcat-sustainability'),
-    ref('bcat-design-inspiration'),
-  ],
+/** Blog Navigation singleton — primary nav category order + footer link columns. */
+const blogNavigationDoc = {
+  _id: 'blogNavigation',
+  _type: 'blogNavigation',
+  primaryNavigation: {
+    categories: [
+      ref('bcat-packaging-news'),
+      ref('bcat-trends'),
+      ref('bcat-business-strategy'),
+      ref('bcat-sustainability'),
+      ref('bcat-design-inspiration'),
+    ],
+  },
+  footerNavigation: buildFooterNavigationSeed(
+    process.env.NEXT_PUBLIC_WWW_URL || 'https://www.pakfactory.com',
+    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3003',
+  ),
 }
 
-const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc, blogSettingsDoc]
+const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc, blogNavigationDoc]
 
 async function publishDocument(documentId) {
   try {

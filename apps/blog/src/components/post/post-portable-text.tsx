@@ -1,19 +1,12 @@
 import Image from "next/image";
-import Link from "next/link";
 import {
   PortableText as PortableTextRoot,
   type PortableTextComponents,
 } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { Button } from "@pakfactory/ui/components/button";
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@pakfactory/ui/components/card";
-import type { PostBodyWidget } from "@/lib/blog-post";
+import { BodyCallout } from "@/components/modules/inline/body-callout";
+import { WidgetRenderer } from "@/components/modules/widget/widget-renderer";
+import type { PostBodyCallout, PostBodyWidget } from "@/lib/blog-post";
 import { sanityImageUrl } from "@/lib/sanity-image";
 
 type BodyImageValue = {
@@ -62,53 +55,6 @@ function PostBodyImage({ value }: { value: BodyImageValue }) {
       ) : null}
     </figure>
   );
-}
-
-function PostWidgetEmbed({ value }: { value: WidgetEmbedValue }) {
-  const widget = value.widget;
-  if (!widget?.widgetType) return null;
-
-  if (widget.widgetType === "cta") {
-    return (
-      <Card className="my-8 bg-muted/30">
-        <CardHeader>
-          {widget.headline ? <CardTitle>{widget.headline}</CardTitle> : null}
-          {widget.subtext ? <CardDescription>{widget.subtext}</CardDescription> : null}
-        </CardHeader>
-        {widget.buttonLabel && widget.buttonUrl ? (
-          <CardFooter>
-            <Button asChild variant={widget.variant === "secondary" ? "outline" : "default"}>
-              <Link href={widget.buttonUrl}>{widget.buttonLabel}</Link>
-            </Button>
-          </CardFooter>
-        ) : null}
-      </Card>
-    );
-  }
-
-  if (widget.widgetType === "product-card" && widget.productTitle) {
-    return (
-      <Card className="my-8">
-        <CardHeader>
-          <CardTitle>{widget.productTitle}</CardTitle>
-          {widget.productExcerpt ? (
-            <CardDescription>{widget.productExcerpt}</CardDescription>
-          ) : null}
-        </CardHeader>
-        {widget.productSlug ? (
-          <CardFooter>
-            <Button asChild variant="outline">
-              <Link href={`https://www.pakfactory.com/products/${widget.productSlug}`}>
-                View product
-              </Link>
-            </Button>
-          </CardFooter>
-        ) : null}
-      </Card>
-    );
-  }
-
-  return null;
 }
 
 function createComponents(headingIdByKey: Record<string, string>): PortableTextComponents {
@@ -168,7 +114,10 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
     },
     types: {
       bodyImage: ({ value }) => <PostBodyImage value={value as BodyImageValue} />,
-      widgetEmbed: ({ value }) => <PostWidgetEmbed value={value as WidgetEmbedValue} />,
+      bodyCallout: ({ value }) => <BodyCallout value={value as PostBodyCallout} />,
+      widgetEmbed: ({ value }) => (
+        <WidgetRenderer widget={(value as WidgetEmbedValue).widget} />
+      ),
     },
   };
 }

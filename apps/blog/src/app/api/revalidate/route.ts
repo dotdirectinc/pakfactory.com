@@ -11,7 +11,7 @@ import {
  * Sanity webhook → on-demand revalidation.
  *
  * Configure a webhook in Sanity (project 8293wrxp) targeting this route,
- * filtered to `_type == "redirect" || _type == "post" || _type == "blogSettings" || _type == "blogCategory" || _type == "settings" || _type == "blogTag" || _type == "author"`, with a shared secret
+ * filtered to `_type == "redirect" || _type == "post" || _type == "blogSettings" || _type == "blogNavigation" || _type == "blogCategory" || _type == "settings" || _type == "blogTag" || _type == "author"`, with a shared secret
  * sent as `Authorization: Bearer <secret>` or `?secret=<secret>`.
  *
  * - redirect CRUD or post publish → refresh the cached redirect map.
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   if (type === "post" || !type) {
     tags.add(BLOG_POSTS_CACHE_TAG);
   }
-  if (type === "blogSettings" || type === "blogCategory" || !type) {
+  if (type === "blogSettings" || type === "blogNavigation" || type === "blogCategory" || !type) {
     tags.add(BLOG_SETTINGS_CACHE_TAG);
   }
   if (type === "settings" || !type) {

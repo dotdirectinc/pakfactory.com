@@ -6,10 +6,17 @@ import { isSanityConfigured } from "@/lib/sanity/env";
 import { DEFAULT_BLOG_LANGUAGE } from "@pakfactory/sanity/languages";
 import {
   BLOG_CATEGORIES_QUERY,
+  BLOG_FOOTER_NAV_QUERY,
   BLOG_NAV_CATEGORIES_QUERY,
   POPULAR_POSTS_LATEST_QUERY,
   POPULAR_POSTS_THIS_MONTH_QUERY,
 } from "@pakfactory/sanity/queries";
+import {
+  getFallbackFooterColumns,
+  resolveFooterColumns,
+  type BlogFooterColumns,
+  type BlogFooterNavDoc,
+} from "@/lib/blog-footer-nav";
 import {
   BLOG_REVALIDATE_SECONDS,
   BLOG_SETTINGS_CACHE_TAG,
@@ -104,9 +111,10 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
 }
 
 /**
- * Sub-nav categories — exact order from Blog Settings `categoryOrder`.
+ * Sub-nav categories — exact order from Blog Navigation `primaryNavigation.categories`.
  * Returns only what editors configured; empty when unset, missing settings,
- * Sanity unconfigured, or fetch fails.
+ * Sanity unconfigured, or fetch fails. Slug/language/null-ref filtering happens in
+ * `resolveNavCategories` (GROQ preserves editor order on dereferenced categories).
  */
 export async function fetchBlogNavCategories(): Promise<BlogCategoryChip[]> {
   if (!isSanityConfigured()) {
@@ -124,6 +132,59 @@ export async function fetchBlogNavCategories(): Promise<BlogCategoryChip[]> {
   }
 
   return getCachedBlogNavCategories();
+}
+
+async function loadBlogFooterNavigationFromClient(
+  fetchDoc: () => Promise<BlogFooterNavDoc>,
+): Promise<BlogFooterColumns> {
+  if (!isSanityConfigured()) {
+    return getFallbackFooterColumns();
+  }
+
+  const doc = await fetchDoc().catch(() => null);
+  const columns = resolveFooterColumns(doc);
+  if (columns.length > 0) {
+    return columns;
+  }
+
+  return getFallbackFooterColumns();
+}
+
+async function loadPublishedBlogFooterNavigation(): Promise<BlogFooterColumns> {
+  return loadBlogFooterNavigationFromClient(() =>
+    getPublishedSanityClient().fetch<BlogFooterNavDoc>(
+      BLOG_FOOTER_NAV_QUERY,
+    ),
+  );
+}
+
+const getCachedBlogFooterNavigation = unstable_cache(
+  loadPublishedBlogFooterNavigation,
+  ["blog-footer-navigation"],
+  {
+    revalidate: BLOG_REVALIDATE_SECONDS,
+    tags: [BLOG_SETTINGS_CACHE_TAG],
+  },
+);
+
+/**
+ * Footer link columns from Blog Navigation `footerNavigation.columns`.
+ * Falls back to hardcoded columns when Sanity is unconfigured, fetch fails,
+ * or editors have not configured footer columns yet.
+ */
+export async function fetchBlogFooterNavigation(): Promise<BlogFooterColumns> {
+  if (!isSanityConfigured()) {
+    return getFallbackFooterColumns();
+  }
+
+  if ((await draftMode()).isEnabled) {
+    const client = await getSanityClient();
+    return loadBlogFooterNavigationFromClient(() =>
+      client.fetch<BlogFooterNavDoc>(BLOG_FOOTER_NAV_QUERY),
+    );
+  }
+
+  return getCachedBlogFooterNavigation();
 }
 
 export async function fetchPopularPostsThisMonth(): Promise<PopularPostCard[]> {

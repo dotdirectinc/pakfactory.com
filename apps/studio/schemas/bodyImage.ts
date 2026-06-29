@@ -40,6 +40,14 @@ export const bodyImage = defineType({
       description: 'Optional short caption shown below the image in the frontend.',
     }),
     defineField({
+      name: 'legacyImageUrl',
+      title: 'Legacy image URL (S3)',
+      type: 'url',
+      readOnly: true,
+      description:
+        'Read-only provenance from the WordPress → Sanity blog migration: the original S3 URL of this inline image. The media-upload step replaces it with a Sanity asset; kept as a fallback until the S3 bucket is decommissioned.',
+    }),
+    defineField({
       name: 'link',
       title: 'Link URL',
       type: 'url',

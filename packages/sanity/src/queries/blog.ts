@@ -93,6 +93,22 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       linkNofollow,
       asset
     },
+    _type == "bodyCallout" => {
+      _key,
+      _type,
+      calloutTone,
+      calloutTitle,
+      calloutBody[]{
+        ...,
+        markDefs[]{
+          ...,
+          _type == "link" => {
+            ...,
+            href
+          }
+        }
+      }
+    },
     _type == "widgetEmbed" => {
       _key,
       _type,
@@ -591,14 +607,55 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
   }
 }`;
 
-/** Category nav order from Blog Settings `categoryOrder` (editor drag-and-drop). */
-export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `*[_id == "blogSettings"][0]{
-  _id,
-  "categories": categoryOrder[]->{
+/** Category nav order from Blog Navigation `primaryNavigation.categories` (editor drag-and-drop). */
+export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
+  *[_id == "blogNavigation"][0]{
     _id,
-    title,
-    "slug": slug.current,
-    language
+    "categories": primaryNavigation.categories[]->{
+      _id,
+      title,
+      "slug": slug.current,
+      language
+    }
+  },
+  *[_id == "blogSettings"][0]{
+    _id,
+    "categories": categoryOrder[]->{
+      _id,
+      title,
+      "slug": slug.current,
+      language
+    }
+  }
+)`;
+
+/** Footer link columns from Blog Navigation `footerNavigation.columns`. */
+export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
+  _id,
+  "columns": footerNavigation.columns[]{
+    "sections": sections[]{
+      title,
+      "links": links[]{
+        label,
+        linkType,
+        externalUrl,
+        href,
+        external,
+        "internalLink": internalLink->{
+          _type,
+          title,
+          "slug": slug.current,
+          "name": name,
+          "term": term,
+          pageRole,
+          pageType,
+          category,
+          "handle": handle.current,
+          "collectionSlug": primaryCollection->slug.current,
+          "pageSlug": primaryLandingPage->slug.current
+        }
+      }
+    }
   }
 }`;
 

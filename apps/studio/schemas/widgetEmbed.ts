@@ -1,4 +1,6 @@
+import { ComponentIcon } from '@sanity/icons'
 import { defineField, defineType } from 'sanity'
+import { WidgetEmbedBlock } from '../components/WidgetEmbedBlock'
 
 /**
  * widgetEmbed — Portable Text block that references a saved contentWidget document.
@@ -8,12 +10,16 @@ import { defineField, defineType } from 'sanity'
  * contentWidget document — edit it once and every post embedding it updates too.
  *
  * Usage in post body:
- *   of: [{ type: 'block' }, { type: 'bodyImage' }, { type: 'widgetEmbed' }]
+ *   of: [{ type: 'block' }, { type: 'bodyImage' }, { type: 'bodyCallout' }, { type: 'widgetEmbed' }]
  */
 export const widgetEmbed = defineType({
   name: 'widgetEmbed',
   title: 'Widget',
   type: 'object',
+  icon: ComponentIcon,
+  components: {
+    block: WidgetEmbedBlock,
+  },
   fields: [
     defineField({
       name: 'widget',
