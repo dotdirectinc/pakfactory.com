@@ -1,4 +1,4 @@
-import { FilterArchiveSidebar } from "@/components/modules/filter-archive-sidebar";
+import { FilterArchiveSidebar } from "@/components/modules/filter/filter-archive-sidebar";
 import { ArchiveLayout } from "@/components/views/archive-layout";
 import { PostList } from "@/components/modules/post-list";
 import { pagedHeading } from "@/lib/archive-format";

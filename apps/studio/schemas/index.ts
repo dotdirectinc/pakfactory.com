@@ -13,6 +13,7 @@ import { author } from './author'
 import { blogCategory } from './blogCategory'
 import { blogTag } from './blogTag'
 import { bodyImage } from './bodyImage'
+import { inlineBlocks } from './inline'
 import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
@@ -20,6 +21,7 @@ import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticP
 import { expertiseStage } from './expertiseStage'
 import { caseStudy } from './caseStudy'
 import { glossaryTerm, guide, helpArticle } from './resources'
+import { blogNavigation } from './blogNavigation'
 import { blogSettings } from './blogSettings'
 import { blogPage } from './blogPage'
 import { solutionsSettings } from './solutionsSettings'
@@ -65,6 +67,7 @@ export const schemaTypes = [
   blogCategory,
   blogTag,
   bodyImage,
+  ...inlineBlocks,
   contentWidget,
   widgetEmbed,
   page,
@@ -79,6 +82,7 @@ export const schemaTypes = [
 
   // Singletons
   settings,
+  blogNavigation,
   blogSettings,
   blogPage,
   aboutPage,

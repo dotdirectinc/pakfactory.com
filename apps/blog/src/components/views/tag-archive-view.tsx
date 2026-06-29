@@ -1,4 +1,4 @@
-import { FilterActive } from "@/components/modules/filter-active";
+import { FilterActive } from "@/components/modules/filter/filter-active";
 import { ArchiveLayout } from "@/components/views/archive-layout";
 import { PostList } from "@/components/modules/post-list";
 import { pagedHeading, postCountLabel } from "@/lib/archive-format";

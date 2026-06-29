@@ -25,6 +25,29 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ---
 
+## Primary navigation (blog header)
+
+The sticky header category strip (`SiteNav` → `SiteNavCategories` in root `layout.tsx`) reads **only** the Studio singleton `blogNavigation.primaryNavigation.categories` via `BLOG_NAV_CATEGORIES_QUERY` → `fetchBlogNavCategories()`. Order is exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
+
+- **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty.
+- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with the dev category order.
+- **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` / `blogCategory` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
+- **Out of scope here:** `/all` browse sidebar, search, and 404 still use `fetchBlogCategories()` (all categories, alphabetical).
+
+---
+
+## Footer navigation (blog footer link grid)
+
+The footer link columns (`SiteFooter` in root `layout.tsx`) read `blogNavigation.footerNavigation.columns` via `BLOG_FOOTER_NAV_QUERY` → `fetchBlogFooterNavigation()`. Order matches Studio **Navigation → Footer Navigation** (columns left to right, sections top to bottom). When the singleton is missing, fetch fails, or columns are empty, the footer falls back to hardcoded columns in `getFallbackFooterColumns()` (`apps/blog/src/lib/blog-footer-nav.ts`).
+
+- **Link model:** each footer link is **Internal** (reference to any [linkable document type](../../apps/studio/lib/linkable-document-types.ts) — blog, website, solutions, resources, static singletons) or **External** (full `https://…` URL). Hrefs resolve at fetch time via `@pakfactory/sanity/resolve-document-href`: blog docs → root-relative paths; www docs → absolute marketing URLs (`external: true`). Optional label overrides the referenced document title. Legacy `href` strings are still resolved until `migrate:blog-navigation` converts them.
+- **CMS scope:** link columns only — collaboration CTA, copyright, and social icons stay in code.
+- **Backfill / migrate:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` seeds default footer columns when empty and converts legacy href-based links to references.
+- **Local seed:** `pnpm seed:blog-dev` writes primary nav and reference-based footer columns on `blogNavigation`.
+- **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
+
+---
+
 ## Studio ↔ blog SEO/Social wiring (backlog — schema done, front-end pending)
 
 The Studio blog schemas were rebuilt against the BA "Blog CMS Field Spec" (2026-06) on the `feature/sanity-studio-ux` branch: all content types now declare SEO/Social via the shared helper [`apps/studio/lib/seo-fields.ts`](../../apps/studio/lib/seo-fields.ts). **The schemas are done; the blog-side GROQ projections + metadata fallbacks are not yet wired.** Contract: [`CLAUDE.md`](./CLAUDE.md) § "SEO & Social field contract". Work the checklist below when connecting Studio to the blog interface.
