@@ -1,6 +1,7 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import {
+  BLOG_GLOBAL_SETTINGS_CACHE_TAG,
   BLOG_POSTS_CACHE_TAG,
   BLOG_REDIRECTS_CACHE_TAG,
   BLOG_SETTINGS_CACHE_TAG,
@@ -10,10 +11,11 @@ import {
  * Sanity webhook → on-demand revalidation.
  *
  * Configure a webhook in Sanity (project 8293wrxp) targeting this route,
- * filtered to `_type == "redirect" || _type == "post" || _type == "blogSettings" || _type == "blogNavigation" || _type == "blogCategory"`, with a shared secret
+ * filtered to `_type == "redirect" || _type == "post" || _type == "blogSettings" || _type == "blogNavigation" || _type == "blogCategory" || _type == "settings" || _type == "blogTag" || _type == "author"`, with a shared secret
  * sent as `Authorization: Bearer <secret>` or `?secret=<secret>`.
  *
  * - redirect CRUD or post publish → refresh the cached redirect map.
+ * - post/tag/category/author publish → also refresh sitemap.
  * - post publish → also refresh post-derived surfaces (home/RSS/listings).
  */
 export async function POST(request: Request) {
@@ -50,9 +52,23 @@ export async function POST(request: Request) {
   if (type === "blogSettings" || type === "blogNavigation" || type === "blogCategory" || !type) {
     tags.add(BLOG_SETTINGS_CACHE_TAG);
   }
+  if (type === "settings" || !type) {
+    tags.add(BLOG_GLOBAL_SETTINGS_CACHE_TAG);
+  }
   // Next 16: revalidateTag takes (tag, profile). "max" requests a full revalidate;
   // the underlying unstable_cache TTL (BLOG_REVALIDATE_SECONDS) is the freshness floor.
   for (const tag of tags) revalidateTag(tag, "max");
+
+  // Sitemap index + all sub-sitemaps regenerate on any content change that affects entries.
+  const sitemapTypes = ["post", "blogCategory", "blogTag", "author"];
+  if (!type || sitemapTypes.includes(type)) {
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/pages-sitemap.xml");
+    revalidatePath("/categories-sitemap.xml");
+    revalidatePath("/authors-sitemap.xml");
+    revalidatePath("/posts-sitemap/1");
+    revalidatePath("/tags-sitemap/1");
+  }
 
   return NextResponse.json({
     revalidated: true,

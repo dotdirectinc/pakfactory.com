@@ -528,7 +528,7 @@ export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
 /** Published posts for the XML sitemap — slug, category for canonical path, and lastmod. */
 export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -558,11 +558,13 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
   "ogImageUrl": ogImage.asset->url
 }`;
 
-/** Global Settings singleton — default OG + org logo for metadata fallbacks. */
+/** Global Settings singleton — default OG + org logo for metadata fallbacks + crawler text files. */
 export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   siteTitle,
   "defaultOgImageUrl": defaultOgImage.asset->url,
-  "organizationLogoUrl": organization.logo.asset->url
+  "organizationLogoUrl": organization.logo.asset->url,
+  robotsTxt,
+  llmsTxt
 }`;
 
 /** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */
@@ -760,12 +762,106 @@ export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
   ${AUTHOR_POST_FILTER}
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-/** Authors with at least one published post (sitemap). */
+/** Authors with at least one published post (sitemap).
+ * Posts with language null/missing are treated as belonging to the default
+ * language so authors seeded before the language field was added are included. */
 export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "author"
   && defined(slug.current)
-  && count(*[_type == "post" && language == $language && author._ref == ^._id && defined(publishedAt) && publishedAt <= now()]) > 0
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && author._ref == ^._id
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ]) > 0
 ]{
+  "slug": slug.current,
+  _updatedAt
+}`;
+
+/** Categories for sitemap — slug + lastmod. Separate from BLOG_CATEGORIES_QUERY to avoid changing its shape. */
+export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
+  _type == "blogCategory"
+  && defined(slug.current)
+  && language == $language
+] | order(title asc){
+  "slug": slug.current,
+  _updatedAt
+}`;
+
+/** Populated tags for sitemap — only tags with at least one published post and allowIndex != false. */
+export const TAGS_FOR_SITEMAP_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && defined(slug.current)
+  && language == $language
+  && allowIndex != false
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(publishedAt)
+    && publishedAt <= now()
+    && ^._id in tags[]._ref
+  ]) > 0
+]{
+  "slug": slug.current,
+  _updatedAt
+}`;
+
+// ── Sitemap index pagination (PROD-1865) ─────────────────────────────────────
+
+/** Total published post count — used by the sitemap index to calculate page groups. */
+export const BLOG_SITEMAP_POST_COUNT_QUERY = /* groq */ `count(*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+])`;
+
+/** Total populated tag count — used by the sitemap index to calculate page groups. */
+export const BLOG_SITEMAP_TAG_COUNT_QUERY = /* groq */ `count(*[
+  _type == "blogTag"
+  && defined(slug.current)
+  && language == $language
+  && allowIndex != false
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(publishedAt)
+    && publishedAt <= now()
+    && ^._id in tags[]._ref
+  ]) > 0
+])`;
+
+/** Paginated posts for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
+export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc)[$start...$end]{
+  "slug": slug.current,
+  "categorySlug": category->slug.current,
+  publishedAt,
+  _updatedAt
+}`;
+
+/** Paginated populated tags for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
+export const BLOG_SITEMAP_TAGS_PAGE_QUERY = /* groq */ `*[
+  _type == "blogTag"
+  && defined(slug.current)
+  && language == $language
+  && allowIndex != false
+  && count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(publishedAt)
+    && publishedAt <= now()
+    && ^._id in tags[]._ref
+  ]) > 0
+] | order(title asc)[$start...$end]{
   "slug": slug.current,
   _updatedAt
 }`;

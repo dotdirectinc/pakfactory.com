@@ -85,3 +85,22 @@ export function siteBaseUrl(): string {
 export function absoluteUrl(path = "/"): string {
   return `${siteBaseUrl()}${withLeadingSlash(path)}`;
 }
+
+/**
+ * Absolute URL for the sitemap XSL stylesheet.
+ *
+ * Cannot use `absoluteUrl` here because `NEXT_PUBLIC_SITE_URL` may include a
+ * path (e.g. `http://localhost:3003/blog` in local dev) even though `basePath`
+ * is not set in `next.config.ts`. `URL.origin` strips any path component from
+ * the env value so the XSL href always points to the actual served route:
+ *   origin + BLOG_BASE_PATH + "/sitemap.xsl"
+ */
+export function sitemapXslUrl(): string {
+  let origin: string;
+  try {
+    origin = new URL(getSiteUrl()).origin;
+  } catch {
+    origin = normalizeSiteUrl(getSiteUrl());
+  }
+  return `${origin}${sitePath("/sitemap.xsl")}`;
+}

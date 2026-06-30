@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "migrate:product-single-refs": "tsx scripts/migrate-product-to-single-refs.ts",
-    "migrate:product-page-related-collections": "tsx scripts/migrate-product-page-related-collections.ts"
+    "migrate:product-page-related-collections": "tsx scripts/migrate-product-page-related-collections.ts",
+    "update:llms-txt": "tsx scripts/update-llms-txt.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0"
