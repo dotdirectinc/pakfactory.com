@@ -26,5 +26,10 @@
   "engines": {
     "node": ">=20.19"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "overrides": {
+      "@sanity/client": "7.22.1"
+    }
+  }
 }
