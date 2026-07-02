@@ -63,6 +63,16 @@ export {
     POSTS_BY_CATEGORY_SLUG_QUERY,
 } from './queries/blog';
 
+export {
+    CASE_STUDIES_LISTING_QUERY,
+    CASE_STUDY_BY_SLUG_QUERY,
+    CASE_STUDY_PATHS_QUERY,
+    type CaseStudyCard,
+    type CaseStudyDetail,
+    type CaseStudyPath,
+    type CaseStudyResult,
+} from './queries/case-studies';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,
