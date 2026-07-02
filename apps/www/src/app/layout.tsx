@@ -8,6 +8,7 @@ import './globals.css';
 export const metadata: Metadata = {
     title: 'PakFactory',
     description: 'Custom packaging, simplified.',
+    robots: { index: false, follow: true },
 };
 
 const navItems = [
