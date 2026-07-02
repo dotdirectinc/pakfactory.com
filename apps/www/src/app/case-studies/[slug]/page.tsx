@@ -1,0 +1,137 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { PortableText } from "@portabletext/react";
+import type { PortableTextBlock } from "@portabletext/types";
+import { getPublishedSanityClient } from "@/sanity/client";
+import { isSanityConfigured } from "@/sanity/env";
+import {
+  CASE_STUDY_BY_SLUG_QUERY,
+  CASE_STUDY_PATHS_QUERY,
+  type CaseStudyDetail,
+  type CaseStudyPath,
+} from "@pakfactory/sanity/queries";
+import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import { absoluteUrl } from "@/lib/site";
+
+export const revalidate = 3600;
+
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  if (!isSanityConfigured()) return [];
+  const paths = await getPublishedSanityClient()
+    .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
+    .catch(() => [] as CaseStudyPath[]);
+  return paths.map((p) => ({ slug: p.slug }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  if (!isSanityConfigured()) return {};
+
+  const study = await getPublishedSanityClient()
+    .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+    .catch(() => null);
+
+  if (!study) return {};
+
+  const title = study.metaTitle?.trim() || study.title;
+  const description = study.metaDescription?.trim() || study.excerpt || undefined;
+  const canonical = absoluteUrl(`/case-studies/${slug}`);
+
+  return {
+    title: `${title} | PakFactory`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      ...(study.ogImageUrl ? { images: [{ url: study.ogImageUrl }] } : {}),
+    },
+  };
+}
+
+export default async function CaseStudyPage({ params }: Props) {
+  const { slug } = await params;
+
+  if (!isSanityConfigured()) notFound();
+
+  const study = await getPublishedSanityClient()
+    .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+    .catch(() => null);
+
+  if (!study) notFound();
+
+  const pageUrl = absoluteUrl(`/case-studies/${slug}`);
+
+  const jsonLd = serializeJsonLd(
+    jsonLdGraph([
+      webPage({
+        url: pageUrl,
+        name: study.title,
+        description: study.excerpt ?? undefined,
+      }),
+    ]),
+  );
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
+      />
+      <main className="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8">
+        {/* Hero */}
+        {study.heroImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={study.heroImageUrl}
+            alt={study.heroImageAlt ?? study.title}
+            className="mb-10 aspect-video w-full rounded-xl object-cover"
+          />
+        )}
+
+        {/* Meta */}
+        <div className="mb-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
+          {study.industry && (
+            <span className="font-medium uppercase tracking-wider">
+              {study.industry}
+            </span>
+          )}
+          {study.clientName && <span>{study.clientName}</span>}
+        </div>
+
+        <h1 className="text-4xl font-bold tracking-tight">{study.title}</h1>
+
+        {study.excerpt && (
+          <p className="mt-4 text-lg text-muted-foreground">{study.excerpt}</p>
+        )}
+
+        {/* Results */}
+        {study.results && study.results.length > 0 && (
+          <ul className="mt-10 grid gap-6 sm:grid-cols-3">
+            {study.results.map((r) => (
+              <li key={r._key} className="rounded-lg border p-6 text-center">
+                <p className="text-3xl font-bold">{r.value}</p>
+                <p className="mt-1 font-medium">{r.metric}</p>
+                {r.description && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {r.description}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Body */}
+        {Array.isArray(study.body) && study.body.length > 0 && (
+          <div className="prose prose-neutral mt-10 max-w-none dark:prose-invert">
+            <PortableText value={study.body as PortableTextBlock[]} />
+          </div>
+        )}
+      </main>
+    </>
+  );
+}
