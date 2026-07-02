@@ -13,6 +13,7 @@ import {
 } from "@pakfactory/seo";
 import { CaseStudyCard as CaseStudyCardUI } from "@pakfactory/ui/components/case-study-card";
 import { absoluteUrl } from "@/lib/site";
+import { MOCK_CASE_STUDY_CARDS } from "@/lib/mock/case-studies";
 
 export const revalidate = 3600;
 
@@ -32,11 +33,14 @@ export const metadata: Metadata = {
 };
 
 export default async function CaseStudiesPage() {
-  const studies = isSanityConfigured()
+  const sanityStudies = isSanityConfigured()
     ? await getPublishedSanityClient()
         .fetch<CaseStudyCard[]>(CASE_STUDIES_LISTING_QUERY)
         .catch(() => [] as CaseStudyCard[])
     : ([] as CaseStudyCard[]);
+
+  // Fall back to mock data until PROD-1650 schema + documents exist in Sanity.
+  const studies = sanityStudies.length > 0 ? sanityStudies : MOCK_CASE_STUDY_CARDS;
 
   const jsonLd = serializeJsonLd(
     jsonLdGraph([

@@ -13,17 +13,29 @@ import {
 import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
 import { CaseStudyResult } from "@pakfactory/ui/components/case-study-result";
 import { absoluteUrl } from "@/lib/site";
+import {
+  MOCK_CASE_STUDY_DETAILS,
+  MOCK_SLUGS,
+} from "@/lib/mock/case-studies";
 
 export const revalidate = 3600;
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  if (!isSanityConfigured()) return [];
-  const paths = await getPublishedSanityClient()
-    .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
-    .catch(() => [] as CaseStudyPath[]);
-  return paths.map((p) => ({ slug: p.slug }));
+  const sanityPaths = isSanityConfigured()
+    ? await getPublishedSanityClient()
+        .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
+        .catch(() => [] as CaseStudyPath[])
+    : [];
+
+  const sanitySlugSet = new Set(sanityPaths.map((p) => p.slug));
+  // Include mock slugs only when Sanity has no documents yet.
+  const mockPaths = sanityPaths.length === 0
+    ? MOCK_SLUGS.map((slug) => ({ slug }))
+    : [];
+
+  return [...sanityPaths, ...mockPaths.filter((p) => !sanitySlugSet.has(p.slug))];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -56,11 +68,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  if (!isSanityConfigured()) notFound();
+  const sanityStudy = isSanityConfigured()
+    ? await getPublishedSanityClient()
+        .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+        .catch(() => null)
+    : null;
 
-  const study = await getPublishedSanityClient()
-    .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-    .catch(() => null);
+  // Fall back to mock data until PROD-1650 schema + documents exist in Sanity.
+  const study = sanityStudy ?? MOCK_CASE_STUDY_DETAILS[slug] ?? null;
 
   if (!study) notFound();
 
