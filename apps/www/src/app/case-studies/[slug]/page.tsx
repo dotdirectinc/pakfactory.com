@@ -11,6 +11,7 @@ import {
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
 import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import { CaseStudyResult } from "@pakfactory/ui/components/case-study-result";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -112,14 +113,12 @@ export default async function CaseStudyPage({ params }: Props) {
         {study.results && study.results.length > 0 && (
           <ul className="mt-10 grid gap-6 sm:grid-cols-3">
             {study.results.map((r) => (
-              <li key={r._key} className="rounded-lg border p-6 text-center">
-                <p className="text-3xl font-bold">{r.value}</p>
-                <p className="mt-1 font-medium">{r.metric}</p>
-                {r.description && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {r.description}
-                  </p>
-                )}
+              <li key={r._key}>
+                <CaseStudyResult
+                  value={r.value}
+                  metric={r.metric}
+                  description={r.description}
+                />
               </li>
             ))}
           </ul>

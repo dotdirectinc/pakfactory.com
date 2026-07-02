@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getPublishedSanityClient } from "@/sanity/client";
 import { isSanityConfigured } from "@/sanity/env";
 import {
@@ -12,6 +11,7 @@ import {
   serializeJsonLd,
   webPage,
 } from "@pakfactory/seo";
+import { CaseStudyCard as CaseStudyCardUI } from "@pakfactory/ui/components/case-study-card";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -71,37 +71,15 @@ export default async function CaseStudiesPage() {
           <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {studies.map((study) => (
               <li key={study._id}>
-                <Link
+                <CaseStudyCardUI
                   href={`/case-studies/${study.slug}`}
-                  className="group block rounded-lg border p-6 transition-shadow hover:shadow-md"
-                >
-                  {study.heroImageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={study.heroImageUrl}
-                      alt={study.heroImageAlt ?? study.title}
-                      className="mb-4 aspect-video w-full rounded object-cover"
-                    />
-                  )}
-                  {study.industry && (
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {study.industry}
-                    </p>
-                  )}
-                  <h2 className="text-lg font-semibold group-hover:underline">
-                    {study.title}
-                  </h2>
-                  {study.clientName && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {study.clientName}
-                    </p>
-                  )}
-                  {study.excerpt && (
-                    <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">
-                      {study.excerpt}
-                    </p>
-                  )}
-                </Link>
+                  title={study.title}
+                  clientName={study.clientName}
+                  industry={study.industry}
+                  excerpt={study.excerpt}
+                  heroImageUrl={study.heroImageUrl}
+                  heroImageAlt={study.heroImageAlt}
+                />
               </li>
             ))}
           </ul>
