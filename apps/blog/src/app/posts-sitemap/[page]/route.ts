@@ -35,16 +35,9 @@ export async function GET(
   const changefreq = postSitemap?.sitemapChangefreq ?? "weekly";
   const priority = postSitemap?.sitemapPriority ?? 0.7;
 
+  // Only individual post URLs live here; `/all` (the posts archive index) is a
+  // listing page and belongs in pages-sitemap.xml with `/` and `/contribute`.
   const entries: SitemapUrlEntry[] = [];
-
-  // /all is the first entry of page 1 only.
-  if (page === 1) {
-    entries.push({
-      loc: absoluteUrl("/all"),
-      changefreq,
-      priority,
-    });
-  }
 
   if (isSanityConfigured()) {
     const client = getPublishedSanityClient();

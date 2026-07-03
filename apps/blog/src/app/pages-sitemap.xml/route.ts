@@ -12,8 +12,10 @@ export const revalidate = 60;
 export async function GET() {
   const entries: SitemapUrlEntry[] = [
     { loc: absoluteUrl("/"), changefreq: "daily", priority: 1 },
-    // Indexable static code routes (not CMS-driven). /all lives in the posts
-    // sitemap; /search is noindex, so /contribute is the only other one here.
+    // Indexable non-post routes: home + code routes + CMS landing/static pages
+    // (appended below). `/all` is the posts archive index — it changes whenever
+    // a post publishes. `/search` is noindex, so it's excluded.
+    { loc: absoluteUrl("/all"), changefreq: "daily", priority: 0.8 },
     { loc: absoluteUrl("/contribute"), changefreq: "monthly", priority: 0.5 },
   ];
 
