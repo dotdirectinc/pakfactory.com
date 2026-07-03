@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getPublishedSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getPublishedSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   CASE_STUDIES_LISTING_QUERY,
   type CaseStudyCard,
@@ -11,7 +11,7 @@ import {
   serializeJsonLd,
   webPage,
 } from "@pakfactory/seo";
-import { CaseStudyCard as CaseStudyCardUI } from "@pakfactory/ui/components/case-study-card";
+import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { absoluteUrl } from "@/lib/site";
 import { MOCK_CASE_STUDY_CARDS } from "@/lib/mock/case-studies";
 

@@ -4,7 +4,7 @@ import {
   getSanityApiVersion,
   getSanityDataset,
   getSanityProjectId,
-} from "@/sanity/env";
+} from "@/lib/sanity/env";
 
 const token = process.env["SANITY_API_READ_TOKEN"];
 

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { getPublishedSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getPublishedSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   CASE_STUDY_BY_SLUG_QUERY,
   CASE_STUDY_PATHS_QUERY,
@@ -11,7 +11,7 @@ import {
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
 import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
-import { CaseStudyResult } from "@pakfactory/ui/components/case-study-result";
+import { CaseStudyResult } from "@/components/ui/case-study-result";
 import { absoluteUrl } from "@/lib/site";
 import {
   MOCK_CASE_STUDY_DETAILS,

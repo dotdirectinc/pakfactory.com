@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getSanityClient } from "@/sanity/client";
+import { getSanityClient } from "@/lib/sanity/client";
 import {
   getSanityDataset,
   getSanityProjectId,
   isSanityConfigured,
-} from "@/sanity/env";
+} from "@/lib/sanity/env";
 
 function maskProjectId(id: string): string {
   if (id.length <= 2) return "(short)";

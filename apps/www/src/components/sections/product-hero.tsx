@@ -16,7 +16,7 @@ export type HeroSectionProps = {
     className?: string;
 };
 
-const HeroSection = ({
+const ProductHero = ({
     badgeLabel,
     badgeCaption,
     headline,
@@ -52,4 +52,4 @@ const HeroSection = ({
     );
 };
 
-export default HeroSection;
+export default ProductHero;
