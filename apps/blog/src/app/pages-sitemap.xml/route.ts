@@ -12,6 +12,9 @@ export const revalidate = 60;
 export async function GET() {
   const entries: SitemapUrlEntry[] = [
     { loc: absoluteUrl("/"), changefreq: "daily", priority: 1 },
+    // Indexable static code routes (not CMS-driven). /all lives in the posts
+    // sitemap; /search is noindex, so /contribute is the only other one here.
+    { loc: absoluteUrl("/contribute"), changefreq: "monthly", priority: 0.5 },
   ];
 
   if (isSanityConfigured()) {

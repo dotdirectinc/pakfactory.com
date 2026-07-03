@@ -12,6 +12,7 @@ export const revalidate = 60;
 type SitemapPost = {
   slug: string;
   categorySlug?: string;
+  mainImageUrl?: string;
   publishedAt?: string;
   _updatedAt?: string;
 };
@@ -65,6 +66,7 @@ export async function GET(
         ...(lastmod ? { lastmod: new Date(lastmod).toISOString().slice(0, 10) } : {}),
         changefreq,
         priority,
+        ...(post.mainImageUrl ? { images: [post.mainImageUrl] } : {}),
       });
     }
   }

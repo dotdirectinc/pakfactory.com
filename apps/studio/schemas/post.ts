@@ -62,13 +62,6 @@ export const post = defineType({
                     description:
                         'Optional. Falls back to the alt text set on the image asset in the Media library.',
                 }),
-                defineField({
-                    name: 'caption',
-                    title: 'Caption',
-                    type: 'string',
-                    description:
-                        'Optional short caption shown below the image in the frontend.',
-                }),
             ],
         })),
         defineField({

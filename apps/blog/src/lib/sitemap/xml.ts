@@ -12,7 +12,25 @@ export type SitemapUrlEntry = {
   lastmod?: string;
   changefreq?: string;
   priority?: number;
+  /**
+   * Absolute image URLs for the Google image sitemap extension. When any entry
+   * carries images, `buildUrlset` declares the image namespace and emits an
+   * `<image:image><image:loc>…</image:loc></image:image>` block per URL.
+   */
+  images?: string[];
 };
+
+/** Google image sitemap namespace (only `<image:loc>` is still supported). */
+const IMAGE_SITEMAP_NS = "http://www.google.com/schemas/sitemap-image/1.1";
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 function xslPI(xslHref: string): string {
   return `<?xml-stylesheet type="text/xsl" href="${xslHref}"?>\n`;
@@ -35,19 +53,26 @@ export function buildSitemapIndex(entries: SitemapIndexEntry[], xslHref?: string
 }
 
 export function buildUrlset(entries: SitemapUrlEntry[], xslHref?: string): string {
+  const hasImages = entries.some((e) => e.images && e.images.length > 0);
   const inner = entries
     .map((e) => {
-      const lines = [`    <loc>${e.loc}</loc>`];
+      const lines = [`    <loc>${escapeXml(e.loc)}</loc>`];
       if (e.lastmod) lines.push(`    <lastmod>${e.lastmod}</lastmod>`);
       if (e.changefreq) lines.push(`    <changefreq>${e.changefreq}</changefreq>`);
       if (e.priority != null) lines.push(`    <priority>${e.priority}</priority>`);
+      for (const image of e.images ?? []) {
+        lines.push(
+          `    <image:image>\n      <image:loc>${escapeXml(image)}</image:loc>\n    </image:image>`,
+        );
+      }
       return `  <url>\n${lines.join("\n")}\n  </url>`;
     })
     .join("\n");
+  const imageNs = hasImages ? `\n        xmlns:image="${IMAGE_SITEMAP_NS}"` : "";
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     (xslHref ? xslPI(xslHref) : "") +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${imageNs}>\n` +
     `${inner}\n` +
     `</urlset>`
   );

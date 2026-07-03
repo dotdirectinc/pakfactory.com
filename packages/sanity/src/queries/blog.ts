@@ -33,8 +33,7 @@ const POST_CARD_FIELDS = /* groq */ `{
   publishedAt,
   mainImage{
     ...,
-    "alt": coalesce(alt, asset->altText),
-    "caption": coalesce(caption, asset->description)
+    "alt": coalesce(alt, asset->altText)
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
@@ -61,8 +60,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   "ogImageUrl": ogImage.asset->url,
   mainImage{
     ...,
-    "alt": coalesce(alt, asset->altText),
-    "caption": coalesce(caption, asset->description)
+    "alt": coalesce(alt, asset->altText)
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
@@ -278,7 +276,7 @@ export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
 /** Indexable CMS pages for sitemap (landing + static). */
 export const BLOG_LANDING_PAGES_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogPage"
-  && language == $language
+  && (!defined(language) || language == $language)
   && pageRole in ["landing", "static"]
   && defined(slug.current)
   && defined(publishedAt)
@@ -614,6 +612,7 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
     "categories": primaryNavigation.categories[]->{
       _id,
       title,
+      navLabel,
       "slug": slug.current,
       language
     }
@@ -623,6 +622,7 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
     "categories": categoryOrder[]->{
       _id,
       title,
+      navLabel,
       "slug": slug.current,
       language
     }
@@ -784,7 +784,7 @@ export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
 export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogCategory"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
 ] | order(title asc){
   "slug": slug.current,
   _updatedAt
@@ -794,7 +794,7 @@ export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
 export const TAGS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogTag"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
   && allowIndex != false
   && count(*[
     _type == "post"
@@ -823,7 +823,7 @@ export const BLOG_SITEMAP_POST_COUNT_QUERY = /* groq */ `count(*[
 export const BLOG_SITEMAP_TAG_COUNT_QUERY = /* groq */ `count(*[
   _type == "blogTag"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
   && allowIndex != false
   && count(*[
     _type == "post"
@@ -844,6 +844,7 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
 ] | order(publishedAt desc)[$start...$end]{
   "slug": slug.current,
   "categorySlug": category->slug.current,
+  "mainImageUrl": mainImage.asset->url,
   publishedAt,
   _updatedAt
 }`;
@@ -852,7 +853,7 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
 export const BLOG_SITEMAP_TAGS_PAGE_QUERY = /* groq */ `*[
   _type == "blogTag"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
   && allowIndex != false
   && count(*[
     _type == "post"

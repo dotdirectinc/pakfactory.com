@@ -24,6 +24,14 @@ export const blogCategory = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'navLabel',
+      title: 'Nav label',
+      type: 'string',
+      group: 'details',
+      description:
+        'Optional short label shown for this category in the primary navigation bar. When blank, the Name is used.',
+    }),
+    defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
