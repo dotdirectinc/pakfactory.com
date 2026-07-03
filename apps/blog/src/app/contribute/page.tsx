@@ -9,6 +9,7 @@ import {
 } from "@pakfactory/ui/components/card";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
 import { getContributeSubjectOptions } from "@/lib/contribute-options";
+import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
@@ -23,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
-    robots: { index: true, follow: true },
+    robots: robotsDirectiveToMetadata({ index: true, follow: true }),
     alternates: { canonical },
     openGraph: {
       title: PAGE_TITLE,

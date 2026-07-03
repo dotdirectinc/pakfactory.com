@@ -95,9 +95,24 @@ export function getBlogRobotsDirective(input: BlogRobotsInput): BlogRobotsDirect
   return { index: true, follow: true };
 }
 
+/**
+ * Global indexing kill-switch. When `BLOG_DISABLE_INDEXING` is truthy, every
+ * blog page is forced to `noindex, nofollow` regardless of the per-document or
+ * rule-based directive — so non-production origins (e.g. the `*.vercel.app`
+ * preview) are never indexed. Set it in the environment of any deploy that must
+ * stay out of search results; leave it unset in production.
+ */
+export function isBlogIndexingDisabled(): boolean {
+  const v = process.env.BLOG_DISABLE_INDEXING?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 export function robotsDirectiveToMetadata(
   directive: BlogRobotsDirective,
 ): NonNullable<Metadata["robots"]> {
+  if (isBlogIndexingDisabled()) {
+    return { index: false, follow: false, nocache: true, noimageindex: true };
+  }
   return {
     index: directive.index,
     follow: directive.follow,
