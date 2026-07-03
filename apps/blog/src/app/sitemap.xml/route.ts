@@ -32,10 +32,10 @@ export async function GET() {
       { loc: absoluteUrl("/categories-sitemap.xml") },
       { loc: absoluteUrl("/authors-sitemap.xml") },
       ...Array.from({ length: postPages }, (_, i) => ({
-        loc: absoluteUrl(`/posts-sitemap/${i + 1}.xml`),
+        loc: absoluteUrl(`/posts-sitemap-${i + 1}.xml`),
       })),
       ...Array.from({ length: tagPages }, (_, i) => ({
-        loc: absoluteUrl(`/tags-sitemap/${i + 1}.xml`),
+        loc: absoluteUrl(`/tags-sitemap-${i + 1}.xml`),
       })),
     ],
     sitemapXslUrl(),
