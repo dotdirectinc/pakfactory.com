@@ -107,8 +107,6 @@ Shipped prerequisites are documented in **[`docs/blog-3-jira-conventions.md`](do
 
 Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.net/browse/PROD-1480).
 
-<<<<<<< HEAD
-
 ## ADR summary
 
 The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — read it for any "why was this chosen?" question. Foundational platform decisions that predate the register are summarized below; numbered ADRs link out.
@@ -124,22 +122,6 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | **ADR-004 — Media library**          | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md)     |
 | **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
 | **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                                                            | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
-
-=======
-
-## ADR summary (draft — confirm links)
-
-<!-- TODO content owner: replace placeholder links with real ADR doc URLs or in-repo paths -->
-
-| ADR                        | Decision                                                                                                | Link  |
-| -------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
-| **Monorepo orchestration** | Use **Turborepo** for tasks, caching, and env passthrough across apps and packages.                     | _TBD_ |
-| **CMS**                    | **Sanity** as structured content layer with shared package `@pakfactory/sanity`.                        | _TBD_ |
-| **Web framework**          | **Next.js App Router** for www + blog; server components by default.                                    | _TBD_ |
-| **Shared UI**              | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks.       | _TBD_ |
-| **Package manager**        | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`. | _TBD_ |
-
-> > > > > > > feature/sanity-studio-ux
 
 ## JIRA defaults (Product / Blog 3.0)
 
