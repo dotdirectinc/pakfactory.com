@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
-import {
-  getCategoryFallback,
-  isKnownCategorySlug,
-  type BlogCategorySlug,
-} from "@/lib/blog-categories";
+import { getCategoryFallback } from "@/lib/blog-categories";
 import {
   getTotalArchivePages,
   isArchivePageOutOfRange,
@@ -221,8 +217,6 @@ export async function buildCategoryArchiveMetadata(
 export async function fetchCategoryBySlug(
   slug: string,
 ): Promise<CategoryDocument | null> {
-  if (!isKnownCategorySlug(slug)) return null;
-
   const fallback = getCategoryFallback(slug);
   if (!isSanityConfigured()) {
     return fallback
@@ -250,7 +244,7 @@ export async function fetchCategoryBySlug(
 }
 
 export async function fetchCategoryArchivePage(
-  categorySlug: BlogCategorySlug,
+  categorySlug: string,
   pageNumber: number,
   filters: CategoryListFilters,
 ): Promise<CategoryArchivePageData | null> {

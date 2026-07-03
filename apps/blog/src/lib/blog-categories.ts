@@ -1,14 +1,5 @@
-import {
-  BLOG_CATEGORY_SLUGS,
-  isKnownCategorySlug,
-  type BlogCategorySlug,
-} from "@pakfactory/sanity/blog-reserved-slugs";
-
-export { BLOG_CATEGORY_SLUGS, isKnownCategorySlug, type BlogCategorySlug };
-
 /**
  * Fallback category chips when Sanity is unconfigured or the dataset has no blogCategory docs.
- * Slugs must stay in sync with `apps/studio/schemas/blogCategory.ts` validation.
  */
 export const BLOG_CATEGORY_FALLBACK = [
   { slug: "trends", title: "Trends" },

@@ -4,7 +4,7 @@ import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 
-/** Blocked slug values — keep aligned with @pakfactory/sanity/blog-reserved-slugs */
+/** Blocked slug values — reserved app segments (keep aligned with @pakfactory/sanity/blog-reserved-slugs). */
 const BLOCKED_SLUGS = [
   'all',
   'api',
@@ -14,11 +14,6 @@ const BLOCKED_SLUGS = [
   'search',
   'sitemap.xml',
   'tag',
-  'trends',
-  'sustainability',
-  'business-strategy',
-  'design-inspiration',
-  'packaging-news',
 ] as const
 
 function validateBlogPageSlug(slug: { current?: string } | undefined, pageRole: string | undefined) {
