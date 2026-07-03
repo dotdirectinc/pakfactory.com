@@ -29,22 +29,9 @@ export const blogCategory = defineType({
       type: 'slug',
       group: 'details',
       options: { source: 'title' },
-      description: 'Used in the URL: /blog/{slug}. Must match the CATEGORY_SLUGS constant in Next.js.',
+      description: 'Used in the URL: /blog/{slug}. Must be lowercase, hyphen-separated, and unique per language.',
       validation: (Rule) =>
         Rule.required()
-          .custom((slug) => {
-          const allowed = [
-            'trends',
-            'sustainability',
-            'business-strategy',
-            'design-inspiration',
-            'packaging-news',
-          ]
-          if (!slug?.current) return 'Slug is required'
-          return allowed.includes(slug.current)
-            ? true
-            : `Slug must be one of: ${allowed.join(', ')}. Adding a new category requires updating the Next.js CATEGORY_SLUGS constant too.`
-        })
           .custom(uniqueSlugPerLanguage('blogCategory')),
     }),
     defineField({
