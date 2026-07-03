@@ -10,14 +10,14 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@pakfactory/ui/components/breadcrumb';
-import HeroSection from '@/components/products/hero-section-01';
-import ProductCollectionList from '@/components/products/product-collection-list';
+import ProductHero from '@/components/sections/product-hero';
+import ProductCollectionList from '@/components/modules/product-collection-list';
 import {plainTextFromBlocks} from '@/lib/portable-text';
-import {getPublishedSanityClient, getSanityClient} from '@/sanity/client';
-import {isSanityConfigured} from '@/sanity/env';
+import {getPublishedSanityClient, getSanityClient} from '@/lib/sanity/client';
+import {isSanityConfigured} from '@/lib/sanity/env';
 import {getCollectionsForProductPage} from '@pakfactory/sanity/product-page-collections';
 import {PRODUCT_PAGE_SLUGS_QUERY} from '@pakfactory/sanity/queries';
-import {normalizeSegment} from '../path-utils';
+import {normalizeSegment} from '@/lib/products/path-utils';
 
 export const revalidate = 60;
 
@@ -148,7 +148,7 @@ export default async function ProductLandingPage({
                 </Breadcrumb>
             </div>
 
-            <HeroSection
+            <ProductHero
                 badgeLabel="Product line"
                 badgeCaption={page.title}
                 headline={headline}

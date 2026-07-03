@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import {draftMode} from 'next/headers';
-import Navbar from '@/components/common/navbar';
+import SiteNav from '@/components/layout/site-nav';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import {VisualEditing} from 'next-sanity/visual-editing';
 import './globals.css';
@@ -28,7 +28,7 @@ export default async function RootLayout({
         <html lang="en" className="scroll-smooth">
             <body className="antialiased">
                 <TooltipProvider>
-                    <Navbar navigationData={navItems} />
+                    <SiteNav navigationData={navItems} />
                     {children}
                 </TooltipProvider>
                 {isDraft && <VisualEditing />}

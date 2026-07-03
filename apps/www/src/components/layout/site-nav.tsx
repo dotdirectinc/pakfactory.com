@@ -12,14 +12,14 @@ import {
 } from '@pakfactory/ui/components/dropdown-menu';
 import {Separator} from '@pakfactory/ui/components/separator';
 
-import Logo from '@/components/common/logo';
+import Logo from '@/components/layout/logo';
 
 type NavigationItem = {
     title: string;
     href: string;
 }[];
 
-const Navbar = ({navigationData}: {navigationData: NavigationItem}) => {
+const SiteNav = ({navigationData}: {navigationData: NavigationItem}) => {
     return (
         <header className="bg-background sticky top-0 z-50">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-4 py-7 sm:px-6">
@@ -79,4 +79,4 @@ const Navbar = ({navigationData}: {navigationData: NavigationItem}) => {
     );
 };
 
-export default Navbar;
+export default SiteNav;

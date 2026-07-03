@@ -6,9 +6,9 @@ import {
     CapabilityCatalog,
     type CapabilityCatalogItem,
     type CapabilityCatalogTab,
-} from '@/components/capabilities/capability-catalog';
-import SectionHeader from '@/components/products/section-header';
-import { getSanityClient } from '@/sanity/client';
+} from '@/components/modules/capability-catalog';
+import SectionHeader from '@/components/modules/section-header';
+import { getSanityClient } from '@/lib/sanity/client';
 
 export const metadata: Metadata = {
     title: 'Capabilities',

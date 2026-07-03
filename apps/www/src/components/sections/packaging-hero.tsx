@@ -19,7 +19,7 @@ export type PackagingHeroSectionProps = {
 /**
  * Two-column packaging hero: beige panel, bold headline, body copy, lime pill CTA, right-aligned product shot.
  */
-export default function HeroSection({
+export default function PackagingHero({
   title,
   description,
   primaryCta,

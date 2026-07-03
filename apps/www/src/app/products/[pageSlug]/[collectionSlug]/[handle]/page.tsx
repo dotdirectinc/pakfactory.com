@@ -1,16 +1,16 @@
 import type { PortableTextBlock } from "@portabletext/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getPublishedSanityClient, getSanityClient, urlFor } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getPublishedSanityClient, getSanityClient, urlFor } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import { plainTextFromBlocks } from "@/lib/portable-text";
 import {
   CAPABILITIES_FOR_PRODUCT_REFS_QUERY,
   PRODUCT_BY_PATH_QUERY,
   PRODUCT_PATHS_QUERY,
 } from "@pakfactory/sanity/queries";
-import { normalizeHandle, normalizeSegment } from "../../../path-utils";
-import ProductOverview from "@/components/products/product-overview";
+import { normalizeHandle, normalizeSegment } from "@/lib/products/path-utils";
+import ProductOverview from "@/components/modules/product-overview";
 
 export const revalidate = 60;
 
