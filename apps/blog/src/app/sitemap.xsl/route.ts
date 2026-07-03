@@ -1,4 +1,6 @@
-export const revalidate = 31536000; // 1 year — stylesheet is static
+export const revalidate = 3600; // 1 hour — static content, but the URL is
+// unversioned, so avoid a long/immutable cache (a stylesheet edit must reach
+// returning visitors, not be pinned for a year).
 
 const XSL = `<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0"
@@ -137,7 +139,7 @@ export function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/xsl; charset=utf-8",
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": "public, max-age=3600, must-revalidate",
     },
   });
 }
