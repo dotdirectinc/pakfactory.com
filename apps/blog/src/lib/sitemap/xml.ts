@@ -40,7 +40,7 @@ export function buildSitemapIndex(entries: SitemapIndexEntry[], xslHref?: string
   const inner = entries
     .map((e) => {
       const lastmod = e.lastmod ? `\n    <lastmod>${e.lastmod}</lastmod>` : "";
-      return `  <sitemap>\n    <loc>${e.loc}</loc>${lastmod}\n  </sitemap>`;
+      return `  <sitemap>\n    <loc>${escapeXml(e.loc)}</loc>${lastmod}\n  </sitemap>`;
     })
     .join("\n");
   return (

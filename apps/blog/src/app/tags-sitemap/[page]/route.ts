@@ -16,7 +16,10 @@ export async function GET(
   { params }: { params: Promise<{ page: string }> },
 ) {
   const { page: pageStr } = await params;
-  const page = parseInt(pageStr, 10);
+  // Canonical form is `/tags-sitemap/{n}.xml`; the bare `/tags-sitemap/{n}`
+  // (no extension) is still accepted so previously-submitted URLs don't 404.
+  const digits = /^(\d+)(?:\.xml)?$/.exec(pageStr)?.[1];
+  const page = digits ? parseInt(digits, 10) : NaN;
   if (isNaN(page) || page < 1) {
     return new Response("Not found", { status: 404 });
   }
