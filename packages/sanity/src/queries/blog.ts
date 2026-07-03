@@ -132,7 +132,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     count(relatedPosts) > 0 => relatedPosts[]->${POST_CARD_FIELDS},
     *[
       _type == "post"
-      && language == $language
+      && (!defined(language) || language == $language)
       && category._ref == ^.category._ref
       && _id != ^._id
       && defined(slug.current)
@@ -145,7 +145,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
 /** Posts published in the current calendar month (UTC), newest first. */
 export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -161,7 +161,7 @@ export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
 /** Latest posts for home hero sidebar (excludes featured id when provided). */
 export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -177,7 +177,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     "featured": featuredPost->${POST_CARD_FIELDS},
     "latest": *[
       _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
@@ -190,7 +190,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     "categoryTitle": category->title,
     "posts": *[
       _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
       && category._ref == ^.category._ref
       && defined(slug.current)
       && defined(publishedAt)
@@ -291,7 +291,7 @@ export const BLOG_LANDING_PAGES_SITEMAP_QUERY = /* groq */ `*[
 /** Three newest posts in a category by blogCategory slug. */
 export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && category->slug.current == $categorySlug
   && defined(slug.current)
   && defined(publishedAt)
@@ -302,7 +302,7 @@ export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
 export const POST_BY_SLUG_QUERY = /* groq */ `*[
   _type == "post"
   && slug.current == $slug
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(publishedAt)
   && publishedAt <= now()
 ][0]${POST_DETAIL_FIELDS}`;
@@ -310,7 +310,7 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[
 /** Post detail under a category URL (legacy redirect route). */
 export const POST_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && slug.current == $postSlug
   && category->slug.current == $categorySlug
   && defined(publishedAt)
@@ -336,7 +336,7 @@ export const BLOG_CATEGORY_BY_SLUG_QUERY = /* groq */ `*[_type == "blogCategory"
 }`;
 
 const CATEGORY_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && category->slug.current == $categorySlug
   && defined(slug.current)
   && defined(publishedAt)
@@ -380,7 +380,7 @@ export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
   && language == $language
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && category->slug.current == $categorySlug
     && defined(publishedAt)
     && publishedAt <= now()
@@ -397,7 +397,7 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
   _type == "author"
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && category->slug.current == $categorySlug
     && defined(publishedAt)
     && publishedAt <= now()
@@ -415,7 +415,7 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
  * tag titles. `$yearStart`/`$yearEnd` narrow by publish date (nullable).
  */
 const SEARCH_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -482,7 +482,7 @@ export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
 /** Total published posts (all archive pagination). */
 export const BLOG_ALL_POSTS_COUNT_QUERY = /* groq */ `count(*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -491,7 +491,7 @@ export const BLOG_ALL_POSTS_COUNT_QUERY = /* groq */ `count(*[
 /** Paginated all-posts archive (PROD-1498) — `$start` inclusive, `$end` exclusive. */
 export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -500,7 +500,7 @@ export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
 /** Latest 20 published posts for RSS 2.0 (`/rss.xml`, PROD-1505). */
 export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -517,7 +517,7 @@ export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
 /** Latest published posts when the month window returns fewer than three. */
 export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -661,7 +661,7 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
 
 /** Published posts carrying $tagSlug, with optional author/date narrowing (tag is the page, not a filter). */
 const TAG_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && $tagSlug in tags[]->slug.current
   && defined(slug.current)
   && defined(publishedAt)
@@ -693,7 +693,7 @@ export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   && slug.current != $tagSlug
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && $tagSlug in tags[]->slug.current
     && defined(publishedAt)
     && publishedAt <= now()
@@ -710,7 +710,7 @@ export const BLOG_TAG_AUTHORS_FACET_QUERY = /* groq */ `*[
   _type == "author"
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && $tagSlug in tags[]->slug.current
     && defined(publishedAt)
     && publishedAt <= now()
@@ -747,7 +747,7 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
 }`;
 
 const AUTHOR_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && author->slug.current == $authorSlug
   && defined(slug.current)
   && defined(publishedAt)
