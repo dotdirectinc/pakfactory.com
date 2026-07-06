@@ -1,6 +1,6 @@
 import { PlayIcon } from '@sanity/icons'
 import { defineField, defineType } from 'sanity'
-import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageType } from '../../lib/media-tags'
 
 /**
  * bodyVideo — inline video embed for the post Portable Text body.

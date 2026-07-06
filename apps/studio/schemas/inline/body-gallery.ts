@@ -1,6 +1,6 @@
 import { ImagesIcon } from '@sanity/icons'
 import { defineArrayMember, defineField, defineType } from 'sanity'
-import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageType } from '../../lib/media-tags'
 
 /**
  * bodyGallery — inline two-up image gallery for the post Portable Text body.
