@@ -53,6 +53,11 @@ export type PostBodyWidget = {
   productExcerpt?: string;
 };
 
+export type PostBodyQuote = {
+  quote?: string;
+  attribution?: string;
+};
+
 export type PostBodyCallout = {
   calloutTone?: string;
   calloutTitle?: string;

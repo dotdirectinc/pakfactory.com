@@ -91,6 +91,12 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       linkNofollow,
       asset
     },
+    _type == "bodyQuote" => {
+      _key,
+      _type,
+      quote,
+      attribution
+    },
     _type == "bodyCallout" => {
       _key,
       _type,
