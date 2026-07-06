@@ -8,12 +8,18 @@ import { BodyCallout } from "@/components/modules/inline/body-callout";
 import { BodyQuote } from "@/components/modules/inline/body-quote";
 import { BodyGallery } from "@/components/modules/inline/body-gallery";
 import { BodyTable } from "@/components/modules/inline/body-table";
+import { BodyVideo } from "@/components/modules/inline/body-video";
+import { BodyStatStack } from "@/components/modules/inline/body-stat-stack";
+import { BodyBarChart } from "@/components/modules/inline/body-bar-chart";
 import { WidgetRenderer } from "@/components/modules/widget/widget-renderer";
 import type {
+  PostBodyBarChart,
   PostBodyCallout,
   PostBodyGallery,
   PostBodyQuote,
+  PostBodyStatStack,
   PostBodyTable,
+  PostBodyVideo,
   PostBodyWidget,
 } from "@/lib/blog-post";
 import { sanityImageUrl } from "@/lib/sanity-image";
@@ -125,6 +131,11 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
       bodyImage: ({ value }) => <PostBodyImage value={value as BodyImageValue} />,
       bodyQuote: ({ value }) => <BodyQuote value={value as PostBodyQuote} />,
       bodyGallery: ({ value }) => <BodyGallery value={value as PostBodyGallery} />,
+      bodyVideo: ({ value }) => <BodyVideo value={value as PostBodyVideo} />,
+      bodyStatStack: ({ value }) => (
+        <BodyStatStack value={value as PostBodyStatStack} />
+      ),
+      bodyBarChart: ({ value }) => <BodyBarChart value={value as PostBodyBarChart} />,
       bodyTable: ({ value }) => <BodyTable value={value as PostBodyTable} />,
       bodyCallout: ({ value }) => <BodyCallout value={value as PostBodyCallout} />,
       widgetEmbed: ({ value }) => (

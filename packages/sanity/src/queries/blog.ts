@@ -117,6 +117,35 @@ const POST_DETAIL_FIELDS = /* groq */ `{
         cells
       }
     },
+    _type == "bodyVideo" => {
+      _key,
+      _type,
+      url,
+      title,
+      caption,
+      poster
+    },
+    _type == "bodyStatStack" => {
+      _key,
+      _type,
+      source,
+      stats[]{
+        _key,
+        value,
+        label
+      }
+    },
+    _type == "bodyBarChart" => {
+      _key,
+      _type,
+      title,
+      source,
+      data[]{
+        _key,
+        label,
+        value
+      }
+    },
     _type == "bodyCallout" => {
       _key,
       _type,

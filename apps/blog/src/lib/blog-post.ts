@@ -69,6 +69,24 @@ export type PostBodyTable = {
   rows?: Array<{ _key?: string; cells?: string[] }>;
 };
 
+export type PostBodyVideo = {
+  url?: string;
+  poster?: unknown;
+  title?: string;
+  caption?: string;
+};
+
+export type PostBodyStatStack = {
+  source?: string;
+  stats?: Array<{ _key?: string; value?: string; label?: string }>;
+};
+
+export type PostBodyBarChart = {
+  title?: string;
+  source?: string;
+  data?: Array<{ _key?: string; label?: string; value?: number }>;
+};
+
 export type PostBodyCallout = {
   calloutTone?: string;
   calloutTitle?: string;
