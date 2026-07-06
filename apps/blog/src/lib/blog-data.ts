@@ -38,6 +38,7 @@ export type PopularPostCard = {
 
 type BlogNavCategoryRow = BlogCategoryChip & {
   language?: string | null;
+  navLabel?: string | null;
 };
 
 type BlogNavSettingsDoc = {
@@ -54,10 +55,15 @@ function resolveNavCategories(
       .filter((row): row is BlogNavCategoryRow => row != null)
       .filter((row) => (row.language ?? language) === language)
       .filter(
-        (row): row is BlogCategoryChip =>
+        (row): row is BlogNavCategoryRow =>
           Boolean(row.slug?.trim() && row.title?.trim()),
       )
-      .map(({ _id, title, slug }) => ({ _id, title, slug }));
+      // Nav bar shows the category's Nav label when set, else its Name.
+      .map(({ _id, title, navLabel, slug }) => ({
+        _id,
+        title: navLabel?.trim() || title,
+        slug,
+      }));
   }
   return [];
 }

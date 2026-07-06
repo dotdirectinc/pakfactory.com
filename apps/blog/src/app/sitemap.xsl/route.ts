@@ -1,9 +1,12 @@
-export const revalidate = 31536000; // 1 year — stylesheet is static
+export const revalidate = 3600; // 1 hour — static content, but the URL is
+// unversioned, so avoid a long/immutable cache (a stylesheet edit must reach
+// returning visitors, not be pinned for a year).
 
 const XSL = `<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:sm="http://www.sitemaps.org/schemas/sitemap/0.9">
+  xmlns:sm="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
   <xsl:output method="html" version="1.0" encoding="UTF-8" indent="yes"/>
 
@@ -33,6 +36,8 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
           a:hover { text-decoration: underline; }
           .badge { display: inline-block; padding: 1px 7px; border-radius: 99px; background: #f3f4f6; border: 1px solid #e5e7eb; font-size: 0.75rem; color: #374151; }
           .dim { color: #9ca3af; }
+          .imgcell { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+          .thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid #e5e7eb; display: block; }
         </style>
       </head>
       <body>
@@ -85,6 +90,7 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
           <th>Last Modified</th>
           <th>Change Freq</th>
           <th>Priority</th>
+          <th>Images</th>
         </tr>
       </thead>
       <tbody>
@@ -105,6 +111,21 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
             <td>
               <xsl:if test="sm:priority"><xsl:value-of select="sm:priority"/></xsl:if>
             </td>
+            <td>
+              <xsl:choose>
+                <xsl:when test="image:image">
+                  <div class="imgcell">
+                    <span class="badge"><xsl:value-of select="count(image:image)"/></span>
+                    <xsl:for-each select="image:image">
+                      <a href="{image:loc}" target="_blank">
+                        <img class="thumb" loading="lazy" src="{concat(image:loc, '?w=80&amp;h=80&amp;fit=crop&amp;auto=format')}"/>
+                      </a>
+                    </xsl:for-each>
+                  </div>
+                </xsl:when>
+                <xsl:otherwise><span class="dim">—</span></xsl:otherwise>
+              </xsl:choose>
+            </td>
           </tr>
         </xsl:for-each>
       </tbody>
@@ -118,7 +139,7 @@ export function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/xsl; charset=utf-8",
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": "public, max-age=3600, must-revalidate",
     },
   });
 }

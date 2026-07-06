@@ -1,5 +1,4 @@
 import { cache } from "react";
-import { isKnownCategorySlug } from "@/lib/blog-categories";
 import {
   fetchCategoryArchivePage,
   parseCategoryFilters,
@@ -34,11 +33,8 @@ export async function resolveBlogSegment(
   const page = options?.page ?? 1;
   const filters = parseCategoryFilters(options?.searchParams ?? {});
 
-  if (isKnownCategorySlug(segment)) {
-    const data = await cachedFetchCategoryArchivePage(segment, page, filters);
-    if (!data) return { kind: "notFound" };
-    return { kind: "category", data };
-  }
+  const categoryData = await cachedFetchCategoryArchivePage(segment, page, filters);
+  if (categoryData) return { kind: "category", data: categoryData };
 
   const cmsPage = await cachedFetchBlogPageBySlug(segment);
   if (cmsPage) return { kind: "blogPage", data: cmsPage };

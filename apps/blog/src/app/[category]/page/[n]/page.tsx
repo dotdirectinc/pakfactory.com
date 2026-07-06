@@ -14,7 +14,6 @@ import {
   paginatedListTitle,
   resolvePaginationRoute,
 } from "@/lib/blog-archive-pagination";
-import { isKnownCategorySlug } from "@/lib/blog-categories";
 import { categoryHref } from "@/lib/blog-post-url";
 
 export const revalidate = 60;
@@ -31,7 +30,6 @@ export async function generateMetadata({
   const { category, n: raw } = await params;
   const pagination = resolvePaginationRoute(raw, categoryHref(category));
   if (
-    !isKnownCategorySlug(category) ||
     pagination.status === "not-found" ||
     pagination.status === "redirect"
   ) {
@@ -70,8 +68,6 @@ export default async function CategoryArchivePaginatedPage({
   searchParams,
 }: PageProps) {
   const { category, n: raw } = await params;
-
-  if (!isKnownCategorySlug(category)) notFound();
 
   const pagination = resolvePaginationRoute(raw, categoryHref(category));
   if (pagination.status === "not-found") notFound();

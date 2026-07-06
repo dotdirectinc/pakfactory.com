@@ -40,6 +40,22 @@ const nextConfig: NextConfig = {
   // Posts are canonical at `/{postSlug}` (root); category/tag/search are discovery
   // only, never URL scoping. Permanently redirect old indexed URLs. More specific
   // (pagination) first. basePath is applied automatically.
+  // Flat, Yoast-style sub-sitemap URLs (`/posts-sitemap-1.xml`) served by the
+  // paginated `[page]` route handlers. App Router can't embed a dynamic number
+  // mid-segment (`posts-sitemap-[page].xml`), and a root dynamic segment would
+  // collide with `[category]`, so the pretty URL is a rewrite onto the handler.
+  async rewrites() {
+    return [
+      {
+        source: "/posts-sitemap-:page(\\d{1,}).xml",
+        destination: "/posts-sitemap/:page",
+      },
+      {
+        source: "/tags-sitemap-:page(\\d{1,}).xml",
+        destination: "/tags-sitemap/:page",
+      },
+    ];
+  },
   async redirects() {
     return [
       {
