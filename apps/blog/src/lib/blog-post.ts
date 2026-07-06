@@ -58,6 +58,17 @@ export type PostBodyQuote = {
   attribution?: string;
 };
 
+export type PostBodyGallery = {
+  caption?: string;
+  images?: Array<{ _key?: string; alt?: string; asset?: unknown }>;
+};
+
+export type PostBodyTable = {
+  columns?: string[];
+  caption?: string;
+  rows?: Array<{ _key?: string; cells?: string[] }>;
+};
+
 export type PostBodyCallout = {
   calloutTone?: string;
   calloutTitle?: string;

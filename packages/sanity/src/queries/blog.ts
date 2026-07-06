@@ -97,6 +97,26 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       quote,
       attribution
     },
+    _type == "bodyGallery" => {
+      _key,
+      _type,
+      caption,
+      images[]{
+        _key,
+        alt,
+        asset
+      }
+    },
+    _type == "bodyTable" => {
+      _key,
+      _type,
+      columns,
+      caption,
+      rows[]{
+        _key,
+        cells
+      }
+    },
     _type == "bodyCallout" => {
       _key,
       _type,

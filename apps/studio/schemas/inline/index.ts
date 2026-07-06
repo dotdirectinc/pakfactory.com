@@ -1,5 +1,7 @@
 import { bodyCallout } from './body-callout'
+import { bodyGallery } from './body-gallery'
 import { bodyQuote } from './body-quote'
+import { bodyTable } from './body-table'
 
 /**
  * Inline body blocks — one-off content authored in place inside a post's
@@ -12,4 +14,4 @@ import { bodyQuote } from './body-quote'
  * Studio PT editor, inline blocks appear as native toolbar insert buttons (the
  * array insert menu does not yet apply to Portable Text — see Sanity #6992).
  */
-export const inlineBlocks = [bodyCallout, bodyQuote]
+export const inlineBlocks = [bodyCallout, bodyQuote, bodyGallery, bodyTable]

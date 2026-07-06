@@ -6,8 +6,16 @@ import {
 import type { PortableTextBlock } from "@portabletext/types";
 import { BodyCallout } from "@/components/modules/inline/body-callout";
 import { BodyQuote } from "@/components/modules/inline/body-quote";
+import { BodyGallery } from "@/components/modules/inline/body-gallery";
+import { BodyTable } from "@/components/modules/inline/body-table";
 import { WidgetRenderer } from "@/components/modules/widget/widget-renderer";
-import type { PostBodyCallout, PostBodyQuote, PostBodyWidget } from "@/lib/blog-post";
+import type {
+  PostBodyCallout,
+  PostBodyGallery,
+  PostBodyQuote,
+  PostBodyTable,
+  PostBodyWidget,
+} from "@/lib/blog-post";
 import { sanityImageUrl } from "@/lib/sanity-image";
 
 type BodyImageValue = {
@@ -116,6 +124,8 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
     types: {
       bodyImage: ({ value }) => <PostBodyImage value={value as BodyImageValue} />,
       bodyQuote: ({ value }) => <BodyQuote value={value as PostBodyQuote} />,
+      bodyGallery: ({ value }) => <BodyGallery value={value as PostBodyGallery} />,
+      bodyTable: ({ value }) => <BodyTable value={value as PostBodyTable} />,
       bodyCallout: ({ value }) => <BodyCallout value={value as PostBodyCallout} />,
       widgetEmbed: ({ value }) => (
         <WidgetRenderer widget={(value as WidgetEmbedValue).widget} />
