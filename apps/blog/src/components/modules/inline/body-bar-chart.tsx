@@ -14,8 +14,8 @@ type BodyBarChartProps = {
 };
 
 // Neutral default that matches the site theme; brand accent for highlights.
-const BAR_COLOR = "#D9D9D9";
-const BAR_HIGHLIGHT_COLOR = "#E06D06";
+const BAR_COLOR = "#F4F4F5";
+const BAR_HIGHLIGHT_COLOR = "#476333";
 
 const chartConfig = {
   value: { label: "Value", color: BAR_COLOR },
@@ -91,7 +91,7 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
                 : undefined
             }
           />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
           <Bar dataKey="value" radius={4}>
             {data.map((d, i) => (
               <Cell
