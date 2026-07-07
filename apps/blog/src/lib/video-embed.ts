@@ -100,13 +100,16 @@ export function parseVideoUrl(rawUrl: string): ParsedVideo | null {
 
   // ── Facebook (plugin iframe accepts the full href; token-free) ───────────
   if (host === "facebook.com" || host === "m.facebook.com" || host === "fb.watch" || host === "fb.com") {
+    const isReel = /\/reel\//.test(u.pathname);
     const isVideo =
       host === "fb.watch" ||
-      /\/(videos|watch|reel)\b/.test(u.pathname) ||
+      isReel ||
+      /\/(videos|watch)\b/.test(u.pathname) ||
       u.searchParams.has("v");
     if (isVideo) {
       const src = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(rawUrl)}&show_text=false&autoplay=true`;
-      return iframe("facebook", rawUrl, src);
+      // Reels are portrait (9:16); regular FB videos are landscape.
+      return iframe("facebook", rawUrl, src, isReel ? "9/16" : "16/9");
     }
   }
 
