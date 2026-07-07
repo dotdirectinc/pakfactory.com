@@ -84,7 +84,12 @@ export type PostBodyStatStack = {
 export type PostBodyBarChart = {
   title?: string;
   source?: string;
-  data?: Array<{ _key?: string; label?: string; value?: number }>;
+  data?: Array<{
+    _key?: string;
+    label?: string;
+    value?: number;
+    highlight?: boolean;
+  }>;
 };
 
 export type PostBodyCallout = {

@@ -45,6 +45,13 @@ export const bodyBarChart = defineType({
               type: 'number',
               validation: (Rule) => Rule.required().min(0).error('A non-negative value is required.'),
             }),
+            defineField({
+              name: 'highlight',
+              title: 'Highlight this bar',
+              type: 'boolean',
+              description: 'Show this bar in the accent colour to draw attention to it.',
+              initialValue: false,
+            }),
           ],
           preview: {
             select: { label: 'label', value: 'value' },

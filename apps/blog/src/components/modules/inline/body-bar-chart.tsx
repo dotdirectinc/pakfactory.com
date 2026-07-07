@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -13,8 +13,12 @@ type BodyBarChartProps = {
   value: PostBodyBarChart;
 };
 
+// Neutral default that matches the site theme; brand accent for highlights.
+const BAR_COLOR = "#D9D9D9";
+const BAR_HIGHLIGHT_COLOR = "#E06D06";
+
 const chartConfig = {
-  value: { label: "Value", color: "var(--chart-1)" },
+  value: { label: "Value", color: BAR_COLOR },
 } satisfies ChartConfig;
 
 /**
@@ -25,7 +29,11 @@ const chartConfig = {
 export function BodyBarChart({ value }: BodyBarChartProps) {
   const data = (value.data ?? [])
     .filter((d) => typeof d.value === "number" && Number.isFinite(d.value))
-    .map((d, i) => ({ label: d.label?.trim() || `#${i + 1}`, value: d.value ?? 0 }));
+    .map((d, i) => ({
+      label: d.label?.trim() || `#${i + 1}`,
+      value: d.value ?? 0,
+      highlight: Boolean(d.highlight),
+    }));
   if (data.length === 0) return null;
 
   const title = value.title?.trim();
@@ -51,7 +59,14 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
           />
           <YAxis tickLine={false} axisLine={false} width={40} />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+          <Bar dataKey="value" radius={4}>
+            {data.map((d, i) => (
+              <Cell
+                key={i}
+                fill={d.highlight ? BAR_HIGHLIGHT_COLOR : BAR_COLOR}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ChartContainer>
 

@@ -143,7 +143,8 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       data[]{
         _key,
         label,
-        value
+        value,
+        highlight
       }
     },
     _type == "bodyCallout" => {
