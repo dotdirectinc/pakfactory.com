@@ -22,6 +22,15 @@ export function blogHomePageParams() {
   });
 }
 
+/**
+ * Params for a landing/static page-by-slug query. The page builder projection
+ * may include a postPopularRow section that references `$monthStart`, so it must
+ * be provided alongside language + slug.
+ */
+export function blogPageBySlugParams(slug: string) {
+  return blogLanguageParams({ slug, monthStart: monthStartIso() });
+}
+
 function monthStartIso(): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
