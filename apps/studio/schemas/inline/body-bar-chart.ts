@@ -24,7 +24,8 @@ export const bodyBarChart = defineType({
       name: 'data',
       title: 'Data',
       type: 'array',
-      description: '2–20 data points (recommended max 20).',
+      description:
+        'Chart data points (label + value). Use the "Paste data" tool for large sets.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -51,7 +52,7 @@ export const bodyBarChart = defineType({
           },
         }),
       ],
-      validation: (Rule) => Rule.required().min(2).max(20).error('Add 2–20 data points.'),
+      validation: (Rule) => Rule.required().min(2).error('Add at least 2 data points.'),
     }),
     defineField({
       name: 'source',

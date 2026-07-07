@@ -1,17 +1,33 @@
+"use client";
+
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@pakfactory/ui/components/chart";
 import type { PostBodyBarChart } from "@/lib/blog-post";
 
 type BodyBarChartProps = {
   value: PostBodyBarChart;
 };
 
-/** Inline bar chart authored in the post body portable text. Dependency-free. */
+const chartConfig = {
+  value: { label: "Value", color: "var(--chart-1)" },
+} satisfies ChartConfig;
+
+/**
+ * Inline single-series bar chart authored in the post body. Uses the shadcn
+ * chart primitive (Recharts) with default styling and the theme chart token.
+ * Unbounded number of points; an sr-only data table is the text alternative.
+ */
 export function BodyBarChart({ value }: BodyBarChartProps) {
-  const data = (value.data ?? []).filter(
-    (d) => typeof d.value === "number" && Number.isFinite(d.value),
-  );
+  const data = (value.data ?? [])
+    .filter((d) => typeof d.value === "number" && Number.isFinite(d.value))
+    .map((d, i) => ({ label: d.label?.trim() || `#${i + 1}`, value: d.value ?? 0 }));
   if (data.length === 0) return null;
 
-  const max = Math.max(...data.map((d) => d.value ?? 0), 1);
   const title = value.title?.trim();
   const source = value.source?.trim();
 
@@ -23,25 +39,21 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
         </figcaption>
       ) : null}
 
-      {/* Visual bars — decorative; the sr-only table below is the text alternative. */}
-      <div className="flex items-end justify-between gap-2 sm:gap-4" aria-hidden="true">
-        {data.map((d, i) => {
-          const height = max > 0 ? Math.max(2, ((d.value ?? 0) / max) * 100) : 0;
-          return (
-            <div key={i} className="flex flex-1 flex-col items-center gap-2">
-              <div className="flex h-40 w-full items-end">
-                <div
-                  className="w-full rounded-t bg-[var(--color-chart-1)]"
-                  style={{ height: `${height}%` }}
-                />
-              </div>
-              <span className="text-center text-xs text-muted-foreground">
-                {d.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <ChartContainer config={chartConfig} className="h-[320px] w-full">
+        <BarChart accessibilityLayer data={data}>
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            interval="preserveStartEnd"
+          />
+          <YAxis tickLine={false} axisLine={false} width={40} />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+        </BarChart>
+      </ChartContainer>
 
       <table className="sr-only">
         <caption>{title || "Bar chart data"}</caption>
