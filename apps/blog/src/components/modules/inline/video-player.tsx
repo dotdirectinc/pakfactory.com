@@ -46,7 +46,7 @@ export function VideoPlayer({
           <button
             type="button"
             onClick={() => setPlaying(true)}
-            className="group absolute inset-0 flex items-center justify-center"
+            className="group absolute inset-0 flex cursor-pointer items-center justify-center"
             aria-label={`Play video: ${title}`}
           >
             {posterUrl ? (
