@@ -183,7 +183,7 @@ Do these separately, after the token commit, when porting POC components:
 - [ ] **2. New families** — add the §4 block to `:root`.
 - [ ] **3. Shadows** — replace ladder per §5; set `--shadow` = `--shadow-sm`.
 - [ ] **4. Radius** — `--radius: 0.875rem`.
-- [x] **5. Layout width** — `--layout-max: 1440px` (done 2026-07-07; chose the full 1440 Figma artboard width rather than the 1280 inner block).
+- [x] **5. Layout width** — `--layout-max: 1280px` (done 2026-07-07; briefly tried 1440 (artboard width) then set to **1280** to match the POC inner block exactly).
 - [ ] **6. Dashed dieline** — append the gradient block from §6.
 - [ ] **7. Guardrails** — confirm `.dark`, `--chart-1..5`, `--card`, `--popover`, `--destructive` are **unchanged** in the diff.
 - [ ] **8. Commit** — single commit; record migration SHA in §2.

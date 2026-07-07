@@ -86,7 +86,7 @@ export type CtaRfqBlock = {
   heading?: string;
   body?: string;
   ctaHref?: string;
-};
+} & DielineBorderFields;
 
 export type CtaPillarsBlock = {
   _type: "ctaPillars";

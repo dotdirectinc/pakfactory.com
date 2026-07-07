@@ -13,6 +13,12 @@ export function getCategoryFallback(slug: string): BlogCategoryChip | undefined 
   return BLOG_CATEGORY_FALLBACK.find((c) => c.slug === slug);
 }
 
-export type BlogCategoryChip = { _id?: string; slug: string; title: string };
+export type BlogCategoryChip = {
+  _id?: string;
+  slug: string;
+  title: string;
+  /** Optional short nav label; falls back to `title` when blank. */
+  navLabel?: string;
+};
 
 export const PACKAGING_NEWS_SLUG = "packaging-news" as const;
