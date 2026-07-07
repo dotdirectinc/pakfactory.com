@@ -14,27 +14,29 @@ export function BodyStatStack({ value }: BodyStatStackProps) {
   const cols = stats.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2";
 
   return (
-    <section className="my-8">
-      <dl className={cn("grid grid-cols-1 gap-4", cols)}>
-        {stats.map((stat, i) => (
-          <div
-            key={stat._key ?? i}
-            className="rounded-lg border-t-2 border-primary bg-muted/40 p-5"
-          >
-            <dt className="text-3xl font-semibold tracking-tight text-foreground">
-              {stat.value}
-            </dt>
-            {stat.label?.trim() ? (
-              <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {stat.label}
-              </dd>
-            ) : null}
-          </div>
-        ))}
-      </dl>
+    <figure className="my-8">
+      <div className="rounded-3xl bg-[#F4F4F5] p-8 sm:p-10">
+        <dl className={cn("grid grid-cols-1 gap-8", cols)}>
+          {stats.map((stat, i) => (
+            <div key={stat._key ?? i}>
+              <div className="mb-4 h-1 w-16 rounded-full bg-[#476333]" />
+              <dt className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                {stat.value}
+              </dt>
+              {stat.label?.trim() ? (
+                <dd className="mt-3 text-base leading-relaxed text-muted-foreground">
+                  {stat.label}
+                </dd>
+              ) : null}
+            </div>
+          ))}
+        </dl>
+      </div>
       {source ? (
-        <p className="mt-4 text-xs text-muted-foreground">{source}</p>
+        <figcaption className="mt-3 text-sm text-muted-foreground">
+          {source}
+        </figcaption>
       ) : null}
-    </section>
+    </figure>
   );
 }
