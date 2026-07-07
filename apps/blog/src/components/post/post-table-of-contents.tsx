@@ -9,9 +9,15 @@ type PostTableOfContentsProps = {
   entries: TocEntry[];
 };
 
+// Collapsed peek height (px). The list is never fully hidden — it keeps a
+// minimum, scrollable height; the bottom chevron expands it to a taller,
+// viewport-capped list. Keep in sync with the `max-h-[180px]` class below.
+const COLLAPSED_MAX_PX = 180;
+
 export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(entries[0]?.id ?? null);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   // Scroll-spy — highlight the section currently in view.
@@ -40,8 +46,15 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
     return () => observer.disconnect();
   }, [entries]);
 
-  // Keep the active item visible within the capped, scrollable TOC — scroll
-  // only the nav container, never the page.
+  // Only offer expand/collapse when the list overflows the collapsed peek.
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    setOverflowing(el.scrollHeight > COLLAPSED_MAX_PX + 8);
+  }, [entries]);
+
+  // Keep the active item visible within the scrollable TOC — scroll only the
+  // nav container, never the page.
   useEffect(() => {
     if (!activeId || !navRef.current) return;
     const nav = navRef.current;
@@ -55,52 +68,51 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-expanded={open}
-        aria-label={open ? "Collapse table of contents" : "Expand table of contents"}
-        className="group flex w-full cursor-pointer items-center gap-2 text-left"
+      <p className="text-base font-medium text-muted-foreground">
+        Table of content
+      </p>
+      <nav
+        ref={navRef}
+        aria-label="Table of contents"
+        className={cn("overflow-y-auto", open ? "max-h-[55vh]" : "max-h-[180px]")}
       >
-        <span className="text-base font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-          Table of content
-        </span>
-        <ChevronDown
-          className={cn(
-            "size-5 shrink-0 text-foreground transition-transform group-hover:text-foreground",
-            open && "rotate-180",
-          )}
-          aria-hidden
-        />
-      </button>
-      {open ? (
-        <nav
-          ref={navRef}
-          aria-label="Table of contents"
-          className="max-h-[45vh] overflow-y-auto pr-1"
+        <ol className="flex list-decimal flex-col gap-2 ps-5 marker:text-muted-foreground">
+          {entries.map((entry) => {
+            const isActive = activeId === entry.id;
+            return (
+              <li key={entry.id} className={cn(entry.level === 3 && "ms-4")}>
+                <a
+                  href={`#${entry.id}`}
+                  data-toc-id={entry.id}
+                  className={cn(
+                    "block text-sm leading-6 transition-colors",
+                    isActive
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {entry.text}
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+      {overflowing ? (
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          aria-label={
+            open ? "Collapse table of contents" : "Expand table of contents"
+          }
+          className="flex w-full cursor-pointer items-center justify-center border-t border-dashed border-border pt-3 text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ol className="flex list-decimal flex-col gap-2 ps-5 marker:text-muted-foreground">
-            {entries.map((entry) => {
-              const isActive = activeId === entry.id;
-              return (
-                <li key={entry.id} className={cn(entry.level === 3 && "ms-4")}>
-                  <a
-                    href={`#${entry.id}`}
-                    data-toc-id={entry.id}
-                    className={cn(
-                      "block text-sm leading-6 transition-colors",
-                      isActive
-                        ? "font-medium text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {entry.text}
-                  </a>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
+          <ChevronDown
+            className={cn("size-5 transition-transform", open && "rotate-180")}
+            aria-hidden
+          />
+        </button>
       ) : null}
     </div>
   );
