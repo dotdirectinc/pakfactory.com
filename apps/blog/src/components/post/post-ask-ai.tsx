@@ -53,7 +53,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
       <p className="text-base font-medium text-muted-foreground">
         Ask AI about this article
       </p>
-      <div className="flex flex-wrap items-center gap-6">
+      <div className="flex w-full items-center justify-between">
         {PROVIDERS.map((provider) => (
           <a
             key={provider.id}

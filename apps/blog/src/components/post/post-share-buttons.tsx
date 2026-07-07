@@ -51,7 +51,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-base font-medium text-muted-foreground">Share article</p>
-      <div className="flex flex-wrap items-center gap-6">
+      <div className="flex w-full items-center justify-between">
         <button
           type="button"
           onClick={copyLink}

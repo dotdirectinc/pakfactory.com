@@ -38,22 +38,28 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
     <div className="flex flex-col gap-4">
       <p className="text-base font-medium text-muted-foreground">Written by</p>
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-5">
-          <Avatar className="size-16">
-            {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
-            <AvatarFallback>{initials(name)}</AvatarFallback>
-          </Avatar>
-          {author?.slug ? (
-            <Link
-              href={authorHref(author.slug)}
-              className="font-semibold text-foreground underline underline-offset-4 hover:text-foreground/80"
-            >
+        {author?.slug ? (
+          <Link
+            href={authorHref(author.slug)}
+            className="group flex w-fit items-center gap-5 rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Avatar className="size-16">
+              {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
+              <AvatarFallback>{initials(name)}</AvatarFallback>
+            </Avatar>
+            <span className="font-semibold text-foreground underline underline-offset-4 transition-colors group-hover:text-foreground/80">
               {name}
-            </Link>
-          ) : (
+            </span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-5">
+            <Avatar className="size-16">
+              {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
+              <AvatarFallback>{initials(name)}</AvatarFallback>
+            </Avatar>
             <span className="font-semibold text-foreground">{name}</span>
-          )}
-        </div>
+          </div>
+        )}
         {bio ? (
           <p className="line-clamp-3 text-sm leading-5 text-muted-foreground">
             {bio}
