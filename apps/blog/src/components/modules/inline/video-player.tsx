@@ -27,8 +27,9 @@ export function VideoPlayer({
   const [playing, setPlaying] = useState(autoShow);
   const portrait = aspect === "9/16";
 
+  // Portrait (TikTok / FB reels) matches the Instagram reel width.
   return (
-    <div className={portrait ? "mx-auto w-full max-w-sm" : "w-full"}>
+    <div className={portrait ? "mx-auto w-full max-w-[400px]" : "w-full"}>
       <div
         className="relative w-full overflow-hidden rounded-lg bg-muted"
         style={{ aspectRatio: aspect }}
