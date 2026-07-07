@@ -9,11 +9,11 @@ const SCRIPTS: Record<SocialProvider, { src: string; id: string }> = {
   instagram: { src: "https://www.instagram.com/embed.js", id: "instagram-embed" },
 };
 
-// Instagram matches the vertical reel width (TikTok / FB reels); a tweet card
-// keeps its natural width.
+// All social/reel embeds share one width (matches TikTok / FB reels via the
+// iframe VideoPlayer): Twitter, Instagram, TikTok, and Facebook reels line up.
 const WIDTH: Record<SocialProvider, string> = {
   instagram: "max-w-[400px]",
-  twitter: "max-w-[550px]",
+  twitter: "max-w-[400px]",
 };
 
 function loadScript(src: string, id: string): Promise<void> {
