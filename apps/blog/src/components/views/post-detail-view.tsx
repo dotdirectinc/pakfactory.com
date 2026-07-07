@@ -65,6 +65,7 @@ export function PostDetailView({post}: PostDetailViewProps) {
             }
             sidebar={
                 <PostDetailSidebar
+                    author={post.author}
                     toc={toc}
                     shareUrl={canonicalUrl}
                     shareTitle={post.title}
