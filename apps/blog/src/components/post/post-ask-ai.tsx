@@ -61,7 +61,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Ask ${provider.label} about this article`}
-            className="transition-opacity hover:opacity-70"
+            className="flex rounded-sm outline-none transition-opacity hover:opacity-70 focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <Image
               src={provider.icon}

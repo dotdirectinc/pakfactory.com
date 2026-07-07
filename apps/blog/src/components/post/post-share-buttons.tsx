@@ -46,7 +46,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
   }
 
   const iconLink =
-    "flex size-5 items-center justify-center text-foreground transition-opacity hover:opacity-70";
+    "flex size-5 items-center justify-center rounded-sm text-foreground outline-none transition-opacity hover:opacity-70 focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,7 +56,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
           type="button"
           onClick={copyLink}
           aria-label={copied ? "Link copied" : "Copy link"}
-          className="flex size-5 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          className="flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {copied ? (
             <Check className="size-5" aria-hidden />
@@ -88,7 +88,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
           type="button"
           onClick={copyLink}
           aria-label="Copy link to share on Instagram"
-          className="flex size-5 cursor-pointer items-center justify-center transition-opacity hover:opacity-70"
+          className="flex size-5 cursor-pointer items-center justify-center rounded-sm outline-none transition-opacity hover:opacity-70 focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Image
             src="/logos/social/instagram.svg"
