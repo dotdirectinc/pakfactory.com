@@ -1,5 +1,9 @@
 import { sanityImageUrl } from "@/lib/sanity-image";
-import { fetchPlatformThumbnail, parseVideoUrl } from "@/lib/video-embed";
+import {
+  fetchPlatformThumbnail,
+  fetchSocialThumbnail,
+  parseVideoUrl,
+} from "@/lib/video-embed";
 import type { PostBodyVideo } from "@/lib/blog-post";
 import { VideoPlayer } from "./video-player";
 import { SocialVideoEmbed } from "./social-video-embed";
@@ -23,12 +27,14 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
   const title = value.title?.trim() || "Video";
 
   if (parsed.kind === "social") {
+    const socialPoster =
+      customPoster ?? (await fetchSocialThumbnail(parsed)) ?? undefined;
     return (
       <figure className="my-8">
         <SocialVideoEmbed
           provider={parsed.provider}
           url={parsed.url}
-          posterUrl={customPoster}
+          posterUrl={socialPoster}
           title={title}
         />
         {caption ? (

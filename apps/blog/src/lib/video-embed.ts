@@ -36,6 +36,8 @@ export type ParsedVideo =
       provider: SocialProvider;
       /** Canonical post/tweet URL for the platform blockquote embed. */
       url: string;
+      /** Tweet id (twitter) or shortcode (instagram) — used for thumbnails. */
+      id: string;
     };
 
 function iframe(
@@ -110,21 +112,56 @@ export function parseVideoUrl(rawUrl: string): ParsedVideo | null {
 
   // ── Twitter / X (social embed) ───────────────────────────────────────────
   if (host === "twitter.com" || host === "x.com" || host === "mobile.twitter.com") {
-    if (/\/status\/\d+/.test(u.pathname)) {
+    const id = u.pathname.match(/\/status\/(\d+)/)?.[1];
+    if (id) {
       // Normalize x.com → twitter.com for widgets.js.
       const normalized = rawUrl.replace(/^https?:\/\/(www\.)?(mobile\.)?x\.com/, "https://twitter.com");
-      return { kind: "social", provider: "twitter", url: normalized };
+      return { kind: "social", provider: "twitter", url: normalized, id };
     }
   }
 
   // ── Instagram (social embed) ─────────────────────────────────────────────
   if (host === "instagram.com" || host.endsWith(".instagram.com")) {
-    if (/^\/(p|reel|tv)\/[^/]+/.test(u.pathname)) {
-      return { kind: "social", provider: "instagram", url: rawUrl };
+    const code = u.pathname.match(/^\/(?:p|reel|tv)\/([^/]+)/)?.[1];
+    if (code) {
+      return { kind: "social", provider: "instagram", url: rawUrl, id: code };
     }
   }
 
   return null;
+}
+
+/** Twitter syndication token (same algorithm react-tweet uses) — keyless. */
+function twitterSyndicationToken(id: string): string {
+  return ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, "");
+}
+
+type TweetResult = {
+  mediaDetails?: Array<{ media_url_https?: string }>;
+  photos?: Array<{ url?: string }>;
+};
+
+/**
+ * Keyless thumbnail for the social tier. Twitter/X uses the public syndication
+ * API (video poster / first photo). Instagram & Facebook have no reliable
+ * keyless thumbnail (would need a token), so they fall back to an editor poster.
+ */
+export async function fetchSocialThumbnail(
+  parsed: Extract<ParsedVideo, { kind: "social" }>,
+): Promise<string | null> {
+  if (parsed.provider !== "twitter") return null;
+  try {
+    const token = twitterSyndicationToken(parsed.id);
+    const res = await fetch(
+      `https://cdn.syndication.twimg.com/tweet-result?id=${parsed.id}&token=${token}&lang=en`,
+      { next: { revalidate: 86400 } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as TweetResult;
+    return data.mediaDetails?.[0]?.media_url_https ?? data.photos?.[0]?.url ?? null;
+  } catch {
+    return null;
+  }
 }
 
 type OEmbedResponse = { thumbnail_url?: string };
