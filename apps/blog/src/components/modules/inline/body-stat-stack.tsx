@@ -19,8 +19,8 @@ export function BodyStatStack({ value }: BodyStatStackProps) {
         <dl className={cn("grid grid-cols-1 gap-8", cols)}>
           {stats.map((stat, i) => (
             <div key={stat._key ?? i}>
-              <div className="mb-4 h-1 w-16 rounded-full bg-[#476333]" />
-              <dt className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <div className="mb-4 h-1 w-[75px] rounded-full bg-[#476333]" />
+              <dt className="text-[40px] font-bold leading-none tracking-tight text-foreground">
                 {stat.value}
               </dt>
               {stat.label?.trim() ? (
