@@ -34,12 +34,7 @@ if (process.env.NODE_ENV === "development") {
 const nextConfig: NextConfig = {
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo"],
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "cdn.sanity.io" },
-      // Video widget (bodyVideo) poster fallback when no custom poster is set.
-      { protocol: "https", hostname: "i.ytimg.com" },
-      { protocol: "https", hostname: "img.youtube.com" },
-    ],
+    remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],
   },
   // PROD-1597: the `/category/` prefix was removed — archives live at `/{category}`.
   // Posts are canonical at `/{postSlug}` (root); category/tag/search are discovery
