@@ -73,12 +73,34 @@ For `apps/blog`, do not add new tokens in `apps/blog/src/app/globals.css` for fe
 - After schema changes: extract/deploy as your workflow requires before relying on MCP content tools. See [`.cursor/rules/agent-toolkit.mdc`](.cursor/rules/agent-toolkit.mdc) for the Knowledge Router and MCP content operations.
 - For editor-specific GROQ and Studio patterns, use the same file and [Sanity AI best practices](https://www.sanity.io/docs/developer-guides/ai-best-practices).
 
+### Sanity content — agent guardrails (binding)
+
+Editorial documents (posts, pages, singletons, navigation, etc.) live in the **Sanity dataset**, not in git. AI agents (**Cursor, Claude Code, and any in-repo skill**) must treat content writes as **human-only**.
+
+**Agents may:**
+
+- Add or change **schema** in [`apps/studio/schemas/`](apps/studio/schemas/) (fields, section types, validation, groups, previews)
+- Wire desk structure, document actions, GROQ in [`packages/sanity/`](packages/sanity/), and front-end rendering
+- **Read** Sanity via GROQ, client fetch, or MCP **query** tools for debugging
+
+**Agents must never:**
+
+- Run seed scripts (`seed.mjs`, `seed-blog-dev.mjs`, `seed-blog-singleton-pages.mjs`, etc.)
+- Use Sanity MCP or `@sanity/client` to **create, patch, replace, delete, or publish** documents
+- Mutate editorial content on **any** dataset (`development` or `production`)
+
+**Humans** own document writes: Studio UI, explicit seed runs, approved migrations, and dataset export/import.
+
+When a feature needs example data, document **what humans should seed** in [`apps/blog/memory.md`](apps/blog/memory.md) or the PR — do not execute seeds or patch documents. Refuse requests such as “run `pnpm seed:blog-dev`”, “patch `blogHomePage` via MCP”, or “publish this post” unless the user will run the write themselves; agents may only implement schema/code and state the human command.
+
+Human workflow (no agent writes): [`apps/blog/memory.md`](apps/blog/memory.md) § Content vs seed workflow.
+
 ## MCP defaults (when available)
 
 Use MCP for authoritative, version-aware answers instead of guessing.
 
 1. **Context7** (`user-context7` when configured): **`resolve-library-id`** then **`query-docs`** before stating **library-specific** APIs or deprecations for Next.js, React, Sanity client, Tailwind, etc.
-2. **Sanity** (`https://mcp.sanity.io` or configured alias): content queries, schema deploy, docs search — follow [`.cursor/rules/agent-toolkit.mdc`](.cursor/rules/agent-toolkit.mdc).
+2. **Sanity** (`https://mcp.sanity.io` or configured alias): **read** (query, inspect) and schema deploy — follow [`.cursor/rules/agent-toolkit.mdc`](.cursor/rules/agent-toolkit.mdc). **Do not** use MCP to create, patch, publish, or delete documents (see § Sanity content — agent guardrails).
 3. **shadcn** / **shadcn-studio**: registered in [`.cursor/mcp.json`](.cursor/mcp.json) under `shadcn` and `shadcn-studio` — use for CLI/registry workflows per server instructions; do not bypass mandated workflows.
 4. **Figma** (`figma` in `.cursor/mcp.json`): design URLs with `fileKey` + `nodeId` for inspection and design-to-code workflows.
 
@@ -138,4 +160,4 @@ Full ticket-to-code mapping: [`docs/blog-3-jira-conventions.md`](docs/blog-3-jir
 
 ## AI verification checklist
 
-After onboarding, open the monorepo in your IDE and run the prompts in [README.md](./README.md) **AI IDE setup** → **Verification prompts**. The assistant should refuse carts/Shopify assumptions, insist on **pnpm**, protect **packages/ui**, and follow blog Sanity + schema rules.
+After onboarding, open the monorepo in your IDE and run the prompts in [README.md](./README.md) **AI IDE setup** → **Verification prompts**. The assistant should refuse carts/Shopify assumptions, insist on **pnpm**, protect **packages/ui**, follow blog Sanity + schema rules, and **refuse autonomous Sanity document writes** (seeds, MCP patch/publish) on any dataset.

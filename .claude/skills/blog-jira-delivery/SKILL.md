@@ -47,7 +47,7 @@ Produce a short markdown plan:
 - Server Components by default; `export const revalidate = 60` unless specified.
 - `generateMetadata` + `getBlogRobotsDirective` / listing helpers from `apps/blog/src/lib/seo.ts`.
 - Colocate UI under `apps/blog/src/app/_components/` or `src/app/<route>/_components/`.
-- If CMS needs a new field, add it in **`apps/studio/schemas`** only (additive); update seed when helpful.
+- If CMS needs a new field, add it in **`apps/studio/schemas`** only (additive). Note any seed fixture updates for **humans** in `memory.md` — **do not run seeds** ([`AGENTS.md`](../../../AGENTS.md) § Sanity content — agent guardrails).
 
 ## Phase 5 — Verify
 

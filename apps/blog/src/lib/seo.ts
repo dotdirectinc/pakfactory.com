@@ -130,7 +130,7 @@ export function getAllArchiveRobots(pageNumber: number): BlogRobotsDirective {
 }
 
 /**
- * Robots for `/tag/{slug}` archives (PROD-1500). Like other listings, but an
+ * Robots for `/topics/{slug}` archives (PROD-1500). Like other listings, but an
  * **empty** tag (no published posts) is `noindex` even on page 1 to avoid
  * indexing thin/empty pages.
  */

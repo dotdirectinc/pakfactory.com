@@ -29,6 +29,7 @@ import {
   BLOG_TAG_POSTS_PAGE_OLDEST_QUERY,
   BLOG_TAG_POSTS_PAGE_TITLE_QUERY,
 } from "@pakfactory/sanity/queries";
+import type { TopicGroupRef } from "@/lib/tag-groups";
 
 export type TagSort = "newest" | "oldest" | "title";
 
@@ -37,14 +38,14 @@ export type TagDocument = DocSeoFields & {
   title: string;
   slug: string;
   descriptionText?: string;
-  tagGroup?: string;
+  topicGroup?: TopicGroupRef;
 };
 
 export type TagFacet = {
   _id?: string;
   title: string;
   slug: string;
-  tagGroup?: string;
+  topicGroup?: TopicGroupRef;
 };
 export type TagFacetAuthor = { _id?: string; name: string; slug: string };
 
@@ -142,7 +143,7 @@ export function tagPageHref(
   pageNumber: number,
   filters: TagListFilters,
 ): string {
-  const base = pageNumber <= 1 ? `/tag/${tagSlug}` : `/tag/${tagSlug}/page/${pageNumber}`;
+  const base = pageNumber <= 1 ? `/topics/${tagSlug}` : `/topics/${tagSlug}/page/${pageNumber}`;
   const params = new URLSearchParams();
   if (filters.author) params.set("author", filters.author);
   if (filters.year) params.set("year", filters.year);

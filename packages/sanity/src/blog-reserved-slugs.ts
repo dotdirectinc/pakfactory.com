@@ -18,6 +18,8 @@ export const BLOG_RESERVED_SLUGS = [
   "sitemap.xsl",
   "tag",
   "tags-sitemap",
+  "topics",
+  "topics-sitemap",
 ] as const;
 
 export type BlogReservedSlug = (typeof BLOG_RESERVED_SLUGS)[number];

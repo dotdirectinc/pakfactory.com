@@ -3,9 +3,9 @@ export function categoryHref(categorySlug: string): string {
   return `/${categorySlug}`;
 }
 
-/** Canonical tag archive path — `/tag/{tagSlug}` (PROD-1500). */
+/** Canonical topic archive path — `/topics/{tagSlug}` (PROD-1500). */
 export function tagHref(tagSlug: string): string {
-  return `/tag/${tagSlug}`;
+  return `/topics/${tagSlug}`;
 }
 
 /** Canonical author profile path — `/author/{slug}` (PROD-1501). */

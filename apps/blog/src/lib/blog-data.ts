@@ -12,9 +12,9 @@ import {
   POPULAR_POSTS_THIS_MONTH_QUERY,
 } from "@pakfactory/sanity/queries";
 import {
-  getFallbackFooterColumns,
-  resolveFooterColumns,
-  type BlogFooterColumns,
+  getFallbackFooterData,
+  resolveFooterData,
+  type BlogFooterData,
   type BlogFooterNavDoc,
 } from "@/lib/blog-footer-nav";
 import {
@@ -142,21 +142,16 @@ export async function fetchBlogNavCategories(): Promise<BlogCategoryChip[]> {
 
 async function loadBlogFooterNavigationFromClient(
   fetchDoc: () => Promise<BlogFooterNavDoc>,
-): Promise<BlogFooterColumns> {
+): Promise<BlogFooterData> {
   if (!isSanityConfigured()) {
-    return getFallbackFooterColumns();
+    return getFallbackFooterData();
   }
 
   const doc = await fetchDoc().catch(() => null);
-  const columns = resolveFooterColumns(doc);
-  if (columns.length > 0) {
-    return columns;
-  }
-
-  return getFallbackFooterColumns();
+  return resolveFooterData(doc);
 }
 
-async function loadPublishedBlogFooterNavigation(): Promise<BlogFooterColumns> {
+async function loadPublishedBlogFooterNavigation(): Promise<BlogFooterData> {
   return loadBlogFooterNavigationFromClient(() =>
     getPublishedSanityClient().fetch<BlogFooterNavDoc>(
       BLOG_FOOTER_NAV_QUERY,
@@ -174,13 +169,13 @@ const getCachedBlogFooterNavigation = unstable_cache(
 );
 
 /**
- * Footer link columns from Blog Navigation `footerNavigation.columns`.
- * Falls back to hardcoded columns when Sanity is unconfigured, fetch fails,
- * or editors have not configured footer columns yet.
+ * Footer link columns, social links, and AI answer links from Blog Navigation.
+ * Falls back to hardcoded defaults when Sanity is unconfigured, fetch fails,
+ * or editors have not configured footer content yet.
  */
-export async function fetchBlogFooterNavigation(): Promise<BlogFooterColumns> {
+export async function fetchBlogFooterNavigation(): Promise<BlogFooterData> {
   if (!isSanityConfigured()) {
-    return getFallbackFooterColumns();
+    return getFallbackFooterData();
   }
 
   if ((await draftMode()).isEnabled) {

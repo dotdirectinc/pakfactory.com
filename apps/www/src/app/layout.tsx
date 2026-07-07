@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import {draftMode} from 'next/headers';
 import Navbar from '@/components/common/navbar';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
-import {VisualEditing} from 'next-sanity/visual-editing';
+import {SanityVisualEditing} from '@/components/common/sanity-visual-editing';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default async function RootLayout({
                     <Navbar navigationData={navItems} />
                     {children}
                 </TooltipProvider>
-                {isDraft && <VisualEditing />}
+                {isDraft && <SanityVisualEditing />}
             </body>
         </html>
     );

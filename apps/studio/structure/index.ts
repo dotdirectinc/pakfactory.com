@@ -19,11 +19,16 @@ import {
   LockIcon,
   StarIcon,
   ThLargeIcon,
+  AddIcon,
 } from '@sanity/icons'
-import type { DividerBuilder, ListItemBuilder, StructureBuilder } from 'sanity/structure'
+import type {
+  DividerBuilder,
+  ListItemBuilder,
+  StructureBuilder,
+  StructureResolverContext,
+} from 'sanity/structure'
 import { MediaToolRedirect } from '../components/MediaToolRedirect'
-import { BLOG_HOME_PAGE_IDS, SUPPORTED_LANGUAGES } from '../lib/languages'
-import { TAG_GROUPS, TAG_GROUP_UNGROUPED } from '../schemas/blogTag'
+import { BLOG_HOME_PAGE_IDS, BLOG_TOPICS_PAGE_IDS } from '../lib/languages'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FEATURE FLAG
@@ -74,31 +79,39 @@ function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
 }
 
 function blogHomepageItem(S: StructureBuilder): ListItemBuilder {
+  // i18n dormant (English-only) — opens the single EN home directly, no per-language
+  // sub-list. Restore the SUPPORTED_LANGUAGES.map() wrapper to reactivate. See lib/languages.ts.
   return S.listItem()
+    .id('blogHomePage')
     .title('Homepage')
     .icon(HomeIcon)
     .child(
-      S.list()
-        .title('Homepage')
-        .items(
-          SUPPORTED_LANGUAGES.map(({ id, title }) =>
-            S.listItem()
-              .title(`Homepage (${title})`)
-              .id(`blogHomePage-${id}`)
-              .child(
-                S.editor()
-                  .id(BLOG_HOME_PAGE_IDS[id])
-                  .schemaType('blogPage')
-                  .documentId(BLOG_HOME_PAGE_IDS[id])
-              )
-          )
-        )
+      S.editor()
+        .id(BLOG_HOME_PAGE_IDS.en)
+        .schemaType('blogPage')
+        .documentId(BLOG_HOME_PAGE_IDS.en)
+    )
+}
+
+function blogTopicsPageItem(S: StructureBuilder): ListItemBuilder {
+  // i18n dormant (English-only) — opens the single EN topic page directly.
+  // Restore the SUPPORTED_LANGUAGES.map() wrapper to reactivate. See lib/languages.ts.
+  return S.listItem()
+    .id('blogTopicsPage')
+    .title('Topic page')
+    .icon(TagIcon)
+    .child(
+      S.editor()
+        .id(BLOG_TOPICS_PAGE_IDS.en)
+        .schemaType('blogPage')
+        .documentId(BLOG_TOPICS_PAGE_IDS.en)
     )
 }
 
 function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
   const pageItems: ListItemBuilder[] = [
     blogHomepageItem(S),
+    blogTopicsPageItem(S),
   ]
 
   if (BLOG_STUDIO_LANDING_PAGES) {
@@ -136,13 +149,118 @@ function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     )
 }
 
+/** Topics in a CMS group — panel 3 when a group row is selected. */
+function topicEntriesForGroup(
+  S: StructureBuilder,
+  groupId: string,
+  title: string,
+) {
+  return S.documentList()
+    .title(`${title} Topics`)
+    .schemaType('blogTag')
+    .filter('_type == "blogTag" && topicGroup._ref == $groupId')
+    .params({ groupId })
+    .defaultOrdering([{ field: 'title', direction: 'asc' }])
+    .initialValueTemplates([
+      S.initialValueTemplateItem('blogTag-in-group', { groupId }),
+    ])
+}
+
+function ungroupedTopicsList(S: StructureBuilder) {
+  return S.documentList()
+    .title('Ungrouped')
+    .schemaType('blogTag')
+    .filter('_type == "blogTag" && !defined(topicGroup)')
+    .defaultOrdering([{ field: 'title', direction: 'asc' }])
+}
+
+/** Panel 2 = group folders + Edit groups + Ungrouped; panel 3 = topics or group CRUD. */
+function topicsDeskItem(
+  S: StructureBuilder,
+  context: StructureResolverContext,
+): ListItemBuilder {
+  return S.listItem()
+    .title('Topics')
+    .icon(TagIcon)
+    .child(async () => {
+      const client = context.getClient({ apiVersion: '2024-01-01' })
+      const groups = await client.fetch<
+        { _id: string; title: string; order?: number }[]
+      >(
+        `*[_type == "blogTopicGroup"] | order(order asc, title asc){ _id, title, order }`,
+      )
+
+      const byPublishedId = new Map<
+        string,
+        { _id: string; title: string; order?: number }
+      >()
+      for (const group of groups) {
+        const publishedId = group._id.replace(/^drafts\./, '')
+        if (!byPublishedId.has(publishedId) || group._id.startsWith('drafts.')) {
+          byPublishedId.set(publishedId, {
+            _id: publishedId,
+            title: group.title,
+            order: group.order,
+          })
+        }
+      }
+
+      const uniqueGroups = [...byPublishedId.values()].sort((a, b) => {
+        const orderA = a.order ?? 0
+        const orderB = b.order ?? 0
+        if (orderA !== orderB) return orderA - orderB
+        return a.title.localeCompare(b.title)
+      })
+
+      const editGroupsList = S.documentTypeList('blogTopicGroup')
+        .title('Edit groups')
+        .defaultOrdering([
+          { field: 'order', direction: 'asc' },
+          { field: 'title', direction: 'asc' },
+        ])
+
+      return S.list()
+        .title('Topic Groups')
+        .items([
+          ...uniqueGroups.map((group) =>
+            S.listItem()
+              .id(`topic-folder-${group._id}`)
+              .title(group.title)
+              .icon(FolderIcon)
+              .child(topicEntriesForGroup(S, group._id, group.title)),
+          ),
+          S.divider(),
+          S.listItem()
+            .id('blog-topics-edit-groups')
+            .title('Edit groups')
+            .icon(CogIcon)
+            .schemaType('blogTopicGroup')
+            .child(editGroupsList),
+          S.listItem()
+            .id('blog-topics-ungrouped')
+            .title('Ungrouped')
+            .icon(TagIcon)
+            .child(ungroupedTopicsList(S)),
+        ])
+        .menuItems([
+          S.menuItem()
+            .title('Create topic group')
+            .icon(AddIcon)
+            .intent({ type: 'create', params: { type: 'blogTopicGroup' } }),
+        ])
+    })
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED BUILDING BLOCKS
 // Each function returns an array of list items / dividers so they can be
 // composed freely into any workspace structure.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+export function blogItems(
+  S: StructureBuilder,
+  context: StructureResolverContext,
+): (ListItemBuilder | DividerBuilder)[] {
   return [
     S.listItem()
       .title('Posts')
@@ -170,53 +288,7 @@ export function blogItems(S: StructureBuilder): (ListItemBuilder | DividerBuilde
       .schemaType('author')
       .child(S.documentTypeList('author').title('Authors')),
 
-    S.listItem()
-      .title('Tags')
-      .icon(TagIcon)
-      .child(
-        S.list()
-          .title('Tags')
-          .items([
-            // One sub-list per classification axis (tagGroup). Tags stay flat;
-            // this only groups how they're browsed in Studio.
-            ...TAG_GROUPS.map(({ value, title }) =>
-              S.listItem()
-                .title(title)
-                .icon(TagIcon)
-                .schemaType('blogTag')
-                .child(
-                  S.documentTypeList('blogTag')
-                    .title(title)
-                    .filter('_type == "blogTag" && tagGroup == $tagGroup')
-                    .params({ tagGroup: value })
-                    .defaultOrdering([{ field: 'title', direction: 'asc' }])
-                )
-            ),
-
-            S.divider(),
-
-            // Catch-all for tags with no axis assigned yet (un-backfilled docs).
-            S.listItem()
-              .title('Ungrouped')
-              .schemaType('blogTag')
-              .child(
-                S.documentTypeList('blogTag')
-                  .title('Ungrouped')
-                  .filter('_type == "blogTag" && (!defined(tagGroup) || tagGroup == $ungrouped)')
-                  .params({ ungrouped: TAG_GROUP_UNGROUPED })
-                  .defaultOrdering([{ field: 'title', direction: 'asc' }])
-              ),
-
-            S.listItem()
-              .title('All Tags')
-              .schemaType('blogTag')
-              .child(
-                S.documentTypeList('blogTag')
-                  .title('All Tags')
-                  .defaultOrdering([{ field: 'title', direction: 'asc' }])
-              ),
-          ])
-      ),
+    topicsDeskItem(S, context),
 
     S.listItem()
       .title('Widgets')
@@ -853,11 +925,11 @@ export function resourcesItems(S: StructureBuilder): (ListItemBuilder | DividerB
               .schemaType('author')
               .child(S.documentTypeList('author').title('Authors')),
             S.listItem()
-              .title('Tags')
+              .title('Topics')
               .icon(TagIcon)
               .child(
                 S.documentTypeList('blogTag')
-                  .title('Tags')
+                  .title('Topics')
                   .defaultOrdering([{ field: 'title', direction: 'asc' }])
               ),
             S.listItem()
@@ -1062,11 +1134,14 @@ export const adminStructure = (S: StructureBuilder) =>
     ])
 
 /** Blog — editorial team */
-export const blogStructure = (S: StructureBuilder) =>
+export const blogStructure = (
+  S: StructureBuilder,
+  context: StructureResolverContext,
+) =>
   S.list()
     .title('Blog')
     .items([
-      ...blogItems(S),
+      ...blogItems(S, context),
       ...settingsItems(S, { blog: true }),
     ])
 

@@ -297,6 +297,36 @@ const blogHomePageDoc = {
   ],
 }
 
+/** Default topics index layout for local QA. */
+const blogTopicsPageDoc = {
+  _id: 'blogTopicsPage',
+  _type: 'blogPage',
+  pageRole: 'topics',
+  language: 'en',
+  title: 'Explore topics',
+  description:
+    'Browse PakFactory blog topics across packaging materials, types, finishes, and industries.',
+  metaTitle: 'Explore topics | PakFactory Blog',
+  metaDescription:
+    'Browse PakFactory blog topics across packaging materials, types, finishes, and industries.',
+  pageBuilder: [
+    {
+      _key: key(),
+      _type: 'postPopularRow',
+      heading: 'Popular this month',
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'ctaNewsletter',
+      heading: 'Get the latest packaging digest',
+      body: 'Subscribe now for latest packaging news, trends and more.',
+    },
+  ],
+  // Listed groups on /topics (publish prepends new blogTopicGroup refs automatically).
+  topics: [ref('btgrp-packaging-type'), ref('btgrp-industry')],
+}
+
 /** Blog Navigation singleton — primary nav category order + footer link columns. */
 const blogNavigationDoc = {
   _id: 'blogNavigation',
@@ -316,7 +346,7 @@ const blogNavigationDoc = {
   ),
 }
 
-const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc, blogNavigationDoc]
+const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc, blogTopicsPageDoc, blogNavigationDoc]
 
 async function publishDocument(documentId) {
   try {
@@ -399,6 +429,7 @@ async function seed() {
   await tx.commit()
 
   await publishDocument('blogHomePage')
+  await publishDocument('blogTopicsPage')
 
   const categoryPageDeleted = await deleteOrphanCategoryPageDoc()
   const categoriesPatched = await migrateCategoryTaxonomyDocs()
@@ -406,6 +437,7 @@ async function seed() {
   console.log(`  ✓  Industries added/updated : ${extraIndustries.length}`)
   console.log(`  ✓  Posts added/updated      : ${extraPosts.length}`)
   console.log('  ✓  Blog Homepage pageBuilder : 1 document (blogHomePage / blogPage home)')
+  console.log('  ✓  Topics page pageBuilder    : 1 document (blogTopicsPage / blogPage topics)')
   console.log(
     `  ✓  Orphan category page doc  : ${categoryPageDeleted ? 'deleted' : 'none found'}`,
   )
