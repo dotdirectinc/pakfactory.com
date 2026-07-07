@@ -44,7 +44,7 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
   const axisLabelFill = "var(--muted-foreground)";
 
   return (
-    <figure className="my-8 rounded-lg border border-border p-6">
+    <figure className="my-8">
       {title ? (
         <figcaption className="mb-6 text-sm font-semibold text-foreground">
           {title}
