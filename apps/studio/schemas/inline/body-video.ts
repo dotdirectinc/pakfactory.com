@@ -20,7 +20,8 @@ export const bodyVideo = defineType({
       name: 'url',
       title: 'Video URL',
       type: 'url',
-      description: 'A YouTube or Vimeo watch/share URL.',
+      description:
+        'Full video/post URL — YouTube, Vimeo, Dailymotion, TikTok, Facebook, X (Twitter), or Instagram.',
       validation: (Rule) =>
         Rule.required().uri({ scheme: ['https', 'http'] }).error('Enter a full video URL.'),
     }),
@@ -29,7 +30,7 @@ export const bodyVideo = defineType({
       title: 'Poster image',
       ...taggedImageType([MEDIA_TAG.blog], { hotspot: true }),
       description:
-        'Optional custom thumbnail shown before play. Falls back to the YouTube thumbnail when omitted.',
+        'Optional custom thumbnail — overrides the platform thumbnail. YouTube/Vimeo/Dailymotion/TikTok auto-fetch one; Facebook and X/Instagram have none, so a poster is recommended there.',
     }),
     defineField({
       name: 'title',

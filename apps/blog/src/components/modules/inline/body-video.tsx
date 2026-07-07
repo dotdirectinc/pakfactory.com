@@ -2,12 +2,15 @@ import { sanityImageUrl } from "@/lib/sanity-image";
 import { fetchPlatformThumbnail, parseVideoUrl } from "@/lib/video-embed";
 import type { PostBodyVideo } from "@/lib/blog-post";
 import { VideoPlayer } from "./video-player";
+import { SocialVideoEmbed } from "./social-video-embed";
 
 /**
- * Inline video embed authored in the post body portable text. Supports YouTube,
- * Vimeo, Dailymotion, and TikTok. Server component: resolves the poster
- * (editor upload overrides the platform thumbnail) and hands the interactive
- * click-to-play behaviour to the client VideoPlayer.
+ * Inline video embed authored in the post body portable text.
+ *
+ * iframe tier (YouTube, Vimeo, Dailymotion, TikTok, Facebook): server resolves
+ * the poster — editor upload overrides the platform thumbnail — and hands
+ * click-to-play to the client VideoPlayer. social tier (Twitter/X, Instagram):
+ * click-to-load native card via SocialVideoEmbed.
  */
 export async function BodyVideo({ value }: { value: PostBodyVideo }) {
   const url = value.url?.trim();
@@ -15,13 +18,31 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
   const parsed = parseVideoUrl(url);
   if (!parsed) return null;
 
-  // Thumbnail priority: editor poster (override) → platform thumbnail → none.
   const customPoster = sanityImageUrl(value.poster, 1200);
-  const posterUrl =
-    customPoster ?? (await fetchPlatformThumbnail(parsed, url)) ?? undefined;
-
   const caption = value.caption?.trim();
   const title = value.title?.trim() || "Video";
+
+  if (parsed.kind === "social") {
+    return (
+      <figure className="my-8">
+        <SocialVideoEmbed
+          provider={parsed.provider}
+          url={parsed.url}
+          posterUrl={customPoster}
+          title={title}
+        />
+        {caption ? (
+          <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+            {caption}
+          </figcaption>
+        ) : null}
+      </figure>
+    );
+  }
+
+  // iframe tier: editor poster (override) → platform thumbnail → none.
+  const posterUrl =
+    customPoster ?? (await fetchPlatformThumbnail(parsed, url)) ?? undefined;
 
   return (
     <figure className="my-8">
