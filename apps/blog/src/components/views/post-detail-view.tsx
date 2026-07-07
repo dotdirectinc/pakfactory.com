@@ -72,6 +72,8 @@ export function PostDetailView({post}: PostDetailViewProps) {
                 <PostArticleColumn
                     post={post}
                     headingIdByKey={headingIdByKey}
+                    shareUrl={canonicalUrl}
+                    shareTitle={post.title}
                 />
             }
             footer={
