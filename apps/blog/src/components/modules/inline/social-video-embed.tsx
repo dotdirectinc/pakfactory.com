@@ -74,10 +74,11 @@ export function SocialVideoEmbed({ provider, url, title }: SocialVideoEmbedProps
       className={cn(
         "mx-auto w-full",
         WIDTH[provider],
-        // Instagram's embed.js sets its own inline min/max/width on the rendered
-        // iframe — force it to fill the container so it matches the other reels.
-        "[&_.instagram-media]:!mx-auto [&_.instagram-media]:!w-full [&_.instagram-media]:!min-w-0 [&_.instagram-media]:!max-w-full",
-        "[&_.twitter-tweet]:!mx-auto",
+        // widgets.js / embed.js render the post as an <iframe> with their own
+        // inline min/max/width (and their own rendered class, not the blockquote
+        // class) — force that iframe to fill the container so all four line up.
+        // Tailwind v4 important is a suffix (`w-full!`).
+        "[&_iframe]:mx-auto! [&_iframe]:w-full! [&_iframe]:min-w-0! [&_iframe]:max-w-full!",
       )}
     >
       {provider === "twitter" ? (
