@@ -59,14 +59,15 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="flex w-full cursor-pointer items-center justify-between gap-4 text-left"
+        aria-label={open ? "Collapse table of contents" : "Expand table of contents"}
+        className="group flex w-full cursor-pointer items-center gap-2 text-left"
       >
-        <span className="text-base font-medium text-muted-foreground">
+        <span className="text-base font-medium text-muted-foreground transition-colors group-hover:text-foreground">
           Table of content
         </span>
         <ChevronDown
           className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
+            "size-5 shrink-0 text-foreground transition-transform group-hover:text-foreground",
             open && "rotate-180",
           )}
           aria-hidden
