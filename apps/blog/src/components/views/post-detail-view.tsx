@@ -78,12 +78,12 @@ export function PostDetailView({post}: PostDetailViewProps) {
             }
             footer={
                 <>
-                    <CtaNewsletter />
                     <PostRelatedRow
                         posts={post.relatedPosts ?? []}
                         categorySlug={post.categorySlug}
                         categoryTitle={post.categoryTitle}
                     />
+                    <CtaNewsletter />
                 </>
             }
         />
