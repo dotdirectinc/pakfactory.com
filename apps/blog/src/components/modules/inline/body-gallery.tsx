@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type { PostBodyGallery } from "@/lib/blog-post";
 import { sanityImageUrl } from "@/lib/sanity-image";
 
@@ -34,9 +35,7 @@ export function BodyGallery({ value }: BodyGalleryProps) {
         })}
       </div>
       {caption ? (
-        <figcaption className="mt-2 text-sm text-muted-foreground">
-          {caption}
-        </figcaption>
+        <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
       ) : null}
     </figure>
   );

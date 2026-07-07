@@ -1,4 +1,5 @@
 import { cn } from "@pakfactory/ui/lib/utils";
+import { CAPTION_CLASS } from "@/lib/blog-caption";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import { fetchPlatformThumbnail, parseVideoUrl } from "@/lib/video-embed";
 import type { PostBodyVideo } from "@/lib/blog-post";
@@ -28,7 +29,7 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
   const isNarrow = parsed.kind === "social" || parsed.aspect === "9/16";
   const captionClass = cn(
     isNarrow ? "mx-auto w-full max-w-[400px]" : "w-full",
-    "mt-2 text-sm text-muted-foreground",
+    CAPTION_CLASS,
   );
 
   if (parsed.kind === "social") {

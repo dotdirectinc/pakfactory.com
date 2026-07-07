@@ -12,6 +12,7 @@ import { BodyVideo } from "@/components/modules/inline/body-video";
 import { BodyStatStack } from "@/components/modules/inline/body-stat-stack";
 import { BodyBarChart } from "@/components/modules/inline/body-bar-chart";
 import { WidgetRenderer } from "@/components/modules/widget/widget-renderer";
+import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type {
   PostBodyBarChart,
   PostBodyCallout,
@@ -64,9 +65,7 @@ function PostBodyImage({ value }: { value: BodyImageValue }) {
         img
       )}
       {value.caption ? (
-        <figcaption className="mt-2 text-sm text-muted-foreground">
-          {value.caption}
-        </figcaption>
+        <figcaption className={CAPTION_CLASS}>{value.caption}</figcaption>
       ) : null}
     </figure>
   );

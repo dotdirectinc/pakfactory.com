@@ -1,3 +1,4 @@
+import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type { PostBodyTable } from "@/lib/blog-post";
 
 type BodyTableProps = {
@@ -50,9 +51,7 @@ export function BodyTable({ value }: BodyTableProps) {
         </table>
       </div>
       {caption ? (
-        <figcaption className="mt-2 text-sm text-muted-foreground">
-          {caption}
-        </figcaption>
+        <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
       ) : null}
     </figure>
   );
