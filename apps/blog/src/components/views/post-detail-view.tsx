@@ -1,6 +1,5 @@
 import {Breadcrumb} from '@/components/layout/breadcrumb';
-import {PageDielineSection} from '@/components/layout/page-dieline-section';
-import {CtaRfq} from '@/components/blocks/cta-rfq';
+import {CtaNewsletter} from '@/components/blocks/cta-newsletter';
 import {PostArticleColumn} from '@/components/post/post-article-column';
 import {PostDetailHeader} from '@/components/post/post-detail-header';
 import {PostDetailLayout} from '@/components/post/post-detail-layout';
@@ -77,14 +76,12 @@ export function PostDetailView({post}: PostDetailViewProps) {
             }
             footer={
                 <>
+                    <CtaNewsletter />
                     <PostRelatedRow
                         posts={post.relatedPosts ?? []}
                         categorySlug={post.categorySlug}
                         categoryTitle={post.categoryTitle}
                     />
-                    {/* <PageDielineSection innerClassName="py-16 sm:py-24">
-            <CtaRfq />
-          </PageDielineSection> */}
                 </>
             }
         />
