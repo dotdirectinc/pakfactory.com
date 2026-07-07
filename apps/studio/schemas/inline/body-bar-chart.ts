@@ -1,5 +1,6 @@
 import { BarChartIcon } from '@sanity/icons'
 import { defineArrayMember, defineField, defineType } from 'sanity'
+import { ChartDataInput } from '../../components/ChartDataInput'
 
 /**
  * bodyBarChart — inline titled bar chart for the post Portable Text body.
@@ -24,6 +25,7 @@ export const bodyBarChart = defineType({
       name: 'data',
       title: 'Data',
       type: 'array',
+      components: { input: ChartDataInput },
       description:
         'Chart data points (label + value). Use the "Paste data" tool for large sets.',
       of: [
