@@ -74,7 +74,10 @@ export function SocialVideoEmbed({ provider, url, title }: SocialVideoEmbedProps
       className={cn(
         "mx-auto w-full",
         WIDTH[provider],
-        "[&_.instagram-media]:!mx-auto [&_.twitter-tweet]:!mx-auto",
+        // Instagram's embed.js sets its own inline min/max/width on the rendered
+        // iframe — force it to fill the container so it matches the other reels.
+        "[&_.instagram-media]:!mx-auto [&_.instagram-media]:!w-full [&_.instagram-media]:!min-w-0 [&_.instagram-media]:!max-w-full",
+        "[&_.twitter-tweet]:!mx-auto",
       )}
     >
       {provider === "twitter" ? (
