@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -57,7 +57,6 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
           data={data}
           margin={{ top: 4, right: 8, left: 4, bottom: xAxisLabel ? 20 : 0 }}
         >
-          <CartesianGrid vertical={false} />
           <XAxis
             dataKey="label"
             tickLine={false}
