@@ -45,6 +45,24 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
     }
   }
 
+  // Instagram has no web "share URL" dialog. On mobile use the native share
+  // sheet (Instagram appears there); on desktop fall back to copying the link.
+  async function shareInstagram() {
+    const canNativeShare =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      window.matchMedia?.("(pointer: coarse)").matches;
+    if (canNativeShare) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        // User dismissed the share sheet
+      }
+      return;
+    }
+    await copyLink();
+  }
+
   const iconLink =
     "flex size-5 items-center justify-center rounded-sm text-foreground outline-none transition-opacity hover:opacity-70 focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
@@ -83,11 +101,10 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
             />
           </a>
         ))}
-        {/* Instagram has no web share intent — copy the link to paste there. */}
         <button
           type="button"
-          onClick={copyLink}
-          aria-label="Copy link to share on Instagram"
+          onClick={shareInstagram}
+          aria-label="Share on Instagram"
           className="flex size-5 cursor-pointer items-center justify-center rounded-sm outline-none transition-opacity hover:opacity-70 focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Image
@@ -100,6 +117,11 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
           />
         </button>
       </div>
+      {copied ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          Link copied to clipboard.
+        </p>
+      ) : null}
     </div>
   );
 }
