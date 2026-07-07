@@ -5,7 +5,7 @@
  * All blog document queries accept `$language` (default `en` in apps/blog fetch helpers).
  */
 
-export { DEFAULT_BLOG_LANGUAGE, BLOG_HOME_PAGE_IDS } from '../languages'
+export { DEFAULT_BLOG_LANGUAGE, BLOG_HOME_PAGE_IDS, BLOG_TOPICS_PAGE_IDS } from '../languages'
 
 export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && language == $language] | order(title asc){
   _id,
@@ -42,6 +42,11 @@ const POST_CARD_FIELDS = /* groq */ `{
   "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238)
 }`;
 
+const TOPIC_GROUP_PROJECTION = /* groq */ `{
+  title,
+  "slug": slug.current
+}`;
+
 const POST_DETAIL_FIELDS = /* groq */ `{
   _id,
   title,
@@ -69,7 +74,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     _id,
     title,
     "slug": slug.current,
-    tagGroup
+    "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
   },
   "author": author->{
     name,
@@ -172,6 +177,8 @@ export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
 const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _key,
   _type,
+  showTopBorder,
+  showBottomBorder,
   _type == "postFeaturedRow" => {
     latestPostsCount,
     "featured": featuredPost->${POST_CARD_FIELDS},
@@ -195,6 +202,18 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
+    ] | order(publishedAt desc)[0...6]${POST_CARD_FIELDS}
+  },
+  _type == "postPopularRow" => {
+    heading,
+    postsCount,
+    "posts": *[
+      _type == "post"
+      && (!defined(language) || language == $language)
+      && defined(slug.current)
+      && defined(publishedAt)
+      && publishedAt <= now()
+      && publishedAt >= $monthStart
     ] | order(publishedAt desc)[0...6]${POST_CARD_FIELDS}
   },
   _type == "postSpotlightRow" => {
@@ -223,8 +242,30 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   }
 }`;
 
+/** Populated topic group row for /topics grid (shared by index + page Overview queries). */
+const BLOG_TOPIC_GROUP_ROW_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  order,
+  "topics": *[
+    _type == "blogTag"
+    && topicGroup._ref == ^._id
+    && (!defined(language) || language == $language)
+    && defined(slug.current)
+  ] | order(title asc) {
+    _id,
+    title,
+    "slug": slug.current
+  }
+`;
+
+const BLOG_TOPICS_PAGE_TOPICS_PROJECTION = /* groq */ `"topics": topics[]->{
+  ${BLOG_TOPIC_GROUP_ROW_FIELDS}
+}`;
+
 /**
- * Blog homepage page-builder (ADR-009). Returns the home singleton's section
+ * Blog homepage page-builder (ADR-009). Returns the home singleton's block
  * array (`blogPage` with `pageRole == "home"`, id `blogHomePage`). Legacy
  * `blogHomePage` documents are still read until migrated.
  */
@@ -244,6 +285,28 @@ export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
   canonical,
   "ogImageUrl": ogImage.asset->url,
   "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
+/**
+ * Topics index page-builder (ADR-009). Returns the topics singleton's block
+ * array (`blogPage` with `pageRole == "topics"`, id `blogTopicsPage`).
+ */
+export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
+  _type == "blogPage" && _id == $topicsPageId && language == $language
+][0]{
+  title,
+  description,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION},
+  ${BLOG_TOPICS_PAGE_TOPICS_PROJECTION}
 }`;
 
 /** Published landing/static page by slug (ADR-009). */
@@ -389,7 +452,7 @@ export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
-  tagGroup
+  "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
 }`;
 
 /** Authors with published posts in a category (sidebar facets). */
@@ -467,11 +530,11 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
-/** Industry-axis blog tags for the home "Browse by Industries" strip (link to /tag/{slug}). */
+/** Industry-axis blog tags for the home "Browse by Industries" strip (link to /topics/{slug}). */
 export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
   && language == $language
-  && tagGroup == "industry"
+  && topicGroup->slug.current == "industry"
   && defined(slug.current)
 ] | order(title asc){
   _id,
@@ -537,7 +600,7 @@ export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
   _updatedAt
 }`;
 
-// ── Tag archives (PROD-1500) — /tag/{slug} ──────────────────────────────────
+// ── Topic archives (PROD-1500) — /topics/{slug} ───────────────────────────────
 
 /** Tag landing document by slug. `description` is plain text (not portable text). */
 export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug && language == $language][0]{
@@ -545,7 +608,7 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
   title,
   "slug": slug.current,
   "descriptionText": description,
-  tagGroup,
+  "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION},
   metaTitle,
   metaDescription,
   ogTitle,
@@ -629,7 +692,7 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   }
 )`;
 
-/** Footer link columns from Blog Navigation `footerNavigation.columns`. */
+/** Footer link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   _id,
   "columns": footerNavigation.columns[]{
@@ -656,6 +719,14 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
         }
       }
     }
+  },
+  "social": footerNavigation.socialLinks[]{
+    platform,
+    url
+  },
+  "aiLinks": footerNavigation.aiAnswerLinks[]{
+    engine,
+    url
   }
 }`;
 
@@ -686,7 +757,7 @@ export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
   ${TAG_POST_FILTER}
 ] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
 
-/** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by axis in the sidebar. */
+/** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by topic group in the sidebar. */
 export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
   && language == $language
@@ -702,7 +773,7 @@ export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
-  tagGroup
+  "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
 }`;
 
 /** Authors with published posts carrying $tagSlug (sidebar facet). */

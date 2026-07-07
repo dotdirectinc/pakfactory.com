@@ -5,40 +5,14 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 
 /**
  * blogTag — flat tag document type
- * URL pattern: /blog/tag/{slug}
+ * URL pattern: /topics/{slug}
  *
- * Tags stay FLAT. Grouping (for Studio organization and on-page tag facets) is a
- * pure classification via `tagGroup` — a closed enum of axes. No nested document
- * types, no grouping encoded in slugs or titles. The tag URL is unaffected.
- *
- * TAG_GROUPS is the single source of truth for the axis vocabulary. 7 of the 11
- * reference axes are defined so far (the canonical Tagging Reference doc is not
- * yet in-repo); add the remaining 4 here when finalized. Keep values kebab-case.
- * The Studio structure (apps/studio/structure) and seed (apps/studio/scripts/seed.mjs)
- * mirror these values — update them together.
+ * Tags stay FLAT. Grouping for Studio and the /topics grid is via `topicGroup`
+ * reference to `blogTopicGroup`. The tag URL is unaffected.
  */
-
-export const TAG_GROUPS = [
-  { value: 'material', title: 'Material' },
-  { value: 'packaging-type', title: 'Packaging Type' },
-  { value: 'finish', title: 'Finish' },
-  { value: 'industry', title: 'Industry' },
-  // { value: 'channel', title: 'Channel' },
-  // { value: 'design-style', title: 'Design Style' },
-  // { value: 'topic', title: 'Topic' },
-] as const
-
-/**
- * Explicit sentinel for tags deliberately left unclassified. Stored as a real
- * value (not undefined) so the radio always shows a clear selection and editors
- * can ungroup with one click instead of hunting for a "clear field" action.
- * Not part of TAG_GROUPS — it is not an axis and gets no Studio sub-list.
- */
-export const TAG_GROUP_UNGROUPED = 'ungrouped'
-
 export const blogTag = defineType({
   name: 'blogTag',
-  title: 'Blog Tag',
+  title: 'Blog Topic',
   type: 'document',
   groups: [
     { name: 'details', title: 'Details', default: true },
@@ -62,7 +36,7 @@ export const blogTag = defineType({
       type: 'slug',
       group: 'details',
       options: { source: 'title' },
-      description: 'Used in the URL: /blog/tag/{slug}. Set once — changing breaks links.',
+      description: 'Used in the URL: /topics/{slug}. Set once — changing breaks links.',
       validation: (Rule) =>
         Rule.required().custom(uniqueSlugPerLanguage('blogTag')),
     }),
@@ -72,23 +46,17 @@ export const blogTag = defineType({
       type: 'text',
       rows: 2,
       group: 'details',
-      description: 'Short description shown on the /blog/tag/{slug} landing page; reduces thin-content risk.',
+      description:
+        'Short description shown on the topic landing page (/topics/{slug}); reduces thin-content risk.',
     }),
     defineField({
-      name: 'tagGroup',
+      name: 'topicGroup',
       title: 'Group',
-      type: 'string',
+      type: 'reference',
+      to: [{ type: 'blogTopicGroup' }],
       group: 'details',
       description:
-        'Classification axis used to group this flat tag in Studio and in on-page tag facets. Choose "Ungrouped" to leave it unclassified. Does not change the tag URL.',
-      initialValue: TAG_GROUP_UNGROUPED,
-      options: {
-        list: [
-          { value: TAG_GROUP_UNGROUPED, title: 'Ungrouped' },
-          ...TAG_GROUPS.map(({ value, title }) => ({ value, title })),
-        ],
-        layout: 'radio',
-      },
+        'Topic group for Studio organization and the /topics index grid. Leave empty for Ungrouped.',
     }),
 
     // ── SEO ───────────────────────────────────────────────────────────────────
@@ -100,14 +68,17 @@ export const blogTag = defineType({
     ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),
   ],
   preview: {
-    select: { title: 'title', slug: 'slug', tagGroup: 'tagGroup' },
-    prepare({ title, slug, tagGroup }) {
-      const groupTitle =
-        tagGroup === TAG_GROUP_UNGROUPED
-          ? 'Ungrouped'
-          : TAG_GROUPS.find((g) => g.value === tagGroup)?.title
-      const url = slug?.current ? `/blog/tag/${slug.current}` : 'No slug'
-      return { title, subtitle: groupTitle ? `${groupTitle} · ${url}` : url }
+    select: {
+      title: 'title',
+      slug: 'slug',
+      groupTitle: 'topicGroup.title',
+    },
+    prepare({ title, slug, groupTitle }) {
+      const url = slug?.current ? `/topics/${slug.current}` : 'No slug'
+      return {
+        title,
+        subtitle: groupTitle ? `${groupTitle} · ${url}` : url,
+      }
     },
   },
   orderings: [
@@ -120,7 +91,7 @@ export const blogTag = defineType({
       title: 'Group → title',
       name: 'groupOrder',
       by: [
-        { field: 'tagGroup', direction: 'asc' },
+        { field: 'topicGroup.title', direction: 'asc' },
         { field: 'title', direction: 'asc' },
       ],
     },

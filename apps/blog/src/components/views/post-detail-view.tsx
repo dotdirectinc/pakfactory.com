@@ -1,11 +1,11 @@
 import {Breadcrumb} from '@/components/layout/breadcrumb';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
-import {CtaRfq} from '@/components/sections/cta-rfq';
+import {CtaRfq} from '@/components/blocks/cta-rfq';
 import {PostArticleColumn} from '@/components/post/post-article-column';
 import {PostDetailHeader} from '@/components/post/post-detail-header';
 import {PostDetailLayout} from '@/components/post/post-detail-layout';
 import {PostDetailSidebar} from '@/components/post/post-detail-sidebar';
-import {PostRelatedRow} from '@/components/sections/post-related-row';
+import {PostRelatedRow} from '@/components/blocks/post-related-row';
 import type {BlogPostDetail} from '@/lib/blog-post';
 import {postCanonicalUrl} from '@/lib/blog-post';
 import {categoryHref} from '@/lib/blog-post-url';

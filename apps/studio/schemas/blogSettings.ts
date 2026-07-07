@@ -101,7 +101,7 @@ export const blogSettings = defineType({
   groups: [
     { name: 'post', title: 'Post defaults', default: true },
     { name: 'category', title: 'Category defaults' },
-    { name: 'tag', title: 'Tag defaults' },
+    { name: 'tag', title: 'Topic defaults' },
     { name: 'author', title: 'Author defaults' },
     { name: 'general', title: 'General' },
   ],
@@ -135,7 +135,7 @@ export const blogSettings = defineType({
     }),
     defineField({
       name: 'tagDefaults',
-      title: 'Tag defaults',
+      title: 'Topic defaults',
       type: 'object',
       group: 'tag',
       options: { collapsible: false },
@@ -151,7 +151,7 @@ export const blogSettings = defineType({
             type: 'number',
             initialValue: 5,
             description:
-              'Tag pages with fewer than this many posts are forced noindex, even if an editor enables indexing.',
+              'Topic pages with fewer than this many posts are forced noindex, even if an editor enables indexing.',
             validation: (Rule) => Rule.min(0).integer(),
           }),
         ],

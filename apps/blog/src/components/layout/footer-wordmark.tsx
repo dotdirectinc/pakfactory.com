@@ -45,7 +45,7 @@ export function FooterWordmark() {
         >
             <p
                 ref={textRef}
-                className="select-none text-center text-[clamp(3rem,12vw,9.5rem)] font-bold leading-none tracking-tight text-foreground/35 will-change-transform"
+                className="select-none text-center text-[clamp(3rem,12vw,9.5rem)] font-bold leading-none tracking-tight text-primary/35 will-change-transform"
             >
                 PAKFACTORY
             </p>

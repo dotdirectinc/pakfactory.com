@@ -32,9 +32,9 @@ pnpm dev:studio        # Sanity Studio (apps/studio)
 | Production build | `pnpm build:blog` |
 | Type-check | `pnpm --filter @pakfactory/blog typecheck` |
 | Lint | `pnpm --filter @pakfactory/blog lint` |
-| Seed dev content | `pnpm --filter @pakfactory/studio run seed` then `pnpm seed:blog-dev` |
+| Seed dev content | `pnpm --filter @pakfactory/studio run seed` then `pnpm seed:blog-dev` (see [Content vs seed](#content-vs-seed-workflow) — seeds **push** fixtures into Sanity; they are not a content pull) |
 
-After seeding, open Studio → **Pages → Homepage** → **Page sections** tab to reorder blocks.
+After seeding, open Studio → **Pages → Homepage** → **Page blocks** tab to reorder blocks.
 
 Local URL is **`http://localhost:3003/`** — the home page is at the root, **not** `/blog` (the `/blog` prefix is a hosting concern, see [URL scheme](#routing--url-scheme)). Don't use port 3001/3000.
 
@@ -59,7 +59,7 @@ src/
 ├─ app/            Routing ONLY — page.tsx / route.ts / layout.tsx / sitemap.ts …
 │                  Single-route whole-page views are inlined here (ADR-007).
 ├─ components/     All application UI, grouped by ARCHETYPE/LAYER (ADR-008):
-│  ├─ blocks/      Page-builder sections — mirror Studio schemas/sections/ 1:1
+│  ├─ blocks/      Page-builder blocks — mirror Studio schemas/blocks/ 1:1
 │  ├─ layout/      Site chrome — nav, footer, breadcrumb, page frame
 │  ├─ views/       Multi-route route-level templates (archives, author header)
 │  ├─ modules/     Sanity-data-driven building blocks (cards, filters, forms)
@@ -86,15 +86,29 @@ Server Components by default; `export const revalidate = 60` unless a route need
 - Use `getSanityClient()` from `src/lib/sanity/client.ts`; guard with `isSanityConfigured()` from `src/lib/sanity/env.ts` so the app renders without env.
 - Content schemas live in **`apps/studio/schemas`** (the source of truth for `post`, `blogCategory`, `blogTag`, `author`, etc.). Changing a schema is a Studio concern — coordinate before editing.
 
+### Content vs seed workflow
+
+**You do not pull editorial content from Sanity into git before building.** Content lives in the dataset; `pnpm dev:blog` reads it live via the API. Point `.env.local` at the same project + dataset as Studio (`development` for local dev) and refresh.
+
+**Seeding pushes the other way** — fixture scripts overwrite known document IDs in Sanity. Use seeds only when the dataset is empty or you need repeatable QA data; avoid running them while editors are working on the same dataset. **AI agents do not run seeds** — humans only ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
+
+| When | Command |
+| ---- | ------- |
+| Fresh clone / empty dataset | `pnpm --filter @pakfactory/studio run seed` |
+| Home rows need posts + full blog fixtures | `pnpm seed:blog-dev` |
+| Empty homepage/topics page builder only | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` |
+
+Full workflow (draft preview, export/import, rules of thumb): [`memory.md` § Content vs seed workflow](./memory.md#content-vs-seed-workflow).
+
 ## SEO / AEO / GEO
 
 Post pages must ship full `generateMetadata` (title, description, Open Graph, Twitter) and JSON-LD built with **`@pakfactory/seo`** generators (`blogPosting`, `organization`, `person`, `breadcrumbList`, …) — never hand-author schema.org objects inline. See the contract in [`CLAUDE.md` § AEO/GEO](./CLAUDE.md).
 
-## Page sections (shipped)
+## Page blocks (shipped)
 
-The homepage is a **Sanity page builder** on the `blogPage` home singleton (`pageRole: home`, id `blogHomePage`). Landing/static pages are separate `blogPage` documents with `pageBuilderLanding` (ADR-009). Wiring: `BLOG_HOME_PAGE_BUILDER_QUERY` / `BLOG_PAGE_BY_SLUG_QUERY` → `SectionRenderer` + [`registry.ts`](./src/components/sections/registry.ts). Resolver at `/{slug}`: category → CMS page → post.
+The homepage is a **Sanity page builder** on the `blogPage` home singleton (`pageRole: home`, id `blogHomePage`). Landing/static pages are separate `blogPage` documents with `pageBuilderLanding` (ADR-009). Wiring: `BLOG_HOME_PAGE_BUILDER_QUERY` / `BLOG_PAGE_BY_SLUG_QUERY` → `BlockRenderer` + [`registry.ts`](./src/components/blocks/registry.ts). Resolver at `/{slug}`: category → CMS page → post.
 
-Studio: Blog workspace → **Pages → Homepage** (landing/static lists inside Pages gated until `BLOG_STUDIO_LANDING_PAGES`). Seed: `pnpm seed:blog-dev`.
+Studio: Blog workspace → **Pages → Homepage** (landing/static lists inside Pages gated until `BLOG_STUDIO_LANDING_PAGES`). Humans: see [`memory.md`](./memory.md) for seed commands when bootstrapping.
 
 ## Architecture decisions
 
@@ -103,7 +117,7 @@ Decisions live in [`docs/adr/`](../../docs/adr/) (register: [`README.md`](../../
 - **ADR-005** — routing-only `app/`, naming rules (file === export).
 - **ADR-006** — design tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.
 - **ADR-007** — single-route whole-page views are inlined in `page.tsx`; multi-route views are components.
-- **ADR-008** — `components/` grouped by archetype/layer; `sections/` mirrors Studio `schemas/sections/`.
+- **ADR-008** — `components/` grouped by archetype/layer; `blocks/` mirrors Studio `schemas/blocks/`.
 - **ADR-009** — `blogPage` content model (home singleton, landing/static pages, URL resolver).
 
 ## Verify before committing

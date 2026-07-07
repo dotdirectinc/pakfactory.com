@@ -51,7 +51,7 @@ Introduce **`blogPage`** document type with guard rails:
 ```text
 1. Static Next.js routes (win via App Router)
 2. Known category slug → category archive (fixed template)
-3. Published blogPage (landing | static) by slug → SectionRenderer
+3. Published blogPage (landing | static) by slug → BlockRenderer
 4. Post by slug → article
 5. Redirect map → else notFound()
 ```
@@ -61,10 +61,10 @@ Posts and `blogPage` slugs must not collide — Studio validation blocks categor
 ## Consequences
 
 - [`apps/studio/schemas/blogPage.ts`](../../apps/studio/schemas/blogPage.ts) replaces [`blogHomePage.ts`](../../apps/studio/schemas/blogHomePage.ts)
-- [`pageBuilderHome`](../../apps/studio/schemas/sections/index.ts) / `pageBuilderLanding` on `blogPage` only
+- [`pageBuilderHome`](../../apps/studio/schemas/blocks/index.ts) / `pageBuilderLanding` on `blogPage` only
 - [`blogCategory.ts`](../../apps/studio/schemas/blogCategory.ts) — taxonomy identity/SEO only (no `pageBuilder`)
 - GROQ: `BLOG_CATEGORY_BY_SLUG_QUERY` + listing queries in [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts)
-- [`CategoryArchiveView`](../../apps/blog/src/components/views/category-archive-view.tsx) composes fixed sections; no `SectionRenderer` on category routes
+- [`CategoryArchiveView`](../../apps/blog/src/components/views/category-archive-view.tsx) composes fixed sections; no `BlockRenderer` on category routes
 - [`[segment]/page.tsx`](../../apps/blog/src/app/[segment]/page.tsx) resolves CMS landings before posts
 - Sitemap includes published landing/static pages
 
@@ -76,4 +76,4 @@ Blog workspace + `apps/blog` only. Does not change www `page` type.
 
 Landing and static page lists are **hidden inside Pages** until design ships (`BLOG_STUDIO_LANDING_PAGES = false` in [`apps/studio/structure/index.ts`](../../apps/studio/structure/index.ts)). Editors open **Pages → Homepage** only; category content lives under **Blog → Categories**. Schema, GROQ, and the `/{slug}` resolver remain — flip the flag and re-seed sample landings to restore full Studio UX.
 
-**Insert menu:** Homepage `pageBuilderHome` uses `insertMenu.groups` tabs (Post / Tag / CTA; Studio always prepends All). Optional grid thumbnails: [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) + [`page-builder-preview.ts`](../../apps/studio/schemas/sections/page-builder-preview.ts).
+**Insert menu:** Homepage `pageBuilderHome` uses `insertMenu.groups` tabs (Post / Tag / CTA; Studio always prepends All). Optional grid thumbnails: [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) + [`page-builder-preview.ts`](../../apps/studio/schemas/blocks/page-builder-preview.ts).

@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
-import type { PageBuilderSection } from "@/components/sections/registry";
+import type { PageBuilderBlock } from "@/components/blocks/registry";
 import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
@@ -19,7 +19,7 @@ export type BlogPageRecord = DocSeoFields & {
   ogImageUrl?: string | null;
   publishedAt?: string | null;
   _updatedAt?: string | null;
-  pageBuilder?: PageBuilderSection[] | null;
+  pageBuilder?: PageBuilderBlock[] | null;
 };
 
 export async function fetchBlogPageBySlug(
