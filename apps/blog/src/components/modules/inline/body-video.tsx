@@ -1,3 +1,4 @@
+import { cn } from "@pakfactory/ui/lib/utils";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import { fetchPlatformThumbnail, parseVideoUrl } from "@/lib/video-embed";
 import type { PostBodyVideo } from "@/lib/blog-post";
@@ -22,6 +23,14 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
   const caption = value.caption?.trim();
   const title = value.title?.trim() || "Video";
 
+  // Vertical frames (social + portrait iframes) are centered at 400px; align the
+  // caption to that frame width so it sits flush with the video's left edge.
+  const isNarrow = parsed.kind === "social" || parsed.aspect === "9/16";
+  const captionClass = cn(
+    isNarrow ? "mx-auto w-full max-w-[400px]" : "w-full",
+    "mt-2 text-sm text-muted-foreground",
+  );
+
   if (parsed.kind === "social") {
     return (
       <figure className="my-8">
@@ -30,11 +39,7 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
           url={parsed.url}
           title={title}
         />
-        {caption ? (
-          <figcaption className="mt-2 text-sm text-muted-foreground">
-            {caption}
-          </figcaption>
-        ) : null}
+        {caption ? <figcaption className={captionClass}>{caption}</figcaption> : null}
       </figure>
     );
   }
@@ -60,11 +65,7 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
         aspect={parsed.aspect}
         autoShow={autoShow}
       />
-      {caption ? (
-        <figcaption className="mt-2 text-sm text-muted-foreground">
-          {caption}
-        </figcaption>
-      ) : null}
+      {caption ? <figcaption className={captionClass}>{caption}</figcaption> : null}
     </figure>
   );
 }
