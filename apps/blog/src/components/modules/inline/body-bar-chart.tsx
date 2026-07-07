@@ -91,7 +91,10 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
                 : undefined
             }
           />
-          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent className="gap-2 px-3 py-2.5" />}
+          />
           <Bar dataKey="value" radius={4}>
             {data.map((d, i) => (
               <Cell
