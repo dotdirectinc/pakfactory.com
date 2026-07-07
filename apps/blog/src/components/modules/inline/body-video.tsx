@@ -31,7 +31,7 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
           title={title}
         />
         {caption ? (
-          <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+          <figcaption className="mt-2 text-sm text-muted-foreground">
             {caption}
           </figcaption>
         ) : null}
@@ -61,7 +61,7 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
         autoShow={autoShow}
       />
       {caption ? (
-        <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+        <figcaption className="mt-2 text-sm text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}

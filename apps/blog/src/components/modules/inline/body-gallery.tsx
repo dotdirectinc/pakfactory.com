@@ -34,7 +34,7 @@ export function BodyGallery({ value }: BodyGalleryProps) {
         })}
       </div>
       {caption ? (
-        <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+        <figcaption className="mt-2 text-sm text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}
