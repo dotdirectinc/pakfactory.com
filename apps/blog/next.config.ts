@@ -33,6 +33,11 @@ if (process.env.NODE_ENV === "development") {
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo"],
+  turbopack: {
+    resolveAlias: {
+      "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
+    },
+  },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],
   },
@@ -51,13 +56,33 @@ const nextConfig: NextConfig = {
         destination: "/posts-sitemap/:page",
       },
       {
-        source: "/tags-sitemap-:page(\\d{1,}).xml",
-        destination: "/tags-sitemap/:page",
+        source: "/topics-sitemap-:page(\\d{1,}).xml",
+        destination: "/topics-sitemap/:page",
       },
     ];
   },
   async redirects() {
     return [
+      {
+        source: "/tags-sitemap-:page(\\d{1,}).xml",
+        destination: "/topics-sitemap-:page.xml",
+        permanent: true,
+      },
+      {
+        source: "/tags-sitemap",
+        destination: "/topics-sitemap-1.xml",
+        permanent: true,
+      },
+      {
+        source: "/tag/:slug/page/:n",
+        destination: "/topics/:slug/page/:n",
+        permanent: true,
+      },
+      {
+        source: "/tag/:slug",
+        destination: "/topics/:slug",
+        permanent: true,
+      },
       {
         source: "/category/:category/page/:n",
         destination: "/:category/page/:n",

@@ -45,6 +45,7 @@ After `git pull`, ask your assistant:
 | “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; URLs via `getSiteUrl()` with `/blog` prefix per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
 | “Index page 2 of the blog with ?page=2.” | Apply **`noindex, follow`** via `getListingRobotsFromSearchParams` in `apps/blog/src/lib/seo.ts` (PROD-1495). |
 | “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
+| “Run `pnpm seed:blog-dev` to fix the homepage.” | Refuse autonomous seed/content writes; may edit schemas or tell the human which command to run manually ([`AGENTS.md`](./AGENTS.md) § Sanity content — agent guardrails). |
 
 ## Prerequisites
 

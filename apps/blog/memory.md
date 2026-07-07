@@ -177,6 +177,27 @@ Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` 
 3. Preview phase 1 — converge client API; wire `blog-page.ts` + `blogLocations` (**done** 2026-06-18).
 4. PROD-1502 — post page; Tier 1 JSON-LD (`dateModified`, `NewsArticle`) **done**; Tier 3 AEO (`faqPage`, TL;DR) next. See [`docs/blog-jsonld-audit.md`](../../docs/blog-jsonld-audit.md).
 
+## i18n — DORMANT (English-only, parked 2026-07-07)
+
+Document internationalization (`@sanity/document-internationalization`, EN + FR) was **parked** — it surfaced two homepages (one per language) in the desk and interfered with the team workflow. **No French content exists and no FR is planned yet.** Chosen path: **Option B — hide the chrome, keep the machinery dormant** (not a full removal).
+
+**What changed:**
+- `apps/studio/lib/languages.ts` — `SUPPORTED_LANGUAGES` reduced to `en` only (FR entry commented out) → the i18n plugin is single-language / dormant (no French translation affordance).
+- `apps/studio/structure/index.ts` — `blogHomepageItem` / `blogTopicsPageItem` **flattened**: each opens the single EN singleton directly, no `SUPPORTED_LANGUAGES.map()` per-language sub-list. Result: one **Homepage**, one **Topic page** in the desk.
+- The `language` field was **already** `hidden: true` + `readOnly: true` (`initialValue: 'en'`) in `lib/i18n-fields.ts` — untouched.
+
+**Kept in place (so re-enabling is trivial):** the plugin config + `blogI18nPlugin`, the hidden `language` field on all 5 `BLOG_I18N_SCHEMA_TYPES`, `uniqueSlugPerLanguage` (per-type + language slug scoping), and the `-fr` keys in `BLOG_HOME_PAGE_IDS` / `BLOG_TOPICS_PAGE_IDS`.
+
+**Data:** nothing deleted — consistent with "deploy = schema/structure, not data." Any `-fr` docs / `translation.metadata` (none today) would just be unlisted in the desk, not removed.
+
+**To reactivate French later:**
+1. Uncomment `{ id: 'fr', title: 'French' }` in `lib/languages.ts`.
+2. Restore the `SUPPORTED_LANGUAGES.map(...)` per-language sub-list in `blogHomepageItem` + `blogTopicsPageItem` (`structure/index.ts` — git history has the exact prior code).
+3. (Optional) unhide the `language` field in `lib/i18n-fields.ts` so editors can switch languages.
+4. Update blog front-end (GROQ/routes) to handle a `/fr` route + language switch — no French route exists today.
+
+---
+
 ## PROD-1504 — `/contribute` contributor page (implemented)
 
 **Jira:** [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) — S2.8 Build `/blog/contribute`. Public route **`/contribute`** (reserved segment; indexable).
@@ -473,12 +494,40 @@ The blog app must see Sanity credentials at **runtime**. Three layers work toget
 
 Root `.env.example` defaults to `development`. Production dataset is for Vercel prod / preview only.
 
+### Content vs seed workflow
+
+**Editorial content does not live in git.** Posts, homepage blocks, topics copy, and SEO fields are stored in the **Sanity dataset** (cloud). Next.js reads them at runtime via GROQ. When the content team edits in Studio, those changes appear on the next page load or Presentation refresh — there is **no pull-into-repo step** before building features.
+
+**Seeding is the opposite direction:** scripts in [`apps/studio/scripts/`](../../apps/studio/scripts/) **push** known fixture documents **into** Sanity using `createOrReplace` on fixed IDs. Use seeds to bootstrap or reset dev data — not to stay in sync with editors.
+
+| Artifact | Source of truth | In git? |
+| -------- | --------------- | ------- |
+| Schemas (fields, page-builder blocks) | `apps/studio/schemas/` | Yes |
+| GROQ queries | `packages/sanity/src/queries/` | Yes |
+| Editorial content | Sanity dataset | No |
+| Seed fixtures | `seed*.mjs` scripts | Yes (templates only) |
+
+**Developer workflow when content team is editing:**
+
+1. Align `.env.local` to the **same project + dataset** as Studio (`development` for day-to-day dev).
+2. Run `pnpm dev:studio` + `pnpm dev:blog` — apps read live data; no seed required.
+3. Preview **drafts** via Studio **Presentation** ([`docs/sanity-live-preview.md`](./docs/sanity-live-preview.md)). Direct browser tabs show **published** content unless draft mode is on.
+4. **Do not run seed scripts** on a dataset editors are actively using unless you intend to overwrite fixed docs (`blogHomePage`, `blogTopicsPage`, `post-dev-*`, etc.).
+5. **Schema changes** ship from git first; editors fill new fields in Studio after deploy.
+
+**Rare “pull” (dataset export/import):** Sanity CLI `sanity dataset export` / `import` — for backup, cloning prod → staging, or disaster recovery. Not wired in this repo; not part of daily dev. Do not commit `.tar.gz` exports for normal feature work.
+
+**Rules of thumb:** same dataset in env as Studio → latest published content on refresh; seeding ≠ syncing; never seed `production` without ops approval.
+
+**AI agents:** schema changes in git only; never run seeds or write documents in Sanity on any dataset. Content team and developers run seeds and Studio edits manually when needed ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
+
 ### Seed commands
 
 | Command                                     | What it writes                                                                                                                                  |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm --filter @pakfactory/studio run seed` | Full catalog (~163 docs): capabilities, products, blog taxonomy, 3 base posts, settings. Idempotent `createOrReplace`. Reads root `.env.local`. |
-| `pnpm seed:blog-dev`                        | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries. Script: `apps/studio/scripts/seed-blog-dev.mjs`.                     |
+| `pnpm seed:blog-dev`                        | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries + nav + home/topics defaults. **Overwrites** singletons. Script: `apps/studio/scripts/seed-blog-dev.mjs`. |
+| `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` | Home + topics page builders only (`blogHomePage`, `blogTopicsPage`). **No post changes.** Script: `apps/studio/scripts/seed-blog-singleton-pages.mjs`. |
 
 Token: `SANITY_API_WRITE_TOKEN`, `SANITY_TOKEN`, or `SANITY_API_READ_TOKEN` (repo scripts accept any of these for local dev).
 
@@ -566,34 +615,49 @@ curl -s http://localhost:3003/rss.xml | head -20
 curl -sI http://localhost:3003/rss.xml | grep -i content-type
 ```
 
-## Tag grouping — `tagGroup` axes (Studio taxonomy, no ticket yet)
+## Full-bleed page-builder — dashed border toggles
 
-Tags stay **flat** (`blogTag`, URL `/blog/tag/{slug}`). Grouping is a **pure classification**
-on a `tagGroup` string field — no nested document types, no grouping encoded in slugs or titles.
+Full-bleed blocks (`postFeaturedRow`, `postCategoryRow`, `postPopularRow`, `postSpotlightRow`, `ctaNewsletter`) expose **Show top dashed border** and **Show bottom dashed border** in Studio (`apps/studio/lib/dieline-border-fields.ts`). Both default **on** for new inserts; editors turn one off when stacked blocks would show a double dash.
 
-| Concern                                                          | Location                                                                                                                        |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Source of truth** — axis vocabulary                            | `TAG_GROUPS` in `apps/studio/schemas/blogTag.ts`                                                                                |
-| Ungrouped sentinel value (`"ungrouped"`)                         | `TAG_GROUP_UNGROUPED` in same file                                                                                              |
-| `tagGroup` + `order` fields (radio, `initialValue: 'ungrouped'`) | `apps/studio/schemas/blogTag.ts`                                                                                                |
-| Studio browse lists (per-axis + Ungrouped + All)                 | `apps/studio/structure/index.ts` (imports `TAG_GROUPS`)                                                                         |
-| Seeded tag → axis assignments                                    | `apps/studio/scripts/seed.mjs` (`blogTags`)                                                                                     |
-| Front-end facet projection (`tagGroup`, `order`)                 | `BLOG_CATEGORY_TAGS_FACET_QUERY` in `@pakfactory/sanity/queries`; type `CategoryFacetTag` in `src/lib/blog-category-archive.ts` |
+**Legacy documents** without saved border fields keep prior behavior: post rows render bottom only; newsletter CTA renders top only (`apps/blog/src/lib/dieline-borders.ts`).
 
-**Current axes (7 of 11):** `material`, `packaging-type`, `finish`, `industry`, `channel`,
-`design-style`, `topic`. The canonical 11-axis Tagging Reference is not yet in-repo; add the
-remaining 4 to `TAG_GROUPS` when finalized.
+**Topics page double-line fix (human-only):** On **Pages → Topic page → Page builder**, when `postPopularRow` sits directly above `ctaNewsletter`, hide one adjacent border — e.g. turn **off** `showTopBorder` on the newsletter block, or **off** `showBottomBorder` on the popular row above it.
 
-**To add/rename an axis:** edit `TAG_GROUPS` only — the dropdown, the Studio sub-list, and the
-facet projection all derive from it. Never change an existing `value` after tags use it (orphans
-them into Ungrouped); renaming `title` is safe.
+## Topic groups — `blogTopicGroup` + `topicGroup` ref (CMS taxonomy)
+
+Tags stay **flat** (`blogTag`, URL `/topics/{slug}`). Grouping for Studio and the `/topics` grid uses **`blogTopicGroup`** documents; each tag holds a **`topicGroup`** reference.
+
+| Concern | Location |
+| ------- | -------- |
+| **Source of truth** — group vocabulary | `blogTopicGroup` in `apps/studio/schemas/blogTopicGroup.ts` |
+| Tag → group reference | `topicGroup` on `apps/studio/schemas/blogTag.ts` |
+| Studio browse — panel 2: group folders \| divider \| Edit groups \| Ungrouped; panel 3: topics (folder), group CRUD (Edit groups), or ungrouped topics | `apps/studio/structure/index.ts` (`topicsDeskItem`) |
+| Seeded groups + tag assignments | `apps/studio/scripts/seed.mjs` (`blogTopicGroups`, `blogTags`) |
+| `/topics` grid (listed only) | Topic page Overview `topics[]` (references to `blogTopicGroup`); publish prepends new groups — [`publishTopicGroupToTopicsPage`](../../apps/studio/actions/publishTopicGroupToTopicsPage.ts) |
+| `/topics` page GROQ | `BLOG_TOPICS_PAGE_BUILDER_QUERY` (hydrates `topics[]` + `pageBuilder`) in `@pakfactory/sanity/queries` |
+| Front-end grid | `src/lib/blog-topics-index.ts` (`fetchTopicsIndex(pageTopics)` — no auto-append), `src/components/modules/topic-grid.tsx` |
+| Tag links per group | All assigned `blogTag` docs with a slug (same as Studio group folder); not gated on published posts |
+| Group title helper | `topicGroupTitle()` in `src/lib/tag-groups.ts` |
+| Facet projection | `BLOG_CATEGORY_TAGS_FACET_QUERY`; type `CategoryFacetTag` in `src/lib/blog-category-archive.ts` |
+
+**To add/rename a group:** create or edit a `blogTopicGroup` in Studio (or seed). Assign tags via `topicGroup` ref. **Publish** the group to prepend it on **Pages → Topic page → Overview → Topics**; only listed groups render on `/topics` (group headings show even with zero topic links). Drag to reorder. Do not change group slugs after tags use them (`?group=` deep links).
+
+**Existing groups (migration):** re-publish each `blogTopicGroup`, manually add references on the Topic page `topics` list, or run seed — until listed, groups do not appear on `/topics`. After the reference-array schema change, replace any legacy `topicsGridItem` rows by re-adding groups on Overview → Topics.
+
+### Human migration (existing datasets)
+
+After schema deploy, content team must:
+
+1. Create `blogTopicGroup` docs (Material, Packaging Type, Finish, Industry, …).
+2. Re-assign each `blogTag` to its group in Studio.
+3. Remove legacy `tagGroup` string and unknown `axis` fields from existing documents.
+4. Verify `/topics`, `/topics?group=industry`, home industry pills, tag archive kickers.
+
+Agents implement schema + queries + UI only — **do not run seeds or patch production documents.**
 
 **Gotcha:** `S.documentTypeList('blogTag').filter(...)` **replaces** the built-in `_type`
 constraint, so every custom tag filter in `structure/index.ts` must include `_type == "blogTag"`
 explicitly (else it matches all types and breaks orderings — e.g. `author` has no `title`).
-
-**Front-end note:** facet query projects `"ungrouped"` for unclassified tags; treat it as
-"no group" at render (or filter it out of the facet query later).
 
 ---
 
@@ -644,7 +708,7 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 
 **Jira:** [PROD-1500](https://dotdirect.atlassian.net/browse/PROD-1500) — S2.4 Build `/blog/tag/[slug]` tag pages — child of PROD-1482
 
-**Schema:** flat `blogTag` (`title`, `slug`, `tagGroup`, `order`, `description`, `meta*`, `ogImage`); `post.tags[]->blogTag`. Axis vocabulary = `tagGroup` (see [Tag grouping](#tag-grouping--taggroup-axes-studio-taxonomy-no-ticket-yet) section). **No schema edits** — T1.2 already added `tagGroup`.
+**Schema:** flat `blogTag` (`title`, `slug`, `topicGroup` ref, `description`, `meta*`, `ogImage`); `post.tags[]->blogTag`. Group labels from `blogTopicGroup` (see [Topic groups](#topic-groups--blogtopicgroup--topicgroup-ref-cms-taxonomy) section).
 
 ### What was shipped
 
@@ -653,7 +717,7 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 | Page 1                                      | `src/app/tag/[slug]/page.tsx`                                                                                                                                                                  |
 | Page 2+ (`/page/1` → `/tag/[slug]`)         | `src/app/tag/[slug]/page/[n]/page.tsx`                                                                                                                                                         |
 | Data                                        | `src/lib/blog-tag-archive.ts`                                                                                                                                                                  |
-| Axis labels (mirror of studio `TAG_GROUPS`) | `src/lib/tag-groups.ts`                                                                                                                                                                        |
+| Group title helper | `topicGroupTitle()` in `src/lib/tag-groups.ts` |
 | JSON-LD                                     | `src/lib/tag-archive-jsonld.ts`                                                                                                                                                                |
 | Robots (empty→noindex)                      | `getTagListingRobots()` in `src/lib/seo.ts`                                                                                                                                                    |
 | UI                                          | `_components/tag-archive-view`, `tag-filter-sidebar`, `tag-active-filters`, `tag-archive-pagination`; reuse `PostCard`                                                                         |
@@ -661,8 +725,8 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 
 ### Behavior
 
-- **Kicker:** `tagGroupTitle(tag.tagGroup)` → e.g. `INDUSTRY`; omitted when `ungrouped`/unknown.
-- **Sidebar:** co-occurring tags (other tags on this tag's posts) grouped by axis; **the current tag's own axis row is hidden** (e.g. Industry hidden on `/tag/beauty`); empty axes omitted. Plus author + date + sort. Filter state (`author`, `year`, `month`, `sort`) in URL — **`tag` is the page, not a filter**.
+- **Kicker:** `topicGroupTitle(tag.topicGroup)` → e.g. `Industry`; omitted when ungrouped.
+- **Sidebar:** co-occurring tags (other tags on this tag's posts) grouped by `topicGroup`; **the current tag's own group row is hidden**; empty groups omitted. Plus author + date + sort. Filter state (`author`, `year`, `month`, `sort`) in URL — **`tag` is the page, not a filter**.
 - **Robots:** page 1 unfiltered **with ≥1 post → index, follow**; **empty tag / page ≥2 / any filter → noindex, follow**. The empty→noindex clause is unique to tags (`getTagListingRobots`).
 - **Posts** span categories; each `PostCard` links via its own `post.categorySlug` (`/{category}/{post}`).
 - **Unknown tag slug → `notFound()`**; out-of-range page → `notFound()`.
@@ -708,7 +772,7 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 
 ### Also (home) — Browse by Industries from the industry tag group
 
-`home-industry-strip` + `blog-home.ts` now source industry pills from `BLOG_INDUSTRY_TAGS_QUERY` (`blogTag` where `tagGroup == "industry"`) and link to `/tag/{slug}` via `tagHref()` — replacing the old `industry`-doc query + hardcoded fallback + www links.
+`home-industry-strip` + `blog-home.ts` now source industry pills from `BLOG_INDUSTRY_TAGS_QUERY` (`blogTag` where `topicGroup->slug.current == "industry"`) and link to `/topics/{slug}` via `tagHref()` — replacing the old `industry`-doc query + hardcoded fallback + www links.
 
 ---
 

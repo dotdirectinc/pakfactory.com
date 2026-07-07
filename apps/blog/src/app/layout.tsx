@@ -35,7 +35,7 @@ export default async function RootLayout({
     children: React.ReactNode;
 }) {
     const isDraft = (await draftMode()).isEnabled;
-    const [navCategories, footerColumns] = await Promise.all([
+    const [navCategories, footerData] = await Promise.all([
         fetchBlogNavCategories(),
         fetchBlogFooterNavigation(),
     ]);
@@ -44,7 +44,11 @@ export default async function RootLayout({
             <body className="antialiased">
                 <SiteNav categories={navCategories} />
                 {children}
-                <SiteFooter columns={footerColumns} />
+                <SiteFooter
+                    columns={footerData.columns}
+                    social={footerData.social}
+                    aiLinks={footerData.aiLinks}
+                />
                 {isDraft && <VisualEditing />}
             </body>
         </html>

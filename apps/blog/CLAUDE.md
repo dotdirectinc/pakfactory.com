@@ -6,7 +6,7 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 | Route                      | File                                                                                         | Notes                                                                                                                   |
 | -------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `/`                        | [`src/app/page.tsx`](./src/app/page.tsx)                                                     | Blog home; `SectionRenderer` + home singleton `pageBuilder`; `revalidate = 60`                       |
+| `/`                        | [`src/app/page.tsx`](./src/app/page.tsx)                                                     | Blog home; `BlockRenderer` + home singleton `pageBuilder`; `revalidate = 60`                       |
 | `/all`                     | [`src/app/all/page.tsx`](./src/app/all/page.tsx)                                             | All posts archive page 1 (PROD-1498)                                                                                    |
 | `/all/page/[n]`            | [`src/app/all/page/[n]/page.tsx`](./src/app/all/page/[n]/page.tsx)                           | Archive pagination; page 1 → `/all`                                                                                     |
 | `/rss.xml`                 | [`src/app/rss.xml/route.ts`](./src/app/rss.xml/route.ts)                                     | RSS 2.0                                                                                                                 |
@@ -16,19 +16,20 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/authors-sitemap.xml`     | [`src/app/authors-sitemap.xml/route.ts`](./src/app/authors-sitemap.xml/route.ts)             | Authors with ≥1 published post                                                                                          |
 | `/posts-sitemap`           | [`src/app/posts-sitemap/route.ts`](./src/app/posts-sitemap/route.ts)                         | 301 → `/posts-sitemap-1.xml`                                                                                            |
 | `/posts-sitemap-[n].xml`   | [`src/app/posts-sitemap/[page]/route.ts`](./src/app/posts-sitemap/%5Bpage%5D/route.ts)       | Paginated **post URLs only** (200/group) + featured-image sitemap. Public `-[n].xml` (rewrite in `next.config.ts`) → handler; internal `/posts-sitemap/[n]` still accepted |
-| `/tags-sitemap`            | [`src/app/tags-sitemap/route.ts`](./src/app/tags-sitemap/route.ts)                           | 301 → `/tags-sitemap-1.xml`                                                                                             |
-| `/tags-sitemap-[n].xml`    | [`src/app/tags-sitemap/[page]/route.ts`](./src/app/tags-sitemap/%5Bpage%5D/route.ts)         | Paginated tags with ≥1 post (200/group). Public `-[n].xml` (rewrite) → handler; internal `/tags-sitemap/[n]` still accepted |
+| `/topics-sitemap`            | [`src/app/topics-sitemap/route.ts`](./src/app/topics-sitemap/route.ts)                           | 301 → `/topics-sitemap-1.xml`                                                                                             |
+| `/topics-sitemap-[n].xml`    | [`src/app/topics-sitemap/[page]/route.ts`](./src/app/topics-sitemap/%5Bpage%5D/route.ts)         | Paginated topics with ≥1 post (200/group). Public `-[n].xml` (rewrite) → handler; internal `/topics-sitemap/[n]` still accepted. Legacy `/tags-sitemap*` → 301 |
 | `/search`                  | [`src/app/search/page.tsx`](./src/app/search/page.tsx)                                       | Keyword search (PROD-1503); Sanity `match`, relevance default; always `noindex, follow`; `?q=&page=&year=&month=&sort=` |
 | `/contribute`              | [`src/app/contribute/page.tsx`](./src/app/contribute/page.tsx)                               | Contributor pitch form (PROD-1504); **index, follow**; `WebPage` JSON-LD; POST `/api/contribute`                        |
 | `/[category]`              | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx)                           | **Resolver:** category archive → **CMS landing/static** (`blogPage`) → post `/{slug}` (ADR-009) |
 | `/[category]/page/[n]`     | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx)     | Category pagination + query filters                                                                                     |
 | `/[category]/[postSlug]`   | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | **Legacy scoped post** → permanent redirect to `/{postSlug}` (PROD-1597)                                                |
-| `/tag/[slug]`              | [`src/app/tag/[slug]/page.tsx`](./src/app/tag/%5Bslug%5D/page.tsx)                           | Tag archive page 1 (PROD-1500); axis-aware kicker + sidebar                                                             |
-| `/tag/[slug]/page/[n]`     | [`src/app/tag/[slug]/page/[n]/page.tsx`](./src/app/tag/%5Bslug%5D/page/%5Bn%5D/page.tsx)     | Tag pagination + filters; page 1 → `/tag/[slug]`                                                                        |
+| `/topics`                  | [`src/app/topics/page.tsx`](./src/app/topics/page.tsx)                                       | Explore topics index — taxonomy grid (code) + CMS `pageBuilder` below; singleton `blogTopicsPage` (`pageRole: topics`); Overview title + description; `?group=<axis>` expands one axis (noindex) |
+| `/topics/[slug]`           | [`src/app/topics/[slug]/page.tsx`](./src/app/topics/%5Bslug%5D/page.tsx)                     | Topic archive page 1 (PROD-1500); axis-aware kicker + sidebar                                                             |
+| `/topics/[slug]/page/[n]`  | [`src/app/topics/[slug]/page/[n]/page.tsx`](./src/app/topics/%5Bslug%5D/page/%5Bn%5D/page.tsx) | Topic pagination + filters; page 1 → `/topics/[slug]`; legacy `/tag/*` → 301 here                                        |
 | `/author/[slug]`           | [`src/app/author/[slug]/page.tsx`](./src/app/author/%5Bslug%5D/page.tsx)                     | Author profile (PROD-1501); SSR 12 + client "Load More", Person JSON-LD                                                 |
 | `/api/author/[slug]/posts` | [`src/app/api/author/[slug]/posts/route.ts`](./src/app/api/author/%5Bslug%5D/posts/route.ts) | Load-More feed (JSON, 12/page, `?offset=`)                                                                              |
 
-**URL scheme (PROD-1597, updated 2026-05-27):** no `/category/` prefix. A **post's only URL is `/{slug}`** (root) — category/tag/search/home are _discovery paths_, never URL scoping. The root dynamic route `/[category]` resolves to a category archive (known slug), CMS landing/static page, or post via `resolveBlogSegment()`. Legacy `/{category}/{post-slug}` and `/category/...` URLs **permanently redirect** (route-level `permanentRedirect` + `next.config.ts`). Build category links with `categoryHref()`, tag links with `tagHref()`, and post links with `postDetailHref()` (always returns `/{slug}`) from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `sitemap.xml`, `pages-sitemap.xml`, `categories-sitemap.xml`, `authors-sitemap.xml`, `posts-sitemap`, `tags-sitemap`, `robots.txt`, `llms.txt`, `api`, `search`, `tag`, `author`, `contribute`). See `packages/sanity/src/blog-reserved-slugs.ts` for the canonical list enforced in Sanity validation.
+**URL scheme (PROD-1597, updated 2026-05-27):** no `/category/` prefix. A **post's only URL is `/{slug}`** (root) — category/topic/search/home are _discovery paths_, never URL scoping. The root dynamic route `/[category]` resolves to a category archive (known slug), CMS landing/static page, or post via `resolveBlogSegment()`. Legacy `/{category}/{post-slug}` and `/category/...` URLs **permanently redirect** (route-level `permanentRedirect` + `next.config.ts`). Legacy `/tag/{slug}` and `/tag/{slug}/page/{n}` **301 to `/topics/{slug}`** (same pagination shape). Build category links with `categoryHref()`, topic links with `tagHref()` → `/topics/{slug}`, and post links with `postDetailHref()` (always returns `/{slug}`) from [`src/lib/blog-post-url.ts`](./src/lib/blog-post-url.ts) — never hardcode the path. A post slug must never collide with a category slug or a reserved root segment (`all`, `rss.xml`, `sitemap.xml`, `pages-sitemap.xml`, `categories-sitemap.xml`, `authors-sitemap.xml`, `posts-sitemap`, `tags-sitemap`, `topics-sitemap`, `topics`, `robots.txt`, `llms.txt`, `api`, `search`, `tag`, `author`, `contribute`). See `packages/sanity/src/blog-reserved-slugs.ts` for the canonical list enforced in Sanity validation.
 
 Use **Server Components** by default. Do not replace content navigation with client-side routers for SEO-critical pages.
 
@@ -41,7 +42,7 @@ Use **Server Components** by default. Do not replace content navigation with cli
 
 ## Public URLs (PROD-1496 / PROD-1497 / PROD-1596)
 
-- **`apps/blog`** routes are flat at the app root (`/`, `/[category]`, `/[category]/[postSlug]`, `/all`, `/rss.xml`, `/sitemap.xml`, `/pages-sitemap.xml`, `/categories-sitemap.xml`, `/authors-sitemap.xml`, `/posts-sitemap/[page]`, `/tags-sitemap/[page]`). **Do not** nest routes under an `app/blog/` folder — the `/blog` path prefix is a **config** concern (`basePath`), not a directory concern.
+- **`apps/blog`** routes are flat at the app root (`/`, `/[category]`, `/[category]/[postSlug]`, `/all`, `/rss.xml`, `/sitemap.xml`, `/pages-sitemap.xml`, `/categories-sitemap.xml`, `/authors-sitemap.xml`, `/posts-sitemap/[page]`, `/topics-sitemap/[page]`). **Do not** nest routes under an `app/blog/` folder — the `/blog` path prefix is a **config** concern (`basePath`), not a directory concern.
 - **Today:** origin-root (subdomain-compatible). `basePath` is **unset** and `BLOG_BASE_PATH` is `''`.
 - **Future (subpath):** blog served at `pakfactory.com/blog` via Next.js **multi-zones** (`www` at root rewrites `/blog/*` → blog zone). Flip = set `basePath: '/blog'` in `next.config.ts` **and** `NEXT_PUBLIC_BLOG_BASE_PATH=/blog`; `next/link` + every canonical/JSON-LD/RSS/sitemap then gains the prefix automatically.
 - **Build absolute URLs only via [`src/lib/site.ts`](./src/lib/site.ts):** `absoluteUrl(path)` (canonicals, JSON-LD, RSS, sitemap) and `sitePath(path)` (relative metadata `url`s). **Never** concatenate `getSiteUrl()` with a raw path — `basePath` does not touch hand-built strings, so the prefix would be skipped under subpath hosting.
@@ -80,13 +81,15 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 
 ## Blog pages (ADR-009)
 
-**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
+**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `topics` (singleton, id `blogTopicsPage`), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
 
 **Studio:** Blog workspace → **Pages → Homepage** (`BLOG_STUDIO_LANDING_PAGES = false` in [`structure/index.ts`](../../apps/studio/structure/index.ts)). Sidebar order: Posts, Categories, Authors, Tags, Widgets, then Pages (no divider after Pages). Landing/static lists inside Pages stay hidden until design ships; backend resolver remains active when docs exist.
 
+**i18n (dormant — English-only, 2026-07-07):** document-internationalization is parked to English-only, so Studio shows a **single Homepage / Topic page**, not one per language. All the machinery (plugin, hidden `language` field, per-type slug scoping, `-fr` ID keys) is kept in place; there is no French content or route yet. To reactivate French, see [`memory.md`](./memory.md) § i18n.
+
 **Resolver (`/{category}`):** category → published `blogPage` → post → redirect/404. Landing URLs are **`/{slug}`** at root. `/contribute` remains a code route.
 
-**Landing fetch:** `BLOG_PAGE_BY_SLUG_QUERY` → [`fetchBlogPageBySlug()`](./src/lib/blog-page.ts) → [`BlogLandingView`](./src/components/views/blog-landing-view.tsx) + `SectionRenderer`.
+**Landing fetch:** `BLOG_PAGE_BY_SLUG_QUERY` → [`fetchBlogPageBySlug()`](./src/lib/blog-page.ts) → [`BlogLandingView`](./src/components/views/blog-landing-view.tsx) + `BlockRenderer`.
 
 ## SEO & Social field contract (studio ↔ blog wiring)
 
@@ -132,41 +135,54 @@ Every content document type (`post`, `blogCategory`, `blogTag`, `author`, `blogP
 
 ## Homepage page builder (shipped)
 
-The blog home is a **Sanity-driven page builder**: home singleton (`blogPage`, `pageRole: home`, id `blogHomePage`), drag-reorderable **`pageBuilder`** (`pageBuilderHome` schema), each section rendered by a matching component in `components/sections/`.
+The blog home is a **Sanity-driven page builder**: home singleton (`blogPage`, `pageRole: home`, id `blogHomePage`), drag-reorderable **`pageBuilder`** (`pageBuilderHome` schema), each block rendered by a matching component in `components/blocks/`.
 
-**Data flow:** Studio → `BLOG_HOME_PAGE_BUILDER_QUERY` → [`fetchBlogHomePageBuilder()`](./src/lib/blog-home.ts) → [`SectionRenderer`](./src/components/sections/section-renderer.tsx) via [`registry.ts`](./src/components/sections/registry.ts).
+**Data flow:** Studio → `BLOG_HOME_PAGE_BUILDER_QUERY` → [`fetchBlogHomePageBuilder()`](./src/lib/blog-home.ts) → [`BlockRenderer`](./src/components/blocks/block-renderer.tsx) via [`registry.ts`](./src/components/blocks/registry.ts).
 
-**Section types** — `components/sections/` mirrors [`apps/studio/schemas/sections/`](../../apps/studio/schemas/sections/) 1:1 (Sanity content field names — `pageBuilder`, the `_type`s — are unchanged; only code/folder terminology is "section", per ADR-008):
+**Block types** — `components/blocks/` mirrors [`apps/studio/schemas/blocks/`](../../apps/studio/schemas/blocks/) 1:1 (Sanity content field names — `pageBuilder`, the `_type`s — are unchanged; only code/folder terminology is "block", per ADR-012):
 
-| `_type` | File | Component | Home | Landing |
-| --- | --- | --- | --- | --- |
-| `postFeaturedRow` | `post-featured-row` | `PostFeaturedRow` | yes | no |
-| `postCategoryRow` | `post-category-row` | `PostCategoryRow` | yes | no |
-| `postSpotlightRow` | `post-spotlight-row` | `PostSpotlightRow` | yes | no |
-| `tagStrip` | `tag-strip` | `TagStrip` | yes | yes |
-| `ctaNewsletter` | `cta-newsletter` | `CtaNewsletter` | yes | yes |
-| `ctaRfq` | `cta-rfq` | `CtaRfq` | yes | yes |
-| `ctaPillars` | `cta-pillars` | `CtaPillars` | yes | yes |
-| `richTextBand` | `rich-text-band` | `RichTextBand` | no | yes |
+| `_type` | File | Component | Home | Landing | Topics |
+| --- | --- | --- | --- | --- | --- |
+| `postFeaturedRow` | `post-featured-row` | `PostFeaturedRow` | yes | no | yes |
+| `postCategoryRow` | `post-category-row` | `PostCategoryRow` | yes | no | yes |
+| `postPopularRow` | `post-popular-row` | `PostPopularRow` | yes | no | yes |
+| `postSpotlightRow` | `post-spotlight-row` | `PostSpotlightRow` | yes | no | yes |
+| `tagStrip` | `tag-strip` | `TagStrip` | yes | yes | yes |
+| `ctaNewsletter` | `cta-newsletter` | `CtaNewsletter` | yes | yes | yes |
+| `ctaRfq` | `cta-rfq` | `CtaRfq` | yes | yes | yes |
+| `ctaPillars` | `cta-pillars` | `CtaPillars` | yes | yes | yes |
+| `richTextBand` | `rich-text-band` | `RichTextBand` | no | yes | no |
 
-**Add a section (4 places):** Studio schema + [`schemas/sections/index.ts`](../../apps/studio/schemas/sections/index.ts) → component → `registry.ts` → GROQ branch in `PAGE_BUILDER_BLOCKS_PROJECTION` ([`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts)). Register new sections in `insertMenu.groups` (home vs landing) in [`schemas/sections/index.ts`](../../apps/studio/schemas/sections/index.ts).
+**Add a block (4 places):** Studio schema + [`schemas/blocks/index.ts`](../../apps/studio/schemas/blocks/index.ts) → component → `registry.ts` → GROQ branch in `PAGE_BUILDER_BLOCKS_PROJECTION` ([`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts)). Register new blocks in `insertMenu.groups` (home vs landing) in [`schemas/blocks/index.ts`](../../apps/studio/schemas/blocks/index.ts).
 
-**Insert menu (Studio):** **+ Add item** uses tabs **All** (always) + **Post** / **Tag** / **CTA** on the homepage (`pageBuilderLanding` adds **Content**). Each section also carries a colour-coded "kind" badge in the array list via [`SectionItemPreview`](../../apps/studio/components/SectionItemPreview.tsx). Grid view supports optional preview thumbnails: drop `{_type}.webp` in [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) and register the `_type` in [`page-builder-preview.ts`](../../apps/studio/schemas/sections/page-builder-preview.ts) (currently empty → each section's default schema icon is shown).
+**Insert menu (Studio):** **+ Add item** uses tabs **All** (always) + **Post** / **Tag** / **CTA** on the homepage (`pageBuilderLanding` adds **Content**). Each block also carries a colour-coded "kind" badge in the array list via [`BlockItemPreview`](../../apps/studio/components/BlockItemPreview.tsx). Grid view supports optional preview thumbnails: drop `{_type}.webp` in [`apps/studio/static/page-builder-thumbnails/`](../../apps/studio/static/page-builder-thumbnails/) and register the `_type` in [`page-builder-preview.ts`](../../apps/studio/schemas/blocks/page-builder-preview.ts) (currently empty → each block's default schema icon is shown).
 
-**Local ops:** Studio → **Pages → Homepage**. Seed: `pnpm seed:blog-dev` (home singleton only).
+**Local ops:** Studio → **Pages → Homepage**. **Humans:** bootstrap with seed commands in [`memory.md`](./memory.md) when the page builder is empty. **Agents:** do not run seeds or mutate Sanity documents ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
+
+## Topics page builder (shipped)
+
+The `/topics` index uses a **hybrid layout**: the taxonomy grid renders **only** groups listed on the Topic page Overview **`topics`** reference array (drag order; headings show even when a group has no published topic links yet). Publishing a new `blogTopicGroup` **prepends** it to that array via [`publishTopicGroupToTopicsPage`](../../apps/studio/actions/publishTopicGroupToTopicsPage.ts). Header (title + description) and sections **below** the grid are CMS-managed on the topics singleton (`blogPage`, `pageRole: topics`, id `blogTopicsPage`) via **`pageBuilder`** / **`pageBuilderHome`**.
+
+**Data flow:** `BLOG_TOPICS_PAGE_BUILDER_QUERY` → [`fetchBlogTopicsPage()`](./src/lib/blog-topics-page.ts) → [`fetchTopicsIndex(page.topics)`](./src/lib/blog-topics-index.ts) for the grid; `pageBuilder` → [`BlockRenderer`](./src/components/blocks/block-renderer.tsx).
+
+**Editor tabs:** Overview (title, description, **Topics** grid curator), SEO, Social, Page blocks — same shape as Homepage; `pageRole` is hidden on the pinned singleton.
+
+**Local ops:** Studio → **Pages → Topic page**. **Humans:** see [`memory.md`](./memory.md) for seed commands when bootstrapping. **Agents:** do not run seeds or mutate Sanity documents.
+
+**Presentation:** Blog workspace → **Presentation** → `/topics`. Location resolver maps singleton id `blogTopicsPage` → `/topics` (see [`presentation/locations.ts`](../../apps/studio/presentation/locations.ts) + [`blog-page-singletons.ts`](../../apps/studio/lib/blog-page-singletons.ts)). Page fetches use `getPreviewableSanityClient()` for draft overlays on title, description, and page sections.
 
 ## Components and files
 
 - **File naming:** kebab-case, **file name === exported component** (ADR-005 D5, still in force). Use a **prefix-first stem** (`post-featured-row`, `filter-active`, `site-nav`) so alphabetical sort clusters related files; see ADR-008 for recognized prefixes. Never a registry/positional ID (`hero-section-32`).
 - **Location (ADR-008 + ADR-011 hybrid; ADR-007 still in force):** canonical in **[ADR-008](../../docs/adr/0008-component-archetype-grouping.md)** (layer axis) amended by **[ADR-011](../../docs/adr/0011-component-feature-layer-hybrid.md)** (feature clustering). Retains **[ADR-005](../../docs/adr/0005-component-organization.md)** routing-only `app/` + naming, and **[ADR-007](../../docs/adr/0007-inline-single-route-page-views.md)** inline-single-route views. **`app/` holds routing files** (`page.tsx` / `route.ts` / `layout.tsx` / `sitemap.ts` …) and may inline a whole-page view's JSX directly in its `page.tsx` (ADR-007). **Every importable/shared component lives under `src/components/`**; no components are imported from `app/`. `src/` stays **`app/ components/ lib/`** only.
     - **`src/components/` = all application UI**, **grouped primarily by archetype/layer** (ADR-008), with **optional feature clustering** (ADR-011): top-level feature folders for multi-layer single-page surfaces (`post/`), feature subfolders inside a layer at 3+ same-layer files (`modules/widget/`). Imported via **`@/components/{archetype}/{file}`** or **`@/components/{archetype}/{feature}/{file}`**. Use the **ordered decision rule** in ADR-011 to pick a folder:
-        1. Sanity page-builder section → **`sections/`**
+        1. Sanity page-builder block → **`blocks/`**
         2. Site chrome → **`layout/`**
         3. Multi-route whole-page template → **`views/`** (single-route stays inline in `page.tsx`)
         4. Sanity-data-driven building block → **`modules/`**
         5. Presentational app-local primitive → **`ui/`** (cross-app → `@pakfactory/ui`)
     - **Folder contents:**
-        - **`sections/` — page-builder sections**, one per Studio [`schemas/sections/`](../../apps/studio/schemas/sections/) type; targets of the `_type → component` resolver in [`registry.ts`](./src/components/sections/registry.ts). Current sections: `post-featured-row`, `post-category-row`, `post-spotlight-row`, `tag-strip`, `cta-newsletter`, `cta-rfq`, `cta-pillars`, `rich-text-band`. **Adding a section** — see [Homepage page builder (shipped)](#homepage-page-builder-shipped) above.
+        - **`blocks/` — page-builder blocks**, one per Studio [`schemas/blocks/`](../../apps/studio/schemas/blocks/) type; targets of the `_type → component` resolver in [`registry.ts`](./src/components/blocks/registry.ts). Current blocks: `post-featured-row`, `post-category-row`, `post-popular-row`, `post-spotlight-row`, `tag-strip`, `cta-newsletter`, `cta-rfq`, `cta-pillars`, `rich-text-band`. **Adding a block** — see [Homepage page builder (shipped)](#homepage-page-builder-shipped) above.
         - **`layout/` — site chrome / page frame.** `site-nav`, `site-nav-categories`, `site-footer`, `footer-wordmark`, `breadcrumb`, `page-dieline-section`.
         - **`views/` — multi-route route-level templates** (single-route views are inlined per ADR-007). `category-archive-view`, `all-archive-view`, `tag-archive-view`, `author-header`, `archive-layout`, `blog-landing-view`.
         - **`modules/` — Sanity-data-driven reusable building blocks.** `post-card`, `post-list`, `pagination`, `search-form`, `author-posts-loader`, `contribute-form`, `category-filter-bar`. **Feature subfolders:** `modules/widget/` (`widget-renderer`, `widget-cta`, `widget-product-card`) — portable-text reference widgets (CTA, product card); `modules/filter/` (`filter-sidebar`, `filter-active`, `filter-archive-sidebar`) — faceted archive filters and `/all` browse nav; `modules/inline/` (`body-callout`, ...) — inline post-body blocks authored in place (like `bodyImage`), mirroring Studio [`schemas/inline/`](../../apps/studio/schemas/inline/). Add an inline block: `schemas/inline/<body-x>.ts` + barrel `schemas/inline/index.ts` (auto-registers in `post.body`; appears as a native PT toolbar insert button) → renderer `modules/inline/<body-x>.tsx` → `bodyX` entry in [`post-portable-text`](./src/components/post/post-portable-text.tsx) `types`.

@@ -25,6 +25,7 @@ import {
   POST_BY_CATEGORY_AND_SLUG_QUERY,
   POST_BY_SLUG_QUERY,
 } from "@pakfactory/sanity/queries";
+import type { TopicGroupRef } from "@/lib/tag-groups";
 
 const PACKAGING_NEWS_CATEGORY_SLUG = "packaging-news";
 
@@ -38,7 +39,7 @@ export type PostTag = {
   _id?: string;
   title: string;
   slug: string;
-  tagGroup?: string;
+  topicGroup?: TopicGroupRef;
 };
 
 export type PostBodyWidget = {

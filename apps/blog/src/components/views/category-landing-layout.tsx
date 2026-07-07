@@ -24,7 +24,7 @@ export function CategoryLandingLayout({
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <main>
-        <PageDielineSection innerClassName="py-3">{breadcrumb}</PageDielineSection>
+        <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
         {header}
         {children}
       </main>
@@ -41,9 +41,7 @@ export function CategoryLandingSection({
   className?: string;
 }) {
   return (
-    <section
-      className={`border-b border-dashed border-border ${className ?? ""}`}
-    >
+    <section className={className ?? ""}>
       <PageDielineSection innerClassName="py-16 sm:py-24">
         {children}
       </PageDielineSection>

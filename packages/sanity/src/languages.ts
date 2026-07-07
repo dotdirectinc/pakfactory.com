@@ -10,3 +10,9 @@ export const BLOG_HOME_PAGE_IDS: Record<BlogLanguageId, string> = {
   en: 'blogHomePage',
   fr: 'blogHomePage-fr',
 }
+
+/** Fixed document ids for localized topics index singletons. */
+export const BLOG_TOPICS_PAGE_IDS: Record<BlogLanguageId, string> = {
+  en: 'blogTopicsPage',
+  fr: 'blogTopicsPage-fr',
+}

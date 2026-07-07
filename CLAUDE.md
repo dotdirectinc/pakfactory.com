@@ -40,3 +40,7 @@ Invoke them by name when the task matches; they align with the blog’s AEO/GEO 
 Use the **PROD** project defaults in [`AGENTS.md`](./AGENTS.md) and the Blog 3.0 ticket map in [`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md). Completed prerequisite work includes **PROD-1486** (pnpm), **PROD-1487** (`@pakfactory/seo`), **PROD-1516** (this AI config), **PROD-1495** (listing robots), **PROD-1496** (blog Vercel + root URLs).
 
 When editing **`packages/seo`**, also read [`packages/seo/CLAUDE.md`](./packages/seo/CLAUDE.md).
+
+## Sanity content guardrails
+
+Agents edit **schemas in git only** (`apps/studio/schemas/`, structure, queries) — never write documents in Sanity (no seed scripts, no MCP create/patch/publish) on any dataset. Humans run seeds and Studio editorial updates. Binding rule: [`AGENTS.md`](./AGENTS.md) § Sanity content — agent guardrails; skills must not contradict it.
