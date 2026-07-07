@@ -33,25 +33,27 @@ export function PageHeader({
 
   return (
     <PageDielineSection className="bg-accent" innerClassName="py-16">
-      <div className="flex max-w-[55rem] flex-col gap-6">
-        <h1
-          id="page-header-heading"
-          className="text-5xl font-semibold text-foreground"
-        >
-          {title}
-        </h1>
-        {hasPortableDescription ? (
-          <PortableText
-            value={description}
-            className="text-xl leading-7 text-muted-foreground [&_a]:underline [&_p:last-child]:mb-0 [&_p]:mb-0 [&_p]:leading-7"
-          />
-        ) : plainDescription ? (
-          <p className="text-xl leading-7 text-muted-foreground">
-            {plainDescription}
-          </p>
-        ) : null}
+      <div className="flex max-w-[55rem] flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <h1
+            id="page-header-heading"
+            className="text-4xl font-semibold leading-tight tracking-tight text-foreground lg:text-5xl"
+          >
+            {title}
+          </h1>
+          {hasPortableDescription ? (
+            <PortableText
+              value={description}
+              className="text-xl leading-7 text-muted-foreground [&_a]:underline [&_p:last-child]:mb-0 [&_p]:mb-0 [&_p]:leading-7"
+            />
+          ) : plainDescription ? (
+            <p className="text-xl leading-7 text-muted-foreground">
+              {plainDescription}
+            </p>
+          ) : null}
+        </div>
         {bannerSrc ? (
-          <div className="relative mt-2 aspect-[21/9] max-w-full overflow-hidden rounded-[14px]">
+          <div className="relative aspect-[21/9] max-w-full overflow-hidden rounded-[14px]">
             <Image
               src={bannerSrc}
               alt=""

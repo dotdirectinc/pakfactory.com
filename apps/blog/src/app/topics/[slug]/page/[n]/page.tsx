@@ -13,6 +13,7 @@ import {
   paginatedListTitle,
   resolvePaginationRoute,
 } from "@/lib/blog-archive-pagination";
+import { fetchBlogCategories } from "@/lib/blog-data";
 import { getTagListingRobots } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -63,12 +64,20 @@ export default async function TopicArchivePaginatedPage({
 
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
-  const data = await fetchTagArchivePage(slug, pagination.pageNumber, filters);
+  const [data, categories] = await Promise.all([
+    fetchTagArchivePage(slug, pagination.pageNumber, filters),
+    fetchBlogCategories(),
+  ]);
 
   if (!data) notFound();
   if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount)) {
     notFound();
   }
 
-  return <TopicArchiveView data={data} />;
+  const categoryOptions = categories.map((c) => ({
+    value: c.slug,
+    label: c.navLabel?.trim() || c.title,
+  }));
+
+  return <TopicArchiveView data={data} categoryOptions={categoryOptions} />;
 }

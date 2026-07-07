@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {MessageSquareText} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
-import {FooterWordmark} from '@/components/layout/footer-wordmark';
+// import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
 import {
     getFallbackFooterColumns,
@@ -142,7 +142,11 @@ function FooterAiIcon({link}: {link: BlogAiLink}) {
     );
 }
 
-export function SiteFooter({columns, social = [], aiLinks = []}: SiteFooterProps) {
+export function SiteFooter({
+    columns,
+    social = [],
+    aiLinks = [],
+}: SiteFooterProps) {
     const footerColumns =
         columns && columns.length > 0 ? columns : getFallbackFooterColumns();
     const talkHref = `${WWW}/contact`;
@@ -151,28 +155,18 @@ export function SiteFooter({columns, social = [], aiLinks = []}: SiteFooterProps
         <footer className="bg-background">
             <PageDielineSection innerClassName="px-0">
                 {/* Giant wordmark */}
-                <FooterWordmark />
+                {/* <FooterWordmark /> */}
 
                 {/* Collaboration CTA */}
-                <div className="border-t border-dashed border-border px-8 py-10 text-center">
+                <div className=" border-dashed border-border px-8 py-10 text-center">
                     <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
-                        Let&apos;s collaborate
-                        <br />
-                        and craft your vision
+                        Let&apos;s collaborate and craft <br /> your vision
                     </h2>
                     <Button
                         className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                         asChild
                     >
-                        <a href={talkHref}>
-                            Let&apos;s talk
-                            <span className="ml-2 inline-flex size-5 items-center justify-center rounded-full bg-background text-primary">
-                                <MessageSquareText
-                                    className="size-3"
-                                    strokeWidth={2}
-                                />
-                            </span>
-                        </a>
+                        <a href={talkHref}>Let&apos;s talk</a>
                     </Button>
                 </div>
 

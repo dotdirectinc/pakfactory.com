@@ -7,9 +7,24 @@
 
 export { DEFAULT_BLOG_LANGUAGE, BLOG_HOME_PAGE_IDS, BLOG_TOPICS_PAGE_IDS } from '../languages'
 
+/**
+ * Read-time utility — single source of truth for the estimated reading time.
+ *
+ * Computed entirely in GROQ so the post `body` never has to cross the wire just
+ * to be word-counted (important on card/listing queries): `pt::text(body)`
+ * flattens the Portable Text to a string server-side, `length(...) / 5`
+ * approximates the word count (~5 chars/word incl. spaces), divided by the
+ * average reading speed. Reuse `READING_TIME_MINUTES_PROJECTION` in every post
+ * projection instead of re-writing the formula.
+ */
+export const READING_TIME_WPM = 238;
+
+export const READING_TIME_MINUTES_PROJECTION = /* groq */ `"readingTimeMinutes": round(length(pt::text(body)) / 5 / ${READING_TIME_WPM})`;
+
 export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && language == $language] | order(title asc){
   _id,
   title,
+  navLabel,
   "slug": slug.current
 }`;
 
@@ -39,7 +54,7 @@ const POST_CARD_FIELDS = /* groq */ `{
   "categoryTitle": category->title,
   "authorName": author->name,
   "authorImageUrl": author->photo.asset->url,
-  "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238)
+  ${READING_TIME_MINUTES_PROJECTION}
 }`;
 
 const TOPIC_GROUP_PROJECTION = /* groq */ `{
@@ -69,7 +84,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238),
+  ${READING_TIME_MINUTES_PROJECTION},
   "tags": tags[]->{
     _id,
     title,

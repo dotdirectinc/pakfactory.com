@@ -7,7 +7,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@pakfactory/ui/components/card';
+import {cn} from '@pakfactory/ui/lib/utils';
 import type {CtaRfqBlock, BlockProps} from '@/components/blocks/registry';
+import {
+    CTA_RFQ_DIELINE_BORDER_DEFAULTS,
+    resolveDielineBorders,
+} from '@/lib/dieline-borders';
 
 const DEFAULT_HEADING = 'Need custom packaging?';
 const DEFAULT_BODY =
@@ -22,9 +27,29 @@ function defaultQuoteHref(): string {
  * `ctaRfq` page-builder section — quote / RFQ consultative CTA. Heading, body, and
  * button URL are optional and fall back to PakFactory defaults.
  */
-export function CtaRfq({heading, body, ctaHref}: BlockProps<CtaRfqBlock>) {
+export function CtaRfq({
+    heading,
+    body,
+    ctaHref,
+    showTopBorder,
+    showBottomBorder,
+}: BlockProps<CtaRfqBlock>) {
+    const {borderTop, borderBottom} = resolveDielineBorders(
+        showTopBorder,
+        showBottomBorder,
+        CTA_RFQ_DIELINE_BORDER_DEFAULTS,
+    );
+    const hasBorder = borderTop || borderBottom;
+
     return (
-        <section aria-labelledby="cta-rfq-heading">
+        <section
+            aria-labelledby="cta-rfq-heading"
+            className={cn(
+                hasBorder && '-mx-8 px-8',
+                borderTop && 'border-t border-dashed border-border',
+                borderBottom && 'border-b border-dashed border-border',
+            )}
+        >
             <Card className="bg-muted/30 text-center">
                 <CardHeader className="items-center text-center">
                     <CardTitle id="cta-rfq-heading" className="text-xl">

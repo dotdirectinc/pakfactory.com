@@ -7,6 +7,7 @@ import {
   parseTagFilters,
   tagPageHref,
 } from "@/lib/blog-tag-archive";
+import { fetchBlogCategories } from "@/lib/blog-data";
 import { getTagListingRobots } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -37,9 +38,17 @@ export default async function TopicArchivePage({ params, searchParams }: PagePro
   const { slug } = await params;
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
-  const data = await fetchTagArchivePage(slug, 1, filters);
+  const [data, categories] = await Promise.all([
+    fetchTagArchivePage(slug, 1, filters),
+    fetchBlogCategories(),
+  ]);
 
   if (!data) notFound();
 
-  return <TopicArchiveView data={data} />;
+  const categoryOptions = categories.map((c) => ({
+    value: c.slug,
+    label: c.navLabel?.trim() || c.title,
+  }));
+
+  return <TopicArchiveView data={data} categoryOptions={categoryOptions} />;
 }
