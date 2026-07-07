@@ -2,7 +2,6 @@ import type { PortableTextBlock } from "@portabletext/types";
 import { PostPortableText } from "@/components/post/post-portable-text";
 import type { BlogPostDetail } from "@/lib/blog-post";
 import { POST_ARTICLE_ID } from "@/lib/reading-progress";
-import { PostAuthorBio } from "@/components/post/post-author-bio";
 import { PostFaqSection } from "@/components/post/post-faq-section";
 import { PostTagChips } from "@/components/post/post-tag-chips";
 
@@ -42,14 +41,6 @@ export function PostArticleColumn({ post, headingIdByKey }: PostArticleColumnPro
 
       <PostFaqSection items={post.faqItems ?? []} />
       <PostTagChips tags={post.tags ?? []} />
-      <PostAuthorBio
-        name={post.author?.name}
-        slug={post.author?.slug}
-        role={post.author?.role}
-        tagline={post.author?.tagline}
-        shortBio={post.author?.shortBio}
-        photo={post.author?.photo}
-      />
     </article>
   );
 }

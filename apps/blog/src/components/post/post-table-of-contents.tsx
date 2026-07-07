@@ -119,7 +119,7 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
           aria-label={
             open ? "Collapse table of contents" : "Expand table of contents"
           }
-          className="flex w-full cursor-pointer items-center justify-center border-t border-dashed border-border pt-3 text-muted-foreground transition-colors hover:text-foreground"
+          className="flex w-full cursor-pointer items-center justify-center border-t border-dashed border-border py-3 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronDown
             className={cn(

@@ -69,7 +69,9 @@ export function PostDetailSidebar({
               )}
             </div>
             {bio ? (
-              <p className="text-sm leading-5 text-muted-foreground">{bio}</p>
+              <p className="line-clamp-3 text-sm leading-5 text-muted-foreground">
+                {bio}
+              </p>
             ) : null}
           </div>
         </div>
