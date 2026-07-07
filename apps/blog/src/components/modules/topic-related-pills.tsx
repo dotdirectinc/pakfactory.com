@@ -1,10 +1,16 @@
 import Link from "next/link";
-import { LayoutGrid } from "lucide-react";
-import { Badge } from "@pakfactory/ui/components/badge";
+import { Compass } from "lucide-react";
 import type { TagFacet } from "@/lib/blog-tag-archive";
 import { tagHref } from "@/lib/blog-post-url";
 
 const MAX_RELATED_TOPICS = 8;
+
+/**
+ * POC topic chip — white rounded-full pill with hairline border + soft shadow.
+ * Mirrors the POC BlogTopicHeader chip (Figma topic detail header).
+ */
+const TOPIC_CHIP_CLASS =
+  "inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-colors hover:border-foreground/30";
 
 type TopicRelatedPillsProps = {
   topics: TagFacet[];
@@ -17,21 +23,23 @@ export function TopicRelatedPills({ topics }: TopicRelatedPillsProps) {
   if (visible.length === 0) return null;
 
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <span className="text-base font-medium text-muted-foreground">
         Related topics:
       </span>
       {visible.map((topic) => (
-        <Badge key={topic._id ?? topic.slug} variant="outline" asChild>
-          <Link href={tagHref(topic.slug)}>{topic.title}</Link>
-        </Badge>
-      ))}
-      <Badge variant="outline" asChild>
-        <Link href="/topics" className="inline-flex items-center gap-2">
-          <LayoutGrid className="size-4 shrink-0" aria-hidden />
-          Explore all topics
+        <Link
+          key={topic._id ?? topic.slug}
+          href={tagHref(topic.slug)}
+          className={TOPIC_CHIP_CLASS}
+        >
+          {topic.title}
         </Link>
-      </Badge>
+      ))}
+      <Link href="/topics" className={TOPIC_CHIP_CLASS}>
+        <Compass className="size-4 shrink-0" aria-hidden />
+        Explore all topics
+      </Link>
     </div>
   );
 }

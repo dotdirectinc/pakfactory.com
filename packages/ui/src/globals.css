@@ -4,9 +4,9 @@
 
 :root {
     /* Shared content column for dielines (use max-w-[var(--layout-max)]) */
-    /* 1440px = the full Figma artboard width (POC inner block is 1280 inside a
-       1440 artboard; we use the artboard width). See docs/pak-brand-token-migration.md §5. */
-    --layout-max: 1440px;
+    /* 1280px matches the POC / Figma inner block (1280 inside a 1440 artboard,
+       80px gutters). See docs/pak-brand-token-migration.md §5. */
+    --layout-max: 1280px;
     /* ── Pak brand palette (light) — see docs/pak-brand-token-migration.md §3 ── */
     --background: #f4f1eb;         /* warm cream */
     --foreground: #1a1a1a;
@@ -433,4 +433,31 @@
     background-size: 12px 1px, 12px 1px, 1px 12px, 1px 1px, 1px 1px;
     background-position: top, bottom, right, top right, bottom right;
     background-repeat: repeat-x, repeat-x, repeat-y, no-repeat, no-repeat;
+}
+
+/* Responsive grid dividers — extend the dashed dieline to the `md:border-r` /
+   `md:border-l` used by multi-column grids (e.g. the site-footer columns). Only
+   active ≥ md (768px) so stacked mobile columns show no vertical rule. Mirrors the
+   literal `.border-r`/`.border-l` rules above. See docs/pak-brand-token-migration.md §6. */
+@media (min-width: 768px) {
+    .md\:border-r.border-dashed,
+    .md\:border-l.border-dashed {
+        border-color: transparent;
+    }
+    .md\:border-r.border-dashed {
+        background-image: linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+        background-size: 1px 12px;
+        background-position: right;
+        background-repeat: repeat-y;
+    }
+    .md\:border-l.border-dashed {
+        background-image: linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+        background-size: 1px 12px;
+        background-position: left;
+        background-repeat: repeat-y;
+    }
+    /* Last column opts out of its own right rule (Tailwind `md:last:border-r-0`). */
+    .md\:last\:border-r-0.border-dashed:last-child {
+        background-image: none;
+    }
 }

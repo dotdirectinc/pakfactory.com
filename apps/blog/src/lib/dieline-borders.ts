@@ -12,6 +12,12 @@ export const NEWSLETTER_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
   bottom: false,
 };
 
+/** Defaults for the RFQ CTA (no dashed edges unless explicitly enabled). */
+export const CTA_RFQ_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
+  top: false,
+  bottom: false,
+};
+
 export function resolveDielineBorders(
   showTopBorder: boolean | undefined,
   showBottomBorder: boolean | undefined,

@@ -1,11 +1,10 @@
 import "server-only";
 
-import imageUrlBuilder from "@sanity/image-url";
+import {
+  createImageUrlBuilder,
+  type SanityImageSource,
+} from "@sanity/image-url";
 import { getSanityDataset, getSanityProjectId } from "@/lib/sanity/env";
-
-type UrlForSource = Parameters<
-  ReturnType<typeof imageUrlBuilder>["image"]
->[0];
 
 /**
  * Absolute CDN URL for a Sanity image field, or undefined if unbuildable.
@@ -15,11 +14,11 @@ export function sanityImageUrl(source: unknown, width = 1200): string | undefine
   const projectId = getSanityProjectId();
   if (!projectId) return undefined;
   try {
-    return imageUrlBuilder({
+    return createImageUrlBuilder({
       projectId,
       dataset: getSanityDataset(),
     })
-      .image(source as UrlForSource)
+      .image(source as SanityImageSource)
       .width(width)
       .fit("max")
       .url();

@@ -35,6 +35,7 @@ type PostCardProps = {
     | "rail"
     | "categoryHero";
   showFeaturedBadge?: boolean;
+  priority?: boolean;
 };
 
 function authorInitials(name?: string): string {
@@ -55,7 +56,7 @@ function MetaDot() {
 
 function CategoryBadge({ title }: { title: string }) {
   return (
-    <Badge className="w-fit border-transparent bg-primary/10 px-2 py-0.5 text-sm font-medium text-primary">
+    <Badge className="w-fit rounded-full border-transparent bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
       {title}
     </Badge>
   );
@@ -138,7 +139,7 @@ function PostMeta({
     segments.push(
       <span
         key="author"
-        className="inline-flex items-center gap-2 text-sm text-foreground"
+        className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
       >
         {isFeatured && (
           <Avatar size="sm" className="size-7">
@@ -187,6 +188,7 @@ export function PostCard({
   post,
   variant = "default",
   showFeaturedBadge = false,
+  priority = false,
 }: PostCardProps) {
   const isFeatured = variant === "featured";
   const isCategoryHero = variant === "categoryHero";
@@ -315,6 +317,7 @@ export function PostCard({
                 fill
                 className="object-cover transition-transform group-hover:scale-[1.02]"
                 sizes="200px"
+                priority={priority || undefined}
               />
             )}
           </div>
@@ -348,16 +351,17 @@ export function PostCard({
   }
 
   return (
-    <article className="flex flex-col gap-6">
+    <article className="flex flex-col gap-4">
       <Link href={post.href} className="group block">
-        <div className="relative h-60 min-h-[180px] overflow-hidden rounded-[14px] bg-muted">
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-secondary">
           {post.imageUrl && (
             <Image
               src={post.imageUrl}
               alt={post.imageAlt ?? ""}
               fill
-              className="object-cover transition-transform group-hover:scale-[1.02]"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               sizes="(max-width: 1024px) 50vw, 320px"
+              priority={priority || undefined}
             />
           )}
         </div>
@@ -368,7 +372,7 @@ export function PostCard({
           categoryTitle={post.categoryTitle}
         />
         <Link href={post.href} className="group block">
-          <h3 className="text-2xl font-medium leading-8 text-card-foreground group-hover:underline">
+          <h3 className="text-lg font-medium leading-7 text-card-foreground transition-colors group-hover:text-primary">
             {post.title}
           </h3>
         </Link>

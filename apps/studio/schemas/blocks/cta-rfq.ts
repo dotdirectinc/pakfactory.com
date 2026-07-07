@@ -1,6 +1,10 @@
 import { defineField, defineType } from 'sanity'
 import { RocketIcon } from '@sanity/icons'
 import { BlockItemPreview } from '../../components/BlockItemPreview';
+import {
+  dielineBorderFields,
+  dielineBorderPreviewSubtitle,
+} from '../../lib/dieline-border-fields';
 
 /**
  * ctaRfq — quote / RFQ consultative call-to-action band. Page-builder block
@@ -34,12 +38,20 @@ export const ctaRfq = defineType({
       validation: (Rule) =>
         Rule.uri({ allowRelative: true, scheme: ['http', 'https'] }),
     }),
+    ...dielineBorderFields(),
   ],
   preview: {
-    select: { heading: 'heading' },
-    prepare({ heading }) {
+    select: {
+      heading: 'heading',
+      showTopBorder: 'showTopBorder',
+      showBottomBorder: 'showBottomBorder',
+    },
+    prepare({ heading, showTopBorder, showBottomBorder }) {
+      const borders = dielineBorderPreviewSubtitle(showTopBorder, showBottomBorder)
       return {
-        title: 'CTA — RFQ / Quote', subtitle: heading || 'Need custom packaging?' }
+        title: 'CTA — RFQ / Quote',
+        subtitle: [heading || 'Need custom packaging?', borders].filter(Boolean).join(' · '),
+      }
     },
   },
   components: { preview: BlockItemPreview },
