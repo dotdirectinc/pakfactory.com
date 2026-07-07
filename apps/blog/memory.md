@@ -623,6 +623,12 @@ Full-bleed blocks (`postFeaturedRow`, `postCategoryRow`, `postPopularRow`, `post
 
 **Topics page double-line fix (human-only):** On **Pages → Topic page → Page builder**, when `postPopularRow` sits directly above `ctaNewsletter`, hide one adjacent border — e.g. turn **off** `showTopBorder` on the newsletter block, or **off** `showBottomBorder` on the popular row above it.
 
+## Archive listing pagination
+
+- **Page size:** `LISTING_PAGE_SIZE = 15` in `src/lib/blog-archive.ts` (topic, category, `/all` archives).
+- **UI:** shared `src/components/modules/pagination.tsx` — Figma Topic Detail layout (status left, Previous + numbered window + Next right). Window helper: `src/lib/pagination-window.ts`.
+- **Routes:** page 1 at list root; page 2+ at `/page/{n}` (e.g. `/topics/{slug}/page/2`). Pager hidden when `totalPages <= 1`.
+
 ## Topic groups — `blogTopicGroup` + `topicGroup` ref (CMS taxonomy)
 
 Tags stay **flat** (`blogTag`, URL `/topics/{slug}`). Grouping for Studio and the `/topics` grid uses **`blogTopicGroup`** documents; each tag holds a **`topicGroup`** reference.
