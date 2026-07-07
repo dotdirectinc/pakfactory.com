@@ -13,7 +13,11 @@ type PostTableOfContentsProps = {
 // minimum, scrollable height; the bottom chevron expands it to a taller,
 // viewport-capped list.
 const COLLAPSED_MAX_PX = 180;
-const EXPANDED_VIEWPORT_RATIO = 0.55;
+// Space reserved above/below the scrollable list within the sticky sidebar:
+// the sticky top offset, the "Table of content" label, and the bottom
+// expand/collapse chevron — so that chevron is always visible without the user
+// scrolling the page.
+const STICKY_RESERVED_PX = 240;
 
 export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(entries[0]?.id ?? null);
@@ -52,12 +56,19 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   // the current state. Animating an exact measured maxHeight — rather than
   // toggling between fixed caps — keeps the expand/collapse transition smooth.
   useEffect(() => {
-    const el = navRef.current;
-    if (!el) return;
-    const content = el.scrollHeight;
-    setOverflowing(content > COLLAPSED_MAX_PX + 8);
-    const cap = Math.round(window.innerHeight * EXPANDED_VIEWPORT_RATIO);
-    setMaxHeight(open ? Math.min(content, cap) : COLLAPSED_MAX_PX);
+    const measure = () => {
+      const el = navRef.current;
+      if (!el) return;
+      const content = el.scrollHeight;
+      setOverflowing(content > COLLAPSED_MAX_PX + 8);
+      const available = Math.max(140, window.innerHeight - STICKY_RESERVED_PX);
+      setMaxHeight(
+        open ? Math.min(content, available) : Math.min(COLLAPSED_MAX_PX, available),
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, [open, entries]);
 
   // Keep the active item centered within the (collapsed or expanded) scrollable

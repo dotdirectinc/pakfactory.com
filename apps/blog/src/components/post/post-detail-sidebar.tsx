@@ -34,7 +34,7 @@ function initials(name: string): string {
 }
 
 const dividerBlock = "border-b border-dashed border-border pb-8";
-
+const dividerBlockNoPaddingBottom = "border-b border-dashed border-border"
 /** Figma `blog_detail-page_sidebar` — author, table of contents, share, Ask AI. */
 export function PostDetailSidebar({
   author,
@@ -47,7 +47,7 @@ export function PostDetailSidebar({
   const bio = author?.shortBio?.trim() || author?.tagline?.trim();
 
   return (
-    <div className="flex flex-col gap-6 lg:border-r lg:border-dashed lg:border-border lg:pr-6">
+    <div className="flex flex-col gap-6 lg:h-full lg:border-r lg:border-dashed lg:border-border lg:pr-6">
       {authorName ? (
         <div className={`flex flex-col gap-4 ${dividerBlock}`}>
           <p className="text-base font-medium text-muted-foreground">Written by</p>
@@ -77,17 +77,21 @@ export function PostDetailSidebar({
         </div>
       ) : null}
 
-      {toc.length > 0 ? (
+      {/* Sticky from the table of contents down — this block stays in view once
+          the author card above has scrolled past. */}
+      <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+        {toc.length > 0 ? (
+          <div className={dividerBlockNoPaddingBottom}>
+            <PostTableOfContents entries={toc} />
+          </div>
+        ) : null}
+
         <div className={dividerBlock}>
-          <PostTableOfContents entries={toc} />
+          <PostShareButtons url={shareUrl} title={shareTitle} />
         </div>
-      ) : null}
 
-      <div className={dividerBlock}>
-        <PostShareButtons url={shareUrl} title={shareTitle} />
+        <PostAskAi url={shareUrl} title={shareTitle} />
       </div>
-
-      <PostAskAi url={shareUrl} title={shareTitle} />
     </div>
   );
 }

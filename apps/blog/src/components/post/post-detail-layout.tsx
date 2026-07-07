@@ -25,7 +25,9 @@ export function PostDetailLayout({
       {header}
       <PageDielineSection innerClassName="py-12 sm:py-16 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,304px)_minmax(0,1fr)] lg:gap-16">
-          <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">{sidebar}</aside>
+          {/* Aside stretches to the row height so the sidebar can make just its
+              lower part (TOC → Ask AI) sticky while the author card scrolls away. */}
+          <aside className="min-w-0">{sidebar}</aside>
           <div className="min-w-0 max-w-[848px]">{article}</div>
         </div>
       </PageDielineSection>
