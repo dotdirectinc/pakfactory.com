@@ -51,11 +51,9 @@ export function PostDetailView({post}: PostDetailViewProps) {
             header={
                 <PostDetailHeader
                     title={post.title}
+                    subtitle={post.excerpt}
                     categoryTitle={post.categoryTitle}
                     categorySlug={post.categorySlug}
-                    authorName={post.author?.name}
-                    authorSlug={post.author?.slug}
-                    authorPhoto={post.author?.photo}
                     publishedAt={post.publishedAt}
                     lastModified={post.lastModified}
                     readingTimeMinutes={post.readingTimeMinutes}
