@@ -22,6 +22,18 @@ export const bodyBarChart = defineType({
       description: 'Chart title shown above the bars.',
     }),
     defineField({
+      name: 'xAxisLabel',
+      title: 'X-axis label',
+      type: 'string',
+      description: 'Optional label under the horizontal axis (e.g. "Year").',
+    }),
+    defineField({
+      name: 'yAxisLabel',
+      title: 'Y-axis label',
+      type: 'string',
+      description: 'Optional label beside the vertical axis (e.g. "Launches").',
+    }),
+    defineField({
       name: 'data',
       title: 'Data',
       type: 'array',

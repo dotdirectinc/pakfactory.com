@@ -139,6 +139,8 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       _key,
       _type,
       title,
+      xAxisLabel,
+      yAxisLabel,
       source,
       data[]{
         _key,

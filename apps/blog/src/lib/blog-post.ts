@@ -83,6 +83,8 @@ export type PostBodyStatStack = {
 
 export type PostBodyBarChart = {
   title?: string;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
   source?: string;
   data?: Array<{
     _key?: string;

@@ -37,7 +37,11 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
   if (data.length === 0) return null;
 
   const title = value.title?.trim();
+  const xAxisLabel = value.xAxisLabel?.trim();
+  const yAxisLabel = value.yAxisLabel?.trim();
   const source = value.source?.trim();
+
+  const axisLabelFill = "var(--muted-foreground)";
 
   return (
     <figure className="my-8 rounded-lg border border-border p-6">
@@ -48,7 +52,11 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
       ) : null}
 
       <ChartContainer config={chartConfig} className="h-[320px] w-full">
-        <BarChart accessibilityLayer data={data}>
+        <BarChart
+          accessibilityLayer
+          data={data}
+          margin={{ top: 4, right: 8, left: 4, bottom: xAxisLabel ? 20 : 0 }}
+        >
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="label"
@@ -56,8 +64,33 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
             axisLine={false}
             tickMargin={8}
             interval="preserveStartEnd"
+            label={
+              xAxisLabel
+                ? {
+                    value: xAxisLabel,
+                    position: "insideBottom",
+                    offset: -12,
+                    fill: axisLabelFill,
+                    fontSize: 12,
+                  }
+                : undefined
+            }
           />
-          <YAxis tickLine={false} axisLine={false} width={40} />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            width={yAxisLabel ? 60 : 40}
+            label={
+              yAxisLabel
+                ? {
+                    value: yAxisLabel,
+                    angle: -90,
+                    position: "insideLeft",
+                    style: { textAnchor: "middle", fill: axisLabelFill, fontSize: 12 },
+                  }
+                : undefined
+            }
+          />
           <ChartTooltip content={<ChartTooltipContent />} />
           <Bar dataKey="value" radius={4}>
             {data.map((d, i) => (
