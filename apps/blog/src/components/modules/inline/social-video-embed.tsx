@@ -47,7 +47,10 @@ export function SocialVideoEmbed({
   posterUrl,
   title,
 }: SocialVideoEmbedProps) {
-  const [loaded, setLoaded] = useState(false);
+  // With no poster (e.g. Instagram — no keyless thumbnail), auto-load the native
+  // card so its own thumbnail shows from the start. With a poster (e.g. Twitter
+  // syndication thumbnail), stay click-gated so nothing third-party loads early.
+  const [loaded, setLoaded] = useState(!posterUrl);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

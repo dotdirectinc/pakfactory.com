@@ -50,13 +50,22 @@ export async function BodyVideo({ value }: { value: PostBodyVideo }) {
   const posterUrl =
     customPoster ?? (await fetchPlatformThumbnail(parsed, url)) ?? undefined;
 
+  // Facebook has no keyless thumbnail — with no editor poster, render its native
+  // embed directly (its own thumbnail shows from the start) instead of a blank
+  // placeholder. Strip autoplay so it doesn't play on load.
+  const autoShow = parsed.provider === "facebook" && !posterUrl;
+  const embedSrc = autoShow
+    ? parsed.embedSrc.replace("&autoplay=true", "")
+    : parsed.embedSrc;
+
   return (
     <figure className="my-8">
       <VideoPlayer
-        embedSrc={parsed.embedSrc}
+        embedSrc={embedSrc}
         posterUrl={posterUrl}
         title={title}
         aspect={parsed.aspect}
+        autoShow={autoShow}
       />
       {caption ? (
         <figcaption className="mt-2 text-center text-sm text-muted-foreground">

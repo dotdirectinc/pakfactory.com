@@ -8,6 +8,12 @@ type VideoPlayerProps = {
   title: string;
   /** Player aspect ratio. Portrait (9/16) is width-constrained and centered. */
   aspect?: "16/9" | "9/16";
+  /**
+   * Render the iframe immediately instead of the click-to-play poster — used
+   * for providers whose own embed shows a thumbnail (Facebook, which has no
+   * keyless poster). `embedSrc` should not autoplay in this mode.
+   */
+  autoShow?: boolean;
 };
 
 /** Click-to-play poster → provider iframe. Keyboard-operable, privacy-friendly. */
@@ -16,8 +22,9 @@ export function VideoPlayer({
   posterUrl,
   title,
   aspect = "16/9",
+  autoShow = false,
 }: VideoPlayerProps) {
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(autoShow);
   const portrait = aspect === "9/16";
 
   return (
