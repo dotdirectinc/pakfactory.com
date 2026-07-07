@@ -98,11 +98,11 @@ export const post = defineType({
         }),
         defineField({
             name: 'tags',
-            title: 'Tags',
+            title: 'Topics',
             type: 'array',
             group: 'categorization',
             description:
-                'Apply 3–5 structured tags from the relevant axes + 0–3 topic tags. See the Tagging Reference Guide.',
+                'Apply 3–5 structured topics from the relevant axes + 0–3 subject topics. See the Tagging Reference Guide.',
             of: [{type: 'reference', to: [{type: 'blogTag'}]}],
         }),
         defineField({

@@ -32,6 +32,7 @@ import {
   BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY,
   BLOG_CATEGORY_TAGS_FACET_QUERY,
 } from "@pakfactory/sanity/queries";
+import type { TopicGroupRef } from "@/lib/tag-groups";
 
 export type CategorySort = "newest" | "oldest" | "title";
 
@@ -48,7 +49,7 @@ export type CategoryFacetTag = {
   _id?: string;
   title: string;
   slug: string;
-  tagGroup?: string;
+  topicGroup?: TopicGroupRef;
 };
 export type CategoryFacetAuthor = { _id?: string; name: string; slug: string };
 

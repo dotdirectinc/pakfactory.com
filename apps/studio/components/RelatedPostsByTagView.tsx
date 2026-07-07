@@ -92,13 +92,13 @@ export function RelatedPostsByTagView({ document: { displayed } }: Props) {
     <div style={styles.container}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
         <p style={{ ...styles.heading, margin: 0 }}>
-          Posts tagged "{displayed.title || 'this tag'}"
+          Posts in "{displayed.title || 'this topic'}"
         </p>
         <span style={styles.count}>{posts.length}</span>
       </div>
 
       {posts.length === 0 ? (
-        <p style={styles.empty}>No posts using this tag yet.</p>
+        <p style={styles.empty}>No posts using this topic yet.</p>
       ) : (
         <ul style={styles.list}>
           {posts.map((post) => (

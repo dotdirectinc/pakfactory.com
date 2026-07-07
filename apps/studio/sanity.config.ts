@@ -12,6 +12,7 @@ import {
 import { websiteLocations, blogLocations } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
+import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import {
   adminStructure,
@@ -105,7 +106,22 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   return S.document().views([S.view.form()])
 }
 
-const schema = { types: schemaTypes, templates: (prev: Template[]) => [...prev, ...productTemplates] }
+const blogTemplates: Template[] = [
+  {
+    id: 'blogTag-in-group',
+    title: 'Topic',
+    schemaType: 'blogTag',
+    parameters: [{ name: 'groupId', type: 'string' }],
+    value: ({ groupId }: { groupId: string }) => ({
+      topicGroup: { _type: 'reference', _ref: groupId },
+    }),
+  },
+]
+
+const schema = {
+  types: schemaTypes,
+  templates: (prev: Template[]) => [...prev, ...productTemplates, ...blogTemplates],
+}
 
 const blogI18nPlugin = documentInternationalization({
   supportedLanguages: [...SUPPORTED_LANGUAGES],
@@ -123,10 +139,17 @@ const documentActions = (
   prev: DocumentActionComponent[],
   context: DocumentActionsContext,
 ): DocumentActionComponent[] => {
-  let actions =
-    context.schemaType === 'post'
-      ? prev.map((action) => (action.action === 'publish' ? publishWithRedirect : action))
-      : prev
+  let actions = prev
+  if (context.schemaType === 'post') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishWithRedirect : action,
+    )
+  }
+  if (context.schemaType === 'blogTopicGroup') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishTopicGroupToTopicsPage : action,
+    )
+  }
 
   if (isBlogI18nSchemaType(context.schemaType)) {
     actions = [
@@ -186,6 +209,10 @@ export default defineConfig([
           origin: BLOG_PREVIEW_ORIGIN,
           previewMode: { enable: '/api/draft-mode/enable' },
         },
+        allowOrigins: [
+          'http://localhost:3003',
+          'https://pakfactory-blog.vercel.app',
+        ],
         resolve: { locations: blogLocations },
       }),
       media(),

@@ -41,6 +41,14 @@ type PageDielineSectionProps = {
   innerClassName?: string;
 };
 
+/**
+ * Wraps page-builder blocks below fixed dieline sections on landing shells.
+ * Same outer gutter contract as homepage `<main className={pageDielineOuterClass()}>`.
+ */
+export function PageDielineBlockRail({ children }: { children: ReactNode }) {
+  return <div className={pageDielineOuterClass()}>{children}</div>;
+}
+
 /** Outer viewport gutter + inner max-width dieline column. */
 export function PageDielineSection({
   children,
@@ -59,9 +67,9 @@ type PageDielineFullBleedSectionProps = {
   sectionClassName?: string;
   innerClassName?: string;
   shellClassName?: string;
-  /** Full-bleed dashed top edge (opt-in; avoids double-dash when stacking bands). */
+  /** Dashed top edge on the inner dieline column (opt-in; avoids double-dash when stacking bands). */
   borderTop?: boolean;
-  /** Full-bleed dashed bottom edge (opt-in). */
+  /** Dashed bottom edge on the inner dieline column (opt-in). */
   borderBottom?: boolean;
   "aria-labelledby"?: string;
   id?: string;
@@ -85,15 +93,20 @@ export function PageDielineFullBleedSection({
     <section
       id={id}
       aria-labelledby={ariaLabelledBy}
-      className={cn(
-        pageFullBleedRowClass(),
-        borderTop && "border-t border-dashed border-border",
-        borderBottom && "border-b border-dashed border-border",
-        sectionClassName,
-      )}
+      className={cn(pageFullBleedRowClass(), sectionClassName)}
     >
       <div className={pageFullBleedSectionContentClass(shellClassName)}>
-        <div className={pageDielineInnerClass(innerClassName)}>{children}</div>
+        <div
+          className={pageDielineInnerClass(
+            cn(
+              innerClassName,
+              borderTop && "border-t border-dashed border-border",
+              borderBottom && "border-b border-dashed border-border",
+            ),
+          )}
+        >
+          {children}
+        </div>
       </div>
     </section>
   );

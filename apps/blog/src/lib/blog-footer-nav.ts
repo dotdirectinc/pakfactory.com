@@ -20,6 +20,120 @@ export type BlogFooterSection = {
 /** Footer link grid: one array of sections per column (left to right). */
 export type BlogFooterColumns = BlogFooterSection[][];
 
+export type BlogSocialPlatform =
+  | "instagram"
+  | "facebook"
+  | "linkedin"
+  | "youtube"
+  | "pinterest"
+  | "x";
+
+export type BlogSocialLink = {
+  platform: BlogSocialPlatform;
+  url: string;
+};
+
+export type BlogAiEngine =
+  | "chatgpt"
+  | "gemini"
+  | "perplexity"
+  | "claude"
+  | "grok";
+
+export type BlogAiLink = {
+  engine: BlogAiEngine;
+  url: string;
+};
+
+export type BlogFooterData = {
+  columns: BlogFooterColumns;
+  social: BlogSocialLink[];
+  aiLinks: BlogAiLink[];
+};
+
+const PAKFACTORY_AI_PROMPT = buildPakFactoryAiPrompt();
+
+function pakFactoryBrandDomain(): string {
+  try {
+    return new URL(getWwwUrl()).hostname.replace(/^www\./, "");
+  } catch {
+    return "pakfactory.com";
+  }
+}
+
+/** Neutral, GEO-friendly prompt — brand + domain helps AI retrieve the right entity. */
+export function buildPakFactoryAiPrompt(): string {
+  const domain = pakFactoryBrandDomain();
+  return `What is PakFactory (${domain})? Summarize what they do, who they serve, and cite your sources.`;
+}
+
+function buildAiAnswerUrl(engine: BlogAiEngine, prompt: string): string {
+  const q = encodeURIComponent(prompt);
+  switch (engine) {
+    case "chatgpt":
+      return `https://chatgpt.com/?q=${q}`;
+    case "gemini":
+      return `https://gemini.google.com/app?q=${q}`;
+    case "perplexity":
+      return `https://www.perplexity.ai/search?q=${q}`;
+    case "claude":
+      return `https://claude.ai/new?q=${q}`;
+    case "grok":
+      return `https://grok.com/?q=${q}`;
+  }
+}
+
+/** Hardcoded social links when Studio footer social links are empty or unavailable. */
+export function getFallbackSocialLinks(): BlogSocialLink[] {
+  return [
+    {
+      platform: "instagram",
+      url: "https://www.instagram.com/pakfactory",
+    },
+    {
+      platform: "facebook",
+      url: "https://www.facebook.com/pakfactory",
+    },
+    {
+      platform: "linkedin",
+      url: "https://www.linkedin.com/company/pakfactory",
+    },
+    {
+      platform: "youtube",
+      url: "https://www.youtube.com/@pakfactory",
+    },
+    {
+      platform: "pinterest",
+      url: "https://www.pinterest.com/pakfactory",
+    },
+  ];
+}
+
+/** Hardcoded AI answer links when Studio footer AI links are empty or unavailable. */
+export function getFallbackAiLinks(): BlogAiLink[] {
+  const engines: BlogAiEngine[] = [
+    "chatgpt",
+    "gemini",
+    "perplexity",
+    "claude",
+    "grok",
+  ];
+
+  return engines.map((engine) => ({
+    engine,
+    url: buildAiAnswerUrl(engine, PAKFACTORY_AI_PROMPT),
+  }));
+}
+
+/** Full footer data fallback when Sanity is unconfigured or fetch fails. */
+export function getFallbackFooterData(): BlogFooterData {
+  return {
+    columns: getFallbackFooterColumns(),
+    social: getFallbackSocialLinks(),
+    aiLinks: getFallbackAiLinks(),
+  };
+}
+
 const BLOG_CATEGORY_LINKS = [
   { slug: "packaging-news", label: "Packaging News" },
   { slug: "trends", label: "Trends" },
@@ -36,10 +150,13 @@ export function getFallbackFooterColumns(): BlogFooterColumns {
     [
       {
         title: "Browse the Blog",
-        links: BLOG_CATEGORY_LINKS.map(({ slug, label }) => ({
-          label,
-          href: categoryHref(slug),
-        })),
+        links: [
+          ...BLOG_CATEGORY_LINKS.map(({ slug, label }) => ({
+            label,
+            href: categoryHref(slug),
+          })),
+          { label: "All Topics", href: "/topics" },
+        ],
       },
       {
         title: "Explore PakFactory",
@@ -147,7 +264,83 @@ type FooterNavColumnRow = {
 export type BlogFooterNavDoc = {
   _id?: string;
   columns?: (FooterNavColumnRow | null)[] | null;
+  social?: (FooterSocialLinkRow | null)[] | null;
+  aiLinks?: (FooterAiLinkRow | null)[] | null;
 } | null;
+
+type FooterSocialLinkRow = {
+  platform?: string | null;
+  url?: string | null;
+};
+
+type FooterAiLinkRow = {
+  engine?: string | null;
+  url?: string | null;
+};
+
+const SOCIAL_PLATFORMS = new Set<BlogSocialPlatform>([
+  "instagram",
+  "facebook",
+  "linkedin",
+  "youtube",
+  "pinterest",
+  "x",
+]);
+
+const AI_ENGINES = new Set<BlogAiEngine>([
+  "chatgpt",
+  "gemini",
+  "perplexity",
+  "claude",
+  "grok",
+]);
+
+function isSocialPlatform(value: string): value is BlogSocialPlatform {
+  return SOCIAL_PLATFORMS.has(value as BlogSocialPlatform);
+}
+
+function isAiEngine(value: string): value is BlogAiEngine {
+  return AI_ENGINES.has(value as BlogAiEngine);
+}
+
+export function resolveFooterSocialLinks(
+  doc: BlogFooterNavDoc,
+): BlogSocialLink[] {
+  const links = (doc?.social ?? [])
+    .filter((link): link is FooterSocialLinkRow => link != null)
+    .map((link) => {
+      const platform = link.platform?.trim() ?? "";
+      const url = link.url?.trim() ?? "";
+      if (!isSocialPlatform(platform) || !url) return null;
+      return { platform, url };
+    })
+    .filter((link): link is BlogSocialLink => link != null);
+
+  return links.length > 0 ? links : getFallbackSocialLinks();
+}
+
+export function resolveFooterAiLinks(doc: BlogFooterNavDoc): BlogAiLink[] {
+  const links = (doc?.aiLinks ?? [])
+    .filter((link): link is FooterAiLinkRow => link != null)
+    .map((link) => {
+      const engine = link.engine?.trim() ?? "";
+      const url = link.url?.trim() ?? "";
+      if (!isAiEngine(engine) || !url) return null;
+      return { engine, url };
+    })
+    .filter((link): link is BlogAiLink => link != null);
+
+  return links.length > 0 ? links : getFallbackAiLinks();
+}
+
+export function resolveFooterData(doc: BlogFooterNavDoc): BlogFooterData {
+  const columns = resolveFooterColumns(doc);
+  return {
+    columns: columns.length > 0 ? columns : getFallbackFooterColumns(),
+    social: resolveFooterSocialLinks(doc),
+    aiLinks: resolveFooterAiLinks(doc),
+  };
+}
 
 export function resolveFooterLinkHref(link: FooterNavLinkRow): {
   href: string;

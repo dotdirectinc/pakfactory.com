@@ -1,17 +1,56 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {MessageSquareText} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
 import {
     getFallbackFooterColumns,
+    type BlogAiEngine,
+    type BlogAiLink,
     type BlogFooterColumns,
     type BlogFooterLink,
     type BlogFooterSection,
+    type BlogSocialLink,
+    type BlogSocialPlatform,
 } from '@/lib/blog-footer-nav';
 import {getWwwUrl} from '@/lib/site';
 
 const WWW = getWwwUrl();
+
+const SOCIAL_ICON_SRC: Record<BlogSocialPlatform, string> = {
+    instagram: '/logos/social/instagram.svg',
+    facebook: '/logos/social/facebook.svg',
+    linkedin: '/logos/social/linkedin.svg',
+    youtube: '/logos/social/youtube.svg',
+    pinterest: '/logos/social/pinterest.svg',
+    x: '/logos/social/x.svg',
+};
+
+const AI_ICON_SRC: Record<BlogAiEngine, string> = {
+    chatgpt: '/logos/ai/openai.svg',
+    gemini: '/logos/ai/gemini.svg',
+    perplexity: '/logos/ai/perplexity.svg',
+    claude: '/logos/ai/claude.svg',
+    grok: '/logos/ai/grok.svg',
+};
+
+const SOCIAL_LABELS: Record<BlogSocialPlatform, string> = {
+    instagram: 'Instagram',
+    facebook: 'Facebook',
+    linkedin: 'LinkedIn',
+    youtube: 'YouTube',
+    pinterest: 'Pinterest',
+    x: 'X',
+};
+
+const AI_LABELS: Record<BlogAiEngine, string> = {
+    chatgpt: 'ChatGPT',
+    gemini: 'Gemini',
+    perplexity: 'Perplexity',
+    claude: 'Claude',
+    grok: 'Grok',
+};
 
 function FooterLinkItem({link}: {link: BlogFooterLink}) {
     const className =
@@ -51,9 +90,59 @@ function FooterSectionBlock({section}: {section: BlogFooterSection}) {
 
 type SiteFooterProps = {
     columns?: BlogFooterColumns;
+    social?: BlogSocialLink[];
+    aiLinks?: BlogAiLink[];
 };
 
-export function SiteFooter({columns}: SiteFooterProps) {
+function FooterSocialIcon({link}: {link: BlogSocialLink}) {
+    const src = SOCIAL_ICON_SRC[link.platform];
+    if (!src) return null;
+
+    return (
+        <a
+            href={link.url}
+            aria-label={SOCIAL_LABELS[link.platform]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-foreground hover:opacity-80"
+        >
+            <Image
+                src={src}
+                alt=""
+                width={20}
+                height={20}
+                className="size-5"
+                aria-hidden
+            />
+        </a>
+    );
+}
+
+function FooterAiIcon({link}: {link: BlogAiLink}) {
+    const src = AI_ICON_SRC[link.engine];
+    if (!src) return null;
+
+    return (
+        <a
+            href={link.url}
+            aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:opacity-80"
+        >
+            <Image
+                src={src}
+                alt=""
+                width={16}
+                height={16}
+                className="size-4"
+                aria-hidden
+            />
+        </a>
+    );
+}
+
+export function SiteFooter({columns, social = [], aiLinks = []}: SiteFooterProps) {
     const footerColumns =
         columns && columns.length > 0 ? columns : getFallbackFooterColumns();
     const talkHref = `${WWW}/contact`;
@@ -104,93 +193,42 @@ export function SiteFooter({columns}: SiteFooterProps) {
                     ))}
                 </div>
 
-                {/* Bottom bar */}
+                {/* Bottom bar — copyright + social */}
                 <div className="border-t border-dashed border-foreground/10">
                     <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
                         <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
                             © 2026 PakFactory
                         </p>
                         <div className="flex items-center gap-11 text-foreground">
-                            <a
-                                href="https://www.facebook.com/pakfactory"
-                                aria-label="Facebook"
-                                className="text-foreground hover:opacity-80"
-                            >
-                                <svg
-                                    className="size-5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.75"
-                                    aria-hidden
-                                >
-                                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://www.instagram.com/pakfactory"
-                                aria-label="Instagram"
-                                className="text-foreground hover:opacity-80"
-                            >
-                                <svg
-                                    className="size-5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.75"
-                                    aria-hidden
-                                >
-                                    <rect
-                                        x="2"
-                                        y="2"
-                                        width="20"
-                                        height="20"
-                                        rx="5"
-                                        ry="5"
-                                    />
-                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                                    <line
-                                        x1="17.5"
-                                        y1="6.5"
-                                        x2="17.51"
-                                        y2="6.5"
-                                    />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://x.com/pakfactory"
-                                aria-label="X"
-                                className="text-foreground hover:opacity-80"
-                            >
-                                <span className="sr-only">X</span>
-                                <svg
-                                    className="size-5"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                    aria-hidden
-                                >
-                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://www.linkedin.com/company/pakfactory"
-                                aria-label="LinkedIn"
-                                className="text-foreground hover:opacity-80"
-                            >
-                                <svg
-                                    className="size-5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.75"
-                                    aria-hidden
-                                >
-                                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-                                    <rect x="2" y="9" width="4" height="12" />
-                                    <circle cx="4" cy="4" r="2" />
-                                </svg>
-                            </a>
+                            {social.map((link) => (
+                                <FooterSocialIcon
+                                    key={link.platform}
+                                    link={link}
+                                />
+                            ))}
                         </div>
+                    </div>
+                </div>
+
+                {/* Bottom bar — AI answer links */}
+                <div className="border-t border-dashed border-foreground/10">
+                    <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
+                        <div className="flex flex-wrap items-center gap-6">
+                            <p className="text-sm text-muted-foreground">
+                                See what AI says about PakFactory
+                            </p>
+                            <div className="flex h-4 items-center gap-3">
+                                {aiLinks.map((link) => (
+                                    <FooterAiIcon
+                                        key={link.engine}
+                                        link={link}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            © 2026 PakFactory. All Rights Reserved
+                        </p>
                     </div>
                 </div>
             </PageDielineSection>

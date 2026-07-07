@@ -4,38 +4,41 @@
 
 :root {
     /* Shared content column for dielines (use max-w-[var(--layout-max)]) */
-    --layout-max: 1536px;
-    --background: #ffffff;
-    --foreground: rgb(10 10 10);
-    --card: rgb(255 255 255);
-    --card-foreground: rgb(10 10 10);
-    --popover: rgb(255 255 255);
-    --popover-foreground: rgb(10 10 10);
-    --primary: rgb(23 23 23);
-    --primary-foreground: rgb(250 250 250);
-    --secondary: rgb(245 245 245);
-    --secondary-foreground: rgb(23 23 23);
-    --muted: rgb(245 245 245);
-    --muted-foreground: rgb(115 115 115);
-    --accent: rgb(245 245 245);
-    --accent-foreground: rgb(23 23 23);
+    /* 1440px = the full Figma artboard width (POC inner block is 1280 inside a
+       1440 artboard; we use the artboard width). See docs/pak-brand-token-migration.md §5. */
+    --layout-max: 1440px;
+    /* ── Pak brand palette (light) — see docs/pak-brand-token-migration.md §3 ── */
+    --background: #f4f1eb;         /* warm cream */
+    --foreground: #1a1a1a;
+    --card: #ffffff;
+    --card-foreground: #1a1a1a;
+    --popover: #ffffff;
+    --popover-foreground: #1a1a1a;
+    --primary: #2b5f2d;            /* PakFactory forest green */
+    --primary-foreground: #ffffff;
+    --secondary: #ece8df;          /* warm beige */
+    --secondary-foreground: #1a1a1a;
+    --muted: #ece8df;
+    --muted-foreground: #6e6e6e;
+    --accent: #ece8df;
+    --accent-foreground: #1a1a1a;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: rgb(229 229 229);
-    --input: rgb(229 229 229);
-    --ring: #a3a3a3;
+    --border: #d4cfc4;             /* warm taupe */
+    --input: #d4cfc4;
+    --ring: #2b5f2d;
     --chart-1: rgb(245 73 0);
     --chart-2: rgb(0 150 137);
     --chart-3: rgb(16 78 100);
     --chart-4: rgb(255 185 0);
     --chart-5: rgb(254 154 0);
-    --sidebar: rgb(250 250 250);
-    --sidebar-foreground: rgb(10 10 10);
-    --sidebar-primary: rgb(23 23 23);
-    --sidebar-primary-foreground: rgb(250 250 250);
-    --sidebar-accent: rgb(245 245 245);
-    --sidebar-accent-foreground: rgb(23 23 23);
-    --sidebar-border: rgb(229 229 229);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: #f4f1eb;
+    --sidebar-foreground: #1a1a1a;
+    --sidebar-primary: #2b5f2d;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #ece8df;
+    --sidebar-accent-foreground: #1a1a1a;
+    --sidebar-border: #d4cfc4;
+    --sidebar-ring: #2b5f2d;
 
     --font-geist-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
     --font-sans: var(--font-geist-sans);
@@ -46,23 +49,58 @@
         'Geist Mono', 'Geist Mono Fallback', ui-monospace, SFMono-Regular,
         Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
-    --radius: 0.625rem;
+    --radius: 0.875rem;            /* 14px — Figma borderradius-rounded-box */
 
     /* One grid step = 8px at 16px root; tune globally for layout rhythm */
     --spacing-grid-unit: 0.5rem;
 
-    --shadow-2xs: 0 1px 3px 0px rgb(0 0 0 / 0.05);
-    --shadow-xs: 0 1px 3px 0px rgb(0 0 0 / 0.05);
+    /* ── Neutral elevation ladder — see docs/pak-brand-token-migration.md §5 ── */
+    --shadow-2xs: 0 1px rgb(0 0 0 / 0.05);
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-sm:
-        0 1px 3px 0px rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow: 0 1px 3px 0px rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     --shadow-md:
-        0 1px 3px 0px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.1);
+        0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg:
-        0 1px 3px 0px rgb(0 0 0 / 0.1), 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --shadow-xl:
-        0 1px 3px 0px rgb(0 0 0 / 0.1), 0 8px 10px -1px rgb(0 0 0 / 0.1);
-    --shadow-2xl: 0 1px 3px 0px rgb(0 0 0 / 0.25);
+        0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+    /* ── Pak brand token families — see docs/pak-brand-token-migration.md §4 ── */
+    /* opacity/primary — green at 10–60% (soft fills, hover, focus) */
+    --opacity-primary-10: rgb(43 95 45 / 0.1);
+    --opacity-primary-20: rgb(43 95 45 / 0.2);
+    --opacity-primary-30: rgb(43 95 45 / 0.3);
+    --opacity-primary-40: rgb(43 95 45 / 0.4);
+    --opacity-primary-50: rgb(43 95 45 / 0.5);
+    --opacity-primary-60: rgb(43 95 45 / 0.6);
+
+    /* derived primary states */
+    --primary-hover: #245125;      /* primary −6% */
+    --primary-active: #1f4521;     /* primary −12% */
+
+    /* opacity/neutral — cool gray-blue (faded text, dividers, wordmark) */
+    --opacity-neutral-lighter: rgb(71 72 87 / 0.1);
+    --opacity-neutral-main: rgb(71 72 87 / 0.3);
+    --opacity-neutral-darker: rgb(71 72 87 / 0.6);
+
+    /* primary gradient (Figma "primary-gradient" fill) */
+    --primary-gradient: linear-gradient(135deg, #2b5f2d 0%, #4a8a4d 100%);
+
+    /* primary-tinted elevation ladder */
+    --shadow-primary-2xs: 0 1px var(--opacity-primary-20);
+    --shadow-primary-xs: 0 1px 2px 0 var(--opacity-primary-20);
+    --shadow-primary-sm:
+        0 1px 3px 0 var(--opacity-primary-30), 0 1px 2px -1px var(--opacity-primary-30);
+    --shadow-primary-md:
+        0 4px 6px -1px var(--opacity-primary-30), 0 2px 4px -2px var(--opacity-primary-30);
+    --shadow-primary-lg:
+        0 10px 15px -3px var(--opacity-primary-40), 0 4px 6px -4px var(--opacity-primary-40);
+    --shadow-primary-xl:
+        0 20px 25px -5px var(--opacity-primary-40), 0 8px 10px -6px var(--opacity-primary-40);
+    --shadow-primary-2xl: 0 25px 50px -12px var(--opacity-primary-50);
 }
 
 .dark {
@@ -220,7 +258,15 @@
     }
 }
 
-/* Responsive type scaling — bump root font-size at wide breakpoints */
+/* Responsive type scaling — DISABLED 2026-07-07.
+   Root font is now FIXED at 16px at every width, to match the PakFactory POC
+   design system (blog-poc uses a fixed-16px base — no responsive root scaling).
+   The scaling below made rem-based utilities (text-base, text-xl, …) render
+   larger than the Figma spec on ≥1600px monitors (e.g. an h2 `text-xl` = 20px
+   became 21.25px @1600 / 22.5px @1920), mismatching /topics vs the POC.
+   Re-enable this block if/when we deliberately want type to grow on large
+   displays. See docs/pak-brand-token-migration.md §7. */
+/*
 @media (min-width: 1600px) {
     html {
         font-size: 17px;
@@ -232,6 +278,7 @@
         font-size: 18px;
     }
 }
+*/
 
 @keyframes collapsible-down {
     from {
@@ -254,4 +301,136 @@
 }
 @utility animate-collapsible-up {
     animation: collapsible-up 0.3s ease-out;
+}
+
+/* ── Dashed dieline borders — see docs/pak-brand-token-migration.md §6 ────────
+   Pixel-perfect 6px dash + 6px gap, 1px stroke (Figma: Style·Dashed Dash·6 Gap·6).
+   Browser-native `border-style: dashed` has no dash-length API, so we draw the
+   dashes with background-image linear-gradients and set border-color transparent
+   so the native (imprecise) dashes don't render alongside. Hooks the existing
+   `border-dashed` + `border-border` utilities — no component change needed.
+   Color is var(--border): warm taupe in light, existing border in dark.
+──────────────────────────────────────────────────────────────────────────────*/
+:is(
+    .border.border-dashed,
+    .border-t.border-dashed,
+    .border-b.border-dashed,
+    .border-l.border-dashed,
+    .border-r.border-dashed,
+    .border-x.border-dashed,
+    .border-y.border-dashed
+) {
+    border-color: transparent;
+}
+
+.border-t.border-dashed {
+    background-image: linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px);
+    background-size: 12px 1px;
+    background-position: top;
+    background-repeat: repeat-x;
+}
+
+.border-b.border-dashed {
+    background-image: linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px);
+    background-size: 12px 1px;
+    background-position: bottom;
+    background-repeat: repeat-x;
+}
+
+.border-y.border-dashed {
+    background-image:
+        linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px);
+    background-size: 12px 1px, 12px 1px;
+    background-position: top, bottom;
+    background-repeat: repeat-x, repeat-x;
+}
+
+.border-l.border-dashed {
+    background-image: linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+    background-size: 1px 12px;
+    background-position: left;
+    background-repeat: repeat-y;
+}
+
+.border-r.border-dashed {
+    background-image: linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+    background-size: 1px 12px;
+    background-position: right;
+    background-repeat: repeat-y;
+}
+
+.border-x.border-dashed {
+    background-image:
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+    background-size: 1px 12px, 1px 12px;
+    background-position: left, right;
+    background-repeat: repeat-y, repeat-y;
+}
+
+.border.border-dashed {
+    background-image:
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border));
+    background-size: 12px 1px, 12px 1px, 1px 12px, 1px 12px, 1px 1px, 1px 1px, 1px 1px, 1px 1px;
+    background-position: top, bottom, left, right, top left, top right, bottom left, bottom right;
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y, no-repeat, no-repeat, no-repeat, no-repeat;
+}
+
+/* Composite combinations — directional + axis classes used together, so the
+   dashed pattern covers every implied side instead of one rule clobbering the
+   others on background-image. Corner anchors prevent dash-phase gaps at joins. */
+.border-t.border-x.border-dashed {
+    background-image:
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border));
+    background-size: 12px 1px, 1px 12px, 1px 12px, 1px 1px, 1px 1px;
+    background-position: top, left, right, top left, top right;
+    background-repeat: repeat-x, repeat-y, repeat-y, no-repeat, no-repeat;
+}
+
+.border-b.border-x.border-dashed {
+    background-image:
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border));
+    background-size: 12px 1px, 1px 12px, 1px 12px, 1px 1px, 1px 1px;
+    background-position: bottom, left, right, bottom left, bottom right;
+    background-repeat: repeat-x, repeat-y, repeat-y, no-repeat, no-repeat;
+}
+
+.border-l.border-y.border-dashed {
+    background-image:
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border));
+    background-size: 12px 1px, 12px 1px, 1px 12px, 1px 1px, 1px 1px;
+    background-position: top, bottom, left, top left, bottom left;
+    background-repeat: repeat-x, repeat-x, repeat-y, no-repeat, no-repeat;
+}
+
+.border-r.border-y.border-dashed {
+    background-image:
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to right,  var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px),
+        linear-gradient(var(--border), var(--border)),
+        linear-gradient(var(--border), var(--border));
+    background-size: 12px 1px, 12px 1px, 1px 12px, 1px 1px, 1px 1px;
+    background-position: top, bottom, right, top right, bottom right;
+    background-repeat: repeat-x, repeat-x, repeat-y, no-repeat, no-repeat;
 }

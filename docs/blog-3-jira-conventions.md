@@ -124,8 +124,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 ## PROD-1500 — Tag archives
 
 - **Routes:** `/tag/[slug]` (page 1), `/tag/[slug]/page/[n]` (page 2+; `/page/1` → `/tag/[slug]`). `tag` is a reserved root segment (PROD-1597) — physical route beats `[category]`.
-- **Tags are flat** (`blogTag`); axis = `tagGroup` (`material`, `packaging-type`, `finish`, `industry`; `ungrouped` sentinel). Front-end label map mirrors studio in [`apps/blog/src/lib/tag-groups.ts`](../apps/blog/src/lib/tag-groups.ts) — keep in sync with `TAG_GROUPS` in `apps/studio/schemas/blogTag.ts`.
-- **Kicker:** axis title from `tagGroup` (omit when ungrouped). **Sidebar:** co-occurring tags grouped by axis, **own-axis row hidden**; author/date/sort. `tag` is the page, **not** a filter param (filters: `author`, `year`, `month`, `sort`).
+- **Tags are flat** (`blogTag`); group = `topicGroup` → `blogTopicGroup` (`material`, `packaging-type`, `finish`, `industry`, …). Group title from CMS via `topicGroupTitle()` in [`apps/blog/src/lib/tag-groups.ts`](../apps/blog/src/lib/tag-groups.ts).
+- **Kicker:** group title from `topicGroup` (omit when ungrouped). **Sidebar:** co-occurring tags grouped by `topicGroup`, **own-group row hidden**; author/date/sort. `tag` is the page, **not** a filter param (filters: `author`, `year`, `month`, `sort`).
 - **Robots:** `getTagListingRobots(page, sp, hasPosts)` — page 1 unfiltered + ≥1 post **index**; **empty tag**, page ≥2, or any filter **noindex, follow** (empty→noindex is tag-specific).
 - **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList`; post item URLs via `absoluteUrl(postDetailHref(slug, categorySlug))` (posts span categories).
 - **Unknown slug / out-of-range page → `notFound()`.**

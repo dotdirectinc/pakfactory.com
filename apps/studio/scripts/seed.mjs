@@ -1054,32 +1054,54 @@ const posts = [
   },
 ]
 
-// ─── Blog Tags ───────────────────────────────────────────────────────────────
-// Full closed-vocabulary tag set. 11 structured axes + topic placeholder.
-// Reference: channels/blog/00_foundation/PakFactory_Blog_Tagging_Reference_Final_v1.0.md
+// ─── Blog Topic Groups ───────────────────────────────────────────────────────
+// CMS-managed groups for /topics grid + Studio organization.
+// Humans: run seed after schema deploy; agents must not execute seed scripts.
 
-// tagGroup values mirror TAG_GROUPS in apps/studio/schemas/blogTag.ts — keep in sync.
+const blogTopicGroups = [
+  { _id: 'btgrp-material',       _type: 'blogTopicGroup', title: 'Material',       slug: slug('material'),       order: 0 },
+  { _id: 'btgrp-packaging-type', _type: 'blogTopicGroup', title: 'Packaging Type', slug: slug('packaging-type'), order: 1 },
+  { _id: 'btgrp-finish',         _type: 'blogTopicGroup', title: 'Finish',         slug: slug('finish'),         order: 2 },
+  { _id: 'btgrp-industry',       _type: 'blogTopicGroup', title: 'Industry',       slug: slug('industry'),       order: 3 },
+  { _id: 'btgrp-channel',        _type: 'blogTopicGroup', title: 'Channel',        slug: slug('channel'),        order: 4 },
+  { _id: 'btgrp-design-style',   _type: 'blogTopicGroup', title: 'Design Style',   slug: slug('design-style'),   order: 5 },
+  { _id: 'btgrp-topic',          _type: 'blogTopicGroup', title: 'Topic',          slug: slug('topic'),          order: 6 },
+]
+
+const topicGroupRef = {
+  material: ref('btgrp-material'),
+  'packaging-type': ref('btgrp-packaging-type'),
+  finish: ref('btgrp-finish'),
+  industry: ref('btgrp-industry'),
+  channel: ref('btgrp-channel'),
+  'design-style': ref('btgrp-design-style'),
+  topic: ref('btgrp-topic'),
+}
+
+// ─── Blog Tags ───────────────────────────────────────────────────────────────
+// Flat topics; grouping via topicGroup → blogTopicGroup.
+
 const blogTags = [
-  { _id: 'btag-paperboard',          _type: 'blogTag', title: 'Paperboard',          slug: slug('paperboard'),          tagGroup: 'material',       order: 1, description: 'White or coated paperboard, folding carton stock.' },
-  { _id: 'btag-corrugated',          _type: 'blogTag', title: 'Corrugated',           slug: slug('corrugated'),          tagGroup: 'material',       order: 2, description: 'Corrugated cardboard — single and double wall.' },
-  { _id: 'btag-kraft',               _type: 'blogTag', title: 'Kraft',                slug: slug('kraft'),               tagGroup: 'material',       order: 3, description: 'Unbleached kraft paper / kraft board.' },
-  { _id: 'btag-rigid-box',           _type: 'blogTag', title: 'Rigid Box',            slug: slug('rigid-box'),           tagGroup: 'packaging-type', order: 1, description: 'Setup/luxury rigid boxes.' },
-  { _id: 'btag-folding-carton',      _type: 'blogTag', title: 'Folding Carton',       slug: slug('folding-carton'),      tagGroup: 'packaging-type', order: 2, description: 'Folded paperboard cartons.' },
-  { _id: 'btag-mailer-box',          _type: 'blogTag', title: 'Mailer Box',           slug: slug('mailer-box'),          tagGroup: 'packaging-type', order: 3, description: 'E-commerce shipping mailers.' },
-  { _id: 'btag-matte',               _type: 'blogTag', title: 'Matte',                slug: slug('matte'),               tagGroup: 'finish',         order: 1, description: 'Matte lamination or coating.' },
-  { _id: 'btag-gloss',               _type: 'blogTag', title: 'Gloss',                slug: slug('gloss'),               tagGroup: 'finish',         order: 2, description: 'Gloss lamination or coating.' },
-  { _id: 'btag-soft-touch',          _type: 'blogTag', title: 'Soft Touch',           slug: slug('soft-touch'),          tagGroup: 'finish',         order: 3, description: 'Soft-touch lamination — velvety tactile finish.' },
-  { _id: 'btag-foil-stamp',          _type: 'blogTag', title: 'Foil Stamp',           slug: slug('foil-stamp'),          tagGroup: 'finish',         order: 4, description: 'Hot foil stamping.' },
-  { _id: 'btag-sustainability',      _type: 'blogTag', title: 'Sustainability',        slug: slug('sustainability'),      tagGroup: 'topic',          order: 1, description: 'Sustainable packaging materials, certifications, and strategy.' },
-  { _id: 'btag-dtc',                 _type: 'blogTag', title: 'DTC',                  slug: slug('dtc'),                 tagGroup: 'channel',        order: 1, description: 'Direct-to-consumer / e-commerce packaging.' },
-  { _id: 'btag-retail',              _type: 'blogTag', title: 'Retail',               slug: slug('retail'),              tagGroup: 'channel',        order: 2, description: 'Brick-and-mortar retail and shelf packaging.' },
-  { _id: 'btag-beauty',              _type: 'blogTag', title: 'Beauty',               slug: slug('beauty'),              tagGroup: 'industry',       order: 1, description: 'Beauty, cosmetics, skincare, and personal care packaging.' },
-  { _id: 'btag-food-beverage',       _type: 'blogTag', title: 'Food & Beverage',      slug: slug('food-beverage'),       tagGroup: 'industry',       order: 2, description: 'Food, drink, snack, and beverage packaging.' },
-  { _id: 'btag-sourcing',            _type: 'blogTag', title: 'Sourcing',             slug: slug('sourcing'),            tagGroup: 'topic',          order: 2, description: 'Supplier sourcing, MOQs, and procurement.' },
-  { _id: 'btag-unboxing',            _type: 'blogTag', title: 'Unboxing',             slug: slug('unboxing'),            tagGroup: 'topic',          order: 3, description: 'Unboxing experience and customer reveal design.' },
-  { _id: 'btag-minimalist',          _type: 'blogTag', title: 'Minimalist',           slug: slug('minimalist'),          tagGroup: 'design-style',   order: 1, description: 'Clean, restrained design with generous white space.' },
-  { _id: 'btag-luxury',              _type: 'blogTag', title: 'Luxury',               slug: slug('luxury'),              tagGroup: 'design-style',   order: 2, description: 'Premium and luxury packaging design and materials.' },
-  { _id: 'btag-trends',              _type: 'blogTag', title: 'Trends',               slug: slug('trends'),              tagGroup: 'topic',          order: 4, description: 'Emerging packaging trends and market shifts.' },
+  { _id: 'btag-paperboard',     _type: 'blogTag', title: 'Paperboard',     slug: slug('paperboard'),     topicGroup: topicGroupRef.material,       description: 'White or coated paperboard, folding carton stock.' },
+  { _id: 'btag-corrugated',     _type: 'blogTag', title: 'Corrugated',      slug: slug('corrugated'),      topicGroup: topicGroupRef.material,       description: 'Corrugated cardboard — single and double wall.' },
+  { _id: 'btag-kraft',          _type: 'blogTag', title: 'Kraft',           slug: slug('kraft'),           topicGroup: topicGroupRef.material,       description: 'Unbleached kraft paper / kraft board.' },
+  { _id: 'btag-rigid-box',      _type: 'blogTag', title: 'Rigid Box',       slug: slug('rigid-box'),       topicGroup: topicGroupRef['packaging-type'], description: 'Setup/luxury rigid boxes.' },
+  { _id: 'btag-folding-carton', _type: 'blogTag', title: 'Folding Carton',  slug: slug('folding-carton'),  topicGroup: topicGroupRef['packaging-type'], description: 'Folded paperboard cartons.' },
+  { _id: 'btag-mailer-box',     _type: 'blogTag', title: 'Mailer Box',      slug: slug('mailer-box'),      topicGroup: topicGroupRef['packaging-type'], description: 'E-commerce shipping mailers.' },
+  { _id: 'btag-matte',          _type: 'blogTag', title: 'Matte',           slug: slug('matte'),           topicGroup: topicGroupRef.finish,         description: 'Matte lamination or coating.' },
+  { _id: 'btag-gloss',          _type: 'blogTag', title: 'Gloss',           slug: slug('gloss'),           topicGroup: topicGroupRef.finish,         description: 'Gloss lamination or coating.' },
+  { _id: 'btag-soft-touch',     _type: 'blogTag', title: 'Soft Touch',      slug: slug('soft-touch'),      topicGroup: topicGroupRef.finish,         description: 'Soft-touch lamination — velvety tactile finish.' },
+  { _id: 'btag-foil-stamp',     _type: 'blogTag', title: 'Foil Stamp',       slug: slug('foil-stamp'),      topicGroup: topicGroupRef.finish,         description: 'Hot foil stamping.' },
+  { _id: 'btag-sustainability', _type: 'blogTag', title: 'Sustainability',  slug: slug('sustainability'),  topicGroup: topicGroupRef.topic,        description: 'Sustainable packaging materials, certifications, and strategy.' },
+  { _id: 'btag-dtc',            _type: 'blogTag', title: 'DTC',             slug: slug('dtc'),             topicGroup: topicGroupRef.channel,        description: 'Direct-to-consumer / e-commerce packaging.' },
+  { _id: 'btag-retail',         _type: 'blogTag', title: 'Retail',          slug: slug('retail'),          topicGroup: topicGroupRef.channel,        description: 'Brick-and-mortar retail and shelf packaging.' },
+  { _id: 'btag-beauty',         _type: 'blogTag', title: 'Beauty',          slug: slug('beauty'),          topicGroup: topicGroupRef.industry,       description: 'Beauty, cosmetics, skincare, and personal care packaging.' },
+  { _id: 'btag-food-beverage',  _type: 'blogTag', title: 'Food & Beverage', slug: slug('food-beverage'),   topicGroup: topicGroupRef.industry,       description: 'Food, drink, snack, and beverage packaging.' },
+  { _id: 'btag-sourcing',       _type: 'blogTag', title: 'Sourcing',        slug: slug('sourcing'),        topicGroup: topicGroupRef.topic,        description: 'Supplier sourcing, MOQs, and procurement.' },
+  { _id: 'btag-unboxing',       _type: 'blogTag', title: 'Unboxing',        slug: slug('unboxing'),        topicGroup: topicGroupRef.topic,        description: 'Unboxing experience and customer reveal design.' },
+  { _id: 'btag-minimalist',     _type: 'blogTag', title: 'Minimalist',      slug: slug('minimalist'),      topicGroup: topicGroupRef['design-style'], description: 'Clean, restrained design with generous white space.' },
+  { _id: 'btag-luxury',         _type: 'blogTag', title: 'Luxury',          slug: slug('luxury'),          topicGroup: topicGroupRef['design-style'], description: 'Premium and luxury packaging design and materials.' },
+  { _id: 'btag-trends',         _type: 'blogTag', title: 'Trends',          slug: slug('trends'),          topicGroup: topicGroupRef.topic,        description: 'Emerging packaging trends and market shifts.' },
 ]
 
 const settingsDoc = {
@@ -1110,6 +1132,7 @@ const allDocs = [
   ...products,
   ...pages,
   ...blogCategories,
+  ...blogTopicGroups,
   ...blogTags,
   ...authors,
   ...posts,
@@ -1140,6 +1163,7 @@ async function seed() {
   console.log(`    Products              : ${products.length} (incl. ${products.filter(p => p.productStyleCategories?.some(s => s._ref === 'psc-mag')).length} Magnetic Closure)`)
   console.log(`    Pages                 : ${pages.length}`)
   console.log(`    Blog Categories       : ${blogCategories.length}`)
+  console.log(`    Blog Topic Groups     : ${blogTopicGroups.length}`)
   console.log(`    Blog Tags             : ${blogTags.length}`)
   console.log(`    Authors               : ${authors.length}`)
   console.log(`    Posts                 : ${posts.length}`)
