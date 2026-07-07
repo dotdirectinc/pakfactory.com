@@ -11,13 +11,15 @@ type PostTableOfContentsProps = {
 
 // Collapsed peek height (px). The list is never fully hidden — it keeps a
 // minimum, scrollable height; the bottom chevron expands it to a taller,
-// viewport-capped list. Keep in sync with the `max-h-[180px]` class below.
+// viewport-capped list.
 const COLLAPSED_MAX_PX = 180;
+const EXPANDED_VIEWPORT_RATIO = 0.55;
 
 export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(entries[0]?.id ?? null);
   const [open, setOpen] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
+  const [maxHeight, setMaxHeight] = useState<number>(COLLAPSED_MAX_PX);
   const navRef = useRef<HTMLElement>(null);
 
   // Scroll-spy — highlight the section currently in view.
@@ -46,23 +48,33 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
     return () => observer.disconnect();
   }, [entries]);
 
-  // Only offer expand/collapse when the list overflows the collapsed peek.
+  // Measure overflow (whether the chevron is needed) and the target height for
+  // the current state. Animating an exact measured maxHeight — rather than
+  // toggling between fixed caps — keeps the expand/collapse transition smooth.
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
-    setOverflowing(el.scrollHeight > COLLAPSED_MAX_PX + 8);
-  }, [entries]);
+    const content = el.scrollHeight;
+    setOverflowing(content > COLLAPSED_MAX_PX + 8);
+    const cap = Math.round(window.innerHeight * EXPANDED_VIEWPORT_RATIO);
+    setMaxHeight(open ? Math.min(content, cap) : COLLAPSED_MAX_PX);
+  }, [open, entries]);
 
-  // Keep the active item visible within the scrollable TOC — scroll only the
-  // nav container, never the page.
+  // Keep the active item centered within the (collapsed or expanded) scrollable
+  // TOC — scroll only the nav container, never the page. getBoundingClientRect
+  // works regardless of the nav's offset parent.
   useEffect(() => {
     if (!activeId || !navRef.current) return;
     const nav = navRef.current;
     const link = nav.querySelector<HTMLElement>(`[data-toc-id="${activeId}"]`);
     if (!link) return;
-    const target = link.offsetTop - nav.clientHeight / 2 + link.clientHeight / 2;
+    const offsetWithinNav =
+      link.getBoundingClientRect().top -
+      nav.getBoundingClientRect().top +
+      nav.scrollTop;
+    const target = offsetWithinNav - nav.clientHeight / 2 + link.clientHeight / 2;
     nav.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
-  }, [activeId]);
+  }, [activeId, open]);
 
   if (entries.length === 0) return null;
 
@@ -74,7 +86,8 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
       <nav
         ref={navRef}
         aria-label="Table of contents"
-        className={cn("overflow-y-auto", open ? "max-h-[55vh]" : "max-h-[180px]")}
+        style={{ maxHeight }}
+        className="overflow-y-auto transition-[max-height] duration-300 ease-in-out"
       >
         <ol className="flex list-decimal flex-col gap-2 ps-5 marker:text-muted-foreground">
           {entries.map((entry) => {
@@ -109,7 +122,10 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
           className="flex w-full cursor-pointer items-center justify-center border-t border-dashed border-border pt-3 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronDown
-            className={cn("size-5 transition-transform", open && "rotate-180")}
+            className={cn(
+              "size-5 transition-transform duration-300",
+              open && "rotate-180",
+            )}
             aria-hidden
           />
         </button>
