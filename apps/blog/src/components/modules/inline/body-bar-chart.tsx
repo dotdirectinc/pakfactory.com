@@ -4,7 +4,6 @@ import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
   type ChartConfig,
 } from "@pakfactory/ui/components/chart";
 import type { PostBodyBarChart } from "@/lib/blog-post";
@@ -92,7 +91,18 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
           />
           <ChartTooltip
             cursor={false}
-            content={<ChartTooltipContent className="gap-2 px-3 py-2.5" />}
+            content={({ active, payload, label }) =>
+              active && payload && payload.length ? (
+                <div className="min-w-[80px] rounded-lg border border-border/50 bg-background px-4 py-2.5 text-center shadow-xl">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {label}
+                  </div>
+                  <div className="mt-0.5 text-sm font-semibold text-foreground">
+                    {payload[0]?.value}
+                  </div>
+                </div>
+              ) : null
+            }
           />
           <Bar dataKey="value" radius={4}>
             {data.map((d, i) => (
