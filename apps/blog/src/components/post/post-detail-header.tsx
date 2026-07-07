@@ -17,15 +17,6 @@ type PostDetailHeaderProps = {
   mainImageAlt?: string;
 };
 
-function MetaDot() {
-  return (
-    <span
-      className="inline-block size-2.5 shrink-0 rounded-full bg-muted-foreground/60"
-      aria-hidden
-    />
-  );
-}
-
 export function PostDetailHeader({
   title,
   subtitle,
@@ -44,75 +35,67 @@ export function PostDetailHeader({
 
   return (
     <section aria-labelledby="post-heading" className="bg-muted">
-      <PageDielineSection innerClassName="border-b border-dashed py-12 sm:py-16">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
-          {/* Text column */}
-          <div className="flex flex-col gap-6 lg:flex-1">
-            <div className="flex flex-col gap-4">
-              {categoryTitle ? (
-                categorySlug ? (
-                  <Link
-                    href={categoryHref(categorySlug)}
-                    className="w-fit text-sm text-foreground hover:underline"
-                  >
-                    {categoryTitle}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-foreground">{categoryTitle}</span>
-                )
-              ) : null}
-
-              <h1
-                id="post-heading"
-                className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl"
+      <PageDielineSection innerClassName="grid grid-cols-1 items-center gap-8 py-10 md:py-12 lg:grid-cols-2">
+        {/* Text column */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+          {categoryTitle ? (
+            categorySlug ? (
+              <Link
+                href={categoryHref(categorySlug)}
+                className="w-fit text-base font-medium text-muted-foreground hover:text-foreground"
               >
-                {title}
-              </h1>
-            </div>
+                {categoryTitle}
+              </Link>
+            ) : (
+              <span className="text-base font-medium text-muted-foreground">
+                {categoryTitle}
+              </span>
+            )
+          ) : null}
 
-            {subtitle ? (
-              <p className="text-base leading-6 text-muted-foreground">{subtitle}</p>
-            ) : null}
-
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 text-base">
-              {publishedLabel ? (
-                <span className="font-medium text-muted-foreground">
-                  Published: {publishedLabel}
-                </span>
-              ) : null}
-              {updatedLabel ? (
-                <>
-                  {publishedLabel ? <MetaDot /> : null}
-                  <span className="font-medium text-muted-foreground">
-                    Last Updated: {updatedLabel}
-                  </span>
-                </>
-              ) : null}
-              {readLabel ? (
-                <>
-                  {publishedLabel || updatedLabel ? <MetaDot /> : null}
-                  <span className="font-medium text-muted-foreground">
-                    {readLabel}
-                  </span>
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Hero image column */}
-          <figure className="relative h-[240px] w-full overflow-hidden rounded-[14px] bg-background sm:h-[320px] lg:h-[333px] lg:flex-1">
-            {heroUrl ? (
-              <Image
-                src={heroUrl}
-                alt={mainImageAlt ?? title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 620px"
-                priority
-              />
-            ) : null}
-          </figure>
+          <h1
+            id="post-heading"
+            className="text-4xl font-semibold leading-tight tracking-tight text-foreground lg:text-5xl"
+          >
+            {title}
+          </h1>
         </div>
+
+        {subtitle ? (
+          <p className="text-base leading-7 text-muted-foreground">{subtitle}</p>
+        ) : null}
+
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-muted-foreground">
+          {publishedLabel ? <span>Published: {publishedLabel}</span> : null}
+          {updatedLabel ? (
+            <>
+              {publishedLabel ? <span aria-hidden>·</span> : null}
+              <span>Last Updated: {updatedLabel}</span>
+            </>
+          ) : null}
+          {readLabel ? (
+            <>
+              {publishedLabel || updatedLabel ? <span aria-hidden>·</span> : null}
+              <span>{readLabel}</span>
+            </>
+          ) : null}
+        </p>
+      </div>
+
+      {/* Hero image column */}
+      <figure className="relative aspect-video w-full overflow-hidden rounded-2xl bg-secondary">
+        {heroUrl ? (
+          <Image
+            src={heroUrl}
+            alt={mainImageAlt ?? title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 620px"
+            priority
+          />
+        ) : null}
+      </figure>
       </PageDielineSection>
     </section>
   );
