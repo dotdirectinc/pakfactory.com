@@ -2,7 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import type { TopicsPageGroupRow } from "@/lib/blog-topics-index";
-import { fetchPopularPostsThisMonth } from "@/lib/blog-data";
+import { enrichPopularRowBlocks } from "@/lib/page-builder";
 import { blogTopicsPageParams } from "@/lib/blog-language";
 import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import {
@@ -13,7 +13,6 @@ import type { BlogRobotsDirective } from "@/lib/seo";
 import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { BLOG_TOPICS_PAGE_BUILDER_QUERY } from "@pakfactory/sanity/queries";
-import type { HomePostCard } from "@/lib/blog-home";
 
 const TOPICS_TITLE_FALLBACK = "Explore topics";
 const TOPICS_META_TITLE_FALLBACK = "Explore topics | PakFactory Blog";
@@ -40,31 +39,6 @@ async function fetchSafe<T>(
     }
     return fallback;
   }
-}
-
-async function enrichPopularRowBlocks(
-  blocks: PageBuilderBlock[] | null | undefined,
-): Promise<PageBuilderBlock[]> {
-  if (!blocks?.length) return [];
-
-  return Promise.all(
-    blocks.map(async (block) => {
-      if (block._type !== "postPopularRow") return block;
-
-      const count = block.postsCount ?? 3;
-      let posts = block.posts ?? [];
-
-      if (posts.length < count) {
-        const popular = await fetchPopularPostsThisMonth();
-        posts = popular as HomePostCard[];
-      }
-
-      return {
-        ...block,
-        posts: posts.slice(0, count),
-      };
-    }),
-  );
 }
 
 export async function fetchBlogTopicsPage(): Promise<BlogTopicsPageDoc | null> {

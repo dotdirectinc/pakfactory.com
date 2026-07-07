@@ -9,6 +9,7 @@ import {
   ColorWheelIcon,
   TagIcon,
   UserIcon,
+  WarningOutlineIcon,
   BookIcon,
   BulbOutlineIcon,
   CaseIcon,
@@ -28,7 +29,11 @@ import type {
   StructureResolverContext,
 } from 'sanity/structure'
 import { MediaToolRedirect } from '../components/MediaToolRedirect'
-import { BLOG_HOME_PAGE_IDS, BLOG_TOPICS_PAGE_IDS } from '../lib/languages'
+import {
+  BLOG_HOME_PAGE_IDS,
+  BLOG_TOPICS_PAGE_IDS,
+  BLOG_NOT_FOUND_PAGE_IDS,
+} from '../lib/languages'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FEATURE FLAG
@@ -108,10 +113,26 @@ function blogTopicsPageItem(S: StructureBuilder): ListItemBuilder {
     )
 }
 
+function blogNotFoundPageItem(S: StructureBuilder): ListItemBuilder {
+  // i18n dormant (English-only) — opens the single EN 404 singleton directly.
+  // The 404 is not routable: it is a content source for the Next `not-found` page.
+  return S.listItem()
+    .id('blogNotFoundPage')
+    .title('404 page')
+    .icon(WarningOutlineIcon)
+    .child(
+      S.editor()
+        .id(BLOG_NOT_FOUND_PAGE_IDS.en)
+        .schemaType('blogPage')
+        .documentId(BLOG_NOT_FOUND_PAGE_IDS.en)
+    )
+}
+
 function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
   const pageItems: ListItemBuilder[] = [
     blogHomepageItem(S),
     blogTopicsPageItem(S),
+    blogNotFoundPageItem(S),
   ]
 
   if (BLOG_STUDIO_LANDING_PAGES) {

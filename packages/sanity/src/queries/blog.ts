@@ -28,6 +28,24 @@ export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && de
   "slug": slug.current
 }`;
 
+/** 404 page singleton (blogPage id "blogNotFoundPage") — curated recovery topics. */
+export const BLOG_NOT_FOUND_PAGE_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}`;
+
+/** Fallback topics when no 404 topics are curated — newest/alphabetical topics with a slug. */
+export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
+  _type == "blogTag" && defined(slug.current) && language == $language
+] | order(title asc)[0...6]{
+  _id,
+  title,
+  "slug": slug.current
+}`;
+
 /**
  * Active CMS redirects (`apps/studio/schemas/redirect`). Applied at request time
  * on would-be-404s. `type` is "301" | "302"; the blog maps 301→308 / 302→307.
@@ -254,7 +272,27 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "richTextBand" => {
     heading,
     body
+  },
+  _type == "promoBanner" => {
+    heading,
+    body,
+    ctaLabel,
+    ctaUrl,
+    "images": images[]{ "url": asset->url }
   }
+}`;
+
+/**
+ * 404 page singleton with page-builder blocks (blogPage id "blogNotFoundPage").
+ * Requires `$language` and `$monthStart` params (see blogNotFoundPageParams).
+ */
+export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
 }`;
 
 /** Populated topic group row for /topics grid (shared by index + page Overview queries). */

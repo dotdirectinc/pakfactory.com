@@ -9,6 +9,7 @@ import { PostCategoryRow } from "@/components/blocks/post-category-row";
 import { PostFeaturedRow } from "@/components/blocks/post-featured-row";
 import { PostPopularRow } from "@/components/blocks/post-popular-row";
 import { PostSpotlightRow } from "@/components/blocks/post-spotlight-row";
+import { PromoBanner } from "@/components/blocks/promo-banner";
 import { RichTextBand } from "@/components/blocks/rich-text-band";
 import { TagStrip } from "@/components/blocks/tag-strip";
 
@@ -101,6 +102,16 @@ export type RichTextBandBlock = {
   body?: PortableTextBlock[];
 };
 
+export type PromoBannerBlock = {
+  _type: "promoBanner";
+  _key: string;
+  heading?: string;
+  body?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  images?: { url?: string }[];
+} & DielineBorderFields;
+
 /** Discriminated union of every page-builder array member. */
 export type PageBuilderBlock =
   | PostFeaturedRowBlock
@@ -111,7 +122,8 @@ export type PageBuilderBlock =
   | CtaNewsletterBlock
   | CtaRfqBlock
   | CtaPillarsBlock
-  | RichTextBandBlock;
+  | RichTextBandBlock
+  | PromoBannerBlock;
 
 export type BlockProps<T extends PageBuilderBlock> = Omit<T, "_type" | "_key">;
 
@@ -125,6 +137,7 @@ export const BLOCK_COMPONENTS = {
   ctaRfq: CtaRfq,
   ctaPillars: CtaPillars,
   richTextBand: RichTextBand,
+  promoBanner: PromoBanner,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as const satisfies Record<PageBuilderBlock["_type"], ComponentType<any>>;
 

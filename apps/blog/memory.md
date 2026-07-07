@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-06-18.
+Last updated: 2026-07-07.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -176,6 +176,60 @@ Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` 
 2. Section B — SEO/Social GROQ + metadata fallbacks (**done** 2026-06-18).
 3. Preview phase 1 — converge client API; wire `blog-page.ts` + `blogLocations` (**done** 2026-06-18).
 4. PROD-1502 — post page; Tier 1 JSON-LD (`dateModified`, `NewsArticle`) **done**; Tier 3 AEO (`faqPage`, TL;DR) next. See [`docs/blog-jsonld-audit.md`](../../docs/blog-jsonld-audit.md).
+
+## PROD-1896 — Blog 404 page (redesign; 404 = blogPage singleton)
+
+**Jira:** [PROD-1896](https://dotdirect.atlassian.net/browse/PROD-1896) — 404 Page (Story, epic PROD-1377). Dev clone: PROD-1949. Redesigns the existing `not-found.tsx` (PROD-1506) to the 2026 POC/Figma (node 2407:25166).
+
+**Architecture decision (2026-07-07):** the 404's editor config does **not** live in Blog Settings. It's a **`blogPage` singleton** with `pageRole: notFound` (id `blogNotFoundPage`), shown in the desk under **Pages → 404 page** (mirrors Homepage/Topics singletons). Rationale: page-specific content belongs on a page doc, not global settings; and it opens the door to Page Blocks (phase 2). We briefly built it as a `blogSettings.notFoundTopics` field, then reverted to the singleton.
+
+**Not routable (critical):** the 404 stays the Next `not-found.tsx` route → real HTTP 404 + noindex, in blog chrome, no breadcrumb. The singleton is a **content source**, never a URL: `BLOG_PAGE_BY_SLUG_QUERY` only resolves `pageRole in ["landing","static"]` + a slug, and singletons have no slug — so `blogNotFoundPage` can't be hit as a page (AC#1).
+
+**Singleton mechanics:** `notFound` added to the `isBlogPageSingleton` family (`apps/studio/lib/blog-page-singletons.ts` + `lib/languages.ts` `BLOG_NOT_FOUND_PAGE_IDS`). See **§ blogPage singleton — pageRole contract** below for `pageRole` validation and troubleshooting.
+
+| Concern | Location |
+| --- | --- |
+| Singleton role + fields (`recommendedTopics`, `pageBuilder` via `pageBuilderHome`) | `apps/studio/schemas/blogPage.ts` (notFound-only, hidden otherwise) |
+| `promoBanner` block (reusable on home/topics/404) | `apps/studio/schemas/blocks/promo-banner.ts` |
+| Desk item **Pages → 404 page** | `apps/studio/structure/index.ts` (`blogNotFoundPageItem`) |
+| GROQ | `BLOG_NOT_FOUND_PAGE_BUILDER_QUERY` + `BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY` in `@pakfactory/sanity/queries` |
+| Data | `fetchBlogNotFoundPage()` → `{ topics, blocks }` in `src/lib/blog-data.ts` (uses `getPreviewableSanityClient()` for Presentation) |
+| Hero (fixed) | `src/components/modules/not-found-hero.tsx` — eyebrow + single `h1` + Explore-topics/curated chips + Back-to-Blog-Home |
+| Promo banner block | `src/components/blocks/promo-banner.tsx` → reuses `src/components/modules/promo-banner.tsx` |
+| Page compose | `src/app/not-found.tsx` — fixed hero + `BlockRenderer(blocks)` + newsletter CTA |
+| Presentation preview | `apps/studio/presentation/locations.ts` — `blogNotFoundPage` → `/404-preview` |
+
+**Phase 2 (shipped):** below-hero region is page-builder-driven via `pageBuilderHome` (`postPopularRow`, `promoBanner`, `ctaNewsletter`, etc.). Promo is authored only via the `promoBanner` block (inline `promo` object removed from schema).
+
+**Human steps before ship:**
+1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo`, `promoBanner` block + 404 `pageBuilder` field).
+2. **One-time backfill (if "Page role Required"):** run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` or patch `pageRole: "notFound"` on `blogNotFoundPage` via Vision/API.
+3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Promo Banner + Newsletter), or use the seed script above.
+4. Verify at `http://localhost:3003/404-preview` (Presentation uses the same URL).
+5. **AC#4** — final PakFactory promo copy + real images + CTA URL (editable via Promo Banner block).
+6. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
+
+**Known:** studio `tsc` still nags `documentId` on the singleton `initialValue` — pre-existing (home/topics use the same signature; Sanity provides it at runtime; Vite build unaffected).
+
+---
+
+## blogPage singleton — pageRole contract
+
+Pinned document ids imply `pageRole` (source of truth for Studio field visibility):
+
+| Document id | pageRole |
+| --- | --- |
+| `blogHomePage` | `home` |
+| `blogTopicsPage` | `topics` |
+| `blogNotFoundPage` | `notFound` |
+
+- **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
+- **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
+- **Validation:** singletons skip `pageRole` required (role implied by id; see `blogPage.ts` custom rule).
+- **Seeds:** `seed-blog-singleton-pages.mjs` / `seed-blog-dev.mjs` must always set explicit `pageRole`.
+- **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: run seed or patch field; deploy schema with validation skip.
+
+---
 
 ## i18n — DORMANT (English-only, parked 2026-07-07)
 

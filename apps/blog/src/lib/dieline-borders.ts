@@ -18,6 +18,12 @@ export const CTA_RFQ_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
   bottom: false,
 };
 
+/** Defaults for the promo banner (both edges on; matches Studio initialValue). */
+export const PROMO_BANNER_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
+  top: true,
+  bottom: true,
+};
+
 export function resolveDielineBorders(
   showTopBorder: boolean | undefined,
   showBottomBorder: boolean | undefined,

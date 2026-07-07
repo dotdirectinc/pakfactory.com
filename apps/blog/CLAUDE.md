@@ -81,7 +81,9 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 
 ## Blog pages (ADR-009)
 
-**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `topics` (singleton, id `blogTopicsPage`), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
+**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `topics` (singleton, id `blogTopicsPage`), `notFound` (singleton, id `blogNotFoundPage`), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
+
+**Singleton `pageRole`:** pinned document ids imply the role; the field is hidden/read-only in Studio. New docs get role via async `initialValue` (create only). Full contract + troubleshooting: [`memory.md`](./memory.md) § blogPage singleton — pageRole contract.
 
 **Studio:** Blog workspace → **Pages → Homepage** (`BLOG_STUDIO_LANDING_PAGES = false` in [`structure/index.ts`](../../apps/studio/structure/index.ts)). Sidebar order: Posts, Categories, Authors, Tags, Widgets, then Pages (no divider after Pages). Landing/static lists inside Pages stay hidden until design ships; backend resolver remains active when docs exist.
 
