@@ -140,6 +140,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       _key,
       _type,
       caption,
+      aspectRatio,
       images[]{
         _key,
         alt,
