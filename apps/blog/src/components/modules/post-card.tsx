@@ -243,24 +243,22 @@ export function PostCard({
 
   if (isFeaturedLead) {
     return (
-      <article className="flex flex-col gap-6 lg:contents">
-        <div className="lg:col-start-1 lg:row-start-1">
-          <Link href={post.href} className="group block">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
-              {post.imageUrl && (
-                <Image
-                  src={post.imageUrl}
-                  alt={post.imageAlt ?? ""}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-[1.02]"
-                  sizes="(max-width: 1024px) 100vw, 776px"
-                  priority
-                />
-              )}
-            </div>
-          </Link>
-        </div>
-        <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-2">
+      <article className="flex flex-col gap-6">
+        <Link href={post.href} className="group block">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
+            {post.imageUrl && (
+              <Image
+                src={post.imageUrl}
+                alt={post.imageAlt ?? ""}
+                fill
+                className="object-cover transition-transform group-hover:scale-[1.02]"
+                sizes="(max-width: 1024px) 100vw, 776px"
+                priority
+              />
+            )}
+          </div>
+        </Link>
+        <div className="flex flex-col gap-3">
           {post.categoryTitle && (
             <CategoryBadge title={post.categoryTitle} />
           )}

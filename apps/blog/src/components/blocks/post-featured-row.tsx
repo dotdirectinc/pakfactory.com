@@ -52,23 +52,24 @@ export function PostFeaturedRow({
                 >
                     Featured Posts
                 </h2>
-                <div className="flex flex-col gap-16 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-x-16 lg:gap-y-6">
-                    {featuredCard ? (
-                        <PostCard
-                            post={featuredCard}
-                            variant="featuredLead"
-                        />
-                    ) : (
-                        <p className="text-muted-foreground">
-                            No featured post yet. Pin one in Studio with
-                            &quot;Feature on blog home&quot;.
-                        </p>
-                    )}
-                    <div className="border-t border-dashed border-border pt-8 lg:col-start-2 lg:row-start-1 lg:flex lg:flex-col lg:justify-between lg:self-stretch lg:pt-4">
+                <div className="flex flex-col gap-16 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-16">
+                    <div>
+                        {featuredCard ? (
+                            <PostCard
+                                post={featuredCard}
+                                variant="featuredLead"
+                            />
+                        ) : (
+                            <p className="text-muted-foreground">
+                                No featured post yet. Pin one in Studio with
+                                &quot;Feature on blog home&quot;.
+                            </p>
+                        )}
+                    </div>
+                    <div className="border-t border-dashed border-border pt-8 lg:border-t-0 lg:pt-0">
                         <PostList
                             posts={latestCards}
                             variant="featuredListItem"
-                            className="flex h-full flex-col justify-between"
                             emptyMessage="No published posts yet."
                         />
                     </div>
