@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Button } from "@pakfactory/ui/components/button";
-import { SearchForm } from "@/components/modules/search-form";
-import { CategoryChips } from "@/components/ui/category-chips";
-import { CtaRfq } from "@/components/blocks/cta-rfq";
+import { BlockRenderer } from "@/components/blocks/block-renderer";
+import { NotFoundHero } from "@/components/modules/not-found-hero";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
-import { PostList } from "@/components/modules/post-list";
-import { toPostCardDataListFromPopular } from "@/lib/post-card-data";
-import { fetchBlogCategories, fetchPopularPostsThisMonth } from "@/lib/blog-data";
+import { fetchBlogNotFoundPage } from "@/lib/blog-data";
 import {
   getBlogRobotsDirective,
   robotsDirectiveToMetadata,
@@ -15,45 +10,24 @@ import {
 
 export const metadata: Metadata = {
   title: "Page not found | PakFactory Blog",
-  description: "This page does not exist. Search the blog or browse categories.",
+  description:
+    "This page does not exist. Explore topics or head back to the blog home.",
   robots: robotsDirectiveToMetadata(getBlogRobotsDirective({ kind: "error" })),
 };
 
+/**
+ * Blog 404 (PROD-1896) — real HTTP 404 (Next serves this with a 404 status),
+ * noindex via metadata, inside the blog chrome with no breadcrumb. Fixed recovery
+ * hero; body is page-builder-driven via BlockRenderer + newsletter CTA.
+ */
 export default async function NotFound() {
-  const [categories, popularPosts] = await Promise.all([
-    fetchBlogCategories(),
-    fetchPopularPostsThisMonth(),
-  ]);
+  const notFoundPage = await fetchBlogNotFoundPage();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <header className="space-y-4">
-        <p className="text-sm font-medium text-muted-foreground">404</p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          We could not find that page
-        </h1>
-        <p className="text-muted-foreground">
-          The link may be outdated or the URL was mistyped. Search below or pick a
-          category to keep reading.
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/">Back to Blog Home</Link>
-        </Button>
-      </header>
-
-      <div className="mt-10 space-y-10">
-        <SearchForm />
-        <CategoryChips categories={categories} />
-        <PostList
-          posts={toPostCardDataListFromPopular(popularPosts)}
-          variant="rail"
-          layout="list"
-          heading="Popular this month"
-          headingId="popular-posts-heading"
-        />
-        <CtaRfq />
-        <CtaNewsletter />
-      </div>
-    </main>
+    <>
+      <NotFoundHero topics={notFoundPage.topics} />
+      <BlockRenderer blocks={notFoundPage.blocks} />
+      <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
+    </>
   );
 }

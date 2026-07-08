@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AuthorHeader } from "@/components/views/author-header";
-import { AuthorPostsLoader } from "@/components/modules/author-posts-loader";
-import { buildAuthorJsonLd } from "@/lib/author-jsonld";
+import { AuthorArchiveView } from "@/components/views/author-archive-view";
+import { isArchivePageOutOfRange } from "@/lib/blog-archive-pagination";
 import {
+  authorPageHref,
   buildAuthorMetadata,
-  fetchAuthorBySlug,
-  fetchAuthorPostsPage,
+  fetchAuthorArchivePage,
+  getAuthorListingRobots,
 } from "@/lib/blog-author";
-import { sanityImageUrl } from "@/lib/sanity-image";
-import { getBlogRobotsDirective } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -19,40 +17,21 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const author = await fetchAuthorBySlug(slug);
-  if (!author) return { title: "Author not found" };
+  const data = await fetchAuthorArchivePage(slug, 1);
+  if (!data) return { title: "Author not found" };
 
-  return buildAuthorMetadata(author, getBlogRobotsDirective({ kind: "author" }));
+  return buildAuthorMetadata(
+    data.author,
+    authorPageHref(slug, 1),
+    getAuthorListingRobots(1),
+  );
 }
 
 export default async function AuthorProfilePage({ params }: PageProps) {
   const { slug } = await params;
-  const author = await fetchAuthorBySlug(slug);
-  if (!author) notFound();
+  const data = await fetchAuthorArchivePage(slug, 1);
+  if (!data) notFound();
+  if (isArchivePageOutOfRange(1, data.totalCount)) notFound();
 
-  const { posts, hasMore } = await fetchAuthorPostsPage(slug, 0);
-  const photoUrl = sanityImageUrl(author.photo, 400);
-  const jsonLd = buildAuthorJsonLd(author, photoUrl);
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd }}
-      />
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <AuthorHeader author={author} />
-        <section aria-labelledby="author-posts">
-          <h2 id="author-posts" className="mb-6 text-lg font-semibold tracking-tight">
-            Articles by {author.name}
-          </h2>
-          <AuthorPostsLoader
-            authorSlug={author.slug}
-            initialPosts={posts}
-            initialHasMore={hasMore}
-          />
-        </section>
-      </main>
-    </>
-  );
+  return <AuthorArchiveView data={data} />;
 }

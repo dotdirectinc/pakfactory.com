@@ -83,6 +83,8 @@ Editorial documents (posts, pages, singletons, navigation, etc.) live in the **S
 - Wire desk structure, document actions, GROQ in [`packages/sanity/`](packages/sanity/), and front-end rendering
 - **Read** Sanity via GROQ, client fetch, or MCP **query** tools for debugging
 
+**`blogPage` pinned singletons** (`blogHomePage`, `blogTopicsPage`, `blogNotFoundPage`, `blogSearchPage`): `pageRole` is implied by document id; seeds must set explicit `pageRole`. Ops and troubleshooting: [`apps/blog/memory.md`](apps/blog/memory.md) § blogPage singleton — pageRole contract.
+
 **Agents must never:**
 
 - Run seed scripts (`seed.mjs`, `seed-blog-dev.mjs`, `seed-blog-singleton-pages.mjs`, etc.)
@@ -144,6 +146,9 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | **ADR-004 — Media library**          | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md)     |
 | **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
 | **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                                                            | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
+| **ADR-013 — Shared core vs feature composition** | Extract shared UI as controlled, props-only `ui/` primitives; features own data/URL wiring in `modules/` controllers. Never import one feature's component into another, and never fork a feature component — extract the shared core. | [`docs/adr/0013-shared-core-vs-feature-composition.md`](docs/adr/0013-shared-core-vs-feature-composition.md) |
+
+> ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) are listed in the register linked above.
 
 ## JIRA defaults (Product / Blog 3.0)
 

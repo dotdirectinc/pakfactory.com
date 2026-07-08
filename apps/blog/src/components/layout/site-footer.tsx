@@ -5,6 +5,10 @@ import {Button} from '@pakfactory/ui/components/button';
 // import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
 import {
+    SocialPlatformIcon,
+    socialPlatformAriaLabel,
+} from '@/components/modules/social-platform-icon';
+import {
     getFallbackFooterColumns,
     type BlogAiEngine,
     type BlogAiLink,
@@ -12,20 +16,10 @@ import {
     type BlogFooterLink,
     type BlogFooterSection,
     type BlogSocialLink,
-    type BlogSocialPlatform,
 } from '@/lib/blog-footer-nav';
 import {getWwwUrl} from '@/lib/site';
 
 const WWW = getWwwUrl();
-
-const SOCIAL_ICON_SRC: Record<BlogSocialPlatform, string> = {
-    instagram: '/logos/social/instagram.svg',
-    facebook: '/logos/social/facebook.svg',
-    linkedin: '/logos/social/linkedin.svg',
-    youtube: '/logos/social/youtube.svg',
-    pinterest: '/logos/social/pinterest.svg',
-    x: '/logos/social/x.svg',
-};
 
 const AI_ICON_SRC: Record<BlogAiEngine, string> = {
     chatgpt: '/logos/ai/openai.svg',
@@ -33,15 +27,6 @@ const AI_ICON_SRC: Record<BlogAiEngine, string> = {
     perplexity: '/logos/ai/perplexity.svg',
     claude: '/logos/ai/claude.svg',
     grok: '/logos/ai/grok.svg',
-};
-
-const SOCIAL_LABELS: Record<BlogSocialPlatform, string> = {
-    instagram: 'Instagram',
-    facebook: 'Facebook',
-    linkedin: 'LinkedIn',
-    youtube: 'YouTube',
-    pinterest: 'Pinterest',
-    x: 'X',
 };
 
 const AI_LABELS: Record<BlogAiEngine, string> = {
@@ -95,25 +80,15 @@ type SiteFooterProps = {
 };
 
 function FooterSocialIcon({link}: {link: BlogSocialLink}) {
-    const src = SOCIAL_ICON_SRC[link.platform];
-    if (!src) return null;
-
     return (
         <a
             href={link.url}
-            aria-label={SOCIAL_LABELS[link.platform]}
+            aria-label={socialPlatformAriaLabel(link.platform)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-foreground hover:opacity-80"
         >
-            <Image
-                src={src}
-                alt=""
-                width={20}
-                height={20}
-                className="size-5"
-                aria-hidden
-            />
+            <SocialPlatformIcon platform={link.platform} size={20} />
         </a>
     );
 }

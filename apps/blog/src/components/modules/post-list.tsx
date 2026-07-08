@@ -15,6 +15,8 @@ type PostListProps = {
     | "default"
     | "compact"
     | "featured"
+    | "featuredLead"
+    | "featuredListItem"
     | "horizontal"
     | "headline"
     | "rail";
@@ -47,7 +49,29 @@ export function PostList({
 
   let list: ReactNode;
 
-  if (
+  if (variant === "featuredListItem") {
+    // POC featured secondary list: dashed divider between each item.
+    list = (
+      <ul className={className ?? "flex flex-col"}>
+        {posts.map((post, index) => (
+          <li
+            key={post._id}
+            className={
+              index > 0
+                ? "mt-5 pt-5 lg:mt-4 lg:border-t lg:border-dashed lg:border-border lg:pt-4"
+                : undefined
+            }
+          >
+            <PostCard
+              post={post}
+              variant="featuredListItem"
+              priority={priorityFirst && index === 0}
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  } else if (
     layout === "list" ||
     variant === "headline" ||
     variant === "rail" ||

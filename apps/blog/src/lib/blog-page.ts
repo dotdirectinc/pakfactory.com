@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import { getSanityClient } from "@/lib/sanity/client";
-import { blogLanguageParams } from "@/lib/blog-language";
+import { blogLandingPageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   buildDocMetadata,
@@ -34,7 +34,7 @@ export async function fetchBlogPageBySlug(
     const client = await getSanityClient();
     return await client.fetch<BlogPageRecord | null>(
       BLOG_PAGE_BY_SLUG_QUERY,
-      blogLanguageParams({ slug }),
+      blogLandingPageParams(slug),
     );
   } catch (err) {
     if (process.env.NODE_ENV === "development") {

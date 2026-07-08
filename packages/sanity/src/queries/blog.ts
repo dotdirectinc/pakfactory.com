@@ -1,6 +1,7 @@
 /**
  * Blog 3.0 GROQ — field names match `apps/studio/schemas` (post, blogCategory, author).
- * Popular posts: no `viewCount` on post yet; month window with publishedAt fallback in app code.
+ * Popular posts: ranked by `viewCount` desc within a time window (block `timeWindowDays`
+ * or monthStart for search/backfill); `publishedAt` as tiebreak; latest-posts fallback in app code.
  *
  * All blog document queries accept `$language` (default `en` in apps/blog fetch helpers).
  */
@@ -25,6 +26,24 @@ export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && de
   _id,
   title,
   navLabel,
+  "slug": slug.current
+}`;
+
+/** 404 page singleton (blogPage id "blogNotFoundPage") — curated recovery topics. */
+export const BLOG_NOT_FOUND_PAGE_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}`;
+
+/** Fallback topics when no 404 topics are curated — newest/alphabetical topics with a slug. */
+export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
+  _type == "blogTag" && defined(slug.current) && language == $language
+] | order(title asc)[0...6]{
+  _id,
+  title,
   "slug": slug.current
 }`;
 
@@ -162,7 +181,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   )
 }`;
 
-/** Posts published in the current calendar month (UTC), newest first. */
+/** Posts published in the current calendar month (UTC), ranked by Views then newest. */
 export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
   _type == "post"
   && (!defined(language) || language == $language)
@@ -170,7 +189,7 @@ export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
   && defined(publishedAt)
   && publishedAt <= now()
   && publishedAt >= $monthStart
-] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
 /** CMS-pinned hero post from the homepage page builder (`postFeaturedRow.featuredPost`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
@@ -222,14 +241,15 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "postPopularRow" => {
     heading,
     postsCount,
+    timeWindowDays,
     "posts": *[
       _type == "post"
       && (!defined(language) || language == $language)
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
-      && publishedAt >= $monthStart
-    ] | order(publishedAt desc)[0...6]${POST_CARD_FIELDS}
+      && dateTime(publishedAt) >= dateTime(now()) - (coalesce(^.timeWindowDays, 30) * 86400)
+    ] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...6]${POST_CARD_FIELDS}
   },
   _type == "postSpotlightRow" => {
     heading,
@@ -254,7 +274,41 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "richTextBand" => {
     heading,
     body
+  },
+  _type == "promoBanner" => {
+    heading,
+    body,
+    ctaLabel,
+    ctaUrl,
+    "images": images[]{ "url": asset->url }
   }
+}`;
+
+/**
+ * 404 page singleton with page-builder blocks (blogPage id "blogNotFoundPage").
+ * Requires `$language` and `$monthStart` params (see blogNotFoundPageParams).
+ */
+export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
+/**
+ * Search page singleton with page-builder blocks (blogPage id "blogSearchPage").
+ * Content source for the reserved `/search` route — not slug-routable.
+ * Requires `$language` and `$monthStart` params (see blogSearchPageParams).
+ */
+export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogSearchPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
 }`;
 
 /** Populated topic group row for /topics grid (shared by index + page Overview queries). */
@@ -487,10 +541,12 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Keyword search (PROD-1503) — Sanity built-in `match`. `$searchTerm` is the
- * tokenized query (each token suffixed with `*` for prefix matching), built in
- * `apps/blog/src/lib/blog-search.ts`. Matches title, excerpt, body text, and
- * tag titles. `$yearStart`/`$yearEnd` narrow by publish date (nullable).
+ * Keyword search (PROD-1503, PROD-1950) — Sanity built-in `match`. `$searchTerm`
+ * is the tokenized query (each token suffixed with `*` for prefix matching), built
+ * in `apps/blog/src/lib/blog-search.ts`. Matches title, category title, excerpt,
+ * body text, and tag titles (all case-insensitive). `$categorySlugs` is a nullable
+ * array that narrows to the selected categories (empty = all).
+ * `$yearStart`/`$yearEnd` narrow by publish date (nullable).
  */
 const SEARCH_POST_FILTER = /* groq */ `_type == "post"
   && (!defined(language) || language == $language)
@@ -499,10 +555,12 @@ const SEARCH_POST_FILTER = /* groq */ `_type == "post"
   && publishedAt <= now()
   && (
     title match $searchTerm
+    || category->title match $searchTerm
     || excerpt match $searchTerm
     || pt::text(body) match $searchTerm
     || count(tags[@->title match $searchTerm]) > 0
   )
+  && (count($categorySlugs) == 0 || category->slug.current in $categorySlugs)
   && ($yearStart == null || publishedAt >= $yearStart)
   && ($yearEnd == null || publishedAt < $yearEnd)`;
 
@@ -592,14 +650,14 @@ export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   "authorName": author->name
 }`;
 
-/** Latest published posts when the month window returns fewer than three. */
+/** Published posts ranked by Views when the month window returns fewer than three. */
 export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
   _type == "post"
   && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
 /** Published posts for the XML sitemap — slug, category for canonical path, and lastmod. */
 export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
@@ -820,7 +878,11 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
   authorType,
   bio,
   "bioText": pt::text(bio),
-  socialLinks,
+  socialLinks[]{
+    platform,
+    url,
+    label
+  },
   photo,
   metaTitle,
   metaDescription,

@@ -30,3 +30,13 @@ export const BLOG_TOPICS_PAGE_IDS = {
   en: 'blogTopicsPage',
   fr: 'blogTopicsPage-fr',
 } as const
+
+export const BLOG_NOT_FOUND_PAGE_IDS = {
+  en: 'blogNotFoundPage',
+  fr: 'blogNotFoundPage-fr',
+} as const
+
+export const BLOG_SEARCH_PAGE_IDS = {
+  en: 'blogSearchPage',
+  fr: 'blogSearchPage-fr',
+} as const
