@@ -58,6 +58,14 @@ export const CASE_STUDY_PATHS_QUERY = /* groq */ `*[
   _type == "caseStudy" && defined(slug.current)
 ]{ "slug": slug.current }`;
 
+/** Slugs + last-modified for sitemap generation. */
+export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
+  _type == "caseStudy" && defined(slug.current)
+] | order(publishedAt desc) {
+  "slug": slug.current,
+  "lastmod": coalesce(publishedAt, _updatedAt)
+}`;
+
 // ─── TypeScript types (mirrors GROQ projections above) ───────────────────────
 
 export type CaseStudyCard = {
@@ -88,3 +96,5 @@ export type CaseStudyDetail = CaseStudyCard & {
 };
 
 export type CaseStudyPath = { slug: string };
+
+export type CaseStudySitemapEntry = { slug: string; lastmod: string | null };

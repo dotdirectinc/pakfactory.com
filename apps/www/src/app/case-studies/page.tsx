@@ -6,13 +6,14 @@ import {
   type CaseStudyCard,
 } from "@pakfactory/sanity/queries";
 import {
+  breadcrumbList,
+  collectionPage,
   itemList,
   jsonLdGraph,
   serializeJsonLd,
-  webPage,
 } from "@pakfactory/seo";
-import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { absoluteUrl } from "@/lib/site";
+import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { MOCK_CASE_STUDY_CARDS } from "@/lib/mock/case-studies";
 
 export const revalidate = 3600;
@@ -44,7 +45,16 @@ export default async function CaseStudiesPage() {
 
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
-      webPage({ url: PAGE_URL, name: "Case Studies | PakFactory" }),
+      breadcrumbList([
+        { name: "Home", url: absoluteUrl("/") },
+        { name: "Case Studies", url: PAGE_URL },
+      ]),
+      collectionPage({
+        name: "Case Studies | PakFactory",
+        url: PAGE_URL,
+        description:
+          "See how PakFactory has helped brands create custom packaging that protects products and elevates unboxing experiences.",
+      }),
       itemList({
         name: "Case Studies",
         items: studies.map((s) => ({
