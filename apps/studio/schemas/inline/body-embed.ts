@@ -65,14 +65,14 @@ export const bodyEmbed = defineType({
       options: {
         list: [
           { title: 'Fixed height', value: 'height' },
-          { title: 'Auto height (detect)', value: 'auto' },
+          { title: 'Auto', value: 'auto' },
           { title: 'Aspect ratio', value: 'aspect' },
         ],
         layout: 'radio',
       },
       initialValue: 'height',
       description:
-        'Fixed: use the height below — best for surveys/forms (Zoho, Google Forms). Auto: detect the embed height via postMessage and fall back to the height below when the embed reports nothing (Google Forms never does). Note: a provider’s reported height can include its own padding/whitespace, so Auto may look taller than the visible form — prefer Fixed for surveys. Aspect ratio: size by ratio.',
+        'Fixed: use the width/height below. Auto: detect the embed’s actual width & height via postMessage (e.g. Zoho survey) and size + center the iframe to match — no whitespace, no scroll; falls back to the width/height below when the embed reports nothing (Google Forms never does). Aspect ratio: size by ratio.',
     }),
     defineField({
       name: 'height',

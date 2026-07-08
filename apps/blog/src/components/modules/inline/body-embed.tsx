@@ -1,5 +1,4 @@
 import { isAllowedEmbedUrl } from "@pakfactory/sanity/embed-allowlist";
-import { CAPTION_CLASS } from "@/lib/blog-caption";
 import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import type { PostBodyEmbed } from "@/lib/blog-post";
 import { EmbedFrame } from "./embed-frame";
@@ -11,8 +10,8 @@ type BodyEmbedProps = {
 /**
  * Inline iframe embed authored in the post body. Security boundary: the URL is
  * only rendered when it passes the allowlist (baseline hosts ∪ admin-managed
- * Settings.additionalEmbedHosts). Sizing (fixed / auto / aspect) is handled by
- * the client EmbedFrame.
+ * Settings.additionalEmbedHosts). Sizing (fixed / auto / aspect), width,
+ * centering and the caption are handled by the client EmbedFrame.
  */
 export async function BodyEmbed({ value }: BodyEmbedProps) {
   const url = value.url?.trim();
@@ -22,37 +21,22 @@ export async function BodyEmbed({ value }: BodyEmbedProps) {
   const additionalHosts = settings?.additionalEmbedHosts ?? [];
   if (!isAllowedEmbedUrl(url, additionalHosts)) return null;
 
-  const title = value.title?.trim() || "Embedded content";
-  const caption = value.caption?.trim();
   const mode =
     value.sizing === "auto"
       ? "auto"
       : value.sizing === "aspect"
         ? "aspect"
         : "height";
-  const height = value.height && value.height > 0 ? value.height : 600;
-  const aspectRatio = value.aspectRatio || "16/9";
-  // Optional fixed width (matched to the form) — centers the embed and removes
-  // side whitespace. `maxWidth` keeps it responsive on narrow viewports.
-  const width =
-    value.width && value.width > 0 && mode !== "aspect"
-      ? value.width
-      : undefined;
 
   return (
-    <figure className="my-8">
-      <div className="mx-auto" style={width ? { maxWidth: width } : undefined}>
-        <EmbedFrame
-          url={url}
-          title={title}
-          mode={mode}
-          height={height}
-          aspectRatio={aspectRatio}
-        />
-        {caption ? (
-          <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
-        ) : null}
-      </div>
-    </figure>
+    <EmbedFrame
+      url={url}
+      title={value.title?.trim() || "Embedded content"}
+      mode={mode}
+      height={value.height && value.height > 0 ? value.height : 600}
+      width={value.width && value.width > 0 ? value.width : undefined}
+      aspectRatio={value.aspectRatio || "16/9"}
+      caption={value.caption?.trim() || undefined}
+    />
   );
 }

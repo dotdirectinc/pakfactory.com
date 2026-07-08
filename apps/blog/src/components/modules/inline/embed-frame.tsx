@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CAPTION_CLASS } from "@/lib/blog-caption";
 import {
   adapterForHost,
-  genericHeightFromMessage,
+  genericSizeFromMessage,
 } from "./embed-height-adapters";
 
 type EmbedFrameProps = {
@@ -12,17 +13,26 @@ type EmbedFrameProps = {
   mode: "height" | "auto" | "aspect";
   /** Fixed height, or the fallback height in auto mode. */
   height: number;
+  /** Optional fixed max-width, or the fallback width in auto mode. */
+  width?: number;
   aspectRatio: string;
+  caption?: string;
 };
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, Math.round(value)));
 
 export function EmbedFrame({
   url,
   title,
   mode,
   height,
+  width,
   aspectRatio,
+  caption,
 }: EmbedFrameProps) {
   const [autoHeight, setAutoHeight] = useState<number | null>(null);
+  const [autoWidth, setAutoWidth] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -37,12 +47,12 @@ export function EmbedFrame({
       return;
     }
 
-    // Prefer a host-specific adapter (e.g. Zoho Survey); fall back to the
-    // generic common-shape parser for cooperating providers.
+    // Prefer a host-specific adapter (e.g. Zoho Survey, which reports both its
+    // width and height); fall back to the generic common-shape parser.
     const adapter = adapterForHost(embedHost);
 
     function onMessage(event: MessageEvent) {
-      // Security: only trust height messages from the embed's own origin and,
+      // Security: only trust size messages from the embed's own origin and,
       // when available, its own window.
       if (event.origin !== embedOrigin) return;
       if (
@@ -52,12 +62,9 @@ export function EmbedFrame({
         return;
       }
       const parsed =
-        adapter?.parseHeight(event.data) ??
-        genericHeightFromMessage(event.data);
-      if (parsed != null) {
-        // Clamp to sane bounds to avoid runaway growth / jitter.
-        setAutoHeight(Math.min(4000, Math.max(120, Math.round(parsed))));
-      }
+        adapter?.parseSize(event.data) ?? genericSizeFromMessage(event.data);
+      if (parsed?.height != null) setAutoHeight(clamp(parsed.height, 120, 4000));
+      if (parsed?.width != null) setAutoWidth(clamp(parsed.width, 240, 1600));
     }
 
     window.addEventListener("message", onMessage);
@@ -66,25 +73,35 @@ export function EmbedFrame({
 
   const isAspect = mode === "aspect";
   const resolvedHeight = mode === "auto" ? (autoHeight ?? height) : height;
-  const frameStyle = isAspect
-    ? { aspectRatio }
-    : { height: resolvedHeight };
+  const resolvedWidth = mode === "auto" ? (autoWidth ?? width) : width;
+
+  const frameStyle = isAspect ? { aspectRatio } : { height: resolvedHeight };
 
   return (
-    <div
-      className="w-full overflow-hidden rounded-lg border border-border bg-muted/20 transition-[height] duration-200"
-      style={frameStyle}
+    <figure
+      className="mx-auto my-8"
+      style={
+        resolvedWidth && !isAspect ? { maxWidth: resolvedWidth } : undefined
+      }
     >
-      <iframe
-        ref={iframeRef}
-        src={url}
-        title={title}
-        loading="lazy"
-        referrerPolicy="strict-origin-when-cross-origin"
-        sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
-        allowFullScreen
-        className="size-full border-0"
-      />
-    </div>
+      <div
+        className="w-full overflow-hidden rounded-lg border border-border bg-muted/20 transition-[height,max-width] duration-200"
+        style={frameStyle}
+      >
+        <iframe
+          ref={iframeRef}
+          src={url}
+          title={title}
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+          allowFullScreen
+          className="size-full border-0"
+        />
+      </div>
+      {caption ? (
+        <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
+      ) : null}
+    </figure>
   );
 }
