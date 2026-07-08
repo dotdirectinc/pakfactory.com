@@ -130,6 +130,75 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       linkNofollow,
       asset
     },
+    _type == "bodyQuote" => {
+      _key,
+      _type,
+      quote,
+      attribution
+    },
+    _type == "bodyGallery" => {
+      _key,
+      _type,
+      caption,
+      images[]{
+        _key,
+        alt,
+        asset
+      }
+    },
+    _type == "bodyTable" => {
+      _key,
+      _type,
+      variant,
+      columns,
+      caption,
+      rows[]{
+        _key,
+        cells
+      }
+    },
+    _type == "bodyEmbed" => {
+      _key,
+      _type,
+      url,
+      title,
+      sizing,
+      height,
+      width,
+      caption
+    },
+    _type == "bodyVideo" => {
+      _key,
+      _type,
+      url,
+      title,
+      caption,
+      poster
+    },
+    _type == "bodyStatStack" => {
+      _key,
+      _type,
+      source,
+      stats[]{
+        _key,
+        value,
+        label
+      }
+    },
+    _type == "bodyBarChart" => {
+      _key,
+      _type,
+      title,
+      xAxisLabel,
+      yAxisLabel,
+      source,
+      data[]{
+        _key,
+        label,
+        value,
+        highlight
+      }
+    },
     _type == "bodyCallout" => {
       _key,
       _type,
@@ -698,7 +767,8 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "defaultOgImageUrl": defaultOgImage.asset->url,
   "organizationLogoUrl": organization.logo.asset->url,
   robotsTxt,
-  llmsTxt
+  llmsTxt,
+  additionalEmbedHosts
 }`;
 
 /** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */

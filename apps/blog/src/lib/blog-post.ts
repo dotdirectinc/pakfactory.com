@@ -54,6 +54,57 @@ export type PostBodyWidget = {
   productExcerpt?: string;
 };
 
+export type PostBodyQuote = {
+  quote?: string;
+  attribution?: string;
+};
+
+export type PostBodyGallery = {
+  caption?: string;
+  images?: Array<{ _key?: string; alt?: string; asset?: unknown }>;
+};
+
+export type PostBodyTable = {
+  variant?: "data" | "comparison";
+  columns?: string[];
+  caption?: string;
+  rows?: Array<{ _key?: string; cells?: string[] }>;
+};
+
+export type PostBodyEmbed = {
+  url?: string;
+  title?: string;
+  sizing?: "height" | "auto";
+  height?: number;
+  width?: number;
+  caption?: string;
+};
+
+export type PostBodyVideo = {
+  url?: string;
+  poster?: unknown;
+  title?: string;
+  caption?: string;
+};
+
+export type PostBodyStatStack = {
+  source?: string;
+  stats?: Array<{ _key?: string; value?: string; label?: string }>;
+};
+
+export type PostBodyBarChart = {
+  title?: string;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  source?: string;
+  data?: Array<{
+    _key?: string;
+    label?: string;
+    value?: number;
+    highlight?: boolean;
+  }>;
+};
+
 export type PostBodyCallout = {
   calloutTone?: string;
   calloutTitle?: string;

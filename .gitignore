@@ -36,3 +36,5 @@ Thumbs.db
 # (applies in every dir, so this also ignores apps/*/package-lock.json).
 package-lock.json
 yarn.lock
+
+apps/blog/next-env.d.ts

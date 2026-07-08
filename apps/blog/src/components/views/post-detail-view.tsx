@@ -1,6 +1,5 @@
 import {Breadcrumb} from '@/components/layout/breadcrumb';
-import {PageDielineSection} from '@/components/layout/page-dieline-section';
-import {CtaRfq} from '@/components/blocks/cta-rfq';
+import {CtaNewsletter} from '@/components/blocks/cta-newsletter';
 import {PostArticleColumn} from '@/components/post/post-article-column';
 import {PostDetailHeader} from '@/components/post/post-detail-header';
 import {PostDetailLayout} from '@/components/post/post-detail-layout';
@@ -51,11 +50,9 @@ export function PostDetailView({post}: PostDetailViewProps) {
             header={
                 <PostDetailHeader
                     title={post.title}
+                    subtitle={post.excerpt}
                     categoryTitle={post.categoryTitle}
                     categorySlug={post.categorySlug}
-                    authorName={post.author?.name}
-                    authorSlug={post.author?.slug}
-                    authorPhoto={post.author?.photo}
                     publishedAt={post.publishedAt}
                     lastModified={post.lastModified}
                     readingTimeMinutes={post.readingTimeMinutes}
@@ -65,6 +62,7 @@ export function PostDetailView({post}: PostDetailViewProps) {
             }
             sidebar={
                 <PostDetailSidebar
+                    author={post.author}
                     toc={toc}
                     shareUrl={canonicalUrl}
                     shareTitle={post.title}
@@ -74,6 +72,8 @@ export function PostDetailView({post}: PostDetailViewProps) {
                 <PostArticleColumn
                     post={post}
                     headingIdByKey={headingIdByKey}
+                    shareUrl={canonicalUrl}
+                    shareTitle={post.title}
                 />
             }
             footer={
@@ -83,9 +83,7 @@ export function PostDetailView({post}: PostDetailViewProps) {
                         categorySlug={post.categorySlug}
                         categoryTitle={post.categoryTitle}
                     />
-                    {/* <PageDielineSection innerClassName="py-16 sm:py-24">
-            <CtaRfq />
-          </PageDielineSection> */}
+                    <CtaNewsletter />
                 </>
             }
         />
