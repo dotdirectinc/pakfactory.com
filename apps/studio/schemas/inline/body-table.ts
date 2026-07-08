@@ -56,6 +56,21 @@ export const bodyTable = defineType({
         Rule.required().min(2).max(10).error('Add between 2 and 10 rows.'),
     }),
     defineField({
+      name: 'variant',
+      title: 'Style',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Data table', value: 'data' },
+          { title: 'Comparison table', value: 'comparison' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'data',
+      description:
+        'Comparison style emphasizes the first column as row labels with striped rows — good for "A vs B" feature comparisons.',
+    }),
+    defineField({
       name: 'caption',
       title: 'Caption',
       type: 'string',

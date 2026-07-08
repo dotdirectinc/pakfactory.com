@@ -53,7 +53,12 @@ export function ReadingProgressBar() {
   if (!mountNode) return null;
 
   return createPortal(
-    <div className="relative h-1 w-full bg-border/40" aria-hidden>
+    // Hidden until there's actual progress — no empty default bar at the top.
+    <div
+      className="relative h-1 w-full bg-border/40 transition-opacity duration-200"
+      style={{ opacity: progress > 0 ? 1 : 0 }}
+      aria-hidden
+    >
       <div
         className="h-full bg-primary"
         style={{ width: `${progress * 100}%` }}

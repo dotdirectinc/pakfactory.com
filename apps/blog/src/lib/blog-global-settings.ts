@@ -10,6 +10,8 @@ export type BlogGlobalSettings = {
   siteTitle?: string | null;
   robotsTxt?: string | null;
   llmsTxt?: string | null;
+  /** Admin-managed extra hosts allowed for the bodyEmbed iframe widget. */
+  additionalEmbedHosts?: string[] | null;
 };
 
 async function loadBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {

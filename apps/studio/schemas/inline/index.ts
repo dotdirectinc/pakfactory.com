@@ -1,5 +1,6 @@
 import { bodyBarChart } from './body-bar-chart'
 import { bodyCallout } from './body-callout'
+import { bodyEmbed } from './body-embed'
 import { bodyGallery } from './body-gallery'
 import { bodyQuote } from './body-quote'
 import { bodyStatStack } from './body-stat-stack'
@@ -25,4 +26,5 @@ export const inlineBlocks = [
   bodyStatStack,
   bodyBarChart,
   bodyTable,
+  bodyEmbed,
 ]

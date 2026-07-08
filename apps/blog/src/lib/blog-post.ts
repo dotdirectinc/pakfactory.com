@@ -65,9 +65,19 @@ export type PostBodyGallery = {
 };
 
 export type PostBodyTable = {
+  variant?: "data" | "comparison";
   columns?: string[];
   caption?: string;
   rows?: Array<{ _key?: string; cells?: string[] }>;
+};
+
+export type PostBodyEmbed = {
+  url?: string;
+  title?: string;
+  sizing?: "height" | "auto";
+  height?: number;
+  width?: number;
+  caption?: string;
 };
 
 export type PostBodyVideo = {
