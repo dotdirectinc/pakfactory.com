@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  adapterForHost,
+  genericHeightFromMessage,
+} from "./embed-height-adapters";
 
 type EmbedFrameProps = {
   url: string;
@@ -10,32 +14,6 @@ type EmbedFrameProps = {
   height: number;
   aspectRatio: string;
 };
-
-/**
- * Best-effort height extraction from a postMessage payload. There is no single
- * standard, so we accept a few common shapes. Providers that never post their
- * height simply keep the fallback height.
- */
-function parseHeight(data: unknown): number | null {
-  if (typeof data === "number" && data > 0) return data;
-  if (data && typeof data === "object") {
-    const record = data as Record<string, unknown>;
-    for (const key of [
-      "height",
-      "pakfactoryEmbedHeight",
-      "frameHeight",
-      "scrollHeight",
-      "documentHeight",
-    ]) {
-      const value = record[key];
-      if (typeof value === "number" && value > 0) return value;
-      if (typeof value === "string" && /^\d+(\.\d+)?$/.test(value)) {
-        return Number.parseFloat(value);
-      }
-    }
-  }
-  return null;
-}
 
 export function EmbedFrame({
   url,
@@ -50,11 +28,18 @@ export function EmbedFrame({
   useEffect(() => {
     if (mode !== "auto") return;
     let embedOrigin: string;
+    let embedHost: string;
     try {
-      embedOrigin = new URL(url).origin;
+      const parsedUrl = new URL(url);
+      embedOrigin = parsedUrl.origin;
+      embedHost = parsedUrl.hostname;
     } catch {
       return;
     }
+
+    // Prefer a host-specific adapter (e.g. Zoho Survey); fall back to the
+    // generic common-shape parser for cooperating providers.
+    const adapter = adapterForHost(embedHost);
 
     function onMessage(event: MessageEvent) {
       // Security: only trust height messages from the embed's own origin and,
@@ -66,7 +51,9 @@ export function EmbedFrame({
       ) {
         return;
       }
-      const parsed = parseHeight(event.data);
+      const parsed =
+        adapter?.parseHeight(event.data) ??
+        genericHeightFromMessage(event.data);
       if (parsed != null) {
         // Clamp to sane bounds to avoid runaway growth / jitter.
         setAutoHeight(Math.min(4000, Math.max(120, Math.round(parsed))));
