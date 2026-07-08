@@ -85,6 +85,15 @@ export const bodyEmbed = defineType({
       validation: (Rule) => Rule.min(120).max(2000),
     }),
     defineField({
+      name: 'width',
+      title: 'Max width (px)',
+      type: 'number',
+      hidden: ({ parent }) => parent?.sizing === 'aspect',
+      description:
+        'Optional. Set to the embedded form’s actual width to remove side whitespace — the embed is centered in the article. Leave empty for full width.',
+      validation: (Rule) => Rule.min(240).max(1200),
+    }),
+    defineField({
       name: 'aspectRatio',
       title: 'Aspect ratio',
       type: 'string',

@@ -76,6 +76,7 @@ export type PostBodyEmbed = {
   title?: string;
   sizing?: "height" | "auto" | "aspect";
   height?: number;
+  width?: number;
   aspectRatio?: string;
   caption?: string;
 };

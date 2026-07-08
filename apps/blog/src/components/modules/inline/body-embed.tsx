@@ -32,19 +32,27 @@ export async function BodyEmbed({ value }: BodyEmbedProps) {
         : "height";
   const height = value.height && value.height > 0 ? value.height : 600;
   const aspectRatio = value.aspectRatio || "16/9";
+  // Optional fixed width (matched to the form) — centers the embed and removes
+  // side whitespace. `maxWidth` keeps it responsive on narrow viewports.
+  const width =
+    value.width && value.width > 0 && mode !== "aspect"
+      ? value.width
+      : undefined;
 
   return (
     <figure className="my-8">
-      <EmbedFrame
-        url={url}
-        title={title}
-        mode={mode}
-        height={height}
-        aspectRatio={aspectRatio}
-      />
-      {caption ? (
-        <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
-      ) : null}
+      <div className="mx-auto" style={width ? { maxWidth: width } : undefined}>
+        <EmbedFrame
+          url={url}
+          title={title}
+          mode={mode}
+          height={height}
+          aspectRatio={aspectRatio}
+        />
+        {caption ? (
+          <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
+        ) : null}
+      </div>
     </figure>
   );
 }

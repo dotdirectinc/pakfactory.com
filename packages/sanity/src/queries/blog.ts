@@ -145,6 +145,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       title,
       sizing,
       height,
+      width,
       aspectRatio,
       caption
     },
