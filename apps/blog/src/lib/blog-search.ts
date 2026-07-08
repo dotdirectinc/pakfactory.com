@@ -3,6 +3,7 @@ import {
   archivePageSlice,
   getTotalArchivePages,
   isArchivePageOutOfRange,
+  LISTING_PAGE_SIZE,
 } from "@/lib/blog-archive";
 import { parseListingPage, type BlogRobotsDirective } from "@/lib/seo";
 import { getSanityClient } from "@/lib/sanity/client";
@@ -15,6 +16,11 @@ import {
   BLOG_SEARCH_POSTS_PAGE_RELEVANCE_QUERY,
   BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY,
 } from "@pakfactory/sanity/queries";
+import {
+  ALGOLIA_SORT_INDEX,
+  type AlgoliaPostRecord,
+} from "@pakfactory/sanity/algolia/post-record";
+import { liteClient } from "algoliasearch/lite";
 
 /** Relevance is the default; the sidebar can re-sort. */
 export type SearchSort = "relevance" | "newest" | "oldest" | "title";
@@ -38,6 +44,10 @@ export type SearchPageData = {
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
+
+const useAlgolia =
+  Boolean(process.env.NEXT_PUBLIC_ALGOLIA_APP_ID) &&
+  Boolean(process.env.NEXT_PUBLIC_ALGOLIA_API_KEY);
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (value === undefined) return undefined;
@@ -104,6 +114,93 @@ function searchPageQuery(sort: SearchSort): string {
   }
 }
 
+function algoliaHitToHomePostCard(hit: AlgoliaPostRecord): HomePostCard {
+  return {
+    _id: hit.objectID,
+    title: hit.title,
+    slug: hit.slug,
+    excerpt: hit.excerpt || undefined,
+    publishedAt: hit.publishedAt ?? undefined,
+    mainImage: hit.image
+      ? { url: hit.image, alt: hit.imageAlt || undefined }
+      : undefined,
+    categorySlug: hit.category?.slug ?? undefined,
+    categoryTitle: hit.category?.title ?? undefined,
+    authorName: hit.author?.name ?? undefined,
+  };
+}
+
+function buildAlgoliaFacetFilters(categories: string[]): string[][] | undefined {
+  if (categories.length === 0) return undefined;
+  return [categories.map((slug) => `category.slug:${slug}`)];
+}
+
+async function fetchSearchPageFromAlgolia(
+  query: string,
+  pageNumber: number,
+  filters: SearchListFilters,
+): Promise<{ posts: HomePostCard[]; totalCount: number }> {
+  const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!;
+  const apiKey = process.env.NEXT_PUBLIC_ALGOLIA_API_KEY!;
+  const client = liteClient(appId, apiKey);
+  const facetFilters = buildAlgoliaFacetFilters(filters.categories);
+
+  const { results } = await client.searchForHits<AlgoliaPostRecord>({
+    requests: [
+      {
+        indexName: ALGOLIA_SORT_INDEX[filters.sort],
+        query,
+        page: Math.max(0, pageNumber - 1),
+        hitsPerPage: LISTING_PAGE_SIZE,
+        ...(facetFilters ? { facetFilters } : {}),
+      },
+    ],
+  });
+
+  const result = results[0];
+  const hits = result?.hits ?? [];
+  return {
+    posts: hits.map(algoliaHitToHomePostCard),
+    totalCount: result?.nbHits ?? 0,
+  };
+}
+
+async function fetchSearchPageFromGroq(
+  searchTerm: string,
+  pageNumber: number,
+  filters: SearchListFilters,
+): Promise<{ posts: HomePostCard[]; totalCount: number }> {
+  const groqParams = blogLanguageParams({
+    searchTerm,
+    categorySlugs: filters.categories,
+    yearStart: null,
+    yearEnd: null,
+  });
+
+  let totalCount = 0;
+  if (isSanityConfigured()) {
+    const client = await getSanityClient();
+    totalCount = await client
+      .fetch<number>(BLOG_SEARCH_POSTS_COUNT_QUERY, groqParams)
+      .catch(() => 0);
+  }
+
+  let posts: HomePostCard[] = [];
+  if (isSanityConfigured() && !isArchivePageOutOfRange(pageNumber, totalCount)) {
+    const { start, end } = archivePageSlice(pageNumber);
+    const client = await getSanityClient();
+    posts = await client
+      .fetch<HomePostCard[]>(searchPageQuery(filters.sort), {
+        ...groqParams,
+        start,
+        end,
+      })
+      .catch(() => []);
+  }
+
+  return { posts, totalCount };
+}
+
 /**
  * Build a `/search` URL. `q` and active filters are query params; relevance
  * sort and page 1 are omitted (defaults). Categories serialize as repeated
@@ -145,38 +242,42 @@ export async function fetchSearchPage(
     return { ...base, posts: [], totalCount: 0, totalPages: 1 };
   }
 
-  const groqParams = blogLanguageParams({
-    searchTerm,
-    categorySlugs: filters.categories,
-    yearStart: null,
-    yearEnd: null,
-  });
-
+  let posts: HomePostCard[] = [];
   let totalCount = 0;
-  if (isSanityConfigured()) {
-    const client = await getSanityClient();
-    totalCount = await client
-      .fetch<number>(BLOG_SEARCH_POSTS_COUNT_QUERY, groqParams)
-      .catch(() => 0);
+
+  if (useAlgolia) {
+    try {
+      const algoliaResult = await fetchSearchPageFromAlgolia(
+        query,
+        pageNumber,
+        filters,
+      );
+      posts = algoliaResult.posts;
+      totalCount = algoliaResult.totalCount;
+    } catch (error) {
+      console.error("[blog-search] Algolia search failed, falling back to GROQ:", error);
+      const groqResult = await fetchSearchPageFromGroq(
+        searchTerm,
+        pageNumber,
+        filters,
+      );
+      posts = groqResult.posts;
+      totalCount = groqResult.totalCount;
+    }
+  } else {
+    const groqResult = await fetchSearchPageFromGroq(
+      searchTerm,
+      pageNumber,
+      filters,
+    );
+    posts = groqResult.posts;
+    totalCount = groqResult.totalCount;
   }
 
   const totalPages = getTotalArchivePages(totalCount);
 
   if (isArchivePageOutOfRange(pageNumber, totalCount)) {
     return { ...base, posts: [], totalCount, totalPages };
-  }
-
-  let posts: HomePostCard[] = [];
-  if (isSanityConfigured()) {
-    const { start, end } = archivePageSlice(pageNumber);
-    const client = await getSanityClient();
-    posts = await client
-      .fetch<HomePostCard[]>(searchPageQuery(filters.sort), {
-        ...groqParams,
-        start,
-        end,
-      })
-      .catch(() => []);
   }
 
   return { ...base, posts, totalCount, totalPages };

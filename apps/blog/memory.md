@@ -266,7 +266,30 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 
 ---
 
-## i18n — DORMANT (English-only, parked 2026-07-07)
+## PROD-1957 — Algolia search backend
+
+**Jira:** [PROD-1957](https://dotdirect.atlassian.net/browse/PROD-1957) — Algolia sync Function + `/search` backend swap. Follows [Sanity's official Algolia guide](https://www.sanity.io/docs/developer-guides/how-to-implement-front-end-search-with-sanity).
+
+| Concern | Location |
+| --- | --- |
+| Blueprint | `sanity.blueprint.ts` (repo root) |
+| Sync Function | `functions/algolia-document-sync/` |
+| Shared projection + record mapper | `packages/sanity/src/algolia/post-record.ts` |
+| Index configure + backfill (human) | `apps/studio/scripts/algolia-configure-index.ts`, `algolia-initial-sync.ts` |
+| Search backend swap | `apps/blog/src/lib/blog-search.ts` — env-gated `liteClient`; GROQ fallback |
+
+**Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
+
+**Human deploy order:**
+1. Create Algolia app + index `posts`; set env in root `.env`, Vercel blog project, and Function env (`SANITY_PROJECT_ID`, `SANITY_DATASET` from Studio).
+2. `npx sanity blueprints deploy`
+3. `cd apps/studio && npx sanity exec scripts/algolia-configure-index.ts --with-user-token`
+4. `npx sanity exec scripts/algolia-initial-sync.ts --with-user-token`
+5. Test: `npx sanity functions test algolia-document-sync --document-id <post-id> --dataset development --with-user-token`
+
+**Agents:** implement schema/code only; never run backfill, blueprint deploy, or patch Sanity documents.
+
+---
 
 Document internationalization (`@sanity/document-internationalization`, EN + FR) was **parked** — it surfaced two homepages (one per language) in the desk and interfered with the team workflow. **No French content exists and no FR is planned yet.** Chosen path: **Option B — hide the chrome, keep the machinery dormant** (not a full removal).
 
