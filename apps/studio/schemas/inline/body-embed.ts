@@ -72,7 +72,7 @@ export const bodyEmbed = defineType({
       },
       initialValue: 'height',
       description:
-        'Fixed: use the height below. Auto: try to detect the embed height via postMessage and fall back to the height below when the embed does not report it (many third-party embeds do not). Aspect ratio: size by ratio.',
+        'Fixed: use the height below — best for surveys/forms (Zoho, Google Forms). Auto: detect the embed height via postMessage and fall back to the height below when the embed reports nothing (Google Forms never does). Note: a provider’s reported height can include its own padding/whitespace, so Auto may look taller than the visible form — prefer Fixed for surveys. Aspect ratio: size by ratio.',
     }),
     defineField({
       name: 'height',
