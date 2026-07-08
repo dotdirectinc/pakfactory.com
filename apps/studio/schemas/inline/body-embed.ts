@@ -66,13 +66,12 @@ export const bodyEmbed = defineType({
         list: [
           { title: 'Fixed height', value: 'height' },
           { title: 'Auto', value: 'auto' },
-          { title: 'Aspect ratio', value: 'aspect' },
         ],
         layout: 'radio',
       },
       initialValue: 'height',
       description:
-        'Fixed: use the width/height below. Auto: detect the embed’s actual width & height via postMessage (e.g. Zoho survey) and size + center the iframe to match — no whitespace, no scroll; falls back to the width/height below when the embed reports nothing (Google Forms never does). Aspect ratio: size by ratio.',
+        'Fixed: use the width/height below (centered). Auto: detect the embed’s actual width & height via postMessage (e.g. Zoho survey) and size + center the iframe to match; falls back to a standard size when the embed reports nothing (Google Forms never does).',
     }),
     defineField({
       name: 'height',
@@ -81,7 +80,7 @@ export const bodyEmbed = defineType({
       initialValue: 600,
       readOnly: ({ parent }) => parent?.sizing === 'auto',
       description:
-        'Fixed: the iframe height. Aspect: set EITHER width or height — the other follows the ratio. Disabled in Auto (the embed reports its own size; falls back to a standard size).',
+        'Fixed height of the iframe. Disabled in Auto (the embed reports its own size; falls back to a standard size).',
       validation: (Rule) => Rule.min(120).max(2000),
     }),
     defineField({
@@ -90,23 +89,8 @@ export const bodyEmbed = defineType({
       type: 'number',
       readOnly: ({ parent }) => parent?.sizing === 'auto',
       description:
-        'Max width — the embed is centered; leave empty for full width. Aspect: set EITHER width or height. Disabled in Auto.',
+        'Max width — the embed is centered; leave empty for full width. Disabled in Auto.',
       validation: (Rule) => Rule.min(240).max(1200),
-    }),
-    defineField({
-      name: 'aspectRatio',
-      title: 'Aspect ratio',
-      type: 'string',
-      options: {
-        list: [
-          { title: '16:9', value: '16/9' },
-          { title: '4:3', value: '4/3' },
-          { title: '1:1', value: '1/1' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: '16/9',
-      hidden: ({ parent }) => parent?.sizing !== 'aspect',
     }),
     defineField({
       name: 'caption',

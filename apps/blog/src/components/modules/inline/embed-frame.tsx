@@ -10,12 +10,11 @@ import {
 type EmbedFrameProps = {
   url: string;
   title: string;
-  mode: "height" | "auto" | "aspect";
+  mode: "height" | "auto";
   /** Fixed height, or the fallback height in auto mode. */
   height: number;
   /** Optional fixed max-width, or the fallback width in auto mode. */
   width?: number;
-  aspectRatio: string;
   caption?: string;
 };
 
@@ -28,7 +27,6 @@ export function EmbedFrame({
   mode,
   height,
   width,
-  aspectRatio,
   caption,
 }: EmbedFrameProps) {
   const [autoHeight, setAutoHeight] = useState<number | null>(null);
@@ -80,22 +78,17 @@ export function EmbedFrame({
     return () => window.removeEventListener("message", onMessage);
   }, [mode, url]);
 
-  const isAspect = mode === "aspect";
   const resolvedHeight = mode === "auto" ? (autoHeight ?? height) : height;
   const resolvedWidth = mode === "auto" ? (autoWidth ?? width) : width;
-
-  const frameStyle = isAspect ? { aspectRatio } : { height: resolvedHeight };
 
   return (
     <figure
       className="mx-auto my-8"
-      style={
-        resolvedWidth && !isAspect ? { maxWidth: resolvedWidth } : undefined
-      }
+      style={resolvedWidth ? { maxWidth: resolvedWidth } : undefined}
     >
       <div
         className="w-full overflow-hidden rounded-lg bg-background transition-[height,max-width] duration-200"
-        style={frameStyle}
+        style={{ height: resolvedHeight }}
       >
         <iframe
           ref={iframeRef}

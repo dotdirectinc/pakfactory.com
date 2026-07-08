@@ -146,7 +146,6 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       sizing,
       height,
       width,
-      aspectRatio,
       caption
     },
     _type == "bodyVideo" => {
