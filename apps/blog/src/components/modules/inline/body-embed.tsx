@@ -2,6 +2,7 @@ import { isAllowedEmbedUrl } from "@pakfactory/sanity/embed-allowlist";
 import { CAPTION_CLASS } from "@/lib/blog-caption";
 import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import type { PostBodyEmbed } from "@/lib/blog-post";
+import { EmbedFrame } from "./embed-frame";
 
 type BodyEmbedProps = {
   value: PostBodyEmbed;
@@ -10,7 +11,8 @@ type BodyEmbedProps = {
 /**
  * Inline iframe embed authored in the post body. Security boundary: the URL is
  * only rendered when it passes the allowlist (baseline hosts ∪ admin-managed
- * Settings.additionalEmbedHosts). Anything else renders nothing.
+ * Settings.additionalEmbedHosts). Sizing (fixed / auto / aspect) is handled by
+ * the client EmbedFrame.
  */
 export async function BodyEmbed({ value }: BodyEmbedProps) {
   const url = value.url?.trim();
@@ -22,28 +24,24 @@ export async function BodyEmbed({ value }: BodyEmbedProps) {
 
   const title = value.title?.trim() || "Embedded content";
   const caption = value.caption?.trim();
-  const isAspect = value.sizing === "aspect";
-  const aspectRatio = value.aspectRatio || "16/9";
+  const mode =
+    value.sizing === "auto"
+      ? "auto"
+      : value.sizing === "aspect"
+        ? "aspect"
+        : "height";
   const height = value.height && value.height > 0 ? value.height : 600;
-
-  const frameStyle = isAspect ? { aspectRatio } : { height };
+  const aspectRatio = value.aspectRatio || "16/9";
 
   return (
     <figure className="my-8">
-      <div
-        className="w-full overflow-hidden rounded-lg border border-border bg-muted/20"
-        style={frameStyle}
-      >
-        <iframe
-          src={url}
-          title={title}
-          loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
-          sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
-          allowFullScreen
-          className="size-full border-0"
-        />
-      </div>
+      <EmbedFrame
+        url={url}
+        title={title}
+        mode={mode}
+        height={height}
+        aspectRatio={aspectRatio}
+      />
       {caption ? (
         <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
       ) : null}

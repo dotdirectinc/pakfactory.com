@@ -74,7 +74,7 @@ export type PostBodyTable = {
 export type PostBodyEmbed = {
   url?: string;
   title?: string;
-  sizing?: "height" | "aspect";
+  sizing?: "height" | "auto" | "aspect";
   height?: number;
   aspectRatio?: string;
   caption?: string;

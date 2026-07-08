@@ -65,11 +65,14 @@ export const bodyEmbed = defineType({
       options: {
         list: [
           { title: 'Fixed height', value: 'height' },
+          { title: 'Auto height (detect)', value: 'auto' },
           { title: 'Aspect ratio', value: 'aspect' },
         ],
         layout: 'radio',
       },
       initialValue: 'height',
+      description:
+        'Fixed: use the height below. Auto: try to detect the embed height via postMessage and fall back to the height below when the embed does not report it (many third-party embeds do not). Aspect ratio: size by ratio.',
     }),
     defineField({
       name: 'height',
@@ -77,6 +80,8 @@ export const bodyEmbed = defineType({
       type: 'number',
       initialValue: 600,
       hidden: ({ parent }) => parent?.sizing === 'aspect',
+      description:
+        'Fixed height, or the fallback height in Auto mode (used until/unless the embed reports its own height).',
       validation: (Rule) => Rule.min(120).max(2000),
     }),
     defineField({
