@@ -65,6 +65,7 @@ export type PostBodyGallery = {
 };
 
 export type PostBodyTable = {
+  variant?: "data" | "comparison";
   columns?: string[];
   caption?: string;
   rows?: Array<{ _key?: string; cells?: string[] }>;

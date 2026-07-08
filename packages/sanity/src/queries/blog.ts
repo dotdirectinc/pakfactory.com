@@ -130,6 +130,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     _type == "bodyTable" => {
       _key,
       _type,
+      variant,
       columns,
       caption,
       rows[]{
