@@ -21,70 +21,74 @@ export function BodyTable({ value }: BodyTableProps) {
 
   return (
     <figure className="my-8">
-      {/* Card + horizontal scroll. A styled (always-visible when scrollable)
-          bottom scrollbar signals that the table scrolls sideways. */}
-      <div className="overflow-x-auto rounded-2xl bg-muted [scrollbar-color:var(--color-muted-foreground)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-foreground/25 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:h-1.5">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-border/60">
-              {columns.map((col, i) => (
-                <th
-                  key={i}
-                  scope="col"
-                  className={cn(
-                    "px-6 py-4 align-bottom font-medium text-muted-foreground",
-                    i === 0
-                      ? cn("sticky left-0 z-10 bg-muted", FIRST_COL_WIDTH)
-                      : "min-w-[200px]",
-                  )}
-                >
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, r) => {
-              // Zebra: even rows share the card colour, odd rows are white stripes.
-              const rowBg = r % 2 === 1 ? "bg-card" : "bg-muted";
-              return (
-                <tr key={row._key ?? r}>
-                  {/* Normalize each row to the column count so mismatched rows degrade gracefully. */}
-                  {columns.map((_, c) => {
-                    const content = row.cells?.[c]?.trim() ?? "";
-                    if (c === 0) {
+      {/* Padded card. The inner div is the horizontal scroll container; its
+          styled (always-visible when scrollable) bottom scrollbar signals that
+          the table scrolls sideways. */}
+      <div className="rounded-2xl border border-border/60 bg-card p-2 sm:p-3">
+        <div className="overflow-x-auto [scrollbar-color:var(--color-muted-foreground)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-foreground/25 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:h-1.5">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-border/60">
+                {columns.map((col, i) => (
+                  <th
+                    key={i}
+                    scope="col"
+                    className={cn(
+                      "px-6 py-4 align-bottom font-medium text-muted-foreground",
+                      i === 0
+                        ? cn("sticky left-0 z-10 bg-card", FIRST_COL_WIDTH)
+                        : "min-w-[200px]",
+                    )}
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, r) => {
+                // Zebra: even rows match the card; odd rows get a subtle
+                // beige highlight (bg-muted) that fits the warm theme.
+                const rowBg = r % 2 === 1 ? "bg-muted" : "bg-card";
+                return (
+                  <tr key={row._key ?? r}>
+                    {/* Normalize each row to the column count so mismatched rows degrade gracefully. */}
+                    {columns.map((_, c) => {
+                      const content = row.cells?.[c]?.trim() ?? "";
+                      if (c === 0) {
+                        return (
+                          <th
+                            key={c}
+                            scope="row"
+                            className={cn(
+                              "sticky left-0 z-10 px-6 py-5 text-left align-middle text-foreground",
+                              FIRST_COL_WIDTH,
+                              rowBg,
+                              isComparison ? "font-semibold" : "font-medium",
+                            )}
+                          >
+                            {content}
+                          </th>
+                        );
+                      }
                       return (
-                        <th
+                        <td
                           key={c}
-                          scope="row"
                           className={cn(
-                            "sticky left-0 z-10 px-6 py-5 text-left align-top text-foreground",
-                            FIRST_COL_WIDTH,
+                            "min-w-[200px] px-6 py-5 align-middle text-foreground",
                             rowBg,
-                            isComparison ? "font-semibold" : "font-medium",
                           )}
                         >
                           {content}
-                        </th>
+                        </td>
                       );
-                    }
-                    return (
-                      <td
-                        key={c}
-                        className={cn(
-                          "min-w-[200px] px-6 py-5 align-top text-foreground",
-                          rowBg,
-                        )}
-                      >
-                        {content}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
       {caption ? (
         <figcaption className={CAPTION_CLASS}>{caption}</figcaption>
