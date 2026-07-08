@@ -24,7 +24,7 @@ export function BodyTable({ value }: BodyTableProps) {
       {/* Padded card. The inner div is the horizontal scroll container; its
           styled (always-visible when scrollable) bottom scrollbar signals that
           the table scrolls sideways. */}
-      <div className="rounded-2xl border border-border/60 bg-card p-2 sm:p-3">
+      <div className="rounded-2xl bg-[#F4F4F5] p-2 sm:p-3">
         <div className="overflow-x-auto [scrollbar-color:var(--color-muted-foreground)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-foreground/25 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:h-1.5">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
@@ -36,7 +36,7 @@ export function BodyTable({ value }: BodyTableProps) {
                     className={cn(
                       "px-6 py-4 align-bottom font-medium text-muted-foreground",
                       i === 0
-                        ? cn("sticky left-0 z-10 bg-card", FIRST_COL_WIDTH)
+                        ? cn("sticky left-0 z-10 bg-[#F4F4F5]", FIRST_COL_WIDTH)
                         : "min-w-[200px]",
                     )}
                   >
@@ -47,9 +47,9 @@ export function BodyTable({ value }: BodyTableProps) {
             </thead>
             <tbody>
               {rows.map((row, r) => {
-                // Zebra: even rows match the card; odd rows get a subtle
-                // beige highlight (bg-muted) that fits the warm theme.
-                const rowBg = r % 2 === 1 ? "bg-muted" : "bg-card";
+                // Zebra: default rows are #F4F4F5 (match the card); highlighted
+                // (alternating) rows are white.
+                const rowBg = r % 2 === 1 ? "bg-white" : "bg-[#F4F4F5]";
                 return (
                   <tr key={row._key ?? r}>
                     {/* Normalize each row to the column count so mismatched rows degrade gracefully. */}
