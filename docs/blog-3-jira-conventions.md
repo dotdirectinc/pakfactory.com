@@ -227,3 +227,11 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 - **Blog query layer:** [`apps/blog/src/lib/blog-search.ts`](../apps/blog/src/lib/blog-search.ts) uses `liteClient` when `NEXT_PUBLIC_ALGOLIA_APP_ID` + `NEXT_PUBLIC_ALGOLIA_API_KEY` are set; otherwise GROQ fallback (CI/preview). **Never** put `ALGOLIA_WRITE_KEY` in `apps/blog`.
 - **Shared record shape:** [`packages/sanity/src/algolia/post-record.ts`](../../packages/sanity/src/algolia/post-record.ts).
 - **Env:** root `.env.example` — `NEXT_PUBLIC_ALGOLIA_*` (search key), `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (server-only).
+
+## Nav search typeahead (PROD-1957 follow-on)
+
+- **Nav only** — `NavSearchForm` in [`apps/blog/src/components/modules/search-form.tsx`](../apps/blog/src/components/modules/search-form.tsx) shows Algolia-powered suggestions as you type (desktop category row + mobile compact overlay).
+- **Client fetch:** [`apps/blog/src/lib/algolia-suggest.ts`](../apps/blog/src/lib/algolia-suggest.ts) — debounced `fetchSearchSuggestBundle()` via `liteClient` (min 2 chars; parallel queries on `posts` index for posts, categories, topics).
+- **Shared UI (ADR-013):** [`search-suggestion-panel.tsx`](../apps/blog/src/components/ui/search-suggestion-panel.tsx) (tabbed panel + rows), [`search-suggest-tabs.tsx`](../apps/blog/src/components/ui/search-suggest-tabs.tsx), [`search-highlight.tsx`](../apps/blog/src/components/ui/search-highlight.tsx). Tabs: All / Posts / Categories / Topics with counts; footer links to `/search?q=…`.
+- **Fallback:** when `NEXT_PUBLIC_ALGOLIA_*` is unset, nav search stays a plain GET form (CI/preview). Set both vars in root `.env.local` and/or `apps/blog/.env.local`; restart dev after env changes.
+- **Out of scope:** `/search` page live results, InstantSearch, Query Suggestions index, settings/gear menu.

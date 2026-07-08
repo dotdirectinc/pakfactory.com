@@ -289,6 +289,22 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 
 **Agents:** implement schema/code only; never run backfill, blueprint deploy, or patch Sanity documents.
 
+### Nav search typeahead (follow-on)
+
+| Concern | Location |
+| --- | --- |
+| Suggest fetch (client) | `src/lib/algolia-suggest.ts` |
+| Tabbed dropdown UI (ADR-013) | `src/components/ui/search-suggestion-panel.tsx`, `search-suggest-tabs.tsx`, `search-highlight.tsx` |
+| Nav combobox controller | `src/components/modules/search-form.tsx` (`NavSearchForm`) |
+
+- Debounced Algolia suggest (300ms, min 2 chars) when `NEXT_PUBLIC_ALGOLIA_*` is set.
+- **Tabs:** All, Posts, Categories, Topics — one `multiSearch` on the `posts` index (`restrictSearchableAttributes` for category/topic queries); counts on each tab pill.
+- **Row kinds:** post (thumb + category subtitle), category (folder icon), topic (tag icon); query match highlighted via `SearchHighlight`.
+- **Clear** control in the nav pill when query is non-empty.
+- Keyboard: arrows highlight rows, tab bar ArrowLeft/Right, Enter navigates to row or `/search?q=…`, Escape closes panel.
+- Without Algolia env: plain GET form unchanged.
+- **Local env:** copy `NEXT_PUBLIC_ALGOLIA_APP_ID` + `NEXT_PUBLIC_ALGOLIA_API_KEY` into `apps/blog/.env.local` and restart dev after changes.
+
 ---
 
 Document internationalization (`@sanity/document-internationalization`, EN + FR) was **parked** — it surfaced two homepages (one per language) in the desk and interfered with the team workflow. **No French content exists and no FR is planned yet.** Chosen path: **Option B — hide the chrome, keep the machinery dormant** (not a full removal).
