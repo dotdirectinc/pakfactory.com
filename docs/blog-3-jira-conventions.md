@@ -80,7 +80,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Robots:** `getBlogRobotsDirective({ kind: 'error' })` → **`noindex, follow`**.
 - **GROQ:** [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts) — field names match **`apps/studio`** schemas (`blogCategory`, `post.publishedAt`, `author.photo`).
 - **Reuse:** `_components/blog-search-form`, `category-chips`, `popular-posts-rail` for search zero-results (PROD-1503).
-- **Popular rail:** current UTC month by `publishedAt`, then latest published (no `viewCount` until studio adds it).
+- **Popular rail:** ranked by `viewCount` (Views) within `postPopularRow.timeWindowDays` (default 30); search/backfill still use UTC month then highest-Views published.
 - **Newsletter:** `POST /api/newsletter` when `NEWSLETTER_WEBHOOK_URL` is set.
 
 ## PROD-1499 — Category archives

@@ -448,7 +448,7 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 | Deliverable                     | Location                                                                                                  |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Global 404                      | `src/app/not-found.tsx` — `noindex, follow` via `getBlogRobotsDirective({ kind: 'error' })`               |
-| Blog GROQ                       | `packages/sanity/src/queries/blog.ts` — categories + popular posts (month window, `publishedAt` fallback) |
+| Blog GROQ                       | `packages/sanity/src/queries/blog.ts` — categories + popular posts (`viewCount` window, `publishedAt` tiebreak) |
 | Data helpers                    | `src/lib/blog-data.ts`, `src/lib/blog-categories.ts` (studio slug fallback)                               |
 | Recovery rail (reuse PROD-1503) | `src/app/_components/` — search, chips, popular rail, RFQ CTA, newsletter                                 |
 | Newsletter API                  | `src/app/api/newsletter/route.ts` — needs `NEWSLETTER_WEBHOOK_URL`                                        |
@@ -456,7 +456,7 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 
 ### Popular posts
 
-No `viewCount` on studio `post` yet. Rail uses posts with `publishedAt` in the current UTC month; if fewer than three, fills from latest published.
+Posts ranked by `viewCount` (Views) desc within a configurable day window (`postPopularRow.timeWindowDays`, default 30). Tiebreak is `publishedAt` desc. Search zero-results / backfill still use the UTC calendar month window, then fill from highest-Views published posts when fewer than three. Editors set Views on the post **Publishing** tab.
 
 ### Verification
 

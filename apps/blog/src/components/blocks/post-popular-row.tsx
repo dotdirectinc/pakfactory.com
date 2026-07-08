@@ -12,7 +12,7 @@ import {toPostCardDataList} from '@/lib/post-card-data';
 
 /**
  * `postPopularRow` page-builder section — auto-populated row of popular posts
- * this month (with fallback to latest when the month window is sparse).
+ * ranked by Views within the block's day window (with fallback when sparse).
  */
 export function PostPopularRow({
     heading,

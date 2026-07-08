@@ -57,6 +57,7 @@ export type PostPopularRowBlock = {
   _key: string;
   heading?: string;
   postsCount?: number;
+  timeWindowDays?: number;
   posts: HomePostCard[];
 } & DielineBorderFields;
 
