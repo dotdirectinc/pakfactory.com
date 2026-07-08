@@ -1,13 +1,31 @@
 import type { Metadata } from "next";
+import { SiteNav } from "@pakfactory/ui/components/site-nav";
+import { SiteFooter } from "@pakfactory/ui/components/site-footer";
+import { SOFT_LAUNCH_NAV_LINKS, SOFT_LAUNCH_FOOTER_COLUMNS } from "@/lib/www-nav";
+import { getSiteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
+
+const WWW_URL = getSiteUrl();
 
 export default function CaseStudiesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      <SiteNav
+        navLinks={SOFT_LAUNCH_NAV_LINKS}
+        getQuoteHref={`${WWW_URL}/contact`}
+      />
+      <main>{children}</main>
+      <SiteFooter
+        columns={SOFT_LAUNCH_FOOTER_COLUMNS}
+        contactHref={`${WWW_URL}/contact`}
+      />
+    </>
+  );
 }
