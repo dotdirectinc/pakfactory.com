@@ -13,8 +13,8 @@ type BodyBarChartProps = {
 };
 
 // Neutral default that matches the site theme; brand accent for highlights.
-const BAR_COLOR = "#F4F4F5";
-const BAR_HIGHLIGHT_COLOR = "#476333";
+const BAR_COLOR = "#dbdbe3";
+const BAR_HIGHLIGHT_COLOR = "#7aa45c";
 
 const chartConfig = {
   value: { label: "Value", color: BAR_COLOR },
