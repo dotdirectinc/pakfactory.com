@@ -138,6 +138,16 @@ const POST_DETAIL_FIELDS = /* groq */ `{
         cells
       }
     },
+    _type == "bodyEmbed" => {
+      _key,
+      _type,
+      url,
+      title,
+      sizing,
+      height,
+      aspectRatio,
+      caption
+    },
     _type == "bodyVideo" => {
       _key,
       _type,
@@ -699,7 +709,8 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "defaultOgImageUrl": defaultOgImage.asset->url,
   "organizationLogoUrl": organization.logo.asset->url,
   robotsTxt,
-  llmsTxt
+  llmsTxt,
+  additionalEmbedHosts
 }`;
 
 /** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */

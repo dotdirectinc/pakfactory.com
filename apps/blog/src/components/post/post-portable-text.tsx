@@ -11,6 +11,7 @@ import { BodyTable } from "@/components/modules/inline/body-table";
 import { BodyVideo } from "@/components/modules/inline/body-video";
 import { BodyStatStack } from "@/components/modules/inline/body-stat-stack";
 import { BodyBarChart } from "@/components/modules/inline/body-bar-chart";
+import { BodyEmbed } from "@/components/modules/inline/body-embed";
 import { WidgetRenderer } from "@/components/modules/widget/widget-renderer";
 import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type {
@@ -20,6 +21,7 @@ import type {
   PostBodyQuote,
   PostBodyStatStack,
   PostBodyTable,
+  PostBodyEmbed,
   PostBodyVideo,
   PostBodyWidget,
 } from "@/lib/blog-post";
@@ -136,6 +138,7 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
       ),
       bodyBarChart: ({ value }) => <BodyBarChart value={value as PostBodyBarChart} />,
       bodyTable: ({ value }) => <BodyTable value={value as PostBodyTable} />,
+      bodyEmbed: ({ value }) => <BodyEmbed value={value as PostBodyEmbed} />,
       bodyCallout: ({ value }) => <BodyCallout value={value as PostBodyCallout} />,
       widgetEmbed: ({ value }) => (
         <WidgetRenderer widget={(value as WidgetEmbedValue).widget} />

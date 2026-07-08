@@ -71,6 +71,15 @@ export type PostBodyTable = {
   rows?: Array<{ _key?: string; cells?: string[] }>;
 };
 
+export type PostBodyEmbed = {
+  url?: string;
+  title?: string;
+  sizing?: "height" | "aspect";
+  height?: number;
+  aspectRatio?: string;
+  caption?: string;
+};
+
 export type PostBodyVideo = {
   url?: string;
   poster?: unknown;
