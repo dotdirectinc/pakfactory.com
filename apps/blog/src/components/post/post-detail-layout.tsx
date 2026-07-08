@@ -29,7 +29,7 @@ export function PostDetailLayout({
       <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
       {header}
       <PageDielineSection innerClassName="py-12 sm:py-16 lg:py-24">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,304px)_minmax(0,1fr)] lg:gap-16">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)] lg:gap-16">
           {/* Hidden below lg (author/share/Ask AI move to the article foot);
               on desktop it stretches to the row height so the sidebar can make
               just its lower part (TOC → Ask AI) sticky while the author scrolls. */}
