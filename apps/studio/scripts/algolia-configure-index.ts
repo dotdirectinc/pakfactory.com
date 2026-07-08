@@ -17,8 +17,10 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+// .env.local first — dotenv keeps the first value set, so .env.local wins
+// over .env (Next.js convention; matches sanity.blueprint.ts).
 dotenv.config({ path: path.resolve(__dirname, "../../../.env.local") });
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const { ALGOLIA_APP_ID = "", ALGOLIA_WRITE_KEY = "" } = env;
 

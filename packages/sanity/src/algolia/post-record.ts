@@ -132,6 +132,9 @@ export const ALGOLIA_REPLICA_SETTINGS: Record<
 };
 
 export const ALGOLIA_MAX_CONTENT_CHARS = 8000;
+
+/** Hard budget for the serialized record — safely under Algolia's 10,000-byte API limit. */
+export const ALGOLIA_RECORD_TARGET_BYTES = 9500;
 export const ALGOLIA_MAX_TITLE_CHARS = 500;
 export const ALGOLIA_RECORD_WARN_BYTES = 9000;
 
@@ -226,10 +229,24 @@ export function toAlgoliaRecord(
     imageAlt: source.image?.alt ?? "",
   };
 
-  const size = JSON.stringify(record).length;
-  if (size > ALGOLIA_RECORD_WARN_BYTES) {
+  // Adaptive truncation: the fixed content cap isn't enough when other fields
+  // (title, excerpt, tags, URLs) are large — WordPress-imported posts blew the
+  // 10KB API limit. Shrink `content` until the WHOLE record fits the budget.
+  // JSON.stringify length measures serialized bytes incl. escaping overhead.
+  let size = JSON.stringify(record).length;
+  while (size > ALGOLIA_RECORD_TARGET_BYTES && record.content.length > 0) {
+    const overage = size - ALGOLIA_RECORD_TARGET_BYTES;
+    record.content = record.content.slice(
+      0,
+      Math.max(0, record.content.length - Math.max(overage, 200)),
+    );
+    size = JSON.stringify(record).length;
+  }
+  if (size > ALGOLIA_RECORD_TARGET_BYTES) {
+    // Content is already empty and we're still over budget — other fields are
+    // huge. Surface it loudly; this record needs manual attention.
     console.warn(
-      `Algolia record ${source._id} is ${size} bytes (close to 10KB limit)`,
+      `Algolia record ${source._id} is ${size} bytes even with empty content`,
     );
   }
 
