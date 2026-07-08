@@ -982,7 +982,13 @@ const authors = [
     tagline: '12 years in structural packaging engineering across cosmetics, food, and electronics.',
     shortBio: 'Senior Packaging Engineer at PakFactory with 12 years in structural design and substrate specification for 200+ brands.',
     bio: [block('Sarah Chen is a Senior Packaging Engineer at PakFactory with 12 years of experience in structural design and substrate specification. She has led packaging programs for 200+ brands across cosmetics, food & beverage, and consumer electronics. Sarah holds a BSc in Packaging Science from Ryerson University and is a member of the Institute of Packaging Professionals (IoPP).')],
-    socialLinks: ['https://linkedin.com/in/sarah-chen-packaging'],
+    socialLinks: [
+      {
+        platform: 'linkedin',
+        url: 'https://linkedin.com/in/sarah-chen-packaging',
+        label: 'Sarah Chen',
+      },
+    ],
     metaTitle: 'Sarah Chen — PakFactory Blog',
     metaDescription: 'Sarah Chen is a Senior Packaging Engineer at PakFactory with 12 years of experience in structural design, substrate specification, and packaging programs for 200+ brands.',
   },
@@ -994,7 +1000,13 @@ const authors = [
     tagline: '8 years guiding brands through FSC, BPI, and How2Recycle certification programs.',
     shortBio: 'Director of Sustainability at PakFactory, advising brands on material choices, lifecycle analysis, and certification strategy.',
     bio: [block('Marcus Wright leads PakFactory\'s sustainability practice, advising brands on material choices, lifecycle analysis, and certification strategy. He has guided over 80 brands through FSC, BPI, and How2Recycle certification programs. Marcus holds an MSc in Environmental Management from the University of British Columbia.')],
-    socialLinks: ['https://linkedin.com/in/marcus-wright-sustainability'],
+    socialLinks: [
+      {
+        platform: 'linkedin',
+        url: 'https://linkedin.com/in/marcus-wright-sustainability',
+        label: 'Marcus Wright',
+      },
+    ],
     metaTitle: 'Marcus Wright — PakFactory Blog',
     metaDescription: 'Marcus Wright is PakFactory\'s Director of Sustainability, advising brands on material choices, lifecycle analysis, and FSC, BPI, and How2Recycle certification strategy.',
   },
@@ -1007,8 +1019,16 @@ const authors = [
     shortBio: 'Head of Brand Strategy at PakFactory; former Packaging Creative Director at Glossier.',
     bio: [block('Priya Nair leads brand strategy at PakFactory, helping emerging and enterprise brands translate their identity into packaging decisions. With a background in industrial design and 9 years of brand-side experience, she brings a commercial lens to the technical decisions that define unboxing experiences.')],
     socialLinks: [
-      'https://linkedin.com/in/priya-nair-packaging',
-      'https://x.com/priya_pakfactory',
+      {
+        platform: 'linkedin',
+        url: 'https://linkedin.com/in/priya-nair-packaging',
+        label: 'Priya Nair',
+      },
+      {
+        platform: 'x',
+        url: 'https://x.com/priya_pakfactory',
+        label: 'Priya Nair',
+      },
     ],
     metaTitle: 'Priya Nair — PakFactory Blog',
     metaDescription: 'Priya Nair is Head of Brand Strategy at PakFactory, helping brands translate identity into packaging decisions. Former Packaging Creative Director at Glossier.',

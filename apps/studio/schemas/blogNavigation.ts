@@ -1,4 +1,5 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
+import { socialLinksField } from '../lib/social-link-schema'
 import { ALL_FIELDS_GROUP } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
 import {
@@ -224,66 +225,10 @@ export const blogNavigation = defineType({
           validation: (Rule) =>
             Rule.max(3).warning('Layout supports 3 columns on desktop.'),
         }),
-        defineField({
-          name: 'socialLinks',
-          title: 'Social links',
-          type: 'array',
+        socialLinksField({
+          context: 'footer',
           description:
             'Social profile icons shown in the footer bottom bar. When empty, the blog falls back to built-in defaults.',
-          of: [
-            defineArrayMember({
-              type: 'object',
-              name: 'footerSocialLink',
-              fields: [
-                defineField({
-                  name: 'platform',
-                  title: 'Platform',
-                  type: 'string',
-                  options: {
-                    list: [
-                      { title: 'Instagram', value: 'instagram' },
-                      { title: 'Facebook', value: 'facebook' },
-                      { title: 'LinkedIn', value: 'linkedin' },
-                      { title: 'YouTube', value: 'youtube' },
-                      { title: 'Pinterest', value: 'pinterest' },
-                      { title: 'X (Twitter)', value: 'x' },
-                    ],
-                  },
-                  validation: (Rule) => Rule.required(),
-                }),
-                defineField({
-                  name: 'url',
-                  title: 'URL',
-                  type: 'url',
-                  validation: (Rule) => Rule.required(),
-                }),
-              ],
-              preview: {
-                select: { platform: 'platform', url: 'url' },
-                prepare({ platform, url }) {
-                  const label =
-                    platform === 'x'
-                      ? 'X (Twitter)'
-                      : platform
-                        ? platform.charAt(0).toUpperCase() + platform.slice(1)
-                        : 'Social link'
-                  return { title: label, subtitle: url ?? 'No URL' }
-                },
-              },
-            }),
-          ],
-          validation: (Rule) =>
-            Rule.custom((links) => {
-              if (!Array.isArray(links)) return true
-              const platforms = links
-                .map((link) => (link as { platform?: string })?.platform)
-                .filter(Boolean)
-              const unique = new Set(platforms)
-              if (unique.size !== platforms.length) {
-                return 'Each social platform can only appear once.'
-              }
-              return true
-            }),
         }),
         defineField({
           name: 'aiAnswerLinks',

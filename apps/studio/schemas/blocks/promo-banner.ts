@@ -7,7 +7,7 @@ import {
 } from '../../lib/dieline-border-fields'
 
 /**
- * promoBanner — green full-width promo card with heading, body, CTA, and up to 2 images.
+ * promoBanner — green full-width promo card with heading, body, CTA, and up to 3 images.
  * Page-builder block (apps/blog components/blocks/promo-banner).
  */
 export const promoBanner = defineType({
@@ -43,10 +43,10 @@ export const promoBanner = defineType({
     }),
     defineField({
       name: 'images',
-      title: 'Images (up to 2)',
+      title: 'Images (up to 3)',
       type: 'array',
       of: [defineArrayMember({ type: 'image', options: { hotspot: true } })],
-      validation: (Rule) => Rule.max(2),
+      validation: (Rule) => Rule.max(3),
     }),
     ...dielineBorderFields(),
   ],

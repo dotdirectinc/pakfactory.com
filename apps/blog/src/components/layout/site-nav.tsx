@@ -1,10 +1,12 @@
 import Link from 'next/link';
+import {Box} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
 import {SiteNavCategories} from '@/components/layout/site-nav-categories';
 import {
     SiteNavCompactActions,
     SiteNavCompactProvider,
+    SiteNavTopRow,
 } from '@/components/layout/site-nav-compact';
 import type {BlogCategoryChip} from '@/lib/blog-categories';
 import {READING_PROGRESS_SLOT_ID} from '@/lib/reading-progress';
@@ -25,22 +27,24 @@ export function SiteNav({categories}: SiteNavProps) {
                     categories={categories}
                     contactHref={QUOTE_HREF}
                 >
-                    <PageDielineSection innerClassName="flex h-16 items-center justify-between border-b border-dashed border-border">
+                    <SiteNavTopRow>
                         <div className="flex shrink-0 items-center gap-2">
                             <Link
                                 href={getWwwUrl()}
                                 className="flex items-center gap-3 no-underline"
                             >
-                                <span className="flex size-8 items-center justify-center rounded-md bg-foreground text-xs font-bold text-background">
-                                    PF
-                                </span>
+                                <Box
+                                    className="size-7 text-foreground"
+                                    strokeWidth={1.75}
+                                    aria-hidden
+                                />
                                 <span className="text-[15px] font-semibold tracking-tight text-foreground lg:text-xl">
                                     PakFactory
                                 </span>
                             </Link>
                             <Link
                                 href="/"
-                                className="text-[15px] font-semibold tracking-tight text-foreground no-underline lg:text-xl"
+                                className="text-[15px] font-medium tracking-tight text-muted-foreground no-underline lg:text-xl"
                             >
                                 Blog
                             </Link>
@@ -54,7 +58,7 @@ export function SiteNav({categories}: SiteNavProps) {
                         </Button>
 
                         <SiteNavCompactActions />
-                    </PageDielineSection>
+                    </SiteNavTopRow>
                 </SiteNavCompactProvider>
             </div>
 

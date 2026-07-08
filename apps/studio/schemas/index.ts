@@ -1,4 +1,5 @@
 import { capabilityCategory } from './capabilityCategory'
+import { socialLink } from '../lib/social-link-schema'
 import { capabilityType } from './capabilityType'
 import { capability } from './capability'
 import { attributeGroup } from './attributeGroup'
@@ -38,6 +39,9 @@ import {
 } from './blocks'
 
 export const schemaTypes = [
+  // Shared objects
+  socialLink,
+
   // Capability layer
   capabilityCategory,
   capabilityType,

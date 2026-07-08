@@ -12,12 +12,13 @@ import {
     type RefObject,
 } from 'react';
 import Link from 'next/link';
-import {ArrowRight, Menu, Search, X} from 'lucide-react';
+import {ArrowRight, Search, X} from 'lucide-react';
 import {usePathname} from 'next/navigation';
 import {Button} from '@pakfactory/ui/components/button';
 import {NavSearchForm} from '@/components/modules/search-form';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {
+    PageDielineSection,
     pageDielineInnerClass,
     pageDielineOuterClass,
 } from '@/components/layout/page-dieline-section';
@@ -49,52 +50,22 @@ function useSiteNavCompact() {
     return context;
 }
 
-type SiteNavCompactSearchOverlayProps = {
-    searchOpen: boolean;
-    searchRowId: string;
-    onClose: () => void;
+type SiteNavTopRowProps = {
+    children: ReactNode;
 };
 
-function SiteNavCompactSearchOverlay({
-    searchOpen,
-    searchRowId,
-    onClose,
-}: SiteNavCompactSearchOverlayProps) {
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (!searchOpen) return;
-        inputRef.current?.focus();
-    }, [searchOpen]);
-
-    if (!searchOpen) return null;
+export function SiteNavTopRow({children}: SiteNavTopRowProps) {
+    const {searchOpen} = useSiteNavCompact();
 
     return (
-        <>
-            <button
-                type="button"
-                className="fixed inset-x-0 top-16 bottom-0 z-50 animate-in bg-black/20 fade-in-0 duration-300 lg:hidden"
-                aria-hidden
-                tabIndex={-1}
-                onClick={onClose}
-            />
-            <div
-                id={searchRowId}
-                role="search"
-                className="fixed inset-x-0 top-16 z-50 animate-in border-b border-dashed border-border bg-background  fade-in-0 slide-in-from-top-2 duration-300 lg:hidden"
-            >
-                <div className={pageDielineOuterClass()}>
-                    <div className={pageDielineInnerClass()}>
-                        <NavSearchForm
-                            id="site-nav-compact-search"
-                            inputRef={inputRef}
-                            className="pt-2 pb-3"
-                            fieldClassName="w-full"
-                        />
-                    </div>
-                </div>
-            </div>
-        </>
+        <PageDielineSection
+            innerClassName={cn(
+                'flex h-16 items-center justify-between border-dashed border-border',
+                searchOpen ? 'max-lg:border-b-0 lg:border-b' : 'border-b',
+            )}
+        >
+            {children}
+        </PageDielineSection>
     );
 }
 
@@ -111,9 +82,12 @@ export function SiteNavCompactProvider({
 }: SiteNavCompactProviderProps) {
     const [searchOpen, setSearchOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [headerBottom, setHeaderBottom] = useState(64);
     const searchRowId = useId();
     const menuId = useId();
     const menuTriggerRef = useRef<HTMLButtonElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    const headerShellRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
     const closeSearch = useCallback(() => {
@@ -141,17 +115,48 @@ export function SiteNavCompactProvider({
         });
     }, []);
 
+    const updateHeaderBottom = useCallback(() => {
+        const shell = headerShellRef.current;
+        if (!shell) return;
+        setHeaderBottom(shell.getBoundingClientRect().bottom);
+    }, []);
+
     useEffect(() => {
         setSearchOpen(false);
         setMenuOpen(false);
     }, [pathname]);
 
     useEffect(() => {
+        if (!searchOpen) return;
+        searchInputRef.current?.focus();
+    }, [searchOpen]);
+
+    useEffect(() => {
+        if (!searchOpen) return;
+
+        updateHeaderBottom();
+
+        const shell = headerShellRef.current;
+        if (!shell) return;
+
+        const observer = new ResizeObserver(updateHeaderBottom);
+        observer.observe(shell);
+        window.addEventListener('resize', updateHeaderBottom);
+        window.addEventListener('scroll', updateHeaderBottom, {passive: true});
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updateHeaderBottom);
+            window.removeEventListener('scroll', updateHeaderBottom);
+        };
+    }, [searchOpen, updateHeaderBottom]);
+
+    useEffect(() => {
         if (!searchOpen && !menuOpen) return;
 
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
-            if (searchOpen) setSearchOpen(false);
+            if (searchOpen) closeSearch();
             if (menuOpen) closeMenu();
         };
 
@@ -160,7 +165,7 @@ export function SiteNavCompactProvider({
         return () => {
             document.removeEventListener('keydown', onKeyDown);
         };
-    }, [searchOpen, menuOpen, closeMenu]);
+    }, [searchOpen, menuOpen, closeMenu, closeSearch]);
 
     useEffect(() => {
         if (!menuOpen) return;
@@ -186,13 +191,40 @@ export function SiteNavCompactProvider({
                 menuTriggerRef,
             }}
         >
-            {children}
+            <div ref={headerShellRef}>
+                {children}
 
-            <SiteNavCompactSearchOverlay
-                searchOpen={searchOpen}
-                searchRowId={searchRowId}
-                onClose={closeSearch}
-            />
+                {searchOpen ? (
+                    <div className="border-b border-dashed border-border bg-background lg:hidden">
+                        <div
+                            id={searchRowId}
+                            role="search"
+                            className={pageDielineOuterClass()}
+                        >
+                            <div className={pageDielineInnerClass('py-3')}>
+                                <NavSearchForm
+                                    id="site-nav-compact-search"
+                                    inputRef={searchInputRef}
+                                    placeholder="Search the blog…"
+                                    showSubmit
+                                    submitLabel="Search"
+                                    fieldClassName="w-full"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+
+            {searchOpen ? (
+                <button
+                    type="button"
+                    aria-label="Close search"
+                    className="fixed inset-x-0 bottom-0 z-30 animate-in bg-black/20 fade-in-0 duration-300 lg:hidden"
+                    style={{top: headerBottom}}
+                    onClick={closeSearch}
+                />
+            ) : null}
 
             {menuOpen ? (
                 <div
@@ -296,7 +328,30 @@ export function SiteNavCompactActions() {
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 onClick={toggleMenu}
             >
-                <Menu className="size-4" />
+                <span className="relative block size-4" aria-hidden>
+                    <span
+                        className={cn(
+                            'absolute left-0 h-0.5 w-4 bg-current transition-all duration-300',
+                            menuOpen
+                                ? 'top-1/2 -translate-y-1/2 rotate-45'
+                                : 'top-0.5',
+                        )}
+                    />
+                    <span
+                        className={cn(
+                            'absolute left-0 top-1/2 h-0.5 w-4 -translate-y-1/2 bg-current transition-opacity duration-300',
+                            menuOpen && 'opacity-0',
+                        )}
+                    />
+                    <span
+                        className={cn(
+                            'absolute left-0 h-0.5 w-4 bg-current transition-all duration-300',
+                            menuOpen
+                                ? 'top-1/2 -translate-y-1/2 -rotate-45'
+                                : 'bottom-0.5',
+                        )}
+                    />
+                </span>
             </Button>
         </div>
     );

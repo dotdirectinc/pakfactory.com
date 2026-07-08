@@ -3,6 +3,7 @@ import {
   resolveSanityDocumentLabel,
   type SanityLinkDocument,
 } from "@pakfactory/sanity/resolve-document-href";
+import type { FooterSocialPlatform } from "@pakfactory/sanity/social-platforms";
 import { categoryHref } from "@/lib/blog-post-url";
 import { getWwwUrl } from "@/lib/site";
 
@@ -20,13 +21,7 @@ export type BlogFooterSection = {
 /** Footer link grid: one array of sections per column (left to right). */
 export type BlogFooterColumns = BlogFooterSection[][];
 
-export type BlogSocialPlatform =
-  | "instagram"
-  | "facebook"
-  | "linkedin"
-  | "youtube"
-  | "pinterest"
-  | "x";
+export type BlogSocialPlatform = FooterSocialPlatform;
 
 export type BlogSocialLink = {
   platform: BlogSocialPlatform;

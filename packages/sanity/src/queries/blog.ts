@@ -858,7 +858,11 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
   authorType,
   bio,
   "bioText": pt::text(bio),
-  socialLinks,
+  socialLinks[]{
+    platform,
+    url,
+    label
+  },
   photo,
   metaTitle,
   metaDescription,

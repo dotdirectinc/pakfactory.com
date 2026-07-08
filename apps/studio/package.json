@@ -14,6 +14,7 @@
     "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs"
   },
   "dependencies": {
+    "@pakfactory/sanity": "workspace:*",
     "@sanity/document-internationalization": "^6.2.7",
     "@sanity/vision": "^5.24.0",
     "react": "^19.2.5",
