@@ -34,9 +34,14 @@ export function EmbedFrame({
   const [autoHeight, setAutoHeight] = useState<number | null>(null);
   const [autoWidth, setAutoWidth] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const appliedRef = useRef(false);
 
   useEffect(() => {
     if (mode !== "auto") return;
+    // One-shot: applying a width makes responsive embeds re-render and report a
+    // new (smaller) width, which would loop. Detect once on entry, set the size,
+    // then stop listening.
+    appliedRef.current = false;
     let embedOrigin: string;
     let embedHost: string;
     try {
@@ -52,6 +57,7 @@ export function EmbedFrame({
     const adapter = adapterForHost(embedHost);
 
     function onMessage(event: MessageEvent) {
+      if (appliedRef.current) return;
       // Security: only trust size messages from the embed's own origin and,
       // when available, its own window.
       if (event.origin !== embedOrigin) return;
@@ -63,8 +69,11 @@ export function EmbedFrame({
       }
       const parsed =
         adapter?.parseSize(event.data) ?? genericSizeFromMessage(event.data);
-      if (parsed?.height != null) setAutoHeight(clamp(parsed.height, 120, 4000));
-      if (parsed?.width != null) setAutoWidth(clamp(parsed.width, 240, 1600));
+      if (!parsed) return;
+      if (parsed.height != null) setAutoHeight(clamp(parsed.height, 120, 4000));
+      if (parsed.width != null) setAutoWidth(clamp(parsed.width, 240, 1600));
+      appliedRef.current = true;
+      window.removeEventListener("message", onMessage);
     }
 
     window.addEventListener("message", onMessage);
