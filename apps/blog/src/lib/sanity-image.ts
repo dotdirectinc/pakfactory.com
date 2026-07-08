@@ -10,6 +10,12 @@ import { getSanityDataset, getSanityProjectId } from "@/lib/sanity/env";
  * Absolute CDN URL for a Sanity image field, or undefined if unbuildable.
  */
 export function sanityImageUrl(source: unknown, width = 1200): string | undefined {
+  if (source != null && typeof source === "object") {
+    const directUrl = (source as { url?: unknown }).url;
+    if (typeof directUrl === "string" && directUrl.trim() !== "") {
+      return directUrl;
+    }
+  }
   if (source == null || typeof source !== "object") return undefined;
   const projectId = getSanityProjectId();
   if (!projectId) return undefined;

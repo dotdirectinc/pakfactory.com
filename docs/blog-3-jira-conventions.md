@@ -206,7 +206,7 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 
 - **Route:** `apps/blog/src/app/search/page.tsx` → public **`/search`** (reserved root segment; static route beats the `[category]` resolver, PROD-1597). `revalidate = 60`.
 - **Robots:** **always `noindex, follow`** for all three states via `getSearchRobots()` in [`apps/blog/src/lib/blog-search.ts`](../apps/blog/src/lib/blog-search.ts) — search result pages are never indexed; links still pass authority.
-- **Search:** Sanity built-in `match` (no external full-text infra, per AC). `buildSearchTerm()` tokenizes `q` and suffixes each token with `*` (prefix match). Filter matches **title, category title, excerpt, body (`pt::text`), and tag titles**. Category multiselect via repeated `?category=`. `?q=&category=&page=&sort=` (query-string pagination only; `searchPageHref()`).
+- **Search:** When Algolia env is set (PROD-1957), `fetchSearchPage()` queries index `posts` via `algoliasearch/lite` (server-side); otherwise Sanity `match` GROQ (CI/preview fallback). `buildSearchTerm()` still gates the empty state. Category multiselect → Algolia `facetFilters` or GROQ `categorySlugs`. `?q=&category=&page=&sort=` unchanged.
 - **Relevance:** default order is `score(boost(title,5), boost(excerpt,2), pt::text(body))` → `order(_score desc, publishedAt desc)`. **Gotcha:** `score()` rejects dereference expressions — tag matching stays in the filter for recall but is **not** a `boost()` term (`tags[@->title match …]` → "score() function received unexpected expression"). Re-sortable to newest/oldest/title.
 - **UI (PROD-1950):** dieline layout — `PageHeader` + `SearchFilterBar` (Category + Sort) + `PostList` + `Pagination`; empty/no-results use `TopicChipRow` + CMS page blocks.
 - **CMS singleton (PROD-1950):** `blogPage` id `blogSearchPage`, `pageRole: search` — content source only (not slug-routable). Editors curate `recommendedTopics` + `pageBuilder` (`pageBuilderHome`). Desk: **Pages → Search page**. See [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-1950.
@@ -216,3 +216,22 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 
 - **Builds on** PROD-1503. Reworks `/search` to Figma (results + no-results). ADR-013 shared core (`ListingFilterBar`, `TopicChipRow`) + search-owned `SearchFilterBar`.
 - **Do not** model search as a landing/`static` slug page — use the pinned singleton. Agents never seed or patch `blogSearchPage`.
+
+## PROD-1957 — Algolia search backend
+
+- **Jira:** [PROD-1957](https://dotdirect.atlassian.net/browse/PROD-1957) — Algolia integration (Sanity Function sync + backend swap).
+- **Guide:** [How to implement front-end search with Sanity](https://www.sanity.io/docs/developer-guides/how-to-implement-front-end-search-with-sanity).
+- **Sync:** [`sanity.blueprint.ts`](../../sanity.blueprint.ts) + [`functions/algolia-document-sync/`](../../functions/algolia-document-sync/) — incremental index on post create/update/delete. PakFactory extension: remove record when `allowIndex === false`.
+- **Backfill (human):** from `apps/studio`: `npx sanity exec scripts/algolia-configure-index.ts --with-user-token` then `npx sanity exec scripts/algolia-initial-sync.ts --with-user-token`.
+- **Deploy Function (human):** `npx sanity blueprints deploy` (needs `deployStudio` grant; set `ALGOLIA_*`, `SANITY_PROJECT_ID`, `SANITY_DATASET` in Function env).
+- **Blog query layer:** [`apps/blog/src/lib/blog-search.ts`](../apps/blog/src/lib/blog-search.ts) uses `liteClient` when `NEXT_PUBLIC_ALGOLIA_APP_ID` + `NEXT_PUBLIC_ALGOLIA_API_KEY` are set; otherwise GROQ fallback (CI/preview). **Never** put `ALGOLIA_WRITE_KEY` in `apps/blog`.
+- **Shared record shape:** [`packages/sanity/src/algolia/post-record.ts`](../../packages/sanity/src/algolia/post-record.ts).
+- **Env:** root `.env.example` — `NEXT_PUBLIC_ALGOLIA_*` (search key), `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (server-only).
+
+## Nav search typeahead (PROD-1957 follow-on)
+
+- **Nav only** — `NavSearchForm` in [`apps/blog/src/components/modules/search-form.tsx`](../apps/blog/src/components/modules/search-form.tsx) shows Algolia-powered suggestions as you type (desktop category row + mobile compact overlay).
+- **Client fetch:** [`apps/blog/src/lib/algolia-suggest.ts`](../apps/blog/src/lib/algolia-suggest.ts) — debounced `fetchSearchSuggestBundle()` via `liteClient` (min 2 chars; parallel queries on `posts` index for posts, categories, topics).
+- **Shared UI (ADR-013):** [`search-suggestion-panel.tsx`](../apps/blog/src/components/ui/search-suggestion-panel.tsx) (tabbed panel + rows), [`search-suggest-tabs.tsx`](../apps/blog/src/components/ui/search-suggest-tabs.tsx), [`search-highlight.tsx`](../apps/blog/src/components/ui/search-highlight.tsx). Tabs: All / Posts / Categories / Topics with counts; footer links to `/search?q=…`.
+- **Fallback:** when `NEXT_PUBLIC_ALGOLIA_*` is unset, nav search stays a plain GET form (CI/preview). Set both vars in root `.env.local` and/or `apps/blog/.env.local`; restart dev after env changes.
+- **Out of scope:** `/search` page live results, InstantSearch, Query Suggestions index, settings/gear menu.
