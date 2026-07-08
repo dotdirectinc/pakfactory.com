@@ -3,11 +3,11 @@ import { defineArrayMember, defineField, defineType } from 'sanity'
 import { MEDIA_TAG, taggedImageType } from '../../lib/media-tags'
 
 /**
- * bodyGallery — inline two-up image gallery for the post Portable Text body.
+ * bodyGallery — horizontally scrollable image gallery for the post body.
  *
- * One-off content authored in place (like bodyImage / bodyCallout). Two images
- * side by side with a shared caption; stacks on mobile. Register in
- * `schemas/inline/index.ts` to auto-join the post body `of` array.
+ * Minimum 2 images, no upper limit. Each image is shown at ~75% of the
+ * viewport width so readers see one full image and a peek at the next.
+ * Aspect ratio (16:9 or 1:1) controls how each image is cropped.
  */
 export const bodyGallery = defineType({
   name: 'bodyGallery',
@@ -19,7 +19,7 @@ export const bodyGallery = defineType({
       name: 'images',
       title: 'Images',
       type: 'array',
-      description: 'Exactly two images, shown side by side (stacked on mobile).',
+      description: 'Minimum 2 images. Readers scroll horizontally through the gallery.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -52,22 +52,43 @@ export const bodyGallery = defineType({
           },
         }),
       ],
-      validation: (Rule) =>
-        Rule.required().min(2).max(2).error('Add exactly two images.'),
+      validation: (Rule) => Rule.required().min(2).error('Add at least two images.'),
+    }),
+    defineField({
+      name: 'aspectRatio',
+      title: 'Image aspect ratio',
+      type: 'string',
+      description: '16:9 for landscape photos; 1:1 for square crops.',
+      initialValue: '16:9',
+      options: {
+        list: [
+          { title: 'Landscape (16:9)', value: '16:9' },
+          { title: 'Square (1:1)', value: '1:1' },
+        ],
+        layout: 'radio',
+      },
     }),
     defineField({
       name: 'caption',
       title: 'Caption',
       type: 'string',
-      description: 'Optional caption shown below both images.',
+      description: 'Optional caption shown below the gallery.',
     }),
   ],
   preview: {
-    select: { media: 'images.0.asset', caption: 'caption', alt0: 'images.0.alt' },
-    prepare({ media, caption, alt0 }) {
+    select: {
+      media: 'images.0.asset',
+      caption: 'caption',
+      alt0: 'images.0.alt',
+      count: 'images',
+      aspectRatio: 'aspectRatio',
+    },
+    prepare({ media, caption, alt0, count, aspectRatio }) {
+      const n = Array.isArray(count) ? count.length : 0
+      const ratio = aspectRatio === '1:1' ? '1:1' : '16:9'
       return {
         title: caption || 'Image gallery',
-        subtitle: alt0 ? `2 images · ${alt0}` : '2 images',
+        subtitle: `${n} image${n !== 1 ? 's' : ''} · ${ratio}${alt0 ? ` · ${alt0}` : ''}`,
         media,
       }
     },
