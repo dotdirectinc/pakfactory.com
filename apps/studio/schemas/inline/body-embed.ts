@@ -79,18 +79,18 @@ export const bodyEmbed = defineType({
       title: 'Height (px)',
       type: 'number',
       initialValue: 600,
-      hidden: ({ parent }) => parent?.sizing === 'aspect',
+      readOnly: ({ parent }) => parent?.sizing === 'auto',
       description:
-        'Fixed height, or the fallback height in Auto mode (used until/unless the embed reports its own height).',
+        'Fixed: the iframe height. Aspect: set EITHER width or height — the other follows the ratio. Disabled in Auto (the embed reports its own size; falls back to a standard size).',
       validation: (Rule) => Rule.min(120).max(2000),
     }),
     defineField({
       name: 'width',
       title: 'Max width (px)',
       type: 'number',
-      hidden: ({ parent }) => parent?.sizing === 'aspect',
+      readOnly: ({ parent }) => parent?.sizing === 'auto',
       description:
-        'Optional. Set to the embedded form’s actual width to remove side whitespace — the embed is centered in the article. Leave empty for full width.',
+        'Max width — the embed is centered; leave empty for full width. Aspect: set EITHER width or height. Disabled in Auto.',
       validation: (Rule) => Rule.min(240).max(1200),
     }),
     defineField({

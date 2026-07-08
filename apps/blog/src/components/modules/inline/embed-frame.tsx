@@ -94,7 +94,7 @@ export function EmbedFrame({
       }
     >
       <div
-        className="w-full overflow-hidden rounded-lg border border-border bg-muted/20 transition-[height,max-width] duration-200"
+        className="w-full overflow-hidden rounded-lg bg-background transition-[height,max-width] duration-200"
         style={frameStyle}
       >
         <iframe
@@ -105,7 +105,9 @@ export function EmbedFrame({
           referrerPolicy="strict-origin-when-cross-origin"
           sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
           allowFullScreen
-          className="size-full border-0"
+          // Blends with the page where the embed's content is transparent; the
+          // embed's own (cross-origin) background can't be restyled from here.
+          className="size-full border-0 bg-background"
         />
       </div>
       {caption ? (
