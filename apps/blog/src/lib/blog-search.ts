@@ -3,6 +3,7 @@ import {
   archivePageSlice,
   getTotalArchivePages,
   isArchivePageOutOfRange,
+  LISTING_PAGE_SIZE,
 } from "@/lib/blog-archive";
 import { parseListingPage, type BlogRobotsDirective } from "@/lib/seo";
 import { getSanityClient } from "@/lib/sanity/client";
@@ -15,13 +16,18 @@ import {
   BLOG_SEARCH_POSTS_PAGE_RELEVANCE_QUERY,
   BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY,
 } from "@pakfactory/sanity/queries";
+import {
+  ALGOLIA_SORT_INDEX,
+  type AlgoliaPostRecord,
+} from "@pakfactory/sanity/algolia/post-record";
+import { liteClient } from "algoliasearch/lite";
 
 /** Relevance is the default; the sidebar can re-sort. */
 export type SearchSort = "relevance" | "newest" | "oldest" | "title";
 
 export type SearchListFilters = {
-  year?: string;
-  month?: string;
+  /** Selected category slugs (empty = all). Wired to the URL as repeated `?category=`. */
+  categories: string[];
   sort: SearchSort;
 };
 
@@ -39,9 +45,24 @@ export type SearchPageData = {
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
+const useAlgolia =
+  Boolean(process.env.NEXT_PUBLIC_ALGOLIA_APP_ID) &&
+  Boolean(process.env.NEXT_PUBLIC_ALGOLIA_API_KEY);
+
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (value === undefined) return undefined;
   return Array.isArray(value) ? value[0] : value;
+}
+
+/** Collect a repeated/comma-separated query param into a de-duped, trimmed list. */
+function paramList(value: string | string[] | undefined): string[] {
+  if (value === undefined) return [];
+  const raw = Array.isArray(value) ? value : [value];
+  const values = raw
+    .flatMap((entry) => entry.split(","))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return Array.from(new Set(values));
 }
 
 export function parseSearchQuery(searchParams: SearchParams): string {
@@ -55,8 +76,7 @@ export function parseSearchSort(raw: string | undefined): SearchSort {
 
 export function parseSearchFilters(searchParams: SearchParams): SearchListFilters {
   return {
-    year: firstParam(searchParams.year)?.trim() || undefined,
-    month: firstParam(searchParams.month)?.trim() || undefined,
+    categories: paramList(searchParams.category),
     sort: parseSearchSort(firstParam(searchParams.sort)),
   };
 }
@@ -81,34 +101,6 @@ export function buildSearchTerm(query: string): string | null {
   return tokens.map((token) => `${token}*`).join(" ");
 }
 
-function yearMonthBounds(
-  year?: string,
-  month?: string,
-): { yearStart: string | null; yearEnd: string | null } {
-  if (!year) return { yearStart: null, yearEnd: null };
-  const y = Number.parseInt(year, 10);
-  if (!Number.isFinite(y)) return { yearStart: null, yearEnd: null };
-
-  if (month) {
-    const m = Number.parseInt(month, 10);
-    if (!Number.isFinite(m) || m < 1 || m > 12) {
-      return {
-        yearStart: new Date(Date.UTC(y, 0, 1)).toISOString(),
-        yearEnd: new Date(Date.UTC(y + 1, 0, 1)).toISOString(),
-      };
-    }
-    return {
-      yearStart: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
-      yearEnd: new Date(Date.UTC(y, m, 1)).toISOString(),
-    };
-  }
-
-  return {
-    yearStart: new Date(Date.UTC(y, 0, 1)).toISOString(),
-    yearEnd: new Date(Date.UTC(y + 1, 0, 1)).toISOString(),
-  };
-}
-
 function searchPageQuery(sort: SearchSort): string {
   switch (sort) {
     case "newest":
@@ -122,9 +114,97 @@ function searchPageQuery(sort: SearchSort): string {
   }
 }
 
+function algoliaHitToHomePostCard(hit: AlgoliaPostRecord): HomePostCard {
+  return {
+    _id: hit.objectID,
+    title: hit.title,
+    slug: hit.slug,
+    excerpt: hit.excerpt || undefined,
+    publishedAt: hit.publishedAt ?? undefined,
+    mainImage: hit.image
+      ? { url: hit.image, alt: hit.imageAlt || undefined }
+      : undefined,
+    categorySlug: hit.category?.slug ?? undefined,
+    categoryTitle: hit.category?.title ?? undefined,
+    authorName: hit.author?.name ?? undefined,
+  };
+}
+
+function buildAlgoliaFacetFilters(categories: string[]): string[][] | undefined {
+  if (categories.length === 0) return undefined;
+  return [categories.map((slug) => `category.slug:${slug}`)];
+}
+
+async function fetchSearchPageFromAlgolia(
+  query: string,
+  pageNumber: number,
+  filters: SearchListFilters,
+): Promise<{ posts: HomePostCard[]; totalCount: number }> {
+  const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!;
+  const apiKey = process.env.NEXT_PUBLIC_ALGOLIA_API_KEY!;
+  const client = liteClient(appId, apiKey);
+  const facetFilters = buildAlgoliaFacetFilters(filters.categories);
+
+  const { results } = await client.searchForHits<AlgoliaPostRecord>({
+    requests: [
+      {
+        indexName: ALGOLIA_SORT_INDEX[filters.sort],
+        query,
+        page: Math.max(0, pageNumber - 1),
+        hitsPerPage: LISTING_PAGE_SIZE,
+        ...(facetFilters ? { facetFilters } : {}),
+      },
+    ],
+  });
+
+  const result = results[0];
+  const hits = result?.hits ?? [];
+  return {
+    posts: hits.map(algoliaHitToHomePostCard),
+    totalCount: result?.nbHits ?? 0,
+  };
+}
+
+async function fetchSearchPageFromGroq(
+  searchTerm: string,
+  pageNumber: number,
+  filters: SearchListFilters,
+): Promise<{ posts: HomePostCard[]; totalCount: number }> {
+  const groqParams = blogLanguageParams({
+    searchTerm,
+    categorySlugs: filters.categories,
+    yearStart: null,
+    yearEnd: null,
+  });
+
+  let totalCount = 0;
+  if (isSanityConfigured()) {
+    const client = await getSanityClient();
+    totalCount = await client
+      .fetch<number>(BLOG_SEARCH_POSTS_COUNT_QUERY, groqParams)
+      .catch(() => 0);
+  }
+
+  let posts: HomePostCard[] = [];
+  if (isSanityConfigured() && !isArchivePageOutOfRange(pageNumber, totalCount)) {
+    const { start, end } = archivePageSlice(pageNumber);
+    const client = await getSanityClient();
+    posts = await client
+      .fetch<HomePostCard[]>(searchPageQuery(filters.sort), {
+        ...groqParams,
+        start,
+        end,
+      })
+      .catch(() => []);
+  }
+
+  return { posts, totalCount };
+}
+
 /**
  * Build a `/search` URL. `q` and active filters are query params; relevance
- * sort and page 1 are omitted (defaults).
+ * sort and page 1 are omitted (defaults). Categories serialize as repeated
+ * `?category=` params.
  */
 export function searchPageHref(
   query: string,
@@ -134,8 +214,7 @@ export function searchPageHref(
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   if (pageNumber > 1) params.set("page", String(pageNumber));
-  if (filters.year) params.set("year", filters.year);
-  if (filters.month) params.set("month", filters.month);
+  for (const slug of filters.categories) params.append("category", slug);
   if (filters.sort !== "relevance") params.set("sort", filters.sort);
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";
@@ -163,34 +242,42 @@ export async function fetchSearchPage(
     return { ...base, posts: [], totalCount: 0, totalPages: 1 };
   }
 
-  const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
-  const groqParams = blogLanguageParams({ searchTerm, yearStart, yearEnd });
-
+  let posts: HomePostCard[] = [];
   let totalCount = 0;
-  if (isSanityConfigured()) {
-    const client = await getSanityClient();
-    totalCount = await client
-      .fetch<number>(BLOG_SEARCH_POSTS_COUNT_QUERY, groqParams)
-      .catch(() => 0);
+
+  if (useAlgolia) {
+    try {
+      const algoliaResult = await fetchSearchPageFromAlgolia(
+        query,
+        pageNumber,
+        filters,
+      );
+      posts = algoliaResult.posts;
+      totalCount = algoliaResult.totalCount;
+    } catch (error) {
+      console.error("[blog-search] Algolia search failed, falling back to GROQ:", error);
+      const groqResult = await fetchSearchPageFromGroq(
+        searchTerm,
+        pageNumber,
+        filters,
+      );
+      posts = groqResult.posts;
+      totalCount = groqResult.totalCount;
+    }
+  } else {
+    const groqResult = await fetchSearchPageFromGroq(
+      searchTerm,
+      pageNumber,
+      filters,
+    );
+    posts = groqResult.posts;
+    totalCount = groqResult.totalCount;
   }
 
   const totalPages = getTotalArchivePages(totalCount);
 
   if (isArchivePageOutOfRange(pageNumber, totalCount)) {
     return { ...base, posts: [], totalCount, totalPages };
-  }
-
-  let posts: HomePostCard[] = [];
-  if (isSanityConfigured()) {
-    const { start, end } = archivePageSlice(pageNumber);
-    const client = await getSanityClient();
-    posts = await client
-      .fetch<HomePostCard[]>(searchPageQuery(filters.sort), {
-        ...groqParams,
-        start,
-        end,
-      })
-      .catch(() => []);
   }
 
   return { ...base, posts, totalCount, totalPages };

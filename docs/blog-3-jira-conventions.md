@@ -80,7 +80,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Robots:** `getBlogRobotsDirective({ kind: 'error' })` → **`noindex, follow`**.
 - **GROQ:** [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts) — field names match **`apps/studio`** schemas (`blogCategory`, `post.publishedAt`, `author.photo`).
 - **Reuse:** `_components/blog-search-form`, `category-chips`, `popular-posts-rail` for search zero-results (PROD-1503).
-- **Popular rail:** current UTC month by `publishedAt`, then latest published (no `viewCount` until studio adds it).
+- **Popular rail:** ranked by `viewCount` (Views) within `postPopularRow.timeWindowDays` (default 30); search/backfill still use UTC month then highest-Views published.
 - **Newsletter:** `POST /api/newsletter` when `NEWSLETTER_WEBHOOK_URL` is set.
 
 ## PROD-1499 — Category archives
@@ -124,8 +124,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 ## PROD-1500 — Tag archives
 
 - **Routes:** `/tag/[slug]` (page 1), `/tag/[slug]/page/[n]` (page 2+; `/page/1` → `/tag/[slug]`). `tag` is a reserved root segment (PROD-1597) — physical route beats `[category]`.
-- **Tags are flat** (`blogTag`); axis = `tagGroup` (`material`, `packaging-type`, `finish`, `industry`; `ungrouped` sentinel). Front-end label map mirrors studio in [`apps/blog/src/lib/tag-groups.ts`](../apps/blog/src/lib/tag-groups.ts) — keep in sync with `TAG_GROUPS` in `apps/studio/schemas/blogTag.ts`.
-- **Kicker:** axis title from `tagGroup` (omit when ungrouped). **Sidebar:** co-occurring tags grouped by axis, **own-axis row hidden**; author/date/sort. `tag` is the page, **not** a filter param (filters: `author`, `year`, `month`, `sort`).
+- **Tags are flat** (`blogTag`); group = `topicGroup` → `blogTopicGroup` (`material`, `packaging-type`, `finish`, `industry`, …). Group title from CMS via `topicGroupTitle()` in [`apps/blog/src/lib/tag-groups.ts`](../apps/blog/src/lib/tag-groups.ts).
+- **Kicker:** group title from `topicGroup` (omit when ungrouped). **Sidebar:** co-occurring tags grouped by `topicGroup`, **own-group row hidden**; author/date/sort. `tag` is the page, **not** a filter param (filters: `author`, `year`, `month`, `sort`).
 - **Robots:** `getTagListingRobots(page, sp, hasPosts)` — page 1 unfiltered + ≥1 post **index**; **empty tag**, page ≥2, or any filter **noindex, follow** (empty→noindex is tag-specific).
 - **JSON-LD:** `collectionPage` + `itemList` + `breadcrumbList`; post item URLs via `absoluteUrl(postDetailHref(slug, categorySlug))` (posts span categories).
 - **Unknown slug / out-of-range page → `notFound()`.**
@@ -142,8 +142,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 ## PROD-1501 — Author profiles
 
-- **Route:** `/author/[slug]` (indexable; `author` is a reserved root segment). Header: circular photo, role, name (H1), bio + credentials (portable text), **LinkedIn only** (personalSite/xHandle ignored per UX spec).
-- **Posts:** first 12 SSR in a 3-col grid; **"Load More (12)"** appends via client fetch to `GET /api/author/[slug]/posts?offset=N` — **no `/page/N` URLs**. Images resolved server-side; the client grid imports `AuthorPostCard` as a **type-only** import to avoid the `server-only` image builder.
+- **Route:** `/author/[slug]` (page 1) and `/author/[slug]/page/[n]` (pagination); page 1 canonical at `/author/[slug]`; page 2+ → **noindex, follow** (PROD-1495). `author` is a reserved root segment.
+- **Posts:** SSR `PostList` in a 3-col grid; **15 per page** (`LISTING_PAGE_SIZE`, same as topic/category); path-based `<Pagination>` — no client load-more API.
 - **JSON-LD:** `Person` (`jobTitle`=role, `description`=bio text, `sameAs`=[LinkedIn]) + `BreadcrumbList`, via `@pakfactory/seo` `person()` (extended with `jobTitle`/`description`/`sameAs`). `authorPersonId(slug)` = `…/author/{slug}#person`.
 - **Article back-ref:** every post's `Article.author` `@id` is `authorPersonId(post.author.slug)`, so posts link back to the author page (`blog-post.ts`).
 - **Sitemap:** authors with ≥1 published post (`AUTHORS_FOR_SITEMAP_QUERY`).
@@ -178,7 +178,7 @@ Feature split across two branches (one ticket): **Studio** on `feature/sanity-st
 - **Asset-level metadata (capture-once):** the plugin writes `altText`, `description`, and `originalFilename` onto `sanity.imageAsset`. Editorial mapping: **alt → `altText`**, **caption → `description`**, **filename → `originalFilename`**.
 - **Per-use overrides:** `post.mainImage` and `post.ogImage` ([`apps/studio/schemas/post.ts`](../apps/studio/schemas/post.ts)) carry optional `alt` (and `mainImage.caption`) override fields that fall back to the asset-level value. `bodyImage` keeps its required per-use alt unchanged.
 - **Decision (Option B):** chose the plugin over native Media Library (Enterprise, cross-project) and over per-use-only fields. Native library is the documented upgrade path when cross-project asset sharing becomes a firm requirement; migration is non-trivial (re-uploads + re-links).
-- **Blog read path:** GROQ resolves alt/caption on `mainImage` via `coalesce(per-use, asset->altText/description)` in `POST_CARD_FIELDS` + `POST_DETAIL_FIELDS` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts). [`apps/blog/src/lib/sanity-image.ts`](../apps/blog/src/lib/sanity-image.ts) exports `sanityImageAlt` (`server-only`); [`PostCard`](../apps/blog/src/app/_components/post-card.tsx) reads it directly, and the author posts grid flows it through [`AuthorPostCard.imageAlt`](../apps/blog/src/lib/blog-author.ts) so the client [`AuthorPostsLoader`](../apps/blog/src/app/_components/author-posts-loader.tsx) stays free of the server-only image module. A11y-aware fallback: `alt ?? ""` when no editor alt (image is inside a link with adjacent title).
+- **Blog read path:** GROQ resolves alt/caption on `mainImage` via `coalesce(per-use, asset->altText/description)` in `POST_CARD_FIELDS` + `POST_DETAIL_FIELDS` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts). [`apps/blog/src/lib/sanity-image.ts`](../apps/blog/src/lib/sanity-image.ts) exports `sanityImageAlt` (`server-only`); author archive posts resolve alt server-side via `toPostCardData` in [`apps/blog/src/lib/blog-author.ts`](../apps/blog/src/lib/blog-author.ts) before SSR `PostList`.
 - **Editor coaching:** descriptive-filename do/don't examples added to [`docs/pakfactory-content-team-fields-final.md`](./pakfactory-content-team-fields-final.md) § "Image Asset (Library)". Upload-time soft warning on generic names isn't cleanly feasible in Sanity (field validation can't dereference `asset->originalFilename`), so it stays as coaching.
 - **Pending:** post-detail hero + body image rendering (`BlogPostArticle` is currently a stub) — the GROQ shape is already resolved, so the future hero just reads `post.mainImage.alt` / `.caption`.
 
@@ -206,8 +206,32 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 
 - **Route:** `apps/blog/src/app/search/page.tsx` → public **`/search`** (reserved root segment; static route beats the `[category]` resolver, PROD-1597). `revalidate = 60`.
 - **Robots:** **always `noindex, follow`** for all three states via `getSearchRobots()` in [`apps/blog/src/lib/blog-search.ts`](../apps/blog/src/lib/blog-search.ts) — search result pages are never indexed; links still pass authority.
-- **Search:** Sanity built-in `match` (no external full-text infra, per AC). `buildSearchTerm()` tokenizes `q` and suffixes each token with `*` (prefix match). Filter matches **title, excerpt, body (`pt::text`), and tag titles**. `?q=&page=&year=&month=&sort=` (query-string pagination only; `searchPageHref()`).
+- **Search:** When Algolia env is set (PROD-1957), `fetchSearchPage()` queries index `posts` via `algoliasearch/lite` (server-side); otherwise Sanity `match` GROQ (CI/preview fallback). `buildSearchTerm()` still gates the empty state. Category multiselect → Algolia `facetFilters` or GROQ `categorySlugs`. `?q=&category=&page=&sort=` unchanged.
 - **Relevance:** default order is `score(boost(title,5), boost(excerpt,2), pt::text(body))` → `order(_score desc, publishedAt desc)`. **Gotcha:** `score()` rejects dereference expressions — tag matching stays in the filter for recall but is **not** a `boost()` term (`tags[@->title match …]` → "score() function received unexpected expression"). Re-sortable to newest/oldest/title.
-- **States** (`search-view.tsx`, route-private): empty (`SearchForm` + `CategoryChips`), results (count + grid of `PostCard` + `Pagination` + route-private `SearchSidebar`), zero-results (message + `PostPopularRail`).
-- **Sidebar** is route-private (Categories nav + Sort + Date), **not** the shared category-tuned `FilterSidebar` (which assumes a "newest" default and doesn't preserve `q`). Future: unify behind one generalized component.
-- **GROQ:** `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts), re-exported from `@pakfactory/sanity/queries`.
+- **UI (PROD-1950):** dieline layout — `PageHeader` + `SearchFilterBar` (Category + Sort) + `PostList` + `Pagination`; empty/no-results use `TopicChipRow` + CMS page blocks.
+- **CMS singleton (PROD-1950):** `blogPage` id `blogSearchPage`, `pageRole: search` — content source only (not slug-routable). Editors curate `recommendedTopics` + `pageBuilder` (`pageBuilderHome`). Desk: **Pages → Search page**. See [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-1950.
+- **GROQ:** `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` + `BLOG_SEARCH_PAGE_BUILDER_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts), re-exported from `@pakfactory/sanity/queries`.
+
+## PROD-1950 — Search results redesign + Search singleton
+
+- **Builds on** PROD-1503. Reworks `/search` to Figma (results + no-results). ADR-013 shared core (`ListingFilterBar`, `TopicChipRow`) + search-owned `SearchFilterBar`.
+- **Do not** model search as a landing/`static` slug page — use the pinned singleton. Agents never seed or patch `blogSearchPage`.
+
+## PROD-1957 — Algolia search backend
+
+- **Jira:** [PROD-1957](https://dotdirect.atlassian.net/browse/PROD-1957) — Algolia integration (Sanity Function sync + backend swap).
+- **Guide:** [How to implement front-end search with Sanity](https://www.sanity.io/docs/developer-guides/how-to-implement-front-end-search-with-sanity).
+- **Sync:** [`sanity.blueprint.ts`](../../sanity.blueprint.ts) + [`functions/algolia-document-sync/`](../../functions/algolia-document-sync/) — incremental index on post create/update/delete. PakFactory extension: remove record when `allowIndex === false`.
+- **Backfill (human):** from `apps/studio`: `npx sanity exec scripts/algolia-configure-index.ts --with-user-token` then `npx sanity exec scripts/algolia-initial-sync.ts --with-user-token`.
+- **Deploy Function (human):** `npx sanity blueprints deploy` (needs `deployStudio` grant; set `ALGOLIA_*`, `SANITY_PROJECT_ID`, `SANITY_DATASET` in Function env).
+- **Blog query layer:** [`apps/blog/src/lib/blog-search.ts`](../apps/blog/src/lib/blog-search.ts) uses `liteClient` when `NEXT_PUBLIC_ALGOLIA_APP_ID` + `NEXT_PUBLIC_ALGOLIA_API_KEY` are set; otherwise GROQ fallback (CI/preview). **Never** put `ALGOLIA_WRITE_KEY` in `apps/blog`.
+- **Shared record shape:** [`packages/sanity/src/algolia/post-record.ts`](../../packages/sanity/src/algolia/post-record.ts).
+- **Env:** root `.env.example` — `NEXT_PUBLIC_ALGOLIA_*` (search key), `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (server-only).
+
+## Nav search typeahead (PROD-1957 follow-on)
+
+- **Nav only** — `NavSearchForm` in [`apps/blog/src/components/modules/search-form.tsx`](../apps/blog/src/components/modules/search-form.tsx) shows Algolia-powered suggestions as you type (desktop category row + mobile compact overlay).
+- **Client fetch:** [`apps/blog/src/lib/algolia-suggest.ts`](../apps/blog/src/lib/algolia-suggest.ts) — debounced `fetchSearchSuggestBundle()` via `liteClient` (min 2 chars; parallel queries on `posts` index for posts, categories, topics).
+- **Shared UI (ADR-013):** [`search-suggestion-panel.tsx`](../apps/blog/src/components/ui/search-suggestion-panel.tsx) (tabbed panel + rows), [`search-suggest-tabs.tsx`](../apps/blog/src/components/ui/search-suggest-tabs.tsx), [`search-highlight.tsx`](../apps/blog/src/components/ui/search-highlight.tsx). Tabs: All / Posts / Categories / Topics with counts; footer links to `/search?q=…`.
+- **Fallback:** when `NEXT_PUBLIC_ALGOLIA_*` is unset, nav search stays a plain GET form (CI/preview). Set both vars in root `.env.local` and/or `apps/blog/.env.local`; restart dev after env changes.
+- **Out of scope:** `/search` page live results, InstantSearch, Query Suggestions index, settings/gear menu.

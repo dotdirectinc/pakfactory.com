@@ -27,7 +27,7 @@ export type BuildDocMetadataInput = {
   descriptionFallback?: string | null;
   /** Featured/hero image URL for OG when ogImage is blank. */
   featuredImageUrl?: string | null;
-  /** Path for self-canonical when `canonical` is blank (e.g. `/slug`, `/tag/foo`). */
+  /** Path for self-canonical when `canonical` is blank (e.g. `/slug`, `/topics/foo`). */
   selfCanonicalPath: string;
   /** Global default OG from settings singleton. */
   defaultOgImageUrl?: string | null;

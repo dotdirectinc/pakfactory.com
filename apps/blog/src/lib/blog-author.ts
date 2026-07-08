@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { PortableTextBlock } from "@portabletext/types";
+import type { SocialLink } from "@pakfactory/sanity/social-platforms";
 import type { PostCardData } from "@/components/modules/post-card";
 import type { HomePostCard } from "@/lib/blog-home";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
@@ -11,6 +12,11 @@ import {
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import {
+  archivePageSlice,
+  getTotalArchivePages,
+  isArchivePageOutOfRange,
+} from "@/lib/blog-archive";
 import { getBlogRobotsDirective, type BlogRobotsDirective } from "@/lib/seo";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import { authorHref } from "@/lib/blog-post-url";
@@ -20,10 +26,13 @@ import {
   AUTHOR_POSTS_PAGE_QUERY,
 } from "@pakfactory/sanity/queries";
 
-/** Posts shown per "page" (initial SSR batch and each Load More click). */
-export const AUTHOR_PAGE_SIZE = 12;
-
-export type AuthorPostsResult = { posts: PostCardData[]; hasMore: boolean };
+export type AuthorArchivePageData = {
+  author: AuthorDoc;
+  posts: PostCardData[];
+  totalCount: number;
+  pageNumber: number;
+  totalPages: number;
+};
 
 export type AuthorDoc = DocSeoFields & {
   _id?: string;
@@ -36,13 +45,15 @@ export type AuthorDoc = DocSeoFields & {
   bio?: PortableTextBlock[];
   /** Plain-text bio (`pt::text`) for the Person schema description. */
   bioText?: string;
-  socialLinks?: string[];
+  socialLinks?: SocialLink[];
   photo?: unknown;
 };
 
 export async function buildAuthorMetadata(
   author: AuthorDoc,
+  selfCanonicalPath: string,
   robots: BlogRobotsDirective = getBlogRobotsDirective({ kind: "author" }),
+  options?: { titleOverride?: string; descriptionOverride?: string },
 ): Promise<Metadata> {
   const ctx = await fetchSeoContext();
   const defaults = typeDefaults(ctx, "authorDefaults");
@@ -56,11 +67,13 @@ export async function buildAuthorMetadata(
       author.role ||
       `Articles by ${author.name} on PakFactory Blog.`,
     featuredImageUrl: photoUrl,
-    selfCanonicalPath: authorHref(author.slug),
+    selfCanonicalPath,
     defaultOgImageUrl: ctx.defaultOgImageUrl,
     seo: author,
     robots,
     openGraphType: "profile",
+    titleOverride: options?.titleOverride,
+    descriptionOverride: options?.descriptionOverride,
     metaTitleFormat: defaults?.metaTitleFormat,
     metaDescriptionFormat: defaults?.metaDescriptionFormat,
     formatTokens: {
@@ -70,6 +83,16 @@ export async function buildAuthorMetadata(
       sitename: ctx.siteName,
     },
   });
+}
+
+export function authorPageHref(authorSlug: string, pageNumber: number): string {
+  return pageNumber <= 1
+    ? authorHref(authorSlug)
+    : `${authorHref(authorSlug)}/page/${pageNumber}`;
+}
+
+export function getAuthorListingRobots(pageNumber: number): BlogRobotsDirective {
+  return getBlogRobotsDirective({ kind: "author", pageNumber });
 }
 
 export async function fetchAuthorBySlug(slug: string): Promise<AuthorDoc | null> {
@@ -106,23 +129,36 @@ export async function fetchAuthorPosts(
 }
 
 /**
- * One page of author posts as client-safe cards + whether more remain.
- * `offset` is the number already shown; returns the next `AUTHOR_PAGE_SIZE`.
- * Used by the SSR page (offset 0) and the Load More API route.
+ * One page of author archive posts (path-based pagination, shared LISTING_PAGE_SIZE).
  */
-export async function fetchAuthorPostsPage(
+export async function fetchAuthorArchivePage(
   authorSlug: string,
-  offset: number,
-): Promise<AuthorPostsResult> {
-  if (!isSanityConfigured()) return { posts: [], hasMore: false };
-  const start = Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
-  const end = start + AUTHOR_PAGE_SIZE;
-  const [rows, total] = await Promise.all([
-    fetchAuthorPosts(authorSlug, start, end),
-    fetchAuthorPostsCount(authorSlug),
-  ]);
+  pageNumber: number,
+): Promise<AuthorArchivePageData | null> {
+  const author = await fetchAuthorBySlug(authorSlug);
+  if (!author) return null;
+
+  const totalCount = await fetchAuthorPostsCount(authorSlug);
+  const totalPages = getTotalArchivePages(totalCount);
+
+  if (isArchivePageOutOfRange(pageNumber, totalCount)) {
+    return {
+      author,
+      posts: [],
+      totalCount,
+      pageNumber,
+      totalPages,
+    };
+  }
+
+  const { start, end } = archivePageSlice(pageNumber);
+  const rows = await fetchAuthorPosts(authorSlug, start, end);
+
   return {
+    author,
     posts: rows.map((post) => toPostCardData(post)),
-    hasMore: end < total,
+    totalCount,
+    pageNumber,
+    totalPages,
   };
 }

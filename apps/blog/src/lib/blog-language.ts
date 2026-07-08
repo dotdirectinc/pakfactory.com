@@ -1,5 +1,6 @@
 import {
   BLOG_HOME_PAGE_IDS,
+  BLOG_TOPICS_PAGE_IDS,
   DEFAULT_BLOG_LANGUAGE,
 } from "@pakfactory/sanity/languages";
 
@@ -17,5 +18,41 @@ export function blogLanguageParams<T extends Record<string, unknown>>(
 export function blogHomePageParams() {
   return blogLanguageParams({
     homePageId: BLOG_HOME_PAGE_IDS.en,
+    monthStart: monthStartIso(),
+  });
+}
+
+function monthStartIso(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
+/** Params for the localized topics index singleton query. */
+export function blogTopicsPageParams() {
+  return blogLanguageParams({
+    topicsPageId: BLOG_TOPICS_PAGE_IDS.en,
+    monthStart: monthStartIso(),
+  });
+}
+
+/** Params for the 404 page singleton query (page builder + popular row). */
+export function blogNotFoundPageParams() {
+  return blogLanguageParams({
+    monthStart: monthStartIso(),
+  });
+}
+
+/** Params for the search page singleton query (page builder + popular row). */
+export function blogSearchPageParams() {
+  return blogLanguageParams({
+    monthStart: monthStartIso(),
+  });
+}
+
+/** Params for landing/static blogPage fetch by slug (page builder + popular row). */
+export function blogLandingPageParams(slug: string) {
+  return blogLanguageParams({
+    slug,
+    monthStart: monthStartIso(),
   });
 }

@@ -6,7 +6,7 @@ import {
     serializeJsonLd,
 } from '@pakfactory/seo';
 import {pageDielineOuterClass} from '@/components/layout/page-dieline-section';
-import { SectionRenderer } from '@/components/sections/section-renderer';
+import { BlockRenderer } from '@/components/blocks/block-renderer';
 import {
     buildBlogHomeMetadata,
     fetchBlogHomePage,
@@ -95,7 +95,7 @@ export default async function BlogHomePage() {
                     </div>
                 )}
 
-                <SectionRenderer sections={blocks} />
+                <BlockRenderer blocks={blocks} />
             </main>
         </>
     );

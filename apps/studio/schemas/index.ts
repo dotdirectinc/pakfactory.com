@@ -1,4 +1,5 @@
 import { capabilityCategory } from './capabilityCategory'
+import { socialLink } from '../lib/social-link-schema'
 import { capabilityType } from './capabilityType'
 import { capability } from './capability'
 import { attributeGroup } from './attributeGroup'
@@ -11,6 +12,7 @@ import { useCase } from './useCase'
 import { product } from './product'
 import { author } from './author'
 import { blogCategory } from './blogCategory'
+import { blogTopicGroup } from './blogTopicGroup'
 import { blogTag } from './blogTag'
 import { bodyImage } from './bodyImage'
 import { inlineBlocks } from './inline'
@@ -29,9 +31,17 @@ import { page } from './page'
 import { post } from './post'
 import { redirect } from './redirect'
 import { settings } from './settings'
-import { pageBuilderSections, pageBuilder, pageBuilderHome, pageBuilderLanding } from './sections'
+import {
+  pageBuilderBlocks,
+  pageBuilder,
+  pageBuilderHome,
+  pageBuilderLanding,
+} from './blocks'
 
 export const schemaTypes = [
+  // Shared objects
+  socialLink,
+
   // Capability layer
   capabilityCategory,
   capabilityType,
@@ -65,6 +75,7 @@ export const schemaTypes = [
   // Editorial
   author,
   blogCategory,
+  blogTopicGroup,
   blogTag,
   bodyImage,
   ...inlineBlocks,
@@ -75,7 +86,7 @@ export const schemaTypes = [
   redirect,
 
   // Page builder
-  ...pageBuilderSections,
+  ...pageBuilderBlocks,
   pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,

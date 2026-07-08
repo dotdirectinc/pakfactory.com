@@ -21,7 +21,7 @@ export function PostDetailLayout({
   return (
     <main>
       <ReadingProgressBar />
-      <PageDielineSection innerClassName="py-3">{breadcrumb}</PageDielineSection>
+      <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
       {header}
       <PageDielineSection innerClassName="py-12 sm:py-16 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,304px)_minmax(0,1fr)] lg:gap-16">

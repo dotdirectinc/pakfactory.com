@@ -15,6 +15,8 @@ type PostListProps = {
     | "default"
     | "compact"
     | "featured"
+    | "featuredLead"
+    | "featuredListItem"
     | "horizontal"
     | "headline"
     | "rail";
@@ -25,6 +27,8 @@ type PostListProps = {
   heading?: string;
   headingId?: string;
   className?: string;
+  /** When true, the first card image loads with priority (LCP). */
+  priorityFirst?: boolean;
 };
 
 export function PostList({
@@ -36,6 +40,7 @@ export function PostList({
   heading,
   headingId,
   className,
+  priorityFirst = false,
 }: PostListProps) {
   if (posts.length === 0) {
     if (!emptyMessage) return null;
@@ -44,7 +49,29 @@ export function PostList({
 
   let list: ReactNode;
 
-  if (
+  if (variant === "featuredListItem") {
+    // POC featured secondary list: dashed divider between each item.
+    list = (
+      <ul className={className ?? "flex flex-col"}>
+        {posts.map((post, index) => (
+          <li
+            key={post._id}
+            className={
+              index > 0
+                ? "mt-5 pt-5 lg:mt-4 lg:border-t lg:border-dashed lg:border-border lg:pt-4"
+                : undefined
+            }
+          >
+            <PostCard
+              post={post}
+              variant="featuredListItem"
+              priority={priorityFirst && index === 0}
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  } else if (
     layout === "list" ||
     variant === "headline" ||
     variant === "rail" ||
@@ -56,9 +83,13 @@ export function PostList({
           className ?? (variant === "horizontal" ? "space-y-6" : "space-y-4")
         }
       >
-        {posts.map((post) => (
+        {posts.map((post, index) => (
           <li key={post._id}>
-            <PostCard post={post} variant={variant} />
+            <PostCard
+              post={post}
+              variant={variant}
+              priority={priorityFirst && index === 0}
+            />
           </li>
         ))}
       </ul>
@@ -76,9 +107,13 @@ export function PostList({
   } else {
     list = (
       <ul className={className ?? `grid gap-6 ${COLUMN_CLASSES[columns]}`}>
-        {posts.map((post) => (
+        {posts.map((post, index) => (
           <li key={post._id}>
-            <PostCard post={post} variant={variant} />
+            <PostCard
+              post={post}
+              variant={variant}
+              priority={priorityFirst && index === 0}
+            />
           </li>
         ))}
       </ul>

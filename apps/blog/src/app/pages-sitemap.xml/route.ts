@@ -12,6 +12,11 @@ export const revalidate = 60;
 export async function GET() {
   const entries: SitemapUrlEntry[] = [
     { loc: absoluteUrl("/"), changefreq: "daily", priority: 1 },
+    // Indexable non-post routes: home + code routes + CMS landing/static pages
+    // (appended below). `/all` is the posts archive index — it changes whenever
+    // a post publishes. `/search` is noindex, so it's excluded.
+    { loc: absoluteUrl("/all"), changefreq: "daily", priority: 0.8 },
+    { loc: absoluteUrl("/contribute"), changefreq: "monthly", priority: 0.5 },
   ];
 
   if (isSanityConfigured()) {

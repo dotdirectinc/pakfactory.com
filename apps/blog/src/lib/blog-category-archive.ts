@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
-import {
-  getCategoryFallback,
-  isKnownCategorySlug,
-  type BlogCategorySlug,
-} from "@/lib/blog-categories";
+import { getCategoryFallback } from "@/lib/blog-categories";
 import {
   getTotalArchivePages,
   isArchivePageOutOfRange,
@@ -36,6 +32,7 @@ import {
   BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY,
   BLOG_CATEGORY_TAGS_FACET_QUERY,
 } from "@pakfactory/sanity/queries";
+import type { TopicGroupRef } from "@/lib/tag-groups";
 
 export type CategorySort = "newest" | "oldest" | "title";
 
@@ -52,7 +49,7 @@ export type CategoryFacetTag = {
   _id?: string;
   title: string;
   slug: string;
-  tagGroup?: string;
+  topicGroup?: TopicGroupRef;
 };
 export type CategoryFacetAuthor = { _id?: string; name: string; slug: string };
 
@@ -221,8 +218,6 @@ export async function buildCategoryArchiveMetadata(
 export async function fetchCategoryBySlug(
   slug: string,
 ): Promise<CategoryDocument | null> {
-  if (!isKnownCategorySlug(slug)) return null;
-
   const fallback = getCategoryFallback(slug);
   if (!isSanityConfigured()) {
     return fallback
@@ -250,7 +245,7 @@ export async function fetchCategoryBySlug(
 }
 
 export async function fetchCategoryArchivePage(
-  categorySlug: BlogCategorySlug,
+  categorySlug: string,
   pageNumber: number,
   filters: CategoryListFilters,
 ): Promise<CategoryArchivePageData | null> {

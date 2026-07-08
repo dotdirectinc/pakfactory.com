@@ -33,6 +33,11 @@ if (process.env.NODE_ENV === "development") {
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo"],
+  turbopack: {
+    resolveAlias: {
+      "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
+    },
+  },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],
   },
@@ -40,8 +45,44 @@ const nextConfig: NextConfig = {
   // Posts are canonical at `/{postSlug}` (root); category/tag/search are discovery
   // only, never URL scoping. Permanently redirect old indexed URLs. More specific
   // (pagination) first. basePath is applied automatically.
+  // Flat, Yoast-style sub-sitemap URLs (`/posts-sitemap-1.xml`) served by the
+  // paginated `[page]` route handlers. App Router can't embed a dynamic number
+  // mid-segment (`posts-sitemap-[page].xml`), and a root dynamic segment would
+  // collide with `[category]`, so the pretty URL is a rewrite onto the handler.
+  async rewrites() {
+    return [
+      {
+        source: "/posts-sitemap-:page(\\d{1,}).xml",
+        destination: "/posts-sitemap/:page",
+      },
+      {
+        source: "/topics-sitemap-:page(\\d{1,}).xml",
+        destination: "/topics-sitemap/:page",
+      },
+    ];
+  },
   async redirects() {
     return [
+      {
+        source: "/tags-sitemap-:page(\\d{1,}).xml",
+        destination: "/topics-sitemap-:page.xml",
+        permanent: true,
+      },
+      {
+        source: "/tags-sitemap",
+        destination: "/topics-sitemap-1.xml",
+        permanent: true,
+      },
+      {
+        source: "/tag/:slug/page/:n",
+        destination: "/topics/:slug/page/:n",
+        permanent: true,
+      },
+      {
+        source: "/tag/:slug",
+        destination: "/topics/:slug",
+        permanent: true,
+      },
       {
         source: "/category/:category/page/:n",
         destination: "/:category/page/:n",

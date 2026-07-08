@@ -16,7 +16,7 @@ import {
   getSanityProjectId,
   isSanityConfigured,
 } from "@/lib/sanity/env";
-import type { PageBuilderSection } from "@/components/sections/registry";
+import type { PageBuilderBlock } from "@/components/blocks/registry";
 import {
   BLOG_HOME_PAGE_BUILDER_QUERY,
   BLOG_INDUSTRY_TAGS_QUERY,
@@ -48,7 +48,7 @@ export type HomePostCard = {
   readingTimeMinutes?: number;
 };
 
-/** Industry pill — an industry-axis `blogTag`; links to `/tag/{slug}`. */
+/** Industry pill — an industry-axis `blogTag`; links to `/topics/{slug}`. */
 export type HomeIndustryPill = {
   _id?: string;
   title: string;
@@ -129,7 +129,7 @@ async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
   );
 }
 
-/** Industry-axis `blogTag` pills (tagGroup == "industry"), ordered by `order` then title. */
+/** Industry-group `blogTag` pills (topicGroup slug `industry`), ordered by title. */
 async function fetchIndustries(): Promise<HomeIndustryPill[]> {
   const client = await getPreviewableSanityClient();
   return fetchSafe(
@@ -189,7 +189,7 @@ export function getBlogHomeDebugInfo(): BlogHomeDebugInfo {
 export type BlogHomePageDoc = DocSeoFields & {
   title?: string | null;
   srHeading?: string | null;
-  pageBuilder?: PageBuilderSection[] | null;
+  pageBuilder?: PageBuilderBlock[] | null;
 };
 
 const HOME_TITLE_FALLBACK =
@@ -250,7 +250,7 @@ export async function buildBlogHomeMetadata(
 }
 
 /** Homepage `pageBuilder` blocks only — see `fetchBlogHomePage` for SEO fields. */
-export async function fetchBlogHomePageBuilder(): Promise<PageBuilderSection[]> {
+export async function fetchBlogHomePageBuilder(): Promise<PageBuilderBlock[]> {
   const doc = await fetchBlogHomePage();
   return doc?.pageBuilder ?? [];
 }

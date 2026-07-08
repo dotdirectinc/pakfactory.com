@@ -7,8 +7,8 @@ import {
   BLOG_ALL_POSTS_PAGE_QUERY,
 } from "@pakfactory/sanity/queries";
 
-/** Shared listing page size (all archive + category archives). */
-export const LISTING_PAGE_SIZE = 12;
+/** Shared listing page size (all archive + category + topic archives). */
+export const LISTING_PAGE_SIZE = 15;
 
 /** @deprecated Use LISTING_PAGE_SIZE */
 export const ALL_ARCHIVE_PAGE_SIZE = LISTING_PAGE_SIZE;

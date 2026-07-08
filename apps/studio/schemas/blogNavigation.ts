@@ -1,4 +1,5 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
+import { socialLinksField } from '../lib/social-link-schema'
 import { ALL_FIELDS_GROUP } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
 import {
@@ -106,7 +107,7 @@ const footerSectionMember = defineArrayMember({
               }
               const slugHint =
                 internalType === 'blogTag'
-                  ? `/tag/${internalSlug ?? '…'}`
+                  ? `/topics/${internalSlug ?? '…'}`
                   : internalType === 'author'
                     ? `/author/${internalSlug ?? '…'}`
                     : internalSlug
@@ -211,7 +212,7 @@ export const blogNavigation = defineType({
       type: 'object',
       group: 'footer',
       description:
-        'Footer link grid only. The collaboration CTA, copyright line, and social icons are not editable here.',
+        'Footer link grid, social icons, and AI answer-engine links. The collaboration CTA and copyright lines are not editable here.',
       options: { collapsible: false },
       fields: [
         defineField({
@@ -223,6 +224,77 @@ export const blogNavigation = defineType({
           of: [footerColumnMember],
           validation: (Rule) =>
             Rule.max(3).warning('Layout supports 3 columns on desktop.'),
+        }),
+        socialLinksField({
+          context: 'footer',
+          description:
+            'Social profile icons shown in the footer bottom bar. When empty, the blog falls back to built-in defaults.',
+        }),
+        defineField({
+          name: 'aiAnswerLinks',
+          title: 'AI answer links',
+          type: 'array',
+          description:
+            'Links for the "See what AI says about PakFactory" row. When empty, the blog falls back to built-in default query URLs.',
+          of: [
+            defineArrayMember({
+              type: 'object',
+              name: 'footerAiAnswerLink',
+              fields: [
+                defineField({
+                  name: 'engine',
+                  title: 'AI engine',
+                  type: 'string',
+                  options: {
+                    list: [
+                      { title: 'ChatGPT', value: 'chatgpt' },
+                      { title: 'Gemini', value: 'gemini' },
+                      { title: 'Perplexity', value: 'perplexity' },
+                      { title: 'Claude', value: 'claude' },
+                      { title: 'Grok', value: 'grok' },
+                    ],
+                  },
+                  validation: (Rule) => Rule.required(),
+                }),
+                defineField({
+                  name: 'url',
+                  title: 'URL',
+                  type: 'url',
+                  description:
+                    'Full URL including the query (e.g. https://chatgpt.com/?q=What+is+PakFactory+%28pakfactory.com%29%3F+Summarize+what+they+do%2C+who+they+serve%2C+and+cite+your+sources.). Include brand name and domain in the prompt for best results.',
+                  validation: (Rule) => Rule.required(),
+                }),
+              ],
+              preview: {
+                select: { engine: 'engine', url: 'url' },
+                prepare({ engine, url }) {
+                  const labels: Record<string, string> = {
+                    chatgpt: 'ChatGPT',
+                    gemini: 'Gemini',
+                    perplexity: 'Perplexity',
+                    claude: 'Claude',
+                    grok: 'Grok',
+                  }
+                  return {
+                    title: labels[engine ?? ''] ?? 'AI engine',
+                    subtitle: url ?? 'No URL',
+                  }
+                },
+              },
+            }),
+          ],
+          validation: (Rule) =>
+            Rule.custom((links) => {
+              if (!Array.isArray(links)) return true
+              const engines = links
+                .map((link) => (link as { engine?: string })?.engine)
+                .filter(Boolean)
+              const unique = new Set(engines)
+              if (unique.size !== engines.length) {
+                return 'Each AI engine can only appear once.'
+              }
+              return true
+            }),
         }),
       ],
     }),

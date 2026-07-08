@@ -1,10 +1,29 @@
-import { defineField, defineType } from 'sanity'
+import { defineArrayMember, defineField, defineType } from 'sanity'
 import { DocumentsIcon, HomeIcon } from '@sanity/icons'
+import {
+  isBlogHomeSingleton,
+  isBlogNotFoundSingleton,
+  isBlogPageSingleton,
+  isBlogSearchSingleton,
+  isBlogTopicsSingleton,
+  stripDraftId,
+} from '../lib/blog-page-singletons'
 import { languageField, uniqueSlugPerLanguage } from '../lib/i18n-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 
-/** Blocked slug values — keep aligned with @pakfactory/sanity/blog-reserved-slugs */
+function uniqueTopicGroupRefs(
+  items: { _ref?: string }[] | undefined,
+): true | string {
+  if (!items?.length) return true
+  const refs = items.map((item) => item._ref).filter(Boolean) as string[]
+  if (new Set(refs).size !== refs.length) {
+    return 'Each topic group can only appear once in the list.'
+  }
+  return true
+}
+
+/** Blocked slug values — reserved app segments (keep aligned with @pakfactory/sanity/blog-reserved-slugs). */
 const BLOCKED_SLUGS = [
   'all',
   'api',
@@ -14,15 +33,13 @@ const BLOCKED_SLUGS = [
   'search',
   'sitemap.xml',
   'tag',
-  'trends',
-  'sustainability',
-  'business-strategy',
-  'design-inspiration',
-  'packaging-news',
 ] as const
 
-function validateBlogPageSlug(slug: { current?: string } | undefined, pageRole: string | undefined) {
-  if (pageRole === 'home') return true
+function validateBlogPageSlug(
+  slug: { current?: string } | undefined,
+  isSingleton: boolean,
+) {
+  if (isSingleton) return true
   const value = slug?.current?.trim()
   if (!value) return 'Slug is required for landing and static pages'
   if (BLOCKED_SLUGS.includes(value as (typeof BLOCKED_SLUGS)[number])) {
@@ -38,7 +55,7 @@ export const blogPage = defineType({
   icon: DocumentsIcon,
   groups: [
     { name: 'overview', title: 'Overview', default: true },
-    { name: 'builder', title: 'Page sections' },
+    { name: 'builder', title: 'Page blocks' },
     { name: 'seo', title: 'SEO' },
     { name: 'social', title: 'Social' },
   ],
@@ -52,15 +69,29 @@ export const blogPage = defineType({
       options: {
         list: [
           { title: 'Homepage (singleton)', value: 'home' },
+          { title: 'Topics index (singleton)', value: 'topics' },
+          { title: '404 page (singleton)', value: 'notFound' },
+          { title: 'Search page (singleton)', value: 'search' },
           { title: 'Landing page', value: 'landing' },
           { title: 'Static page', value: 'static' },
         ],
         layout: 'radio',
       },
-      validation: (Rule) => Rule.required(),
-      readOnly: ({ document }) => document?.pageRole === 'home',
-      hidden: ({ document }) => document?.pageRole === 'home',
-      initialValue: 'landing',
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          if (isBlogPageSingleton(context.document)) return true
+          return value ? true : 'Required'
+        }),
+      readOnly: ({ document }) => isBlogPageSingleton(document),
+      hidden: ({ document }) => isBlogPageSingleton(document),
+      initialValue: async (_value, { documentId }) => {
+        const id = stripDraftId(documentId)
+        if (id === 'blogTopicsPage' || id === 'blogTopicsPage-fr') return 'topics'
+        if (id === 'blogHomePage' || id === 'blogHomePage-fr') return 'home'
+        if (id === 'blogNotFoundPage' || id === 'blogNotFoundPage-fr') return 'notFound'
+        if (id === 'blogSearchPage' || id === 'blogSearchPage-fr') return 'search'
+        return 'landing'
+      },
     }),
     defineField({
       name: 'title',
@@ -76,7 +107,48 @@ export const blogPage = defineType({
       group: 'overview',
       description:
         'The homepage H1. Rendered visually-hidden (sr-only) for SEO + screen readers, not shown visually. Defaults to the site name when blank.',
-      hidden: ({ document }) => document?.pageRole !== 'home',
+      hidden: ({ document }) => !isBlogHomeSingleton(document),
+    }),
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'text',
+      rows: 3,
+      group: 'overview',
+      description:
+        'Intro copy shown under the page title on /topics. Separate from the SEO meta description.',
+      hidden: ({ document }) => !isBlogTopicsSingleton(document),
+    }),
+    defineField({
+      name: 'topics',
+      title: 'Topics',
+      type: 'array',
+      group: 'overview',
+      of: [
+        defineArrayMember({
+          type: 'reference',
+          to: [{ type: 'blogTopicGroup' }],
+          options: { disableNew: true },
+        }),
+      ],
+      description:
+        'Drag to set order on /topics. Only groups listed here appear on the site. New groups are added here automatically when published.',
+      hidden: ({ document }) => !isBlogTopicsSingleton(document),
+      validation: (Rule) =>
+        Rule.custom((items) => uniqueTopicGroupRefs(items as { _ref?: string }[])),
+    }),
+    // ── 404 / Search singleton fields ───────────────────────────────────────────
+    defineField({
+      name: 'recommendedTopics',
+      title: 'Recommended topics',
+      type: 'array',
+      group: 'overview',
+      of: [defineArrayMember({ type: 'reference', to: [{ type: 'blogTag' }] })],
+      description:
+        'Curated topic chips for the 404 recovery section and search empty/no-results state. When empty, the newest topics are used as a fallback.',
+      hidden: ({ document }) =>
+        !isBlogNotFoundSingleton(document) && !isBlogSearchSingleton(document),
+      validation: (Rule) => Rule.max(8).unique(),
     }),
     defineField({
       name: 'slug',
@@ -84,13 +156,13 @@ export const blogPage = defineType({
       type: 'slug',
       group: 'overview',
       options: { source: 'title', maxLength: 96 },
-      description: 'URL path: /{slug}. Not used on the homepage singleton.',
-      hidden: ({ document }) => document?.pageRole === 'home',
+      description: 'URL path: /{slug}. Not used on homepage or topics singletons.',
+      hidden: ({ document }) => isBlogPageSingleton(document),
       validation: (Rule) =>
         Rule.custom(async (slug, context) => {
           const roleCheck = validateBlogPageSlug(
             slug as { current?: string },
-            context.document?.pageRole as string | undefined,
+            isBlogPageSingleton(context.document),
           )
           if (roleCheck !== true) return roleCheck
           return uniqueSlugPerLanguage('blogPage')(slug as { current?: string }, context)
@@ -102,28 +174,33 @@ export const blogPage = defineType({
       type: 'datetime',
       group: 'overview',
       description: 'Required before the page is visible on the site or in the sitemap.',
-      hidden: ({ document }) => document?.pageRole === 'home',
+      hidden: ({ document }) => isBlogPageSingleton(document),
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          if (context.document?.pageRole === 'home') return true
+          if (isBlogPageSingleton(context.document)) return true
           return value ? true : 'Set a publish date before the page goes live'
         }),
     }),
     defineField({
       name: 'pageBuilder',
-      title: 'Page sections',
+      title: 'Page blocks',
       type: 'pageBuilderHome',
       group: 'builder',
-      description: 'Homepage block library (all page-builder blocks).',
-      hidden: ({ document }) => document?.pageRole !== 'home',
+      description:
+        'Page-builder blocks (homepage, topics index, 404 page, and search page).',
+      hidden: ({ document }) =>
+        !isBlogHomeSingleton(document) &&
+        !isBlogTopicsSingleton(document) &&
+        !isBlogNotFoundSingleton(document) &&
+        !isBlogSearchSingleton(document),
     }),
     defineField({
       name: 'pageBuilderLanding',
-      title: 'Page sections',
+      title: 'Page blocks',
       type: 'pageBuilderLanding',
       group: 'builder',
       description: 'Landing/static block library (CTAs, tag strip, rich text).',
-      hidden: ({ document }) => document?.pageRole === 'home',
+      hidden: ({ document }) => isBlogPageSingleton(document),
     }),
     // ── SEO ───────────────────────────────────────────────────────────────────
     ...seoFields({ group: 'seo' }),
@@ -140,6 +217,18 @@ export const blogPage = defineType({
     prepare({ title, pageRole, slug }) {
       if (pageRole === 'home') {
         return { title: 'Blog Homepage', subtitle: 'Singleton', media: HomeIcon }
+      }
+      if (pageRole === 'topics') {
+        return { title: title || 'Explore topics', subtitle: 'Topics index · /topics' }
+      }
+      if (pageRole === 'notFound') {
+        return { title: '404 Page', subtitle: 'Singleton · content source' }
+      }
+      if (pageRole === 'search') {
+        return {
+          title: title || 'Search page',
+          subtitle: 'Singleton · /search content source',
+        }
       }
       return {
         title: title || 'Untitled page',

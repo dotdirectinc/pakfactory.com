@@ -73,12 +73,36 @@ For `apps/blog`, do not add new tokens in `apps/blog/src/app/globals.css` for fe
 - After schema changes: extract/deploy as your workflow requires before relying on MCP content tools. See [`.cursor/rules/agent-toolkit.mdc`](.cursor/rules/agent-toolkit.mdc) for the Knowledge Router and MCP content operations.
 - For editor-specific GROQ and Studio patterns, use the same file and [Sanity AI best practices](https://www.sanity.io/docs/developer-guides/ai-best-practices).
 
+### Sanity content — agent guardrails (binding)
+
+Editorial documents (posts, pages, singletons, navigation, etc.) live in the **Sanity dataset**, not in git. AI agents (**Cursor, Claude Code, and any in-repo skill**) must treat content writes as **human-only**.
+
+**Agents may:**
+
+- Add or change **schema** in [`apps/studio/schemas/`](apps/studio/schemas/) (fields, section types, validation, groups, previews)
+- Wire desk structure, document actions, GROQ in [`packages/sanity/`](packages/sanity/), and front-end rendering
+- **Read** Sanity via GROQ, client fetch, or MCP **query** tools for debugging
+
+**`blogPage` pinned singletons** (`blogHomePage`, `blogTopicsPage`, `blogNotFoundPage`, `blogSearchPage`): `pageRole` is implied by document id; seeds must set explicit `pageRole`. Ops and troubleshooting: [`apps/blog/memory.md`](apps/blog/memory.md) § blogPage singleton — pageRole contract.
+
+**Agents must never:**
+
+- Run seed scripts (`seed.mjs`, `seed-blog-dev.mjs`, `seed-blog-singleton-pages.mjs`, etc.)
+- Use Sanity MCP or `@sanity/client` to **create, patch, replace, delete, or publish** documents
+- Mutate editorial content on **any** dataset (`development` or `production`)
+
+**Humans** own document writes: Studio UI, explicit seed runs, approved migrations, and dataset export/import.
+
+When a feature needs example data, document **what humans should seed** in [`apps/blog/memory.md`](apps/blog/memory.md) or the PR — do not execute seeds or patch documents. Refuse requests such as “run `pnpm seed:blog-dev`”, “patch `blogHomePage` via MCP”, or “publish this post” unless the user will run the write themselves; agents may only implement schema/code and state the human command.
+
+Human workflow (no agent writes): [`apps/blog/memory.md`](apps/blog/memory.md) § Content vs seed workflow.
+
 ## MCP defaults (when available)
 
 Use MCP for authoritative, version-aware answers instead of guessing.
 
 1. **Context7** (`user-context7` when configured): **`resolve-library-id`** then **`query-docs`** before stating **library-specific** APIs or deprecations for Next.js, React, Sanity client, Tailwind, etc.
-2. **Sanity** (`https://mcp.sanity.io` or configured alias): content queries, schema deploy, docs search — follow [`.cursor/rules/agent-toolkit.mdc`](.cursor/rules/agent-toolkit.mdc).
+2. **Sanity** (`https://mcp.sanity.io` or configured alias): **read** (query, inspect) and schema deploy — follow [`.cursor/rules/agent-toolkit.mdc`](.cursor/rules/agent-toolkit.mdc). **Do not** use MCP to create, patch, publish, or delete documents (see § Sanity content — agent guardrails).
 3. **shadcn** / **shadcn-studio**: registered in [`.cursor/mcp.json`](.cursor/mcp.json) under `shadcn` and `shadcn-studio` — use for CLI/registry workflows per server instructions; do not bypass mandated workflows.
 4. **Figma** (`figma` in `.cursor/mcp.json`): design URLs with `fileKey` + `nodeId` for inspection and design-to-code workflows.
 
@@ -107,8 +131,6 @@ Shipped prerequisites are documented in **[`docs/blog-3-jira-conventions.md`](do
 
 Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.net/browse/PROD-1480).
 
-<<<<<<< HEAD
-
 ## ADR summary
 
 The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — read it for any "why was this chosen?" question. Foundational platform decisions that predate the register are summarized below; numbered ADRs link out.
@@ -124,22 +146,9 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | **ADR-004 — Media library**          | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md)     |
 | **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
 | **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                                                            | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
+| **ADR-013 — Shared core vs feature composition** | Extract shared UI as controlled, props-only `ui/` primitives; features own data/URL wiring in `modules/` controllers. Never import one feature's component into another, and never fork a feature component — extract the shared core. | [`docs/adr/0013-shared-core-vs-feature-composition.md`](docs/adr/0013-shared-core-vs-feature-composition.md) |
 
-=======
-
-## ADR summary (draft — confirm links)
-
-<!-- TODO content owner: replace placeholder links with real ADR doc URLs or in-repo paths -->
-
-| ADR                        | Decision                                                                                                | Link  |
-| -------------------------- | ------------------------------------------------------------------------------------------------------- | ----- |
-| **Monorepo orchestration** | Use **Turborepo** for tasks, caching, and env passthrough across apps and packages.                     | _TBD_ |
-| **CMS**                    | **Sanity** as structured content layer with shared package `@pakfactory/sanity`.                        | _TBD_ |
-| **Web framework**          | **Next.js App Router** for www + blog; server components by default.                                    | _TBD_ |
-| **Shared UI**              | **`@pakfactory/ui`** workspace package for primitives; apps own composition and marketing blocks.       | _TBD_ |
-| **Package manager**        | **pnpm** with `workspace:*` protocol for internal packages; reproducible installs via `pnpm-lock.yaml`. | _TBD_ |
-
-> > > > > > > feature/sanity-studio-ux
+> ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) are listed in the register linked above.
 
 ## JIRA defaults (Product / Blog 3.0)
 
@@ -156,4 +165,4 @@ Full ticket-to-code mapping: [`docs/blog-3-jira-conventions.md`](docs/blog-3-jir
 
 ## AI verification checklist
 
-After onboarding, open the monorepo in your IDE and run the prompts in [README.md](./README.md) **AI IDE setup** → **Verification prompts**. The assistant should refuse carts/Shopify assumptions, insist on **pnpm**, protect **packages/ui**, and follow blog Sanity + schema rules.
+After onboarding, open the monorepo in your IDE and run the prompts in [README.md](./README.md) **AI IDE setup** → **Verification prompts**. The assistant should refuse carts/Shopify assumptions, insist on **pnpm**, protect **packages/ui**, follow blog Sanity + schema rules, and **refuse autonomous Sanity document writes** (seeds, MCP patch/publish) on any dataset.

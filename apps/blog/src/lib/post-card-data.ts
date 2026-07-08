@@ -66,15 +66,7 @@ export function toPostCardDataList(
 }
 
 export function toPostCardDataFromPopular(post: PopularPostCard): PostCardData {
-  return toPostCardData({
-    _id: post._id,
-    title: post.title,
-    slug: post.slug,
-    excerpt: post.excerpt,
-    publishedAt: post.publishedAt,
-    mainImage: post.mainImage,
-    categorySlug: post.categorySlug,
-  });
+  return toPostCardData(post);
 }
 
 export function toPostCardDataListFromPopular(

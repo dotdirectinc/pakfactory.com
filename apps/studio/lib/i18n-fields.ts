@@ -41,4 +41,5 @@ export const languageField = {
   type: 'string',
   readOnly: true,
   hidden: true,
+  initialValue: 'en',
 } as const

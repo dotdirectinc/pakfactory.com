@@ -28,10 +28,13 @@ export function buildAuthorJsonLd(author: AuthorDoc, photoUrl?: string): string 
     image: photoUrl,
     jobTitle: author.role,
     description: author.shortBio?.trim() || author.bioText?.trim() || undefined,
-    sameAs:
-      author.socialLinks?.filter((url) => url?.trim()).length
-        ? author.socialLinks.filter((url) => url?.trim())
-        : undefined,
+    sameAs: (() => {
+      const urls =
+        author.socialLinks
+          ?.map((link) => link.url?.trim())
+          .filter((url): url is string => Boolean(url)) ?? [];
+      return urls.length > 0 ? urls : undefined;
+    })(),
   });
 
   const crumbs = breadcrumbList([

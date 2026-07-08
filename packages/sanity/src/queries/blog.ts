@@ -1,13 +1,47 @@
 /**
  * Blog 3.0 GROQ — field names match `apps/studio/schemas` (post, blogCategory, author).
- * Popular posts: no `viewCount` on post yet; month window with publishedAt fallback in app code.
+ * Popular posts: ranked by `viewCount` desc within a time window (block `timeWindowDays`
+ * or monthStart for search/backfill); `publishedAt` as tiebreak; latest-posts fallback in app code.
  *
  * All blog document queries accept `$language` (default `en` in apps/blog fetch helpers).
  */
 
-export { DEFAULT_BLOG_LANGUAGE, BLOG_HOME_PAGE_IDS } from '../languages'
+export { DEFAULT_BLOG_LANGUAGE, BLOG_HOME_PAGE_IDS, BLOG_TOPICS_PAGE_IDS } from '../languages'
+
+/**
+ * Read-time utility — single source of truth for the estimated reading time.
+ *
+ * Computed entirely in GROQ so the post `body` never has to cross the wire just
+ * to be word-counted (important on card/listing queries): `pt::text(body)`
+ * flattens the Portable Text to a string server-side, `length(...) / 5`
+ * approximates the word count (~5 chars/word incl. spaces), divided by the
+ * average reading speed. Reuse `READING_TIME_MINUTES_PROJECTION` in every post
+ * projection instead of re-writing the formula.
+ */
+export const READING_TIME_WPM = 238;
+
+export const READING_TIME_MINUTES_PROJECTION = /* groq */ `"readingTimeMinutes": round(length(pt::text(body)) / 5 / ${READING_TIME_WPM})`;
 
 export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && language == $language] | order(title asc){
+  _id,
+  title,
+  navLabel,
+  "slug": slug.current
+}`;
+
+/** 404 page singleton (blogPage id "blogNotFoundPage") — curated recovery topics. */
+export const BLOG_NOT_FOUND_PAGE_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}`;
+
+/** Fallback topics when no 404 topics are curated — newest/alphabetical topics with a slug. */
+export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
+  _type == "blogTag" && defined(slug.current) && language == $language
+] | order(title asc)[0...6]{
   _id,
   title,
   "slug": slug.current
@@ -33,14 +67,18 @@ const POST_CARD_FIELDS = /* groq */ `{
   publishedAt,
   mainImage{
     ...,
-    "alt": coalesce(alt, asset->altText),
-    "caption": coalesce(caption, asset->description)
+    "alt": coalesce(alt, asset->altText)
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "authorName": author->name,
   "authorImageUrl": author->photo.asset->url,
-  "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238)
+  ${READING_TIME_MINUTES_PROJECTION}
+}`;
+
+const TOPIC_GROUP_PROJECTION = /* groq */ `{
+  title,
+  "slug": slug.current
 }`;
 
 const POST_DETAIL_FIELDS = /* groq */ `{
@@ -61,17 +99,16 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   "ogImageUrl": ogImage.asset->url,
   mainImage{
     ...,
-    "alt": coalesce(alt, asset->altText),
-    "caption": coalesce(caption, asset->description)
+    "alt": coalesce(alt, asset->altText)
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "readingTimeMinutes": round(length(pt::text(body)) / 5 / 238),
+  ${READING_TIME_MINUTES_PROJECTION},
   "tags": tags[]->{
     _id,
     title,
     "slug": slug.current,
-    tagGroup
+    "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
   },
   "author": author->{
     name,
@@ -134,7 +171,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     count(relatedPosts) > 0 => relatedPosts[]->${POST_CARD_FIELDS},
     *[
       _type == "post"
-      && language == $language
+      && (!defined(language) || language == $language)
       && category._ref == ^.category._ref
       && _id != ^._id
       && defined(slug.current)
@@ -144,15 +181,15 @@ const POST_DETAIL_FIELDS = /* groq */ `{
   )
 }`;
 
-/** Posts published in the current calendar month (UTC), newest first. */
+/** Posts published in the current calendar month (UTC), ranked by Views then newest. */
 export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
   && publishedAt >= $monthStart
-] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
 /** CMS-pinned hero post from the homepage page builder (`postFeaturedRow.featuredPost`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
@@ -163,7 +200,7 @@ export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
 /** Latest posts for home hero sidebar (excludes featured id when provided). */
 export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -174,12 +211,14 @@ export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
 const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _key,
   _type,
+  showTopBorder,
+  showBottomBorder,
   _type == "postFeaturedRow" => {
     latestPostsCount,
     "featured": featuredPost->${POST_CARD_FIELDS},
     "latest": *[
       _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
@@ -192,12 +231,25 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     "categoryTitle": category->title,
     "posts": *[
       _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
       && category._ref == ^.category._ref
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
     ] | order(publishedAt desc)[0...6]${POST_CARD_FIELDS}
+  },
+  _type == "postPopularRow" => {
+    heading,
+    postsCount,
+    timeWindowDays,
+    "posts": *[
+      _type == "post"
+      && (!defined(language) || language == $language)
+      && defined(slug.current)
+      && defined(publishedAt)
+      && publishedAt <= now()
+      && dateTime(publishedAt) >= dateTime(now()) - (coalesce(^.timeWindowDays, 30) * 86400)
+    ] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...6]${POST_CARD_FIELDS}
   },
   _type == "postSpotlightRow" => {
     heading,
@@ -222,11 +274,67 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "richTextBand" => {
     heading,
     body
+  },
+  _type == "promoBanner" => {
+    heading,
+    body,
+    ctaLabel,
+    ctaUrl,
+    "images": images[]{ "url": asset->url }
   }
 }`;
 
 /**
- * Blog homepage page-builder (ADR-009). Returns the home singleton's section
+ * 404 page singleton with page-builder blocks (blogPage id "blogNotFoundPage").
+ * Requires `$language` and `$monthStart` params (see blogNotFoundPageParams).
+ */
+export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
+/**
+ * Search page singleton with page-builder blocks (blogPage id "blogSearchPage").
+ * Content source for the reserved `/search` route — not slug-routable.
+ * Requires `$language` and `$monthStart` params (see blogSearchPageParams).
+ */
+export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogSearchPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
+/** Populated topic group row for /topics grid (shared by index + page Overview queries). */
+const BLOG_TOPIC_GROUP_ROW_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  order,
+  "topics": *[
+    _type == "blogTag"
+    && topicGroup._ref == ^._id
+    && (!defined(language) || language == $language)
+    && defined(slug.current)
+  ] | order(title asc) {
+    _id,
+    title,
+    "slug": slug.current
+  }
+`;
+
+const BLOG_TOPICS_PAGE_TOPICS_PROJECTION = /* groq */ `"topics": topics[]->{
+  ${BLOG_TOPIC_GROUP_ROW_FIELDS}
+}`;
+
+/**
+ * Blog homepage page-builder (ADR-009). Returns the home singleton's block
  * array (`blogPage` with `pageRole == "home"`, id `blogHomePage`). Legacy
  * `blogHomePage` documents are still read until migrated.
  */
@@ -246,6 +354,28 @@ export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
   canonical,
   "ogImageUrl": ogImage.asset->url,
   "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
+/**
+ * Topics index page-builder (ADR-009). Returns the topics singleton's block
+ * array (`blogPage` with `pageRole == "topics"`, id `blogTopicsPage`).
+ */
+export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
+  _type == "blogPage" && _id == $topicsPageId && language == $language
+][0]{
+  title,
+  description,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION},
+  ${BLOG_TOPICS_PAGE_TOPICS_PROJECTION}
 }`;
 
 /** Published landing/static page by slug (ADR-009). */
@@ -278,7 +408,7 @@ export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
 /** Indexable CMS pages for sitemap (landing + static). */
 export const BLOG_LANDING_PAGES_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogPage"
-  && language == $language
+  && (!defined(language) || language == $language)
   && pageRole in ["landing", "static"]
   && defined(slug.current)
   && defined(publishedAt)
@@ -293,7 +423,7 @@ export const BLOG_LANDING_PAGES_SITEMAP_QUERY = /* groq */ `*[
 /** Three newest posts in a category by blogCategory slug. */
 export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && category->slug.current == $categorySlug
   && defined(slug.current)
   && defined(publishedAt)
@@ -304,7 +434,7 @@ export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
 export const POST_BY_SLUG_QUERY = /* groq */ `*[
   _type == "post"
   && slug.current == $slug
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(publishedAt)
   && publishedAt <= now()
 ][0]${POST_DETAIL_FIELDS}`;
@@ -312,7 +442,7 @@ export const POST_BY_SLUG_QUERY = /* groq */ `*[
 /** Post detail under a category URL (legacy redirect route). */
 export const POST_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && slug.current == $postSlug
   && category->slug.current == $categorySlug
   && defined(publishedAt)
@@ -338,7 +468,7 @@ export const BLOG_CATEGORY_BY_SLUG_QUERY = /* groq */ `*[_type == "blogCategory"
 }`;
 
 const CATEGORY_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && category->slug.current == $categorySlug
   && defined(slug.current)
   && defined(publishedAt)
@@ -382,7 +512,7 @@ export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
   && language == $language
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && category->slug.current == $categorySlug
     && defined(publishedAt)
     && publishedAt <= now()
@@ -391,7 +521,7 @@ export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
-  tagGroup
+  "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
 }`;
 
 /** Authors with published posts in a category (sidebar facets). */
@@ -399,7 +529,7 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
   _type == "author"
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && category->slug.current == $categorySlug
     && defined(publishedAt)
     && publishedAt <= now()
@@ -411,22 +541,26 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Keyword search (PROD-1503) — Sanity built-in `match`. `$searchTerm` is the
- * tokenized query (each token suffixed with `*` for prefix matching), built in
- * `apps/blog/src/lib/blog-search.ts`. Matches title, excerpt, body text, and
- * tag titles. `$yearStart`/`$yearEnd` narrow by publish date (nullable).
+ * Keyword search (PROD-1503, PROD-1950) — Sanity built-in `match`. `$searchTerm`
+ * is the tokenized query (each token suffixed with `*` for prefix matching), built
+ * in `apps/blog/src/lib/blog-search.ts`. Matches title, category title, excerpt,
+ * body text, and tag titles (all case-insensitive). `$categorySlugs` is a nullable
+ * array that narrows to the selected categories (empty = all).
+ * `$yearStart`/`$yearEnd` narrow by publish date (nullable).
  */
 const SEARCH_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
   && (
     title match $searchTerm
+    || category->title match $searchTerm
     || excerpt match $searchTerm
     || pt::text(body) match $searchTerm
     || count(tags[@->title match $searchTerm]) > 0
   )
+  && (count($categorySlugs) == 0 || category->slug.current in $categorySlugs)
   && ($yearStart == null || publishedAt >= $yearStart)
   && ($yearEnd == null || publishedAt < $yearEnd)`;
 
@@ -469,11 +603,11 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
-/** Industry-axis blog tags for the home "Browse by Industries" strip (link to /tag/{slug}). */
+/** Industry-axis blog tags for the home "Browse by Industries" strip (link to /topics/{slug}). */
 export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
   && language == $language
-  && tagGroup == "industry"
+  && topicGroup->slug.current == "industry"
   && defined(slug.current)
 ] | order(title asc){
   _id,
@@ -484,7 +618,7 @@ export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
 /** Total published posts (all archive pagination). */
 export const BLOG_ALL_POSTS_COUNT_QUERY = /* groq */ `count(*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -493,7 +627,7 @@ export const BLOG_ALL_POSTS_COUNT_QUERY = /* groq */ `count(*[
 /** Paginated all-posts archive (PROD-1498) — `$start` inclusive, `$end` exclusive. */
 export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -502,7 +636,7 @@ export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
 /** Latest 20 published posts for RSS 2.0 (`/rss.xml`, PROD-1505). */
 export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
@@ -516,14 +650,14 @@ export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   "authorName": author->name
 }`;
 
-/** Latest published posts when the month window returns fewer than three. */
+/** Published posts ranked by Views when the month window returns fewer than three. */
 export const POPULAR_POSTS_LATEST_QUERY = /* groq */ `*[
   _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
-] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
 /** Published posts for the XML sitemap — slug, category for canonical path, and lastmod. */
 export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
@@ -539,7 +673,7 @@ export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
   _updatedAt
 }`;
 
-// ── Tag archives (PROD-1500) — /tag/{slug} ──────────────────────────────────
+// ── Topic archives (PROD-1500) — /topics/{slug} ───────────────────────────────
 
 /** Tag landing document by slug. `description` is plain text (not portable text). */
 export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug && language == $language][0]{
@@ -547,7 +681,7 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
   title,
   "slug": slug.current,
   "descriptionText": description,
-  tagGroup,
+  "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION},
   metaTitle,
   metaDescription,
   ogTitle,
@@ -614,6 +748,7 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
     "categories": primaryNavigation.categories[]->{
       _id,
       title,
+      navLabel,
       "slug": slug.current,
       language
     }
@@ -623,13 +758,14 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
     "categories": categoryOrder[]->{
       _id,
       title,
+      navLabel,
       "slug": slug.current,
       language
     }
   }
 )`;
 
-/** Footer link columns from Blog Navigation `footerNavigation.columns`. */
+/** Footer link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   _id,
   "columns": footerNavigation.columns[]{
@@ -656,12 +792,20 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
         }
       }
     }
+  },
+  "social": footerNavigation.socialLinks[]{
+    platform,
+    url
+  },
+  "aiLinks": footerNavigation.aiAnswerLinks[]{
+    engine,
+    url
   }
 }`;
 
 /** Published posts carrying $tagSlug, with optional author/date narrowing (tag is the page, not a filter). */
 const TAG_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && $tagSlug in tags[]->slug.current
   && defined(slug.current)
   && defined(publishedAt)
@@ -686,14 +830,14 @@ export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
   ${TAG_POST_FILTER}
 ] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
 
-/** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by axis in the sidebar. */
+/** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by topic group in the sidebar. */
 export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
   && language == $language
   && slug.current != $tagSlug
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && $tagSlug in tags[]->slug.current
     && defined(publishedAt)
     && publishedAt <= now()
@@ -702,7 +846,7 @@ export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
-  tagGroup
+  "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
 }`;
 
 /** Authors with published posts carrying $tagSlug (sidebar facet). */
@@ -710,7 +854,7 @@ export const BLOG_TAG_AUTHORS_FACET_QUERY = /* groq */ `*[
   _type == "author"
   && _id in *[
     _type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
     && $tagSlug in tags[]->slug.current
     && defined(publishedAt)
     && publishedAt <= now()
@@ -734,7 +878,11 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
   authorType,
   bio,
   "bioText": pt::text(bio),
-  socialLinks,
+  socialLinks[]{
+    platform,
+    url,
+    label
+  },
   photo,
   metaTitle,
   metaDescription,
@@ -747,7 +895,7 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
 }`;
 
 const AUTHOR_POST_FILTER = /* groq */ `_type == "post"
-  && language == $language
+  && (!defined(language) || language == $language)
   && author->slug.current == $authorSlug
   && defined(slug.current)
   && defined(publishedAt)
@@ -784,7 +932,7 @@ export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
 export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogCategory"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
 ] | order(title asc){
   "slug": slug.current,
   _updatedAt
@@ -794,7 +942,7 @@ export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
 export const TAGS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogTag"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
   && allowIndex != false
   && count(*[
     _type == "post"
@@ -823,7 +971,7 @@ export const BLOG_SITEMAP_POST_COUNT_QUERY = /* groq */ `count(*[
 export const BLOG_SITEMAP_TAG_COUNT_QUERY = /* groq */ `count(*[
   _type == "blogTag"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
   && allowIndex != false
   && count(*[
     _type == "post"
@@ -844,6 +992,7 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
 ] | order(publishedAt desc)[$start...$end]{
   "slug": slug.current,
   "categorySlug": category->slug.current,
+  "mainImageUrl": mainImage.asset->url,
   publishedAt,
   _updatedAt
 }`;
@@ -852,7 +1001,7 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
 export const BLOG_SITEMAP_TAGS_PAGE_QUERY = /* groq */ `*[
   _type == "blogTag"
   && defined(slug.current)
-  && language == $language
+  && (!defined(language) || language == $language)
   && allowIndex != false
   && count(*[
     _type == "post"

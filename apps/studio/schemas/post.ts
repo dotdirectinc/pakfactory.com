@@ -62,13 +62,6 @@ export const post = defineType({
                     description:
                         'Optional. Falls back to the alt text set on the image asset in the Media library.',
                 }),
-                defineField({
-                    name: 'caption',
-                    title: 'Caption',
-                    type: 'string',
-                    description:
-                        'Optional short caption shown below the image in the frontend.',
-                }),
             ],
         })),
         defineField({
@@ -105,11 +98,11 @@ export const post = defineType({
         }),
         defineField({
             name: 'tags',
-            title: 'Tags',
+            title: 'Topics',
             type: 'array',
             group: 'categorization',
             description:
-                'Apply 3–5 structured tags from the relevant axes + 0–3 topic tags. See the Tagging Reference Guide.',
+                'Apply 3–5 structured topics from the relevant axes + 0–3 subject topics. See the Tagging Reference Guide.',
             of: [{type: 'reference', to: [{type: 'blogTag'}]}],
         }),
         defineField({
@@ -156,6 +149,16 @@ export const post = defineType({
             group: 'publishing',
             description:
                 'Editorial date — defaults to the publish date; bump only on a substantive revision (not typos or metadata). Feeds sitemap lastmod, Article dateModified, and the visible "Updated" label.',
+        }),
+        defineField({
+            name: 'viewCount',
+            title: 'Views',
+            type: 'number',
+            group: 'publishing',
+            description:
+                'View count used to rank this post in the Popular row (higher = more prominent). Manually set or analytics-synced.',
+            initialValue: 0,
+            validation: (Rule) => Rule.min(0).integer(),
         }),
 
         // ── SEO ─────────────────────────────────────────────────────────────────

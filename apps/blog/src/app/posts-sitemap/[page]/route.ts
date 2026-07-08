@@ -12,6 +12,7 @@ export const revalidate = 60;
 type SitemapPost = {
   slug: string;
   categorySlug?: string;
+  mainImageUrl?: string;
   publishedAt?: string;
   _updatedAt?: string;
 };
@@ -21,7 +22,10 @@ export async function GET(
   { params }: { params: Promise<{ page: string }> },
 ) {
   const { page: pageStr } = await params;
-  const page = parseInt(pageStr, 10);
+  // Canonical form is `/posts-sitemap/{n}.xml`; the bare `/posts-sitemap/{n}`
+  // (no extension) is still accepted so previously-submitted URLs don't 404.
+  const digits = /^(\d+)(?:\.xml)?$/.exec(pageStr)?.[1];
+  const page = digits ? parseInt(digits, 10) : NaN;
   if (isNaN(page) || page < 1) {
     return new Response("Not found", { status: 404 });
   }
@@ -31,16 +35,9 @@ export async function GET(
   const changefreq = postSitemap?.sitemapChangefreq ?? "weekly";
   const priority = postSitemap?.sitemapPriority ?? 0.7;
 
+  // Only individual post URLs live here; `/all` (the posts archive index) is a
+  // listing page and belongs in pages-sitemap.xml with `/` and `/contribute`.
   const entries: SitemapUrlEntry[] = [];
-
-  // /all is the first entry of page 1 only.
-  if (page === 1) {
-    entries.push({
-      loc: absoluteUrl("/all"),
-      changefreq,
-      priority,
-    });
-  }
 
   if (isSanityConfigured()) {
     const client = getPublishedSanityClient();
@@ -65,6 +62,7 @@ export async function GET(
         ...(lastmod ? { lastmod: new Date(lastmod).toISOString().slice(0, 10) } : {}),
         changefreq,
         priority,
+        ...(post.mainImageUrl ? { images: [post.mainImageUrl] } : {}),
       });
     }
   }

@@ -20,7 +20,7 @@ workflow; it lives on `feature/sanity-studio-ux` in the studio worktree.
 - **Worktree/branch:** `pakfactory.com-sanity-studio-ux` on `feature/sanity-studio-ux`. Schema work **never** rides on `feature/blog` (see `single-app-commits-and-branches.md`).
 - **Source of truth:** `apps/studio/schemas/` (registered in `schemas/index.ts`), desk in `apps/studio/structure/`, actions in `apps/studio/actions/`, seeds in `apps/studio/scripts/{seed,seed-blog-dev}.mjs`.
 - **Stack:** Sanity 5, TS 5, pnpm. Project `8293wrxp`; dev dataset **`development`**.
-- Read [`AGENTS.md`](../../AGENTS.md) § Sanity and GROQ, and the content-team checklist (PROD-1601).
+- Read [`AGENTS.md`](../../AGENTS.md) § Sanity and GROQ (including **Sanity content — agent guardrails**), and the content-team checklist (PROD-1601).
 
 ## Authoring rules
 
@@ -35,10 +35,10 @@ workflow; it lives on `feature/sanity-studio-ux` in the studio worktree.
 
 1. **Plan against the checklist.** Map the target document's fields to PROD-1601; note which already exist (grep `apps/studio/schemas`). Prefer **additive** changes.
 2. **Edit the schema** with groups/validation/initialValue/preview. Register new types in `schemas/index.ts`.
-3. **Seed example data** in `scripts/seed.mjs` (and `seed-blog-dev.mjs` for blog-home volume) so the new field is exercised — idempotent `createOrReplace`.
+3. **Human follow-up (seeds):** document optional updates to `scripts/seed.mjs` / `seed-blog-dev.mjs` in the PR or ticket so a human can exercise the new field — **agents do not run seeds or write documents** ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
 4. **Typegen:** keep `pnpm sanity typegen` clean (PROD-1490 AC). If typegen isn't wired yet, set up `sanity schema extract` + `sanity-typegen.json` as part of the ticket — downstream GROQ types depend on it.
 5. **Verify locally:** `pnpm dev:studio` (`:3333`), confirm the editor renders the groups/validation/preview as intended; run `pnpm --filter @pakfactory/studio build`.
-6. **Commit** on `feature/sanity-studio-ux` (`feat(studio): …`), schema + seed + structure together. Then **`pnpm --filter @pakfactory/studio run deploy`** (`sanity deploy`) so the team Studio gets the schema and any document actions.
+6. **Commit** on `feature/sanity-studio-ux` (`feat(studio): …`), schema + structure (+ seed script diffs if added for humans). Then **`pnpm --filter @pakfactory/studio run deploy`** (`sanity deploy`) so the team Studio gets the schema and any document actions.
 7. **Hand off the consumption** to the blog via the **schema-contract** skill — a deployed field isn't "done" until an app projects and renders it.
 
 ## Breaking changes → migrate
@@ -53,3 +53,4 @@ single→array author `sameAs`. Don't make a field required while published docs
 - Don't edit schemas already relied on by a live app without confirming (see `confirm-approved-features.md`).
 - Don't treat the stub `packages/sanity/src/schemas` as the source of truth — `apps/studio/schemas` wins.
 - Don't bundle `apps/blog/**` changes into a studio commit.
+- Don't run seed scripts or mutate Sanity documents via MCP/client — schema in git only.

@@ -30,11 +30,14 @@ type PostCardProps = {
     | "default"
     | "compact"
     | "featured"
+    | "featuredLead"
+    | "featuredListItem"
     | "horizontal"
     | "headline"
     | "rail"
     | "categoryHero";
   showFeaturedBadge?: boolean;
+  priority?: boolean;
 };
 
 function authorInitials(name?: string): string {
@@ -55,7 +58,7 @@ function MetaDot() {
 
 function CategoryBadge({ title }: { title: string }) {
   return (
-    <Badge className="w-fit border-transparent bg-primary/10 px-2 py-0.5 text-sm font-medium text-primary">
+    <Badge className="w-fit rounded-full border-transparent bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
       {title}
     </Badge>
   );
@@ -138,7 +141,7 @@ function PostMeta({
     segments.push(
       <span
         key="author"
-        className="inline-flex items-center gap-2 text-sm text-foreground"
+        className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
       >
         {isFeatured && (
           <Avatar size="sm" className="size-7">
@@ -187,8 +190,11 @@ export function PostCard({
   post,
   variant = "default",
   showFeaturedBadge = false,
+  priority = false,
 }: PostCardProps) {
   const isFeatured = variant === "featured";
+  const isFeaturedLead = variant === "featuredLead";
+  const isFeaturedListItem = variant === "featuredListItem";
   const isCategoryHero = variant === "categoryHero";
   const isHorizontal = variant === "horizontal";
   const isCompact = variant === "compact";
@@ -231,6 +237,59 @@ export function PostCard({
             </p>
           )}
         </Link>
+      </article>
+    );
+  }
+
+  if (isFeaturedLead) {
+    return (
+      <article className="flex flex-col gap-6">
+        <Link href={post.href} className="group block">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
+            {post.imageUrl && (
+              <Image
+                src={post.imageUrl}
+                alt={post.imageAlt ?? ""}
+                fill
+                className="object-cover transition-transform group-hover:scale-[1.02]"
+                sizes="(max-width: 1024px) 100vw, 776px"
+                priority
+              />
+            )}
+          </div>
+        </Link>
+        <div className="flex flex-col gap-3">
+          {post.categoryTitle && (
+            <CategoryBadge title={post.categoryTitle} />
+          )}
+          <Link href={post.href} className="group block">
+            <h3 className="text-2xl font-semibold leading-snug tracking-tight text-card-foreground group-hover:underline lg:text-3xl">
+              {post.title}
+            </h3>
+          </Link>
+          {post.excerpt && (
+            <p className="line-clamp-2 text-base text-muted-foreground">
+              {post.excerpt}
+            </p>
+          )}
+          <PostMeta post={post} tone="listing" />
+        </div>
+      </article>
+    );
+  }
+
+  if (isFeaturedListItem) {
+    return (
+      <article className="flex flex-col gap-2">
+        {post.categoryTitle && (
+          <CategoryBadge title={post.categoryTitle} />
+        )}
+        <Link href={post.href} className="group block">
+          <h3 className="line-clamp-2 text-lg font-medium leading-snug text-card-foreground group-hover:underline">
+            {post.title}
+          </h3>
+        </Link>
+        <PostMeta post={post} tone="horizontal" />
       </article>
     );
   }
@@ -315,6 +374,7 @@ export function PostCard({
                 fill
                 className="object-cover transition-transform group-hover:scale-[1.02]"
                 sizes="200px"
+                priority={priority || undefined}
               />
             )}
           </div>
@@ -348,16 +408,17 @@ export function PostCard({
   }
 
   return (
-    <article className="flex flex-col gap-6">
+    <article className="flex flex-col gap-4">
       <Link href={post.href} className="group block">
-        <div className="relative h-60 min-h-[180px] overflow-hidden rounded-[14px] bg-muted">
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-secondary">
           {post.imageUrl && (
             <Image
               src={post.imageUrl}
               alt={post.imageAlt ?? ""}
               fill
-              className="object-cover transition-transform group-hover:scale-[1.02]"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               sizes="(max-width: 1024px) 50vw, 320px"
+              priority={priority || undefined}
             />
           )}
         </div>
@@ -368,7 +429,7 @@ export function PostCard({
           categoryTitle={post.categoryTitle}
         />
         <Link href={post.href} className="group block">
-          <h3 className="text-2xl font-medium leading-8 text-card-foreground group-hover:underline">
+          <h3 className="text-lg font-medium leading-7 text-card-foreground transition-colors group-hover:text-primary">
             {post.title}
           </h3>
         </Link>

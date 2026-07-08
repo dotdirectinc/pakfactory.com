@@ -1,5 +1,11 @@
 import { defineLocations } from 'sanity/presentation'
 import type { DocumentLocationResolvers } from 'sanity/presentation'
+import {
+  isBlogHomeSingleton,
+  isBlogNotFoundSingleton,
+  isBlogSearchSingleton,
+  isBlogTopicsSingleton,
+} from '../lib/blog-page-singletons'
 
 /**
  * Document → front-end location resolvers for the Presentation tool.
@@ -25,10 +31,32 @@ export const blogLocations: DocumentLocationResolvers = {
         : { locations: [] },
   }),
   blogPage: defineLocations({
-    select: { title: 'title', slug: 'slug.current', pageRole: 'pageRole' },
+    select: {
+      _id: '_id',
+      title: 'title',
+      slug: 'slug.current',
+      pageRole: 'pageRole',
+    },
     resolve: (doc) => {
-      if (doc?.pageRole === 'home') {
-        return { locations: [{ title: doc.title || 'Homepage', href: '/' }] }
+      if (isBlogHomeSingleton(doc ?? undefined)) {
+        return { locations: [{ title: doc?.title || 'Homepage', href: '/' }] }
+      }
+      if (isBlogTopicsSingleton(doc ?? undefined)) {
+        return {
+          locations: [
+            { title: doc?.title || 'Explore topics', href: '/topics' },
+          ],
+        }
+      }
+      if (isBlogNotFoundSingleton(doc ?? undefined)) {
+        return {
+          locations: [{ title: '404 page', href: '/404-preview' }],
+        }
+      }
+      if (isBlogSearchSingleton(doc ?? undefined)) {
+        return {
+          locations: [{ title: doc?.title || 'Search page', href: '/search' }],
+        }
       }
       return doc?.slug
         ? { locations: [{ title: doc.title || 'Page', href: `/${doc.slug}` }] }
@@ -46,7 +74,7 @@ export const blogLocations: DocumentLocationResolvers = {
     select: { title: 'title', slug: 'slug.current' },
     resolve: (doc) =>
       doc?.slug
-        ? { locations: [{ title: doc.title || 'Tag', href: `/tag/${doc.slug}` }] }
+        ? { locations: [{ title: doc.title || 'Topic', href: `/topics/${doc.slug}` }] }
         : { locations: [] },
   }),
   author: defineLocations({
