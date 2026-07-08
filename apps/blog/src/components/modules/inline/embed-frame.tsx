@@ -57,23 +57,37 @@ export function EmbedFrame({
     const adapter = adapterForHost(embedHost);
 
     function onMessage(event: MessageEvent) {
-      if (appliedRef.current) return;
       // Security: only trust size messages from the embed's own origin and,
       // when available, its own window.
       if (event.origin !== embedOrigin) return;
+      const parsed =
+        adapter?.parseSize(event.data) ?? genericSizeFromMessage(event.data);
+
+      // TEMP DEBUG — inspect every payload the embed posts (raw + parsed) so we
+      // can see whether it ever reports a tight/content size vs the padded one.
+      // Remove after diagnosis. (Listener is intentionally NOT removed here so
+      // all messages are logged; one-shot is enforced via appliedRef below.)
+      // eslint-disable-next-line no-console
+      console.log("[bodyEmbed] message", {
+        origin: event.origin,
+        sameSource:
+          !iframeRef.current ||
+          event.source === iframeRef.current.contentWindow,
+        data: event.data,
+        parsed,
+      });
+
       if (
         iframeRef.current &&
         event.source !== iframeRef.current.contentWindow
       ) {
         return;
       }
-      const parsed =
-        adapter?.parseSize(event.data) ?? genericSizeFromMessage(event.data);
+      if (appliedRef.current) return;
       if (!parsed) return;
       if (parsed.height != null) setAutoHeight(clamp(parsed.height, 120, 4000));
       if (parsed.width != null) setAutoWidth(clamp(parsed.width, 240, 1600));
       appliedRef.current = true;
-      window.removeEventListener("message", onMessage);
     }
 
     window.addEventListener("message", onMessage);
