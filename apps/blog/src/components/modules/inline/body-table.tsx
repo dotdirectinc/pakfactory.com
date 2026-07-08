@@ -6,6 +6,10 @@ type BodyTableProps = {
   value: PostBodyTable;
 };
 
+// First column: ~40% on mobile (fixed), 35% on desktop. It stays sticky while
+// the rest scrolls horizontally, so it needs an opaque per-row background.
+const FIRST_COL_WIDTH = "w-[150px] sm:w-[35%]";
+
 /** Inline data / comparison table authored in the post body portable text. */
 export function BodyTable({ value }: BodyTableProps) {
   const columns = (value.columns ?? []).map((c) => c?.trim() ?? "");
@@ -17,20 +21,22 @@ export function BodyTable({ value }: BodyTableProps) {
 
   return (
     <figure className="my-8">
-      <div className="overflow-x-auto rounded-lg border border-border">
+      {/* Card + horizontal scroll. A styled (always-visible when scrollable)
+          bottom scrollbar signals that the table scrolls sideways. */}
+      <div className="overflow-x-auto rounded-2xl bg-muted [scrollbar-color:var(--color-muted-foreground)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-foreground/25 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:h-1.5">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr
-              className={cn(
-                "border-b border-border",
-                isComparison ? "bg-muted" : "bg-muted/40",
-              )}
-            >
+            <tr className="border-b border-border/60">
               {columns.map((col, i) => (
                 <th
                   key={i}
                   scope="col"
-                  className="px-4 py-3 font-semibold text-foreground"
+                  className={cn(
+                    "px-6 py-4 align-bottom font-medium text-muted-foreground",
+                    i === 0
+                      ? cn("sticky left-0 z-10 bg-muted", FIRST_COL_WIDTH)
+                      : "min-w-[200px]",
+                  )}
                 >
                   {col}
                 </th>
@@ -38,41 +44,45 @@ export function BodyTable({ value }: BodyTableProps) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, r) => (
-              <tr
-                key={row._key ?? r}
-                className={cn(
-                  "border-b border-border last:border-0",
-                  // Comparison style: zebra striping for readability.
-                  isComparison && r % 2 === 1 && "bg-muted/20",
-                )}
-              >
-                {/* Normalize each row to the column count so mismatched rows degrade gracefully. */}
-                {columns.map((_, c) => {
-                  const content = row.cells?.[c]?.trim() ?? "";
-                  // Comparison style: the first column is a bold row label.
-                  if (isComparison && c === 0) {
+            {rows.map((row, r) => {
+              // Zebra: even rows share the card colour, odd rows are white stripes.
+              const rowBg = r % 2 === 1 ? "bg-card" : "bg-muted";
+              return (
+                <tr key={row._key ?? r}>
+                  {/* Normalize each row to the column count so mismatched rows degrade gracefully. */}
+                  {columns.map((_, c) => {
+                    const content = row.cells?.[c]?.trim() ?? "";
+                    if (c === 0) {
+                      return (
+                        <th
+                          key={c}
+                          scope="row"
+                          className={cn(
+                            "sticky left-0 z-10 px-6 py-5 text-left align-top text-foreground",
+                            FIRST_COL_WIDTH,
+                            rowBg,
+                            isComparison ? "font-semibold" : "font-medium",
+                          )}
+                        >
+                          {content}
+                        </th>
+                      );
+                    }
                     return (
-                      <th
+                      <td
                         key={c}
-                        scope="row"
-                        className="px-4 py-3 text-left align-top font-medium text-foreground"
+                        className={cn(
+                          "min-w-[200px] px-6 py-5 align-top text-foreground",
+                          rowBg,
+                        )}
                       >
                         {content}
-                      </th>
+                      </td>
                     );
-                  }
-                  return (
-                    <td
-                      key={c}
-                      className="px-4 py-3 align-top text-muted-foreground"
-                    >
-                      {content}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
