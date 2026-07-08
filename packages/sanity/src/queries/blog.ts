@@ -297,6 +297,20 @@ export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPag
   "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
 }`;
 
+/**
+ * Search page singleton with page-builder blocks (blogPage id "blogSearchPage").
+ * Content source for the reserved `/search` route — not slug-routable.
+ * Requires `$language` and `$monthStart` params (see blogSearchPageParams).
+ */
+export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogSearchPage"][0]{
+  "topics": recommendedTopics[]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
 /** Populated topic group row for /topics grid (shared by index + page Overview queries). */
 const BLOG_TOPIC_GROUP_ROW_FIELDS = /* groq */ `
   _id,
@@ -527,10 +541,12 @@ export const BLOG_CATEGORY_AUTHORS_FACET_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Keyword search (PROD-1503) — Sanity built-in `match`. `$searchTerm` is the
- * tokenized query (each token suffixed with `*` for prefix matching), built in
- * `apps/blog/src/lib/blog-search.ts`. Matches title, excerpt, body text, and
- * tag titles. `$yearStart`/`$yearEnd` narrow by publish date (nullable).
+ * Keyword search (PROD-1503, PROD-1950) — Sanity built-in `match`. `$searchTerm`
+ * is the tokenized query (each token suffixed with `*` for prefix matching), built
+ * in `apps/blog/src/lib/blog-search.ts`. Matches title, category title, excerpt,
+ * body text, and tag titles (all case-insensitive). `$categorySlugs` is a nullable
+ * array that narrows to the selected categories (empty = all).
+ * `$yearStart`/`$yearEnd` narrow by publish date (nullable).
  */
 const SEARCH_POST_FILTER = /* groq */ `_type == "post"
   && (!defined(language) || language == $language)
@@ -539,10 +555,12 @@ const SEARCH_POST_FILTER = /* groq */ `_type == "post"
   && publishedAt <= now()
   && (
     title match $searchTerm
+    || category->title match $searchTerm
     || excerpt match $searchTerm
     || pt::text(body) match $searchTerm
     || count(tags[@->title match $searchTerm]) > 0
   )
+  && (count($categorySlugs) == 0 || category->slug.current in $categorySlugs)
   && ($yearStart == null || publishedAt >= $yearStart)
   && ($yearEnd == null || publishedAt < $yearEnd)`;
 

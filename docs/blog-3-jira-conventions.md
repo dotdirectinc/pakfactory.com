@@ -206,8 +206,13 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 
 - **Route:** `apps/blog/src/app/search/page.tsx` → public **`/search`** (reserved root segment; static route beats the `[category]` resolver, PROD-1597). `revalidate = 60`.
 - **Robots:** **always `noindex, follow`** for all three states via `getSearchRobots()` in [`apps/blog/src/lib/blog-search.ts`](../apps/blog/src/lib/blog-search.ts) — search result pages are never indexed; links still pass authority.
-- **Search:** Sanity built-in `match` (no external full-text infra, per AC). `buildSearchTerm()` tokenizes `q` and suffixes each token with `*` (prefix match). Filter matches **title, excerpt, body (`pt::text`), and tag titles**. `?q=&page=&year=&month=&sort=` (query-string pagination only; `searchPageHref()`).
+- **Search:** Sanity built-in `match` (no external full-text infra, per AC). `buildSearchTerm()` tokenizes `q` and suffixes each token with `*` (prefix match). Filter matches **title, category title, excerpt, body (`pt::text`), and tag titles**. Category multiselect via repeated `?category=`. `?q=&category=&page=&sort=` (query-string pagination only; `searchPageHref()`).
 - **Relevance:** default order is `score(boost(title,5), boost(excerpt,2), pt::text(body))` → `order(_score desc, publishedAt desc)`. **Gotcha:** `score()` rejects dereference expressions — tag matching stays in the filter for recall but is **not** a `boost()` term (`tags[@->title match …]` → "score() function received unexpected expression"). Re-sortable to newest/oldest/title.
-- **States** (`search-view.tsx`, route-private): empty (`SearchForm` + `CategoryChips`), results (count + grid of `PostCard` + `Pagination` + route-private `SearchSidebar`), zero-results (message + `PostPopularRail`).
-- **Sidebar** is route-private (Categories nav + Sort + Date), **not** the shared category-tuned `FilterSidebar` (which assumes a "newest" default and doesn't preserve `q`). Future: unify behind one generalized component.
-- **GROQ:** `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts), re-exported from `@pakfactory/sanity/queries`.
+- **UI (PROD-1950):** dieline layout — `PageHeader` + `SearchFilterBar` (Category + Sort) + `PostList` + `Pagination`; empty/no-results use `TopicChipRow` + CMS page blocks.
+- **CMS singleton (PROD-1950):** `blogPage` id `blogSearchPage`, `pageRole: search` — content source only (not slug-routable). Editors curate `recommendedTopics` + `pageBuilder` (`pageBuilderHome`). Desk: **Pages → Search page**. See [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-1950.
+- **GROQ:** `BLOG_SEARCH_POSTS_{COUNT,PAGE_RELEVANCE,PAGE_NEWEST,PAGE_OLDEST,PAGE_TITLE}_QUERY` + `BLOG_SEARCH_PAGE_BUILDER_QUERY` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts), re-exported from `@pakfactory/sanity/queries`.
+
+## PROD-1950 — Search results redesign + Search singleton
+
+- **Builds on** PROD-1503. Reworks `/search` to Figma (results + no-results). ADR-013 shared core (`ListingFilterBar`, `TopicChipRow`) + search-owned `SearchFilterBar`.
+- **Do not** model search as a landing/`static` slug page — use the pinned singleton. Agents never seed or patch `blogSearchPage`.

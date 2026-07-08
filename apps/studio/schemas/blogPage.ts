@@ -4,6 +4,7 @@ import {
   isBlogHomeSingleton,
   isBlogNotFoundSingleton,
   isBlogPageSingleton,
+  isBlogSearchSingleton,
   isBlogTopicsSingleton,
   stripDraftId,
 } from '../lib/blog-page-singletons'
@@ -70,6 +71,7 @@ export const blogPage = defineType({
           { title: 'Homepage (singleton)', value: 'home' },
           { title: 'Topics index (singleton)', value: 'topics' },
           { title: '404 page (singleton)', value: 'notFound' },
+          { title: 'Search page (singleton)', value: 'search' },
           { title: 'Landing page', value: 'landing' },
           { title: 'Static page', value: 'static' },
         ],
@@ -87,6 +89,7 @@ export const blogPage = defineType({
         if (id === 'blogTopicsPage' || id === 'blogTopicsPage-fr') return 'topics'
         if (id === 'blogHomePage' || id === 'blogHomePage-fr') return 'home'
         if (id === 'blogNotFoundPage' || id === 'blogNotFoundPage-fr') return 'notFound'
+        if (id === 'blogSearchPage' || id === 'blogSearchPage-fr') return 'search'
         return 'landing'
       },
     }),
@@ -134,7 +137,7 @@ export const blogPage = defineType({
       validation: (Rule) =>
         Rule.custom((items) => uniqueTopicGroupRefs(items as { _ref?: string }[])),
     }),
-    // ── 404 singleton fields ────────────────────────────────────────────────────
+    // ── 404 / Search singleton fields ───────────────────────────────────────────
     defineField({
       name: 'recommendedTopics',
       title: 'Recommended topics',
@@ -142,8 +145,9 @@ export const blogPage = defineType({
       group: 'overview',
       of: [defineArrayMember({ type: 'reference', to: [{ type: 'blogTag' }] })],
       description:
-        'Curated topic chips shown in the 404 recovery section. When empty, the newest topics are used as a fallback.',
-      hidden: ({ document }) => !isBlogNotFoundSingleton(document),
+        'Curated topic chips for the 404 recovery section and search empty/no-results state. When empty, the newest topics are used as a fallback.',
+      hidden: ({ document }) =>
+        !isBlogNotFoundSingleton(document) && !isBlogSearchSingleton(document),
       validation: (Rule) => Rule.max(8).unique(),
     }),
     defineField({
@@ -182,11 +186,13 @@ export const blogPage = defineType({
       title: 'Page blocks',
       type: 'pageBuilderHome',
       group: 'builder',
-      description: 'Page-builder blocks (homepage, topics index, and 404 page).',
+      description:
+        'Page-builder blocks (homepage, topics index, 404 page, and search page).',
       hidden: ({ document }) =>
         !isBlogHomeSingleton(document) &&
         !isBlogTopicsSingleton(document) &&
-        !isBlogNotFoundSingleton(document),
+        !isBlogNotFoundSingleton(document) &&
+        !isBlogSearchSingleton(document),
     }),
     defineField({
       name: 'pageBuilderLanding',
@@ -216,7 +222,13 @@ export const blogPage = defineType({
         return { title: title || 'Explore topics', subtitle: 'Topics index · /topics' }
       }
       if (pageRole === 'notFound') {
-        return { title: '404 Page', subtitle: 'Singleton · not routable' }
+        return { title: '404 Page', subtitle: 'Singleton · content source' }
+      }
+      if (pageRole === 'search') {
+        return {
+          title: title || 'Search page',
+          subtitle: 'Singleton · /search content source',
+        }
       }
       return {
         title: title || 'Untitled page',

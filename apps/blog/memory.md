@@ -18,7 +18,7 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/author/{slug}`                     | ✅ PROD-1501                                                                                                                                                                                                    |
 | `/rss.xml`                           | ✅ PROD-1505                                                                                                                                                                                                    |
 | `/sitemap.xml`                       | ✅ PROD-1596 (utility; not on BA tree)                                                                                                                                                                          |
-| `/search` (+ `?q=`)                  | ✅ PROD-1503                                                                                                                                                                                                    |
+| `/search` (+ `?q=`)                  | ✅ PROD-1503 + PROD-1950 (dieline UI + Search singleton CMS)                                                                                                                                                     |
 | `/contribute`                        | ✅ PROD-1504                                                                                                                                                                                                    |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
@@ -222,12 +222,47 @@ Pinned document ids imply `pageRole` (source of truth for Studio field visibilit
 | `blogHomePage` | `home` |
 | `blogTopicsPage` | `topics` |
 | `blogNotFoundPage` | `notFound` |
+| `blogSearchPage` | `search` |
 
 - **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
 - **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
 - **Validation:** singletons skip `pageRole` required (role implied by id; see `blogPage.ts` custom rule).
 - **Seeds:** `seed-blog-singleton-pages.mjs` / `seed-blog-dev.mjs` must always set explicit `pageRole`.
 - **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: run seed or patch field; deploy schema with validation skip.
+
+---
+
+## PROD-1950 — Search results page + Search singleton CMS
+
+**Jira:** [PROD-1950](https://dotdirect.atlassian.net/browse/PROD-1950) — Blog search results page (Figma 2399:23410 & 2399:23361). Builds on PROD-1503’s query layer; reworks `/search` onto the dieline layout and adds a Studio-editable content source.
+
+**Architecture:** `/search` stays a **reserved code route** (never a landing/`static` slug — `search` is in `BLOCKED_SLUGS`). Editor config lives on a **`blogPage` singleton** with `pageRole: search` (id `blogSearchPage`), desk **Pages → Search page** — same pattern as 404 (`blogNotFoundPage`). The singleton is a **content source**, not a URL: `BLOG_PAGE_BY_SLUG_QUERY` only resolves `landing`/`static` + slug.
+
+| Concern | Location |
+| --- | --- |
+| Singleton role + fields (`recommendedTopics`, `pageBuilder` via `pageBuilderHome`) | `apps/studio/schemas/blogPage.ts` (visible for search + 404) |
+| Desk item **Pages → Search page** | `apps/studio/structure/index.ts` (`blogSearchPageItem`) |
+| IDs | `apps/studio/lib/languages.ts` `BLOG_SEARCH_PAGE_IDS` |
+| GROQ | `BLOG_SEARCH_PAGE_BUILDER_QUERY` (+ reuse `BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY`) in `@pakfactory/sanity/queries` |
+| Data | `fetchBlogSearchPage()` → `{ topics, blocks }` in `src/lib/blog-data.ts` |
+| Page compose | `src/app/search/page.tsx` — fixed header/listing/empty copy + `TopicChipRow` + `BlockRenderer(blocks)` (newsletter fallback if no CMS blocks) |
+| Shared UI (ADR-013) | `ui/listing-filter-bar`, `ui/topic-chip-row`; search controller `modules/search-filter-bar` |
+| Presentation | `apps/studio/presentation/locations.ts` — `blogSearchPage` → `/search` |
+| Human seed | `apps/studio/scripts/seed-blog-singleton-pages.mjs` (includes `blogSearchPage`) |
+
+**What editors control:** recommended-topic chips (empty / no-results) and below-fold page blocks (popular row, newsletter, promo, etc.). Empty/no-results headings and guidance copy stay in code (same as 404 hero). Results grid, Category filter, Sort, and pagination stay in code.
+
+**Human steps before ship:**
+1. `sanity schema deploy` / Studio deploy — push `pageRole: search` + desk item.
+2. One-time seed: `node apps/studio/scripts/seed-blog-singleton-pages.mjs` (humans only — agents must not run seeds).
+3. Configure **Pages → Search page**: Recommended topics + Page blocks.
+4. Verify empty `/search`, `/search?q=paper` (results + category filter), and a no-match query.
+
+### Verify
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+```
 
 ---
 
@@ -288,6 +323,8 @@ curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
 ## PROD-1503 — `/search` page (implemented)
 
 **Jira:** [PROD-1503](https://dotdirect.atlassian.net/browse/PROD-1503) — S2.7 Build `/blog/search`. Faceted-listing pattern mirroring the category archive. Uses **Sanity built-in `match`** (no external search infra, per AC).
+
+> **Superseded UI / CMS (2026-07):** PROD-1950 reworked the page onto the dieline layout and added the `blogSearchPage` singleton. Keep this section for the original query/robots decisions; see **§ PROD-1950** for current compose + Studio wiring.
 
 | Deliverable                                     | Location                                                                                                            |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |

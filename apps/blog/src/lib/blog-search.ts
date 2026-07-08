@@ -20,8 +20,8 @@ import {
 export type SearchSort = "relevance" | "newest" | "oldest" | "title";
 
 export type SearchListFilters = {
-  year?: string;
-  month?: string;
+  /** Selected category slugs (empty = all). Wired to the URL as repeated `?category=`. */
+  categories: string[];
   sort: SearchSort;
 };
 
@@ -44,6 +44,17 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/** Collect a repeated/comma-separated query param into a de-duped, trimmed list. */
+function paramList(value: string | string[] | undefined): string[] {
+  if (value === undefined) return [];
+  const raw = Array.isArray(value) ? value : [value];
+  const values = raw
+    .flatMap((entry) => entry.split(","))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return Array.from(new Set(values));
+}
+
 export function parseSearchQuery(searchParams: SearchParams): string {
   return firstParam(searchParams.q)?.trim() ?? "";
 }
@@ -55,8 +66,7 @@ export function parseSearchSort(raw: string | undefined): SearchSort {
 
 export function parseSearchFilters(searchParams: SearchParams): SearchListFilters {
   return {
-    year: firstParam(searchParams.year)?.trim() || undefined,
-    month: firstParam(searchParams.month)?.trim() || undefined,
+    categories: paramList(searchParams.category),
     sort: parseSearchSort(firstParam(searchParams.sort)),
   };
 }
@@ -81,34 +91,6 @@ export function buildSearchTerm(query: string): string | null {
   return tokens.map((token) => `${token}*`).join(" ");
 }
 
-function yearMonthBounds(
-  year?: string,
-  month?: string,
-): { yearStart: string | null; yearEnd: string | null } {
-  if (!year) return { yearStart: null, yearEnd: null };
-  const y = Number.parseInt(year, 10);
-  if (!Number.isFinite(y)) return { yearStart: null, yearEnd: null };
-
-  if (month) {
-    const m = Number.parseInt(month, 10);
-    if (!Number.isFinite(m) || m < 1 || m > 12) {
-      return {
-        yearStart: new Date(Date.UTC(y, 0, 1)).toISOString(),
-        yearEnd: new Date(Date.UTC(y + 1, 0, 1)).toISOString(),
-      };
-    }
-    return {
-      yearStart: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
-      yearEnd: new Date(Date.UTC(y, m, 1)).toISOString(),
-    };
-  }
-
-  return {
-    yearStart: new Date(Date.UTC(y, 0, 1)).toISOString(),
-    yearEnd: new Date(Date.UTC(y + 1, 0, 1)).toISOString(),
-  };
-}
-
 function searchPageQuery(sort: SearchSort): string {
   switch (sort) {
     case "newest":
@@ -124,7 +106,8 @@ function searchPageQuery(sort: SearchSort): string {
 
 /**
  * Build a `/search` URL. `q` and active filters are query params; relevance
- * sort and page 1 are omitted (defaults).
+ * sort and page 1 are omitted (defaults). Categories serialize as repeated
+ * `?category=` params.
  */
 export function searchPageHref(
   query: string,
@@ -134,8 +117,7 @@ export function searchPageHref(
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   if (pageNumber > 1) params.set("page", String(pageNumber));
-  if (filters.year) params.set("year", filters.year);
-  if (filters.month) params.set("month", filters.month);
+  for (const slug of filters.categories) params.append("category", slug);
   if (filters.sort !== "relevance") params.set("sort", filters.sort);
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";
@@ -163,8 +145,12 @@ export async function fetchSearchPage(
     return { ...base, posts: [], totalCount: 0, totalPages: 1 };
   }
 
-  const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
-  const groqParams = blogLanguageParams({ searchTerm, yearStart, yearEnd });
+  const groqParams = blogLanguageParams({
+    searchTerm,
+    categorySlugs: filters.categories,
+    yearStart: null,
+    yearEnd: null,
+  });
 
   let totalCount = 0;
   if (isSanityConfigured()) {
