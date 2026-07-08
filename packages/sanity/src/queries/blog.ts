@@ -559,6 +559,25 @@ export const BLOG_CATEGORY_FEATURED_POSTS_QUERY = /* groq */ `*[
   && publishedAt <= now()
 ] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}`;
 
+/**
+ * Recommended topics for the category page (PROD-1951): the tag list of the
+ * most-recently-modified published post in the category. Ordered by
+ * coalesce(lastModified, _updatedAt) desc so it tracks the freshest editorial
+ * signal; returns that post's tags (id, title, slug) or null when none.
+ */
+export const BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY = /* groq */ `*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && category->slug.current == $categorySlug
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(coalesce(lastModified, _updatedAt) desc)[0].tags[]->{
+  _id,
+  title,
+  "slug": slug.current
+}`;
+
 export const BLOG_CATEGORY_POSTS_COUNT_QUERY = /* groq */ `count(*[
   ${CATEGORY_POST_FILTER}
 ])`;

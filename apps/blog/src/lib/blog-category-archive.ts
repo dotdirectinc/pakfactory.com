@@ -30,6 +30,7 @@ import {
   BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY,
   BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY,
   BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY,
+  BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
   BLOG_CATEGORY_TAGS_FACET_QUERY,
 } from "@pakfactory/sanity/queries";
 import type { TopicGroupRef } from "@/lib/tag-groups";
@@ -52,6 +53,8 @@ export type CategoryFacetTag = {
   topicGroup?: TopicGroupRef;
 };
 export type CategoryFacetAuthor = { _id?: string; name: string; slug: string };
+/** A recommended-topic chip — a `blogTag` surfaced from the freshest post. */
+export type CategoryTopic = { _id?: string; title: string; slug: string };
 
 export type CategoryListFilters = {
   tag?: string;
@@ -71,6 +74,8 @@ export type CategoryArchivePageData = {
   filters: CategoryListFilters;
   tags: CategoryFacetTag[];
   authors: CategoryFacetAuthor[];
+  /** Chips for the recommended-topics row (page 1); [] on deeper pages. */
+  recommendedTopics: CategoryTopic[];
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -259,10 +264,13 @@ export async function fetchCategoryArchivePage(
   });
   let totalCount = 0;
   let featuredPosts: HomePostCard[] = [];
+  let recommendedTopics: CategoryTopic[] = [];
 
   if (isSanityConfigured()) {
     const client = await getSanityClient();
-    [totalCount, featuredPosts] = await Promise.all([
+    // Featured band + recommended-topics row are page-1-only sections.
+    const wantsPageOneExtras = pageNumber === 1;
+    [totalCount, featuredPosts, recommendedTopics] = await Promise.all([
       client
         .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
         .catch(() => 0),
@@ -274,6 +282,15 @@ export async function fetchCategoryArchivePage(
             )
             .catch(() => [])
         : Promise.resolve([] as HomePostCard[]),
+      wantsPageOneExtras
+        ? client
+            .fetch<CategoryTopic[] | null>(
+              BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
+              blogLanguageParams({ categorySlug }),
+            )
+            .then((topics) => topics ?? [])
+            .catch(() => [])
+        : Promise.resolve([] as CategoryTopic[]),
     ]);
   }
 
@@ -290,6 +307,7 @@ export async function fetchCategoryArchivePage(
       filters,
       tags: [],
       authors: [],
+      recommendedTopics,
     };
   }
 
@@ -334,6 +352,7 @@ export async function fetchCategoryArchivePage(
     filters,
     tags,
     authors,
+    recommendedTopics,
   };
 }
 

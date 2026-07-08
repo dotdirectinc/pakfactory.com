@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { CategoryFilterBar } from "@/components/modules/category-filter-bar";
 import { CategoryLandingSection } from "@/components/views/category-landing-layout";
 
 type CategoryListingSectionProps = {
@@ -7,15 +6,18 @@ type CategoryListingSectionProps = {
   pagination: ReactNode;
 };
 
-/** Figma listing band — filter bar, post grid, pagination. */
+/**
+ * Figma listing band — post grid + pagination. No filter bar: the category page
+ * is a top-of-funnel discovery view (PROD-1951 AC#8; the Figma filter/sort frames
+ * are hidden).
+ */
 export function CategoryListingSection({
   children,
   pagination,
 }: CategoryListingSectionProps) {
   return (
     <CategoryLandingSection>
-      <CategoryFilterBar />
-      <div className="mt-12 flex flex-col gap-10">{children}</div>
+      <div className="flex flex-col gap-10">{children}</div>
       {pagination}
     </CategoryLandingSection>
   );
