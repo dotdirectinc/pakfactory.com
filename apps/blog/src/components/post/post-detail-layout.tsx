@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { PageDielineSection } from "@/components/layout/page-dieline-section";
+import {
+  PageDielineSection,
+  pageDielineOuterClass,
+} from "@/components/layout/page-dieline-section";
 import { ReadingProgressBar } from "@/components/post/reading-progress-bar";
 
 type PostDetailLayoutProps = {
@@ -19,7 +22,9 @@ export function PostDetailLayout({
   footer,
 }: PostDetailLayoutProps) {
   return (
-    <main>
+    // overflow-x-clip is a safety net against full-bleed rows; it does not
+    // create a scroll container, so the sticky sidebar is unaffected.
+    <main className="overflow-x-clip">
       <ReadingProgressBar />
       <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
       {header}
@@ -32,7 +37,12 @@ export function PostDetailLayout({
           <div className="min-w-0 max-w-[848px]">{article}</div>
         </div>
       </PageDielineSection>
-      {footer}
+      {/* Footer bands use the full-bleed row helper, which is designed to break
+          out of the page gutter — give it that gutter so the negative margins
+          cancel instead of overflowing the viewport. */}
+      {footer ? (
+        <div className={pageDielineOuterClass()}>{footer}</div>
+      ) : null}
     </main>
   );
 }
