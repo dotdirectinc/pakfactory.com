@@ -40,6 +40,9 @@ type NavSearchFormProps = {
     fieldClassName?: string;
     inputRef?: RefObject<HTMLInputElement | null>;
     autoFocus?: boolean;
+    placeholder?: string;
+    showSubmit?: boolean;
+    submitLabel?: string;
 };
 
 /** Pill GET search for site nav — targets `/search`. Reuse in desktop category row and compact overlay. */
@@ -50,29 +53,48 @@ export function NavSearchForm({
     fieldClassName,
     inputRef,
     autoFocus,
+    placeholder = "What you'd like to read?",
+    showSubmit = false,
+    submitLabel = 'Search',
 }: NavSearchFormProps) {
+    const field = (
+        <div className={cn('relative', showSubmit ? 'min-w-0 flex-1' : fieldClassName)}>
+            <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                strokeWidth={1.75}
+                aria-hidden
+            />
+            <Input
+                ref={inputRef}
+                id={id}
+                name="q"
+                type="search"
+                placeholder={placeholder}
+                defaultValue={defaultQuery}
+                autoFocus={autoFocus}
+                className="h-10 rounded-full border-input bg-background pr-3 pl-9 shadow-none"
+            />
+        </div>
+    );
+
     return (
         <form action="/search" method="get" className={className}>
             <label htmlFor={id} className="sr-only">
-                Search posts or topics
+                {placeholder}
             </label>
-            <div className={cn('relative', fieldClassName)}>
-                <Search
-                    className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                    strokeWidth={1.75}
-                    aria-hidden
-                />
-                <Input
-                    ref={inputRef}
-                    id={id}
-                    name="q"
-                    type="search"
-                    placeholder="Search posts or topics"
-                    defaultValue={defaultQuery}
-                    autoFocus={autoFocus}
-                    className="h-10 rounded-full border-input bg-background pr-3 pl-9 shadow-none"
-                />
-            </div>
+            {showSubmit ? (
+                <div className={cn('flex items-center gap-2', fieldClassName)}>
+                    {field}
+                    <Button
+                        type="submit"
+                        className="h-10 shrink-0 rounded-full bg-primary px-5 text-sm font-medium text-white hover:bg-primary/90"
+                    >
+                        {submitLabel}
+                    </Button>
+                </div>
+            ) : (
+                field
+            )}
         </form>
     );
 }

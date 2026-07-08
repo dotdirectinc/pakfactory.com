@@ -2,6 +2,7 @@ import { defineLocations } from 'sanity/presentation'
 import type { DocumentLocationResolvers } from 'sanity/presentation'
 import {
   isBlogHomeSingleton,
+  isBlogNotFoundSingleton,
   isBlogTopicsSingleton,
 } from '../lib/blog-page-singletons'
 
@@ -44,6 +45,11 @@ export const blogLocations: DocumentLocationResolvers = {
           locations: [
             { title: doc?.title || 'Explore topics', href: '/topics' },
           ],
+        }
+      }
+      if (isBlogNotFoundSingleton(doc ?? undefined)) {
+        return {
+          locations: [{ title: '404 page', href: '/404-preview' }],
         }
       }
       return doc?.slug

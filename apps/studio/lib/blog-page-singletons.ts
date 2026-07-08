@@ -1,7 +1,14 @@
-import { BLOG_HOME_PAGE_IDS, BLOG_TOPICS_PAGE_IDS } from './languages'
+import {
+  BLOG_HOME_PAGE_IDS,
+  BLOG_TOPICS_PAGE_IDS,
+  BLOG_NOT_FOUND_PAGE_IDS,
+} from './languages'
 
-const BLOG_HOME_IDS = new Set(Object.values(BLOG_HOME_PAGE_IDS))
-const BLOG_TOPICS_IDS = new Set(Object.values(BLOG_TOPICS_PAGE_IDS))
+const BLOG_HOME_IDS = new Set<string>(Object.values(BLOG_HOME_PAGE_IDS))
+const BLOG_TOPICS_IDS = new Set<string>(Object.values(BLOG_TOPICS_PAGE_IDS))
+const BLOG_NOT_FOUND_IDS = new Set<string>(
+  Object.values(BLOG_NOT_FOUND_PAGE_IDS),
+)
 
 export function stripDraftId(id?: string): string {
   return id?.replace(/^drafts\./, '') ?? ''
@@ -22,6 +29,15 @@ export function isBlogTopicsSingleton(doc?: BlogPageSingletonDoc): boolean {
   return doc?.pageRole === 'topics' || BLOG_TOPICS_IDS.has(id)
 }
 
+export function isBlogNotFoundSingleton(doc?: BlogPageSingletonDoc): boolean {
+  const id = stripDraftId(doc?._id)
+  return doc?.pageRole === 'notFound' || BLOG_NOT_FOUND_IDS.has(id)
+}
+
 export function isBlogPageSingleton(doc?: BlogPageSingletonDoc): boolean {
-  return isBlogHomeSingleton(doc) || isBlogTopicsSingleton(doc)
+  return (
+    isBlogHomeSingleton(doc) ||
+    isBlogTopicsSingleton(doc) ||
+    isBlogNotFoundSingleton(doc)
+  )
 }

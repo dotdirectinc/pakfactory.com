@@ -83,6 +83,8 @@ Editorial documents (posts, pages, singletons, navigation, etc.) live in the **S
 - Wire desk structure, document actions, GROQ in [`packages/sanity/`](packages/sanity/), and front-end rendering
 - **Read** Sanity via GROQ, client fetch, or MCP **query** tools for debugging
 
+**`blogPage` pinned singletons** (`blogHomePage`, `blogTopicsPage`, `blogNotFoundPage`): `pageRole` is implied by document id; seeds must set explicit `pageRole`. Ops and troubleshooting: [`apps/blog/memory.md`](apps/blog/memory.md) § blogPage singleton — pageRole contract.
+
 **Agents must never:**
 
 - Run seed scripts (`seed.mjs`, `seed-blog-dev.mjs`, `seed-blog-singleton-pages.mjs`, etc.)

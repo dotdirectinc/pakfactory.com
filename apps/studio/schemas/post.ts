@@ -150,6 +150,16 @@ export const post = defineType({
             description:
                 'Editorial date — defaults to the publish date; bump only on a substantive revision (not typos or metadata). Feeds sitemap lastmod, Article dateModified, and the visible "Updated" label.',
         }),
+        defineField({
+            name: 'viewCount',
+            title: 'Views',
+            type: 'number',
+            group: 'publishing',
+            description:
+                'View count used to rank this post in the Popular row (higher = more prominent). Manually set or analytics-synced.',
+            initialValue: 0,
+            validation: (Rule) => Rule.min(0).integer(),
+        }),
 
         // ── SEO ─────────────────────────────────────────────────────────────────
         ...seoFields({group: 'seo', canonical: true}),

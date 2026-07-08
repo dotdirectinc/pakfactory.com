@@ -21,7 +21,7 @@ ADR-005 grouped `src/components/` by **feature/domain** (`post/ category/ tag/ a
 | `blocks/` | **Page-builder blocks** — one per Studio `schemas/blocks/` type; targets of the `_type → component` resolver (`BlockRenderer` + `BLOCK_COMPONENTS`). | `post-featured-row`, `post-category-row`, `post-spotlight-row`, `tag-strip`, `cta-newsletter`, `cta-rfq`, `cta-pillars`, `rich-text-band` |
 | `layout/` | **Site chrome / page frame** — nav, footer, structural wrappers. | `site-nav`, `site-nav-categories`, `site-footer`, `footer-wordmark`, `breadcrumb`, `page-dieline-section` |
 | `views/` | **Route-level templates** — multi-route whole-page views (per ADR-007, single-route views stay inlined in `page.tsx`). | `category-archive-view`, `all-archive-view`, `tag-archive-view`, `author-header`, `archive-layout`, `blog-landing-view` |
-| `modules/` | **Sanity-data-driven reusable building blocks** — cards, lists, filters, forms, loaders. | `post-card`, `post-list`, `filter-sidebar`, `filter-active`, `filter-archive-sidebar`, `pagination`, `search-form`, `author-posts-loader`, `contribute-form` |
+| `modules/` | **Sanity-data-driven reusable building blocks** — cards, lists, filters, forms. | `post-card`, `post-list`, `filter-sidebar`, `filter-active`, `filter-archive-sidebar`, `pagination`, `search-form`, `contribute-form` |
 | `ui/` | **App-local presentational primitives** (not cross-app). Distinct from the `@pakfactory/ui` package. | `portable-text`, `category-chips` |
 
 ### Where does this file go? (ordered decision rule)

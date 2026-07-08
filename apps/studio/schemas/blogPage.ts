@@ -2,6 +2,7 @@ import { defineArrayMember, defineField, defineType } from 'sanity'
 import { DocumentsIcon, HomeIcon } from '@sanity/icons'
 import {
   isBlogHomeSingleton,
+  isBlogNotFoundSingleton,
   isBlogPageSingleton,
   isBlogTopicsSingleton,
   stripDraftId,
@@ -68,18 +69,24 @@ export const blogPage = defineType({
         list: [
           { title: 'Homepage (singleton)', value: 'home' },
           { title: 'Topics index (singleton)', value: 'topics' },
+          { title: '404 page (singleton)', value: 'notFound' },
           { title: 'Landing page', value: 'landing' },
           { title: 'Static page', value: 'static' },
         ],
         layout: 'radio',
       },
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          if (isBlogPageSingleton(context.document)) return true
+          return value ? true : 'Required'
+        }),
       readOnly: ({ document }) => isBlogPageSingleton(document),
       hidden: ({ document }) => isBlogPageSingleton(document),
       initialValue: async (_value, { documentId }) => {
         const id = stripDraftId(documentId)
         if (id === 'blogTopicsPage' || id === 'blogTopicsPage-fr') return 'topics'
         if (id === 'blogHomePage' || id === 'blogHomePage-fr') return 'home'
+        if (id === 'blogNotFoundPage' || id === 'blogNotFoundPage-fr') return 'notFound'
         return 'landing'
       },
     }),
@@ -127,6 +134,18 @@ export const blogPage = defineType({
       validation: (Rule) =>
         Rule.custom((items) => uniqueTopicGroupRefs(items as { _ref?: string }[])),
     }),
+    // ── 404 singleton fields ────────────────────────────────────────────────────
+    defineField({
+      name: 'recommendedTopics',
+      title: 'Recommended topics',
+      type: 'array',
+      group: 'overview',
+      of: [defineArrayMember({ type: 'reference', to: [{ type: 'blogTag' }] })],
+      description:
+        'Curated topic chips shown in the 404 recovery section. When empty, the newest topics are used as a fallback.',
+      hidden: ({ document }) => !isBlogNotFoundSingleton(document),
+      validation: (Rule) => Rule.max(8).unique(),
+    }),
     defineField({
       name: 'slug',
       title: 'Slug',
@@ -163,9 +182,11 @@ export const blogPage = defineType({
       title: 'Page blocks',
       type: 'pageBuilderHome',
       group: 'builder',
-      description: 'Page-builder blocks (homepage and topics index).',
+      description: 'Page-builder blocks (homepage, topics index, and 404 page).',
       hidden: ({ document }) =>
-        !isBlogHomeSingleton(document) && !isBlogTopicsSingleton(document),
+        !isBlogHomeSingleton(document) &&
+        !isBlogTopicsSingleton(document) &&
+        !isBlogNotFoundSingleton(document),
     }),
     defineField({
       name: 'pageBuilderLanding',
@@ -193,6 +214,9 @@ export const blogPage = defineType({
       }
       if (pageRole === 'topics') {
         return { title: title || 'Explore topics', subtitle: 'Topics index · /topics' }
+      }
+      if (pageRole === 'notFound') {
+        return { title: '404 Page', subtitle: 'Singleton · not routable' }
       }
       return {
         title: title || 'Untitled page',

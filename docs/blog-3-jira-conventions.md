@@ -80,7 +80,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 - **Robots:** `getBlogRobotsDirective({ kind: 'error' })` → **`noindex, follow`**.
 - **GROQ:** [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts) — field names match **`apps/studio`** schemas (`blogCategory`, `post.publishedAt`, `author.photo`).
 - **Reuse:** `_components/blog-search-form`, `category-chips`, `popular-posts-rail` for search zero-results (PROD-1503).
-- **Popular rail:** current UTC month by `publishedAt`, then latest published (no `viewCount` until studio adds it).
+- **Popular rail:** ranked by `viewCount` (Views) within `postPopularRow.timeWindowDays` (default 30); search/backfill still use UTC month then highest-Views published.
 - **Newsletter:** `POST /api/newsletter` when `NEWSLETTER_WEBHOOK_URL` is set.
 
 ## PROD-1499 — Category archives
@@ -142,8 +142,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 ## PROD-1501 — Author profiles
 
-- **Route:** `/author/[slug]` (indexable; `author` is a reserved root segment). Header: circular photo, role, name (H1), bio + credentials (portable text), **LinkedIn only** (personalSite/xHandle ignored per UX spec).
-- **Posts:** first 12 SSR in a 3-col grid; **"Load More (12)"** appends via client fetch to `GET /api/author/[slug]/posts?offset=N` — **no `/page/N` URLs**. Images resolved server-side; the client grid imports `AuthorPostCard` as a **type-only** import to avoid the `server-only` image builder.
+- **Route:** `/author/[slug]` (page 1) and `/author/[slug]/page/[n]` (pagination); page 1 canonical at `/author/[slug]`; page 2+ → **noindex, follow** (PROD-1495). `author` is a reserved root segment.
+- **Posts:** SSR `PostList` in a 3-col grid; **15 per page** (`LISTING_PAGE_SIZE`, same as topic/category); path-based `<Pagination>` — no client load-more API.
 - **JSON-LD:** `Person` (`jobTitle`=role, `description`=bio text, `sameAs`=[LinkedIn]) + `BreadcrumbList`, via `@pakfactory/seo` `person()` (extended with `jobTitle`/`description`/`sameAs`). `authorPersonId(slug)` = `…/author/{slug}#person`.
 - **Article back-ref:** every post's `Article.author` `@id` is `authorPersonId(post.author.slug)`, so posts link back to the author page (`blog-post.ts`).
 - **Sitemap:** authors with ≥1 published post (`AUTHORS_FOR_SITEMAP_QUERY`).
@@ -178,7 +178,7 @@ Feature split across two branches (one ticket): **Studio** on `feature/sanity-st
 - **Asset-level metadata (capture-once):** the plugin writes `altText`, `description`, and `originalFilename` onto `sanity.imageAsset`. Editorial mapping: **alt → `altText`**, **caption → `description`**, **filename → `originalFilename`**.
 - **Per-use overrides:** `post.mainImage` and `post.ogImage` ([`apps/studio/schemas/post.ts`](../apps/studio/schemas/post.ts)) carry optional `alt` (and `mainImage.caption`) override fields that fall back to the asset-level value. `bodyImage` keeps its required per-use alt unchanged.
 - **Decision (Option B):** chose the plugin over native Media Library (Enterprise, cross-project) and over per-use-only fields. Native library is the documented upgrade path when cross-project asset sharing becomes a firm requirement; migration is non-trivial (re-uploads + re-links).
-- **Blog read path:** GROQ resolves alt/caption on `mainImage` via `coalesce(per-use, asset->altText/description)` in `POST_CARD_FIELDS` + `POST_DETAIL_FIELDS` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts). [`apps/blog/src/lib/sanity-image.ts`](../apps/blog/src/lib/sanity-image.ts) exports `sanityImageAlt` (`server-only`); [`PostCard`](../apps/blog/src/app/_components/post-card.tsx) reads it directly, and the author posts grid flows it through [`AuthorPostCard.imageAlt`](../apps/blog/src/lib/blog-author.ts) so the client [`AuthorPostsLoader`](../apps/blog/src/app/_components/author-posts-loader.tsx) stays free of the server-only image module. A11y-aware fallback: `alt ?? ""` when no editor alt (image is inside a link with adjacent title).
+- **Blog read path:** GROQ resolves alt/caption on `mainImage` via `coalesce(per-use, asset->altText/description)` in `POST_CARD_FIELDS` + `POST_DETAIL_FIELDS` in [`packages/sanity/src/queries/blog.ts`](../packages/sanity/src/queries/blog.ts). [`apps/blog/src/lib/sanity-image.ts`](../apps/blog/src/lib/sanity-image.ts) exports `sanityImageAlt` (`server-only`); author archive posts resolve alt server-side via `toPostCardData` in [`apps/blog/src/lib/blog-author.ts`](../apps/blog/src/lib/blog-author.ts) before SSR `PostList`.
 - **Editor coaching:** descriptive-filename do/don't examples added to [`docs/pakfactory-content-team-fields-final.md`](./pakfactory-content-team-fields-final.md) § "Image Asset (Library)". Upload-time soft warning on generic names isn't cleanly feasible in Sanity (field validation can't dereference `asset->originalFilename`), so it stays as coaching.
 - **Pending:** post-detail hero + body image rendering (`BlogPostArticle` is currently a stub) — the GROQ shape is already resolved, so the future hero just reads `post.mainImage.alt` / `.caption`.
 
