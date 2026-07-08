@@ -1,5 +1,5 @@
 /**
- * Seed blog home, topics, and 404 singleton page builders (no posts, nav, or industries).
+ * Seed blog home, topics, 404, and search singleton page builders (no posts, nav, or industries).
  *
  * From repo root:
  *   node apps/studio/scripts/seed-blog-singleton-pages.mjs
@@ -151,18 +151,41 @@ const blogNotFoundPageDoc = {
   ],
 }
 
+const blogSearchPageDoc = {
+  _id: 'blogSearchPage',
+  _type: 'blogPage',
+  pageRole: 'search',
+  language: 'en',
+  title: 'Search page',
+  pageBuilder: [
+    {
+      _key: key(),
+      _type: 'postPopularRow',
+      heading: 'Popular this month',
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'ctaNewsletter',
+      heading: 'Get the latest packaging digest',
+      body: 'Subscribe now for latest packaging news, trends and more.',
+    },
+  ],
+}
+
 async function seed() {
   console.log(
-    `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics + 404\n`,
+    `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics + 404 + search\n`,
   )
 
   const tx = client.transaction()
   tx.createOrReplace(blogHomePageDoc)
   tx.createOrReplace(blogTopicsPageDoc)
   tx.createOrReplace(blogNotFoundPageDoc)
+  tx.createOrReplace(blogSearchPageDoc)
   await tx.commit()
 
-  const [home, topics, notFound] = await Promise.all([
+  const [home, topics, notFound, search] = await Promise.all([
     client.fetch(
       '*[_id == "blogHomePage"][0]{ _id, title, "sections": count(pageBuilder) }',
     ),
@@ -172,13 +195,17 @@ async function seed() {
     client.fetch(
       '*[_id == "blogNotFoundPage"][0]{ _id, title, "sections": count(pageBuilder) }',
     ),
+    client.fetch(
+      '*[_id == "blogSearchPage"][0]{ _id, title, "sections": count(pageBuilder) }',
+    ),
   ])
 
   console.log(`  ✓  blogHomePage     : ${home?.sections ?? 0} sections`)
   console.log(`  ✓  blogTopicsPage   : ${topics?.sections ?? 0} sections`)
   console.log(`  ✓  blogNotFoundPage : ${notFound?.sections ?? 0} sections`)
+  console.log(`  ✓  blogSearchPage   : ${search?.sections ?? 0} sections`)
   console.log(
-    '\n✅  Singleton page seed complete. Preview 404 at http://localhost:3003/404-preview\n',
+    '\n✅  Singleton page seed complete. Preview search at http://localhost:3003/search\n',
   )
 }
 

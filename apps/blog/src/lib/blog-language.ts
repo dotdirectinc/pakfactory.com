@@ -42,6 +42,13 @@ export function blogNotFoundPageParams() {
   });
 }
 
+/** Params for the search page singleton query (page builder + popular row). */
+export function blogSearchPageParams() {
+  return blogLanguageParams({
+    monthStart: monthStartIso(),
+  });
+}
+
 /** Params for landing/static blogPage fetch by slug (page builder + popular row). */
 export function blogLandingPageParams(slug: string) {
   return blogLanguageParams({
