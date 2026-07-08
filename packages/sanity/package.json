@@ -9,7 +9,9 @@
     "./blog-reserved-slugs": "./src/blog-reserved-slugs.ts",
     "./embed-allowlist": "./src/embed-allowlist.ts",
     "./languages": "./src/languages.ts",
-    "./resolve-document-href": "./src/resolve-document-href.ts"
+    "./resolve-document-href": "./src/resolve-document-href.ts",
+    "./social-platforms": "./src/social-platforms.ts",
+    "./algolia/post-record": "./src/algolia/post-record.ts"
   },
   "scripts": {
     "lint": "eslint src",

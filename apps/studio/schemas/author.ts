@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { socialLinksField } from '../lib/social-link-schema'
 import { seoFields, socialFields } from '../lib/seo-fields'
 
 export const author = defineType({
@@ -88,15 +89,9 @@ export const author = defineType({
         'Fuller bio on the profile page. This is where the author’s areas of expertise, background, and any real credentials are written — natural prose, real-only.',
       of: [{ type: 'block' }],
     }),
-    defineField({
-      name: 'socialLinks',
-      title: 'Social profiles',
-      type: 'array',
+    socialLinksField({
+      context: 'author',
       group: 'profile',
-      description:
-        'Social / external profile URLs (LinkedIn, X, personal site, etc.) → Person.sameAs. The main signal that disambiguates the author and links them to external authority.',
-      of: [{ type: 'url' }],
-      validation: (Rule) => Rule.unique(),
     }),
 
     // ── SEO ───────────────────────────────────────────────────────────────────

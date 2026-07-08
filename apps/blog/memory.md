@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-06-18.
+Last updated: 2026-07-07.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -18,7 +18,7 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/author/{slug}`                     | ✅ PROD-1501                                                                                                                                                                                                    |
 | `/rss.xml`                           | ✅ PROD-1505                                                                                                                                                                                                    |
 | `/sitemap.xml`                       | ✅ PROD-1596 (utility; not on BA tree)                                                                                                                                                                          |
-| `/search` (+ `?q=`)                  | ✅ PROD-1503                                                                                                                                                                                                    |
+| `/search` (+ `?q=`)                  | ✅ PROD-1503 + PROD-1950 (dieline UI + Search singleton CMS)                                                                                                                                                     |
 | `/contribute`                        | ✅ PROD-1504                                                                                                                                                                                                    |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
@@ -177,7 +177,135 @@ Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` 
 3. Preview phase 1 — converge client API; wire `blog-page.ts` + `blogLocations` (**done** 2026-06-18).
 4. PROD-1502 — post page; Tier 1 JSON-LD (`dateModified`, `NewsArticle`) **done**; Tier 3 AEO (`faqPage`, TL;DR) next. See [`docs/blog-jsonld-audit.md`](../../docs/blog-jsonld-audit.md).
 
-## i18n — DORMANT (English-only, parked 2026-07-07)
+## PROD-1896 — Blog 404 page (redesign; 404 = blogPage singleton)
+
+**Jira:** [PROD-1896](https://dotdirect.atlassian.net/browse/PROD-1896) — 404 Page (Story, epic PROD-1377). Dev clone: PROD-1949. Redesigns the existing `not-found.tsx` (PROD-1506) to the 2026 POC/Figma (node 2407:25166).
+
+**Architecture decision (2026-07-07):** the 404's editor config does **not** live in Blog Settings. It's a **`blogPage` singleton** with `pageRole: notFound` (id `blogNotFoundPage`), shown in the desk under **Pages → 404 page** (mirrors Homepage/Topics singletons). Rationale: page-specific content belongs on a page doc, not global settings; and it opens the door to Page Blocks (phase 2). We briefly built it as a `blogSettings.notFoundTopics` field, then reverted to the singleton.
+
+**Not routable (critical):** the 404 stays the Next `not-found.tsx` route → real HTTP 404 + noindex, in blog chrome, no breadcrumb. The singleton is a **content source**, never a URL: `BLOG_PAGE_BY_SLUG_QUERY` only resolves `pageRole in ["landing","static"]` + a slug, and singletons have no slug — so `blogNotFoundPage` can't be hit as a page (AC#1).
+
+**Singleton mechanics:** `notFound` added to the `isBlogPageSingleton` family (`apps/studio/lib/blog-page-singletons.ts` + `lib/languages.ts` `BLOG_NOT_FOUND_PAGE_IDS`). See **§ blogPage singleton — pageRole contract** below for `pageRole` validation and troubleshooting.
+
+| Concern | Location |
+| --- | --- |
+| Singleton role + fields (`recommendedTopics`, `pageBuilder` via `pageBuilderHome`) | `apps/studio/schemas/blogPage.ts` (notFound-only, hidden otherwise) |
+| `promoBanner` block (reusable on home/topics/404) | `apps/studio/schemas/blocks/promo-banner.ts` |
+| Desk item **Pages → 404 page** | `apps/studio/structure/index.ts` (`blogNotFoundPageItem`) |
+| GROQ | `BLOG_NOT_FOUND_PAGE_BUILDER_QUERY` + `BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY` in `@pakfactory/sanity/queries` |
+| Data | `fetchBlogNotFoundPage()` → `{ topics, blocks }` in `src/lib/blog-data.ts` (uses `getPreviewableSanityClient()` for Presentation) |
+| Hero (fixed) | `src/components/modules/not-found-hero.tsx` — eyebrow + single `h1` + Explore-topics/curated chips + Back-to-Blog-Home |
+| Promo banner block | `src/components/blocks/promo-banner.tsx` → reuses `src/components/modules/promo-banner.tsx` |
+| Page compose | `src/app/not-found.tsx` — fixed hero + `BlockRenderer(blocks)` + newsletter CTA |
+| Presentation preview | `apps/studio/presentation/locations.ts` — `blogNotFoundPage` → `/404-preview` |
+
+**Phase 2 (shipped):** below-hero region is page-builder-driven via `pageBuilderHome` (`postPopularRow`, `promoBanner`, `ctaNewsletter`, etc.). Promo is authored only via the `promoBanner` block (inline `promo` object removed from schema).
+
+**Human steps before ship:**
+1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo`, `promoBanner` block + 404 `pageBuilder` field).
+2. **One-time backfill (if "Page role Required"):** run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` or patch `pageRole: "notFound"` on `blogNotFoundPage` via Vision/API.
+3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Promo Banner + Newsletter), or use the seed script above.
+4. Verify at `http://localhost:3003/404-preview` (Presentation uses the same URL).
+5. **AC#4** — final PakFactory promo copy + real images + CTA URL (editable via Promo Banner block).
+6. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
+
+**Known:** studio `tsc` still nags `documentId` on the singleton `initialValue` — pre-existing (home/topics use the same signature; Sanity provides it at runtime; Vite build unaffected).
+
+---
+
+## blogPage singleton — pageRole contract
+
+Pinned document ids imply `pageRole` (source of truth for Studio field visibility):
+
+| Document id | pageRole |
+| --- | --- |
+| `blogHomePage` | `home` |
+| `blogTopicsPage` | `topics` |
+| `blogNotFoundPage` | `notFound` |
+| `blogSearchPage` | `search` |
+
+- **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
+- **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
+- **Validation:** singletons skip `pageRole` required (role implied by id; see `blogPage.ts` custom rule).
+- **Seeds:** `seed-blog-singleton-pages.mjs` / `seed-blog-dev.mjs` must always set explicit `pageRole`.
+- **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: run seed or patch field; deploy schema with validation skip.
+
+---
+
+## PROD-1950 — Search results page + Search singleton CMS
+
+**Jira:** [PROD-1950](https://dotdirect.atlassian.net/browse/PROD-1950) — Blog search results page (Figma 2399:23410 & 2399:23361). Builds on PROD-1503’s query layer; reworks `/search` onto the dieline layout and adds a Studio-editable content source.
+
+**Architecture:** `/search` stays a **reserved code route** (never a landing/`static` slug — `search` is in `BLOCKED_SLUGS`). Editor config lives on a **`blogPage` singleton** with `pageRole: search` (id `blogSearchPage`), desk **Pages → Search page** — same pattern as 404 (`blogNotFoundPage`). The singleton is a **content source**, not a URL: `BLOG_PAGE_BY_SLUG_QUERY` only resolves `landing`/`static` + slug.
+
+| Concern | Location |
+| --- | --- |
+| Singleton role + fields (`recommendedTopics`, `pageBuilder` via `pageBuilderHome`) | `apps/studio/schemas/blogPage.ts` (visible for search + 404) |
+| Desk item **Pages → Search page** | `apps/studio/structure/index.ts` (`blogSearchPageItem`) |
+| IDs | `apps/studio/lib/languages.ts` `BLOG_SEARCH_PAGE_IDS` |
+| GROQ | `BLOG_SEARCH_PAGE_BUILDER_QUERY` (+ reuse `BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY`) in `@pakfactory/sanity/queries` |
+| Data | `fetchBlogSearchPage()` → `{ topics, blocks }` in `src/lib/blog-data.ts` |
+| Page compose | `src/app/search/page.tsx` — fixed header/listing/empty copy + `TopicChipRow` + `BlockRenderer(blocks)` (newsletter fallback if no CMS blocks) |
+| Shared UI (ADR-013) | `ui/listing-filter-bar`, `ui/topic-chip-row`; search controller `modules/search-filter-bar` |
+| Presentation | `apps/studio/presentation/locations.ts` — `blogSearchPage` → `/search` |
+| Human seed | `apps/studio/scripts/seed-blog-singleton-pages.mjs` (includes `blogSearchPage`) |
+
+**What editors control:** recommended-topic chips (empty / no-results) and below-fold page blocks (popular row, newsletter, promo, etc.). Empty/no-results headings and guidance copy stay in code (same as 404 hero). Results grid, Category filter, Sort, and pagination stay in code.
+
+**Human steps before ship:**
+1. `sanity schema deploy` / Studio deploy — push `pageRole: search` + desk item.
+2. One-time seed: `node apps/studio/scripts/seed-blog-singleton-pages.mjs` (humans only — agents must not run seeds).
+3. Configure **Pages → Search page**: Recommended topics + Page blocks.
+4. Verify empty `/search`, `/search?q=paper` (results + category filter), and a no-match query.
+
+### Verify
+
+```bash
+pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
+```
+
+---
+
+## PROD-1957 — Algolia search backend
+
+**Jira:** [PROD-1957](https://dotdirect.atlassian.net/browse/PROD-1957) — Algolia sync Function + `/search` backend swap. Follows [Sanity's official Algolia guide](https://www.sanity.io/docs/developer-guides/how-to-implement-front-end-search-with-sanity).
+
+| Concern | Location |
+| --- | --- |
+| Blueprint | `sanity.blueprint.ts` (repo root) |
+| Sync Function | `functions/algolia-document-sync/` |
+| Shared projection + record mapper | `packages/sanity/src/algolia/post-record.ts` |
+| Index configure + backfill (human) | `apps/studio/scripts/algolia-configure-index.ts`, `algolia-initial-sync.ts` |
+| Search backend swap | `apps/blog/src/lib/blog-search.ts` — env-gated `liteClient`; GROQ fallback |
+
+**Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
+
+**Human deploy order:**
+1. Create Algolia app + index `posts`; set env in root `.env`, Vercel blog project, and Function env (`SANITY_PROJECT_ID`, `SANITY_DATASET` from Studio).
+2. `npx sanity blueprints deploy`
+3. `cd apps/studio && npx sanity exec scripts/algolia-configure-index.ts --with-user-token`
+4. `npx sanity exec scripts/algolia-initial-sync.ts --with-user-token`
+5. Test: `npx sanity functions test algolia-document-sync --document-id <post-id> --dataset development --with-user-token`
+
+**Agents:** implement schema/code only; never run backfill, blueprint deploy, or patch Sanity documents.
+
+### Nav search typeahead (follow-on)
+
+| Concern | Location |
+| --- | --- |
+| Suggest fetch (client) | `src/lib/algolia-suggest.ts` |
+| Tabbed dropdown UI (ADR-013) | `src/components/ui/search-suggestion-panel.tsx`, `search-suggest-tabs.tsx`, `search-highlight.tsx` |
+| Nav combobox controller | `src/components/modules/search-form.tsx` (`NavSearchForm`) |
+
+- Debounced Algolia suggest (300ms, min 2 chars) when `NEXT_PUBLIC_ALGOLIA_*` is set.
+- **Tabs:** All, Posts, Categories, Topics — one `multiSearch` on the `posts` index (`restrictSearchableAttributes` for category/topic queries); counts on each tab pill.
+- **Row kinds:** post (thumb + category subtitle), category (folder icon), topic (tag icon); query match highlighted via `SearchHighlight`.
+- **Clear** control in the nav pill when query is non-empty.
+- Keyboard: arrows highlight rows, tab bar ArrowLeft/Right, Enter navigates to row or `/search?q=…`, Escape closes panel.
+- Without Algolia env: plain GET form unchanged.
+- **Local env:** copy `NEXT_PUBLIC_ALGOLIA_APP_ID` + `NEXT_PUBLIC_ALGOLIA_API_KEY` into `apps/blog/.env.local` and restart dev after changes.
+
+---
 
 Document internationalization (`@sanity/document-internationalization`, EN + FR) was **parked** — it surfaced two homepages (one per language) in the desk and interfered with the team workflow. **No French content exists and no FR is planned yet.** Chosen path: **Option B — hide the chrome, keep the machinery dormant** (not a full removal).
 
@@ -234,6 +362,8 @@ curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
 ## PROD-1503 — `/search` page (implemented)
 
 **Jira:** [PROD-1503](https://dotdirect.atlassian.net/browse/PROD-1503) — S2.7 Build `/blog/search`. Faceted-listing pattern mirroring the category archive. Uses **Sanity built-in `match`** (no external search infra, per AC).
+
+> **Superseded UI / CMS (2026-07):** PROD-1950 reworked the page onto the dieline layout and added the `blogSearchPage` singleton. Keep this section for the original query/robots decisions; see **§ PROD-1950** for current compose + Studio wiring.
 
 | Deliverable                                     | Location                                                                                                            |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -394,7 +524,7 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 | Deliverable                     | Location                                                                                                  |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Global 404                      | `src/app/not-found.tsx` — `noindex, follow` via `getBlogRobotsDirective({ kind: 'error' })`               |
-| Blog GROQ                       | `packages/sanity/src/queries/blog.ts` — categories + popular posts (month window, `publishedAt` fallback) |
+| Blog GROQ                       | `packages/sanity/src/queries/blog.ts` — categories + popular posts (`viewCount` window, `publishedAt` tiebreak) |
 | Data helpers                    | `src/lib/blog-data.ts`, `src/lib/blog-categories.ts` (studio slug fallback)                               |
 | Recovery rail (reuse PROD-1503) | `src/app/_components/` — search, chips, popular rail, RFQ CTA, newsletter                                 |
 | Newsletter API                  | `src/app/api/newsletter/route.ts` — needs `NEWSLETTER_WEBHOOK_URL`                                        |
@@ -402,7 +532,7 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 
 ### Popular posts
 
-No `viewCount` on studio `post` yet. Rail uses posts with `publishedAt` in the current UTC month; if fewer than three, fills from latest published.
+Posts ranked by `viewCount` (Views) desc within a configurable day window (`postPopularRow.timeWindowDays`, default 30). Tiebreak is `publishedAt` desc. Search zero-results / backfill still use the UTC calendar month window, then fill from highest-Views published posts when fewer than three. Editors set Views on the post **Publishing** tab.
 
 ### Verification
 
@@ -622,6 +752,12 @@ Full-bleed blocks (`postFeaturedRow`, `postCategoryRow`, `postPopularRow`, `post
 **Legacy documents** without saved border fields keep prior behavior: post rows render bottom only; newsletter CTA renders top only (`apps/blog/src/lib/dieline-borders.ts`).
 
 **Topics page double-line fix (human-only):** On **Pages → Topic page → Page builder**, when `postPopularRow` sits directly above `ctaNewsletter`, hide one adjacent border — e.g. turn **off** `showTopBorder` on the newsletter block, or **off** `showBottomBorder` on the popular row above it.
+
+## Archive listing pagination
+
+- **Page size:** `LISTING_PAGE_SIZE = 15` in `src/lib/blog-archive.ts` (topic, category, `/all` archives).
+- **UI:** shared `src/components/modules/pagination.tsx` — Figma Topic Detail layout (status left, Previous + numbered window + Next right). Window helper: `src/lib/pagination-window.ts`.
+- **Routes:** page 1 at list root; page 2+ at `/page/{n}` (e.g. `/topics/{slug}/page/2`). Pager hidden when `totalPages <= 1`.
 
 ## Topic groups — `blogTopicGroup` + `topicGroup` ref (CMS taxonomy)
 

@@ -1,5 +1,5 @@
 /**
- * Seed only blog home + topics singleton page builders (no posts, nav, or industries).
+ * Seed blog home, topics, 404, and search singleton page builders (no posts, nav, or industries).
  *
  * From repo root:
  *   node apps/studio/scripts/seed-blog-singleton-pages.mjs
@@ -121,28 +121,92 @@ const blogTopicsPageDoc = {
   topics: [ref('btgrp-packaging-type'), ref('btgrp-industry')],
 }
 
+const blogNotFoundPageDoc = {
+  _id: 'blogNotFoundPage',
+  _type: 'blogPage',
+  pageRole: 'notFound',
+  language: 'en',
+  title: '404 Page',
+  pageBuilder: [
+    {
+      _key: key(),
+      _type: 'postPopularRow',
+      heading: 'Popular this month',
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'promoBanner',
+      heading: 'Custom packaging, made simple',
+      body: 'From concept to delivery, PakFactory helps you design, prototype, and produce packaging that stands out.',
+      ctaLabel: 'Get started',
+      ctaUrl: '/',
+    },
+    {
+      _key: key(),
+      _type: 'ctaNewsletter',
+      heading: 'Get the latest packaging digest',
+      body: 'Subscribe now for latest packaging news, trends and more.',
+    },
+  ],
+}
+
+const blogSearchPageDoc = {
+  _id: 'blogSearchPage',
+  _type: 'blogPage',
+  pageRole: 'search',
+  language: 'en',
+  title: 'Search page',
+  pageBuilder: [
+    {
+      _key: key(),
+      _type: 'postPopularRow',
+      heading: 'Popular this month',
+      postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'ctaNewsletter',
+      heading: 'Get the latest packaging digest',
+      body: 'Subscribe now for latest packaging news, trends and more.',
+    },
+  ],
+}
+
 async function seed() {
   console.log(
-    `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics only\n`,
+    `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics + 404 + search\n`,
   )
 
   const tx = client.transaction()
   tx.createOrReplace(blogHomePageDoc)
   tx.createOrReplace(blogTopicsPageDoc)
+  tx.createOrReplace(blogNotFoundPageDoc)
+  tx.createOrReplace(blogSearchPageDoc)
   await tx.commit()
 
-  const [home, topics] = await Promise.all([
+  const [home, topics, notFound, search] = await Promise.all([
     client.fetch(
       '*[_id == "blogHomePage"][0]{ _id, title, "sections": count(pageBuilder) }',
     ),
     client.fetch(
       '*[_id == "blogTopicsPage"][0]{ _id, title, "sections": count(pageBuilder) }',
     ),
+    client.fetch(
+      '*[_id == "blogNotFoundPage"][0]{ _id, title, "sections": count(pageBuilder) }',
+    ),
+    client.fetch(
+      '*[_id == "blogSearchPage"][0]{ _id, title, "sections": count(pageBuilder) }',
+    ),
   ])
 
-  console.log(`  ✓  blogHomePage   : ${home?.sections ?? 0} sections`)
-  console.log(`  ✓  blogTopicsPage : ${topics?.sections ?? 0} sections`)
-  console.log('\n✅  Singleton page seed complete. Refresh http://localhost:3003 and Studio.\n')
+  console.log(`  ✓  blogHomePage     : ${home?.sections ?? 0} sections`)
+  console.log(`  ✓  blogTopicsPage   : ${topics?.sections ?? 0} sections`)
+  console.log(`  ✓  blogNotFoundPage : ${notFound?.sections ?? 0} sections`)
+  console.log(`  ✓  blogSearchPage   : ${search?.sections ?? 0} sections`)
+  console.log(
+    '\n✅  Singleton page seed complete. Preview search at http://localhost:3003/search\n',
+  )
 }
 
 seed().catch((err) => {

@@ -30,6 +30,8 @@ type PostCardProps = {
     | "default"
     | "compact"
     | "featured"
+    | "featuredLead"
+    | "featuredListItem"
     | "horizontal"
     | "headline"
     | "rail"
@@ -191,6 +193,8 @@ export function PostCard({
   priority = false,
 }: PostCardProps) {
   const isFeatured = variant === "featured";
+  const isFeaturedLead = variant === "featuredLead";
+  const isFeaturedListItem = variant === "featuredListItem";
   const isCategoryHero = variant === "categoryHero";
   const isHorizontal = variant === "horizontal";
   const isCompact = variant === "compact";
@@ -233,6 +237,59 @@ export function PostCard({
             </p>
           )}
         </Link>
+      </article>
+    );
+  }
+
+  if (isFeaturedLead) {
+    return (
+      <article className="flex flex-col gap-6">
+        <Link href={post.href} className="group block">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
+            {post.imageUrl && (
+              <Image
+                src={post.imageUrl}
+                alt={post.imageAlt ?? ""}
+                fill
+                className="object-cover transition-transform group-hover:scale-[1.02]"
+                sizes="(max-width: 1024px) 100vw, 776px"
+                priority
+              />
+            )}
+          </div>
+        </Link>
+        <div className="flex flex-col gap-3">
+          {post.categoryTitle && (
+            <CategoryBadge title={post.categoryTitle} />
+          )}
+          <Link href={post.href} className="group block">
+            <h3 className="text-2xl font-semibold leading-snug tracking-tight text-card-foreground group-hover:underline lg:text-3xl">
+              {post.title}
+            </h3>
+          </Link>
+          {post.excerpt && (
+            <p className="line-clamp-2 text-base text-muted-foreground">
+              {post.excerpt}
+            </p>
+          )}
+          <PostMeta post={post} tone="listing" />
+        </div>
+      </article>
+    );
+  }
+
+  if (isFeaturedListItem) {
+    return (
+      <article className="flex flex-col gap-2">
+        {post.categoryTitle && (
+          <CategoryBadge title={post.categoryTitle} />
+        )}
+        <Link href={post.href} className="group block">
+          <h3 className="line-clamp-2 text-lg font-medium leading-snug text-card-foreground group-hover:underline">
+            {post.title}
+          </h3>
+        </Link>
+        <PostMeta post={post} tone="horizontal" />
       </article>
     );
   }

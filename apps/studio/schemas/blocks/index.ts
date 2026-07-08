@@ -9,6 +9,7 @@ import { ctaNewsletter } from './cta-newsletter'
 import { ctaRfq } from './cta-rfq'
 import { ctaPillars } from './cta-pillars'
 import { richTextBand } from './rich-text-band'
+import { promoBanner } from './promo-banner'
 import { pageBuilderPreviewUrl } from './page-builder-preview'
 
 /**
@@ -24,6 +25,7 @@ export const pageBuilderBlocks = [
   ctaRfq,
   ctaPillars,
   richTextBand,
+  promoBanner,
 ]
 
 /** Homepage + topics index blocks (post-driven rows + full CTA set). */
@@ -36,6 +38,7 @@ export const homePageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
+  promoBanner,
 ]
 
 /** Landing/static allowlist (ADR-009). */
@@ -59,6 +62,7 @@ const INSERT_GROUPS_HOME = [
     title: 'CTA',
     of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars'],
   },
+  { name: 'promo', title: 'Promo', of: ['promoBanner'] },
 ]
 
 const INSERT_GROUPS_LANDING = [

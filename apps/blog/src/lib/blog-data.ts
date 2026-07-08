@@ -1,13 +1,26 @@
-import { unstable_cache } from "next/cache";
+import { unstable_cache, unstable_noStore as noStore } from "next/cache";
 import { draftMode } from "next/headers";
-import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
-import { blogLanguageParams } from "@/lib/blog-language";
+import {
+  getPreviewableSanityClient,
+  getPublishedSanityClient,
+  getSanityClient,
+} from "@/lib/sanity/client";
+import {
+  blogLanguageParams,
+  blogNotFoundPageParams,
+  blogSearchPageParams,
+} from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { DEFAULT_BLOG_LANGUAGE } from "@pakfactory/sanity/languages";
+import type { PageBuilderBlock } from "@/components/blocks/registry";
+import { enrichPopularRowBlocks } from "@/lib/page-builder";
 import {
   BLOG_CATEGORIES_QUERY,
   BLOG_FOOTER_NAV_QUERY,
   BLOG_NAV_CATEGORIES_QUERY,
+  BLOG_NOT_FOUND_PAGE_BUILDER_QUERY,
+  BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY,
+  BLOG_SEARCH_PAGE_BUILDER_QUERY,
   POPULAR_POSTS_LATEST_QUERY,
   POPULAR_POSTS_THIS_MONTH_QUERY,
 } from "@pakfactory/sanity/queries";
@@ -34,6 +47,10 @@ export type PopularPostCard = {
   publishedAt?: string;
   mainImage?: unknown;
   categorySlug?: string;
+  categoryTitle?: string;
+  authorName?: string;
+  authorImageUrl?: string;
+  readingTimeMinutes?: number;
 };
 
 type BlogNavCategoryRow = BlogCategoryChip & {
@@ -114,6 +131,93 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
     .catch(() => []);
   if (rows.length > 0) return rows;
   return [...BLOG_CATEGORY_FALLBACK];
+}
+
+export type TopicChip = { _id?: string; title: string; slug: string };
+
+export type BlogPromo = {
+  heading?: string;
+  body?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  images?: { url?: string }[];
+};
+
+export type BlogNotFoundContent = {
+  topics: TopicChip[];
+  blocks: PageBuilderBlock[];
+};
+
+export type BlogSearchContent = {
+  topics: TopicChip[];
+  blocks: PageBuilderBlock[];
+};
+
+/**
+ * 404 page content — the `blogNotFoundPage` singleton's curated recovery topics
+ * (falling back to the newest topics when none are curated) and page-builder blocks.
+ */
+export async function fetchBlogNotFoundPage(): Promise<BlogNotFoundContent> {
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+  if (!isSanityConfigured()) return { topics: [], blocks: [] };
+  const client = await getPreviewableSanityClient();
+  const page = await client
+    .fetch<{
+      topics?: TopicChip[];
+      pageBuilder?: PageBuilderBlock[] | null;
+    } | null>(BLOG_NOT_FOUND_PAGE_BUILDER_QUERY, blogNotFoundPageParams())
+    .catch(() => null);
+
+  let topics = (page?.topics ?? []).filter((t) => t?.slug);
+  if (topics.length === 0) {
+    const fallback = await client
+      .fetch<TopicChip[]>(BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY, blogLanguageParams())
+      .catch(() => []);
+    topics = (fallback ?? []).filter((t) => t?.slug);
+  }
+
+  const blocks = await enrichPopularRowBlocks(page?.pageBuilder);
+
+  return {
+    topics,
+    blocks,
+  };
+}
+
+/**
+ * Search page content — the `blogSearchPage` singleton's curated recommended
+ * topics (falling back to newest topics) and page-builder blocks. Content source
+ * for the reserved `/search` route; not slug-routable.
+ */
+export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+  if (!isSanityConfigured()) return { topics: [], blocks: [] };
+  const client = await getPreviewableSanityClient();
+  const page = await client
+    .fetch<{
+      topics?: TopicChip[];
+      pageBuilder?: PageBuilderBlock[] | null;
+    } | null>(BLOG_SEARCH_PAGE_BUILDER_QUERY, blogSearchPageParams())
+    .catch(() => null);
+
+  let topics = (page?.topics ?? []).filter((t) => t?.slug);
+  if (topics.length === 0) {
+    const fallback = await client
+      .fetch<TopicChip[]>(BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY, blogLanguageParams())
+      .catch(() => []);
+    topics = (fallback ?? []).filter((t) => t?.slug);
+  }
+
+  const blocks = await enrichPopularRowBlocks(page?.pageBuilder);
+
+  return {
+    topics,
+    blocks,
+  };
 }
 
 /**
