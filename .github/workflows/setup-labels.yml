@@ -1,0 +1,27 @@
+name: Setup labels
+
+# One-time (re-runnable) creation of the app:* / pkg:* labels the PR Labeler applies.
+# Run manually: Actions tab -> "Setup labels" -> Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Create / update labels
+        run: |
+          mk() { gh label create "$1" --color "$2" --description "$3" --repo "$REPO" --force; }
+          mk "app:blog"   "1f6feb" "Changes in apps/blog"
+          mk "app:www"    "0e8a16" "Changes in apps/www"
+          mk "app:studio" "5319e7" "Changes in apps/studio"
+          mk "pkg:ui"     "fbca04" "Changes in packages/ui"
+          mk "pkg:sanity" "d93f0b" "Changes in packages/sanity"
+          mk "pkg:seo"    "0052cc" "Changes in packages/seo"
+          mk "functions"  "006b75" "Changes in functions/*"

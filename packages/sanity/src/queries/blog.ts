@@ -131,8 +131,15 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     "slug": slug.current,
     photo,
     role,
-    tagline,
-    shortBio
+    experience,
+    shortBio,
+    authorType,
+    "bioText": pt::text(bio),
+    socialLinks[]{
+      platform,
+      url,
+      label
+    }
   },
   tldr,
   "tldrText": pt::text(tldr),
@@ -987,7 +994,7 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
   name,
   "slug": slug.current,
   role,
-  tagline,
+  experience,
   shortBio,
   authorType,
   bio,

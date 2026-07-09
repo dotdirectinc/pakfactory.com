@@ -55,30 +55,33 @@ export const author = defineType({
       group: 'profile',
       mediaTags: [MEDIA_TAG.blog],
       options: { hotspot: true },
-      description: 'Headshot (→ Person.image). Square crop recommended, min 400×400px.',
+      description: 'Headshot (→ Person.image). Square, at least 800×800px, face centered.',
+      validation: (Rule) => Rule.required(),
     })),
     defineField({
       name: 'role',
       title: 'Job title',
       type: 'string',
       group: 'profile',
-      description: 'e.g. "Senior Content Writer" (→ Person.jobTitle).',
+      description: 'Real role at PakFactory, 2–5 words (→ Person.jobTitle).',
+      validation: (Rule) => Rule.required().max(50),
     }),
     defineField({
-      name: 'tagline',
-      title: 'Tagline',
+      name: 'experience',
+      title: 'Experience',
       type: 'string',
       group: 'profile',
       description:
-        'One short experience/credibility line under the name, e.g. "10 years covering CPG packaging". Real-only; reconcile with the job title and bio.',
+        'One number-driven line, e.g. "12+ years in packaging engineering · 600+ custom projects shipped".',
     }),
     defineField({
       name: 'shortBio',
       title: 'Short bio',
-      type: 'text',
-      rows: 3,
+      type: 'string',
       group: 'profile',
-      description: '1–3 sentence intro shown on posts (→ Person.description).',
+      description:
+        'One sidebar line on post pages (≤90 chars). Proof only — name and job title show separately.',
+      validation: (Rule) => Rule.required().max(90),
     }),
     defineField({
       name: 'bio',
@@ -86,8 +89,9 @@ export const author = defineType({
       type: 'array',
       group: 'profile',
       description:
-        'Fuller bio on the profile page. This is where the author’s areas of expertise, background, and any real credentials are written — natural prose, real-only.',
+        'Author detail page bio (~120–250 words, third person). Credentials and notable work woven in (→ Person.description).',
       of: [{ type: 'block' }],
+      validation: (Rule) => Rule.required(),
     }),
     socialLinksField({
       context: 'author',

@@ -1,0 +1,23 @@
+# Path -> label map for actions/labeler@v5.
+# PRs get an app:* / pkg:* label per area touched, so PR history is filterable by app.
+'app:blog':
+  - changed-files:
+      - any-glob-to-any-file: 'apps/blog/**'
+'app:www':
+  - changed-files:
+      - any-glob-to-any-file: 'apps/www/**'
+'app:studio':
+  - changed-files:
+      - any-glob-to-any-file: 'apps/studio/**'
+'pkg:ui':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/ui/**'
+'pkg:sanity':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/sanity/**'
+'pkg:seo':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/seo/**'
+'functions':
+  - changed-files:
+      - any-glob-to-any-file: 'functions/**'
