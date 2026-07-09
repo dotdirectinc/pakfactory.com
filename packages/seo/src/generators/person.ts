@@ -11,5 +11,6 @@ export function person(input: PersonInput): Record<string, unknown> {
   if (input.jobTitle) doc.jobTitle = input.jobTitle;
   if (input.description) doc.description = input.description;
   if (input.sameAs?.length) doc.sameAs = [...input.sameAs];
+  if (input.worksFor) doc.worksFor = input.worksFor;
   return doc;
 }
