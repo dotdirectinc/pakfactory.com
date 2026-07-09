@@ -10,7 +10,7 @@ import {
   type CaseStudyDetail,
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
-import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
 import { CaseStudyResult } from "@/components/ui/case-study-result";
 import { absoluteUrl } from "@/lib/site";
 import {
@@ -40,12 +40,14 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  if (!isSanityConfigured()) return {};
 
-  const study = await getPublishedSanityClient()
-    .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-    .catch(() => null);
+  const sanityStudy = isSanityConfigured()
+    ? await getPublishedSanityClient()
+        .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+        .catch(() => null)
+    : null;
 
+  const study = sanityStudy ?? MOCK_CASE_STUDY_DETAILS[slug] ?? null;
   if (!study) return {};
 
   const title = study.metaTitle?.trim() || study.title;
@@ -83,6 +85,11 @@ export default async function CaseStudyPage({ params }: Props) {
 
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
+      breadcrumbList([
+        { name: "Home", url: absoluteUrl("/") },
+        { name: "Case Studies", url: absoluteUrl("/case-studies") },
+        { name: study.title, url: pageUrl },
+      ]),
       webPage({
         url: pageUrl,
         name: study.title,

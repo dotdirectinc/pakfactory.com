@@ -72,11 +72,19 @@ export {
     CASE_STUDIES_LISTING_QUERY,
     CASE_STUDY_BY_SLUG_QUERY,
     CASE_STUDY_PATHS_QUERY,
+    CASE_STUDY_SITEMAP_QUERY,
     type CaseStudyCard,
     type CaseStudyDetail,
     type CaseStudyPath,
     type CaseStudyResult,
+    type CaseStudySitemapEntry,
 } from './queries/case-studies';
+
+export {
+    CASE_STUDY_RESERVED_SLUGS,
+    isBlockedCaseStudySlug,
+    type CaseStudyReservedSlug,
+} from './case-study-reserved-slugs';
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
