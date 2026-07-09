@@ -979,8 +979,8 @@ const authors = [
     name: 'Sarah Chen',
     slug: slug('sarah-chen'),
     role: 'Senior Packaging Engineer, PakFactory',
-    tagline: '12 years in structural packaging engineering across cosmetics, food, and electronics.',
-    shortBio: 'Senior Packaging Engineer at PakFactory with 12 years in structural design and substrate specification for 200+ brands.',
+    experience: '12+ years in structural packaging engineering · 200+ brand programs',
+    shortBio: '12+ years in structural design and substrate specification for 200+ brands.',
     bio: [block('Sarah Chen is a Senior Packaging Engineer at PakFactory with 12 years of experience in structural design and substrate specification. She has led packaging programs for 200+ brands across cosmetics, food & beverage, and consumer electronics. Sarah holds a BSc in Packaging Science from Ryerson University and is a member of the Institute of Packaging Professionals (IoPP).')],
     socialLinks: [
       {
@@ -997,8 +997,8 @@ const authors = [
     name: 'Marcus Wright',
     slug: slug('marcus-wright'),
     role: 'Director of Sustainability, PakFactory',
-    tagline: '8 years guiding brands through FSC, BPI, and How2Recycle certification programs.',
-    shortBio: 'Director of Sustainability at PakFactory, advising brands on material choices, lifecycle analysis, and certification strategy.',
+    experience: '8+ years guiding brands through FSC, BPI, and How2Recycle programs',
+    shortBio: '8+ years guiding brands on material choices, lifecycle analysis, and certifications.',
     bio: [block('Marcus Wright leads PakFactory\'s sustainability practice, advising brands on material choices, lifecycle analysis, and certification strategy. He has guided over 80 brands through FSC, BPI, and How2Recycle certification programs. Marcus holds an MSc in Environmental Management from the University of British Columbia.')],
     socialLinks: [
       {
@@ -1015,7 +1015,7 @@ const authors = [
     name: 'Priya Nair',
     slug: slug('priya-nair'),
     role: 'Head of Brand Strategy, PakFactory',
-    tagline: '9 years translating brand identity into manufacturable packaging decisions.',
+    experience: '9+ years translating brand identity into manufacturable packaging',
     shortBio: 'Head of Brand Strategy at PakFactory; former Packaging Creative Director at Glossier.',
     bio: [block('Priya Nair leads brand strategy at PakFactory, helping emerging and enterprise brands translate their identity into packaging decisions. With a background in industrial design and 9 years of brand-side experience, she brings a commercial lens to the technical decisions that define unboxing experiences.')],
     socialLinks: [

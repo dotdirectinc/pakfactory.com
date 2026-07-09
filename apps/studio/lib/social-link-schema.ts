@@ -57,6 +57,13 @@ function uniquePlatformArrayValidation(context: SocialPlatformContext) {
             return "Each author social link needs a display label.";
           }
         }
+
+        const hasLinkedIn = links.some(
+          (link) => (link as { platform?: string })?.platform === "linkedin",
+        );
+        if (!hasLinkedIn) {
+          return "At least one LinkedIn profile link is required.";
+        }
       }
 
       return true;

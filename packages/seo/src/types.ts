@@ -36,6 +36,8 @@ export type PersonInput = {
   description?: string;
   /** Absolute profile URLs (e.g. LinkedIn) for E-E-A-T */
   sameAs?: string[];
+  /** Employer Organization node or @id reference */
+  worksFor?: Record<string, unknown>;
 };
 
 export type BreadcrumbItem = {

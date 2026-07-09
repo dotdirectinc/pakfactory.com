@@ -13,7 +13,7 @@ type AuthorHeaderProps = {
   author: AuthorDoc;
 };
 
-/** Author profile hero: accent band, square photo, name (H1), role/tagline, bio, social links. */
+/** Author profile hero: role above name, experience below name, long bio, social links. */
 export function AuthorHeader({ author }: AuthorHeaderProps) {
   const photoUrl = sanityImageUrl(author.photo, 596);
   const socialLinks =
@@ -24,8 +24,7 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
         isSocialPlatform(link.platform) &&
         link.label?.trim(),
     ) ?? [];
-  const subtitle = [author.role, author.tagline].filter(Boolean).join(" • ");
-  const hasBio = Boolean(author.shortBio?.trim()) || Boolean(author.bio?.length);
+  const hasBio = Boolean(author.bio?.length);
 
   return (
     <PageDielineFullBleedSection sectionClassName="bg-accent" innerClassName="py-16 sm:py-24">
@@ -48,21 +47,20 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
 
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           <div className="flex flex-col gap-3">
+            {author.role && (
+              <p className="text-lg text-muted-foreground">{author.role}</p>
+            )}
             <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               {author.name}
             </h1>
-            {subtitle && (
-              <p className="text-lg text-muted-foreground">{subtitle}</p>
+            {author.experience && (
+              <p className="text-lg text-muted-foreground">{author.experience}</p>
             )}
           </div>
 
           {(hasBio || socialLinks.length > 0) && (
             <div className="flex w-full flex-col gap-6 border-t border-dashed border-border pt-6">
-              {author.shortBio?.trim() ? (
-                <p className="max-w-3xl text-lg leading-7 text-muted-foreground">
-                  {author.shortBio}
-                </p>
-              ) : author.bio?.length ? (
+              {author.bio?.length ? (
                 <PortableText
                   value={author.bio}
                   className="max-w-3xl text-lg leading-7 text-muted-foreground"

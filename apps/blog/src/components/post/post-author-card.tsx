@@ -12,7 +12,7 @@ export type PostAuthor = {
   slug?: string | null;
   photo?: unknown;
   role?: string;
-  tagline?: string;
+  experience?: string;
   shortBio?: string;
 };
 
@@ -32,7 +32,7 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
   if (!name) return null;
 
   const photoUrl = sanityImageUrl(author?.photo, 128);
-  const bio = author?.shortBio?.trim() || author?.tagline?.trim();
+  const bio = author?.shortBio?.trim() || author?.experience?.trim();
 
   return (
     <div className="flex flex-col gap-4">
