@@ -1,6 +1,6 @@
 name: Branch name
 
-# Enforces the branch naming standard: feat/… | fix/… | chore/…
+# Enforces the branch naming standard: feat/… | feature/… | fix/… | chore/…
 # (a PROD-#### Jira key in the description is recommended, e.g. feat/PROD-1957-algolia-search).
 # The `staging` promotion branch is exempt (it PRs into main).
 # Required status check to select on staging + main: "Validate branch name".
@@ -27,11 +27,11 @@ jobs:
             echo "OK: staging promotion branch."
             exit 0
           fi
-          # Require feat/ fix/ chore/ prefix with a non-empty description.
-          if echo "$HEAD_REF" | grep -Eq '^(feat|fix|chore)/.+'; then
+          # Require feat/ feature/ fix/ chore/ prefix with a non-empty description.
+          if echo "$HEAD_REF" | grep -Eq '^(feat|feature|fix|chore)/.+'; then
             echo "OK: '$HEAD_REF' matches the naming standard."
           else
-            echo "::error::Branch '$HEAD_REF' must start with feat/ , fix/ , or chore/ ."
-            echo "Examples: feat/PROD-1957-algolia-search , fix/blog-toc-card , chore/ci-branch-flow"
+            echo "::error::Branch '$HEAD_REF' must start with feat/ , feature/ , fix/ , or chore/ ."
+            echo "Examples: feat/PROD-1957-algolia-search , feature/newsletter-zoho , fix/blog-toc-card , chore/ci-branch-flow"
             exit 1
           fi
