@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown";
-  if (rateLimited(ip)) {
+  if (ip !== "unknown" && rateLimited(ip)) {
     return NextResponse.json(
       { message: "Too many attempts. Please try again shortly." },
       { status: 429 },
