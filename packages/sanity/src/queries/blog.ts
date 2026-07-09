@@ -22,7 +22,7 @@ export const READING_TIME_WPM = 238;
 
 export const READING_TIME_MINUTES_PROJECTION = /* groq */ `"readingTimeMinutes": round(length(pt::text(body)) / 5 / ${READING_TIME_WPM})`;
 
-export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && language == $language] | order(title asc){
+export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && (language == $language || !defined(language))] | order(title asc){
   _id,
   title,
   navLabel,
@@ -40,7 +40,7 @@ export const BLOG_NOT_FOUND_PAGE_QUERY = /* groq */ `*[_type == "blogPage" && _i
 
 /** Fallback topics when no 404 topics are curated — newest/alphabetical topics with a slug. */
 export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
-  _type == "blogTag" && defined(slug.current) && language == $language
+  _type == "blogTag" && defined(slug.current) && (language == $language || !defined(language))
 ] | order(title asc)[0...6]{
   _id,
   title,
@@ -74,6 +74,22 @@ const POST_CARD_FIELDS = /* groq */ `{
   "authorName": author->name,
   "authorImageUrl": author->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
+}`;
+
+const VIDEO_POST_FIELDS = /* groq */ `{
+  _id,
+  title,
+  description,
+  publishedAt,
+  sourceType,
+  platform,
+  externalUrl,
+  duration,
+  "videoFileUrl": videoFile.asset->url,
+  thumbnail {
+    ...,
+    "alt": coalesce(alt, asset->altText)
+  }
 }`;
 
 const TOPIC_GROUP_PROJECTION = /* groq */ `{
@@ -115,8 +131,15 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     "slug": slug.current,
     photo,
     role,
-    tagline,
-    shortBio
+    experience,
+    shortBio,
+    authorType,
+    "bioText": pt::text(bio),
+    socialLinks[]{
+      platform,
+      url,
+      label
+    }
   },
   tldr,
   "tldrText": pt::text(tldr),
@@ -129,6 +152,76 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       link,
       linkNofollow,
       asset
+    },
+    _type == "bodyQuote" => {
+      _key,
+      _type,
+      quote,
+      attribution
+    },
+    _type == "bodyGallery" => {
+      _key,
+      _type,
+      caption,
+      aspectRatio,
+      images[]{
+        _key,
+        alt,
+        asset
+      }
+    },
+    _type == "bodyTable" => {
+      _key,
+      _type,
+      variant,
+      columns,
+      caption,
+      rows[]{
+        _key,
+        cells
+      }
+    },
+    _type == "bodyEmbed" => {
+      _key,
+      _type,
+      url,
+      title,
+      sizing,
+      height,
+      width,
+      caption
+    },
+    _type == "bodyVideo" => {
+      _key,
+      _type,
+      url,
+      title,
+      caption,
+      poster
+    },
+    _type == "bodyStatStack" => {
+      _key,
+      _type,
+      source,
+      stats[]{
+        _key,
+        value,
+        label
+      }
+    },
+    _type == "bodyBarChart" => {
+      _key,
+      _type,
+      title,
+      xAxisLabel,
+      yAxisLabel,
+      source,
+      data[]{
+        _key,
+        label,
+        value,
+        highlight
+      }
     },
     _type == "bodyCallout" => {
       _key,
@@ -193,7 +286,7 @@ export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
 
 /** CMS-pinned hero post from the homepage page builder (`postFeaturedRow.featuredPost`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
-  (_type == "blogPage" && _id == $homePageId && language == $language)
+  (_type == "blogPage" && _id == $homePageId && (language == $language || !defined(language)))
   || (_type == "blogHomePage" && $language == "en")
 ][0].pageBuilder[_type == "postFeaturedRow"][0].featuredPost->${POST_CARD_FIELDS}`;
 
@@ -255,9 +348,17 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     heading,
     "posts": posts[]->${POST_CARD_FIELDS}
   },
-  _type == "tagStrip" => {
+  _type == "topicStrip" || _type == "tagStrip" => {
     heading,
-    "tags": tags[]->{ _id, title, "slug": slug.current }
+    "topics": coalesce(topics, tags)[]->{ _id, title, "slug": slug.current }
+  },
+  _type == "featuredVideos" => {
+    heading,
+    channelCtaLabel,
+    channelCtaUrl,
+    playbackMode,
+    "featuredVideo": featuredVideo->${VIDEO_POST_FIELDS},
+    "videos": videos[]->${VIDEO_POST_FIELDS}
   },
   _type == "ctaNewsletter" => {
     heading,
@@ -339,7 +440,7 @@ const BLOG_TOPICS_PAGE_TOPICS_PROJECTION = /* groq */ `"topics": topics[]->{
  * `blogHomePage` documents are still read until migrated.
  */
 export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
-  (_type == "blogPage" && _id == $homePageId && language == $language)
+  (_type == "blogPage" && _id == $homePageId && (language == $language || !defined(language)))
   || (_type == "blogHomePage" && $language == "en")
 ][0]{
   title,
@@ -361,7 +462,7 @@ export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
  * array (`blogPage` with `pageRole == "topics"`, id `blogTopicsPage`).
  */
 export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
-  _type == "blogPage" && _id == $topicsPageId && language == $language
+  _type == "blogPage" && _id == $topicsPageId && (language == $language || !defined(language))
 ][0]{
   title,
   description,
@@ -381,7 +482,7 @@ export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
 /** Published landing/static page by slug (ADR-009). */
 export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "blogPage"
-  && language == $language
+  && (language == $language || !defined(language))
   && pageRole in ["landing", "static"]
   && slug.current == $slug
   && defined(publishedAt)
@@ -490,6 +591,25 @@ export const BLOG_CATEGORY_FEATURED_POSTS_QUERY = /* groq */ `*[
   && publishedAt <= now()
 ] | order(publishedAt desc)[0...4]${POST_CARD_FIELDS}`;
 
+/**
+ * Recommended topics for the category page (PROD-1951): the tag list of the
+ * most-recently-modified published post in the category. Ordered by
+ * coalesce(lastModified, _updatedAt) desc so it tracks the freshest editorial
+ * signal; returns that post's tags (id, title, slug) or null when none.
+ */
+export const BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY = /* groq */ `*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && category->slug.current == $categorySlug
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(coalesce(lastModified, _updatedAt) desc)[0].tags[]->{
+  _id,
+  title,
+  "slug": slug.current
+}`;
+
 export const BLOG_CATEGORY_POSTS_COUNT_QUERY = /* groq */ `count(*[
   ${CATEGORY_POST_FILTER}
 ])`;
@@ -509,7 +629,7 @@ export const BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
 /** Tags used by published posts in a category (sidebar facets). */
 export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
   _type == "blogTag"
-  && language == $language
+  && (language == $language || !defined(language))
   && _id in *[
     _type == "post"
   && (!defined(language) || language == $language)
@@ -606,7 +726,7 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
 /** Industry-axis blog tags for the home "Browse by Industries" strip (link to /topics/{slug}). */
 export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
-  && language == $language
+  && (language == $language || !defined(language))
   && topicGroup->slug.current == "industry"
   && defined(slug.current)
 ] | order(title asc){
@@ -676,7 +796,7 @@ export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
 // ── Topic archives (PROD-1500) — /topics/{slug} ───────────────────────────────
 
 /** Tag landing document by slug. `description` is plain text (not portable text). */
-export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug && language == $language][0]{
+export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug && (language == $language || !defined(language))][0]{
   _id,
   title,
   "slug": slug.current,
@@ -698,7 +818,8 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "defaultOgImageUrl": defaultOgImage.asset->url,
   "organizationLogoUrl": organization.logo.asset->url,
   robotsTxt,
-  llmsTxt
+  llmsTxt,
+  additionalEmbedHosts
 }`;
 
 /** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */
@@ -833,7 +954,7 @@ export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
 /** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by topic group in the sidebar. */
 export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
-  && language == $language
+  && (language == $language || !defined(language))
   && slug.current != $tagSlug
   && _id in *[
     _type == "post"
@@ -873,7 +994,7 @@ export const AUTHOR_BY_SLUG_QUERY = /* groq */ `*[_type == "author" && slug.curr
   name,
   "slug": slug.current,
   role,
-  tagline,
+  experience,
   shortBio,
   authorType,
   bio,

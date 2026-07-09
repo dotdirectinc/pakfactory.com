@@ -2,24 +2,29 @@ import type { ComponentType } from "react";
 import type { PortableTextBlock } from "@portabletext/types";
 
 import type { HomePostCard } from "@/lib/blog-home";
+import type { VideoPostInput } from "@/lib/resolve-video-source";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import { CtaPillars } from "@/components/blocks/cta-pillars";
 import { CtaRfq } from "@/components/blocks/cta-rfq";
+import { FeaturedVideos } from "@/components/blocks/featured-videos";
 import { PostCategoryRow } from "@/components/blocks/post-category-row";
 import { PostFeaturedRow } from "@/components/blocks/post-featured-row";
 import { PostPopularRow } from "@/components/blocks/post-popular-row";
 import { PostSpotlightRow } from "@/components/blocks/post-spotlight-row";
 import { PromoBanner } from "@/components/blocks/promo-banner";
 import { RichTextBand } from "@/components/blocks/rich-text-band";
-import { TagStrip } from "@/components/blocks/tag-strip";
+import { TopicStrip } from "@/components/blocks/topic-strip";
 
 /**
  * Page-builder block registry — the single source of truth that maps a
  * Sanity block `_type` to its React component (ADR-008, ADR-012).
  */
 
-/** One resolved tag pill (from `tags[]->` in the home query). */
-export type BlockTagPill = { _id?: string; title: string; slug: string };
+/** One resolved topic pill (from `topics[]->` in the home query). */
+export type BlockTopicPill = { _id?: string; title: string; slug: string };
+
+/** @deprecated Use BlockTopicPill */
+export type BlockTagPill = BlockTopicPill;
 
 /** One pillar card for the `ctaPillars` block. */
 export type BlockPillar = {
@@ -68,12 +73,23 @@ export type PostSpotlightRowBlock = {
   posts: HomePostCard[];
 } & DielineBorderFields;
 
-export type TagStripBlock = {
-  _type: "tagStrip";
+export type TopicStripBlock = {
+  _type: "topicStrip";
   _key: string;
   heading?: string;
-  tags: BlockTagPill[];
-};
+  topics: BlockTopicPill[];
+} & DielineBorderFields;
+
+export type FeaturedVideosBlock = {
+  _type: "featuredVideos";
+  _key: string;
+  heading?: string;
+  channelCtaLabel?: string;
+  channelCtaUrl?: string;
+  playbackMode?: "newTab" | "dialog";
+  featuredVideo: VideoPostInput | null;
+  videos: VideoPostInput[];
+} & DielineBorderFields;
 
 export type CtaNewsletterBlock = {
   _type: "ctaNewsletter";
@@ -119,7 +135,8 @@ export type PageBuilderBlock =
   | PostCategoryRowBlock
   | PostPopularRowBlock
   | PostSpotlightRowBlock
-  | TagStripBlock
+  | TopicStripBlock
+  | FeaturedVideosBlock
   | CtaNewsletterBlock
   | CtaRfqBlock
   | CtaPillarsBlock
@@ -133,7 +150,8 @@ export const BLOCK_COMPONENTS = {
   postCategoryRow: PostCategoryRow,
   postPopularRow: PostPopularRow,
   postSpotlightRow: PostSpotlightRow,
-  tagStrip: TagStrip,
+  topicStrip: TopicStrip,
+  featuredVideos: FeaturedVideos,
   ctaNewsletter: CtaNewsletter,
   ctaRfq: CtaRfq,
   ctaPillars: CtaPillars,

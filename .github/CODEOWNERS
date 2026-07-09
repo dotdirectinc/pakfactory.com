@@ -1,0 +1,23 @@
+# CODEOWNERS — auto-requests review from the owning team on matching paths.
+#
+# NOTE: the team below must belong to the SAME GitHub org that owns this repo.
+# The repo remote is github.com/dotdirect/pakfactory.com, but the team you gave is
+# under org "dotdirectinc". If the org handle is actually "dotdirect", change every
+# "@dotdirectinc/developers-admins" to "@dotdirect/developers-admins".
+# (apps/studio-old is intentionally omitted — treated as legacy.)
+
+# Default owner for everything
+*                    @dotdirectinc/developers-admins
+
+# Apps
+/apps/blog/          @dotdirectinc/developers-admins
+/apps/www/           @dotdirectinc/developers-admins
+/apps/studio/        @dotdirectinc/developers-admins
+
+# Packages
+/packages/ui/        @dotdirectinc/developers-admins
+/packages/sanity/    @dotdirectinc/developers-admins
+/packages/seo/       @dotdirectinc/developers-admins
+
+# Serverless functions
+/functions/          @dotdirectinc/developers-admins

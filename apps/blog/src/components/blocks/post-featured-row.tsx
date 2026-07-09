@@ -66,7 +66,7 @@ export function PostFeaturedRow({
                             </p>
                         )}
                     </div>
-                    <div className="border-t border-dashed border-border pt-8 lg:border-t-0 lg:pt-0">
+                    <div className="border-t border-dashed border-border pt-8 lg:pt-4">
                         <PostList
                             posts={latestCards}
                             variant="featuredListItem"

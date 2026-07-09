@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@pakfactory/ui/components/card";
 import type { PostBodyWidget } from "@/lib/blog-post";
+import { externalLinkAttributes } from "@/lib/external-link";
 
 type WidgetProductCardProps = {
   widget: PostBodyWidget;
@@ -28,7 +29,10 @@ export function WidgetProductCard({ widget }: WidgetProductCardProps) {
       {widget.productSlug ? (
         <CardFooter>
           <Button asChild variant="outline">
-            <Link href={`https://www.pakfactory.com/products/${widget.productSlug}`}>
+            <Link
+              href={`https://www.pakfactory.com/products/${widget.productSlug}`}
+              {...externalLinkAttributes(`https://www.pakfactory.com/products/${widget.productSlug}`)}
+            >
               View product
             </Link>
           </Button>

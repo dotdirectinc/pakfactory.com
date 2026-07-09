@@ -243,6 +243,27 @@ export const settings = defineType({
       type: 'string',
       group: 'integrations',
     }),
+    defineField({
+      name: 'additionalEmbedHosts',
+      title: 'Additional embed hosts',
+      type: 'array',
+      group: 'integrations',
+      of: [{ type: 'string' }],
+      description:
+        'Extra domains allowed in the post "Embed" (iframe) widget, on top of the built-in baseline (Zoho, Google Forms/Looker, Typeform, Calendly). Enter a bare host, e.g. "survey.example.com". Admin-managed — this is a security allowlist.',
+      validation: (Rule) =>
+        Rule.unique().custom((hosts?: string[]) => {
+          if (!hosts) return true
+          const bad = hosts.find(
+            (h) =>
+              typeof h !== 'string' ||
+              !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(h.trim()),
+          )
+          return bad
+            ? `"${bad}" is not a valid host — use a bare domain like survey.example.com`
+            : true
+        }),
+    }),
   ],
   preview: {
     prepare() {

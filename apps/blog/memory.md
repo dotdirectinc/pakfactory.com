@@ -70,7 +70,7 @@ For each type, project the SEO/Social fields and resolve the fallback chain in `
 - [x] **`post`** — metadata via `buildDocMetadata` in `blog-post.ts`; GROQ projects SEO/social + `lastModified`. Tier 1 JSON-LD: `dateModified`, `NewsArticle` for `packaging-news`. Remaining PROD-1502: `tldr`, `relatedPosts`, FAQ UI.
 - [x] **`blogCategory`** — `buildCategoryArchiveMetadata` + GROQ SEO/social + `bannerImageUrl`.
 - [x] **`blogTag`** — `buildTagArchiveMetadata` + GROQ SEO/social; robots respect `allowIndex` default-off via `getTagListingRobots`.
-- [x] **`author`** — `buildAuthorMetadata`; GROQ `socialLinks`/`tagline`/`shortBio`; `author-jsonld.ts` `sameAs` + `author-header.tsx` updated.
+- [x] **`author`** — `buildAuthorMetadata`; GROQ `socialLinks`/`experience`/`shortBio`; `author-jsonld.ts` Long Bio `description` + `worksFor` (staff) + `sameAs`; `author-header.tsx` role above name, experience below, Long Bio on profile page.
 - [x] **`blogPage`** — `buildBlogPageMetadata`; home singleton SEO via `buildBlogHomeMetadata` + `srHeading` (`sr-only` H1 on `/`).
 
 Shared helper: [`src/lib/resolve-seo.ts`](./src/lib/resolve-seo.ts) (`buildDocMetadata`, `resolveCanonicalUrl`, `resolveDocRobots`). Global OG fallback: [`src/lib/blog-global-settings.ts`](./src/lib/blog-global-settings.ts).
@@ -923,7 +923,7 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 | Page                 | `src/app/author/[slug]/page.tsx` — indexable, Person JSON-LD, SSR first 12                                                       |
 | Load More API        | `src/app/api/author/[slug]/posts/route.ts` — `?offset=`, 12/page, server-resolved `imageUrl`                                     |
 | Data                 | `src/lib/blog-author.ts` (`AUTHOR_PAGE_SIZE=12`, `fetchAuthorPostsPage`, client-safe `AuthorPostCard`)                           |
-| JSON-LD              | `src/lib/author-jsonld.ts` — `Person` + `sameAs`→LinkedIn + breadcrumb; `authorPersonId(slug)` shared                            |
+| JSON-LD              | `src/lib/author-jsonld.ts` — `Person` + Long Bio `description` + `worksFor` (staff) + `sameAs` + breadcrumb; `authorPersonId(slug)` shared |
 | PT renderer          | `_components/portable-text.tsx` (`@portabletext/react`, added as blog dep)                                                       |
 | UI                   | `_components/author-header.tsx` (photo/role/H1/bio/credentials/LinkedIn), `_components/author-posts-loader.tsx` (`"use client"`) |
 | Person schema fields | `packages/seo` `person()` extended: `jobTitle`, `description`, `sameAs[]`                                                        |

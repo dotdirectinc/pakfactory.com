@@ -14,6 +14,7 @@ import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
+import { CHANNELS } from './lib/channels'
 import {
   adminStructure,
   blogStructure,
@@ -118,9 +119,22 @@ const blogTemplates: Template[] = [
   },
 ]
 
+// One create-template per channel so "New Video" can be preset to a surface.
+const videoTemplates: Template[] = CHANNELS.map((c) => ({
+  id: `videoPost-${c.id}`,
+  title: `Video (${c.title})`,
+  schemaType: 'videoPost',
+  value: { channels: [c.id] },
+}))
+
 const schema = {
   types: schemaTypes,
-  templates: (prev: Template[]) => [...prev, ...productTemplates, ...blogTemplates],
+  templates: (prev: Template[]) => [
+    ...prev,
+    ...productTemplates,
+    ...blogTemplates,
+    ...videoTemplates,
+  ],
 }
 
 const blogI18nPlugin = documentInternationalization({
@@ -162,15 +176,27 @@ const documentActions = (
   return actions
 }
 
-const blogNewDocumentOptions = (
-  prev: { templateId: string }[],
-  { creationContext }: { creationContext: { type: string } },
-) => {
-  if (creationContext.type === 'structure') {
-    return prev.filter((item) => item.templateId !== 'blogCategory')
+// Per-workspace "create new" options. In a channel lens, video creation is
+// preset to that channel (only its `videoPost-<channel>` template is offered);
+// Global (channel = null) offers all templates so the author picks channels.
+const makeNewDocumentOptions =
+  (channel: string | null) =>
+  (
+    prev: { templateId: string }[],
+    { creationContext }: { creationContext: { type: string } },
+  ) => {
+    if (creationContext.type !== 'structure') return prev
+    let opts = prev.filter((item) => item.templateId !== 'blogCategory')
+    if (channel) {
+      // keep only this channel's video template; drop the bare + other channels'
+      opts = opts.filter(
+        (item) =>
+          !item.templateId.startsWith('videoPost') ||
+          item.templateId === `videoPost-${channel}`,
+      )
+    }
+    return opts
   }
-  return prev
-}
 
 export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
@@ -181,7 +207,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    document: { actions: documentActions, newDocumentOptions: blogNewDocumentOptions },
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
       blogI18nPlugin,
@@ -198,7 +224,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    document: { actions: documentActions, newDocumentOptions: blogNewDocumentOptions },
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions('blog') },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
       blogI18nPlugin,
@@ -223,7 +249,7 @@ export default defineConfig([
   // ── Website — marketing / web team ────────────────────────────────────────
   {
     name: 'website',
-    title: 'Website',
+    title: 'Marketing Website',
     basePath: '/website',
     projectId,
     dataset,

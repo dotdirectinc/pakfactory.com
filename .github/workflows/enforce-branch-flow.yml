@@ -1,0 +1,30 @@
+name: Enforce branch flow
+
+# Guards feature -> staging -> main.
+# A PR into `main` is only allowed when its source (head) branch is `staging`.
+# Any other source (a feature branch trying to skip staging) fails this check.
+# Required status check to select on `main`: "Only staging can merge into main".
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  only-staging-into-main:
+    name: Only staging can merge into main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "staging" ]; then
+            echo "::error::PRs into 'main' must come from 'staging' (got '$HEAD_REF')."
+            echo "Merge your feature branch into 'staging' first, then open a staging -> main PR."
+            exit 1
+          fi
+          echo "OK: PR into main is from 'staging'."
