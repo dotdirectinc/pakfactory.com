@@ -52,23 +52,33 @@ Zoho CRM is **not** required for the newsletter.
 | `NEWSLETTER_WEBHOOK_URL` | apps/blog (server) | The n8n webhook URL. Absent → route returns 503 "not configured". |
 | `NEWSLETTER_WEBHOOK_SECRET` | apps/blog + n8n | Shared secret; n8n verifies the `x-webhook-secret` header. |
 
-## n8n workflow spec (to build)
+## n8n workflow (built)
 
-1. **Webhook** node (POST) — verify `x-webhook-secret` matches; reject otherwise.
-2. **Guard** — re-validate email; optional dedupe (skip if already a confirmed
-   contact via Zoho `contact` lookup).
-3. **Zoho Campaigns — List Subscribe** (HTTP request or Zoho node):
-   - Endpoint: `POST https://campaigns.zoho.com/api/v1.1/json/listsubscribe`
-   - Auth: Zoho OAuth (Campaigns scope) stored in n8n credentials.
-   - Params: `listkey=<MAILING_LIST_KEY>`, `contactinfo={"Contact Email":"<email>"}`,
-     and **double opt-in enabled on the list** so Zoho sends the confirmation.
-   - Pass source/consent fields into custom Campaigns fields for the audit trail.
-4. **Respond** 200 on success (the route treats non-2xx as a 502 to the user).
-5. (Optional, later) parallel branch: upsert a Zoho CRM contact tagged
+**Workflow:** "Newsletter → Zoho Campaigns" · id `NsitN9JW9ReJx5IJ` · Pakfactory
+project · https://pakfactory.app.n8n.cloud/workflow/NsitN9JW9ReJx5IJ
+
+Flow: **Webhook** (POST `/webhook/newsletter-subscribe`) → **Verify Secret** (IF
+on the `x-webhook-secret` header) → **Zoho Campaigns Subscribe** (HTTP
+`POST https://campaigns.zoho.com/api/v1.1/json/listsubscribe`, Zoho OAuth2 cred,
+`listkey` + `contactinfo={"Contact Email": <email>}`) → **Respond Success** 200;
+the false branch → **Respond Unauthorized** 401 (Zoho never called).
+
+Structurally tested (nodes pinned) — happy path routes to 200, wrong secret
+routes to 401 without calling Zoho. The real Zoho call is untested until the
+credential + list key are set.
+
+**Go-live checklist (ops — not code):**
+1. Attach the **Zoho OAuth2 credential** to the HTTP node; confirm its scope
+   includes **Zoho Campaigns** (`ZohoCampaigns.contact.CREATE`).
+2. Replace `REPLACE_WITH_ZOHO_LISTKEY` with the real mailing-list key.
+3. Replace `REPLACE_WITH_SHARED_SECRET` in Verify Secret; set the same value as
+   `NEWSLETTER_WEBHOOK_SECRET` in the blog app env.
+4. Confirm the Zoho **region** domain (`.com` vs `.eu`/`.in`/`.ca`/`.com.au`).
+5. Enable **double opt-in** on the list in Zoho Campaigns.
+6. **Activate** the workflow; set its production webhook URL as
+   `NEWSLETTER_WEBHOOK_URL` in the blog app env.
+7. (Optional, later) parallel branch: upsert a Zoho CRM contact tagged
    `source: newsletter` if sales needs visibility.
-
-Confirm the **mailing list key** and that **double opt-in** is enabled on that
-list in Zoho Campaigns before going live.
 
 ## Terms of the data journey
 
