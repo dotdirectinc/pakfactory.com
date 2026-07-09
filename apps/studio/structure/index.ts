@@ -167,22 +167,22 @@ function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     if (BLOG_STUDIO_LANDING_PAGES) {
         pageItems.push(
             S.listItem()
-                .title('Landing pages')
+                .title('Landing Page')
                 .icon(DocumentsIcon)
                 .schemaType('blogPage')
                 .child(
                     S.documentTypeList('blogPage')
-                        .title('Landing pages')
+                        .title('Landing Page')
                         .filter('_type == "blogPage" && pageRole == "landing"')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
             S.listItem()
-                .title('Static pages')
+                .title('Static Page')
                 .icon(DocumentTextIcon)
                 .schemaType('blogPage')
                 .child(
                     S.documentTypeList('blogPage')
-                        .title('Static pages')
+                        .title('Static Page')
                         .filter('_type == "blogPage" && pageRole == "static"')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
@@ -190,9 +190,9 @@ function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     }
 
     return S.listItem()
-        .title('Pages')
+        .title('Page')
         .icon(DocumentsIcon)
-        .child(S.list().title('Pages').items(pageItems));
+        .child(S.list().title('Page').items(pageItems));
 }
 
 /** Topics in a CMS group — panel 3 when a group row is selected. */
@@ -202,7 +202,7 @@ function topicEntriesForGroup(
     title: string,
 ) {
     return S.documentList()
-        .title(`${title} Topics`)
+        .title(`${title} Topic`)
         .schemaType('blogTag')
         .filter('_type == "blogTag" && topicGroup._ref == $groupId')
         .params({groupId})
@@ -226,7 +226,7 @@ function topicsDeskItem(
     context: StructureResolverContext,
 ): ListItemBuilder {
     return S.listItem()
-        .title('Topics')
+        .title('Topic')
         .icon(TagIcon)
         .child(async () => {
             const client = context.getClient({apiVersion: '2024-01-01'});
@@ -317,60 +317,60 @@ export function blogItems(
 ): (ListItemBuilder | DividerBuilder)[] {
     return [
         S.listItem()
-            .title('Posts')
+            .title('Post')
             .icon(DocumentTextIcon)
             .schemaType('post')
             .child(
                 S.documentTypeList('post')
-                    .title('Posts')
+                    .title('Post')
                     .defaultOrdering([
                         {field: 'publishedAt', direction: 'desc'},
                     ]),
             ),
 
         S.listItem()
-            .title('Videos')
-            .icon(PlayIcon)
-            .schemaType('videoPost')
-            .child(
-                S.documentTypeList('videoPost')
-                    .title('Video posts')
-                    .defaultOrdering([
-                        {field: 'publishedAt', direction: 'desc'},
-                    ]),
-            ),
-
-        S.listItem()
-            .title('Categories')
+            .title('Category')
             .icon(FolderIcon)
             .schemaType('blogCategory')
             .child(
                 S.documentTypeList('blogCategory')
-                    .title('Categories')
+                    .title('Category')
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
-
-        S.listItem()
-            .title('Authors')
-            .icon(UserIcon)
-            .schemaType('author')
-            .child(S.documentTypeList('author').title('Authors')),
 
         topicsDeskItem(S, context),
 
         S.listItem()
-            .title('Widgets')
+            .title('Author')
+            .icon(UserIcon)
+            .schemaType('author')
+            .child(S.documentTypeList('author').title('Author')),
+
+        S.listItem()
+            .title('Video')
+            .icon(PlayIcon)
+            .schemaType('videoPost')
+            .child(
+                S.documentTypeList('videoPost')
+                    .title('Video Post')
+                    .defaultOrdering([
+                        {field: 'publishedAt', direction: 'desc'},
+                    ]),
+            ),
+
+        S.listItem()
+            .title('Widget')
             .icon(ComponentIcon)
             .child(
                 S.list()
-                    .title('Widgets')
+                    .title('Widget')
                     .items([
                         S.listItem()
-                            .title('Blocks')
+                            .title('Block')
                             .schemaType('contentWidget')
                             .child(
                                 S.documentTypeList('contentWidget')
-                                    .title('Blocks')
+                                    .title('Block')
                                     .filter('widgetType == "cta"')
                                     .defaultOrdering([
                                         {
@@ -381,11 +381,11 @@ export function blogItems(
                             ),
 
                         S.listItem()
-                            .title('Product Cards')
+                            .title('Product Card')
                             .schemaType('contentWidget')
                             .child(
                                 S.documentTypeList('contentWidget')
-                                    .title('Product Cards')
+                                    .title('Product Card')
                                     .filter('widgetType == "product-card"')
                                     .defaultOrdering([
                                         {
@@ -398,11 +398,11 @@ export function blogItems(
                         S.divider(),
 
                         S.listItem()
-                            .title('All Widgets')
+                            .title('All')
                             .schemaType('contentWidget')
                             .child(
                                 S.documentTypeList('contentWidget')
-                                    .title('All Widgets')
+                                    .title('All')
                                     .defaultOrdering([
                                         {field: 'widgetType', direction: 'asc'},
                                         {
@@ -1149,12 +1149,12 @@ export function resourcesItems(
                     .title('Blog')
                     .items([
                         S.listItem()
-                            .title('Posts')
+                            .title('Post')
                             .icon(DocumentTextIcon)
                             .schemaType('post')
                             .child(
                                 S.documentTypeList('post')
-                                    .title('Posts')
+                                    .title('Post')
                                     .defaultOrdering([
                                         {
                                             field: 'publishedAt',
@@ -1163,39 +1163,39 @@ export function resourcesItems(
                                     ]),
                             ),
                         S.listItem()
-                            .title('Categories')
+                            .title('Category')
                             .icon(FolderIcon)
                             .schemaType('blogCategory')
                             .child(
                                 S.documentTypeList('blogCategory')
-                                    .title('Categories')
+                                    .title('Category')
                                     .defaultOrdering([
                                         {field: 'title', direction: 'asc'},
                                     ]),
                             ),
                         S.listItem()
-                            .title('Authors')
-                            .icon(UserIcon)
-                            .schemaType('author')
-                            .child(
-                                S.documentTypeList('author').title('Authors'),
-                            ),
-                        S.listItem()
-                            .title('Topics')
+                            .title('Topic')
                             .icon(TagIcon)
                             .child(
                                 S.documentTypeList('blogTag')
-                                    .title('Topics')
+                                    .title('Topic')
                                     .defaultOrdering([
                                         {field: 'title', direction: 'asc'},
                                     ]),
                             ),
                         S.listItem()
-                            .title('Widgets')
+                            .title('Author')
+                            .icon(UserIcon)
+                            .schemaType('author')
+                            .child(
+                                S.documentTypeList('author').title('Author'),
+                            ),
+                        S.listItem()
+                            .title('Widget')
                             .icon(ComponentIcon)
                             .child(
                                 S.documentTypeList('contentWidget').title(
-                                    'Widgets',
+                                    'Widget',
                                 ),
                             ),
                     ]),

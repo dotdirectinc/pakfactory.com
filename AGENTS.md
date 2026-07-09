@@ -83,6 +83,8 @@ Editorial documents (posts, pages, singletons, navigation, etc.) live in the **S
 - Wire desk structure, document actions, GROQ in [`packages/sanity/`](packages/sanity/), and front-end rendering
 - **Read** Sanity via GROQ, client fetch, or MCP **query** tools for debugging
 
+**Naming (binding — ADR-014):** document type `name`s (`_type`), schema `title`s, and Studio desk labels are all **singular** (`post` / "Post"; camelCase type names; arrays keep natural plural field names like `tags`). Never rename an existing `_type` — that is a content migration, not a rename; plan it as its own ticket. See [`docs/adr/0014-sanity-studio-naming.md`](docs/adr/0014-sanity-studio-naming.md).
+
 **`blogPage` pinned singletons** (`blogHomePage`, `blogTopicsPage`, `blogNotFoundPage`, `blogSearchPage`): `pageRole` is implied by document id; seeds must set explicit `pageRole`. Ops and troubleshooting: [`apps/blog/memory.md`](apps/blog/memory.md) § blogPage singleton — pageRole contract.
 
 **Agents must never:**
@@ -148,7 +150,7 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                                                            | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
 | **ADR-013 — Shared core vs feature composition** | Extract shared UI as controlled, props-only `ui/` primitives; features own data/URL wiring in `modules/` controllers. Never import one feature's component into another, and never fork a feature component — extract the shared core. | [`docs/adr/0013-shared-core-vs-feature-composition.md`](docs/adr/0013-shared-core-vs-feature-composition.md) |
 
-> ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) are listed in the register linked above.
+> ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) and **ADR-014 (Sanity naming — singular types/titles/desk labels; `_type` renames are content migrations)** are listed in the register linked above.
 
 ## JIRA defaults (Product / Blog 3.0)
 
