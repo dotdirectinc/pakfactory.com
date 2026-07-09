@@ -158,7 +158,7 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | ----------------- | ---------------------------------------------------------------------------------- |
 | **Project key**   | `PROD`                                                                             |
 | **Issue prefix**  | `PROD-123`                                                                         |
-| **Branches**      | `feat/PROD-123-short-slug` or `feature/PROD-123-short-slug`, `fix/PROD-123-short-slug`, `chore/short-slug` |
+| **Branches**      | `feat/PROD-123-short-slug` or `feature/PROD-123-short-slug`, `fix/PROD-123-short-slug`, `chore/PROD-123-short-slug` (Jira key recommended) |
 | **Commits**       | `PROD-123: summary` or trailer `Refs: PROD-123`                                    |
 | **PR titles**     | `[PROD-123] Short description`                                                     |
 | **Blog 3.0 epic** | [PROD-1480](https://dotdirect.atlassian.net/browse/PROD-1480) — tech prerequisites |
