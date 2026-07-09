@@ -1105,7 +1105,7 @@ export function coreEntitiesItems(
                                       .child(
                                           S.documentTypeList('caseStudy')
                                               .title('Case Studies')
-                                              .filter('status == "published" || status == "draft" || status == "scheduled" || !defined(status)')
+                                              .filter('_type == "caseStudy" && (status == "published" || status == "draft" || status == "scheduled" || !defined(status))')
                                               .defaultOrdering([
                                                   {field: 'publishedAt', direction: 'desc'},
                                               ]),
