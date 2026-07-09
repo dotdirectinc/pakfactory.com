@@ -1297,47 +1297,6 @@ export function resourcesItems(
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
 
-        // ── Clients ───────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Clients')
-            .icon(UserIcon)
-            .schemaType('client')
-            .child(
-                S.documentTypeList('client')
-                    .title('Clients')
-                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
-            ),
-
-        // ── Case Studies ──────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Case Studies')
-            .icon(CaseIcon)
-            .child(
-                S.list()
-                    .title('Case Studies')
-                    .items([
-                        S.listItem()
-                            .title('Studies')
-                            .icon(CaseIcon)
-                            .schemaType('caseStudy')
-                            .child(
-                                S.documentTypeList('caseStudy')
-                                    .title('Case Studies')
-                                    .defaultOrdering([
-                                        {field: 'publishedAt', direction: 'desc'},
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Page Settings')
-                            .icon(CogIcon)
-                            .child(
-                                S.editor()
-                                    .id('caseStudiesPage')
-                                    .schemaType('caseStudiesPage')
-                                    .documentId('caseStudiesPage'),
-                            ),
-                    ]),
-            ),
     ];
 }
 
@@ -1535,7 +1494,7 @@ export const adminStructure = (S: StructureBuilder) =>
     S.list()
         .title('PakFactory')
         .items([
-            ...coreEntitiesItems(S, {hideCaseStudies: true}),
+            ...coreEntitiesItems(S),
             ...resourcesItems(S),
             globalNavigationItem(S),
             ...settingsItems(S, {blog: true, solutions: true}),
