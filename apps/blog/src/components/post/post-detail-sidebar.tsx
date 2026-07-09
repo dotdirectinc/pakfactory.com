@@ -13,7 +13,6 @@ type PostDetailSidebarProps = {
 };
 
 const dividerBlock = "border-b border-dashed border-border pb-8";
-const dividerBlockNoPaddingBottom = "border-b border-dashed border-border";
 
 /** Figma `blog_detail-page_sidebar` — author, table of contents, share, Ask AI. */
 export function PostDetailSidebar({
@@ -33,11 +32,7 @@ export function PostDetailSidebar({
       {/* Sticky from the table of contents down — this block stays in view once
           the author card above has scrolled past. */}
       <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
-        {toc.length > 0 ? (
-          <div className={dividerBlockNoPaddingBottom}>
-            <PostTableOfContents entries={toc} />
-          </div>
-        ) : null}
+        {toc.length > 0 ? <PostTableOfContents entries={toc} /> : null}
 
         <div className={dividerBlock}>
           <PostShareButtons url={shareUrl} title={shareTitle} />

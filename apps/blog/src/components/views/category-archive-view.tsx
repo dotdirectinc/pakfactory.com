@@ -1,9 +1,9 @@
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { CategoryListingRow } from "@/components/blocks/category-listing-row";
-import { CtaRfq } from "@/components/blocks/cta-rfq";
+import { CategoryRecommendedTopics } from "@/components/blocks/category-recommended-topics";
 import { PostCategoryFeaturedRow } from "@/components/blocks/post-category-featured-row";
-import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { PageHeader } from "@/components/modules/page-header";
+import { WidgetNewsletter } from "@/components/modules/widget/widget-newsletter";
 import { CategoryLandingLayout } from "@/components/views/category-landing-layout";
 import { pagedHeading } from "@/lib/archive-format";
 import { buildCategoryArchiveJsonLd } from "@/lib/category-archive-jsonld";
@@ -45,11 +45,14 @@ export function CategoryArchiveView({
       }
     >
       {data.pageNumber === 1 ? (
-        <PostCategoryFeaturedRow
-          heading={FEATURED_HEADING}
-          posts={data.featuredPosts}
-          categorySlug={data.category.slug}
-        />
+        <>
+          <PostCategoryFeaturedRow
+            heading={FEATURED_HEADING}
+            posts={data.featuredPosts}
+            categorySlug={data.category.slug}
+          />
+          <CategoryRecommendedTopics topics={data.recommendedTopics} />
+        </>
       ) : null}
       <CategoryListingRow
         posts={data.posts}
@@ -58,9 +61,7 @@ export function CategoryArchiveView({
         categorySlug={data.category.slug}
         filters={data.filters}
       />
-      <PageDielineSection innerClassName="py-10">
-        <CtaRfq />
-      </PageDielineSection>
+      <WidgetNewsletter />
     </CategoryLandingLayout>
   );
 }
