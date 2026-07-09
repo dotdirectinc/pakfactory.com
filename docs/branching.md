@@ -3,9 +3,9 @@
 ## The flow
 
 ```
-feat/… ─┐
-fix/…  ─┼─► PR ─► staging ─► PR ─► main
-chore/…─┘
+feat/… or feature/… ─┐
+fix/…               ─┼─► PR ─► staging ─► PR ─► main
+chore/…             ─┘
 ```
 
 - **Feature branches** are cut from `staging` and merged back into `staging` via PR.
@@ -17,15 +17,18 @@ chore/…─┘
 
 Branches must start with one of:
 
-| Prefix | For |
-|---|---|
-| `feat/`, `feature/`, `features/` | new feature or enhancement |
-| `fix/`, `bugfix/`, `hotfix/` | bug fix |
-| `chore/` | tooling, CI, docs, deps, refactors |
+| Prefix                           | For                                |
+| -------------------------------- | ---------------------------------- |
+| `feat/`, `feature/`, `features/` | new feature or enhancement         |
+| `fix/`, `bugfix/`, `hotfix/`     | bug fix                            |
+| `chore/`                         | tooling, CI, docs, deps, refactors |
+
+Prefer `feat/` for new task branches, but keep `feature/` valid for existing long-lived
+branches such as `feature/blog` and `feature/sanity-studio-ux`.
 
 Include the Jira key where there is one: `feat/PROD-1957-algolia-search`,
-`fix/blog-toc-card`, `chore/ci-branch-flow`. The **Validate branch name** check enforces the
-prefix on every PR.
+`feature/blog`, `fix/blog-toc-card`, `chore/ci-branch-flow`. The **Validate branch name**
+check enforces the prefix on every PR.
 
 ## Checks that gate a merge
 

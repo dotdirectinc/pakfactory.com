@@ -55,6 +55,6 @@ gh api -X POST repos/dotdirect/pakfactory.com/rulesets --input docs/branch-prote
 | Action | Result |
 |---|---|
 | Direct push to `main` / `staging` | ❌ blocked |
-| `feat/…` → PR into `staging` | ✅ once `ci-success` + branch-name pass |
-| `feat/…` → PR into `main` | ❌ `Only staging can merge into main` fails |
+| `feat/…` or `feature/…` → PR into `staging` | ✅ once `ci-success` + branch-name pass |
+| `feat/…` or `feature/…` → PR into `main` | ❌ `Only staging can merge into main` fails |
 | `staging` → PR into `main` | ✅ once checks pass |
