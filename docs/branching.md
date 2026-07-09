@@ -3,9 +3,9 @@
 ## The flow
 
 ```
-feat/… ─┐
-fix/…  ─┼─► PR ─► staging ─► PR ─► main
-chore/…─┘
+feat/… or feature/… ─┐
+fix/…               ─┼─► PR ─► staging ─► PR ─► main
+chore/…             ─┘
 ```
 
 - **Feature branches** are cut from `staging` and merged back into `staging` via PR.
@@ -17,20 +17,24 @@ chore/…─┘
 
 Branches must start with one of:
 
-| Prefix | For |
-|---|---|
-| `feat/` | new feature or enhancement |
-| `fix/` | bug fix |
-| `chore/` | tooling, CI, docs, deps, refactors |
+| Prefix                           | For                                |
+| -------------------------------- | ---------------------------------- |
+| `feat/`, `feature/`, `features/` | new feature or enhancement         |
+| `fix/`, `bugfix/`, `hotfix/`     | bug fix                            |
+| `chore/`                         | tooling, CI, docs, deps, refactors |
+
+Prefer `feat/` for new task branches, but keep `feature/` valid for existing long-lived
+branches such as `feature/blog` and `feature/sanity-studio-ux`.
 
 Include the Jira key where there is one: `feat/PROD-1957-algolia-search`,
-`fix/blog-toc-card`, `chore/ci-branch-flow`. The **Validate branch name** check enforces the
-prefix on every PR.
+`feature/blog`, `fix/blog-toc-card`, `chore/ci-branch-flow`. The **Validate branch name**
+check enforces the prefix on every PR.
 
 ## Checks that gate a merge
 
-- **`ci-success`** — affected-only lint/typecheck/build (only the apps/packages your PR
-  touched are built; see `.github/workflows/ci.yml`).
+- **`ci-success`** — affected-only typecheck (only the apps/packages your PR touched are
+  checked; see `.github/workflows/ci.yml`). Lint returns once blog migrates off `next lint`
+  (removed in Next 16); build returns once Sanity env is provided as CI secrets.
 - **`Validate branch name`** — the naming rule above.
 - **`Only staging can merge into main`** — on PRs into `main`.
 
