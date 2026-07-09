@@ -52,7 +52,7 @@ export function VideoPlayer({
             {posterUrl ? (
               // Poster comes from arbitrary provider CDNs (ytimg, vimeocdn,
               // dmcdn, tiktokcdn) — a plain img avoids whitelisting every host.
-              // eslint-disable-next-line @next/next/no-img-element
+              // (No next/image: hosts are unbounded. Lint has no no-img rule.)
               <img
                 src={posterUrl}
                 alt=""
