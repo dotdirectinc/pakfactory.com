@@ -21,6 +21,7 @@ import {
     StarIcon,
     ThLargeIcon,
     AddIcon,
+    PlayIcon,
 } from '@sanity/icons';
 import type {
     DividerBuilder,
@@ -53,21 +54,61 @@ function mediaLibraryItem(S: StructureBuilder): ListItemBuilder {
         .child(S.component(MediaToolRedirect).title('Media Library'));
 }
 
-function blogNavigationEditor(
+/**
+ * A single, flattened Redirects item scoped to one channel — used inside a
+ * workspace lens so editors land straight on their own redirects (no
+ * All/Blog/Website drill-down). Global keeps the full multi-channel folder.
+ * The `blog` scope also includes legacy untagged redirects (no channel yet).
+ */
+function scopedRedirectsItem(
     S: StructureBuilder,
-    title: string,
-    paneId: string,
-): ReturnType<StructureBuilder['document']> {
-    return S.document()
-        .id(paneId)
-        .schemaType('blogNavigation')
-        .documentId('blogNavigation')
-        .title(title)
-        .views([S.view.form().id(paneId).title(title)]);
+    channel: string,
+): ListItemBuilder {
+    const filter =
+        channel === 'blog'
+            ? '_type == "redirect" && (channel == "blog" || !defined(channel))'
+            : `_type == "redirect" && channel == "${channel}"`;
+    const label = channel.charAt(0).toUpperCase() + channel.slice(1);
+    return S.listItem()
+        .id('redirects')
+        .title('Redirects')
+        .icon(ArrowRightIcon)
+        .schemaType('redirect')
+        .child(
+            S.documentTypeList('redirect')
+                .title(`${label} Redirects`)
+                .filter(filter)
+                .defaultOrdering([
+                    {field: 'isActive', direction: 'desc'},
+                    {field: '_updatedAt', direction: 'desc'},
+                ]),
+        );
 }
 
 function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
+    // Flattened: open the single blogNavigation singleton directly (Primary &
+    // Footer are field groups/tabs inside the doc) — no extra drill-down level.
     return S.listItem()
+        .id('blogNavigation')
+        .title('Navigation')
+        .icon(ThLargeIcon)
+        .child(
+            S.document()
+                .schemaType('blogNavigation')
+                .documentId('blogNavigation')
+                .title('Blog Navigation'),
+        );
+}
+
+/**
+ * Global (Admin) navigation grouping — lists every channel's navigation
+ * singleton by the "<Channel> Navigation" convention. Only Blog Navigation
+ * exists today; when the Marketing Website / Academy nav singletons are built,
+ * add them here (and expose each directly in its own lens like blogNavigationItem).
+ */
+function globalNavigationItem(S: StructureBuilder): ListItemBuilder {
+    return S.listItem()
+        .id('navigation')
         .title('Navigation')
         .icon(ThLargeIcon)
         .child(
@@ -75,23 +116,16 @@ function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
                 .title('Navigation')
                 .items([
                     S.listItem()
-                        .title('Primary Navigation')
+                        .id('blogNavigation')
+                        .title('Blog Navigation')
                         .child(
-                            blogNavigationEditor(
-                                S,
-                                'Primary Navigation',
-                                'blogNavigation-primary',
-                            ),
+                            S.document()
+                                .schemaType('blogNavigation')
+                                .documentId('blogNavigation')
+                                .title('Blog Navigation'),
                         ),
-                    S.listItem()
-                        .title('Footer Navigation')
-                        .child(
-                            blogNavigationEditor(
-                                S,
-                                'Footer Navigation',
-                                'blogNavigation-footer',
-                            ),
-                        ),
+                    // Marketing Website Navigation → add when websiteNavigation exists
+                    // Academy Navigation → add when academyNavigation exists
                 ]),
         );
 }
@@ -166,22 +200,22 @@ function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     if (BLOG_STUDIO_LANDING_PAGES) {
         pageItems.push(
             S.listItem()
-                .title('Landing pages')
+                .title('Landing Page')
                 .icon(DocumentsIcon)
                 .schemaType('blogPage')
                 .child(
                     S.documentTypeList('blogPage')
-                        .title('Landing pages')
+                        .title('Landing Page')
                         .filter('_type == "blogPage" && pageRole == "landing"')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
             S.listItem()
-                .title('Static pages')
+                .title('Static Page')
                 .icon(DocumentTextIcon)
                 .schemaType('blogPage')
                 .child(
                     S.documentTypeList('blogPage')
-                        .title('Static pages')
+                        .title('Static Page')
                         .filter('_type == "blogPage" && pageRole == "static"')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
@@ -189,9 +223,9 @@ function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     }
 
     return S.listItem()
-        .title('Pages')
+        .title('Page')
         .icon(DocumentsIcon)
-        .child(S.list().title('Pages').items(pageItems));
+        .child(S.list().title('Page').items(pageItems));
 }
 
 /** Topics in a CMS group — panel 3 when a group row is selected. */
@@ -201,7 +235,7 @@ function topicEntriesForGroup(
     title: string,
 ) {
     return S.documentList()
-        .title(`${title} Topics`)
+        .title(`${title} Topic`)
         .schemaType('blogTag')
         .filter('_type == "blogTag" && topicGroup._ref == $groupId')
         .params({groupId})
@@ -225,7 +259,7 @@ function topicsDeskItem(
     context: StructureResolverContext,
 ): ListItemBuilder {
     return S.listItem()
-        .title('Topics')
+        .title('Topic')
         .icon(TagIcon)
         .child(async () => {
             const client = context.getClient({apiVersion: '2024-01-01'});
@@ -316,48 +350,60 @@ export function blogItems(
 ): (ListItemBuilder | DividerBuilder)[] {
     return [
         S.listItem()
-            .title('Posts')
+            .title('Post')
             .icon(DocumentTextIcon)
             .schemaType('post')
             .child(
                 S.documentTypeList('post')
-                    .title('Posts')
+                    .title('Post')
                     .defaultOrdering([
                         {field: 'publishedAt', direction: 'desc'},
                     ]),
             ),
 
         S.listItem()
-            .title('Categories')
+            .title('Category')
             .icon(FolderIcon)
             .schemaType('blogCategory')
             .child(
                 S.documentTypeList('blogCategory')
-                    .title('Categories')
+                    .title('Category')
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
-
-        S.listItem()
-            .title('Authors')
-            .icon(UserIcon)
-            .schemaType('author')
-            .child(S.documentTypeList('author').title('Authors')),
 
         topicsDeskItem(S, context),
 
         S.listItem()
-            .title('Widgets')
+            .title('Author')
+            .icon(UserIcon)
+            .schemaType('author')
+            .child(S.documentTypeList('author').title('Author')),
+
+        S.listItem()
+            .title('Video')
+            .icon(PlayIcon)
+            .schemaType('videoPost')
+            .child(
+                S.documentTypeList('videoPost')
+                    .title('Video Post')
+                    .defaultOrdering([
+                        {field: 'publishedAt', direction: 'desc'},
+                    ]),
+            ),
+
+        S.listItem()
+            .title('Widget')
             .icon(ComponentIcon)
             .child(
                 S.list()
-                    .title('Widgets')
+                    .title('Widget')
                     .items([
                         S.listItem()
-                            .title('Blocks')
+                            .title('Block')
                             .schemaType('contentWidget')
                             .child(
                                 S.documentTypeList('contentWidget')
-                                    .title('Blocks')
+                                    .title('Block')
                                     .filter('widgetType == "cta"')
                                     .defaultOrdering([
                                         {
@@ -368,11 +414,11 @@ export function blogItems(
                             ),
 
                         S.listItem()
-                            .title('Product Cards')
+                            .title('Product Card')
                             .schemaType('contentWidget')
                             .child(
                                 S.documentTypeList('contentWidget')
-                                    .title('Product Cards')
+                                    .title('Product Card')
                                     .filter('widgetType == "product-card"')
                                     .defaultOrdering([
                                         {
@@ -385,11 +431,11 @@ export function blogItems(
                         S.divider(),
 
                         S.listItem()
-                            .title('All Widgets')
+                            .title('All')
                             .schemaType('contentWidget')
                             .child(
                                 S.documentTypeList('contentWidget')
-                                    .title('All Widgets')
+                                    .title('All')
                                     .defaultOrdering([
                                         {field: 'widgetType', direction: 'asc'},
                                         {
@@ -1136,12 +1182,12 @@ export function resourcesItems(
                     .title('Blog')
                     .items([
                         S.listItem()
-                            .title('Posts')
+                            .title('Post')
                             .icon(DocumentTextIcon)
                             .schemaType('post')
                             .child(
                                 S.documentTypeList('post')
-                                    .title('Posts')
+                                    .title('Post')
                                     .defaultOrdering([
                                         {
                                             field: 'publishedAt',
@@ -1150,39 +1196,39 @@ export function resourcesItems(
                                     ]),
                             ),
                         S.listItem()
-                            .title('Categories')
+                            .title('Category')
                             .icon(FolderIcon)
                             .schemaType('blogCategory')
                             .child(
                                 S.documentTypeList('blogCategory')
-                                    .title('Categories')
+                                    .title('Category')
                                     .defaultOrdering([
                                         {field: 'title', direction: 'asc'},
                                     ]),
                             ),
                         S.listItem()
-                            .title('Authors')
-                            .icon(UserIcon)
-                            .schemaType('author')
-                            .child(
-                                S.documentTypeList('author').title('Authors'),
-                            ),
-                        S.listItem()
-                            .title('Topics')
+                            .title('Topic')
                             .icon(TagIcon)
                             .child(
                                 S.documentTypeList('blogTag')
-                                    .title('Topics')
+                                    .title('Topic')
                                     .defaultOrdering([
                                         {field: 'title', direction: 'asc'},
                                     ]),
                             ),
                         S.listItem()
-                            .title('Widgets')
+                            .title('Author')
+                            .icon(UserIcon)
+                            .schemaType('author')
+                            .child(
+                                S.documentTypeList('author').title('Author'),
+                            ),
+                        S.listItem()
+                            .title('Widget')
                             .icon(ComponentIcon)
                             .child(
                                 S.documentTypeList('contentWidget').title(
-                                    'Widgets',
+                                    'Widget',
                                 ),
                             ),
                     ]),
@@ -1239,6 +1285,11 @@ interface SettingsOptions {
     solutions?: boolean;
     /** Show the Media Library inside the Settings section (under the divider). */
     media?: boolean;
+    /**
+     * When set, show only this channel's redirects, flattened (no drill-down).
+     * Omit (Global/Admin) to keep the full multi-channel Redirects folder.
+     */
+    redirectScope?: string;
 }
 
 export function settingsItems(
@@ -1247,13 +1298,16 @@ export function settingsItems(
 ): (ListItemBuilder | DividerBuilder)[] {
     const showBlog = WORKSPACE_SETTINGS && options.blog;
     const showSolutions = WORKSPACE_SETTINGS && options.solutions;
+    const redirectScope = options.redirectScope;
 
     return [
         S.divider().title('Settings'),
 
         ...(options.media ? [mediaLibraryItem(S)] : []),
 
-        S.listItem()
+        redirectScope
+            ? scopedRedirectsItem(S, redirectScope)
+            : S.listItem()
             .title('Redirects')
             .icon(ArrowRightIcon)
             .child(
@@ -1422,6 +1476,7 @@ export const adminStructure = (S: StructureBuilder) =>
         .items([
             ...coreEntitiesItems(S, {hideCaseStudies: true}),
             ...resourcesItems(S),
+            globalNavigationItem(S),
             ...settingsItems(S, {blog: true, solutions: true}),
         ]);
 
@@ -1432,7 +1487,10 @@ export const blogStructure = (
 ) =>
     S.list()
         .title('Blog')
-        .items([...blogItems(S, context), ...settingsItems(S, {blog: true})]);
+        .items([
+            ...blogItems(S, context),
+            ...settingsItems(S, {blog: true, redirectScope: 'blog'}),
+        ]);
 
 /** Website — all content that makes up the website */
 export const websiteStructure = (S: StructureBuilder) =>
@@ -1440,12 +1498,13 @@ export const websiteStructure = (S: StructureBuilder) =>
         .title('Website')
         .items([
             ...coreEntitiesItems(S, {
-                hideCaseStudies: true,
+                // Case Studies shown here (under Core Pages) for the Marketing
+                // Website workspace. TODO: drop the "Core Pages" label later.
                 label: 'Core Pages',
             }),
             ...staticPagesItems(S),
             mediaLibraryItem(S),
-            ...settingsItems(S),
+            ...settingsItems(S, {redirectScope: 'website'}),
         ]);
 
 /** Solutions — industry and use-case solution pages */

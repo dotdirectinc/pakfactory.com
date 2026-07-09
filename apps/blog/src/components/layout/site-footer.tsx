@@ -18,6 +18,7 @@ import {
     type BlogSocialLink,
 } from '@/lib/blog-footer-nav';
 import {getWwwUrl} from '@/lib/site';
+import {externalLinkAttributes, EXTERNAL_LINK_REL} from '@/lib/external-link';
 
 const WWW = getWwwUrl();
 
@@ -43,7 +44,7 @@ function FooterLinkItem({link}: {link: BlogFooterLink}) {
 
     if (link.external) {
         return (
-            <a href={link.href} className={className}>
+            <a href={link.href} className={className} {...externalLinkAttributes(link.href)}>
                 {link.label}
             </a>
         );
@@ -85,7 +86,7 @@ function FooterSocialIcon({link}: {link: BlogSocialLink}) {
             href={link.url}
             aria-label={socialPlatformAriaLabel(link.platform)}
             target="_blank"
-            rel="noopener noreferrer"
+            rel={EXTERNAL_LINK_REL}
             className="text-foreground hover:opacity-80"
         >
             <SocialPlatformIcon platform={link.platform} size={20} />
@@ -102,7 +103,7 @@ function FooterAiIcon({link}: {link: BlogAiLink}) {
             href={link.url}
             aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
             target="_blank"
-            rel="noopener noreferrer"
+            rel={EXTERNAL_LINK_REL}
             className="hover:opacity-80"
         >
             <Image

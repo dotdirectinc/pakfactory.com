@@ -2,11 +2,10 @@ import { getCategoryFallback } from "@/lib/blog-categories";
 import { HOME_CATEGORY_SLUGS } from "@/lib/blog-home";
 
 export const CONTRIBUTE_ROLE_OPTIONS = [
-  { value: "industry-expert", label: "Industry expert" },
-  { value: "brand-manufacturer", label: "Brand / manufacturer" },
-  { value: "agency-consultant", label: "Agency / consultant" },
-  { value: "freelance-writer", label: "Freelance writer" },
-  { value: "academic-researcher", label: "Academic / researcher" },
+  { value: "writer-journalist", label: "Writer / journalist" },
+  { value: "brand-agency", label: "Brand / agency" },
+  { value: "industry-practitioner", label: "Industry practitioner" },
+  { value: "other", label: "Other" },
 ] as const;
 
 export const CONTRIBUTE_SUBJECT_OTHER = "other" as const;

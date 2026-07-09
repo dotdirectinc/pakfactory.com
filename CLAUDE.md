@@ -2,7 +2,7 @@
 
 Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack, domain rules, repo layout, MCP usage, ADR summary, JIRA defaults, and verification. This file adds **Claude Code–specific** configuration only.
 
-**Before building, read the ADRs.** Decisions are tool-agnostic and live in the register at [`docs/adr/README.md`](docs/adr/README.md) (e.g. ADR-005 component organization, ADR-006 design tokens) — the _same_ canon Cursor follows. Using Claude Code never changes the rules; if a task would contradict an ADR, stop and flag it rather than diverging. See `AGENTS.md` § "Decision compliance".
+**Before building, read the ADRs.** Decisions are tool-agnostic and live in the register at [`docs/adr/README.md`](docs/adr/README.md) (e.g. ADR-005 component organization, ADR-006 design tokens, ADR-014 Sanity naming — singular types/titles/desk labels) — the _same_ canon Cursor follows. Using Claude Code never changes the rules; if a task would contradict an ADR, stop and flag it rather than diverging. See `AGENTS.md` § "Decision compliance".
 
 ## Inheritance
 

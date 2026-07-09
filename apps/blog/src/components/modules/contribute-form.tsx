@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@pakfactory/ui/components/button";
 import {
   Card,
@@ -9,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@pakfactory/ui/components/card";
+import { Checkbox } from "@pakfactory/ui/components/checkbox";
 import { Input } from "@pakfactory/ui/components/input";
 import { Label } from "@pakfactory/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@pakfactory/ui/components/radio-group";
@@ -34,8 +36,10 @@ type ContributeFormProps = {
 };
 
 export function ContributeForm({ subjectOptions }: ContributeFormProps) {
+  const router = useRouter();
   const [role, setRole] = useState<ContributeRoleValue | "">("");
-  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [consent, setConsent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -45,9 +49,9 @@ export function ContributeForm({ subjectOptions }: ContributeFormProps) {
       form.reportValidity();
       return;
     }
-    if (!role) {
+    if (!consent) {
       setStatus("error");
-      setMessage("Select your role.");
+      setMessage("You must agree to the privacy terms.");
       return;
     }
 
@@ -61,10 +65,9 @@ export function ContributeForm({ subjectOptions }: ContributeFormProps) {
       organization: String(fd.get("organization") ?? ""),
       linkedIn: String(fd.get("linkedIn") ?? ""),
       subjectMatter: String(fd.get("subjectMatter") ?? ""),
-      role,
+      role: role || undefined,
       pitchAngle: String(fd.get("pitchAngle") ?? ""),
-      outline: String(fd.get("outline") ?? ""),
-      qualifications: String(fd.get("qualifications") ?? ""),
+      consent: true,
       website: String(fd.get("website") ?? ""),
     };
 
@@ -80,10 +83,7 @@ export function ContributeForm({ subjectOptions }: ContributeFormProps) {
         setMessage(data.message ?? "Something went wrong. Try again later.");
         return;
       }
-      setStatus("ok");
-      setMessage(data.message ?? "Thanks — we received your pitch.");
-      form.reset();
-      setRole("");
+      router.push("/contribute/thank-you");
     } catch {
       setStatus("error");
       setMessage("Something went wrong. Try again later.");
@@ -93,137 +93,142 @@ export function ContributeForm({ subjectOptions }: ContributeFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg tracking-tight">Pitch the editors</CardTitle>
+        <CardTitle className="text-lg tracking-tight">Pitch a story</CardTitle>
         <CardDescription>
-          Share your idea in a few minutes. We review every submission.
+          All fields required unless noted. Your details are only used for editorial review.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="relative flex flex-col gap-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="contribute-name">Name</Label>
-              <Input
-                id="contribute-name"
-                name="name"
-                autoComplete="name"
-                required
-                disabled={status === "loading"}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contribute-email">Email</Label>
-              <Input
-                id="contribute-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                disabled={status === "loading"}
-              />
-            </div>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="contribute-organization">Organization (optional)</Label>
-              <Input
-                id="contribute-organization"
-                name="organization"
-                autoComplete="organization"
-                disabled={status === "loading"}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contribute-linkedin">LinkedIn (optional)</Label>
-              <Input
-                id="contribute-linkedin"
-                name="linkedIn"
-                type="url"
-                placeholder="https://linkedin.com/in/…"
-                disabled={status === "loading"}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contribute-subject">Subject matter</Label>
-            <select
-              id="contribute-subject"
-              name="subjectMatter"
-              required
-              disabled={status === "loading"}
-              className={selectClassName}
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select a topic
-              </option>
-              {subjectOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium">Your role</legend>
-            <RadioGroup
-              value={role}
-              onValueChange={(v) => setRole(v as ContributeRoleValue)}
-              disabled={status === "loading"}
-              className="gap-2"
-            >
-              {CONTRIBUTE_ROLE_OPTIONS.map((opt) => (
-                <div key={opt.value} className="flex items-center gap-2">
-                  <RadioGroupItem value={opt.value} id={`contribute-role-${opt.value}`} />
-                  <Label htmlFor={`contribute-role-${opt.value}`} className="font-normal">
-                    {opt.label}
-                  </Label>
+          {/* Section: About you */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">About you</p>
+            <hr className="mt-2 mb-4 border-border" />
+            <div className="flex flex-col gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="contribute-name">Name</Label>
+                  <Input
+                    id="contribute-name"
+                    name="name"
+                    placeholder="Your full name"
+                    autoComplete="name"
+                    required
+                    disabled={status === "loading"}
+                  />
                 </div>
-              ))}
-            </RadioGroup>
-          </fieldset>
+                <div className="space-y-2">
+                  <Label htmlFor="contribute-email">Email</Label>
+                  <Input
+                    id="contribute-email"
+                    name="email"
+                    type="email"
+                    placeholder="you@brand.com"
+                    autoComplete="email"
+                    required
+                    disabled={status === "loading"}
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contribute-pitch">Pitch angle</Label>
-            <textarea
-              id="contribute-pitch"
-              name="pitchAngle"
-              required
-              rows={3}
-              disabled={status === "loading"}
-              className={textareaClassName}
-              placeholder="What is the core insight readers should take away?"
-            />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="contribute-organization">Organization (optional)</Label>
+                  <Input
+                    id="contribute-organization"
+                    name="organization"
+                    placeholder="Where you work"
+                    autoComplete="organization"
+                    disabled={status === "loading"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contribute-linkedin">LinkedIn URL (optional)</Label>
+                  <Input
+                    id="contribute-linkedin"
+                    name="linkedIn"
+                    type="url"
+                    placeholder="linkedin.com/in/…"
+                    disabled={status === "loading"}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contribute-subject">Subject matter</Label>
+                <select
+                  id="contribute-subject"
+                  name="subjectMatter"
+                  required
+                  disabled={status === "loading"}
+                  className={selectClassName}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Select a topic</option>
+                  {subjectOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-medium">Which best describes you? (optional)</legend>
+                <RadioGroup
+                  value={role}
+                  onValueChange={(v) => setRole(v as ContributeRoleValue)}
+                  disabled={status === "loading"}
+                  className="grid grid-cols-2 gap-x-6 gap-y-3"
+                >
+                  {CONTRIBUTE_ROLE_OPTIONS.map((opt) => (
+                    <div key={opt.value} className="flex items-center gap-2">
+                      <RadioGroupItem value={opt.value} id={`contribute-role-${opt.value}`} />
+                      <Label htmlFor={`contribute-role-${opt.value}`} className="font-normal">
+                        {opt.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </fieldset>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contribute-outline">Outline</Label>
-            <textarea
-              id="contribute-outline"
-              name="outline"
-              required
-              rows={5}
-              disabled={status === "loading"}
-              className={textareaClassName}
-              placeholder="Headings or bullet outline for the article"
-            />
+          {/* Section: Your pitch */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Your pitch</p>
+            <hr className="mt-2 mb-4 border-border" />
+            <div className="space-y-2">
+              <Label htmlFor="contribute-pitch">Pitch — angle</Label>
+              <textarea
+                id="contribute-pitch"
+                name="pitchAngle"
+                required
+                rows={4}
+                disabled={status === "loading"}
+                className={textareaClassName}
+                placeholder="What's the angle? Why now? Who is it for?"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contribute-qualifications">Qualifications (optional)</Label>
-            <textarea
-              id="contribute-qualifications"
-              name="qualifications"
-              rows={3}
+          {/* Consent */}
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="contribute-consent"
+              checked={consent}
+              onCheckedChange={(v) => setConsent(v === true)}
               disabled={status === "loading"}
-              className={textareaClassName}
-              placeholder="Relevant experience, credentials, or prior publications"
+              className="mt-0.5"
             />
+            <Label htmlFor="contribute-consent" className="font-normal leading-snug cursor-pointer">
+              I agree to PakFactory storing my details to review this pitch.{" "}
+              <a href="/privacy-policy" className="underline underline-offset-2 hover:text-foreground">
+                See our Privacy Policy.
+              </a>
+            </Label>
           </div>
 
+          {/* Honeypot */}
           <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden>
             <label htmlFor="contribute-website">Website</label>
             <input
@@ -235,15 +240,16 @@ export function ContributeForm({ subjectOptions }: ContributeFormProps) {
             />
           </div>
 
-          <Button type="submit" disabled={status === "loading"} className="w-full sm:w-auto">
-            {status === "loading" ? "Submitting…" : "Submit pitch"}
-          </Button>
+          {/* Submit row */}
+          <div className="flex flex-wrap items-center gap-4">
+            <Button type="submit" disabled={status === "loading"}>
+              {status === "loading" ? "Submitting…" : "Send Pitch →"}
+            </Button>
+            <p className="text-sm text-muted-foreground">Reply within 5 business days.</p>
+          </div>
 
           {message && (
-            <p
-              className={`text-sm ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}
-              role={status === "error" ? "alert" : "status"}
-            >
+            <p className="text-sm text-destructive" role="alert">
               {message}
             </p>
           )}

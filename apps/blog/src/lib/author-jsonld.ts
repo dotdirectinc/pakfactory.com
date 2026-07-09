@@ -27,7 +27,8 @@ export function buildAuthorJsonLd(author: AuthorDoc, photoUrl?: string): string 
     url: pageUrl,
     image: photoUrl,
     jobTitle: author.role,
-    description: author.shortBio?.trim() || author.bioText?.trim() || undefined,
+    description: author.bioText?.trim() || undefined,
+    ...(author.authorType === "staff" ? { worksFor: { "@id": orgId } } : {}),
     sameAs: (() => {
       const urls =
         author.socialLinks

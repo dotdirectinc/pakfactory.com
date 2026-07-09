@@ -39,7 +39,7 @@ export type AuthorDoc = DocSeoFields & {
   name: string;
   slug: string;
   role?: string;
-  tagline?: string;
+  experience?: string;
   shortBio?: string;
   authorType?: "staff" | "guest";
   bio?: PortableTextBlock[];

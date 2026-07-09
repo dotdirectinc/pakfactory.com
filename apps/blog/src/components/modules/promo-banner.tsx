@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { BlogPromo } from "@/lib/blog-data";
+import { externalLinkAttributes } from "@/lib/external-link";
 
 type PromoImage = { url?: string };
 
@@ -156,7 +157,7 @@ export function PromoBanner({ promo }: { promo?: BlogPromo }) {
             asChild
             className="mt-1 w-fit gap-2 rounded-[10px] bg-background px-6 text-base font-medium text-foreground hover:bg-background/90"
           >
-            <Link href={ctaUrl}>
+            <Link href={ctaUrl} {...externalLinkAttributes(ctaUrl)}>
               {ctaLabel}
               <ArrowRight className="size-4" aria-hidden />
             </Link>

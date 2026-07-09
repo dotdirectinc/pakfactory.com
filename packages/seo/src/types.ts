@@ -36,6 +36,8 @@ export type PersonInput = {
   description?: string;
   /** Absolute profile URLs (e.g. LinkedIn) for E-E-A-T */
   sameAs?: string[];
+  /** Employer Organization node or @id reference */
+  worksFor?: Record<string, unknown>;
 };
 
 export type BreadcrumbItem = {
@@ -125,5 +127,23 @@ export type FaqPageItem = {
 
 export type FaqPageInput = {
   items: readonly FaqPageItem[];
+  id?: string;
+};
+
+export type VideoObjectInput = {
+  /** Video title */
+  name: string;
+  description: string;
+  /** Absolute HTTPS thumbnail URL */
+  thumbnailUrl: string;
+  /** ISO 8601 upload/publish date */
+  uploadDate: string;
+  /** Absolute watch or file URL */
+  contentUrl: string;
+  /** Optional embed URL (YouTube/Vimeo) */
+  embedUrl?: string;
+  /** ISO 8601 duration, e.g. PT4M32S */
+  duration?: string;
+  /** Stable node id for @graph linking */
   id?: string;
 };
