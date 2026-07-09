@@ -1,0 +1,126 @@
+name: CI
+
+# Affected-only CI for the Turborepo monorepo.
+# 1. `changes` detects which apps/packages a PR touched.
+# 2. `check` runs lint/typecheck/build ONLY for those, one matrix job per project
+#    (so each app gets its own visible check, e.g. "check (blog)").
+# 3. `ci-success` always runs and is the SINGLE required status check — this avoids
+#    the "skipped required check blocks the PR" deadlock when a project didn't change.
+#
+# Required status check to select in branch protection: `ci-success`.
+
+on:
+  pull_request:
+    branches: [staging, main]
+  push:
+    branches: [staging, main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect affected projects
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      any: ${{ steps.matrix.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            blog: 'apps/blog/**'
+            www: 'apps/www/**'
+            studio: 'apps/studio/**'
+            ui: 'packages/ui/**'
+            sanity: 'packages/sanity/**'
+            seo: 'packages/seo/**'
+            functions: 'functions/**'
+            shared:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'tsconfig.base.json'
+              - 'eslint.config.mjs'
+              - '.github/workflows/ci.yml'
+      - id: matrix
+        env:
+          F_BLOG: ${{ steps.filter.outputs.blog }}
+          F_WWW: ${{ steps.filter.outputs.www }}
+          F_STUDIO: ${{ steps.filter.outputs.studio }}
+          F_UI: ${{ steps.filter.outputs.ui }}
+          F_SANITY: ${{ steps.filter.outputs.sanity }}
+          F_SEO: ${{ steps.filter.outputs.seo }}
+          F_FUNCTIONS: ${{ steps.filter.outputs.functions }}
+          F_SHARED: ${{ steps.filter.outputs.shared }}
+        run: |
+          set -euo pipefail
+          items=()
+          addp() { items+=("{\"name\":\"$1\",\"filter\":\"$2\"}"); }
+          if [ "$F_SHARED" = "true" ]; then
+            # Shared config changed — validate everything.
+            addp blog ./apps/blog
+            addp www ./apps/www
+            addp studio ./apps/studio
+            addp ui ./packages/ui
+            addp sanity ./packages/sanity
+            addp seo ./packages/seo
+            addp functions "./functions/*"
+          else
+            [ "$F_BLOG" = "true" ]      && addp blog ./apps/blog || true
+            [ "$F_WWW" = "true" ]       && addp www ./apps/www || true
+            [ "$F_STUDIO" = "true" ]    && addp studio ./apps/studio || true
+            [ "$F_UI" = "true" ]        && addp ui ./packages/ui || true
+            [ "$F_SANITY" = "true" ]    && addp sanity ./packages/sanity || true
+            [ "$F_SEO" = "true" ]       && addp seo ./packages/seo || true
+            [ "$F_FUNCTIONS" = "true" ] && addp functions "./functions/*" || true
+          fi
+          if [ ${#items[@]} -eq 0 ]; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+            echo 'matrix={"project":[]}' >> "$GITHUB_OUTPUT"
+          else
+            joined=$(IFS=,; echo "${items[*]}")
+            echo "any=true" >> "$GITHUB_OUTPUT"
+            echo "matrix={\"project\":[$joined]}" >> "$GITHUB_OUTPUT"
+          fi
+
+  check:
+    name: check
+    needs: changes
+    if: needs.changes.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint / typecheck / build (${{ matrix.project.name }})
+        run: pnpm exec turbo run lint typecheck build --filter=${{ matrix.project.filter }}
+
+  ci-success:
+    name: ci-success
+    needs: [changes, check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate on affected checks
+        run: |
+          echo "changes: ${{ needs.changes.result }}"
+          echo "check:   ${{ needs.check.result }}"
+          if [ "${{ needs.changes.result }}" != "success" ]; then
+            echo "::error::Change detection failed."; exit 1
+          fi
+          if [ "${{ needs.check.result }}" = "failure" ] || [ "${{ needs.check.result }}" = "cancelled" ]; then
+            echo "::error::One or more affected project checks failed."; exit 1
+          fi
+          echo "All affected checks passed (or nothing needed building)."
