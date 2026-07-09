@@ -71,6 +71,11 @@ type PageDielineFullBleedSectionProps = {
   borderTop?: boolean;
   /** Dashed bottom edge on the inner dieline column (opt-in). */
   borderBottom?: boolean;
+  /**
+   * Dashed left/right guides on the inner column. Defaults to true.
+   * Set false for bands that should only show horizontal dielines (e.g. promo banner).
+   */
+  borderX?: boolean;
   "aria-labelledby"?: string;
   id?: string;
 };
@@ -86,9 +91,12 @@ export function PageDielineFullBleedSection({
   shellClassName,
   borderTop = false,
   borderBottom = false,
+  borderX = true,
   "aria-labelledby": ariaLabelledBy,
   id,
 }: PageDielineFullBleedSectionProps) {
+  const columnClass = borderX ? pageDielineInnerClass : pageDielineContentClass;
+
   return (
     <section
       id={id}
@@ -97,7 +105,7 @@ export function PageDielineFullBleedSection({
     >
       <div className={pageFullBleedSectionContentClass(shellClassName)}>
         <div
-          className={pageDielineInnerClass(
+          className={columnClass(
             cn(
               innerClassName,
               borderTop && "border-t border-dashed border-border",

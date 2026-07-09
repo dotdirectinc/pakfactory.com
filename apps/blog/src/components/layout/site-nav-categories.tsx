@@ -47,7 +47,7 @@ export function SiteNavCategories({categories}: SiteNavCategoriesProps) {
             <NavSearchForm
                 id="site-nav-search"
                 className="shrink-0"
-                fieldClassName="w-[328px]"
+                fieldClassName="w-[240px]"
             />
         </div>
     );

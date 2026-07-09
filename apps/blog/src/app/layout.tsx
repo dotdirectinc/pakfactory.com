@@ -48,6 +48,7 @@ export default async function RootLayout({
                     columns={footerData.columns}
                     social={footerData.social}
                     aiLinks={footerData.aiLinks}
+                    cta={footerData.cta}
                 />
                 {isDraft && <VisualEditing />}
             </body>

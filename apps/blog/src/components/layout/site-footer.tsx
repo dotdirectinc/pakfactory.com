@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import {MessageSquareText} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 // import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
@@ -10,17 +9,16 @@ import {
 } from '@/components/modules/social-platform-icon';
 import {
     getFallbackFooterColumns,
+    getFallbackFooterCta,
     type BlogAiEngine,
     type BlogAiLink,
     type BlogFooterColumns,
+    type BlogFooterCta,
     type BlogFooterLink,
     type BlogFooterSection,
     type BlogSocialLink,
 } from '@/lib/blog-footer-nav';
-import {getWwwUrl} from '@/lib/site';
 import {externalLinkAttributes, EXTERNAL_LINK_REL} from '@/lib/external-link';
-
-const WWW = getWwwUrl();
 
 const AI_ICON_SRC: Record<BlogAiEngine, string> = {
     chatgpt: '/logos/ai/openai.svg',
@@ -44,7 +42,11 @@ function FooterLinkItem({link}: {link: BlogFooterLink}) {
 
     if (link.external) {
         return (
-            <a href={link.href} className={className} {...externalLinkAttributes(link.href)}>
+            <a
+                href={link.href}
+                className={className}
+                {...externalLinkAttributes(link.href)}
+            >
                 {link.label}
             </a>
         );
@@ -78,6 +80,7 @@ type SiteFooterProps = {
     columns?: BlogFooterColumns;
     social?: BlogSocialLink[];
     aiLinks?: BlogAiLink[];
+    cta?: BlogFooterCta;
 };
 
 function FooterSocialIcon({link}: {link: BlogSocialLink}) {
@@ -122,10 +125,11 @@ export function SiteFooter({
     columns,
     social = [],
     aiLinks = [],
+    cta,
 }: SiteFooterProps) {
     const footerColumns =
         columns && columns.length > 0 ? columns : getFallbackFooterColumns();
-    const talkHref = `${WWW}/contact`;
+    const footerCta = cta ?? getFallbackFooterCta();
 
     return (
         <footer className="bg-background">
@@ -134,15 +138,26 @@ export function SiteFooter({
                 {/* <FooterWordmark /> */}
 
                 {/* Collaboration CTA */}
-                <div className=" border-dashed border-border px-8 py-10 text-center">
-                    <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
-                        Let&apos;s collaborate and craft <br /> your vision
+                <div className="px-8 py-16 text-center border-t border-dashed border-foreground/10">
+                    <h2 className="whitespace-pre-line text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+                        {footerCta.message}
                     </h2>
                     <Button
                         className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                         asChild
                     >
-                        <a href={talkHref}>Let&apos;s talk</a>
+                        {footerCta.external ? (
+                            <a
+                                href={footerCta.href}
+                                {...externalLinkAttributes(footerCta.href)}
+                            >
+                                {footerCta.buttonLabel}
+                            </a>
+                        ) : (
+                            <Link href={footerCta.href}>
+                                {footerCta.buttonLabel}
+                            </Link>
+                        )}
                     </Button>
                 </div>
 

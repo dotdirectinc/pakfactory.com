@@ -40,10 +40,18 @@ export type BlogAiLink = {
   url: string;
 };
 
+export type BlogFooterCta = {
+  message: string;
+  buttonLabel: string;
+  href: string;
+  external: boolean;
+};
+
 export type BlogFooterData = {
   columns: BlogFooterColumns;
   social: BlogSocialLink[];
   aiLinks: BlogAiLink[];
+  cta: BlogFooterCta;
 };
 
 const PAKFACTORY_AI_PROMPT = buildPakFactoryAiPrompt();
@@ -126,6 +134,17 @@ export function getFallbackFooterData(): BlogFooterData {
     columns: getFallbackFooterColumns(),
     social: getFallbackSocialLinks(),
     aiLinks: getFallbackAiLinks(),
+    cta: getFallbackFooterCta(),
+  };
+}
+
+/** Hardcoded collaboration CTA when Studio CTA is empty or unavailable. */
+export function getFallbackFooterCta(): BlogFooterCta {
+  return {
+    message: "Let's collaborate and craft\nyour vision",
+    buttonLabel: "Let's talk",
+    href: `${getWwwUrl()}/contact`,
+    external: true,
   };
 }
 
@@ -256,8 +275,17 @@ type FooterNavColumnRow = {
   sections?: (FooterNavSectionRow | null)[] | null;
 };
 
+type FooterCtaRow = {
+  message?: string | null;
+  buttonLabel?: string | null;
+  linkType?: string | null;
+  externalUrl?: string | null;
+  internalLink?: SanityLinkDocument | null;
+};
+
 export type BlogFooterNavDoc = {
   _id?: string;
+  cta?: FooterCtaRow | null;
   columns?: (FooterNavColumnRow | null)[] | null;
   social?: (FooterSocialLinkRow | null)[] | null;
   aiLinks?: (FooterAiLinkRow | null)[] | null;
@@ -328,12 +356,45 @@ export function resolveFooterAiLinks(doc: BlogFooterNavDoc): BlogAiLink[] {
   return links.length > 0 ? links : getFallbackAiLinks();
 }
 
+export function resolveFooterCta(doc: BlogFooterNavDoc): BlogFooterCta {
+  const fallback = getFallbackFooterCta();
+  const cta = doc?.cta;
+  if (!cta) return fallback;
+
+  const message = cta.message?.trim() || fallback.message;
+  const buttonLabel = cta.buttonLabel?.trim() || fallback.buttonLabel;
+
+  const resolved = resolveFooterLinkHref({
+    linkType: cta.linkType,
+    externalUrl: cta.externalUrl,
+    internalLink: cta.internalLink,
+    label: buttonLabel,
+  });
+
+  if (!resolved) {
+    return {
+      message,
+      buttonLabel,
+      href: fallback.href,
+      external: fallback.external,
+    };
+  }
+
+  return {
+    message,
+    buttonLabel,
+    href: resolved.href,
+    external: resolved.external,
+  };
+}
+
 export function resolveFooterData(doc: BlogFooterNavDoc): BlogFooterData {
   const columns = resolveFooterColumns(doc);
   return {
     columns: columns.length > 0 ? columns : getFallbackFooterColumns(),
     social: resolveFooterSocialLinks(doc),
     aiLinks: resolveFooterAiLinks(doc),
+    cta: resolveFooterCta(doc),
   };
 }
 

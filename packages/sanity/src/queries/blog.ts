@@ -72,6 +72,7 @@ const POST_CARD_FIELDS = /* groq */ `{
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "authorName": author->name,
+  "authorSlug": author->slug.current,
   "authorImageUrl": author->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
@@ -886,9 +887,28 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   }
 )`;
 
-/** Footer link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
+/** Footer CTA, link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   _id,
+  "cta": footerNavigation.cta{
+    message,
+    buttonLabel,
+    linkType,
+    externalUrl,
+    "internalLink": internalLink->{
+      _type,
+      title,
+      "slug": slug.current,
+      "name": name,
+      "term": term,
+      pageRole,
+      pageType,
+      category,
+      "handle": handle.current,
+      "collectionSlug": primaryCollection->slug.current,
+      "pageSlug": primaryLandingPage->slug.current
+    }
+  },
   "columns": footerNavigation.columns[]{
     "sections": sections[]{
       title,

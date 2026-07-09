@@ -7,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@pakfactory/ui/components/avatar";
+import { authorHref } from "@/lib/blog-post-url";
 
 /** Plain, client-safe post card props — resolved server-side before render. */
 export type PostCardData = {
@@ -18,6 +19,7 @@ export type PostCardData = {
   imageAlt?: string;
   categoryTitle?: string;
   authorName?: string;
+  authorSlug?: string;
   authorImageUrl?: string;
   publishedAt?: string;
   formattedDate?: string;
@@ -58,9 +60,7 @@ function MetaDot() {
 
 function CategoryBadge({ title }: { title: string }) {
   return (
-    <Badge className="w-fit rounded-full border-transparent bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
-      {title}
-    </Badge>
+    <p className="text-xs font-medium text-muted-foreground">{title}</p>
   );
 }
 
@@ -119,7 +119,18 @@ function PostMeta({
     return (
       <div className="flex flex-col gap-1">
         {post.authorName && (
-          <p className="text-sm text-foreground">{post.authorName}</p>
+          <p className="text-sm text-foreground">
+            {post.authorSlug ? (
+              <Link
+                href={authorHref(post.authorSlug)}
+                className="transition-colors hover:text-primary hover:underline hover:underline-offset-4"
+              >
+                {post.authorName}
+              </Link>
+            ) : (
+              post.authorName
+            )}
+          </p>
         )}
         {metaSegments.length > 0 && (
           <p className="flex flex-wrap items-center gap-2 text-sm">
@@ -138,6 +149,17 @@ function PostMeta({
   const segments: ReactNode[] = [];
 
   if (post.authorName) {
+    const authorLabel = post.authorSlug ? (
+      <Link
+        href={authorHref(post.authorSlug)}
+        className="transition-colors hover:text-primary hover:underline hover:underline-offset-4"
+      >
+        {post.authorName}
+      </Link>
+    ) : (
+      <span>{post.authorName}</span>
+    );
+
     segments.push(
       <span
         key="author"
@@ -151,7 +173,7 @@ function PostMeta({
             <AvatarFallback>{authorInitials(post.authorName)}</AvatarFallback>
           </Avatar>
         )}
-        <span>{post.authorName}</span>
+        {authorLabel}
       </span>,
     );
   }
@@ -258,7 +280,7 @@ export function PostCard({
             )}
           </div>
         </Link>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {post.categoryTitle && (
             <CategoryBadge title={post.categoryTitle} />
           )}
@@ -311,7 +333,7 @@ export function PostCard({
             )}
           </div>
         </Link>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <CardBadge
             showFeaturedBadge={showFeaturedBadge}
             categoryTitle={post.categoryTitle}
@@ -423,7 +445,7 @@ export function PostCard({
           )}
         </div>
       </Link>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <CardBadge
           showFeaturedBadge={showFeaturedBadge}
           categoryTitle={post.categoryTitle}

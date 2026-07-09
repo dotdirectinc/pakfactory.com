@@ -8,7 +8,8 @@ import {
   linkableTypeFilterParams,
 } from '../lib/linkable-document-types'
 
-const footerLinkFields = [
+/** Shared internal/external link target fields — reused by footer links and the collaboration CTA. */
+const linkTargetFields = [
   defineField({
     name: 'linkType',
     title: 'Link type',
@@ -60,6 +61,10 @@ const footerLinkFields = [
         return true
       }),
   }),
+]
+
+const footerLinkFields = [
+  ...linkTargetFields,
   defineField({
     name: 'label',
     title: 'Label',
@@ -212,9 +217,81 @@ export const blogNavigation = defineType({
       type: 'object',
       group: 'footer',
       description:
-        'Footer link grid, social icons, and AI answer-engine links. The collaboration CTA and copyright lines are not editable here.',
+        'Collaboration CTA, footer link grid, social icons, and AI answer-engine links. Copyright lines are not editable here.',
       options: { collapsible: false },
       fields: [
+        defineField({
+          name: 'cta',
+          title: 'Collaboration CTA',
+          type: 'object',
+          description:
+            'Message and button shown above the footer link grid. When empty, built-in defaults are used.',
+          fields: [
+            defineField({
+              name: 'message',
+              title: 'Message',
+              type: 'text',
+              rows: 2,
+              description: 'Heading above the button. Line breaks are preserved.',
+            }),
+            defineField({
+              name: 'buttonLabel',
+              title: 'Button label',
+              type: 'string',
+            }),
+            defineField({
+              name: 'linkType',
+              title: 'Link type',
+              type: 'string',
+              options: {
+                list: [
+                  { title: 'Internal (CMS content)', value: 'internal' },
+                  { title: 'External URL', value: 'external' },
+                ],
+                layout: 'radio',
+              },
+              description:
+                'Optional. When unset, the blog falls back to the default contact link.',
+            }),
+            defineField({
+              name: 'internalLink',
+              title: 'Internal link',
+              type: 'reference',
+              to: linkableReferenceTo,
+              description:
+                'Pick any routable CMS document (blog, website, solutions, resources). Slug changes update the link automatically.',
+              options: {
+                filter: LINKABLE_TYPE_FILTER,
+                filterParams: linkableTypeFilterParams,
+              },
+              hidden: ({ parent }) => parent?.linkType !== 'internal',
+              validation: (Rule) =>
+                Rule.custom((value, context) => {
+                  const parent = context.parent as { linkType?: string } | undefined
+                  if (parent?.linkType === 'internal' && !value) {
+                    return 'Select a CMS document for internal links.'
+                  }
+                  return true
+                }),
+            }),
+            defineField({
+              name: 'externalUrl',
+              title: 'External URL',
+              type: 'url',
+              description:
+                'Full marketing-site URL (e.g. https://www.pakfactory.com/about). Renders as a plain anchor.',
+              hidden: ({ parent }) => parent?.linkType !== 'external',
+              validation: (Rule) =>
+                Rule.custom((value, context) => {
+                  const parent = context.parent as { linkType?: string } | undefined
+                  if (parent?.linkType === 'external' && !value) {
+                    return 'External URL is required.'
+                  }
+                  return true
+                }),
+            }),
+          ],
+        }),
         defineField({
           name: 'columns',
           title: 'Footer columns',

@@ -49,6 +49,7 @@ export type PopularPostCard = {
   categorySlug?: string;
   categoryTitle?: string;
   authorName?: string;
+  authorSlug?: string;
   authorImageUrl?: string;
   readingTimeMinutes?: number;
 };

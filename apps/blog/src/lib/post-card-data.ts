@@ -51,6 +51,7 @@ export function toPostCardData(
     imageAlt: sanityImageAlt(post.mainImage),
     categoryTitle: post.categoryTitle,
     authorName: post.authorName,
+    authorSlug: post.authorSlug,
     authorImageUrl: post.authorImageUrl,
     publishedAt: post.publishedAt,
     formattedDate: formatPostDate(post.publishedAt),
