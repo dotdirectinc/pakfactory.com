@@ -26,6 +26,7 @@ import type {
   PostBodyWidget,
 } from "@/lib/blog-post";
 import { sanityImageUrl } from "@/lib/sanity-image";
+import { EXTERNAL_LINK_REL, externalLinkAttributes } from "@/lib/external-link";
 
 type BodyImageValue = {
   alt?: string;
@@ -58,7 +59,7 @@ function PostBodyImage({ value }: { value: BodyImageValue }) {
       {value.link ? (
         <a
           href={value.link}
-          rel={value.linkNofollow ? "nofollow noopener noreferrer" : "noopener noreferrer"}
+          rel={EXTERNAL_LINK_REL}
           target="_blank"
         >
           {img}
@@ -116,12 +117,11 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
     marks: {
       link: ({ value, children }) => {
         const href: string = value?.href ?? "#";
-        const external = /^https?:\/\//.test(href);
         return (
           <a
             href={href}
             className="font-medium text-primary underline-offset-4 hover:underline"
-            {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            {...externalLinkAttributes(href)}
           >
             {children}
           </a>

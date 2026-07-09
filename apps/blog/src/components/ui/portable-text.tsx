@@ -3,6 +3,7 @@ import {
   type PortableTextComponents,
 } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
+import { externalLinkAttributes } from "@/lib/external-link";
 
 const components: PortableTextComponents = {
   block: {
@@ -30,12 +31,11 @@ const components: PortableTextComponents = {
   marks: {
     link: ({ value, children }) => {
       const href: string = value?.href ?? "#";
-      const external = /^https?:\/\//.test(href);
       return (
         <a
           href={href}
           className="font-medium text-primary underline-offset-4 hover:underline"
-          {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          {...externalLinkAttributes(href)}
         >
           {children}
         </a>

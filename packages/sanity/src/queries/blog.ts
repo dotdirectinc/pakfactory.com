@@ -76,6 +76,22 @@ const POST_CARD_FIELDS = /* groq */ `{
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
 
+const VIDEO_POST_FIELDS = /* groq */ `{
+  _id,
+  title,
+  description,
+  publishedAt,
+  sourceType,
+  platform,
+  externalUrl,
+  duration,
+  "videoFileUrl": videoFile.asset->url,
+  thumbnail {
+    ...,
+    "alt": coalesce(alt, asset->altText)
+  }
+}`;
+
 const TOPIC_GROUP_PROJECTION = /* groq */ `{
   title,
   "slug": slug.current
@@ -325,9 +341,17 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     heading,
     "posts": posts[]->${POST_CARD_FIELDS}
   },
-  _type == "tagStrip" => {
+  _type == "topicStrip" || _type == "tagStrip" => {
     heading,
-    "tags": tags[]->{ _id, title, "slug": slug.current }
+    "topics": coalesce(topics, tags)[]->{ _id, title, "slug": slug.current }
+  },
+  _type == "featuredVideos" => {
+    heading,
+    channelCtaLabel,
+    channelCtaUrl,
+    playbackMode,
+    "featuredVideo": featuredVideo->${VIDEO_POST_FIELDS},
+    "videos": videos[]->${VIDEO_POST_FIELDS}
   },
   _type == "ctaNewsletter" => {
     heading,

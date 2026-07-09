@@ -39,7 +39,10 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn.sanity.io" },
+      { protocol: "https", hostname: "img.youtube.com" },
+    ],
   },
   // PROD-1597: the `/category/` prefix was removed — archives live at `/{category}`.
   // Posts are canonical at `/{postSlug}` (root); category/tag/search are discovery

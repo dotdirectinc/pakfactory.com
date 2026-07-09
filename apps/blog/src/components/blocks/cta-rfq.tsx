@@ -13,6 +13,7 @@ import {
     CTA_RFQ_DIELINE_BORDER_DEFAULTS,
     resolveDielineBorders,
 } from '@/lib/dieline-borders';
+import { externalLinkAttributes } from '@/lib/external-link';
 
 const DEFAULT_HEADING = 'Need custom packaging?';
 const DEFAULT_BODY =
@@ -61,7 +62,10 @@ export function CtaRfq({
                 </CardHeader>
                 <CardFooter className="justify-center pt-0">
                     <Button asChild>
-                        <Link href={ctaHref ?? defaultQuoteHref()}>
+                        <Link
+                            href={ctaHref ?? defaultQuoteHref()}
+                            {...externalLinkAttributes(ctaHref ?? defaultQuoteHref())}
+                        >
                             Get a quote
                         </Link>
                     </Button>

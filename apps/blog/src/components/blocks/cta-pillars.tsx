@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@pakfactory/ui/components/card";
 import type { CtaPillarsBlock, BlockProps } from "@/components/blocks/registry";
+import { externalLinkAttributes } from "@/lib/external-link";
 
 /**
  * `ctaPillars` page-builder section — a promo band of "pillar" cards linking out
@@ -31,7 +32,9 @@ export function CtaPillars({ pillars }: BlockProps<CtaPillarsBlock>) {
               </CardHeader>
               <CardFooter className="pt-0">
                 <Button variant="link" className="h-auto p-0" asChild>
-                  <Link href={pillar.href}>{pillar.ctaLabel} →</Link>
+                  <Link href={pillar.href} {...externalLinkAttributes(pillar.href)}>
+                    {pillar.ctaLabel} →
+                  </Link>
                 </Button>
               </CardFooter>
             </Card>
