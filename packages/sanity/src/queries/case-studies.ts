@@ -2,6 +2,7 @@
  * Case Studies GROQ — field names mirror the `caseStudy` schema (PROD-1893).
  *
  * Canonical URL: pakfactory.com/case-studies/{slug}
+ * All queries gate on status == "published" so draft/archived docs never appear.
  */
 
 // ─── Shared sub-projections ───────────────────────────────────────────────────
@@ -15,14 +16,15 @@ const CASE_STUDY_CARD_FIELDS = /* groq */ `{
   title,
   "slug": slug.current,
   publishedAt,
-  excerpt,
-  clientName,
-  "clientLogoUrl": clientLogo.asset->url,
+  "dateModified": coalesce(lastModified, publishedAt),
+  cardSummary,
+  "cardImageUrl": cardImage.asset->url,
+  cardImageAlt,
+  "client": client->{ name, "logoUrl": logo.asset->url },
   "solutions": solutions[]->${TAXONOMY_ITEM},
-  "packagingTypes": packagingTypes[]->${TAXONOMY_ITEM},
-  "expertise": expertise[]->${TAXONOMY_ITEM},
-  "heroImageUrl": heroImage.asset->url,
-  "heroImageAlt": coalesce(heroImage.alt, heroImage.asset->altText, clientName)
+  "products": products[]->${TAXONOMY_ITEM},
+  "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
+  "heroMediaType": heroMedia.mediaType
 }`;
 
 const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
@@ -30,22 +32,40 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   title,
   "slug": slug.current,
   publishedAt,
-  excerpt,
-  clientName,
-  "clientLogoUrl": clientLogo.asset->url,
-  featuredVideo,
+  "dateModified": coalesce(lastModified, publishedAt),
+  cardSummary,
+  "cardImageUrl": cardImage.asset->url,
+  cardImageAlt,
+  "client": client->{ name, "logoUrl": logo.asset->url, website },
+  heroIntro,
+  heroMedia {
+    mediaType,
+    "imageUrl": image.asset->url,
+    "imageHotspot": image.hotspot,
+    "imageCrop": image.crop,
+    alt,
+    videoUrl,
+    "videoThumbnailUrl": videoThumbnail.asset->url,
+    "videoThumbnailHotspot": videoThumbnail.hotspot
+  },
   "solutions": solutions[]->${TAXONOMY_ITEM},
-  "packagingTypes": packagingTypes[]->${TAXONOMY_ITEM},
-  "expertise": expertise[]->${TAXONOMY_ITEM},
-  "metrics": metrics[]{ _key, title, description },
-  "challenges": challenges{ intro, items },
-  solutionsBody,
-  resultBody,
-  "resultImages": resultImages[]{ _key, "url": image.asset->url, alt, caption },
-  "heroImageUrl": heroImage.asset->url,
-  "heroImageAlt": coalesce(heroImage.alt, heroImage.asset->altText, clientName),
+  "products": products[]->${TAXONOMY_ITEM},
+  "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
+  "capabilities": capabilities[]->${TAXONOMY_ITEM},
+  "highlights": highlights[]{ _key, title, description },
+  challenge,
+  solution,
+  result,
+  "relatedStudies": select(
+    count(relatedStudies) > 0 => relatedStudies[]->${CASE_STUDY_CARD_FIELDS},
+    *[_type == "caseStudy" && status == "published" && _id != ^._id] | order(publishedAt desc)[0...3]${CASE_STUDY_CARD_FIELDS}
+  ),
   metaTitle,
   metaDescription,
+  canonicalUrl,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
   "ogImageUrl": ogImage.asset->url
 }`;
 
@@ -53,37 +73,32 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
 
 /** All published case studies for the listing page — ordered newest first. */
 export const CASE_STUDIES_LISTING_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current)
+  _type == "caseStudy" && status == "published" && defined(slug.current)
 ] | order(publishedAt desc) ${CASE_STUDY_CARD_FIELDS}`;
 
 /** Single case study by slug for the detail page. */
 export const CASE_STUDY_BY_SLUG_QUERY = /* groq */ `*[
-  _type == "caseStudy" && slug.current == $slug
+  _type == "caseStudy" && slug.current == $slug && status == "published"
 ][0] ${CASE_STUDY_DETAIL_FIELDS}`;
 
-/** 3 most recently modified case studies, excluding the given slug. */
-export const CASE_STUDY_RELATED_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current) && slug.current != $currentSlug
-] | order(_updatedAt desc)[0...3] ${CASE_STUDY_CARD_FIELDS}`;
-
-/** All slugs for generateStaticParams. */
+/** All slugs for generateStaticParams (includes all non-archived for preview support). */
 export const CASE_STUDY_PATHS_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current)
+  _type == "caseStudy" && defined(slug.current) && status != "archived"
 ]{ "slug": slug.current }`;
 
-/** Slugs + last-modified for sitemap generation. */
+/** Slugs + last-modified for sitemap generation — published only. */
 export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current)
+  _type == "caseStudy" && status == "published" && defined(slug.current)
 ] | order(publishedAt desc) {
   "slug": slug.current,
-  "lastmod": coalesce(publishedAt, _updatedAt)
+  "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
 }`;
 
 /** All taxonomy options for the listing page filter UI — single round-trip. */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution"] | order(title asc) ${TAXONOMY_ITEM},
-  "packagingTypes": *[_type == "productCategory"] | order(title asc) ${TAXONOMY_ITEM},
-  "expertise": *[_type == "expertiseStage"] | order(title asc) ${TAXONOMY_ITEM}
+  "solutions": *[_type == "industry"] | order(title asc) ${TAXONOMY_ITEM},
+  "products": *[_type == "productCategory"] | order(title asc) ${TAXONOMY_ITEM},
+  "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(order asc) ${TAXONOMY_ITEM}
 }`;
 
 // ─── TypeScript types (mirrors GROQ projections above) ───────────────────────
@@ -94,22 +109,30 @@ export type CaseStudyTaxonomyItem = {
   slug: string;
 };
 
-export type CaseStudyMetric = {
+export type CaseStudyHighlight = {
   _key: string;
   title: string;
   description: string | null;
 };
 
-export type CaseStudyChallenges = {
-  intro: string | null;
-  items: string[] | null;
+export type CaseStudyClientCard = {
+  name: string;
+  logoUrl: string | null;
 };
 
-export type CaseStudyResultImage = {
-  _key: string;
-  url: string | null;
+export type CaseStudyClientDetail = CaseStudyClientCard & {
+  website: string | null;
+};
+
+export type CaseStudyHeroMedia = {
+  mediaType: 'image' | 'video';
+  imageUrl: string | null;
+  imageHotspot: { x: number; y: number } | null;
+  imageCrop: object | null;
   alt: string | null;
-  caption: string | null;
+  videoUrl: string | null;
+  videoThumbnailUrl: string | null;
+  videoThumbnailHotspot: { x: number; y: number } | null;
 };
 
 export type CaseStudyCard = {
@@ -117,25 +140,33 @@ export type CaseStudyCard = {
   title: string;
   slug: string;
   publishedAt: string | null;
-  excerpt: string | null;
-  clientName: string | null;
-  clientLogoUrl: string | null;
+  dateModified: string | null;
+  cardSummary: string | null;
+  cardImageUrl: string | null;
+  cardImageAlt: string | null;
+  client: CaseStudyClientCard | null;
   solutions: CaseStudyTaxonomyItem[] | null;
-  packagingTypes: CaseStudyTaxonomyItem[] | null;
-  expertise: CaseStudyTaxonomyItem[] | null;
-  heroImageUrl: string | null;
-  heroImageAlt: string | null;
+  products: CaseStudyTaxonomyItem[] | null;
+  expertiseAreas: CaseStudyTaxonomyItem[] | null;
+  heroMediaType: 'image' | 'video' | null;
 };
 
 export type CaseStudyDetail = CaseStudyCard & {
-  featuredVideo: string | null;
-  metrics: CaseStudyMetric[] | null;
-  challenges: CaseStudyChallenges | null;
-  solutionsBody: unknown; // Portable Text
-  resultBody: unknown; // Portable Text
-  resultImages: CaseStudyResultImage[] | null;
+  client: CaseStudyClientDetail | null;
+  heroIntro: unknown; // Portable Text (restricted: bold + clientLink)
+  heroMedia: CaseStudyHeroMedia | null;
+  capabilities: CaseStudyTaxonomyItem[] | null;
+  highlights: CaseStudyHighlight[] | null;
+  challenge: unknown; // Portable Text
+  solution: unknown; // Portable Text
+  result: unknown; // Portable Text
+  relatedStudies: CaseStudyCard[] | null;
   metaTitle: string | null;
   metaDescription: string | null;
+  canonicalUrl: string | null;
+  allowIndex: boolean | null;
+  allowFollow: boolean | null;
+  noImageIndex: boolean | null;
   ogImageUrl: string | null;
 };
 
@@ -145,6 +176,6 @@ export type CaseStudySitemapEntry = { slug: string; lastmod: string | null };
 
 export type CaseStudyFilterOptions = {
   solutions: CaseStudyTaxonomyItem[];
-  packagingTypes: CaseStudyTaxonomyItem[];
-  expertise: CaseStudyTaxonomyItem[];
+  products: CaseStudyTaxonomyItem[];
+  expertiseAreas: CaseStudyTaxonomyItem[];
 };

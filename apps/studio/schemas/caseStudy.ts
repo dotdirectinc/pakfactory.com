@@ -1,7 +1,9 @@
 import { CaseIcon } from '@sanity/icons'
 import { defineField, defineType } from 'sanity'
 
-const caseStudyPortableTextOf = [
+// Shared PT config for the three story sections.
+// Uses bodyImage (blog's deployed inline image), testimonialBlock, and caseStudyGalleryBlock.
+const storyPtOf = [
   {
     type: 'block',
     styles: [
@@ -30,9 +32,9 @@ const caseStudyPortableTextOf = [
       ],
     },
   },
-  { type: 'caseStudyImage' },
-  { type: 'caseStudyImageGallery' },
-  { type: 'caseStudyQuote' },
+  { type: 'bodyImage' },
+  { type: 'testimonialBlock' },
+  { type: 'caseStudyGalleryBlock' },
 ]
 
 export const caseStudy = defineType({
@@ -41,132 +43,213 @@ export const caseStudy = defineType({
   type: 'document',
   icon: CaseIcon,
   groups: [
-    { name: 'overview', title: 'Overview', default: true },
-    { name: 'client', title: 'Client' },
-    { name: 'hero', title: 'Hero' },
-    { name: 'taxonomy', title: 'Taxonomy' },
-    { name: 'content', title: 'Content' },
-    { name: 'seo', title: 'SEO' },
+    { name: 'content', title: '📝 Content', default: true },
+    { name: 'story', title: '📖 Story' },
+    { name: 'metrics', title: '📊 Metrics' },
+    { name: 'categorization', title: '🏷️ Categorization' },
+    { name: 'publishing', title: '👤 Publishing' },
+    { name: 'seo', title: '🔍 SEO' },
+    { name: 'social', title: '📣 Social' },
   ],
   fields: [
-    // ─── Overview ─────────────────────────────────────────────────────────────
+
+    // ─── Content (default) ────────────────────────────────────────────────────
 
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'overview',
+      group: 'content',
+      description: 'Detail page H1.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'overview',
+      group: 'content',
       options: { source: 'title' },
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'publishedAt',
-      title: 'Published At',
-      type: 'datetime',
-      group: 'overview',
+      name: 'client',
+      title: 'Client',
+      type: 'reference',
+      to: [{ type: 'client' }],
+      group: 'content',
+      description: 'The brand entity. Card and hero read client→name; sidebar logo reads client→logo.',
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'excerpt',
-      title: 'Excerpt',
-      type: 'text',
-      rows: 3,
-      group: 'overview',
-      description: 'Short summary — shown on cards and as the hero subtitle.',
+      name: 'heroIntro',
+      title: 'Hero intro',
+      type: 'array',
+      group: 'content',
+      description: 'Intro paragraph. Bold and "Client link" annotation only — no headings. The Client link mark resolves to the client\'s website URL at render time.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          lists: [],
+          marks: {
+            decorators: [{ title: 'Bold', value: 'strong' }],
+            annotations: [
+              {
+                name: 'clientLink',
+                type: 'object',
+                title: 'Client link',
+                // No fields — URL resolves from client→website at render time.
+                // Renders bold-only when the client has no website.
+                fields: [],
+              },
+            ],
+          },
+        },
+      ],
+      validation: (Rule) => Rule.required(),
     }),
-
-    // ─── Client ───────────────────────────────────────────────────────────────
-
     defineField({
-      name: 'clientName',
-      title: 'Client Name',
+      name: 'heroMedia',
+      title: 'Hero media',
+      type: 'object',
+      group: 'content',
+      validation: (Rule) => Rule.required(),
+      fields: [
+        defineField({
+          name: 'mediaType',
+          title: 'Media type',
+          type: 'string',
+          options: {
+            list: [
+              { title: 'Image', value: 'image' },
+              { title: 'Video (YouTube)', value: 'video' },
+            ],
+            layout: 'radio',
+          },
+          initialValue: 'image',
+          validation: (Rule) => Rule.required(),
+        }),
+        defineField({
+          name: 'image',
+          title: 'Hero image',
+          type: 'image',
+          options: { hotspot: true },
+          hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'image',
+        }),
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describe the hero image for screen readers.',
+          hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'image',
+          validation: (Rule) =>
+            Rule.custom((val, ctx) => {
+              const parent = ctx.parent as { mediaType?: string } | undefined
+              if (parent?.mediaType === 'image' && !val) return 'Alt text is required for images.'
+              return true
+            }),
+        }),
+        defineField({
+          name: 'videoUrl',
+          title: 'Video URL',
+          type: 'url',
+          description: 'YouTube or Vimeo URL. Renders as a facade (thumbnail + play button); the iframe loads only on click.',
+          hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'video',
+        }),
+        defineField({
+          name: 'videoThumbnail',
+          title: 'Video thumbnail override',
+          type: 'image',
+          options: { hotspot: true },
+          description: "Optional. Leave blank to use YouTube's auto-generated thumbnail. Fill for a branded still.",
+          hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'video',
+        }),
+      ],
+    }),
+    defineField({
+      name: 'cardImage',
+      title: 'Card image',
+      type: 'image',
+      group: 'content',
+      options: { hotspot: true },
+      description: 'Grid visual shown on the listing page card.',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'cardImageAlt',
+      title: 'Card image alt',
       type: 'string',
-      group: 'client',
+      group: 'content',
+      description: 'Describe the card image for accessibility.',
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'clientLogo',
-      title: 'Client Logo',
-      type: 'image',
-      group: 'client',
-      options: { hotspot: true },
+      name: 'cardSummary',
+      title: 'Card summary',
+      type: 'text',
+      rows: 2,
+      group: 'content',
+      description: '1–2 line summary shown on the listing card under the client name.',
+      validation: (Rule) => Rule.required(),
     }),
 
-    // ─── Hero ─────────────────────────────────────────────────────────────────
+    // ─── Story ────────────────────────────────────────────────────────────────
 
     defineField({
-      name: 'heroImage',
-      title: 'Hero Image',
-      type: 'image',
-      group: 'hero',
-      options: { hotspot: true },
-    }),
-    defineField({
-      name: 'featuredVideo',
-      title: 'Featured Video URL',
-      type: 'url',
-      group: 'hero',
-      description: 'YouTube or Vimeo URL. Displayed in the hero when present.',
-    }),
-
-    // ─── Taxonomy ─────────────────────────────────────────────────────────────
-
-    defineField({
-      name: 'solutions',
-      title: 'Solutions',
+      name: 'challenge',
+      title: 'Challenge',
       type: 'array',
-      group: 'taxonomy',
-      of: [{ type: 'reference', to: [{ type: 'solution' }] }],
-      description: 'Filter: Solutions (e.g. Apparel, Cosmetic & Skincare).',
+      group: 'story',
+      description: 'The problem the client faced. Paragraphs, bullets, inline images, and blocks.',
+      of: storyPtOf,
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'packagingTypes',
-      title: 'Packaging Types',
+      name: 'solution',
+      title: 'Solution',
       type: 'array',
-      group: 'taxonomy',
-      of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
-      description: 'Filter: Packaging Type (e.g. Rigid, Custom Pouches).',
+      group: 'story',
+      description: 'How PakFactory solved it. Main narrative section.',
+      of: storyPtOf,
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'expertise',
-      title: 'Expertise',
+      name: 'result',
+      title: 'Result',
       type: 'array',
-      group: 'taxonomy',
-      of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
-      description: 'Filter: Expertise (e.g. Packaging Design, Logistics Management).',
+      group: 'story',
+      description: 'Measurable outcomes. Supports inline images and gallery blocks.',
+      of: storyPtOf,
+      validation: (Rule) => Rule.required(),
     }),
 
     // ─── Metrics ──────────────────────────────────────────────────────────────
 
     defineField({
-      name: 'metrics',
-      title: 'Metrics',
+      name: 'highlights',
+      title: 'Highlights',
       type: 'array',
-      group: 'content',
-      description: 'Key results shown as stat cards. Max 3.',
+      group: 'metrics',
+      description: 'Key stats shown in the left rail. Recommend 2–4.',
       of: [
         {
           type: 'object',
-          name: 'metric',
-          title: 'Metric',
+          name: 'highlightStat',
+          title: 'Stat',
           fields: [
             defineField({
               name: 'title',
-              title: 'Metric',
+              title: 'Stat',
               type: 'string',
-              description: 'The stat or headline figure (e.g. "40% Return Rate Reduction").',
+              description: 'Bold headline, e.g. "70k+ Boxes Manufactured".',
               validation: (Rule) => Rule.required(),
             }),
             defineField({
               name: 'description',
-              title: 'Description',
-              type: 'string',
-              description: 'Supporting context (e.g. "Attributed to better product protection").',
+              title: 'Supporting line',
+              type: 'text',
+              rows: 2,
+              description: 'Context, e.g. "Across 5+ years of a continuous partnership."',
             }),
           ],
           preview: {
@@ -174,136 +257,176 @@ export const caseStudy = defineType({
           },
         },
       ],
-      validation: (Rule) => Rule.max(3).warning('Keep metrics to 3 or fewer for best display.'),
+      validation: (Rule) => Rule.max(4).warning('Keep highlights to 4 or fewer for best display.'),
     }),
 
-    // ─── Challenges ───────────────────────────────────────────────────────────
+    // ─── Categorization ───────────────────────────────────────────────────────
 
     defineField({
-      name: 'challenges',
-      title: 'Challenges',
-      type: 'object',
-      group: 'content',
-      fields: [
-        defineField({
-          name: 'intro',
-          title: 'Intro',
-          type: 'text',
-          rows: 3,
-          description: 'Opening paragraph for the challenges section.',
-        }),
-        defineField({
-          name: 'items',
-          title: 'Challenge Items',
-          type: 'array',
-          of: [{ type: 'string' }],
-          description: 'Bullet-point challenges the client faced.',
-        }),
-      ],
-    }),
-
-    // ─── Solutions Body ───────────────────────────────────────────────────────
-
-    defineField({
-      name: 'solutionsBody',
-      title: 'Solutions Body',
+      name: 'solutions',
+      title: 'Solutions',
       type: 'array',
-      group: 'content',
-      description: 'Rich content for the Solutions section. Supports galleries and pull-quotes.',
-      of: caseStudyPortableTextOf,
-    }),
-
-    // ─── Result Section ───────────────────────────────────────────────────────
-
-    defineField({
-      name: 'resultBody',
-      title: 'Result Body',
-      type: 'array',
-      group: 'content',
-      description: 'Rich content for the Result section. Supports galleries and pull-quotes.',
-      of: caseStudyPortableTextOf,
+      group: 'categorization',
+      of: [{ type: 'reference', to: [{ type: 'industry' }] }],
+      description: 'Solution filter + chips. Solutions = the deployed Industry taxonomy.',
+      validation: (Rule) => Rule.required().min(1),
     }),
     defineField({
-      name: 'resultImages',
-      title: 'Result Images',
+      name: 'products',
+      title: 'Products',
       type: 'array',
-      group: 'content',
-      description: 'Supporting imagery for the result section (before/after, outcome photos).',
-      of: [
-        {
-          type: 'object',
-          name: 'resultImage',
-          title: 'Image',
-          fields: [
-            defineField({
-              name: 'image',
-              title: 'Image',
-              type: 'image',
-              options: { hotspot: true },
-              validation: (Rule) => Rule.required(),
-            }),
-            defineField({
-              name: 'alt',
-              title: 'Alt text',
-              type: 'string',
-              description: 'Describe the image for accessibility.',
-            }),
-            defineField({
-              name: 'caption',
-              title: 'Caption',
-              type: 'string',
-            }),
-          ],
-          preview: {
-            select: { media: 'image', title: 'caption', alt: 'alt' },
-            prepare({ media, title, alt }: { media?: unknown; title?: string; alt?: string }) {
-              return { media, title: title ?? alt ?? 'Image' }
-            },
-          },
-        },
-      ],
+      group: 'categorization',
+      of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
+      description: 'Product filter + chips. Reuses the deployed Product Lines taxonomy.',
+      validation: (Rule) => Rule.required().min(1),
+    }),
+    defineField({
+      name: 'expertiseAreas',
+      title: 'Expertise',
+      type: 'array',
+      group: 'categorization',
+      of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
+      description: 'Expertise filter + chips (the 6 lifecycle stages).',
+      validation: (Rule) => Rule.required().min(1),
+    }),
+    defineField({
+      name: 'capabilities',
+      title: 'Capabilities',
+      type: 'array',
+      group: 'categorization',
+      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
+      description: 'Detail chip group only (no launch filter). Materials, finishes, certifications.',
+    }),
+    defineField({
+      name: 'relatedStudies',
+      title: 'Related studies',
+      type: 'array',
+      group: 'categorization',
+      of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
+      description: 'Manual override for the "See What\'s More" section. Empty → auto-fallback to newest 3.',
+      validation: (Rule) => Rule.max(3),
+    }),
+
+    // ─── Publishing ───────────────────────────────────────────────────────────
+
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: 'publishing',
+      options: {
+        list: [
+          { title: 'Draft', value: 'draft' },
+          { title: 'Scheduled', value: 'scheduled' },
+          { title: 'Published', value: 'published' },
+          { title: 'Archived', value: 'archived' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'draft',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'publishedAt',
+      title: 'Published at',
+      type: 'datetime',
+      group: 'publishing',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'lastModified',
+      title: 'Last modified',
+      type: 'datetime',
+      group: 'publishing',
+      description: 'Editorial date. Bump only on substantive revision. Feeds sitemap lastmod and JSON-LD dateModified. Leave blank to default to Published at.',
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 
     defineField({
       name: 'metaTitle',
-      title: 'Meta Title',
+      title: 'Meta title',
       type: 'string',
       group: 'seo',
-      description: 'Base title — "| PakFactory" is appended automatically. Max 60 characters.',
+      description: '"| PakFactory" appended automatically. Max 60 characters.',
       validation: (Rule) =>
-        Rule.max(60).warning('Titles over 60 characters may be truncated in search results.'),
+        Rule.max(60).warning('Titles over 60 characters may be truncated.'),
     }),
     defineField({
       name: 'metaDescription',
-      title: 'Meta Description',
+      title: 'Meta description',
       type: 'text',
       rows: 3,
       group: 'seo',
-      description: 'Aim for 155–165 characters.',
+      description: 'Fallback: cardSummary → heroIntro. Aim for 155–165 characters.',
       validation: (Rule) =>
-        Rule.max(165).warning('Descriptions over 165 characters are typically truncated.'),
+        Rule.max(160).warning('Descriptions over 160 characters are typically truncated.'),
     }),
     defineField({
-      name: 'ogImage',
-      title: 'OG Image',
-      type: 'image',
+      name: 'canonicalUrl',
+      title: 'Canonical URL',
+      type: 'url',
       group: 'seo',
-      description: 'Open Graph image for social sharing (1200×630 recommended).',
+      description: 'Rare cross-domain override only.',
+    }),
+    defineField({
+      name: 'allowIndex',
+      title: 'Allow indexing',
+      type: 'boolean',
+      group: 'seo',
+      description: 'Uncheck to set noindex. Also drops this study from the on-site grid and related.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'allowFollow',
+      title: 'Allow follow',
+      type: 'boolean',
+      group: 'seo',
+      description: 'Uncheck to set nofollow.',
+      initialValue: true,
+    }),
+    defineField({
+      name: 'noImageIndex',
+      title: 'No image index',
+      type: 'boolean',
+      group: 'seo',
+      description: 'Set noimageindex to prevent Google from indexing images on this page.',
+      initialValue: false,
+    }),
+
+    // ─── Social ───────────────────────────────────────────────────────────────
+
+    defineField({
+      name: 'ogImage',
+      title: 'OG image',
+      type: 'image',
+      group: 'social',
+      options: { hotspot: true },
+      description: 'Open Graph image for social sharing. Fallback: cardImage → heroMedia image → global default.',
     }),
   ],
   preview: {
     select: {
       title: 'title',
-      clientName: 'clientName',
-      heroImage: 'heroImage',
+      clientName: 'client.name',
+      media: 'cardImage',
+      status: 'status',
     },
-    prepare({ title, clientName, heroImage }: { title?: string; clientName?: string; heroImage?: unknown }) {
+    prepare({
+      title,
+      clientName,
+      media,
+      status,
+    }: {
+      title?: string
+      clientName?: string
+      media?: unknown
+      status?: string
+    }) {
       return {
         title: title ?? 'Untitled case study',
-        subtitle: clientName ?? '',
-        media: heroImage,
+        subtitle: [clientName, status ? `[${status}]` : null].filter(Boolean).join(' · '),
+        media,
       }
     },
   },

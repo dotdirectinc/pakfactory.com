@@ -1,22 +1,48 @@
-import type { PortableTextComponents } from "@portabletext/react";
+"use client";
+
+import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import Image from "next/image";
 import { urlFor } from "@/lib/sanity/client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// Factory so the heroIntro clientLink annotation can resolve client->website.
+export function makeHeroIntroPtComponents(clientWebsite?: string | null): PortableTextComponents {
+  return {
+    marks: {
+      strong: ({ children }) => (
+        <strong className="font-semibold text-foreground">{children}</strong>
+      ),
+      clientLink: ({ children }: PortableTextMarkComponentProps<any>) =>
+        clientWebsite ? (
+          <a
+            href={clientWebsite}
+            className="font-semibold text-foreground underline underline-offset-4 hover:no-underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {children}
+          </a>
+        ) : (
+          <strong className="font-semibold text-foreground">{children}</strong>
+        ),
+    },
+    block: {
+      normal: ({ children }) => (
+        <p className="text-lg leading-8 text-muted-foreground">{children}</p>
+      ),
+    },
+  };
+}
+
+// Components for the three story sections (challenge / solution / result).
 export const caseStudyPtComponents: PortableTextComponents = {
   types: {
-    caseStudyImage: ({ value }) => {
-      if (!value.image) return null;
-      const src = urlFor(value.image).url();
-      const sizeClass =
-        value.size === "half"
-          ? "mx-auto w-1/2"
-          : value.size === "wide"
-            ? "w-3/4 mx-auto"
-            : "w-full";
+    bodyImage: ({ value }) => {
+      if (!value?.asset) return null;
+      const src = urlFor(value.asset).url();
       return (
-        <figure className={`not-prose my-10 ${sizeClass}`}>
+        <figure className="not-prose my-10 w-full">
           <div className="relative aspect-video overflow-hidden rounded-xl">
             <Image
               src={src}
@@ -35,30 +61,70 @@ export const caseStudyPtComponents: PortableTextComponents = {
       );
     },
 
-    caseStudyImageGallery: ({ value }) => {
+    testimonialBlock: ({ value }) => (
+      <figure className="not-prose my-10 overflow-hidden rounded-2xl border border-dashed border-border">
+        {value.backgroundImage && (
+          <div className="relative h-32 w-full overflow-hidden">
+            <Image
+              src={urlFor(value.backgroundImage).width(800).height(256).url()}
+              alt={value.backgroundImageAlt ?? ""}
+              fill
+              className="object-cover"
+              sizes="800px"
+            />
+            <div className="absolute inset-0 bg-black/40" />
+          </div>
+        )}
+        <blockquote className="p-8">
+          <p className="text-xl font-medium italic leading-relaxed text-foreground">
+            &ldquo;{value.quote}&rdquo;
+          </p>
+          {(value.attributionName || value.attributionRole) && (
+            <figcaption className="mt-5">
+              {value.attributionName && (
+                <p className="text-sm font-semibold text-foreground">
+                  {value.attributionName}
+                </p>
+              )}
+              {value.attributionRole && (
+                <p className="text-xs text-muted-foreground">{value.attributionRole}</p>
+              )}
+            </figcaption>
+          )}
+        </blockquote>
+      </figure>
+    ),
+
+    caseStudyGalleryBlock: ({ value }) => {
       const images: any[] = value.images ?? [];
-      const isSquare = value.aspectRatio === "1:1";
+      const style: string = value.displayStyle ?? "twoUp";
+
+      const gridClass =
+        style === "twoUp"
+          ? "grid-cols-2 gap-3"
+          : style === "stacked"
+            ? "grid-cols-1 gap-3"
+            : "grid-cols-1"; // fullWidth
+
       return (
-        <div
-          className={`not-prose my-10 grid gap-3 ${images.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
-        >
+        <div className={`not-prose my-10 grid ${gridClass}`}>
           {images.map((item: any, i: number) => {
             if (!item.image) return null;
             const src = urlFor(item.image).url();
             return (
               <figure
                 key={i}
-                className={`relative overflow-hidden rounded-xl ${isSquare ? "aspect-square" : "aspect-video"}`}
+                className="relative aspect-video overflow-hidden rounded-xl"
               >
                 <Image
                   src={src}
-                  alt={item.caption ?? ""}
+                  alt={item.alt ?? ""}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes={style === "twoUp" ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 800px"}
                 />
                 {item.caption && (
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-black/40 px-3 py-2 text-xs text-white">
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-black/50 px-3 py-2 text-xs text-white">
                     {item.caption}
                   </figcaption>
                 )}
@@ -68,34 +134,6 @@ export const caseStudyPtComponents: PortableTextComponents = {
         </div>
       );
     },
-
-    caseStudyQuote: ({ value }) => (
-      <blockquote className="not-prose my-10 border-l-4 border-primary pl-6">
-        <p className="text-xl font-medium italic leading-relaxed text-foreground">
-          &ldquo;{value.quote}&rdquo;
-        </p>
-        {value.author && (
-          <footer className="mt-5 flex items-center gap-3">
-            {value.photo && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={urlFor(value.photo).width(80).height(80).url()}
-                alt={value.author}
-                className="size-10 rounded-full object-cover"
-                width={40}
-                height={40}
-              />
-            )}
-            <div>
-              <p className="text-sm font-semibold text-foreground">{value.author}</p>
-              {value.role && (
-                <p className="text-xs text-muted-foreground">{value.role}</p>
-              )}
-            </div>
-          </footer>
-        )}
-      </blockquote>
-    ),
   },
 
   block: {

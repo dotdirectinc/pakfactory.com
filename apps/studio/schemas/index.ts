@@ -21,7 +21,9 @@ import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
 import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticPages'
 import { expertiseStage } from './expertiseStage'
+import { client } from './client'
 import { caseStudy } from './caseStudy'
+import { caseStudiesPage } from './caseStudiesPage'
 import { glossaryTerm, guide, helpArticle } from './resources'
 import { blogNavigation } from './blogNavigation'
 import { blogSettings } from './blogSettings'
@@ -65,7 +67,9 @@ export const schemaTypes = [
   // Solutions & Core Entities
   solution,
   expertiseStage,
+  client,
   caseStudy,
+  caseStudiesPage,
   solutionsSettings,
 
   // Resources

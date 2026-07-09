@@ -12,8 +12,6 @@ import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   CASE_STUDY_BY_SLUG_QUERY,
   CASE_STUDY_PATHS_QUERY,
-  CASE_STUDY_RELATED_QUERY,
-  type CaseStudyCard,
   type CaseStudyDetail,
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
@@ -21,7 +19,11 @@ import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfacto
 import { absoluteUrl } from "@/lib/site";
 import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { CaseStudyShare } from "./_components/case-study-share";
-import { caseStudyPtComponents } from "./_components/pt-components";
+import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
+import {
+  caseStudyPtComponents,
+  makeHeroIntroPtComponents,
+} from "./_components/pt-components";
 
 export const revalidate = 3600;
 
@@ -45,12 +47,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!study) return {};
 
   const title = study.metaTitle?.trim() || study.title;
-  const description = study.metaDescription?.trim() || study.excerpt || undefined;
-  const canonical = absoluteUrl(`/case-studies/${slug}`);
+  const description =
+    study.metaDescription?.trim() || study.cardSummary || undefined;
+  const canonical = study.canonicalUrl || absoluteUrl(`/case-studies/${slug}`);
+  const robots = [
+    study.allowIndex === false ? "noindex" : "index",
+    study.allowFollow === false ? "nofollow" : "follow",
+    study.noImageIndex ? "noimageindex" : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return {
     title: `${title} | PakFactory`,
     description,
+    robots,
     alternates: { canonical },
     openGraph: {
       title,
@@ -64,28 +75,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  const client = isSanityConfigured() ? getPublishedSanityClient() : null;
-
-  const [study, relatedStudies] = await Promise.all([
-    client
-      ? client
-          .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-          .catch(() => null)
-      : Promise.resolve(null),
-    client
-      ? client
-          .fetch<CaseStudyCard[]>(CASE_STUDY_RELATED_QUERY, { currentSlug: slug })
-          .catch(() => [] as CaseStudyCard[])
-      : Promise.resolve([] as CaseStudyCard[]),
-  ]);
+  const study = isSanityConfigured()
+    ? await getPublishedSanityClient()
+        .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+        .catch(() => null)
+    : null;
 
   if (!study) notFound();
 
   const pageUrl = absoluteUrl(`/case-studies/${slug}`);
   const allTaxonomy = [
     ...(study.solutions ?? []),
-    ...(study.packagingTypes ?? []),
-    ...(study.expertise ?? []),
+    ...(study.products ?? []),
+    ...(study.expertiseAreas ?? []),
+    ...(study.capabilities ?? []),
   ];
 
   const jsonLd = serializeJsonLd(
@@ -98,10 +101,12 @@ export default async function CaseStudyPage({ params }: Props) {
       webPage({
         url: pageUrl,
         name: study.title,
-        description: study.excerpt ?? undefined,
+        description: study.cardSummary ?? undefined,
       }),
     ]),
   );
+
+  const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
 
   return (
     <>
@@ -137,19 +142,10 @@ export default async function CaseStudyPage({ params }: Props) {
         </nav>
       </PageDielineSection>
 
-      {/* Hero image */}
-      {study.heroImageUrl && (
+      {/* Hero media */}
+      {study.heroMedia && (
         <PageDielineSection innerClassName="pt-10 pb-0">
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-secondary">
-            <Image
-              src={study.heroImageUrl}
-              alt={study.heroImageAlt ?? study.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 1280px"
-              priority
-            />
-          </div>
+          <CaseStudyHeroMedia heroMedia={study.heroMedia} title={study.title} />
         </PageDielineSection>
       )}
 
@@ -160,88 +156,59 @@ export default async function CaseStudyPage({ params }: Props) {
           {/* ── Left: primary content ── */}
           <div className="min-w-0">
             {/* Client + title */}
-            {study.clientName && (
+            {study.client?.name && (
               <p className="mb-2 text-sm font-medium text-muted-foreground">
-                {study.clientName}
+                {study.client.name}
               </p>
             )}
             <h1 className="text-4xl font-bold tracking-tight text-foreground lg:text-5xl">
               {study.title}
             </h1>
-            {study.excerpt && (
-              <p className="mt-4 text-lg leading-8 text-muted-foreground">
-                {study.excerpt}
-              </p>
+
+            {/* Hero intro */}
+            {Array.isArray(study.heroIntro) && study.heroIntro.length > 0 && (
+              <div className="mt-4">
+                <PortableText
+                  value={study.heroIntro as PortableTextBlock[]}
+                  components={heroIntroPtComponents}
+                />
+              </div>
             )}
 
-            {/* Challenges */}
-            {study.challenges && (
-              <section className="mt-12">
-                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                  The Challenge
-                </h2>
-                {study.challenges.intro && (
-                  <p className="mt-3 text-base leading-7 text-foreground">
-                    {study.challenges.intro}
-                  </p>
-                )}
-                {study.challenges.items && study.challenges.items.length > 0 && (
-                  <ul className="mt-4 ml-6 list-disc space-y-2 text-base text-foreground">
-                    {study.challenges.items.map((item, i) => (
-                      <li key={i} className="leading-7">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
-
-            {/* Solutions body */}
-            {Array.isArray(study.solutionsBody) && study.solutionsBody.length > 0 && (
+            {/* Challenge */}
+            {Array.isArray(study.challenge) && study.challenge.length > 0 && (
               <section className="mt-12">
                 <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">
-                  Our Solution
+                  The Challenge
                 </h2>
                 <PortableText
-                  value={study.solutionsBody as PortableTextBlock[]}
+                  value={study.challenge as PortableTextBlock[]}
                   components={caseStudyPtComponents}
                 />
               </section>
             )}
 
-            {/* Result images */}
-            {study.resultImages && study.resultImages.length > 0 && (
-              <div className="mt-12 grid grid-cols-2 gap-3">
-                {study.resultImages.map((img) => (
-                  img.url && (
-                    <figure key={img._key} className="relative aspect-video overflow-hidden rounded-xl">
-                      <Image
-                        src={img.url}
-                        alt={img.alt ?? ""}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 50vw, 400px"
-                      />
-                      {img.caption && (
-                        <figcaption className="absolute inset-x-0 bottom-0 bg-black/40 px-3 py-2 text-xs text-white">
-                          {img.caption}
-                        </figcaption>
-                      )}
-                    </figure>
-                  )
-                ))}
-              </div>
+            {/* Solution */}
+            {Array.isArray(study.solution) && study.solution.length > 0 && (
+              <section className="mt-12">
+                <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">
+                  Our Solution
+                </h2>
+                <PortableText
+                  value={study.solution as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </section>
             )}
 
-            {/* Result body */}
-            {Array.isArray(study.resultBody) && study.resultBody.length > 0 && (
+            {/* Result */}
+            {Array.isArray(study.result) && study.result.length > 0 && (
               <section className="mt-12">
                 <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">
                   The Result
                 </h2>
                 <PortableText
-                  value={study.resultBody as PortableTextBlock[]}
+                  value={study.result as PortableTextBlock[]}
                   components={caseStudyPtComponents}
                 />
               </section>
@@ -252,37 +219,49 @@ export default async function CaseStudyPage({ params }: Props) {
           <aside className="flex flex-col gap-8 self-start lg:sticky lg:top-24">
 
             {/* Client card */}
-            {(study.clientName || study.clientLogoUrl) && (
+            {study.client && (
               <div className="rounded-2xl border border-dashed border-border p-6">
-                {study.clientLogoUrl && (
+                {study.client.logoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={study.clientLogoUrl}
-                    alt={study.clientName ?? "Client logo"}
+                    src={study.client.logoUrl}
+                    alt={study.client.name ?? "Client logo"}
                     className="mb-4 h-10 w-auto object-contain"
                   />
                 )}
-                {study.clientName && (
-                  <p className="text-lg font-semibold text-foreground">{study.clientName}</p>
+                {study.client.name && (
+                  <p className="text-lg font-semibold text-foreground">
+                    {study.client.name}
+                  </p>
+                )}
+                {study.client.website && (
+                  <a
+                    href={study.client.website}
+                    className="mt-1 block text-xs text-muted-foreground hover:text-foreground"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Visit website →
+                  </a>
                 )}
               </div>
             )}
 
-            {/* Metrics */}
-            {study.metrics && study.metrics.length > 0 && (
+            {/* Highlights (metrics rail) */}
+            {study.highlights && study.highlights.length > 0 && (
               <div className="rounded-2xl border border-dashed border-border p-6">
                 <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Results
                 </p>
                 <dl className="flex flex-col gap-5">
-                  {study.metrics.map((m) => (
-                    <div key={m._key}>
+                  {study.highlights.map((h) => (
+                    <div key={h._key}>
                       <dt className="text-3xl font-bold tracking-tight text-foreground">
-                        {m.title}
+                        {h.title}
                       </dt>
-                      {m.description && (
+                      {h.description && (
                         <dd className="mt-0.5 text-sm text-muted-foreground">
-                          {m.description}
+                          {h.description}
                         </dd>
                       )}
                     </div>
@@ -291,7 +270,7 @@ export default async function CaseStudyPage({ params }: Props) {
               </div>
             )}
 
-            {/* Taxonomy */}
+            {/* Taxonomy chips */}
             {allTaxonomy.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {allTaxonomy.map((t) => (
@@ -313,23 +292,24 @@ export default async function CaseStudyPage({ params }: Props) {
       </PageDielineSection>
 
       {/* Related case studies */}
-      {relatedStudies.length > 0 && (
+      {study.relatedStudies && study.relatedStudies.length > 0 && (
         <PageDielineSection innerClassName="border-t border-dashed border-border py-16">
           <h2 className="mb-10 text-2xl font-semibold tracking-tight text-foreground">
-            Related Case Studies
+            See What&apos;s More
           </h2>
           <ul className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-            {relatedStudies.map((s) => (
+            {study.relatedStudies.map((s) => (
               <li key={s._id}>
                 <CaseStudyCardUI
                   href={`/case-studies/${s.slug}`}
                   title={s.title}
-                  clientName={s.clientName}
-                  excerpt={s.excerpt}
-                  heroImageUrl={s.heroImageUrl}
-                  heroImageAlt={s.heroImageAlt}
+                  clientName={s.client?.name}
+                  cardSummary={s.cardSummary}
+                  cardImageUrl={s.cardImageUrl}
+                  cardImageAlt={s.cardImageAlt}
                   solutions={s.solutions}
-                  packagingTypes={s.packagingTypes}
+                  products={s.products}
+                  isVideo={s.heroMediaType === "video"}
                 />
               </li>
             ))}

@@ -6,9 +6,8 @@ import { bodyQuote } from './body-quote'
 import { bodyStatStack } from './body-stat-stack'
 import { bodyTable } from './body-table'
 import { bodyVideo } from './body-video'
-import { caseStudyImage } from './case-study-image'
-import { caseStudyImageGallery } from './case-study-image-gallery'
-import { caseStudyQuote } from './case-study-quote'
+import { testimonialBlock } from './testimonial-block'
+import { caseStudyGalleryBlock } from './case-study-gallery-block'
 
 /**
  * Inline body blocks — one-off content authored in place inside a post's
@@ -33,8 +32,11 @@ export const inlineBlocks = [
 ]
 
 /**
- * Inline blocks for case study Portable Text sections (challenges, solutions, result).
+ * Inline blocks for case study Portable Text sections (challenge / solution / result).
  * Kept separate from `inlineBlocks` so they do not appear in the blog post editor.
  * Registered globally in schemas/index.ts so Sanity resolves them in case study PT fields.
+ *
+ * Uses `bodyImage` (blog's deployed single-image block) for inline images.
+ * `testimonialBlock` and `caseStudyGalleryBlock` are case-study-specific.
  */
-export const caseStudyInlineBlocks = [caseStudyImage, caseStudyImageGallery, caseStudyQuote]
+export const caseStudyInlineBlocks = [testimonialBlock, caseStudyGalleryBlock]

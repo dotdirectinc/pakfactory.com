@@ -86,12 +86,13 @@ export default async function CaseStudiesPage() {
                 <CaseStudyCard
                   href={`/case-studies/${study.slug}`}
                   title={study.title}
-                  clientName={study.clientName}
-                  excerpt={study.excerpt}
-                  heroImageUrl={study.heroImageUrl}
-                  heroImageAlt={study.heroImageAlt}
+                  clientName={study.client?.name}
+                  cardSummary={study.cardSummary}
+                  cardImageUrl={study.cardImageUrl}
+                  cardImageAlt={study.cardImageAlt}
                   solutions={study.solutions}
-                  packagingTypes={study.packagingTypes}
+                  products={study.products}
+                  isVideo={study.heroMediaType === "video"}
                   priority={i < 3}
                 />
               </li>
