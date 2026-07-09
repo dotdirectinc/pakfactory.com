@@ -89,7 +89,6 @@ export default async function CaseStudiesPage() {
                   href={`/case-studies/${study.slug}`}
                   title={study.title}
                   clientName={study.clientName}
-                  industry={study.industry}
                   excerpt={study.excerpt}
                   heroImageUrl={study.heroImageUrl}
                   heroImageAlt={study.heroImageAlt}

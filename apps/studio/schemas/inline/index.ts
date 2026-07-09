@@ -1,4 +1,6 @@
 import { bodyCallout } from './body-callout'
+import { caseStudyImageGallery } from './case-study-image-gallery'
+import { caseStudyQuote } from './case-study-quote'
 
 /**
  * Inline body blocks — one-off content authored in place inside a post's
@@ -12,3 +14,10 @@ import { bodyCallout } from './body-callout'
  * array insert menu does not yet apply to Portable Text — see Sanity #6992).
  */
 export const inlineBlocks = [bodyCallout]
+
+/**
+ * Inline blocks for case study Portable Text sections (challenges, solutions, result).
+ * Kept separate from `inlineBlocks` so they do not appear in the blog post editor.
+ * Registered globally in schemas/index.ts so Sanity resolves them in case study PT fields.
+ */
+export const caseStudyInlineBlocks = [caseStudyImageGallery, caseStudyQuote]

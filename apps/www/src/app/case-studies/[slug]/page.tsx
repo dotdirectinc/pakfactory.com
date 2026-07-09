@@ -11,7 +11,6 @@ import {
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
-import { CaseStudyResult } from "@/components/ui/case-study-result";
 import { absoluteUrl } from "@/lib/site";
 import {
   MOCK_CASE_STUDY_DETAILS,
@@ -117,12 +116,8 @@ export default async function CaseStudyPage({ params }: Props) {
 
         {/* Meta */}
         <div className="mb-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
-          {study.industry && (
-            <span className="font-medium uppercase tracking-wider">
-              {study.industry}
-            </span>
-          )}
           {study.clientName && <span>{study.clientName}</span>}
+          {/* Phase 3: taxonomy chips (solutions, packagingTypes, expertise) */}
         </div>
 
         <h1 className="text-4xl font-bold tracking-tight">{study.title}</h1>
@@ -131,25 +126,24 @@ export default async function CaseStudyPage({ params }: Props) {
           <p className="mt-4 text-lg text-muted-foreground">{study.excerpt}</p>
         )}
 
-        {/* Results */}
-        {study.results && study.results.length > 0 && (
+        {/* Metrics — Phase 3 will replace with proper MetricCard components */}
+        {study.metrics && study.metrics.length > 0 && (
           <ul className="mt-10 grid gap-6 sm:grid-cols-3">
-            {study.results.map((r) => (
-              <li key={r._key}>
-                <CaseStudyResult
-                  value={r.value}
-                  metric={r.metric}
-                  description={r.description}
-                />
+            {study.metrics.map((m) => (
+              <li key={m._key} className="rounded-lg border p-4">
+                <p className="text-2xl font-bold">{m.title}</p>
+                {m.description && (
+                  <p className="mt-1 text-sm text-muted-foreground">{m.description}</p>
+                )}
               </li>
             ))}
           </ul>
         )}
 
-        {/* Body */}
-        {Array.isArray(study.body) && study.body.length > 0 && (
+        {/* Solutions body — Phase 3 will apply section layout */}
+        {Array.isArray(study.solutionsBody) && study.solutionsBody.length > 0 && (
           <div className="prose prose-neutral mt-10 max-w-none dark:prose-invert">
-            <PortableText value={study.body as PortableTextBlock[]} />
+            <PortableText value={study.solutionsBody as PortableTextBlock[]} />
           </div>
         )}
       </main>

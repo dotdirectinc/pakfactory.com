@@ -15,7 +15,7 @@ import { blogCategory } from './blogCategory'
 import { blogTopicGroup } from './blogTopicGroup'
 import { blogTag } from './blogTag'
 import { bodyImage } from './bodyImage'
-import { inlineBlocks } from './inline'
+import { inlineBlocks, caseStudyInlineBlocks } from './inline'
 import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
@@ -79,6 +79,7 @@ export const schemaTypes = [
   blogTag,
   bodyImage,
   ...inlineBlocks,
+  ...caseStudyInlineBlocks,
   contentWidget,
   widgetEmbed,
   page,
