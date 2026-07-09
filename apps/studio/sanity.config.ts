@@ -1,433 +1,278 @@
-import {defineConfig, type Template} from 'sanity';
-import {structureTool, type DefaultDocumentNodeResolver} from 'sanity/structure';
-import {visionTool} from '@sanity/vision';
-import {assist} from '@sanity/assist';
-import {presentationTool} from 'sanity/presentation';
-import {schemaTypes} from '@pakfactory/sanity/schemas';
-import {ProductCollectionProductsView} from './components/ProductCollectionProductsView';
-import {ProductPageCollectionsView} from './components/ProductPageCollectionsView';
-import {ProductCapabilitiesView} from './components/ProductCapabilitiesView';
+import { defineConfig } from 'sanity'
+import type { DocumentActionComponent, DocumentActionsContext, Template } from 'sanity'
+import { structureTool } from 'sanity/structure'
+import { presentationTool } from 'sanity/presentation'
+import { visionTool } from '@sanity/vision'
+import { media } from 'sanity-plugin-media'
 import {
-    PRODUCT_FOR_COLLECTION_TEMPLATE_ID,
-    PRODUCT_FOR_LANDING_PAGE_TEMPLATE_ID,
-    CAPABILITY_CATEGORY_MATERIAL_TEMPLATE_ID,
-    CAPABILITY_CATEGORY_FINISH_TEMPLATE_ID,
-} from './templateIds';
+  documentInternationalization,
+  useDeleteTranslationAction,
+  useDuplicateWithTranslationsAction,
+} from '@sanity/document-internationalization'
+import { websiteLocations, blogLocations } from './presentation/locations'
+import { schemaTypes } from './schemas'
+import { publishWithRedirect } from './actions/publishWithRedirect'
+import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
+import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
+import { CHANNELS } from './lib/channels'
+import {
+  adminStructure,
+  blogStructure,
+  websiteStructure,
+  solutionsStructure,
+  academyStructure,
+} from './structure'
+import { BlogCategoryPostsView } from './components/BlogCategoryPostsView'
+import { RelatedPostsView } from './components/RelatedPostsView'
+import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
+import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
+import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
+import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
 
-const productForCollectionTemplate: Template<{collectionId?: string}> = {
-    id: PRODUCT_FOR_COLLECTION_TEMPLATE_ID,
-    title: 'Product in this collection',
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
+const dataset = process.env.SANITY_STUDIO_DATASET || 'development'
+
+// ── Presentation (live site preview) ─────────────────────────────────────────
+// Per-workspace: the Website workspace previews apps/www, Blog previews apps/blog.
+// Origins are env-overridable (set in the Studio env, exposed via SANITY_STUDIO_*).
+// Each surface must run @sanity/visual-editing + a draft-mode enable route for the
+// overlays to work; apps/www already does, apps/blog wiring lands on the blog branch.
+const WWW_PREVIEW_ORIGIN =
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000'
+const BLOG_PREVIEW_ORIGIN =
+  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003'
+
+const productTemplates: Template[] = [
+  {
+    id: 'product-standard',
+    title: 'Product (Standard)',
     schemaType: 'product',
-    parameters: [{name: 'collectionId', type: 'string', title: 'Collection'}],
-    value: (params: {collectionId?: string}) => ({
-        primaryCollection: params?.collectionId
-            ? {_type: 'reference', _ref: params.collectionId}
-            : undefined,
+    parameters: [
+      { name: 'categoryId', title: 'Category ID', type: 'string' },
+      { name: 'styleId', title: 'Style ID', type: 'string' },
+    ],
+    value: ({ categoryId, styleId }: { categoryId: string; styleId: string }) => ({
+      primaryClassification: 'standard',
+      productCategories: [{ _type: 'reference', _ref: categoryId }],
+      productStyleCategories: [{ _type: 'reference', _ref: styleId }],
     }),
-};
-
-const capabilityCategoryMaterialTemplate: Template = {
-    id: CAPABILITY_CATEGORY_MATERIAL_TEMPLATE_ID,
-    title: 'Material',
-    schemaType: 'capabilityCategory',
-    value: {category: 'material'},
-};
-
-const capabilityCategoryFinishTemplate: Template = {
-    id: CAPABILITY_CATEGORY_FINISH_TEMPLATE_ID,
-    title: 'Finish',
-    schemaType: 'capabilityCategory',
-    value: {category: 'finish'},
-};
-
-const productForLandingPageTemplate: Template<{landingPageId?: string}> = {
-    id: PRODUCT_FOR_LANDING_PAGE_TEMPLATE_ID,
-    title: 'Product on this landing page',
+  },
+  {
+    id: 'product-industry',
+    title: 'Product (Industry)',
     schemaType: 'product',
-    parameters: [{name: 'landingPageId', type: 'string', title: 'Landing page'}],
-    value: (params: {landingPageId?: string}) => ({
-        primaryLandingPage: params?.landingPageId
-            ? {_type: 'reference', _ref: params.landingPageId}
-            : undefined,
+    parameters: [
+      { name: 'industryId', title: 'Industry ID', type: 'string' },
+      { name: 'industryCategoryId', title: 'Industry Category ID', type: 'string' },
+    ],
+    value: ({ industryId, industryCategoryId }: { industryId: string; industryCategoryId: string }) => ({
+      primaryClassification: 'industry',
+      industries: [{ _type: 'reference', _ref: industryId }],
+      industryCategories: [{ _type: 'reference', _ref: industryCategoryId }],
     }),
-};
+  },
+]
 
-const projectId =
-    process.env.SANITY_STUDIO_PROJECT_ID ||
-    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
-    '';
-const previewOrigin =
-    process.env.SANITY_STUDIO_PREVIEW_URL || 'http://localhost:3000';
-const dataset =
-    process.env.SANITY_STUDIO_DATASET ||
-    process.env.NEXT_PUBLIC_SANITY_DATASET ||
-    'production';
+const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => {
+  if (schemaType === 'blogCategory') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(BlogCategoryPostsView).title('Posts'),
+    ])
+  }
+  if (schemaType === 'blogTag') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(RelatedPostsByTagView).title('Related Posts'),
+    ])
+  }
+  if (schemaType === 'author') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(RelatedPostsByAuthorView).title('Related Posts'),
+    ])
+  }
+  if (schemaType === 'productStyleCategory') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(ProductStyleCategoryProductsView).title('Products'),
+    ])
+  }
+  if (schemaType === 'product') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(ProductRelatedCapabilitiesView).title('Capabilities'),
+    ])
+  }
+  return S.document().views([S.view.form()])
+}
 
-/** GROQ API version for Structure Builder `documentList().filter()` (required by Sanity). */
-const sanityStructureApiVersion =
-    process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2025-09-25';
+const blogTemplates: Template[] = [
+  {
+    id: 'blogTag-in-group',
+    title: 'Topic',
+    schemaType: 'blogTag',
+    parameters: [{ name: 'groupId', type: 'string' }],
+    value: ({ groupId }: { groupId: string }) => ({
+      topicGroup: { _type: 'reference', _ref: groupId },
+    }),
+  },
+]
 
-const defaultDocumentNode: DefaultDocumentNodeResolver = (S, context) => {
-    if (context.schemaType === 'productCollection') {
-        return S.document().views([
-            S.view.form(),
-            S.view
-                .component(ProductCollectionProductsView)
-                .id('collection-products')
-                .title('Products'),
-        ]);
+// One create-template per channel so "New Video" can be preset to a surface.
+const videoTemplates: Template[] = CHANNELS.map((c) => ({
+  id: `videoPost-${c.id}`,
+  title: `Video (${c.title})`,
+  schemaType: 'videoPost',
+  value: { channels: [c.id] },
+}))
+
+const schema = {
+  types: schemaTypes,
+  templates: (prev: Template[]) => [
+    ...prev,
+    ...productTemplates,
+    ...blogTemplates,
+    ...videoTemplates,
+  ],
+}
+
+const blogI18nPlugin = documentInternationalization({
+  supportedLanguages: [...SUPPORTED_LANGUAGES],
+  schemaTypes: [...BLOG_I18N_SCHEMA_TYPES],
+  languageField: 'language',
+  allowCreateMetaDoc: true,
+})
+
+function isBlogI18nSchemaType(schemaType: string): boolean {
+  return (BLOG_I18N_SCHEMA_TYPES as readonly string[]).includes(schemaType)
+}
+
+// Replace the default publish action on posts so slug changes auto-create redirects.
+const documentActions = (
+  prev: DocumentActionComponent[],
+  context: DocumentActionsContext,
+): DocumentActionComponent[] => {
+  let actions = prev
+  if (context.schemaType === 'post') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishWithRedirect : action,
+    )
+  }
+  if (context.schemaType === 'blogTopicGroup') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishTopicGroupToTopicsPage : action,
+    )
+  }
+
+  if (isBlogI18nSchemaType(context.schemaType)) {
+    actions = [
+      ...actions,
+      useDeleteTranslationAction,
+      useDuplicateWithTranslationsAction,
+    ]
+  }
+
+  return actions
+}
+
+// Per-workspace "create new" options. In a channel lens, video creation is
+// preset to that channel (only its `videoPost-<channel>` template is offered);
+// Global (channel = null) offers all templates so the author picks channels.
+const makeNewDocumentOptions =
+  (channel: string | null) =>
+  (
+    prev: { templateId: string }[],
+    { creationContext }: { creationContext: { type: string } },
+  ) => {
+    if (creationContext.type !== 'structure') return prev
+    let opts = prev.filter((item) => item.templateId !== 'blogCategory')
+    if (channel) {
+      // keep only this channel's video template; drop the bare + other channels'
+      opts = opts.filter(
+        (item) =>
+          !item.templateId.startsWith('videoPost') ||
+          item.templateId === `videoPost-${channel}`,
+      )
     }
-    if (context.schemaType === 'product') {
-        return S.document().views([
-            S.view.form(),
-            S.view
-                .component(ProductCapabilitiesView)
-                .id('product-capabilities')
-                .title('Capabilities'),
-        ]);
-    }
-    if (context.schemaType === 'productPage') {
-        return S.document().views([
-            S.view.form(),
-            S.view
-                .component(ProductPageCollectionsView)
-                .id('page-collections')
-                .title('Collections'),
-        ]);
-    }
-    return S.document();
-};
+    return opts
+  }
 
-export default defineConfig({
-    name: 'pakfactory',
-    title: 'PakFactory Studio',
+export default defineConfig([
+  // ── Admin — full access (default workspace at /) ───────────────────────────
+  {
+    name: 'admin',
+    title: 'Global',
+    basePath: '/admin',
     projectId,
     dataset,
+    schema,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
-        structureTool({
-            defaultDocumentNode,
-            structure: (S) =>
-                S.list()
-                    .title('PakFactory')
-                    .items([
-                        S.divider().title('E-Commerce'),
-
-                        S.listItem()
-                            .id('pagesGroup')
-                            .title('Pages')
-                            .child(
-                                S.list()
-                                    .title('Pages')
-                                    .items([
-                                        S.listItem()
-                                            .id('homeSingleton')
-                                            .title('Home page')
-                                            .child(
-                                                S.document()
-                                                    .schemaType('homePage')
-                                                    .documentId('homePage')
-                                                    .title('Home page'),
-                                            ),
-                                        S.documentTypeListItem(
-                                            'capabilityPage',
-                                        ).title('Capability pages'),
-                                        S.listItem()
-                                            .id('productPagesGroup')
-                                            .title('Product pages')
-                                            .child(
-                                                S.list()
-                                                    .title('Product pages')
-                                                    .items([
-                                                        S.listItem()
-                                                            .id('productPages-all')
-                                                            .title('All')
-                                                            .child(
-                                                                S.documentList()
-                                                                    .apiVersion(
-                                                                        sanityStructureApiVersion,
-                                                                    )
-                                                                    .id(
-                                                                        'productPages-all-list',
-                                                                    )
-                                                                    .title(
-                                                                        'All product pages',
-                                                                    )
-                                                                    .schemaType(
-                                                                        'productPage',
-                                                                    )
-                                                                    .filter(
-                                                                        '_type == "productPage"',
-                                                                    ),
-                                                            ),
-                                                        S.listItem()
-                                                            .id(
-                                                                'productPages-standard',
-                                                            )
-                                                            .title('Standard')
-                                                            .child(
-                                                                S.documentList()
-                                                                    .apiVersion(
-                                                                        sanityStructureApiVersion,
-                                                                    )
-                                                                    .id(
-                                                                        'productPages-standard-list',
-                                                                    )
-                                                                    .title(
-                                                                        'Standard product pages',
-                                                                    )
-                                                                    .schemaType(
-                                                                        'productPage',
-                                                                    )
-                                                                    .filter(
-                                                                        '_type == "productPage" && solutionType == "standard"',
-                                                                    ),
-                                                            ),
-                                                        S.listItem()
-                                                            .id(
-                                                                'productPages-industry',
-                                                            )
-                                                            .title('Industry')
-                                                            .child(
-                                                                S.documentList()
-                                                                    .apiVersion(
-                                                                        sanityStructureApiVersion,
-                                                                    )
-                                                                    .id(
-                                                                        'productPages-industry-list',
-                                                                    )
-                                                                    .title(
-                                                                        'Industry product pages',
-                                                                    )
-                                                                    .schemaType(
-                                                                        'productPage',
-                                                                    )
-                                                                    .filter(
-                                                                        '_type == "productPage" && solutionType == "industry"',
-                                                                    ),
-                                                            ),
-                                                    ]),
-                                            ),
-                                        S.documentTypeListItem(
-                                            'staticPage',
-                                        ).title('Static pages'),
-                                    ]),
-                            ),
-                        S.documentTypeListItem('productCollection').title(
-                            'Collections',
-                        ),
-                        S.documentTypeListItem('siteSettings').title(
-                            'Site settings',
-                        ),
-                        S.divider().title('Blog'),
-                        S.documentTypeListItem('post').title('Posts'),
-                        S.documentTypeListItem('author').title('Authors'),
-
-                        S.divider().title('Library / Catalog'),
-                        S.listItem()
-                            .id('productsGroup')
-                            .title('Products')
-                            .child(
-                                S.list()
-                                    .title('Products')
-                                    .items([
-                                        S.listItem()
-                                            .id('products-all')
-                                            .title('All')
-                                            .child(
-                                                S.documentList()
-                                                    .apiVersion(
-                                                        sanityStructureApiVersion,
-                                                    )
-                                                    .id('products-all-list')
-                                                    .title('All products')
-                                                    .schemaType('product')
-                                                    .filter(
-                                                        '_type == "product"',
-                                                    ),
-                                            ),
-                                        S.listItem()
-                                            .id('products-standard')
-                                            .title('Standard')
-                                            .child(
-                                                S.documentList()
-                                                    .apiVersion(
-                                                        sanityStructureApiVersion,
-                                                    )
-                                                    .id(
-                                                        'products-standard-list',
-                                                    )
-                                                    .title(
-                                                        'Standard program products',
-                                                    )
-                                                    .schemaType('product')
-                                                    .filter(
-                                                        '_type == "product" && primaryLandingPage->_type == "productPage" && primaryLandingPage->solutionType == "standard"',
-                                                    ),
-                                            ),
-                                        S.listItem()
-                                            .id('products-industry')
-                                            .title('Industry')
-                                            .child(
-                                                S.documentList()
-                                                    .apiVersion(
-                                                        sanityStructureApiVersion,
-                                                    )
-                                                    .id(
-                                                        'products-industry-list',
-                                                    )
-                                                    .title(
-                                                        'Industry program products',
-                                                    )
-                                                    .schemaType('product')
-                                                    .filter(
-                                                        '_type == "product" && primaryLandingPage->_type == "productPage" && primaryLandingPage->solutionType == "industry"',
-                                                    ),
-                                            ),
-                                    ]),
-                            ),
-                        S.listItem()
-                            .id('capabilitiesGroup')
-                            .title('Capabilities')
-                            .child(
-                                S.list()
-                                    .title('Capabilities')
-                                    .items([
-                                        S.listItem()
-                                            .id('capabilityCategoriesGroup')
-                                            .title('Categories')
-                                            .child(
-                                                S.list()
-                                                    .title('Categories')
-                                                    .items([
-                                                        S.listItem()
-                                                            .id('capabilityCategories-material')
-                                                            .title('Material')
-                                                            .child(
-                                                                S.documentList()
-                                                                    .apiVersion(
-                                                                        sanityStructureApiVersion,
-                                                                    )
-                                                                    .id('capabilityCategories-material-list')
-                                                                    .title('Material')
-                                                                    .schemaType('capabilityCategory')
-                                                                    .filter(
-                                                                        '_type == "capabilityCategory" && category == "material"',
-                                                                    )
-                                                                    .initialValueTemplates([
-                                                                        S.initialValueTemplateItem(
-                                                                            CAPABILITY_CATEGORY_MATERIAL_TEMPLATE_ID,
-                                                                        ),
-                                                                    ]),
-                                                            ),
-                                                        S.listItem()
-                                                            .id('capabilityCategories-finish')
-                                                            .title('Finishes')
-                                                            .child(
-                                                                S.documentList()
-                                                                    .apiVersion(
-                                                                        sanityStructureApiVersion,
-                                                                    )
-                                                                    .id('capabilityCategories-finish-list')
-                                                                    .title('Finishes')
-                                                                    .schemaType('capabilityCategory')
-                                                                    .filter(
-                                                                        '_type == "capabilityCategory" && category == "finish"',
-                                                                    )
-                                                                    .initialValueTemplates([
-                                                                        S.initialValueTemplateItem(
-                                                                            CAPABILITY_CATEGORY_FINISH_TEMPLATE_ID,
-                                                                        ),
-                                                                    ]),
-                                                            ),
-                                                    ]),
-                                            ),
-                                    ]),
-                            ),
-
-                    ]),
-        }),
-        visionTool(),
-        assist(),
-        presentationTool({
-            allowOrigins: ['http://localhost:*'],
-            previewUrl: {
-                origin: previewOrigin,
-                preview: '/',
-                previewMode: {
-                    enable: '/api/draft-mode/enable',
-                    disable: '/api/draft-mode/disable',
-                },
-            },
-            resolve: {
-                locations: {
-                    homePage: {
-                        select: {title: 'title'},
-                        resolve: (doc) => ({
-                            locations: [
-                                {
-                                    title: (doc?.title as string) || 'Home',
-                                    href: '/',
-                                },
-                            ],
-                        }),
-                    },
-                    productPage: {
-                        select: {title: 'title', slug: 'slug.current'},
-                        resolve: (doc) => ({
-                            locations: doc?.slug
-                                ? [
-                                      {
-                                          title:
-                                              (doc.title as string) ||
-                                              (doc.slug as string),
-                                          href: `/products/${doc.slug as string}`,
-                                      },
-                                  ]
-                                : [],
-                        }),
-                    },
-                    product: {
-                        select: {
-                            title: 'title',
-                            handle: 'handle.current',
-                            pageSlug: 'primaryLandingPage->slug.current',
-                            collectionSlug:
-                                'primaryCollection->slug.current',
-                        },
-                        resolve: (doc) => {
-                            const handle = doc?.handle as string | undefined;
-                            const pageSlug = doc?.pageSlug as
-                                | string
-                                | undefined;
-                            const collectionSlug = doc?.collectionSlug as
-                                | string
-                                | undefined;
-                            if (!handle || !pageSlug || !collectionSlug) {
-                                return {locations: []};
-                            }
-                            return {
-                                locations: [
-                                    {
-                                        title:
-                                            (doc?.title as string) || handle,
-                                        href: `/products/${pageSlug}/${collectionSlug}/${handle}`,
-                                    },
-                                ],
-                            };
-                        },
-                    },
-                },
-            },
-        }),
+      structureTool({ structure: adminStructure, defaultDocumentNode }),
+      blogI18nPlugin,
+      media(),
+      visionTool(),
     ],
-    schema: {
-        types: schemaTypes,
-        templates: (prev) => [
-            ...prev,
-            productForCollectionTemplate,
-            productForLandingPageTemplate,
-            capabilityCategoryMaterialTemplate,
-            capabilityCategoryFinishTemplate,
+  },
+
+  // ── Blog — editorial team ──────────────────────────────────────────────────
+  {
+    name: 'blog',
+    title: 'Blog',
+    basePath: '/blog',
+    projectId,
+    dataset,
+    schema,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions('blog') },
+    plugins: [
+      structureTool({ structure: blogStructure, defaultDocumentNode }),
+      blogI18nPlugin,
+      presentationTool({
+        name: 'presentation',
+        title: 'Presentation',
+        previewUrl: {
+          origin: BLOG_PREVIEW_ORIGIN,
+          previewMode: { enable: '/api/draft-mode/enable' },
+        },
+        allowOrigins: [
+          'http://localhost:3003',
+          'https://pakfactory-blog.vercel.app',
         ],
-    },
-});
+        resolve: { locations: blogLocations },
+      }),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Website — marketing / web team ────────────────────────────────────────
+  {
+    name: 'website',
+    title: 'Marketing Website',
+    basePath: '/website',
+    projectId,
+    dataset,
+    schema,
+    plugins: [
+      structureTool({ structure: websiteStructure, defaultDocumentNode }),
+      presentationTool({
+        name: 'presentation',
+        title: 'Presentation',
+        previewUrl: {
+          origin: WWW_PREVIEW_ORIGIN,
+          previewMode: { enable: '/api/draft-mode/enable' },
+        },
+        resolve: { locations: websiteLocations },
+      }),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Solutions — add back when Solutions workflow is defined ──────────────
+  // { name: 'solutions', title: 'Solutions', basePath: '/solutions', ... }
+
+  // ── Academy — add back when Academy schema is built ───────────────────────
+  // { name: 'academy', title: 'Academy', basePath: '/academy', ... }
+])

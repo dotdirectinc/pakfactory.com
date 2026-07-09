@@ -1,0 +1,17 @@
+{
+  "_type": "post",
+  "_id": "test-post-123",
+  "title": "My First Blog Post",
+  "slug": "my-first-blog-post",
+  "excerpt": "A short excerpt for search testing.",
+  "tldr": "Key takeaway for search.",
+  "content": "This is the plain-text body used for Algolia search indexing.",
+  "category": { "title": "Packaging News", "slug": "packaging-news" },
+  "tags": [{ "title": "Sustainability", "slug": "sustainability" }],
+  "author": { "name": "Jane Author", "slug": "jane-author" },
+  "publishedAt": "2024-01-15T10:00:00.000Z",
+  "lastModified": "2024-01-16T10:00:00.000Z",
+  "image": { "assetRef": null, "alt": "Cover alt text" },
+  "allowIndex": true,
+  "operation": "create"
+}

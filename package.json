@@ -1,10 +1,6 @@
 {
   "name": "pakfactory-sanity-poc",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo run dev",
     "dev:www": "turbo run dev --filter=@pakfactory/www",
@@ -16,16 +12,24 @@
     "build:studio": "turbo run build --filter=@pakfactory/studio",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "seed:demo": "npm run seed:demo --workspace=@pakfactory/sanity",
-    "migrate:product-single-refs": "npm run migrate:product-single-refs --workspace=@pakfactory/sanity",
+    "versions:apps": "pnpm --filter @pakfactory/www pkg get name version versionCode && pnpm --filter @pakfactory/blog pkg get name version versionCode && pnpm --filter @pakfactory/studio pkg get name version versionCode",
+    "seed:demo": "pnpm --filter @pakfactory/sanity run seed:demo",
+    "seed:blog-dev": "pnpm --filter @pakfactory/studio run seed:blog-dev",
+    "migrate:product-single-refs": "pnpm --filter @pakfactory/sanity run migrate:product-single-refs",
+    "update:llms-txt": "pnpm --filter @pakfactory/sanity run update:llms-txt",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@pakfactory/sanity": "workspace:^",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"
   },
   "engines": {
     "node": ">=20.19"
   },
-  "packageManager": "npm@10.9.2"
+  "packageManager": "pnpm@9.15.0",
+  "dependencies": {
+    "@sanity/blueprints": "^0.21.0",
+    "dotenv": "^16.6.1"
+  }
 }
