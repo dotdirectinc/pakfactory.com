@@ -130,7 +130,7 @@ export const MOCK_CASE_STUDY_DETAILS: Record<string, CaseStudyDetail> = {
         description: "Certified curbside recyclable by end customer",
       },
     ],
-    metaTitle: "Sustainable Mailer Boxes Cut Return Rate by 40% | PakFactory",
+    metaTitle: "Sustainable Mailer Boxes Cut Return Rate by 40%",
     metaDescription:
       "How Acme Apparel switched to 100% recycled kraft mailers and reduced returns by 40% while speeding up fulfillment.",
     ogImageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80",
@@ -197,7 +197,7 @@ export const MOCK_CASE_STUDY_DETAILS: Record<string, CaseStudyDetail> = {
         description: "Custom foam insert eliminated shifting",
       },
     ],
-    metaTitle: "Rigid Gift Boxes Drive 28% Repeat Purchases | PakFactory",
+    metaTitle: "Rigid Gift Boxes Drive 28% Repeat Purchases",
     metaDescription:
       "How Luminary Candles used PakFactory magnetic-closure rigid boxes to turn unboxing into a brand moment and grow repeat buyers.",
     ogImageUrl: "https://images.unsplash.com/photo-1607082349566-187342175e2f?w=1200&q=80",
@@ -287,7 +287,7 @@ export const MOCK_CASE_STUDY_DETAILS: Record<string, CaseStudyDetail> = {
         description: "Down from 12 ad-hoc sizes",
       },
     ],
-    metaTitle: "Custom Corrugated Saves Vertex Electronics $1.20/Unit | PakFactory",
+    metaTitle: "Custom Corrugated Saves Vertex Electronics $1.20/Unit",
     metaDescription:
       "How PakFactory right-sized corrugated shipping boxes for Vertex Electronics, eliminating DIM weight overcharges and saving $432K annually.",
     ogImageUrl: "https://images.unsplash.com/photo-1612690669207-fed642192c40?w=1200&q=80",
