@@ -26,11 +26,20 @@ const hits = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimited(ip: string): boolean {
   const now = Date.now();
+
+  // Prevent unbounded growth on warm instances by pruning expired records.
+  if (hits.size > 1000) {
+    for (const [key, value] of hits) {
+      if (now > value.resetAt) hits.delete(key);
+    }
+  }
+
   const rec = hits.get(ip);
   if (!rec || now > rec.resetAt) {
     hits.set(ip, { count: 1, resetAt: now + WINDOW_MS });
     return false;
   }
+
   rec.count += 1;
   return rec.count > MAX_PER_WINDOW;
 }
