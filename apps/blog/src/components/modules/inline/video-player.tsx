@@ -28,8 +28,9 @@ export function VideoPlayer({
   const portrait = aspect === "9/16";
 
   // Portrait (TikTok / FB reels) matches the Instagram reel width.
+  // Landscape capped at 790 px per design spec.
   return (
-    <div className={portrait ? "mx-auto w-full max-w-[400px]" : "w-full"}>
+    <div className={portrait ? "mx-auto w-full max-w-[400px]" : "mx-auto w-full max-w-[790px]"}>
       <div
         className="relative w-full overflow-hidden rounded-lg bg-muted"
         style={{ aspectRatio: aspect }}
