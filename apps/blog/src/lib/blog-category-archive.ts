@@ -268,10 +268,11 @@ export async function fetchCategoryArchivePage(
   const category = await fetchCategoryBySlug(categorySlug);
   if (!category) return null;
 
-  const excludeFeatured =
-    pageNumber === 1 && !hasActiveCategoryFilters(filters);
+  const hasFilters = hasActiveCategoryFilters(filters);
+  // Exclude featured posts from the listing only on page 1 (to avoid duplication with the featured band).
+  const excludeFeaturedFromListing = pageNumber === 1 && !hasFilters;
   const groqParams = groqFilterParams(categorySlug, filters, {
-    excludeFeatured,
+    excludeFeatured: excludeFeaturedFromListing,
   });
   let totalCount = 0;
   let featuredPosts: HomePostCard[] = [];
@@ -279,13 +280,11 @@ export async function fetchCategoryArchivePage(
 
   if (isSanityConfigured()) {
     const client = await getSanityClient();
-    // Featured band + recommended-topics row are page-1-only sections.
-    const wantsPageOneExtras = pageNumber === 1;
     [totalCount, featuredPosts, recommendedTopics] = await Promise.all([
       client
         .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
         .catch(() => 0),
-      excludeFeatured
+      !hasFilters
         ? client
             .fetch<HomePostCard[]>(
               BLOG_CATEGORY_FEATURED_POSTS_QUERY,
@@ -293,15 +292,13 @@ export async function fetchCategoryArchivePage(
             )
             .catch(() => [])
         : Promise.resolve([] as HomePostCard[]),
-      wantsPageOneExtras
-        ? client
-            .fetch<CategoryTopic[] | null>(
-              BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
-              blogLanguageParams({ categorySlug }),
-            )
-            .then((topics) => topics ?? [])
-            .catch(() => [])
-        : Promise.resolve([] as CategoryTopic[]),
+      client
+        .fetch<CategoryTopic[] | null>(
+          BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
+          blogLanguageParams({ categorySlug }),
+        )
+        .then((topics) => topics ?? [])
+        .catch(() => []),
     ]);
   }
 

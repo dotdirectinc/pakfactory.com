@@ -26,7 +26,7 @@ function PerPageSelectInner({ currentPerPage = DEFAULT_PAGE_SIZE }: { currentPer
       value={String(currentPerPage)}
       onChange={handleChange}
       aria-label="Posts per page"
-      className="cursor-pointer bg-transparent text-sm text-muted-foreground outline-none hover:text-foreground"
+      className="cursor-pointer rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm text-muted-foreground outline-none hover:text-foreground"
     >
       {PAGE_SIZE_OPTIONS.map((size) => (
         <option key={size} value={String(size)}>

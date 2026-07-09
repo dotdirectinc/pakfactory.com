@@ -29,8 +29,6 @@ export function Pagination({
   maxVisiblePages = 5,
   rightSlot,
 }: PaginationProps) {
-  if (totalPages <= 1) return null;
-
   const prevHref = pageNumber > 1 ? hrefForPage(pageNumber - 1) : null;
   const nextHref = pageNumber < totalPages ? hrefForPage(pageNumber + 1) : null;
   const window = getPaginationWindow(pageNumber, totalPages, maxVisiblePages);

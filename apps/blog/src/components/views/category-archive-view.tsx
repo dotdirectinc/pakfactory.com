@@ -44,16 +44,12 @@ export function CategoryArchiveView({
         />
       }
     >
-      {data.pageNumber === 1 ? (
-        <>
-          <PostCategoryFeaturedRow
-            heading={FEATURED_HEADING}
-            posts={data.featuredPosts}
-            categorySlug={data.category.slug}
-          />
-          <CategoryRecommendedTopics topics={data.recommendedTopics} />
-        </>
-      ) : null}
+      <PostCategoryFeaturedRow
+        heading={FEATURED_HEADING}
+        posts={data.featuredPosts}
+        categorySlug={data.category.slug}
+      />
+      <CategoryRecommendedTopics topics={data.recommendedTopics} />
       <CategoryListingRow
         posts={data.posts}
         pageNumber={data.pageNumber}
