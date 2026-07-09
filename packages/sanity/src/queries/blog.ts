@@ -22,7 +22,7 @@ export const READING_TIME_WPM = 238;
 
 export const READING_TIME_MINUTES_PROJECTION = /* groq */ `"readingTimeMinutes": round(length(pt::text(body)) / 5 / ${READING_TIME_WPM})`;
 
-export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && language == $language] | order(title asc){
+export const BLOG_CATEGORIES_QUERY = /* groq */ `*[_type == "blogCategory" && defined(slug.current) && (language == $language || !defined(language))] | order(title asc){
   _id,
   title,
   navLabel,
@@ -40,7 +40,7 @@ export const BLOG_NOT_FOUND_PAGE_QUERY = /* groq */ `*[_type == "blogPage" && _i
 
 /** Fallback topics when no 404 topics are curated — newest/alphabetical topics with a slug. */
 export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
-  _type == "blogTag" && defined(slug.current) && language == $language
+  _type == "blogTag" && defined(slug.current) && (language == $language || !defined(language))
 ] | order(title asc)[0...6]{
   _id,
   title,
@@ -262,7 +262,7 @@ export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
 
 /** CMS-pinned hero post from the homepage page builder (`postFeaturedRow.featuredPost`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
-  (_type == "blogPage" && _id == $homePageId && language == $language)
+  (_type == "blogPage" && _id == $homePageId && (language == $language || !defined(language)))
   || (_type == "blogHomePage" && $language == "en")
 ][0].pageBuilder[_type == "postFeaturedRow"][0].featuredPost->${POST_CARD_FIELDS}`;
 
@@ -408,7 +408,7 @@ const BLOG_TOPICS_PAGE_TOPICS_PROJECTION = /* groq */ `"topics": topics[]->{
  * `blogHomePage` documents are still read until migrated.
  */
 export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
-  (_type == "blogPage" && _id == $homePageId && language == $language)
+  (_type == "blogPage" && _id == $homePageId && (language == $language || !defined(language)))
   || (_type == "blogHomePage" && $language == "en")
 ][0]{
   title,
@@ -430,7 +430,7 @@ export const BLOG_HOME_PAGE_BUILDER_QUERY = /* groq */ `*[
  * array (`blogPage` with `pageRole == "topics"`, id `blogTopicsPage`).
  */
 export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
-  _type == "blogPage" && _id == $topicsPageId && language == $language
+  _type == "blogPage" && _id == $topicsPageId && (language == $language || !defined(language))
 ][0]{
   title,
   description,
@@ -450,7 +450,7 @@ export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
 /** Published landing/static page by slug (ADR-009). */
 export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "blogPage"
-  && language == $language
+  && (language == $language || !defined(language))
   && pageRole in ["landing", "static"]
   && slug.current == $slug
   && defined(publishedAt)
@@ -597,7 +597,7 @@ export const BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
 /** Tags used by published posts in a category (sidebar facets). */
 export const BLOG_CATEGORY_TAGS_FACET_QUERY = /* groq */ `*[
   _type == "blogTag"
-  && language == $language
+  && (language == $language || !defined(language))
   && _id in *[
     _type == "post"
   && (!defined(language) || language == $language)
@@ -694,7 +694,7 @@ export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
 /** Industry-axis blog tags for the home "Browse by Industries" strip (link to /topics/{slug}). */
 export const BLOG_INDUSTRY_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
-  && language == $language
+  && (language == $language || !defined(language))
   && topicGroup->slug.current == "industry"
   && defined(slug.current)
 ] | order(title asc){
@@ -764,7 +764,7 @@ export const BLOG_SITEMAP_POSTS_QUERY = /* groq */ `*[
 // ── Topic archives (PROD-1500) — /topics/{slug} ───────────────────────────────
 
 /** Tag landing document by slug. `description` is plain text (not portable text). */
-export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug && language == $language][0]{
+export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.current == $slug && (language == $language || !defined(language))][0]{
   _id,
   title,
   "slug": slug.current,
@@ -922,7 +922,7 @@ export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
 /** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by topic group in the sidebar. */
 export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
   _type == "blogTag"
-  && language == $language
+  && (language == $language || !defined(language))
   && slug.current != $tagSlug
   && _id in *[
     _type == "post"
