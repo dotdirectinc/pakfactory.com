@@ -5,7 +5,6 @@ import {
   type CaseStudySitemapEntry,
 } from "@pakfactory/sanity/queries";
 import { absoluteUrl } from "@/lib/site";
-import { MOCK_SLUGS } from "@/lib/mock/case-studies";
 
 export const revalidate = 300;
 
@@ -37,16 +36,11 @@ function buildSitemapXml(
 }
 
 export async function GET() {
-  const entries = isSanityConfigured()
+  const slugEntries = isSanityConfigured()
     ? await getPublishedSanityClient()
         .fetch<CaseStudySitemapEntry[]>(CASE_STUDY_SITEMAP_QUERY)
         .catch(() => [] as CaseStudySitemapEntry[])
     : ([] as CaseStudySitemapEntry[]);
-
-  const slugEntries =
-    entries.length > 0
-      ? entries
-      : MOCK_SLUGS.map((slug) => ({ slug, lastmod: null }));
 
   const urls = [
     {

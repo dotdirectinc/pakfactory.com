@@ -6,6 +6,7 @@ import { bodyQuote } from './body-quote'
 import { bodyStatStack } from './body-stat-stack'
 import { bodyTable } from './body-table'
 import { bodyVideo } from './body-video'
+import { caseStudyImage } from './case-study-image'
 import { caseStudyImageGallery } from './case-study-image-gallery'
 import { caseStudyQuote } from './case-study-quote'
 
@@ -36,4 +37,4 @@ export const inlineBlocks = [
  * Kept separate from `inlineBlocks` so they do not appear in the blog post editor.
  * Registered globally in schemas/index.ts so Sanity resolves them in case study PT fields.
  */
-export const caseStudyInlineBlocks = [caseStudyImageGallery, caseStudyQuote]
+export const caseStudyInlineBlocks = [caseStudyImage, caseStudyImageGallery, caseStudyQuote]

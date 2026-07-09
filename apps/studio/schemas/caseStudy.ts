@@ -30,6 +30,7 @@ const caseStudyPortableTextOf = [
       ],
     },
   },
+  { type: 'caseStudyImage' },
   { type: 'caseStudyImageGallery' },
   { type: 'caseStudyQuote' },
 ]
