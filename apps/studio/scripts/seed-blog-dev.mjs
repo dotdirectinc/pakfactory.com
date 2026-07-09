@@ -368,6 +368,7 @@ const blogHomePageDoc = {
       _key: key(),
       _type: 'featuredVideos',
       heading: 'Featured Videos',
+      playbackMode: 'dialog',
       channelCtaLabel: 'View more on YouTube',
       channelCtaUrl: 'https://www.youtube.com/@pakfactory',
       featuredVideo: ref('vpost-custom-packaging-101'),

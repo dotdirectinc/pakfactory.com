@@ -349,6 +349,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     heading,
     channelCtaLabel,
     channelCtaUrl,
+    playbackMode,
     "featuredVideo": featuredVideo->${VIDEO_POST_FIELDS},
     "videos": videos[]->${VIDEO_POST_FIELDS}
   },

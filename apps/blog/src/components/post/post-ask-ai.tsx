@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { EXTERNAL_LINK_REL } from "@/lib/external-link";
 
 type PostAskAiProps = {
   url: string;
@@ -81,7 +82,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
               key={provider.id}
               href={href}
               target="_blank"
-              rel="noopener noreferrer"
+              rel={EXTERNAL_LINK_REL}
               onClick={
                 provider.prefill
                   ? undefined

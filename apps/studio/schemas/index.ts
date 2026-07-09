@@ -29,6 +29,7 @@ import { blogPage } from './blogPage'
 import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
 import { post } from './post'
+import { videoPost } from './videoPost'
 import { redirect } from './redirect'
 import { settings } from './settings'
 import {

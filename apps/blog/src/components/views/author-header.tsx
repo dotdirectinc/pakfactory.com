@@ -7,6 +7,7 @@ import {
 import type { AuthorDoc } from "@/lib/blog-author";
 import { isSocialPlatform } from "@pakfactory/sanity/social-platforms";
 import { sanityImageUrl } from "@/lib/sanity-image";
+import { EXTERNAL_LINK_REL } from "@/lib/external-link";
 
 type AuthorHeaderProps = {
   author: AuthorDoc;
@@ -75,7 +76,7 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
                       <a
                         href={link.url}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel={EXTERNAL_LINK_REL}
                         className="inline-flex items-center gap-2 text-base text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <SocialPlatformIcon

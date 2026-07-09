@@ -1,3 +1,5 @@
+import { parseVideoUrl } from "@/lib/video-embed";
+
 /** Resolved video source for cards and VideoObject JSON-LD. */
 export type ResolvedVideoSource = {
   _id?: string;
@@ -9,6 +11,12 @@ export type ResolvedVideoSource = {
   thumbnailUrl?: string;
   contentUrl: string;
   embedUrl?: string;
+  /** Autoplay iframe URL for dialog playback. */
+  embedSrc?: string;
+  /** Drives dialog vs new-tab fallback. */
+  playbackKind: "iframe" | "hosted" | "linkOnly";
+  /** Player aspect ratio for iframe tier. */
+  aspect?: "16/9" | "9/16";
   platform?: string;
 };
 
@@ -27,34 +35,11 @@ export type VideoPostInput = {
 
 type ThumbnailResolver = (thumbnail: unknown) => string | undefined;
 
-function parseYouTubeId(url: string): string | undefined {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname.slice(1).split("/")[0] || undefined;
-    }
-    if (parsed.hostname.includes("youtube.com")) {
-      if (parsed.pathname.startsWith("/embed/")) {
-        return parsed.pathname.split("/")[2] || undefined;
-      }
-      return parsed.searchParams.get("v") ?? undefined;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
-function parseVimeoId(url: string): string | undefined {
-  try {
-    const parsed = new URL(url);
-    if (!parsed.hostname.includes("vimeo.com")) return undefined;
-    const segments = parsed.pathname.split("/").filter(Boolean);
-    const id = segments[segments.length - 1];
-    return id && /^\d+$/.test(id) ? id : undefined;
-  } catch {
-    return undefined;
-  }
+function embedUrlWithoutAutoplay(embedSrc: string): string {
+  const url = new URL(embedSrc);
+  url.searchParams.delete("autoplay");
+  const normalized = url.toString();
+  return normalized.replace(/([?&])autoplay=true&?/, "$1").replace(/[?&]$/, "");
 }
 
 /** Convert display duration "4:32" or "1:04:32" to ISO 8601 PT duration. */
@@ -109,6 +94,7 @@ export function resolveVideoSource(
       href: contentUrl,
       thumbnailUrl,
       contentUrl,
+      playbackKind: "hosted",
       platform: "hosted",
     };
   }
@@ -117,20 +103,29 @@ export function resolveVideoSource(
   if (!externalUrl) return null;
 
   const platform = video.platform ?? "other";
-  let embedUrl: string | undefined;
   let thumbnailUrl = resolveThumbnail(video.thumbnail);
+  const parsed = parseVideoUrl(externalUrl);
 
-  if (platform === "youtube") {
-    const id = parseYouTubeId(externalUrl);
-    if (id) {
-      embedUrl = `https://www.youtube.com/embed/${id}`;
-      thumbnailUrl = thumbnailUrl ?? `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  if (parsed?.kind === "iframe") {
+    if (parsed.provider === "youtube" && !thumbnailUrl) {
+      thumbnailUrl = `https://img.youtube.com/vi/${parsed.id}/hqdefault.jpg`;
     }
-  } else if (platform === "vimeo") {
-    const id = parseVimeoId(externalUrl);
-    if (id) {
-      embedUrl = `https://player.vimeo.com/video/${id}`;
-    }
+
+    return {
+      _id: video._id,
+      title,
+      description: video.description?.trim() || undefined,
+      publishedAt: video.publishedAt ?? undefined,
+      duration: video.duration?.trim() || undefined,
+      href: externalUrl,
+      thumbnailUrl,
+      contentUrl: externalUrl,
+      embedUrl: embedUrlWithoutAutoplay(parsed.embedSrc),
+      embedSrc: parsed.embedSrc,
+      playbackKind: "iframe",
+      aspect: parsed.aspect,
+      platform: parsed.provider,
+    };
   }
 
   return {
@@ -142,7 +137,7 @@ export function resolveVideoSource(
     href: externalUrl,
     thumbnailUrl,
     contentUrl: externalUrl,
-    embedUrl,
+    playbackKind: "linkOnly",
     platform,
   };
 }

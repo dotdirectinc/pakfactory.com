@@ -86,6 +86,7 @@ export type FeaturedVideosBlock = {
   heading?: string;
   channelCtaLabel?: string;
   channelCtaUrl?: string;
+  playbackMode?: "newTab" | "dialog";
   featuredVideo: VideoPostInput | null;
   videos: VideoPostInput[];
 } & DielineBorderFields;
