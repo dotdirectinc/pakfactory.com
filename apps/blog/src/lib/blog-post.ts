@@ -61,6 +61,7 @@ export type PostBodyQuote = {
 
 export type PostBodyGallery = {
   caption?: string;
+  aspectRatio?: "16:9" | "1:1";
   images?: Array<{ _key?: string; alt?: string; asset?: unknown }>;
 };
 

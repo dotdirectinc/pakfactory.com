@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Check, Link2 } from "lucide-react";
 import { useState } from "react";
+import { EXTERNAL_LINK_REL } from "@/lib/external-link";
 
 type PostShareButtonsProps = {
   url: string;
@@ -87,7 +88,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
             key={network.id}
             href={network.href(encodedUrl, encodedTitle)}
             target="_blank"
-            rel="noopener noreferrer"
+            rel={EXTERNAL_LINK_REL}
             aria-label={network.label}
             className={iconLink}
           >

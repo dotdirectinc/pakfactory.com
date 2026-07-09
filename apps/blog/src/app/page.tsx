@@ -14,6 +14,7 @@ import {
     resolveHomePageH1,
 } from '@/lib/blog-home';
 import { fetchBlogGlobalSettings } from '@/lib/blog-global-settings';
+import { buildHomeVideoObjectNodes } from '@/lib/home-jsonld';
 import { getListingRobotsFromSearchParams } from '@/lib/seo';
 import {getWwwUrl, normalizeSiteUrl, siteBaseUrl} from '@/lib/site';
 
@@ -63,6 +64,7 @@ export default async function BlogHomePage() {
             id: blogId,
             publisher: {'@id': orgId},
         }),
+        ...buildHomeVideoObjectNodes(blocks),
     ]);
 
     return (

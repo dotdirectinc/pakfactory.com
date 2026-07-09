@@ -4,7 +4,8 @@ import { postFeaturedRow } from './post-featured-row'
 import { postCategoryRow } from './post-category-row'
 import { postPopularRow } from './post-popular-row'
 import { postSpotlightRow } from './post-spotlight-row'
-import { tagStrip } from './tag-strip'
+import { topicStrip } from './topic-strip'
+import { featuredVideos } from './featured-videos'
 import { ctaNewsletter } from './cta-newsletter'
 import { ctaRfq } from './cta-rfq'
 import { ctaPillars } from './cta-pillars'
@@ -20,7 +21,8 @@ export const pageBuilderBlocks = [
   postCategoryRow,
   postPopularRow,
   postSpotlightRow,
-  tagStrip,
+  topicStrip,
+  featuredVideos,
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
@@ -34,7 +36,8 @@ export const homePageBuilderBlocks = [
   postCategoryRow,
   postPopularRow,
   postSpotlightRow,
-  tagStrip,
+  topicStrip,
+  featuredVideos,
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
@@ -43,7 +46,7 @@ export const homePageBuilderBlocks = [
 
 /** Landing/static allowlist (ADR-009). */
 export const landingPageBuilderBlocks = [
-  tagStrip,
+  topicStrip,
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
@@ -56,7 +59,8 @@ const INSERT_GROUPS_HOME = [
     title: 'Post',
     of: ['postFeaturedRow', 'postCategoryRow', 'postPopularRow', 'postSpotlightRow'],
   },
-  { name: 'tag', title: 'Topic', of: ['tagStrip'] },
+  { name: 'tag', title: 'Topic', of: ['topicStrip'] },
+  { name: 'video', title: 'Video', of: ['featuredVideos'] },
   {
     name: 'cta',
     title: 'CTA',
@@ -66,7 +70,7 @@ const INSERT_GROUPS_HOME = [
 ]
 
 const INSERT_GROUPS_LANDING = [
-  { name: 'tag', title: 'Topic', of: ['tagStrip'] },
+  { name: 'tag', title: 'Topic', of: ['topicStrip'] },
   {
     name: 'cta',
     title: 'CTA',
