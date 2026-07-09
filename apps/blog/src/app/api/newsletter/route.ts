@@ -16,8 +16,7 @@ import { NextResponse } from "next/server";
 // subscription. Bump the version whenever the wording or policy materially changes.
 const CONSENT_VERSION = "2026-07-v1";
 const CONSENT_TEXT =
-  "By subscribing you agreed to receive the PakFactory packaging digest and accepted the Privacy Policy (implied consent; confirmed via double opt-in).";
-
+  "By subscribing you agree to receive the packaging digest and accept our Privacy Policy.";
 // Best-effort per-instance rate limit. Serverless instances aren't shared, so
 // this only slows abuse on a warm instance — back it with a shared store
 // (e.g. Upstash) for hard guarantees. See the data-journey doc.
