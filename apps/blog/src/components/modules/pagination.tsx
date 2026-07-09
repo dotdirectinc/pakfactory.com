@@ -31,91 +31,102 @@ export function Pagination({
   const nextHref = pageNumber < totalPages ? hrefForPage(pageNumber + 1) : null;
   const window = getPaginationWindow(pageNumber, totalPages, maxVisiblePages);
 
-  return (
-    <nav
-      className="flex flex-col gap-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-      aria-label={ariaLabel}
-    >
-      <p className="text-sm text-muted-foreground">
-        Page{" "}
-        <span className="font-medium text-foreground">{pageNumber}</span> of{" "}
-        <span className="font-medium text-foreground">{totalPages}</span>
-      </p>
+  const pageInfo = (
+    <p className="text-sm text-muted-foreground">
+      Page{" "}
+      <span className="font-medium text-foreground">{pageNumber}</span> of{" "}
+      <span className="font-medium text-foreground">{totalPages}</span>
+    </p>
+  );
 
-      <div className="flex flex-wrap items-center gap-2">
-        {prevHref ? (
-          <Button asChild variant="ghost" size="sm" className="h-9 gap-2 px-3">
-            <Link href={prevHref}>
-              <ChevronLeft className="size-4" aria-hidden />
-              Previous
-            </Link>
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 gap-2 px-3"
-            disabled
-            aria-disabled
-          >
-            <ChevronLeft className="size-4" aria-hidden />
+  const nav = (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {prevHref ? (
+        <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 px-2">
+          <Link href={prevHref}>
+            <ChevronLeft className="size-3.5" aria-hidden />
             Previous
-          </Button>
-        )}
+          </Link>
+        </Button>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 gap-1.5 px-2"
+          disabled
+          aria-disabled
+        >
+          <ChevronLeft className="size-3.5" aria-hidden />
+          Previous
+        </Button>
+      )}
 
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {window.map((n) => {
-            const isActive = n === pageNumber;
-            if (isActive) {
-              return (
-                <Button
-                  key={n}
-                  variant="outline"
-                  size="icon"
-                  className="size-9 shrink-0"
-                  aria-current="page"
-                  aria-label={`Page ${n}, current page`}
-                  disabled
-                >
-                  {n}
-                </Button>
-              );
-            }
-            return (
-              <Button
-                key={n}
-                asChild
-                variant="ghost"
-                size="icon"
-                className="size-9 shrink-0"
-              >
-                <Link href={hrefForPage(n)} aria-label={`Page ${n}`}>
-                  {n}
-                </Link>
-              </Button>
-            );
-          })}
-        </div>
-
-        {nextHref ? (
-          <Button asChild variant="ghost" size="sm" className="h-9 gap-2 px-3">
-            <Link href={nextHref}>
-              Next
-              <ChevronRight className="size-4" aria-hidden />
+      {window.map((n) => {
+        const isActive = n === pageNumber;
+        if (isActive) {
+          return (
+            <Button
+              key={n}
+              variant="outline"
+              size="icon"
+              className="size-9 shrink-0"
+              aria-current="page"
+              aria-label={`Page ${n}, current page`}
+              disabled
+            >
+              {n}
+            </Button>
+          );
+        }
+        return (
+          <Button
+            key={n}
+            asChild
+            variant="ghost"
+            size="icon"
+            className="size-9 shrink-0"
+          >
+            <Link href={hrefForPage(n)} aria-label={`Page ${n}`}>
+              {n}
             </Link>
           </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 gap-2 px-3"
-            disabled
-            aria-disabled
-          >
+        );
+      })}
+
+      {nextHref ? (
+        <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 px-2">
+          <Link href={nextHref}>
             Next
-            <ChevronRight className="size-4" aria-hidden />
-          </Button>
-        )}
+            <ChevronRight className="size-3.5" aria-hidden />
+          </Link>
+        </Button>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 gap-1.5 px-2"
+          disabled
+          aria-disabled
+        >
+          Next
+          <ChevronRight className="size-3.5" aria-hidden />
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <nav aria-label={ariaLabel} className="py-3 text-sm">
+      {/* Desktop: 3-col grid — page info left · nav centred · empty spacer right */}
+      <div className="hidden sm:grid sm:grid-cols-3 sm:items-center">
+        {pageInfo}
+        {nav}
+        <div aria-hidden />
+      </div>
+      {/* Mobile: nav centred on top, page info below */}
+      <div className="flex flex-col items-center gap-3 sm:hidden">
+        {nav}
+        {pageInfo}
       </div>
     </nav>
   );
