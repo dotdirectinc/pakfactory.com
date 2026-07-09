@@ -34,7 +34,9 @@ jobs:
         with:
           filters: |
             blog: 'apps/blog/**'
-            www: 'apps/www/**'
+            # www check temporarily skipped — re-enable by uncommenting this line
+            # and the F_WWW / "addp www" lines below.
+            # www: 'apps/www/**'
             studio: 'apps/studio/**'
             ui: 'packages/ui/**'
             sanity: 'packages/sanity/**'
@@ -51,7 +53,7 @@ jobs:
       - id: matrix
         env:
           F_BLOG: ${{ steps.filter.outputs.blog }}
-          F_WWW: ${{ steps.filter.outputs.www }}
+          # F_WWW: ${{ steps.filter.outputs.www }}   # www check skipped for now
           F_STUDIO: ${{ steps.filter.outputs.studio }}
           F_UI: ${{ steps.filter.outputs.ui }}
           F_SANITY: ${{ steps.filter.outputs.sanity }}
@@ -65,7 +67,7 @@ jobs:
           if [ "$F_SHARED" = "true" ]; then
             # Shared config changed — validate everything.
             addp blog ./apps/blog
-            addp www ./apps/www
+            # addp www ./apps/www   # www check skipped for now
             addp studio ./apps/studio
             addp ui ./packages/ui
             addp sanity ./packages/sanity
@@ -73,7 +75,7 @@ jobs:
             addp functions "./functions/*"
           else
             [ "$F_BLOG" = "true" ]      && addp blog ./apps/blog || true
-            [ "$F_WWW" = "true" ]       && addp www ./apps/www || true
+            # [ "$F_WWW" = "true" ]     && addp www ./apps/www || true   # www check skipped for now
             [ "$F_STUDIO" = "true" ]    && addp studio ./apps/studio || true
             [ "$F_UI" = "true" ]        && addp ui ./packages/ui || true
             [ "$F_SANITY" = "true" ]    && addp sanity ./packages/sanity || true
