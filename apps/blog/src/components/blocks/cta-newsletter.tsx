@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import Link from 'next/link';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import type {
@@ -135,12 +136,12 @@ export function CtaNewsletter({
                     <p className="mt-3 text-xs text-muted-foreground">
                         By subscribing you agree to receive the packaging digest
                         and accept our{' '}
-                        <a
+                        <Link
                             href="/privacy-policy"
                             className="underline underline-offset-2 hover:text-foreground"
                         >
                             Privacy Policy
-                        </a>
+                        </Link>
                         .
                     </p>
                     {message && (
