@@ -98,9 +98,18 @@ export const caseStudy = defineType({
                 name: 'clientLink',
                 type: 'object',
                 title: 'Client link',
-                // No fields — URL resolves from client→website at render time.
+                // URL is NOT stored here — it resolves from client→website at render time.
                 // Renders bold-only when the client has no website.
-                fields: [],
+                // The hidden field satisfies Sanity's minimum-one-field requirement.
+                fields: [
+                  defineField({
+                    name: '_marker',
+                    title: 'Client link',
+                    type: 'boolean',
+                    hidden: true,
+                    initialValue: true,
+                  }),
+                ],
               },
             ],
           },
