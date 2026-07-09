@@ -54,21 +54,61 @@ function mediaLibraryItem(S: StructureBuilder): ListItemBuilder {
         .child(S.component(MediaToolRedirect).title('Media Library'));
 }
 
-function blogNavigationEditor(
+/**
+ * A single, flattened Redirects item scoped to one channel — used inside a
+ * workspace lens so editors land straight on their own redirects (no
+ * All/Blog/Website drill-down). Global keeps the full multi-channel folder.
+ * The `blog` scope also includes legacy untagged redirects (no channel yet).
+ */
+function scopedRedirectsItem(
     S: StructureBuilder,
-    title: string,
-    paneId: string,
-): ReturnType<StructureBuilder['document']> {
-    return S.document()
-        .id(paneId)
-        .schemaType('blogNavigation')
-        .documentId('blogNavigation')
-        .title(title)
-        .views([S.view.form().id(paneId).title(title)]);
+    channel: string,
+): ListItemBuilder {
+    const filter =
+        channel === 'blog'
+            ? '_type == "redirect" && (channel == "blog" || !defined(channel))'
+            : `_type == "redirect" && channel == "${channel}"`;
+    const label = channel.charAt(0).toUpperCase() + channel.slice(1);
+    return S.listItem()
+        .id('redirects')
+        .title('Redirects')
+        .icon(ArrowRightIcon)
+        .schemaType('redirect')
+        .child(
+            S.documentTypeList('redirect')
+                .title(`${label} Redirects`)
+                .filter(filter)
+                .defaultOrdering([
+                    {field: 'isActive', direction: 'desc'},
+                    {field: '_updatedAt', direction: 'desc'},
+                ]),
+        );
 }
 
 function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
+    // Flattened: open the single blogNavigation singleton directly (Primary &
+    // Footer are field groups/tabs inside the doc) — no extra drill-down level.
     return S.listItem()
+        .id('blogNavigation')
+        .title('Navigation')
+        .icon(ThLargeIcon)
+        .child(
+            S.document()
+                .schemaType('blogNavigation')
+                .documentId('blogNavigation')
+                .title('Blog Navigation'),
+        );
+}
+
+/**
+ * Global (Admin) navigation grouping — lists every channel's navigation
+ * singleton by the "<Channel> Navigation" convention. Only Blog Navigation
+ * exists today; when the Marketing Website / Academy nav singletons are built,
+ * add them here (and expose each directly in its own lens like blogNavigationItem).
+ */
+function globalNavigationItem(S: StructureBuilder): ListItemBuilder {
+    return S.listItem()
+        .id('navigation')
         .title('Navigation')
         .icon(ThLargeIcon)
         .child(
@@ -76,23 +116,16 @@ function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
                 .title('Navigation')
                 .items([
                     S.listItem()
-                        .title('Primary Navigation')
+                        .id('blogNavigation')
+                        .title('Blog Navigation')
                         .child(
-                            blogNavigationEditor(
-                                S,
-                                'Primary Navigation',
-                                'blogNavigation-primary',
-                            ),
+                            S.document()
+                                .schemaType('blogNavigation')
+                                .documentId('blogNavigation')
+                                .title('Blog Navigation'),
                         ),
-                    S.listItem()
-                        .title('Footer Navigation')
-                        .child(
-                            blogNavigationEditor(
-                                S,
-                                'Footer Navigation',
-                                'blogNavigation-footer',
-                            ),
-                        ),
+                    // Marketing Website Navigation → add when websiteNavigation exists
+                    // Academy Navigation → add when academyNavigation exists
                 ]),
         );
 }
@@ -1252,6 +1285,11 @@ interface SettingsOptions {
     solutions?: boolean;
     /** Show the Media Library inside the Settings section (under the divider). */
     media?: boolean;
+    /**
+     * When set, show only this channel's redirects, flattened (no drill-down).
+     * Omit (Global/Admin) to keep the full multi-channel Redirects folder.
+     */
+    redirectScope?: string;
 }
 
 export function settingsItems(
@@ -1260,13 +1298,16 @@ export function settingsItems(
 ): (ListItemBuilder | DividerBuilder)[] {
     const showBlog = WORKSPACE_SETTINGS && options.blog;
     const showSolutions = WORKSPACE_SETTINGS && options.solutions;
+    const redirectScope = options.redirectScope;
 
     return [
         S.divider().title('Settings'),
 
         ...(options.media ? [mediaLibraryItem(S)] : []),
 
-        S.listItem()
+        redirectScope
+            ? scopedRedirectsItem(S, redirectScope)
+            : S.listItem()
             .title('Redirects')
             .icon(ArrowRightIcon)
             .child(
@@ -1435,6 +1476,7 @@ export const adminStructure = (S: StructureBuilder) =>
         .items([
             ...coreEntitiesItems(S, {hideCaseStudies: true}),
             ...resourcesItems(S),
+            globalNavigationItem(S),
             ...settingsItems(S, {blog: true, solutions: true}),
         ]);
 
@@ -1445,7 +1487,10 @@ export const blogStructure = (
 ) =>
     S.list()
         .title('Blog')
-        .items([...blogItems(S, context), ...settingsItems(S, {blog: true})]);
+        .items([
+            ...blogItems(S, context),
+            ...settingsItems(S, {blog: true, redirectScope: 'blog'}),
+        ]);
 
 /** Website — all content that makes up the website */
 export const websiteStructure = (S: StructureBuilder) =>
@@ -1453,12 +1498,13 @@ export const websiteStructure = (S: StructureBuilder) =>
         .title('Website')
         .items([
             ...coreEntitiesItems(S, {
-                hideCaseStudies: true,
+                // Case Studies shown here (under Core Pages) for the Marketing
+                // Website workspace. TODO: drop the "Core Pages" label later.
                 label: 'Core Pages',
             }),
             ...staticPagesItems(S),
             mediaLibraryItem(S),
-            ...settingsItems(S),
+            ...settingsItems(S, {redirectScope: 'website'}),
         ]);
 
 /** Solutions — industry and use-case solution pages */
