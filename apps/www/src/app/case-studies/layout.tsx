@@ -3,10 +3,13 @@ import { SiteNav } from "@pakfactory/ui/components/site-nav";
 import { SiteFooter } from "@pakfactory/ui/components/site-footer";
 import { SOFT_LAUNCH_NAV_LINKS, SOFT_LAUNCH_FOOTER_COLUMNS } from "@/lib/www-nav";
 import { getSiteUrl } from "@/lib/site";
+import { robotsDirectiveToMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  robots: { index: true, follow: true },
-};
+export function generateMetadata(): Metadata {
+  return {
+    robots: robotsDirectiveToMetadata({ index: true, follow: true }),
+  };
+}
 
 const WWW_URL = getSiteUrl();
 
