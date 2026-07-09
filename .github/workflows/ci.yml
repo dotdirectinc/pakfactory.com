@@ -2,8 +2,9 @@ name: CI
 
 # Affected-only CI for the Turborepo monorepo.
 # 1. `changes` detects which apps/packages a PR touched.
-# 2. `check` runs lint/typecheck/build ONLY for those, one matrix job per project
+# 2. `check` runs typecheck ONLY for those, one matrix job per project
 #    (so each app gets its own visible check, e.g. "check (blog)").
+#    (lint + build are temporarily out — see the note on the check step below.)
 # 3. `ci-success` always runs and is the SINGLE required status check — this avoids
 #    the "skipped required check blocks the PR" deadlock when a project didn't change.
 #
@@ -104,8 +105,12 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Lint / typecheck / build (${{ matrix.project.name }})
-        run: pnpm exec turbo run lint typecheck build --filter=${{ matrix.project.filter }}
+      # NOTE: `lint` is temporarily excluded — apps/blog uses `next lint`, which was
+      # removed in Next.js 16. Re-add `lint` here once blog migrates to the ESLint CLI
+      # (eslint .) using the root eslint.config.mjs. `build` is excluded until the
+      # Sanity env vars are provided as GitHub secrets.
+      - name: Typecheck (${{ matrix.project.name }})
+        run: pnpm exec turbo run typecheck --filter=${{ matrix.project.filter }}
 
   ci-success:
     name: ci-success

@@ -27,11 +27,11 @@ jobs:
             echo "OK: staging promotion branch."
             exit 0
           fi
-          # Require feat/ fix/ chore/ prefix with a non-empty description.
-          if echo "$HEAD_REF" | grep -Eq '^(feat|fix|chore)/.+'; then
+          # Require an approved prefix with a non-empty description.
+          if echo "$HEAD_REF" | grep -Eq '^(feat|feature|features|fix|bugfix|hotfix|chore)/.+'; then
             echo "OK: '$HEAD_REF' matches the naming standard."
           else
-            echo "::error::Branch '$HEAD_REF' must start with feat/ , fix/ , or chore/ ."
-            echo "Examples: feat/PROD-1957-algolia-search , fix/blog-toc-card , chore/ci-branch-flow"
+            echo "::error::Branch '$HEAD_REF' must start with one of: feat/ feature/ features/ fix/ bugfix/ hotfix/ chore/ ."
+            echo "Examples: feat/PROD-1957-algolia-search , feature/blog-homepage , fix/blog-toc-card , chore/ci-branch-flow"
             exit 1
           fi
