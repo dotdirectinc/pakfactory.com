@@ -83,6 +83,7 @@ export const schemaTypes = [
   widgetEmbed,
   page,
   post,
+  videoPost,
   redirect,
 
   // Page builder

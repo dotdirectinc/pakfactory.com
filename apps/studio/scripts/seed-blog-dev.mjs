@@ -243,6 +243,70 @@ const extraPosts = [
   }),
 ]
 
+/** Video library entries for homepage Featured Videos block + VideoObject JSON-LD QA. */
+const videoPosts = [
+  {
+    _id: 'vpost-custom-packaging-101',
+    _type: 'videoPost',
+    title: 'Custom Packaging 101 for Growing Brands',
+    description:
+      'How DTC and retail brands plan materials, structure, and print for scalable custom packaging programs.',
+    publishedAt: '2026-01-15T12:00:00.000Z',
+    sourceType: 'external',
+    platform: 'youtube',
+    externalUrl: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+    duration: '4:32',
+  },
+  {
+    _id: 'vpost-sustainable-materials',
+    _type: 'videoPost',
+    title: 'Sustainable Materials That Still Ship Safely',
+    description:
+      'Recyclable boards, reduced plastic, and how to balance sustainability claims with transit protection.',
+    publishedAt: '2026-02-01T10:00:00.000Z',
+    sourceType: 'external',
+    platform: 'youtube',
+    externalUrl: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+    duration: '3:18',
+  },
+  {
+    _id: 'vpost-rigid-box-tour',
+    _type: 'videoPost',
+    title: 'Rigid Box Construction Tour',
+    description:
+      'A walkthrough of setup boxes, inserts, and finishing options for premium unboxing experiences.',
+    publishedAt: '2026-02-10T14:30:00.000Z',
+    sourceType: 'external',
+    platform: 'youtube',
+    externalUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk',
+    duration: '5:04',
+  },
+  {
+    _id: 'vpost-unboxing-tips',
+    _type: 'videoPost',
+    title: 'Unboxing Design Tips for DTC',
+    description:
+      'Practical layout and reveal patterns that make a first impression without overspending on structure.',
+    publishedAt: '2026-02-18T09:00:00.000Z',
+    sourceType: 'external',
+    platform: 'youtube',
+    externalUrl: 'https://www.youtube.com/watch?v=RgKAFK5djSk',
+    duration: '2:56',
+  },
+  {
+    _id: 'vpost-print-finishes',
+    _type: 'videoPost',
+    title: 'Print Finishes Explained',
+    description:
+      'Matte, gloss, soft-touch, and foil — when each finish makes sense on folding cartons and rigid boxes.',
+    publishedAt: '2026-02-22T16:00:00.000Z',
+    sourceType: 'external',
+    platform: 'youtube',
+    externalUrl: 'https://www.youtube.com/watch?v=OPf0YbXqDm0',
+    duration: '6:12',
+  },
+]
+
 /** Default homepage layout for local QA. */
 const blogHomePageDoc = {
   _id: 'blogHomePage',
@@ -287,6 +351,32 @@ const blogHomePageDoc = {
       _type: 'postCategoryRow',
       category: ref('bcat-design-inspiration'),
       postsCount: 3,
+    },
+    {
+      _key: key(),
+      _type: 'topicStrip',
+      heading: 'Browse by topic',
+      topics: [
+        ref('btag-beauty'),
+        ref('btag-food-beverage'),
+        ref('btag-retail'),
+        ref('btag-sustainability'),
+        ref('btag-dtc'),
+      ],
+    },
+    {
+      _key: key(),
+      _type: 'featuredVideos',
+      heading: 'Featured Videos',
+      channelCtaLabel: 'View more on YouTube',
+      channelCtaUrl: 'https://www.youtube.com/@pakfactory',
+      featuredVideo: ref('vpost-custom-packaging-101'),
+      videos: [
+        ref('vpost-sustainable-materials'),
+        ref('vpost-rigid-box-tour'),
+        ref('vpost-unboxing-tips'),
+        ref('vpost-print-finishes'),
+      ],
     },
     {
       _key: key(),
@@ -346,7 +436,7 @@ const blogNavigationDoc = {
   ),
 }
 
-const allDocs = [...extraIndustries, ...extraPosts, blogHomePageDoc, blogTopicsPageDoc, blogNavigationDoc]
+const allDocs = [...extraIndustries, ...extraPosts, ...videoPosts, blogHomePageDoc, blogTopicsPageDoc, blogNavigationDoc]
 
 async function publishDocument(documentId) {
   try {

@@ -21,6 +21,7 @@ import {
     StarIcon,
     ThLargeIcon,
     AddIcon,
+    PlayIcon,
 } from '@sanity/icons';
 import type {
     DividerBuilder,
@@ -322,6 +323,18 @@ export function blogItems(
             .child(
                 S.documentTypeList('post')
                     .title('Posts')
+                    .defaultOrdering([
+                        {field: 'publishedAt', direction: 'desc'},
+                    ]),
+            ),
+
+        S.listItem()
+            .title('Videos')
+            .icon(PlayIcon)
+            .schemaType('videoPost')
+            .child(
+                S.documentTypeList('videoPost')
+                    .title('Video posts')
                     .defaultOrdering([
                         {field: 'publishedAt', direction: 'desc'},
                     ]),
