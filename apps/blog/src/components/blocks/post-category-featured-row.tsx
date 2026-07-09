@@ -48,7 +48,7 @@ export function PostCategoryFeaturedRow({
   const sectionHeading = heading?.trim() || DEFAULT_HEADING;
 
   return (
-    <CategoryLandingSection>
+    <CategoryLandingSection innerClassName="py-12">
       <div className="flex flex-col gap-8">
         <h2 className="text-2xl font-semibold leading-tight tracking-tight text-foreground lg:text-3xl">
           {sectionHeading}
