@@ -90,8 +90,8 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   if (entries.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-base font-medium text-muted-foreground">
+    <div className="overflow-hidden rounded-[14px] border border-dashed border-border">
+      <p className="border-b border-dashed border-border px-5 py-4 text-base font-medium text-muted-foreground">
         Table of content
       </p>
       <nav
@@ -100,22 +100,24 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
         style={{ maxHeight }}
         className="overflow-y-auto transition-[max-height] duration-300 ease-in-out"
       >
-        <ol className="flex list-decimal flex-col gap-2 ps-5 marker:text-muted-foreground">
-          {entries.map((entry) => {
+        <ol>
+          {entries.map((entry, index) => {
             const isActive = activeId === entry.id;
             return (
-              <li key={entry.id} className={cn(entry.level === 3 && "ms-4")}>
+              <li key={entry.id}>
                 <a
                   href={`#${entry.id}`}
                   data-toc-id={entry.id}
+                  aria-current={isActive ? "location" : undefined}
                   className={cn(
-                    "block text-sm leading-6 transition-colors",
+                    "flex gap-2 px-5 py-3 text-base leading-6 transition-colors",
                     isActive
                       ? "font-medium text-foreground"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {entry.text}
+                  <span className="shrink-0">{index + 1}.</span>
+                  <span>{entry.text}</span>
                 </a>
               </li>
             );
@@ -130,7 +132,7 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
           aria-label={
             open ? "Collapse table of contents" : "Expand table of contents"
           }
-          className="flex w-full cursor-pointer items-center justify-center rounded-sm border-t border-dashed border-border py-3 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="flex w-full cursor-pointer items-center justify-center border-t border-dashed border-border py-3 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <ChevronDown
             className={cn(
