@@ -60,6 +60,7 @@ export function CategoryArchiveView({
         totalPages={data.totalPages}
         categorySlug={data.category.slug}
         filters={data.filters}
+        perPage={data.perPage}
       />
       <WidgetNewsletter />
     </CategoryLandingLayout>

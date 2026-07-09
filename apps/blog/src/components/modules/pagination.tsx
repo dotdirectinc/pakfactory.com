@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
@@ -11,6 +12,8 @@ type PaginationProps = {
   ariaLabel?: string;
   /** Max numbered page buttons shown at once (sliding window). */
   maxVisiblePages?: number;
+  /** Optional content rendered in the right column of the desktop 3-col layout. */
+  rightSlot?: ReactNode;
 };
 
 /**
@@ -24,6 +27,7 @@ export function Pagination({
   hrefForPage,
   ariaLabel = "Pagination",
   maxVisiblePages = 5,
+  rightSlot,
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -117,11 +121,11 @@ export function Pagination({
 
   return (
     <nav aria-label={ariaLabel} className="py-3 text-sm">
-      {/* Desktop: 3-col grid — page info left · nav centred · empty spacer right */}
+      {/* Desktop: 3-col grid — page info left · nav centred · right slot */}
       <div className="hidden sm:grid sm:grid-cols-3 sm:items-center">
         {pageInfo}
         {nav}
-        <div aria-hidden />
+        <div className="flex justify-end">{rightSlot ?? null}</div>
       </div>
       {/* Mobile: nav centred on top, page info below */}
       <div className="flex flex-col items-center gap-3 sm:hidden">
