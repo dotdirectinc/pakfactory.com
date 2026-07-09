@@ -98,7 +98,7 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
         ref={navRef}
         aria-label="Table of contents"
         style={{ maxHeight }}
-        className="overflow-y-auto transition-[max-height] duration-300 ease-in-out"
+        className="overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] transition-[max-height] duration-300 ease-in-out"
       >
         <ol>
           {entries.map((entry, index) => {
