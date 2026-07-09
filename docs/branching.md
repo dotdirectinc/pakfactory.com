@@ -19,8 +19,8 @@ Branches must start with one of:
 
 | Prefix | For |
 |---|---|
-| `feat/` | new feature or enhancement |
-| `fix/` | bug fix |
+| `feat/`, `feature/`, `features/` | new feature or enhancement |
+| `fix/`, `bugfix/`, `hotfix/` | bug fix |
 | `chore/` | tooling, CI, docs, deps, refactors |
 
 Include the Jira key where there is one: `feat/PROD-1957-algolia-search`,
@@ -29,8 +29,9 @@ prefix on every PR.
 
 ## Checks that gate a merge
 
-- **`ci-success`** — affected-only lint/typecheck/build (only the apps/packages your PR
-  touched are built; see `.github/workflows/ci.yml`).
+- **`ci-success`** — affected-only typecheck (only the apps/packages your PR touched are
+  checked; see `.github/workflows/ci.yml`). Lint returns once blog migrates off `next lint`
+  (removed in Next 16); build returns once Sanity env is provided as CI secrets.
 - **`Validate branch name`** — the naming rule above.
 - **`Only staging can merge into main`** — on PRs into `main`.
 
