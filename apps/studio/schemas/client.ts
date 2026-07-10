@@ -37,8 +37,12 @@ export const client = defineType({
       name: 'industry',
       title: 'Industry',
       type: 'reference',
-      to: [{ type: 'industry' }],
-      description: "The client's primary vertical. Optional — a case study can derive it from this.",
+      to: [{ type: 'solution' }],
+      options: {
+        filter: 'solutionType == "industry"',
+      },
+      description:
+        "The client's primary vertical — a Solutions → Industries document. Optional. After migrating from the legacy industry taxonomy, re-select from the Solutions picker.",
     }),
   ],
   preview: {
