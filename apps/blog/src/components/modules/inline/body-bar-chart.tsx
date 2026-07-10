@@ -14,7 +14,7 @@ type BodyBarChartProps = {
 
 // Neutral default that matches the site theme; brand accent for highlights.
 const BAR_COLOR = "#dbdbe3";
-const BAR_HIGHLIGHT_COLOR = "var(--primary)";
+const BAR_HIGHLIGHT_COLOR = "#476333";
 
 function RotatedTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
   return (

@@ -19,7 +19,7 @@ export function BodyStatStack({ value }: BodyStatStackProps) {
         <dl className={cn("grid grid-cols-1 gap-8", cols)}>
           {stats.map((stat, i) => (
             <div key={stat._key ?? i}>
-              <div className="mb-4 h-1 w-[75px] rounded-full bg-primary" />
+              <div className="mb-4 h-1 w-[75px] rounded-full bg-[#476333]" />
               <dt className="text-[40px] font-bold leading-none tracking-tight text-foreground">
                 {stat.value}
               </dt>
