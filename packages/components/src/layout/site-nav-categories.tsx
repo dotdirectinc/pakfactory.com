@@ -1,24 +1,24 @@
 "use client";
 
-import { cn } from "@pakfactory/ui/lib/utils";
+import { PrimaryNavLink } from "./primary-nav-link";
+import type { PrimaryNavItem } from "./primary-nav-types";
 
-export type NavCategory = { href: string; title: string };
+type Props = { navItems: PrimaryNavItem[] };
 
-type Props = { categories: NavCategory[] };
-
-export function SiteNavCategories({ categories }: Props) {
+export function SiteNavCategories({ navItems }: Props) {
   return (
-    <div className="hidden w-full items-center justify-between lg:flex">
-      {categories.length > 0 ? (
-        <nav className="flex min-w-0 flex-1 items-center gap-8 text-base font-medium" aria-label="Blog categories">
-          {categories.map(({ href, title }) => (
-            <a
-              key={href}
-              href={href}
-              className={cn("text-foreground transition-colors hover:text-primary")}
-            >
-              {title}
-            </a>
+    <div className="hidden w-full items-center lg:flex">
+      {navItems.length > 0 ? (
+        <nav
+          className="flex min-w-0 flex-1 items-center gap-8 text-sm font-medium"
+          aria-label="Blog navigation"
+        >
+          {navItems.map((item) => (
+            <PrimaryNavLink
+              key={item.key}
+              item={item}
+              className="text-foreground transition-colors hover:text-primary"
+            />
           ))}
         </nav>
       ) : (

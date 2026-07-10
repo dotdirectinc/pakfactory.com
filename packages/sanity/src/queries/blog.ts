@@ -912,16 +912,37 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
   }
 }`;
 
-/** Category nav order + header CTA from Blog Navigation `primaryNavigation`. */
+/** Primary nav items (categories + custom links) + header CTA from Blog Navigation `primaryNavigation`. */
 export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   *[_id == "blogNavigation"][0]{
     _id,
-    "categories": primaryNavigation.categories[]->{
-      _id,
-      title,
-      navLabel,
-      "slug": slug.current,
-      language
+    "categories": primaryNavigation.categories[]{
+      _type,
+      _key,
+      "category": select(defined(_ref) => @->{
+        _id,
+        title,
+        navLabel,
+        "slug": slug.current,
+        language
+      }),
+      label,
+      linkType,
+      externalUrl,
+      "internalLink": internalLink->{
+        _id,
+        _type,
+        title,
+        "slug": slug.current,
+        "name": name,
+        "term": term,
+        pageRole,
+        pageType,
+        category,
+        "handle": handle.current,
+        "collectionSlug": primaryCollection->slug.current,
+        "pageSlug": primaryLandingPage->slug.current
+      }
     },
     "header": {
       "cta": primaryNavigation.cta{
@@ -947,12 +968,16 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   },
   *[_id == "blogSettings"][0]{
     _id,
-    "categories": categoryOrder[]->{
-      _id,
-      title,
-      navLabel,
-      "slug": slug.current,
-      language
+    "categories": categoryOrder[]{
+      _type,
+      _key,
+      "category": select(defined(_ref) => @->{
+        _id,
+        title,
+        navLabel,
+        "slug": slug.current,
+        language
+      })
     },
     "header": null
   }

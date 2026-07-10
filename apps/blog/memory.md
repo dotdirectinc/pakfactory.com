@@ -27,14 +27,17 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ## Primary navigation (blog header)
 
-The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCategories()` (returns `{ categories, header }`):
+The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCategories()` (returns `{ navItems, header }`):
 
 - **`logo`** — optional company logo from Global Settings → **Company → Company logo** (`BLOG_GLOBAL_SETTINGS_QUERY` → `resolveCompanyLogo`). When set, replaces the built-in Box icon + "PakFactory" wordmark; "Blog" label always shows beside it. When empty / missing asset, the built-in lockup is used.
 - **`cta`** — optional header button from `blogNavigation.primaryNavigation` (`label` + Internal/External link via [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts)). When label or link is empty, the blog falls back to **"Contact Us" → `/contribute`**. Drives both the desktop button and the mobile-menu CTA. Studio: **Navigation → Primary Navigation → Header CTA**.
-- **`categories`** — category strip order from `blogNavigation.primaryNavigation`. Exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
+- **`navItems`** — primary nav strip from `blogNavigation.primaryNavigation.categories` (field title: **Primary navigation items**). Editors drag a mixed ordered list of:
+  - **`blogCategory` references** — label from category Nav label (or Name); href `/{slug}`; archive active-state preserved.
+  - **`primaryNavLink` custom links** — required label + Internal/External link (same [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts) + [`resolveFooterLinkHref()`](./src/lib/blog-footer-nav.ts) stack as footer). Cross-surface www internal links render as external anchors.
+  When the singleton is missing or the list is empty, the strip is hidden (no fallback to all categories).
 
-- **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty.
-- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with the dev category order (logo/CTA left unset so built-in fallbacks apply).
+- **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty. Existing category-only refs remain valid (no content migration).
+- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with dev category refs only (logo/CTA left unset). To test custom links locally, add a `primaryNavLink` object to the `categories` array in `seed-blog-dev.mjs` (see `footer-navigation-seed-data.mjs` `externalLink()` / `internalLink()` helpers).
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` / `blogCategory` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 - **Out of scope here:** `/all` browse sidebar, search, and 404 still use `fetchBlogCategories()` (all categories, alphabetical).
 

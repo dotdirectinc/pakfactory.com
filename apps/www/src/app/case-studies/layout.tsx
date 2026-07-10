@@ -1,25 +1,22 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@pakfactory/components/layout/site-nav";
-import type { NavCategory } from "@pakfactory/components/layout/site-nav";
 import { SiteFooter } from "@pakfactory/components/layout/site-footer";
-import { getWwwUrl } from "@/lib/site";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { BLOG_NAV_CATEGORIES_QUERY, BLOG_FOOTER_NAV_QUERY } from "@pakfactory/sanity/queries";
+import { BLOG_FOOTER_NAV_QUERY } from "@pakfactory/sanity/queries";
 import type { RawFooterDoc } from "@/lib/footer-nav";
 import {
   resolveFooterColumns,
   resolveFooterSocial,
   resolveFooterAiLinks,
 } from "@/lib/footer-nav";
+import { fetchWwwPrimaryNav } from "@/lib/www-primary-nav";
 import {
   BLOG_URL,
-  BLOG_CATEGORIES,
-  FOOTER_COLUMNS,
-  FOOTER_SOCIAL,
-  FOOTER_AI_LINKS,
   buildFooterColumns,
+  FOOTER_AI_LINKS,
+  FOOTER_SOCIAL,
 } from "@/lib/www-nav";
 
 export function generateMetadata(): Metadata {
@@ -28,38 +25,10 @@ export function generateMetadata(): Metadata {
   };
 }
 
-const WWW_URL = getWwwUrl();
-
-type SanityNavCategory = {
-  _id: string;
-  title: string;
-  navLabel?: string | null;
-  slug: string;
-};
-
-async function fetchNavCategories(): Promise<NavCategory[]> {
-  if (!isSanityConfigured()) return BLOG_CATEGORIES;
-  try {
-    const result = await getPublishedSanityClient().fetch<{
-      categories?: SanityNavCategory[] | null;
-    } | null>(BLOG_NAV_CATEGORIES_QUERY, { language: "en" });
-
-    const cats = result?.categories?.filter((c) => !!c.slug) ?? [];
-    if (cats.length === 0) return BLOG_CATEGORIES;
-
-    return cats.map((c) => ({
-      href: `${BLOG_URL}/${c.slug}`,
-      title: (c.navLabel?.trim() || c.title) ?? c.title,
-    }));
-  } catch {
-    return BLOG_CATEGORIES;
-  }
-}
-
-async function fetchFooterData(navCategories: NavCategory[]) {
+async function fetchFooterData(navItems: Awaited<ReturnType<typeof fetchWwwPrimaryNav>>["navItems"]) {
   if (!isSanityConfigured()) {
     return {
-      columns: buildFooterColumns(navCategories),
+      columns: buildFooterColumns(navItems),
       social: FOOTER_SOCIAL,
       aiLinks: FOOTER_AI_LINKS,
     };
@@ -70,13 +39,13 @@ async function fetchFooterData(navCategories: NavCategory[]) {
       BLOG_FOOTER_NAV_QUERY,
     );
     return {
-      columns: resolveFooterColumns(doc) ?? buildFooterColumns(navCategories),
+      columns: resolveFooterColumns(doc) ?? buildFooterColumns(navItems),
       social: resolveFooterSocial(doc) ?? FOOTER_SOCIAL,
       aiLinks: resolveFooterAiLinks(doc) ?? FOOTER_AI_LINKS,
     };
   } catch {
     return {
-      columns: buildFooterColumns(navCategories),
+      columns: buildFooterColumns(navItems),
       social: FOOTER_SOCIAL,
       aiLinks: FOOTER_AI_LINKS,
     };
@@ -88,21 +57,21 @@ export default async function CaseStudiesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const navCategories = await fetchNavCategories();
-  const footer = await fetchFooterData(navCategories);
+  const primaryNav = await fetchWwwPrimaryNav();
+  const footer = await fetchFooterData(primaryNav.navItems);
 
   return (
     <>
       <SiteNav
-        categories={navCategories}
-        wwwHref={WWW_URL}
-        blogHref={BLOG_URL}
-        contactHref={`${WWW_URL}/contact`}
+        navItems={primaryNav.navItems}
+        header={primaryNav.header}
+        homeHref={BLOG_URL}
       />
       <main>{children}</main>
       <SiteFooter
         columns={footer.columns}
-        contactHref={`${WWW_URL}/contact`}
+        contactHref={`${BLOG_URL}/contribute`}
+        contactLabel="Let's talk packaging"
         social={footer.social}
         aiLinks={footer.aiLinks}
       />

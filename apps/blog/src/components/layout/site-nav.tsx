@@ -9,24 +9,23 @@ import {
     SiteNavCompactProvider,
     SiteNavTopRow,
 } from '@/components/layout/site-nav-compact';
-import type {BlogCategoryChip} from '@/lib/blog-categories';
-import type {BlogPrimaryNavHeader} from '@/lib/blog-primary-nav';
+import type {BlogPrimaryNavHeader, BlogPrimaryNavItem} from '@/lib/blog-primary-nav';
 import {externalLinkAttributes} from '@/lib/external-link';
 import {READING_PROGRESS_SLOT_ID} from '@/lib/reading-progress';
 
 type SiteNavProps = {
-    categories: BlogCategoryChip[];
+    navItems: BlogPrimaryNavItem[];
     header: BlogPrimaryNavHeader;
 };
 
-export function SiteNav({categories, header}: SiteNavProps) {
+export function SiteNav({navItems, header}: SiteNavProps) {
     const {logo, cta} = header;
 
     return (
         <header className="sticky -top-0 z-40 lg:-top-16">
             {/* Top tier — PakFactory brand + Blog label + Contact CTA / compact tools */}
             <div className="bg-background">
-                <SiteNavCompactProvider categories={categories} cta={cta}>
+                <SiteNavCompactProvider navItems={navItems} cta={cta}>
                     <SiteNavTopRow>
                         <Link
                             href="/"
@@ -83,7 +82,7 @@ export function SiteNav({categories, header}: SiteNavProps) {
             <div className="bg-background">
                 <div className="hidden border-b border-dashed border-border lg:block">
                     <PageDielineSection innerClassName="flex h-16 items-center">
-                        <SiteNavCategories categories={categories} />
+                        <SiteNavCategories navItems={navItems} />
                     </PageDielineSection>
                 </div>
                 <PageDielineSection innerClassName="px-0">

@@ -22,6 +22,15 @@ export type BlogPrimaryNavCta = {
   external: boolean;
 };
 
+export type BlogPrimaryNavItem = {
+  key: string;
+  label: string;
+  href: string;
+  external?: boolean;
+  /** Set for category-ref items — drives archive active-state matching */
+  categorySlug?: string;
+};
+
 export type BlogPrimaryNavHeader = {
   logo?: BlogPrimaryNavLogo;
   cta: BlogPrimaryNavCta;

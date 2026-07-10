@@ -1,17 +1,53 @@
-import type { NavCategory } from "@pakfactory/components/layout/site-nav";
-import type { AiLink, FooterColumns, FooterLink, SocialLink } from "@pakfactory/components/layout/site-footer";
+import type { PrimaryNavItem } from "@pakfactory/components/layout/primary-nav-types";
+import type {
+  AiLink,
+  FooterColumns,
+  FooterLink,
+  SocialLink,
+} from "@pakfactory/components/layout/site-footer";
 import { getWwwUrl } from "@/lib/site";
 
-export const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfactory.com";
+export const BLOG_URL =
+  process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfactory.com";
 const WWW_URL = getWwwUrl();
 
-export const BLOG_CATEGORIES: NavCategory[] = [
-  { href: `${BLOG_URL}/design-and-structure`, title: "Design & Structure" },
-  { href: `${BLOG_URL}/materials-and-finishes`, title: "Materials & Finishes" },
-  { href: `${BLOG_URL}/sustainability`, title: "Sustainability" },
-  { href: `${BLOG_URL}/compliance`, title: "Compliance" },
-  { href: `${BLOG_URL}/cost-and-sourcing`, title: "Cost & Sourcing" },
-  { href: `${BLOG_URL}/branding`, title: "Branding" },
+export const BLOG_NAV_FALLBACK: PrimaryNavItem[] = [
+  {
+    key: "design-and-structure",
+    label: "Design & Structure",
+    href: `${BLOG_URL}/design-and-structure`,
+    external: true,
+  },
+  {
+    key: "materials-and-finishes",
+    label: "Materials & Finishes",
+    href: `${BLOG_URL}/materials-and-finishes`,
+    external: true,
+  },
+  {
+    key: "sustainability",
+    label: "Sustainability",
+    href: `${BLOG_URL}/sustainability`,
+    external: true,
+  },
+  {
+    key: "compliance",
+    label: "Compliance",
+    href: `${BLOG_URL}/compliance`,
+    external: true,
+  },
+  {
+    key: "cost-and-sourcing",
+    label: "Cost & Sourcing",
+    href: `${BLOG_URL}/cost-and-sourcing`,
+    external: true,
+  },
+  {
+    key: "branding",
+    label: "Branding",
+    href: `${BLOG_URL}/branding`,
+    external: true,
+  },
 ];
 
 export const FOOTER_SOCIAL: SocialLink[] = [
@@ -29,20 +65,22 @@ const AI_PROMPT = encodeURIComponent(
 export const FOOTER_AI_LINKS: AiLink[] = [
   { engine: "chatgpt", url: `https://chatgpt.com/?q=${AI_PROMPT}` },
   { engine: "gemini", url: `https://gemini.google.com/app?q=${AI_PROMPT}` },
-  { engine: "perplexity", url: `https://www.perplexity.ai/search?q=${AI_PROMPT}` },
+  {
+    engine: "perplexity",
+    url: `https://www.perplexity.ai/search?q=${AI_PROMPT}`,
+  },
   { engine: "claude", url: `https://claude.ai/new?q=${AI_PROMPT}` },
   { engine: "grok", url: `https://grok.com/?q=${AI_PROMPT}` },
 ];
 
-export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns {
-  const browseByCategories: FooterLink[] = blogCategories.map((c) => ({
-    label: c.title,
-    href: c.href,
-    external: true,
+export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
+  const browseByCategories: FooterLink[] = navItems.map((item) => ({
+    label: item.label,
+    href: item.href,
+    external: item.external ?? false,
   }));
 
   return [
-    // Column 1 — blog content discovery
     [
       {
         title: "Browse by Categories",
@@ -53,20 +91,37 @@ export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns
         links: [
           { label: "Packaging Type", href: `${WWW_URL}/topics/packaging-type` },
           { label: "Industry", href: `${WWW_URL}/topics/industry` },
-          { label: "Packaging Material", href: `${WWW_URL}/topics/packaging-material` },
-          { label: "Packaging Finish", href: `${WWW_URL}/topics/packaging-finish` },
+          {
+            label: "Packaging Material",
+            href: `${WWW_URL}/topics/packaging-material`,
+          },
+          {
+            label: "Packaging Finish",
+            href: `${WWW_URL}/topics/packaging-finish`,
+          },
           { label: "Printing", href: `${WWW_URL}/topics/printing` },
         ],
       },
     ],
-    // Column 2 — blog + company links
     [
       {
         title: "Explore",
         links: [
-          { label: "Contribute", href: `${BLOG_URL}/contribute`, external: true },
-          { label: "Product Inspiration", href: `${BLOG_URL}/topics`, external: true },
-          { label: "Customization", href: `${BLOG_URL}/topics`, external: true },
+          {
+            label: "Contribute",
+            href: `${BLOG_URL}/contribute`,
+            external: true,
+          },
+          {
+            label: "Product Inspiration",
+            href: `${BLOG_URL}/topics`,
+            external: true,
+          },
+          {
+            label: "Customization",
+            href: `${BLOG_URL}/topics`,
+            external: true,
+          },
         ],
       },
       {
@@ -81,7 +136,6 @@ export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns
         ],
       },
     ],
-    // Column 3 — pakfactory.com sections
     [
       {
         title: "Custom packaging",
@@ -97,4 +151,6 @@ export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns
   ];
 }
 
-export const FOOTER_COLUMNS: FooterColumns = buildFooterColumns(BLOG_CATEGORIES);
+export const FOOTER_COLUMNS: FooterColumns = buildFooterColumns(
+  BLOG_NAV_FALLBACK,
+);
