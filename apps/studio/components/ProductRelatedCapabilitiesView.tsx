@@ -157,7 +157,7 @@ export const ProductRelatedCapabilitiesView: UserViewComponent = ({ documentId }
   return (
     <div style={{ padding: '1rem 1.5rem' }}>
       <div style={{ fontSize: 12, opacity: 0.45, marginBottom: '1.25rem' }}>
-        {total} {total === 1 ? 'capability' : 'capabilities'} total
+        {total} {total === 1 ? 'customization' : 'customizations'} total
       </div>
 
       {/* Overridden — direct assignments take priority */}
@@ -167,7 +167,7 @@ export const ProductRelatedCapabilitiesView: UserViewComponent = ({ documentId }
         </div>
         <CapabilityList
           rows={data.overridden}
-          emptyMessage="No capability overwrite set — inheriting from product style."
+          emptyMessage="No customization overwrite set — inheriting from product style."
         />
       </div>
 
@@ -178,7 +178,7 @@ export const ProductRelatedCapabilitiesView: UserViewComponent = ({ documentId }
         </div>
         <CapabilityList
           rows={data.inherited}
-          emptyMessage="No default capabilities on the assigned product styles."
+          emptyMessage="No default customizations on the assigned product styles."
         />
       </div>
     </div>

@@ -9,7 +9,7 @@ export const product = defineType({
   groups: [
     { name: 'basic', title: 'Basic', default: true },
     { name: 'classification', title: 'Category' },
-    { name: 'capabilities', title: 'Capabilities' },
+    { name: 'capabilities', title: 'Customization' },
     { name: 'attributes', title: 'Attributes' },
     { name: 'specs', title: 'Specs' },
     { name: 'page', title: 'Page' },
@@ -171,15 +171,15 @@ export const product = defineType({
       of: [{ type: 'reference', to: [{ type: 'useCase' }] }],
     }),
 
-    // ─── CAPABILITIES ─────────────────────────────────────────────────────────
+    // ─── CUSTOMIZATION ────────────────────────────────────────────────────────
 
     defineField({
       name: 'capabilitiesOverride',
-      title: 'Capability overwrite',
+      title: 'Customization overwrite',
       type: 'array',
       group: 'capabilities',
       description:
-        'Leave empty — capabilities are inherited automatically from this product\'s category via GROQ. Add items here only to override completely (replaces the full inherited set, not a merge).',
+        'Leave empty — customizations are inherited automatically from this product\'s category via GROQ. Add items here only to override completely (replaces the full inherited set, not a merge).',
       of: [{ type: 'reference', to: [{ type: 'capability' }] }],
     }),
 

@@ -4,7 +4,7 @@ import { BlockItemPreview } from '../../components/BlockItemPreview';
 
 /**
  * ctaPillars — a promo band of "pillar" cards linking out to key destinations
- * (capabilities, resources, case studies). Page-builder block
+ * (customization, resources, case studies). Page-builder block
  * (apps/blog components/blocks/cta-pillars).
  */
 export const ctaPillars = defineType({

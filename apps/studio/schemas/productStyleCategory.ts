@@ -8,7 +8,7 @@ export const productStyleCategory = defineType({
   groups: [
     { name: 'basic', title: 'Basic', default: true },
     { name: 'landing', title: 'Landing Page' },
-    { name: 'capabilities', title: 'Capabilities' },
+    { name: 'capabilities', title: 'Customization' },
     { name: 'seo', title: 'SEO' },
   ],
   fields: [
@@ -121,15 +121,15 @@ export const productStyleCategory = defineType({
       ],
     })),
 
-    // ─── CAPABILITIES ─────────────────────────────────────────────────────────
+    // ─── CUSTOMIZATION ────────────────────────────────────────────────────────
 
     defineField({
       name: 'defaultCapabilities',
-      title: 'Default capabilities',
+      title: 'Default customizations',
       type: 'array',
       group: 'capabilities',
       description:
-        'Capabilities typical for products in this style category. Products inherit these automatically via GROQ; add to a product\'s capabilitiesOverride only to replace the full set.',
+        'Customizations typical for products in this style category. Products inherit these automatically via GROQ; add to a product\'s capabilitiesOverride only to replace the full set.',
       of: [{ type: 'reference', to: [{ type: 'capability' }] }],
     }),
 

@@ -163,11 +163,11 @@ export function SiteFooter({
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-0 border-t border-dashed border-border md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-0 md:px-0 md:py-0">
           {columns.map((column, colIdx) => (
             <div
               key={colIdx}
-              className="flex flex-col gap-16 border-dashed border-border px-8 py-16 md:border-r md:last:border-r-0"
+              className="flex flex-col gap-16 border-dashed border-border md:border-r md:px-8 md:py-16 md:last:border-r-0"
             >
               {column.map((section) => (
                 <FooterSectionBlock key={section.title} section={section} />
