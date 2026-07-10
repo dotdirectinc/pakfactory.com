@@ -49,7 +49,11 @@ export function CategoryArchiveView({
         posts={data.featuredPosts}
         categorySlug={data.category.slug}
       />
-      <CategoryRecommendedTopics topics={data.recommendedTopics} />
+      <CategoryRecommendedTopics
+        topics={data.recommendedTopics}
+        borderTop
+        borderBottom
+      />
       <CategoryListingRow
         posts={data.posts}
         pageNumber={data.pageNumber}

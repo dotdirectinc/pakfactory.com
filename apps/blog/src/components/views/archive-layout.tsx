@@ -50,15 +50,17 @@ export function ArchiveLayout({
     <>
       {filters}
       {children}
-      <div className="py-16">
-        <Pagination
-          pageNumber={pagination.pageNumber}
-          totalPages={pagination.totalPages}
-          hrefForPage={pagination.hrefForPage}
-          ariaLabel={pagination.ariaLabel}
-          rightSlot={pagination.rightSlot}
-        />
-      </div>
+      {pagination.totalPages > 1 && (
+        <div className="py-16">
+          <Pagination
+            pageNumber={pagination.pageNumber}
+            totalPages={pagination.totalPages}
+            hrefForPage={pagination.hrefForPage}
+            ariaLabel={pagination.ariaLabel}
+            rightSlot={pagination.rightSlot}
+          />
+        </div>
+      )}
     </>
   );
 

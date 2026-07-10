@@ -40,10 +40,12 @@ import {
 } from "@/lib/blog-categories";
 import {
   getDefaultPrimaryNavHeader,
+  resolveCompanyLogo,
   resolvePrimaryNavHeader,
   type BlogPrimaryNavHeader,
   type BlogPrimaryNavHeaderRow,
 } from "@/lib/blog-primary-nav";
+import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 
 export type PopularPostCard = {
   _id: string;
@@ -101,10 +103,15 @@ function resolveNavCategories(
 function resolvePrimaryNav(
   doc: BlogNavSettingsDoc,
   language: string = DEFAULT_BLOG_LANGUAGE,
+  companyLogo?: ReturnType<typeof resolveCompanyLogo>,
 ): BlogPrimaryNavData {
+  const header = resolvePrimaryNavHeader(doc?.header ?? undefined);
   return {
     categories: resolveNavCategories(doc, language),
-    header: resolvePrimaryNavHeader(doc?.header ?? undefined),
+    header: {
+      ...header,
+      logo: companyLogo,
+    },
   };
 }
 
@@ -123,8 +130,15 @@ async function loadBlogPrimaryNavFromClient(
       header: getDefaultPrimaryNavHeader(),
     };
   }
-  const doc = await fetchDoc().catch(() => null);
-  return resolvePrimaryNav(doc, language);
+  const [doc, globalSettings] = await Promise.all([
+    fetchDoc().catch(() => null),
+    fetchBlogGlobalSettings(),
+  ]);
+  return resolvePrimaryNav(
+    doc,
+    language,
+    resolveCompanyLogo(globalSettings),
+  );
 }
 
 async function loadPublishedBlogPrimaryNav(): Promise<BlogPrimaryNavData> {
@@ -239,10 +253,11 @@ export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
 }
 
 /**
- * Primary nav — category strip order plus optional header logo/CTA from
- * Blog Navigation `primaryNavigation`. Categories are only what editors
- * configured (empty when unset). Header logo/CTA fall back to the built-in
- * wordmark and "Contact Us" → /contribute when unset.
+ * Primary nav — category strip order plus header CTA from Blog Navigation
+ * `primaryNavigation`, and company logo from Global Settings → Company.
+ * Categories are only what editors configured (empty when unset). Header CTA
+ * falls back to the built-in "Contact Us" → /contribute when unset. Company
+ * logo falls back to the built-in Box + PakFactory wordmark when unset.
  */
 export async function fetchBlogNavCategories(): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {

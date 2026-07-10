@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CategoryLandingSection } from "@/components/views/category-landing-layout";
 import type { HomePostCard } from "@/lib/blog-home";
+import { categoryHref } from "@/lib/blog-post-url";
 import { toPostCardData, toPostCardDataList } from "@/lib/post-card-data";
 import type { PostCardData } from "@/lib/post-card-data";
 
@@ -12,6 +13,25 @@ type PostCategoryFeaturedRowProps = {
   posts?: HomePostCard[];
   categorySlug: string;
 };
+
+function CategoryLabel({
+  title,
+  slug,
+}: {
+  title: string;
+  slug?: string;
+}) {
+  const cls = "text-xs font-medium text-muted-foreground";
+  if (!slug) return <span className={cls}>{title}</span>;
+  return (
+    <Link
+      href={categoryHref(slug)}
+      className={`${cls} w-fit transition-colors hover:text-foreground`}
+    >
+      {title}
+    </Link>
+  );
+}
 
 function PostMeta({ post }: { post: PostCardData }) {
   return (
@@ -56,39 +76,42 @@ export function PostCategoryFeaturedRow({
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr] lg:gap-10">
           {/* Lead post — hero image + full text */}
-          <Link
-            href={lead.href}
-            className="group flex flex-col gap-5 text-foreground no-underline"
-          >
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-muted">
-              {lead.imageUrl ? (
-                <Image
-                  src={lead.imageUrl}
-                  alt={lead.imageAlt ?? lead.title}
-                  fill
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                  sizes="(min-width: 1024px) 66vw, 100vw"
-                  priority
-                />
-              ) : null}
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {lead.categoryTitle ? (
-                <span className="text-xs font-medium text-muted-foreground">
-                  {lead.categoryTitle}
-                </span>
-              ) : null}
-              <h3 className="text-2xl font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary lg:text-3xl">
-                {lead.title}
-              </h3>
-              {lead.excerpt ? (
-                <p className="text-base leading-7 text-muted-foreground">
-                  {lead.excerpt}
-                </p>
-              ) : null}
-              <PostMeta post={lead} />
-            </div>
-          </Link>
+          <div className="flex flex-col gap-5">
+            {lead.categoryTitle ? (
+              <CategoryLabel
+                title={lead.categoryTitle}
+                slug={lead.categorySlug}
+              />
+            ) : null}
+            <Link
+              href={lead.href}
+              className="group flex flex-col gap-5 text-foreground no-underline"
+            >
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-muted">
+                {lead.imageUrl ? (
+                  <Image
+                    src={lead.imageUrl}
+                    alt={lead.imageAlt ?? lead.title}
+                    fill
+                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                    sizes="(min-width: 1024px) 66vw, 100vw"
+                    priority
+                  />
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-2xl font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary lg:text-3xl">
+                  {lead.title}
+                </h3>
+                {lead.excerpt ? (
+                  <p className="text-base leading-7 text-muted-foreground">
+                    {lead.excerpt}
+                  </p>
+                ) : null}
+                <PostMeta post={lead} />
+              </div>
+            </Link>
+          </div>
 
           {/* Secondary list — text only, no images, dashed dividers */}
           {secondary.length > 0 ? (
@@ -102,20 +125,23 @@ export function PostCategoryFeaturedRow({
                       : "border-t border-dashed border-border py-5"
                   }
                 >
-                  <Link
-                    href={post.href}
-                    className="group flex flex-col gap-2 text-foreground no-underline"
-                  >
+                  <div className="flex flex-col gap-2">
                     {post.categoryTitle ? (
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {post.categoryTitle}
-                      </span>
+                      <CategoryLabel
+                        title={post.categoryTitle}
+                        slug={post.categorySlug}
+                      />
                     ) : null}
-                    <h3 className="text-lg font-medium leading-7 text-foreground transition-colors group-hover:text-primary">
-                      {post.title}
-                    </h3>
-                    <PostMeta post={post} />
-                  </Link>
+                    <Link
+                      href={post.href}
+                      className="group flex flex-col gap-2 text-foreground no-underline"
+                    >
+                      <h3 className="text-lg font-medium leading-7 text-foreground transition-colors group-hover:text-primary">
+                        {post.title}
+                      </h3>
+                      <PostMeta post={post} />
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>

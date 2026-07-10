@@ -37,23 +37,25 @@ export function CategoryListingRow({
   return (
     <CategoryListingSection
       pagination={
-        <Pagination
-          pageNumber={pageNumber}
-          totalPages={totalPages}
-          hrefForPage={(page) =>
-            categoryPageHref(categorySlug, page, filters, size)
-          }
-          ariaLabel="Category archive pagination"
-          rightSlot={
-            <PerPageSelect
-              value={size}
-              options={PAGE_SIZE_OPTIONS.map((optionSize) => ({
-                size: optionSize,
-                href: categoryPageHref(categorySlug, 1, filters, optionSize),
-              }))}
-            />
-          }
-        />
+        totalPages > 1 ? (
+          <Pagination
+            pageNumber={pageNumber}
+            totalPages={totalPages}
+            hrefForPage={(page) =>
+              categoryPageHref(categorySlug, page, filters, size)
+            }
+            ariaLabel="Category archive pagination"
+            rightSlot={
+              <PerPageSelect
+                value={size}
+                options={PAGE_SIZE_OPTIONS.map((optionSize) => ({
+                  size: optionSize,
+                  href: categoryPageHref(categorySlug, 1, filters, optionSize),
+                }))}
+              />
+            }
+          />
+        ) : null
       }
     >
       {sectionHeading ? (

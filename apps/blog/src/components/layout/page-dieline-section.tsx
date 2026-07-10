@@ -39,6 +39,10 @@ type PageDielineSectionProps = {
   children: ReactNode;
   className?: string;
   innerClassName?: string;
+  /** Dashed top edge on the inner dieline column (opt-in; avoids double-dash when stacking bands). */
+  borderTop?: boolean;
+  /** Dashed bottom edge on the inner dieline column (opt-in). */
+  borderBottom?: boolean;
 };
 
 /**
@@ -54,10 +58,22 @@ export function PageDielineSection({
   children,
   className,
   innerClassName,
+  borderTop = false,
+  borderBottom = false,
 }: PageDielineSectionProps) {
   return (
     <div className={pageDielineOuterClass(className)}>
-      <div className={pageDielineInnerClass(innerClassName)}>{children}</div>
+      <div
+        className={pageDielineInnerClass(
+          cn(
+            innerClassName,
+            borderTop && "border-t border-dashed border-border",
+            borderBottom && "border-b border-dashed border-border",
+          ),
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }

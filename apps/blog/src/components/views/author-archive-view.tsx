@@ -38,23 +38,25 @@ export function AuthorArchiveView({ data }: { data: AuthorArchivePageData }) {
     >
       <AuthorListingSection
         pagination={
-          <Pagination
-            pageNumber={data.pageNumber}
-            totalPages={data.totalPages}
-            hrefForPage={(page) =>
-              authorPageHref(data.author.slug, page, perPage)
-            }
-            ariaLabel="Author archive pagination"
-            rightSlot={
-              <PerPageSelect
-                value={perPage}
-                options={PAGE_SIZE_OPTIONS.map((size) => ({
-                  size,
-                  href: authorPageHref(data.author.slug, 1, size),
-                }))}
-              />
-            }
-          />
+          data.totalPages > 1 ? (
+            <Pagination
+              pageNumber={data.pageNumber}
+              totalPages={data.totalPages}
+              hrefForPage={(page) =>
+                authorPageHref(data.author.slug, page, perPage)
+              }
+              ariaLabel="Author archive pagination"
+              rightSlot={
+                <PerPageSelect
+                  value={perPage}
+                  options={PAGE_SIZE_OPTIONS.map((size) => ({
+                    size,
+                    href: authorPageHref(data.author.slug, 1, size),
+                  }))}
+                />
+              }
+            />
+          ) : null
         }
       >
         <PostList

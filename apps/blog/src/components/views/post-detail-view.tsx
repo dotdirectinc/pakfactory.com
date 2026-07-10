@@ -82,8 +82,13 @@ export function PostDetailView({post}: PostDetailViewProps) {
                         posts={post.relatedPosts ?? []}
                         categorySlug={post.categorySlug}
                         categoryTitle={post.categoryTitle}
+                        showTopBorder={false}
+                        showBottomBorder={false}
                     />
-                    <CtaNewsletter />
+                    <CtaNewsletter
+                        showTopBorder={false}
+                        showBottomBorder={false}
+                    />
                 </>
             }
         />

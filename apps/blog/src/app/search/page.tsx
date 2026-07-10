@@ -137,25 +137,27 @@ export default async function SearchPage({ searchParams }: PageProps) {
               emptyMessage="No posts on this page."
             />
           </div>
-          <div className="py-16">
-            <Pagination
-              pageNumber={pageNumber}
-              totalPages={totalPages}
-              hrefForPage={(page) =>
-                searchPageHref(query, page, filters, perPage)
-              }
-              ariaLabel="Search results pagination"
-              rightSlot={
-                <PerPageSelect
-                  value={perPage}
-                  options={PAGE_SIZE_OPTIONS.map((size) => ({
-                    size,
-                    href: searchPageHref(query, 1, filters, size),
-                  }))}
-                />
-              }
-            />
-          </div>
+          {totalPages > 1 && (
+            <div className="py-16">
+              <Pagination
+                pageNumber={pageNumber}
+                totalPages={totalPages}
+                hrefForPage={(page) =>
+                  searchPageHref(query, page, filters, perPage)
+                }
+                ariaLabel="Search results pagination"
+                rightSlot={
+                  <PerPageSelect
+                    value={perPage}
+                    options={PAGE_SIZE_OPTIONS.map((size) => ({
+                      size,
+                      href: searchPageHref(query, 1, filters, size),
+                    }))}
+                  />
+                }
+              />
+            </div>
+          )}
         </PageDielineSection>
         <SearchBelowFold blocks={blocks} />
       </main>
