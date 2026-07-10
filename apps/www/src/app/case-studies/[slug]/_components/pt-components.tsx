@@ -1,5 +1,3 @@
-"use client";
-
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import Image from "next/image";
 import { urlFor } from "@/lib/sanity/image";
