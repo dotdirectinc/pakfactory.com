@@ -8,6 +8,7 @@ import {
     useId,
     useRef,
     useState,
+    type CSSProperties,
     type ReactNode,
     type RefObject,
 } from 'react';
@@ -60,18 +61,14 @@ export function SiteNavTopRow({children}: SiteNavTopRowProps) {
     const {searchOpen} = useSiteNavCompact();
 
     return (
-        // Border on a full-width wrapper so the divider spans the viewport (like
-        // the POC nav and the category tier below), not just the dieline column.
-        <div
-            className={cn(
-                'border-dashed border-border',
+        <PageDielineSection
+            innerClassName={cn(
+                'flex h-16 items-center justify-between',
                 searchOpen ? 'max-lg:border-b-0 lg:border-b' : 'border-b',
             )}
         >
-            <PageDielineSection innerClassName="flex h-16 items-center justify-between">
-                {children}
-            </PageDielineSection>
-        </div>
+            {children}
+        </PageDielineSection>
     );
 }
 
@@ -197,7 +194,14 @@ export function SiteNavCompactProvider({
                 menuTriggerRef,
             }}
         >
-            <div ref={headerShellRef}>
+            <div
+                ref={headerShellRef}
+                style={
+                    {
+                        '--nav-search-bottom': `${headerBottom}px`,
+                    } as CSSProperties
+                }
+            >
                 {children}
 
                 {searchOpen ? (
