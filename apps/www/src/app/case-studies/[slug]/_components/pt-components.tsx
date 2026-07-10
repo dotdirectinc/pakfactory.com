@@ -60,33 +60,37 @@ export const caseStudyPtComponents: PortableTextComponents = {
     },
 
     testimonialBlock: ({ value }) => (
-      <figure className="not-prose my-10 overflow-hidden rounded-2xl border border-dashed border-border">
-        {value.backgroundImage && (
-          <div className="relative h-32 w-full overflow-hidden">
-            <Image
-              src={urlFor(value.backgroundImage).width(800).height(256).url()}
-              alt={value.backgroundImageAlt ?? ""}
-              fill
-              className="object-cover"
-              sizes="800px"
-            />
-            <div className="absolute inset-0 bg-black/40" />
-          </div>
+      <figure className="not-prose relative my-10 min-h-[280px] overflow-hidden rounded-2xl">
+        {value.backgroundImage ? (
+          <Image
+            src={urlFor(value.backgroundImage).width(900).height(500).url()}
+            alt={value.backgroundImageAlt ?? ""}
+            fill
+            className="object-cover"
+            sizes="800px"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-foreground" />
         )}
-        <blockquote className="p-8">
-          <p className="text-xl font-medium italic leading-relaxed text-foreground">
-            &ldquo;{value.quote}&rdquo;
-          </p>
+        <div className="absolute inset-0 bg-black/55" />
+        <blockquote className="relative flex min-h-[280px] flex-col justify-between p-8 md:p-10">
+          <div>
+            <span className="block font-serif text-5xl leading-none text-white/80">&ldquo;</span>
+            <p className="mt-3 max-w-[75%] text-xl font-semibold leading-snug text-white md:text-2xl">
+              {value.quote}
+            </p>
+          </div>
           {(value.attributionName || value.attributionRole) && (
-            <figcaption className="mt-5">
-              {value.attributionName && (
-                <p className="text-sm font-semibold text-foreground">
-                  {value.attributionName}
-                </p>
-              )}
-              {value.attributionRole && (
-                <p className="text-xs text-muted-foreground">{value.attributionRole}</p>
-              )}
+            <figcaption className="mt-6 flex items-end justify-end gap-x-2">
+              <span className="self-end pb-1 font-serif text-3xl leading-none text-white/60">&rdquo;</span>
+              <div className="text-right">
+                {value.attributionName && (
+                  <p className="text-base font-bold text-white">{value.attributionName}</p>
+                )}
+                {value.attributionRole && (
+                  <p className="text-sm text-white/70">{value.attributionRole}</p>
+                )}
+              </div>
             </figcaption>
           )}
         </blockquote>

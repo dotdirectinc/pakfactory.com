@@ -7,7 +7,10 @@
     "paths": {
       "@/*": ["./src/*"],
       "@pakfactory/ui/components/*": ["../../packages/ui/src/components/*"],
-      "@pakfactory/ui/lib/*": ["../../packages/ui/src/lib/*"]
+      "@pakfactory/ui/lib/*": ["../../packages/ui/src/lib/*"],
+      "@pakfactory/components/layout/*": ["../../packages/components/src/layout/*"],
+      "@pakfactory/components/modules/*": ["../../packages/components/src/modules/*"],
+      "@pakfactory/components/commons/*": ["../../packages/components/src/commons/*"]
     },
     "noEmit": true,
     "incremental": true,

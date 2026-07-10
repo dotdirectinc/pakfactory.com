@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -12,15 +12,16 @@ import {
   CASE_STUDY_BY_SLUG_QUERY,
   CASE_STUDY_PATHS_QUERY,
   type CaseStudiesPageData,
+  type CaseStudyCard,
   type CaseStudyDetail,
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, videoObject, webPage } from "@pakfactory/seo";
 import { absoluteUrl } from "@/lib/site";
-import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { CaseStudyShare } from "./_components/case-study-share";
 import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
 import { CaseStudyMetaCard } from "./_components/case-study-meta-card";
+import { RelatedStudiesCarousel } from "./_components/related-studies-carousel";
 import {
   caseStudyPtComponents,
   makeHeroIntroPtComponents,
@@ -143,6 +144,8 @@ export default async function CaseStudyPage({ params }: Props) {
   const jsonLd = serializeJsonLd(jsonLdGraph(jsonLdNodes));
 
   const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
+  const contactHref = absoluteUrl("/contact");
+  const wwwHomeHref = absoluteUrl("/");
 
   return (
     <>
@@ -156,7 +159,7 @@ export default async function CaseStudyPage({ params }: Props) {
         <nav aria-label="Breadcrumb">
           <ol className="flex items-center gap-1 text-sm text-muted-foreground">
             <li>
-              <Link href="/" className="hover:text-foreground">
+              <Link href={wwwHomeHref} className="hover:text-foreground">
                 Home
               </Link>
             </li>
@@ -238,21 +241,20 @@ export default async function CaseStudyPage({ params }: Props) {
             </div>
           )}
 
-          {/* Share + CTA — desktop only; mobile version appears after Result */}
-          <div className="hidden lg:flex">
+          {/* Share + CTA — sticky desktop sidebar */}
+          <div className="sticky top-20 hidden flex-col gap-[42px] lg:flex">
             <div className="h-px w-[207px] border-t border-dashed border-border" />
+            <CaseStudyShare
+              url={pageUrl}
+              title={study.title}
+              showCta
+              ctaHeading={pageData?.detailCta?.heading}
+              primaryLabel={pageData?.detailCta?.primaryLabel}
+              primaryHref={pageData?.detailCta?.primaryHref ?? contactHref}
+              secondaryLabel={pageData?.detailCta?.secondaryLabel}
+              secondaryHref={pageData?.detailCta?.secondaryHref ?? wwwHomeHref}
+            />
           </div>
-          <CaseStudyShare
-            url={pageUrl}
-            title={study.title}
-            showCta
-            className="hidden lg:flex"
-            ctaHeading={pageData?.detailCta?.heading}
-            primaryLabel={pageData?.detailCta?.primaryLabel}
-            primaryHref={pageData?.detailCta?.primaryHref}
-            secondaryLabel={pageData?.detailCta?.secondaryLabel}
-            secondaryHref={pageData?.detailCta?.secondaryHref}
-          />
         </aside>
 
         {/* ── Right content ── */}
@@ -265,10 +267,12 @@ export default async function CaseStudyPage({ params }: Props) {
                 Challenges
               </h2>
               <DashedDivider />
-              <PortableText
-                value={study.challenge as PortableTextBlock[]}
-                components={caseStudyPtComponents}
-              />
+              <div>
+                <PortableText
+                  value={study.challenge as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </div>
             </section>
           )}
 
@@ -279,10 +283,12 @@ export default async function CaseStudyPage({ params }: Props) {
                 Solutions
               </h2>
               <DashedDivider />
-              <PortableText
-                value={study.solution as PortableTextBlock[]}
-                components={caseStudyPtComponents}
-              />
+              <div>
+                <PortableText
+                  value={study.solution as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </div>
             </section>
           )}
 
@@ -293,10 +299,12 @@ export default async function CaseStudyPage({ params }: Props) {
                 Result
               </h2>
               <DashedDivider />
-              <PortableText
-                value={study.result as PortableTextBlock[]}
-                components={caseStudyPtComponents}
-              />
+              <div>
+                <PortableText
+                  value={study.result as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </div>
             </section>
           )}
 
@@ -308,48 +316,27 @@ export default async function CaseStudyPage({ params }: Props) {
             className="lg:hidden"
             ctaHeading={pageData?.detailCta?.heading}
             primaryLabel={pageData?.detailCta?.primaryLabel}
-            primaryHref={pageData?.detailCta?.primaryHref}
+            primaryHref={pageData?.detailCta?.primaryHref ?? contactHref}
             secondaryLabel={pageData?.detailCta?.secondaryLabel}
-            secondaryHref={pageData?.detailCta?.secondaryHref}
+            secondaryHref={pageData?.detailCta?.secondaryHref ?? wwwHomeHref}
           />
         </div>
       </PageDielineSection>
 
-      {/* See What's More — related studies */}
+      {/* See What’s More — related studies */}
       {study.relatedStudies && study.relatedStudies.length > 0 && (
         <PageDielineSection
           className="border-t border-dashed border-border"
-          innerClassName="flex flex-col gap-8 py-16 px-0"
+          innerClassName="px-0"
         >
-          <header className="flex flex-wrap items-end justify-between gap-y-8 px-4 md:px-8">
-            <div className="flex min-w-[280px] flex-1 flex-col gap-4">
-              <h2 className="text-4xl font-medium leading-10 tracking-tight text-foreground">
-                {pageData?.relatedSectionHeading?.trim() || "See What’s More"}
-              </h2>
-              <p className="text-lg leading-7 text-muted-foreground">
-                {pageData?.relatedSectionIntro?.trim() ||
-                  "Stay informed with the latest case studies and advancements from our team."}
-              </p>
-            </div>
-          </header>
-
-          <ul className="grid grid-cols-1 gap-6 px-4 md:grid-cols-2 md:px-8 lg:grid-cols-3">
-            {study.relatedStudies.map((s) => (
-              <li key={s._id}>
-                <CaseStudyCardUI
-                  href={`/case-studies/${s.slug}`}
-                  title={s.title}
-                  clientName={s.client?.name}
-                  cardSummary={s.cardSummary}
-                  cardImageUrl={s.cardImageUrl}
-                  cardImageAlt={s.cardImageAlt}
-                  solutions={s.solutions}
-                  products={s.products}
-                  isVideo={s.heroMediaType === "video"}
-                />
-              </li>
-            ))}
-          </ul>
+          <RelatedStudiesCarousel
+            studies={study.relatedStudies}
+            heading={pageData?.relatedSectionHeading?.trim() || "See What’s More"}
+            intro={
+              pageData?.relatedSectionIntro?.trim() ||
+              "Stay informed with the latest case studies and advancements from our team."
+            }
+          />
         </PageDielineSection>
       )}
     </>
