@@ -1,39 +1,23 @@
 import type { Metadata } from "next";
+import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { ContributeForm } from "@/components/modules/contribute-form";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { PageHeader } from "@/components/modules/page-header";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
-import { WidgetNewsletter } from "@/components/modules/widget/widget-newsletter";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
-import { robotsDirectiveToMetadata } from "@/lib/seo";
+import {
+  buildBlogContributeMetadata,
+  fetchBlogContributePage,
+  resolveContributePageDescription,
+  resolveContributePageTitle,
+} from "@/lib/blog-contribute-page";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
-const PAGE_TITLE = "Contribute to Our Blog";
-const PAGE_DESCRIPTION =
-  "Write for the PakFactory blog. We publish guest articles for the people who specify, design, and source custom packaging — brand owners, designers, and packaging teams. Pitch your idea below.";
-
 export async function generateMetadata(): Promise<Metadata> {
-  const canonical = absoluteUrl("/contribute");
-
-  return {
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    robots: robotsDirectiveToMetadata({ index: true, follow: true }),
-    alternates: { canonical },
-    openGraph: {
-      title: PAGE_TITLE,
-      description: PAGE_DESCRIPTION,
-      url: canonical,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title: PAGE_TITLE,
-      description: PAGE_DESCRIPTION,
-    },
-  };
+  const page = await fetchBlogContributePage();
+  return buildBlogContributeMetadata(page, { index: true, follow: true });
 }
 
 function ContributePositioning() {
@@ -63,14 +47,18 @@ function ContributePositioning() {
   );
 }
 
-export default function ContributePage() {
+export default async function ContributePage() {
+  const page = await fetchBlogContributePage();
+  const pageTitle = resolveContributePageTitle(page);
+  const pageDescription = resolveContributePageDescription(page);
+  const blocks = page?.pageBuilder ?? [];
   const pageUrl = absoluteUrl("/contribute");
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
       webPage({
-        name: PAGE_TITLE,
+        name: pageTitle,
         url: pageUrl,
-        description: PAGE_DESCRIPTION,
+        description: pageDescription,
       }),
       breadcrumbList([
         { name: "Blog", url: absoluteUrl("/") },
@@ -90,7 +78,7 @@ export default function ContributePage() {
           <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "Contribute" }]} />
         </PageDielineSection>
 
-        <PageHeader title={PAGE_TITLE} descriptionText={PAGE_DESCRIPTION} />
+        <PageHeader title={pageTitle} descriptionText={pageDescription} />
 
         <PageDielineSection innerClassName="py-16">
           {/*
@@ -107,7 +95,7 @@ export default function ContributePage() {
           </div>
         </PageDielineSection>
 
-        <WidgetNewsletter />
+        {blocks.length > 0 ? <BlockRenderer blocks={blocks} /> : null}
       </main>
     </>
   );

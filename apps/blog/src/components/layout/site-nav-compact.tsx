@@ -283,7 +283,7 @@ export function SiteNavCompactProvider({
                             )}
 
                             <Button asChild>
-                                <a href={contactHref}>Contact Us</a>
+                                <Link href={contactHref}>Contact Us</Link>
                             </Button>
                         </div>
                     </div>

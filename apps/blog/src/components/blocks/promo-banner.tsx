@@ -30,6 +30,7 @@ export function PromoBanner({
       sectionClassName="bg-background"
       borderTop={borderTop}
       borderBottom={borderBottom}
+      borderX={false}
       innerClassName="py-8"
     >
       <PromoBannerCard

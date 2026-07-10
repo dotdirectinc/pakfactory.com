@@ -35,6 +35,7 @@ import {
     BLOG_TOPICS_PAGE_IDS,
     BLOG_NOT_FOUND_PAGE_IDS,
     BLOG_SEARCH_PAGE_IDS,
+    BLOG_CONTRIBUTE_PAGE_IDS,
 } from '../lib/languages';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,12 +190,27 @@ function blogSearchPageItem(S: StructureBuilder): ListItemBuilder {
         );
 }
 
+function blogContributePageItem(S: StructureBuilder): ListItemBuilder {
+    // Content source for the reserved `/contribute` code route (form stays in app).
+    return S.listItem()
+        .id('blogContributePage')
+        .title('Contribute page')
+        .icon(EnvelopeIcon)
+        .child(
+            S.editor()
+                .id(BLOG_CONTRIBUTE_PAGE_IDS.en)
+                .schemaType('blogPage')
+                .documentId(BLOG_CONTRIBUTE_PAGE_IDS.en),
+        );
+}
+
 function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     const pageItems: ListItemBuilder[] = [
         blogHomepageItem(S),
         blogTopicsPageItem(S),
         blogNotFoundPageItem(S),
         blogSearchPageItem(S),
+        blogContributePageItem(S),
     ];
 
     if (BLOG_STUDIO_LANDING_PAGES) {

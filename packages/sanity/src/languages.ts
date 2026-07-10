@@ -16,3 +16,9 @@ export const BLOG_TOPICS_PAGE_IDS: Record<BlogLanguageId, string> = {
   en: 'blogTopicsPage',
   fr: 'blogTopicsPage-fr',
 }
+
+/** Fixed document ids for localized contribute page singletons. */
+export const BLOG_CONTRIBUTE_PAGE_IDS: Record<BlogLanguageId, string> = {
+  en: 'blogContributePage',
+  fr: 'blogContributePage-fr',
+}

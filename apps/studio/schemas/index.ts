@@ -39,6 +39,7 @@ import {
   pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
+  pageBuilderFooter,
 } from './blocks'
 
 export const schemaTypes = [
@@ -97,6 +98,7 @@ export const schemaTypes = [
   pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
+  pageBuilderFooter,
 
   // Singletons
   settings,

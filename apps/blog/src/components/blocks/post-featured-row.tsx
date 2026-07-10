@@ -43,12 +43,12 @@ export function PostFeaturedRow({
             aria-labelledby="post-featured-row-heading"
             borderTop={borderTop}
             borderBottom={borderBottom}
-            innerClassName="py-8 lg:py-10"
+            innerClassName="py-8 lg:py-16"
         >
-            <div className="flex flex-col gap-12 lg:gap-8">
+            <div className="flex flex-col gap-10 lg:gap-8">
                 <h2
                     id="post-featured-row-heading"
-                    className="text-2xl font-semibold leading-tight tracking-tight "
+                    className="text-3xl font-semibold leading-tight tracking-tight "
                 >
                     Featured Posts
                 </h2>

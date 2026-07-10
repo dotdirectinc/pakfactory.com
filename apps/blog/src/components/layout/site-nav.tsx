@@ -10,9 +10,8 @@ import {
 } from '@/components/layout/site-nav-compact';
 import type {BlogCategoryChip} from '@/lib/blog-categories';
 import {READING_PROGRESS_SLOT_ID} from '@/lib/reading-progress';
-import {getWwwUrl} from '@/lib/site';
 
-const QUOTE_HREF = `${getWwwUrl()}/contact`;
+const CONTACT_HREF = '/contribute';
 
 type SiteNavProps = {
     categories: BlogCategoryChip[];
@@ -25,36 +24,31 @@ export function SiteNav({categories}: SiteNavProps) {
             <div className="bg-background">
                 <SiteNavCompactProvider
                     categories={categories}
-                    contactHref={QUOTE_HREF}
+                    contactHref={CONTACT_HREF}
                 >
                     <SiteNavTopRow>
-                        <div className="flex shrink-0 items-center gap-2">
-                            <Link
-                                href={getWwwUrl()}
-                                className="flex items-center gap-3 no-underline"
-                            >
-                                <Box
-                                    className="size-7 text-foreground"
-                                    strokeWidth={1.75}
-                                    aria-hidden
-                                />
-                                <span className="text-[15px] font-semibold tracking-tight text-foreground lg:text-xl">
-                                    PakFactory
-                                </span>
-                            </Link>
-                            <Link
-                                href="/"
-                                className="text-[15px] font-medium tracking-tight text-muted-foreground no-underline lg:text-xl"
-                            >
+                        <Link
+                            href="/"
+                            className="flex shrink-0 items-center gap-2 no-underline"
+                        >
+                            <Box
+                                className="size-7 text-foreground"
+                                strokeWidth={1.75}
+                                aria-hidden
+                            />
+                            <span className="text-[15px] font-semibold tracking-tight text-foreground lg:text-xl">
+                                PakFactory
+                            </span>
+                            <span className="text-[15px] font-medium tracking-tight text-muted-foreground lg:text-xl">
                                 Blog
-                            </Link>
-                        </div>
+                            </span>
+                        </Link>
 
                         <Button
                             className="hidden h-10 rounded-full bg-primary px-6 text-base font-medium text-white hover:bg-primary/90 lg:inline-flex"
                             asChild
                         >
-                            <a href={QUOTE_HREF}>Contact Us</a>
+                            <Link href={CONTACT_HREF}>Contact Us</Link>
                         </Button>
 
                         <SiteNavCompactActions />

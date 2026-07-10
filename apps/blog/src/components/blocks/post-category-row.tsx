@@ -45,7 +45,7 @@ export function PostCategoryRow({
                 <div className="mb-6 flex items-end justify-between gap-4">
                     <h2
                         id={sectionId}
-                        className="text-2xl font-semibold tracking-tight"
+                        className="text-3xl font-semibold tracking-tight"
                     >
                         {categoryTitle ?? categorySlug}
                     </h2>

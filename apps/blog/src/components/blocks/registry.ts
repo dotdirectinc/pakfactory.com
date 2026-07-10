@@ -6,6 +6,7 @@ import type { VideoPostInput } from "@/lib/resolve-video-source";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import { CtaPillars } from "@/components/blocks/cta-pillars";
 import { CtaRfq } from "@/components/blocks/cta-rfq";
+import { CtaSpotlight } from "@/components/blocks/cta-spotlight";
 import { FeaturedVideos } from "@/components/blocks/featured-videos";
 import { PostCategoryRow } from "@/components/blocks/post-category-row";
 import { PostFeaturedRow } from "@/components/blocks/post-featured-row";
@@ -112,6 +113,27 @@ export type CtaPillarsBlock = {
   pillars: BlockPillar[];
 };
 
+/** A single resolved image field on a page-builder block. */
+export type BlockImage = {
+  alt?: string;
+  asset?: unknown;
+  hotspot?: unknown;
+  crop?: unknown;
+};
+
+export type CtaSpotlightBlock = {
+  _type: "ctaSpotlight";
+  _key: string;
+  heading?: string;
+  body?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  imageEffect?: "contained" | "floating";
+  /** Hex string from Sanity color input (e.g. `#052e16`). Defaults to brand green when empty. */
+  backgroundColor?: string;
+  image?: BlockImage;
+} & DielineBorderFields;
+
 export type RichTextBandBlock = {
   _type: "richTextBand";
   _key: string;
@@ -140,6 +162,7 @@ export type PageBuilderBlock =
   | CtaNewsletterBlock
   | CtaRfqBlock
   | CtaPillarsBlock
+  | CtaSpotlightBlock
   | RichTextBandBlock
   | PromoBannerBlock;
 
@@ -155,6 +178,7 @@ export const BLOCK_COMPONENTS = {
   ctaNewsletter: CtaNewsletter,
   ctaRfq: CtaRfq,
   ctaPillars: CtaPillars,
+  ctaSpotlight: CtaSpotlight,
   richTextBand: RichTextBand,
   promoBanner: PromoBanner,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

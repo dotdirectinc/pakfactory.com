@@ -35,9 +35,16 @@ export type LinkableDocumentType = (typeof LINKABLE_DOCUMENT_TYPES)[number]
 
 export const linkableReferenceTo = LINKABLE_DOCUMENT_TYPES.map((type) => ({ type }))
 
-/** GROQ filter for reference picker search — scoped to linkable types only. */
-export const LINKABLE_TYPE_FILTER = '_type in $types'
+/**
+ * GROQ filter for the internal-link reference picker.
+ * Excludes topics / search / 404 blogPage singletons (not good CTA targets).
+ * Allows home, contribute, landing, and static blogPages.
+ */
+export const LINKABLE_TYPE_FILTER = `(_type in $types) && !(
+  _type == "blogPage" && pageRole in $excludedBlogPageRoles
+)`
 
 export const linkableTypeFilterParams = {
   types: [...LINKABLE_DOCUMENT_TYPES],
+  excludedBlogPageRoles: ['topics', 'search', 'notFound'],
 }

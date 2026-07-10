@@ -32,7 +32,7 @@ export function TopicStrip({
       aria-labelledby={headingId}
       borderTop={borderTop}
       borderBottom={borderBottom}
-      innerClassName="py-8 lg:py-24"
+      innerClassName="py-8 lg:py-28"
     >
       <h2
         id={headingId}

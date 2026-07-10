@@ -19,7 +19,7 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `/topics-sitemap`            | [`src/app/topics-sitemap/route.ts`](./src/app/topics-sitemap/route.ts)                           | 301 → `/topics-sitemap-1.xml`                                                                                             |
 | `/topics-sitemap-[n].xml`    | [`src/app/topics-sitemap/[page]/route.ts`](./src/app/topics-sitemap/%5Bpage%5D/route.ts)         | Paginated topics with ≥1 post (200/group). Public `-[n].xml` (rewrite) → handler; internal `/topics-sitemap/[n]` still accepted. Legacy `/tags-sitemap*` → 301 |
 | `/search`                  | [`src/app/search/page.tsx`](./src/app/search/page.tsx)                                       | Keyword search (PROD-1503 + PROD-1950); Sanity `match` (title/category/excerpt/body/tags); Category filter + sort; dieline listing; CMS singleton `blogSearchPage` for topics + page blocks; always `noindex, follow`; `?q=&category=&page=&sort=` |
-| `/contribute`              | [`src/app/contribute/page.tsx`](./src/app/contribute/page.tsx)                               | Contributor pitch form (PROD-1504); **index, follow**; `WebPage` JSON-LD; POST `/api/contribute`                        |
+| `/contribute`              | [`src/app/contribute/page.tsx`](./src/app/contribute/page.tsx)                               | Contributor pitch form (PROD-1504); CMS singleton `blogContributePage` for SEO + page blocks below the form; form stays code-owned; **index, follow**; `WebPage` JSON-LD; POST `/api/contribute` |
 | `/[category]`              | [`src/app/[category]/page.tsx`](./src/app/%5Bcategory%5D/page.tsx)                           | **Resolver:** category archive → **CMS landing/static** (`blogPage`) → post `/{slug}` (ADR-009) |
 | `/[category]/page/[n]`     | [`src/app/[category]/page/[n]/page.tsx`](./src/app/%5Bcategory%5D/page/%5Bn%5D/page.tsx)     | Category pagination + query filters                                                                                     |
 | `/[category]/[postSlug]`   | [`src/app/[category]/[postSlug]/page.tsx`](./src/app/%5Bcategory%5D/%5BpostSlug%5D/page.tsx) | **Legacy scoped post** → permanent redirect to `/{postSlug}` (PROD-1597)                                                |
@@ -81,7 +81,7 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 
 ## Blog pages (ADR-009)
 
-**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `topics` (singleton, id `blogTopicsPage`), `notFound` (singleton, id `blogNotFoundPage`), `search` (singleton, id `blogSearchPage` — content source for `/search`, not slug-routable), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
+**Content model:** [`blogPage`](../../apps/studio/schemas/blogPage.ts) with `pageRole`: `home` (singleton, id `blogHomePage`), `topics` (singleton, id `blogTopicsPage`), `notFound` (singleton, id `blogNotFoundPage`), `search` (singleton, id `blogSearchPage` — content source for `/search`, not slug-routable), `contribute` (singleton, id `blogContributePage` — content source for `/contribute`; form stays in code), `landing`, `static`. Posts stay structured articles; category archives stay taxonomy-only.
 
 **Singleton `pageRole`:** pinned document ids imply the role; the field is hidden/read-only in Studio. New docs get role via async `initialValue` (create only). Full contract + troubleshooting: [`memory.md`](./memory.md) § blogPage singleton — pageRole contract.
 
@@ -89,7 +89,7 @@ Canonical URL base: **`absoluteUrl()`** from [`src/lib/site.ts`](./src/lib/site.
 
 **i18n (dormant — English-only, 2026-07-07):** document-internationalization is parked to English-only, so Studio shows a **single Homepage / Topic page**, not one per language. All the machinery (plugin, hidden `language` field, per-type slug scoping, `-fr` ID keys) is kept in place; there is no French content or route yet. To reactivate French, see [`memory.md`](./memory.md) § i18n.
 
-**Resolver (`/{category}`):** category → published `blogPage` → post → redirect/404. Landing URLs are **`/{slug}`** at root. `/contribute` remains a code route.
+**Resolver (`/{category}`):** category → published `blogPage` → post → redirect/404. Landing URLs are **`/{slug}`** at root. `/contribute` is a reserved hybrid route (CMS SEO + blocks; form in code).
 
 **Landing fetch:** `BLOG_PAGE_BY_SLUG_QUERY` → [`fetchBlogPageBySlug()`](./src/lib/blog-page.ts) → [`BlogLandingView`](./src/components/views/blog-landing-view.tsx) + `BlockRenderer`.
 
@@ -154,6 +154,8 @@ The blog home is a **Sanity-driven page builder**: home singleton (`blogPage`, `
 | `ctaRfq` | `cta-rfq` | `CtaRfq` | yes | yes | yes |
 | `ctaPillars` | `cta-pillars` | `CtaPillars` | yes | yes | yes |
 | `richTextBand` | `rich-text-band` | `RichTextBand` | no | yes | no |
+
+**Footer-only:** `ctaTextAndButton` (`CTA — Text and Button`) lives in `apps/studio/schemas/blocks/cta-text-and-button.ts` and is registered on `pageBuilderFooter` only (`blogNavigation.footerNavigation.builder`). It is **not** in the home/landing/topics page builders or `registry.ts` — the site footer renders it via [`site-footer.tsx`](./src/components/layout/site-footer.tsx) above the footer navigation.
 
 **Add a block (4 places):** Studio schema + [`schemas/blocks/index.ts`](../../apps/studio/schemas/blocks/index.ts) → component → `registry.ts` → GROQ branch in `PAGE_BUILDER_BLOCKS_PROJECTION` ([`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts)). Register new blocks in `insertMenu.groups` (home vs landing) in [`schemas/blocks/index.ts`](../../apps/studio/schemas/blocks/index.ts).
 

@@ -3,6 +3,7 @@ import {
   resolveSanityDocumentLabel,
   type SanityLinkDocument,
 } from "@pakfactory/sanity/resolve-document-href";
+import { isBlogSitePath } from "@pakfactory/sanity/blog-site-paths";
 import type { FooterSocialPlatform } from "@pakfactory/sanity/social-platforms";
 import { categoryHref } from "@/lib/blog-post-url";
 import { getWwwUrl } from "@/lib/site";
@@ -40,10 +41,31 @@ export type BlogAiLink = {
   url: string;
 };
 
+export type BlogFooterCta = {
+  message: string;
+  buttonLabel: string;
+  href: string;
+  external: boolean;
+};
+
+export type BlogFooterCtaAlign = "left" | "center" | "right";
+
+export type BlogFooterCtaBlock = {
+  key: string;
+  message: string;
+  buttonLabel: string;
+  align: BlogFooterCtaAlign;
+  href: string;
+  external: boolean;
+  showTopBorder?: boolean;
+  showBottomBorder?: boolean;
+};
+
 export type BlogFooterData = {
   columns: BlogFooterColumns;
   social: BlogSocialLink[];
   aiLinks: BlogAiLink[];
+  builder: BlogFooterCtaBlock[];
 };
 
 const PAKFACTORY_AI_PROMPT = buildPakFactoryAiPrompt();
@@ -120,12 +142,38 @@ export function getFallbackAiLinks(): BlogAiLink[] {
   }));
 }
 
+/** Hardcoded collaboration CTA when Studio CTA is empty or unavailable. */
+export function getFallbackFooterCta(): BlogFooterCta {
+  return {
+    message: "Let's collaborate and craft\nyour vision",
+    buttonLabel: "Let's talk",
+    href: `${getWwwUrl()}/contact`,
+    external: true,
+  };
+}
+
+/** Single centered CTA block built from {@link getFallbackFooterCta}. */
+export function getFallbackFooterBuilder(): BlogFooterCtaBlock[] {
+  const cta = getFallbackFooterCta();
+  return [
+    {
+      key: "fallback-cta",
+      message: cta.message,
+      buttonLabel: cta.buttonLabel,
+      align: "center",
+      href: cta.href,
+      external: cta.external,
+    },
+  ];
+}
+
 /** Full footer data fallback when Sanity is unconfigured or fetch fails. */
 export function getFallbackFooterData(): BlogFooterData {
   return {
     columns: getFallbackFooterColumns(),
     social: getFallbackSocialLinks(),
     aiLinks: getFallbackAiLinks(),
+    builder: getFallbackFooterBuilder(),
   };
 }
 
@@ -240,7 +288,9 @@ export function getFallbackFooterColumns(): BlogFooterColumns {
 type FooterNavLinkRow = {
   label?: string | null;
   linkType?: string | null;
+  internalKind?: string | null;
   externalUrl?: string | null;
+  sitePath?: string | null;
   /** Legacy shape — resolved until migration converts all footer links. */
   href?: string | null;
   external?: boolean | null;
@@ -256,8 +306,24 @@ type FooterNavColumnRow = {
   sections?: (FooterNavSectionRow | null)[] | null;
 };
 
+type FooterBuilderBlockRow = {
+  _key?: string | null;
+  _type?: string | null;
+  message?: string | null;
+  buttonLabel?: string | null;
+  align?: string | null;
+  showTopBorder?: boolean | null;
+  showBottomBorder?: boolean | null;
+  linkType?: string | null;
+  internalKind?: string | null;
+  externalUrl?: string | null;
+  sitePath?: string | null;
+  internalLink?: SanityLinkDocument | null;
+};
+
 export type BlogFooterNavDoc = {
   _id?: string;
+  builder?: (FooterBuilderBlockRow | null)[] | null;
   columns?: (FooterNavColumnRow | null)[] | null;
   social?: (FooterSocialLinkRow | null)[] | null;
   aiLinks?: (FooterAiLinkRow | null)[] | null;
@@ -328,12 +394,61 @@ export function resolveFooterAiLinks(doc: BlogFooterNavDoc): BlogAiLink[] {
   return links.length > 0 ? links : getFallbackAiLinks();
 }
 
+function resolveFooterCtaAlign(value: string | null | undefined): BlogFooterCtaAlign {
+  if (value === "left" || value === "right" || value === "center") {
+    return value;
+  }
+  return "center";
+}
+
+export function resolveFooterBuilder(doc: BlogFooterNavDoc): BlogFooterCtaBlock[] {
+  const fallback = getFallbackFooterCta();
+  const rows = (doc?.builder ?? []).filter(
+    (block): block is FooterBuilderBlockRow =>
+      block != null && block._type === "ctaTextAndButton",
+  );
+
+  const blocks = rows.map((block, index) => {
+    const message = block.message?.trim() || fallback.message;
+    const buttonLabel = block.buttonLabel?.trim() || fallback.buttonLabel;
+    const align = resolveFooterCtaAlign(block.align);
+    const resolved = resolveFooterLinkHref({
+      linkType: block.linkType,
+      internalKind: block.internalKind,
+      externalUrl: block.externalUrl,
+      sitePath: block.sitePath,
+      internalLink: block.internalLink,
+      label: buttonLabel,
+    });
+
+    return {
+      key: block._key?.trim() || `footer-cta-${index}`,
+      message,
+      buttonLabel,
+      align,
+      href: resolved?.href ?? fallback.href,
+      external: resolved?.external ?? fallback.external,
+      showTopBorder:
+        typeof block.showTopBorder === "boolean"
+          ? block.showTopBorder
+          : undefined,
+      showBottomBorder:
+        typeof block.showBottomBorder === "boolean"
+          ? block.showBottomBorder
+          : undefined,
+    };
+  });
+
+  return blocks.length > 0 ? blocks : getFallbackFooterBuilder();
+}
+
 export function resolveFooterData(doc: BlogFooterNavDoc): BlogFooterData {
   const columns = resolveFooterColumns(doc);
   return {
     columns: columns.length > 0 ? columns : getFallbackFooterColumns(),
     social: resolveFooterSocialLinks(doc),
     aiLinks: resolveFooterAiLinks(doc),
+    builder: resolveFooterBuilder(doc),
   };
 }
 
@@ -349,6 +464,20 @@ export function resolveFooterLinkHref(link: FooterNavLinkRow): {
       href,
       external: true,
       label: link.label?.trim() ?? href,
+    };
+  }
+
+  // Legacy top-level path, or Internal → Site path.
+  if (
+    link.linkType === "path" ||
+    (link.linkType === "internal" && link.internalKind === "path")
+  ) {
+    const sitePath = link.sitePath?.trim();
+    if (!isBlogSitePath(sitePath)) return null;
+    return {
+      href: sitePath,
+      external: false,
+      label: link.label?.trim() ?? sitePath,
     };
   }
 
