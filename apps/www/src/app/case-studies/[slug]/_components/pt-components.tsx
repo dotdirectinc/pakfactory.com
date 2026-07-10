@@ -134,7 +134,7 @@ export const caseStudyPtComponents: PortableTextComponents = {
 
   block: {
     normal: ({ children }) => (
-      <p className="mb-5 text-base leading-7 text-foreground">{children}</p>
+      <p className="mb-5 text-base leading-7 text-foreground md:text-lg">{children}</p>
     ),
     h2: ({ children }) => (
       <h2 className="mb-4 mt-10 text-2xl font-semibold tracking-tight text-foreground">
@@ -150,12 +150,12 @@ export const caseStudyPtComponents: PortableTextComponents = {
 
   list: {
     bullet: ({ children }) => (
-      <ul className="mb-5 ml-6 list-disc space-y-1.5 text-base text-foreground">
+      <ul className="mb-5 ml-6 list-disc space-y-1.5 text-base text-foreground md:text-lg">
         {children}
       </ul>
     ),
     number: ({ children }) => (
-      <ol className="mb-5 ml-6 list-decimal space-y-1.5 text-base text-foreground">
+      <ol className="mb-5 ml-6 list-decimal space-y-1.5 text-base text-foreground md:text-lg">
         {children}
       </ol>
     ),
