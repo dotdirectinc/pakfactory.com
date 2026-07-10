@@ -26,7 +26,7 @@ import {
   makeHeroIntroPtComponents,
 } from "./_components/pt-components";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string }> };
 
