@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@pakfactory/ui/components/button";
 import { Checkbox } from "@pakfactory/ui/components/checkbox";
@@ -24,6 +24,19 @@ export function ContributeForm() {
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+
+  // When the browser restores this page from bfcache (back button after submit),
+  // status is still "loading" and all inputs are disabled. Reset on restore.
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) {
+        setStatus("idle");
+        setMessage(null);
+      }
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   function toggleRole(value: ContributeRoleValue) {
     setRole((prev) => (prev === value ? "" : value));

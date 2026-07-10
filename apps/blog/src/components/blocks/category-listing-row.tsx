@@ -1,4 +1,5 @@
 import { Pagination } from "@/components/modules/pagination";
+import { PerPageSelect } from "@/components/modules/per-page-select";
 import { PostList } from "@/components/modules/post-list";
 import { CategoryListingSection } from "@/components/views/category-listing-section";
 import {
@@ -15,6 +16,7 @@ type CategoryListingRowProps = {
   totalPages: number;
   categorySlug: string;
   filters: CategoryListFilters;
+  perPage?: number;
 };
 
 /** Paginated post grid for a category archive page (fixed template section). */
@@ -25,6 +27,7 @@ export function CategoryListingRow({
   totalPages,
   categorySlug,
   filters,
+  perPage,
 }: CategoryListingRowProps) {
   const gridPosts = toPostCardDataList(posts, { categorySlug });
   const sectionHeading = heading?.trim();
@@ -35,8 +38,9 @@ export function CategoryListingRow({
         <Pagination
           pageNumber={pageNumber}
           totalPages={totalPages}
-          hrefForPage={(page) => categoryPageHref(categorySlug, page, filters)}
+          hrefForPage={(page) => categoryPageHref(categorySlug, page, filters, perPage)}
           ariaLabel="Category archive pagination"
+          rightSlot={<PerPageSelect currentPerPage={perPage} />}
         />
       }
     >

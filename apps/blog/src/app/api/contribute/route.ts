@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import {
-  isValidContributeRole,
-  isValidContributeSubject,
-} from "@/lib/contribute-options";
+import { isValidContributeRole } from "@/lib/contribute-options";
 
 const TO = "marketing@pakfactory.com";
 
@@ -58,7 +55,6 @@ export async function POST(request: Request) {
 
   const name = trim(body.name);
   const email = trim(body.email);
-  const subjectMatter = trim(body.subjectMatter);
   const pitchAngle = trim(body.pitchAngle);
   const role = trim(body.role);
 
@@ -67,9 +63,6 @@ export async function POST(request: Request) {
   }
   if (!email || !email.includes("@")) {
     return NextResponse.json({ message: "Enter a valid email address." }, { status: 400 });
-  }
-  if (!subjectMatter || !isValidContributeSubject(subjectMatter)) {
-    return NextResponse.json({ message: "Select a subject area." }, { status: 400 });
   }
   if (role && !isValidContributeRole(role)) {
     return NextResponse.json({ message: "Invalid role selection." }, { status: 400 });
@@ -103,7 +96,6 @@ export async function POST(request: Request) {
     ["Email", email],
     organization ? ["Organization", organization] : null,
     linkedIn ? ["LinkedIn", linkedIn] : null,
-    ["Subject matter", subjectMatter],
     role ? ["Role", role] : null,
   ].filter(Boolean) as [string, string][];
 
@@ -125,7 +117,7 @@ export async function POST(request: Request) {
       from: `"PakFactory Blog" <${process.env.SMTP_USER}>`,
       to: TO,
       replyTo: `"${name}" <${email}>`,
-      subject: `Blog pitch: ${subjectMatter} — ${name}`,
+      subject: `Blog pitch from ${name}`,
       html,
     });
   } catch (err) {
