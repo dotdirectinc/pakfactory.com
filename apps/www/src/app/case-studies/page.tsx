@@ -14,7 +14,7 @@ import {
 } from "@pakfactory/seo";
 import { absoluteUrl } from "@/lib/site";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
-import { CaseStudyCard } from "@/components/modules/case-study-card";
+import { CaseStudyListingGrid } from "./_components/case-study-listing-grid";
 
 export const revalidate = 3600;
 
@@ -69,6 +69,7 @@ export default async function CaseStudiesPage() {
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
 
+      {/* Hero */}
       <PageDielineSection
         className="border-b border-dashed border-border"
         innerClassName="flex flex-col gap-4 py-16 text-foreground"
@@ -84,30 +85,14 @@ export default async function CaseStudiesPage() {
         </p>
       </PageDielineSection>
 
-      <PageDielineSection innerClassName="py-12">
-        {studies.length === 0 ? (
+      {/* Filter bar + grid — client component handles all interactive state */}
+      {studies.length === 0 ? (
+        <PageDielineSection innerClassName="py-12">
           <p className="text-sm text-muted-foreground">Case studies coming soon.</p>
-        ) : (
-          <ul className="grid grid-cols-1 gap-x-[60px] gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-            {studies.map((study, i) => (
-              <li key={study._id}>
-                <CaseStudyCard
-                  href={`/case-studies/${study.slug}`}
-                  title={study.title}
-                  clientName={study.client?.name}
-                  cardSummary={study.cardSummary}
-                  cardImageUrl={study.cardImageUrl}
-                  cardImageAlt={study.cardImageAlt}
-                  solutions={study.solutions}
-                  products={study.products}
-                  isVideo={study.heroMediaType === "video"}
-                  priority={i < 3}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </PageDielineSection>
+        </PageDielineSection>
+      ) : (
+        <CaseStudyListingGrid studies={studies} />
+      )}
     </>
   );
 }
