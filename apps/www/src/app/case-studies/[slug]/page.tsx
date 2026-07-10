@@ -262,43 +262,49 @@ export default async function CaseStudyPage({ params }: Props) {
 
           {/* Challenges */}
           {Array.isArray(study.challenge) && study.challenge.length > 0 && (
-            <section className="flex flex-col gap-2">
+            <section className="flex flex-col gap-12">
               <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
                 Challenges
               </h2>
               <DashedDivider />
-              <PortableText
-                value={study.challenge as PortableTextBlock[]}
-                components={caseStudyPtComponents}
-              />
+              <div>
+                <PortableText
+                  value={study.challenge as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </div>
             </section>
           )}
 
           {/* Solutions */}
           {Array.isArray(study.solution) && study.solution.length > 0 && (
-            <section className="flex flex-col gap-2">
+            <section className="flex flex-col gap-12">
               <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
                 Solutions
               </h2>
               <DashedDivider />
-              <PortableText
-                value={study.solution as PortableTextBlock[]}
-                components={caseStudyPtComponents}
-              />
+              <div>
+                <PortableText
+                  value={study.solution as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </div>
             </section>
           )}
 
           {/* Result */}
           {Array.isArray(study.result) && study.result.length > 0 && (
-            <section className="flex flex-col gap-2">
+            <section className="flex flex-col gap-12">
               <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
                 Result
               </h2>
               <DashedDivider />
-              <PortableText
-                value={study.result as PortableTextBlock[]}
-                components={caseStudyPtComponents}
-              />
+              <div>
+                <PortableText
+                  value={study.result as PortableTextBlock[]}
+                  components={caseStudyPtComponents}
+                />
+              </div>
             </section>
           )}
 

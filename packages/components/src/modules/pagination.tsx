@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
-import { getPaginationWindow } from "../lib/pagination-window";
+import { getPaginationWindow } from "../commons/pagination-window";
 
 type PaginationProps = {
   pageNumber: number;
