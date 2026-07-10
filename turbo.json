@@ -63,7 +63,8 @@
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL",
-        "SANITY_REVALIDATE_SECRET"
+        "SANITY_REVALIDATE_SECRET",
+        "WWW_DISABLE_INDEXING"
       ]
     },
     "@pakfactory/blog#build": {
