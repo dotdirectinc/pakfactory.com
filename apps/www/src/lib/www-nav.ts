@@ -51,11 +51,11 @@ export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns
       {
         title: "Browse by Topics",
         links: [
-          { label: "Packaging Type", href: `${BLOG_URL}/topics/packaging-type`, external: true },
-          { label: "Industry", href: `${BLOG_URL}/topics/industry`, external: true },
-          { label: "Packaging Material", href: `${BLOG_URL}/topics/packaging-material`, external: true },
-          { label: "Packaging Finish", href: `${BLOG_URL}/topics/packaging-finish`, external: true },
-          { label: "Printing", href: `${BLOG_URL}/topics/printing`, external: true },
+          { label: "Packaging Type", href: `${WWW_URL}/topics/packaging-type` },
+          { label: "Industry", href: `${WWW_URL}/topics/industry` },
+          { label: "Packaging Material", href: `${WWW_URL}/topics/packaging-material` },
+          { label: "Packaging Finish", href: `${WWW_URL}/topics/packaging-finish` },
+          { label: "Printing", href: `${WWW_URL}/topics/printing` },
         ],
       },
     ],
