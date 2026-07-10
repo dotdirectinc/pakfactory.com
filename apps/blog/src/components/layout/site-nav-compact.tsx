@@ -17,16 +17,15 @@ import {ArrowRight, Search, X} from 'lucide-react';
 import {usePathname} from 'next/navigation';
 import {Button} from '@pakfactory/ui/components/button';
 import {NavSearchForm} from '@/components/modules/search-form';
+import {PrimaryNavLink} from '@/components/layout/primary-nav-link';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {
     PageDielineSection,
     pageDielineInnerClass,
     pageDielineOuterClass,
 } from '@/components/layout/page-dieline-section';
-import type {BlogCategoryChip} from '@/lib/blog-categories';
-import type {BlogPrimaryNavCta} from '@/lib/blog-primary-nav';
+import type {BlogPrimaryNavCta, BlogPrimaryNavItem} from '@/lib/blog-primary-nav';
 import {externalLinkAttributes} from '@/lib/external-link';
-import {categoryHref} from '@/lib/blog-post-url';
 
 type SiteNavCompactContextValue = {
     searchOpen: boolean;
@@ -73,13 +72,13 @@ export function SiteNavTopRow({children}: SiteNavTopRowProps) {
 }
 
 type SiteNavCompactProviderProps = {
-    categories: BlogCategoryChip[];
+    navItems: BlogPrimaryNavItem[];
     cta: BlogPrimaryNavCta;
     children: ReactNode;
 };
 
 export function SiteNavCompactProvider({
-    categories,
+    navItems,
     cta,
     children,
 }: SiteNavCompactProviderProps) {
@@ -251,38 +250,27 @@ export function SiteNavCompactProvider({
                                 'flex h-full flex-col justify-between py-8',
                             )}
                         >
-                            {categories.length > 0 ? (
+                            {navItems.length > 0 ? (
                                 <nav
-                                    aria-label="Blog categories"
+                                    aria-label="Blog navigation"
                                     className="flex flex-col gap-12"
                                 >
-                                    {categories.map(({slug, title}) => {
-                                        const href = categoryHref(slug);
-                                        const isActive =
-                                            pathname === href ||
-                                            pathname.startsWith(
-                                                `${href}/page/`,
-                                            );
-
-                                        return (
-                                            <Link
-                                                key={slug}
-                                                href={href}
-                                                onClick={closeMenu}
-                                                className={cn(
-                                                    'flex items-center justify-between text-xl font-medium text-foreground no-underline',
-                                                    isActive && 'text-primary',
-                                                )}
-                                            >
-                                                {title}
+                                    {navItems.map((item) => (
+                                        <PrimaryNavLink
+                                            key={item.key}
+                                            item={item}
+                                            onClick={closeMenu}
+                                            activeClassName="text-primary"
+                                            className="flex items-center justify-between text-xl font-medium text-foreground no-underline"
+                                            trailing={
                                                 <ArrowRight
                                                     className="size-6 shrink-0"
                                                     strokeWidth={1.75}
                                                     aria-hidden
                                                 />
-                                            </Link>
-                                        );
-                                    })}
+                                            }
+                                        />
+                                    ))}
                                 </nav>
                             ) : (
                                 <div />

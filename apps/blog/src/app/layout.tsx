@@ -45,7 +45,7 @@ export default async function RootLayout({
             <body className="antialiased">
                 <AppToaster />
                 <SiteNav
-                    categories={primaryNav.categories}
+                    navItems={primaryNav.navItems}
                     header={primaryNav.header}
                 />
                 {children}
