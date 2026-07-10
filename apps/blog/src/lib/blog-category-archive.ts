@@ -174,7 +174,6 @@ export function categoryPageHref(
   perPage?: number,
 ): string {
   const params = new URLSearchParams();
-  if (pageNumber > 1) params.set("page", String(pageNumber));
   if (filters.tag) params.set("tag", filters.tag);
   if (filters.author) params.set("author", filters.author);
   if (filters.year) params.set("year", filters.year);
@@ -182,7 +181,9 @@ export function categoryPageHref(
   if (filters.sort !== "newest") params.set("sort", filters.sort);
   if (perPage && perPage !== DEFAULT_PAGE_SIZE) params.set("perPage", String(perPage));
   const qs = params.toString();
-  return qs ? `/${categorySlug}?${qs}` : `/${categorySlug}`;
+  const base =
+    pageNumber > 1 ? `/${categorySlug}/page/${pageNumber}` : `/${categorySlug}`;
+  return qs ? `${base}?${qs}` : base;
 }
 
 export function getCategoryListingRobots(

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { CategoryArchiveView } from "@/components/views/category-archive-view";
 import { PostDetailView } from "@/components/views/post-detail-view";
 import { BlogLandingView } from "@/components/views/blog-landing-view";
@@ -39,9 +40,12 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { category } = await params;
   const sp = await searchParams;
-  const page = parseCategoryPageFromSearchParams(sp);
   const perPage = parsePerPage(sp.perPage);
-  const resolution = await resolveBlogSegment(category, { searchParams: sp, page, perPage });
+  const resolution = await resolveBlogSegment(category, {
+    searchParams: sp,
+    page: 1,
+    perPage,
+  });
 
   switch (resolution.kind) {
     case "category": {
@@ -67,13 +71,28 @@ export default async function CategoryRootPage({
 }: PageProps) {
   const { category } = await params;
   const sp = await searchParams;
-  const page = parseCategoryPageFromSearchParams(sp);
   const perPage = parsePerPage(sp.perPage);
-  const resolution = await resolveBlogSegment(category, { searchParams: sp, page, perPage });
+  const resolution = await resolveBlogSegment(category, {
+    searchParams: sp,
+    page: 1,
+    perPage,
+  });
 
   switch (resolution.kind) {
-    case "category":
+    case "category": {
+      const legacyPage = parseCategoryPageFromSearchParams(sp);
+      if (legacyPage > 1) {
+        redirect(
+          categoryPageHref(
+            category,
+            legacyPage,
+            parseCategoryFilters(sp),
+            perPage,
+          ),
+        );
+      }
       return <CategoryArchiveView data={resolution.data} />;
+    }
     case "blogPage":
       return <BlogLandingView page={resolution.data} />;
     case "post": {

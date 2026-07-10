@@ -343,6 +343,7 @@ function NavSearchFormTypeahead({
                 autoFocus={autoFocus}
                 className={cn(
                     'h-10 rounded-full border-input bg-background pl-9 shadow-none',
+                    '[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden',
                     showClear ? 'pr-16' : 'pr-3',
                 )}
             />

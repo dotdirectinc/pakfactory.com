@@ -8,7 +8,7 @@ import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { PageHeader } from "@/components/modules/page-header";
 import { SearchFilterBar } from "@/components/modules/search-filter-bar";
 import { PostList } from "@/components/modules/post-list";
-import { Pagination } from "@/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
 import { TopicChipRow } from "@/components/ui/topic-chip-row";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
@@ -129,7 +129,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
             filters={filters}
             categoryOptions={categoryOptions}
           />
-          <div className="mt-12">
+          <div id={LISTING_TOP_ID} className="scroll-mt-24 mt-12">
             <PostList
               posts={toPostCardDataList(posts)}
               columns={3}
@@ -146,6 +146,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
                   searchPageHref(query, page, filters, perPage)
                 }
                 ariaLabel="Search results pagination"
+                scrollTargetId={LISTING_TOP_ID}
                 rightSlot={
                   <PerPageSelect
                     value={perPage}

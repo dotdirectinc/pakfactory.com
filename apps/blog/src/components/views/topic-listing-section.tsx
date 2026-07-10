@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LISTING_TOP_ID } from "@/components/modules/pagination";
 import {
   TopicFilterBar,
   type CategoryOption,
@@ -32,7 +33,9 @@ export function TopicListingSection({
         categoryOptions={categoryOptions}
         perPage={perPage}
       />
-      <div className="mt-12 flex flex-col gap-10">{children}</div>
+      <div id={LISTING_TOP_ID} className="scroll-mt-24 mt-12 flex flex-col gap-10">
+        {children}
+      </div>
       {pagination && <div className="py-16">{pagination}</div>}
     </TopicLandingSection>
   );
