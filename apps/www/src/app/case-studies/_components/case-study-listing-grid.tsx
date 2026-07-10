@@ -240,7 +240,7 @@ export function CaseStudyListingGrid({ studies }: Props) {
   return (
     <>
       {/* Filter bar */}
-      <section className="border-b border-dashed border-border bg-background">
+      <section className="sticky top-16 z-30 border-b border-dashed border-border bg-background">
         <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
           <div className="flex flex-wrap items-center justify-between gap-4 py-8">
             {/* Desktop filters */}
@@ -402,12 +402,10 @@ export function CaseStudyListingGrid({ studies }: Props) {
                       href={`/case-studies/${study.slug}`}
                       title={study.title}
                       clientName={study.client?.name}
-                      cardSummary={study.cardSummary}
                       cardImageUrl={study.cardImageUrl}
                       cardImageAlt={study.cardImageAlt}
                       solutions={study.solutions}
                       products={study.products}
-                      isVideo={study.heroMediaType === "video"}
                       priority={i < 3}
                     />
                   </li>

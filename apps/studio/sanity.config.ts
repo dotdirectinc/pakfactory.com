@@ -39,7 +39,7 @@ const dataset = process.env.SANITY_STUDIO_DATASET || 'development'
 // Each surface must run @sanity/visual-editing + a draft-mode enable route for the
 // overlays to work; apps/www already does, apps/blog wiring lands on the blog branch.
 const WWW_PREVIEW_ORIGIN =
-  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000'
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'https://pakfactory-com-www.vercel.app'
 const BLOG_PREVIEW_ORIGIN =
   process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003'
 
