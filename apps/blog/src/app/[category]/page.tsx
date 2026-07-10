@@ -7,6 +7,8 @@ import {
   categoryPageHref,
   getCategoryListingRobots,
   parseCategoryFilters,
+  parseCategoryPageFromSearchParams,
+  parsePerPage,
 } from "@/lib/blog-category-archive";
 import {
   buildPostJsonLd,
@@ -37,7 +39,9 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { category } = await params;
   const sp = await searchParams;
-  const resolution = await resolveBlogSegment(category, { searchParams: sp });
+  const page = parseCategoryPageFromSearchParams(sp);
+  const perPage = parsePerPage(sp.perPage);
+  const resolution = await resolveBlogSegment(category, { searchParams: sp, page, perPage });
 
   switch (resolution.kind) {
     case "category": {
@@ -63,7 +67,9 @@ export default async function CategoryRootPage({
 }: PageProps) {
   const { category } = await params;
   const sp = await searchParams;
-  const resolution = await resolveBlogSegment(category, { searchParams: sp });
+  const page = parseCategoryPageFromSearchParams(sp);
+  const perPage = parsePerPage(sp.perPage);
+  const resolution = await resolveBlogSegment(category, { searchParams: sp, page, perPage });
 
   switch (resolution.kind) {
     case "category":

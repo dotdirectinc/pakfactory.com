@@ -27,7 +27,7 @@ export function CategoryRecommendedTopics({
   if (items.length === 0) return null;
 
   return (
-    <PageDielineSection innerClassName="py-8 sm:py-10">
+    <PageDielineSection innerClassName="py-8">
       <TopicChipRow
         label="Recommended topics:"
         topics={items}
