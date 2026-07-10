@@ -69,18 +69,26 @@ export default async function CaseStudiesPage() {
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
 
-      <PageDielineSection innerClassName="border-b border-dashed border-border py-16">
-        <h1 className="text-5xl font-bold tracking-tight">Case Studies</h1>
-        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Real packaging challenges. Real results.
+      <PageDielineSection
+        className="border-b border-dashed border-border"
+        innerClassName="flex flex-col gap-4 py-16 text-foreground"
+      >
+        <p className="text-lg font-semibold leading-7">WORK WE&apos;RE PROUD OF</p>
+        <h1 className="text-[36px] font-semibold leading-10 tracking-tight">
+          Real brands. Real packaging. Real results.
+        </h1>
+        <p className="max-w-[1141px] text-xl leading-7 text-muted-foreground">
+          From first launches to established brands, these stories show how thoughtful
+          packaging can solve real business challenges and create memorable customer
+          experiences.
         </p>
       </PageDielineSection>
 
-      <PageDielineSection innerClassName="py-16">
+      <PageDielineSection innerClassName="py-12">
         {studies.length === 0 ? (
           <p className="text-sm text-muted-foreground">Case studies coming soon.</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-x-[60px] gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
             {studies.map((study, i) => (
               <li key={study._id}>
                 <CaseStudyCard

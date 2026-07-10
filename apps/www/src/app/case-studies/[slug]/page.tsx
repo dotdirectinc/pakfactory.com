@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { ChevronRight } from "lucide-react";
-import { Badge } from "@pakfactory/ui/components/badge";
+import { ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -20,6 +18,7 @@ import { absoluteUrl } from "@/lib/site";
 import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { CaseStudyShare } from "./_components/case-study-share";
 import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
+import { CaseStudyMetaCard } from "./_components/case-study-meta-card";
 import {
   caseStudyPtComponents,
   makeHeroIntroPtComponents,
@@ -72,6 +71,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+function DashedDivider() {
+  return (
+    <div
+      aria-hidden="true"
+      className="h-px w-full"
+      style={{
+        backgroundImage:
+          "linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px)",
+        backgroundSize: "12px 1px",
+        backgroundRepeat: "repeat-x",
+      }}
+    />
+  );
+}
+
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
@@ -84,12 +98,6 @@ export default async function CaseStudyPage({ params }: Props) {
   if (!study) notFound();
 
   const pageUrl = absoluteUrl(`/case-studies/${slug}`);
-  const allTaxonomy = [
-    ...(study.solutions ?? []),
-    ...(study.products ?? []),
-    ...(study.expertiseAreas ?? []),
-    ...(study.capabilities ?? []),
-  ];
 
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
@@ -142,162 +150,151 @@ export default async function CaseStudyPage({ params }: Props) {
         </nav>
       </PageDielineSection>
 
-      {/* Hero media */}
-      {study.heroMedia && (
-        <PageDielineSection innerClassName="pt-10 pb-0">
-          <CaseStudyHeroMedia heroMedia={study.heroMedia} title={study.title} />
-        </PageDielineSection>
-      )}
-
-      {/* Main 2-col layout */}
-      <PageDielineSection innerClassName="py-12">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_320px]">
-
-          {/* ── Left: primary content ── */}
-          <div className="min-w-0">
-            {/* Client + title */}
-            {study.client?.name && (
-              <p className="mb-2 text-sm font-medium text-muted-foreground">
-                {study.client.name}
-              </p>
-            )}
-            <h1 className="text-4xl font-bold tracking-tight text-foreground lg:text-5xl">
+      {/* Hero — title + intro left, meta card right */}
+      <PageDielineSection
+        className="border-b border-dashed border-border"
+        innerClassName="flex flex-col items-start gap-12 py-24 lg:flex-row lg:gap-[98px]"
+      >
+        {/* Left column */}
+        <div className="flex flex-1 flex-col gap-[42px]">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-[48px]">
               {study.title}
             </h1>
-
-            {/* Hero intro */}
             {Array.isArray(study.heroIntro) && study.heroIntro.length > 0 && (
-              <div className="mt-4">
+              <div className="max-w-2xl text-lg leading-7 text-foreground">
                 <PortableText
                   value={study.heroIntro as PortableTextBlock[]}
                   components={heroIntroPtComponents}
                 />
               </div>
             )}
-
-            {/* Challenge */}
-            {Array.isArray(study.challenge) && study.challenge.length > 0 && (
-              <section className="mt-12">
-                <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">
-                  The Challenge
-                </h2>
-                <PortableText
-                  value={study.challenge as PortableTextBlock[]}
-                  components={caseStudyPtComponents}
-                />
-              </section>
-            )}
-
-            {/* Solution */}
-            {Array.isArray(study.solution) && study.solution.length > 0 && (
-              <section className="mt-12">
-                <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">
-                  Our Solution
-                </h2>
-                <PortableText
-                  value={study.solution as PortableTextBlock[]}
-                  components={caseStudyPtComponents}
-                />
-              </section>
-            )}
-
-            {/* Result */}
-            {Array.isArray(study.result) && study.result.length > 0 && (
-              <section className="mt-12">
-                <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground">
-                  The Result
-                </h2>
-                <PortableText
-                  value={study.result as PortableTextBlock[]}
-                  components={caseStudyPtComponents}
-                />
-              </section>
-            )}
           </div>
+          {study.heroMedia && (
+            <CaseStudyHeroMedia heroMedia={study.heroMedia} title={study.title} />
+          )}
+        </div>
 
-          {/* ── Right: sticky sidebar ── */}
-          <aside className="flex flex-col gap-8 self-start lg:sticky lg:top-24">
+        {/* Right column — meta card with client + taxonomy */}
+        <CaseStudyMetaCard
+          clientLogoUrl={study.client?.logoUrl}
+          clientName={study.client?.name}
+          solutions={study.solutions}
+          products={study.products}
+          expertiseAreas={study.expertiseAreas}
+          capabilities={study.capabilities}
+        />
+      </PageDielineSection>
 
-            {/* Client card */}
-            {study.client && (
-              <div className="rounded-2xl border border-dashed border-border p-6">
-                {study.client.logoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={study.client.logoUrl}
-                    alt={study.client.name ?? "Client logo"}
-                    className="mb-4 h-10 w-auto object-contain"
-                  />
-                )}
-                {study.client.name && (
-                  <p className="text-lg font-semibold text-foreground">
-                    {study.client.name}
+      {/* Body — left sidebar + right content */}
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 lg:grid-cols-[300px_1fr]">
+
+        {/* ── Left sidebar ── */}
+        <aside className="flex flex-col gap-[42px] border-r border-dashed border-border px-4 pb-16 pt-24 md:px-8 lg:px-12">
+          {/* Metrics */}
+          {study.highlights && study.highlights.length > 0 && (
+            <div className="flex w-full flex-col gap-[42px]">
+              <p className="text-lg leading-7 text-muted-foreground">Metrics</p>
+              {study.highlights.map((h) => (
+                <div key={h._key} className="flex w-full flex-col gap-3">
+                  <p className="text-lg font-semibold leading-7 text-foreground">
+                    {h.title}
                   </p>
-                )}
-                {study.client.website && (
-                  <a
-                    href={study.client.website}
-                    className="mt-1 block text-xs text-muted-foreground hover:text-foreground"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Visit website →
-                  </a>
-                )}
-              </div>
-            )}
+                  {h.description && (
+                    <p className="text-sm leading-5 text-muted-foreground">
+                      {h.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-            {/* Highlights (metrics rail) */}
-            {study.highlights && study.highlights.length > 0 && (
-              <div className="rounded-2xl border border-dashed border-border p-6">
-                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Results
-                </p>
-                <dl className="flex flex-col gap-5">
-                  {study.highlights.map((h) => (
-                    <div key={h._key}>
-                      <dt className="text-3xl font-bold tracking-tight text-foreground">
-                        {h.title}
-                      </dt>
-                      {h.description && (
-                        <dd className="mt-0.5 text-sm text-muted-foreground">
-                          {h.description}
-                        </dd>
-                      )}
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )}
+          {/* Share + CTA — desktop only; mobile version appears after Result */}
+          <div className="hidden lg:flex">
+            <div className="h-px w-[207px] border-t border-dashed border-border" />
+          </div>
+          <CaseStudyShare
+            url={pageUrl}
+            title={study.title}
+            showCta
+            className="hidden lg:flex"
+          />
+        </aside>
 
-            {/* Taxonomy chips */}
-            {allTaxonomy.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {allTaxonomy.map((t) => (
-                  <Badge
-                    key={t._id}
-                    variant="secondary"
-                    className="rounded-full px-3 py-1 text-xs font-normal"
-                  >
-                    {t.title}
-                  </Badge>
-                ))}
-              </div>
-            )}
+        {/* ── Right content ── */}
+        <div className="flex flex-col gap-24 px-4 pb-24 pt-24 md:px-8 lg:px-16">
 
-            {/* Share */}
-            <CaseStudyShare url={pageUrl} title={study.title} />
-          </aside>
+          {/* Challenges */}
+          {Array.isArray(study.challenge) && study.challenge.length > 0 && (
+            <section className="flex flex-col gap-12">
+              <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
+                Challenges
+              </h2>
+              <DashedDivider />
+              <PortableText
+                value={study.challenge as PortableTextBlock[]}
+                components={caseStudyPtComponents}
+              />
+            </section>
+          )}
+
+          {/* Solutions */}
+          {Array.isArray(study.solution) && study.solution.length > 0 && (
+            <section className="flex flex-col gap-12">
+              <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
+                Solutions
+              </h2>
+              <DashedDivider />
+              <PortableText
+                value={study.solution as PortableTextBlock[]}
+                components={caseStudyPtComponents}
+              />
+            </section>
+          )}
+
+          {/* Result */}
+          {Array.isArray(study.result) && study.result.length > 0 && (
+            <section className="flex flex-col gap-12">
+              <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
+                Result
+              </h2>
+              <DashedDivider />
+              <PortableText
+                value={study.result as PortableTextBlock[]}
+                components={caseStudyPtComponents}
+              />
+            </section>
+          )}
+
+          {/* Share + CTA — mobile only (lg+ gets the sidebar version) */}
+          <CaseStudyShare
+            url={pageUrl}
+            title={study.title}
+            showCta
+            className="lg:hidden"
+          />
         </div>
       </PageDielineSection>
 
-      {/* Related case studies */}
+      {/* See What's More — related studies */}
       {study.relatedStudies && study.relatedStudies.length > 0 && (
-        <PageDielineSection innerClassName="border-t border-dashed border-border py-16">
-          <h2 className="mb-10 text-2xl font-semibold tracking-tight text-foreground">
-            See What&apos;s More
-          </h2>
-          <ul className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+        <PageDielineSection
+          className="border-t border-dashed border-border"
+          innerClassName="flex flex-col gap-8 py-16 px-0"
+        >
+          <header className="flex flex-wrap items-end justify-between gap-y-8 px-4 md:px-8">
+            <div className="flex min-w-[280px] flex-1 flex-col gap-4">
+              <h2 className="text-4xl font-medium leading-10 tracking-tight text-foreground">
+                See What&apos;s More
+              </h2>
+              <p className="text-lg leading-7 text-muted-foreground">
+                Stay informed with the latest case studies and advancements from our team.
+              </p>
+            </div>
+          </header>
+
+          <ul className="grid grid-cols-1 gap-6 px-4 md:grid-cols-2 md:px-8 lg:grid-cols-3">
             {study.relatedStudies.map((s) => (
               <li key={s._id}>
                 <CaseStudyCardUI

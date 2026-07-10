@@ -27,7 +27,7 @@ export function makeHeroIntroPtComponents(clientWebsite?: string | null): Portab
     },
     block: {
       normal: ({ children }) => (
-        <p className="text-lg leading-8 text-muted-foreground">{children}</p>
+        <p className="text-lg leading-7 text-foreground">{children}</p>
       ),
     },
   };
