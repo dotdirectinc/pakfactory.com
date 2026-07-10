@@ -1,3 +1,7 @@
+import {
+  resolveSanityDocumentHref,
+  type SanityLinkDocument,
+} from "@pakfactory/sanity/resolve-document-href";
 import type {
   AiEngine,
   AiLink,
@@ -7,6 +11,7 @@ import type {
   SocialPlatform,
 } from "@pakfactory/components/layout/site-footer";
 import { BLOG_URL } from "@/lib/www-nav";
+import { getWwwUrl } from "@/lib/site";
 
 // ─── Raw Sanity shape (mirrors BLOG_FOOTER_NAV_QUERY) ─────────────────────────
 
@@ -17,6 +22,7 @@ type RawLink = {
   sitePath?: string | null;
   href?: string | null;
   external?: boolean | null;
+  internalLink?: SanityLinkDocument | null;
 };
 
 type RawSection = {
@@ -45,6 +51,11 @@ const AI_ENGINES = new Set<string>([
   "chatgpt", "gemini", "perplexity", "claude", "grok",
 ]);
 
+// Doc types that live on the blog surface — their paths must be prefixed with BLOG_URL.
+const BLOG_DOC_TYPES = new Set([
+  "blogCategory", "blogPage", "post", "blogTag", "author",
+]);
+
 function resolveLink(raw: RawLink): FooterLink | null {
   const label = raw.label?.trim();
   if (!label) return null;
@@ -59,6 +70,17 @@ function resolveLink(raw: RawLink): FooterLink | null {
     const path = raw.sitePath?.trim();
     if (!path) return null;
     return { label, href: `${BLOG_URL}${path}`, external: true };
+  }
+
+  if (raw.linkType === "internal" && raw.internalLink) {
+    const resolved = resolveSanityDocumentHref(raw.internalLink, {
+      surface: "blog",
+      wwwOrigin: getWwwUrl(),
+    });
+    if (!resolved) return null;
+    const isBlogDoc = BLOG_DOC_TYPES.has(raw.internalLink._type ?? "");
+    const href = isBlogDoc ? `${BLOG_URL}${resolved.href}` : resolved.href;
+    return { label, href, external: true };
   }
 
   // Legacy href field
