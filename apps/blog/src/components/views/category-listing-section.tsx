@@ -18,7 +18,7 @@ export function CategoryListingSection({
   return (
     <CategoryLandingSection innerClassName="py-16">
       <div className="flex flex-col gap-10">{children}</div>
-      {pagination}
+      <div className="py-16">{pagination}</div>
     </CategoryLandingSection>
   );
 }

@@ -739,30 +739,20 @@ export const BLOG_SEARCH_POSTS_COUNT_QUERY = /* groq */ `count(*[
   ${SEARCH_POST_FILTER}
 ])`;
 
-/**
- * Relevance-ordered (default): field-weighted score on title/excerpt/body.
- * Tags stay in the filter for recall but are not boosted — `score()` rejects
- * dereferencing expressions like `tags[@->title match ...]`.
- */
-export const BLOG_SEARCH_POSTS_PAGE_RELEVANCE_QUERY = /* groq */ `*[
-  ${SEARCH_POST_FILTER}
-] | score(
-    boost(title match $searchTerm, 5),
-    boost(excerpt match $searchTerm, 2),
-    pt::text(body) match $searchTerm
-  ) | order(_score desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
-
+/** Newest (date posted) — default search sort. */
 export const BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
   ${SEARCH_POST_FILTER}
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-export const BLOG_SEARCH_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
+/** Recently updated — editorial lastModified, falling back to Sanity _updatedAt. */
+export const BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY = /* groq */ `*[
   ${SEARCH_POST_FILTER}
-] | order(publishedAt asc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, _updatedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-export const BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
+/** Most popular — viewCount desc, then publishedAt as tiebreaker. */
+export const BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY = /* groq */ `*[
   ${SEARCH_POST_FILTER}
-] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 /** Industry pills for blog home (studio `industry` documents). */
 export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
@@ -913,7 +903,7 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
   }
 }`;
 
-/** Category nav order from Blog Navigation `primaryNavigation.categories` (editor drag-and-drop). */
+/** Category nav order + header logo/CTA from Blog Navigation `primaryNavigation`. */
 export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   *[_id == "blogNavigation"][0]{
     _id,
@@ -923,6 +913,32 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
       navLabel,
       "slug": slug.current,
       language
+    },
+    "header": {
+      "logo": primaryNavigation.logo{
+        "url": asset->url,
+        "alt": coalesce(alt, asset->altText),
+        "width": asset->metadata.dimensions.width,
+        "height": asset->metadata.dimensions.height
+      },
+      "cta": primaryNavigation.cta{
+        label,
+        linkType,
+        externalUrl,
+        "internalLink": internalLink->{
+          _type,
+          title,
+          "slug": slug.current,
+          "name": name,
+          "term": term,
+          pageRole,
+          pageType,
+          category,
+          "handle": handle.current,
+          "collectionSlug": primaryCollection->slug.current,
+          "pageSlug": primaryLandingPage->slug.current
+        }
+      }
     }
   },
   *[_id == "blogSettings"][0]{
@@ -933,7 +949,8 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
       navLabel,
       "slug": slug.current,
       language
-    }
+    },
+    "header": null
   }
 )`;
 

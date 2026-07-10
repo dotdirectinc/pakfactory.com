@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TopicArchiveView } from "@/components/views/topic-archive-view";
+import { parsePerPage } from "@/lib/blog-archive";
 import {
   buildTagArchiveMetadata,
   fetchTagArchivePage,
@@ -24,7 +25,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
-  const data = await fetchTagArchivePage(slug, 1, filters);
+  const perPage = parsePerPage(sp.perPage);
+  const data = await fetchTagArchivePage(slug, 1, filters, perPage);
   if (!data) return { title: "Topic not found" };
 
   return buildTagArchiveMetadata(
@@ -38,8 +40,9 @@ export default async function TopicArchivePage({ params, searchParams }: PagePro
   const { slug } = await params;
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
+  const perPage = parsePerPage(sp.perPage);
   const [data, categories] = await Promise.all([
-    fetchTagArchivePage(slug, 1, filters),
+    fetchTagArchivePage(slug, 1, filters, perPage),
     fetchBlogCategories(),
   ]);
 

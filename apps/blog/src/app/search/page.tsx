@@ -19,6 +19,10 @@ import {
   fetchBlogSearchPage,
 } from "@/lib/blog-data";
 import {
+  PAGE_SIZE_OPTIONS,
+  parsePerPage,
+} from "@/lib/blog-archive";
+import {
   fetchSearchPage,
   getSearchRobots,
   parseSearchFilters,
@@ -28,6 +32,7 @@ import {
 } from "@/lib/blog-search";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
+import { PerPageSelect } from "@/components/modules/per-page-select";
 
 export const revalidate = 60;
 
@@ -88,8 +93,9 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const query = parseSearchQuery(sp);
   const filters = parseSearchFilters(sp);
   const pageNumber = parseSearchPage(sp);
+  const perPage = parsePerPage(sp.perPage);
   const [data, searchPage] = await Promise.all([
-    fetchSearchPage(query, pageNumber, filters),
+    fetchSearchPage(query, pageNumber, filters, perPage),
     fetchBlogSearchPage(),
   ]);
   const { posts, totalCount, totalPages } = data;
@@ -131,12 +137,23 @@ export default async function SearchPage({ searchParams }: PageProps) {
               emptyMessage="No posts on this page."
             />
           </div>
-          <div className="mt-10">
+          <div className="py-16">
             <Pagination
               pageNumber={pageNumber}
               totalPages={totalPages}
-              hrefForPage={(page) => searchPageHref(query, page, filters)}
+              hrefForPage={(page) =>
+                searchPageHref(query, page, filters, perPage)
+              }
               ariaLabel="Search results pagination"
+              rightSlot={
+                <PerPageSelect
+                  value={perPage}
+                  options={PAGE_SIZE_OPTIONS.map((size) => ({
+                    size,
+                    href: searchPageHref(query, 1, filters, size),
+                  }))}
+                />
+              }
             />
           </div>
         </PageDielineSection>

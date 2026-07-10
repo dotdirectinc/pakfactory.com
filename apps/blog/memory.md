@@ -27,10 +27,14 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ## Primary navigation (blog header)
 
-The sticky header category strip (`SiteNav` → `SiteNavCategories` in root `layout.tsx`) reads **only** the Studio singleton `blogNavigation.primaryNavigation.categories` via `BLOG_NAV_CATEGORIES_QUERY` → `fetchBlogNavCategories()`. Order is exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
+The sticky header (`SiteNav` in root `layout.tsx`) reads the Studio singleton `blogNavigation.primaryNavigation` via `BLOG_NAV_CATEGORIES_QUERY` → `fetchBlogNavCategories()` (returns `{ categories, header }`):
+
+- **`logo`** — optional header image. When set, replaces the built-in Box icon + "PakFactory Blog" wordmark. When empty / missing asset, the built-in lockup is used. Studio: **Navigation → Primary Navigation → Header logo**.
+- **`cta`** — optional header button (`label` + Internal/External link via [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts)). When label or link is empty, the blog falls back to **"Contact Us" → `/contribute`**. Drives both the desktop button and the mobile-menu CTA. Studio: **Navigation → Primary Navigation → Header CTA**.
+- **`categories`** — category strip order. Exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
 
 - **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty.
-- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with the dev category order.
+- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with the dev category order (logo/CTA left unset so built-in fallbacks apply).
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` / `blogCategory` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 - **Out of scope here:** `/all` browse sidebar, search, and 404 still use `fetchBlogCategories()` (all categories, alphabetical).
 
@@ -282,11 +286,12 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 | Sync Function | `functions/algolia-document-sync/` |
 | Shared projection + record mapper | `packages/sanity/src/algolia/post-record.ts` |
 | Index configure + backfill (human) | `apps/studio/scripts/algolia-configure-index.ts`, `algolia-initial-sync.ts` |
-| Search backend swap | `apps/blog/src/lib/blog-search.ts` — env-gated `liteClient`; GROQ fallback |
+| `/search` listings | `apps/blog/src/lib/blog-search.ts` — **GROQ only** + `POST_CARD_FIELDS` (same strategy as category archives) |
+| Nav typeahead | `apps/blog/src/lib/algolia-suggest.ts` — Algolia when `NEXT_PUBLIC_ALGOLIA_*` is set |
 
-**Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
+**Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app — **typeahead only**); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
 
-**Human deploy order:**
+**Human deploy order** (Algolia index for typeahead / sync):
 1. Create Algolia app + index `posts`; set env in root `.env`, Vercel blog project, and Function env (`SANITY_PROJECT_ID`, `SANITY_DATASET` from Studio).
 2. `npx sanity blueprints deploy`
 3. `cd apps/studio && npx sanity exec scripts/algolia-configure-index.ts --with-user-token`
@@ -294,6 +299,12 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 5. Test: `npx sanity functions test algolia-document-sync --document-id <post-id> --dataset development --with-user-token`
 
 **Agents:** implement schema/code only; never run backfill, blueprint deploy, or patch Sanity documents.
+
+### Search cards — GROQ parity with category archives
+
+`/search` uses the same `PostCard` / `PostList` / `toPostCardDataList` pipeline as home and category listings. Listing data always comes from GROQ queries that project `POST_CARD_FIELDS`, so cards get `authorSlug` and `readingTimeMinutes` (→ `Xmin read`) without depending on Algolia index shape.
+
+Algolia is **not** used for the `/search` results grid — only for nav typeahead. Keep `packages/sanity/src/algolia/post-record.ts` and `functions/algolia-document-sync/record.ts` in sync when changing the record shape (typeahead / sync still use those records; `readingTimeMinutes` on the index is optional metadata).
 
 ### Nav search typeahead (follow-on)
 

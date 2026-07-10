@@ -14,6 +14,7 @@ import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   archivePageSlice,
+  DEFAULT_PAGE_SIZE,
   getTotalArchivePages,
   isArchivePageOutOfRange,
 } from "@/lib/blog-archive";
@@ -32,6 +33,7 @@ export type AuthorArchivePageData = {
   totalCount: number;
   pageNumber: number;
   totalPages: number;
+  perPage: number;
 };
 
 export type AuthorDoc = DocSeoFields & {
@@ -85,14 +87,30 @@ export async function buildAuthorMetadata(
   });
 }
 
-export function authorPageHref(authorSlug: string, pageNumber: number): string {
-  return pageNumber <= 1
-    ? authorHref(authorSlug)
-    : `${authorHref(authorSlug)}/page/${pageNumber}`;
+export function authorPageHref(
+  authorSlug: string,
+  pageNumber: number,
+  perPage?: number,
+): string {
+  const base =
+    pageNumber <= 1
+      ? authorHref(authorSlug)
+      : `${authorHref(authorSlug)}/page/${pageNumber}`;
+  if (perPage && perPage !== DEFAULT_PAGE_SIZE) {
+    return `${base}?perPage=${perPage}`;
+  }
+  return base;
 }
 
-export function getAuthorListingRobots(pageNumber: number): BlogRobotsDirective {
-  return getBlogRobotsDirective({ kind: "author", pageNumber });
+export function getAuthorListingRobots(
+  pageNumber: number,
+  options?: { hasNonDefaultPerPage?: boolean },
+): BlogRobotsDirective {
+  return getBlogRobotsDirective({
+    kind: "author",
+    pageNumber,
+    hasNonDefaultPerPage: options?.hasNonDefaultPerPage,
+  });
 }
 
 export async function fetchAuthorBySlug(slug: string): Promise<AuthorDoc | null> {
@@ -129,29 +147,31 @@ export async function fetchAuthorPosts(
 }
 
 /**
- * One page of author archive posts (path-based pagination, shared LISTING_PAGE_SIZE).
+ * One page of author archive posts (path-based pagination, shared page sizes).
  */
 export async function fetchAuthorArchivePage(
   authorSlug: string,
   pageNumber: number,
+  perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<AuthorArchivePageData | null> {
   const author = await fetchAuthorBySlug(authorSlug);
   if (!author) return null;
 
   const totalCount = await fetchAuthorPostsCount(authorSlug);
-  const totalPages = getTotalArchivePages(totalCount);
+  const totalPages = getTotalArchivePages(totalCount, perPage);
 
-  if (isArchivePageOutOfRange(pageNumber, totalCount)) {
+  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
     return {
       author,
       posts: [],
       totalCount,
       pageNumber,
       totalPages,
+      perPage,
     };
   }
 
-  const { start, end } = archivePageSlice(pageNumber);
+  const { start, end } = archivePageSlice(pageNumber, perPage);
   const rows = await fetchAuthorPosts(authorSlug, start, end);
 
   return {
@@ -160,5 +180,6 @@ export async function fetchAuthorArchivePage(
     totalCount,
     pageNumber,
     totalPages,
+    perPage,
   };
 }

@@ -1,23 +1,21 @@
 import {Breadcrumb} from '@/components/layout/breadcrumb';
 import {Pagination} from '@/components/modules/pagination';
+import {PerPageSelect} from '@/components/modules/per-page-select';
 import {PostList} from '@/components/modules/post-list';
 import {PageHeader} from '@/components/modules/page-header';
 import {TopicRelatedPills} from '@/components/modules/topic-related-pills';
 import type {CategoryOption} from '@/components/modules/topic-filter-bar';
 import {CtaNewsletter} from '@/components/blocks/cta-newsletter';
-import {CtaRfq} from '@/components/blocks/cta-rfq';
 import {
     PageDielineBlockRail,
-    PageDielineSection,
 } from '@/components/layout/page-dieline-section';
 import {TopicLandingLayout} from '@/components/views/topic-landing-layout';
 import {TopicListingSection} from '@/components/views/topic-listing-section';
 import {pagedHeading} from '@/lib/archive-format';
+import {PAGE_SIZE_OPTIONS} from '@/lib/blog-archive';
 import {tagPageHref, type TagArchivePageData} from '@/lib/blog-tag-archive';
 import {toPostCardDataList} from '@/lib/post-card-data';
 import {buildTagArchiveJsonLd} from '@/lib/tag-archive-jsonld';
-
-const RFQ_HEADING = "Let's collaborate and craft your vision";
 
 export function TopicArchiveView({
     data,
@@ -34,6 +32,7 @@ export function TopicArchiveView({
     );
     const heading = pagedHeading(data.tag.title, data.pageNumber);
     const gridPosts = toPostCardDataList(data.posts);
+    const perPage = data.perPage;
 
     return (
         <TopicLandingLayout
@@ -64,9 +63,23 @@ export function TopicArchiveView({
                         pageNumber={data.pageNumber}
                         totalPages={data.totalPages}
                         hrefForPage={(page) =>
-                            tagPageHref(data.tag.slug, page, data.filters)
+                            tagPageHref(data.tag.slug, page, data.filters, perPage)
                         }
                         ariaLabel="Topic archive pagination"
+                        rightSlot={
+                            <PerPageSelect
+                                value={perPage}
+                                options={PAGE_SIZE_OPTIONS.map((size) => ({
+                                    size,
+                                    href: tagPageHref(
+                                        data.tag.slug,
+                                        1,
+                                        data.filters,
+                                        size,
+                                    ),
+                                }))}
+                            />
+                        }
                     />
                 }
             >
@@ -80,13 +93,6 @@ export function TopicArchiveView({
             <PageDielineBlockRail>
                 <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
             </PageDielineBlockRail>
-            {/* <PageDielineSection innerClassName="py-10">
-                <CtaRfq
-                    heading={RFQ_HEADING}
-                    showTopBorder={false}
-                    showBottomBorder={false}
-                />
-            </PageDielineSection> */}
         </TopicLandingLayout>
     );
 }

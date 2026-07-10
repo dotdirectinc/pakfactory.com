@@ -24,6 +24,7 @@ type ArchiveLayoutProps = {
     totalPages: number;
     hrefForPage: (page: number) => string;
     ariaLabel?: string;
+    rightSlot?: ReactNode;
   };
 };
 
@@ -49,12 +50,15 @@ export function ArchiveLayout({
     <>
       {filters}
       {children}
-      <Pagination
-        pageNumber={pagination.pageNumber}
-        totalPages={pagination.totalPages}
-        hrefForPage={pagination.hrefForPage}
-        ariaLabel={pagination.ariaLabel}
-      />
+      <div className="py-16">
+        <Pagination
+          pageNumber={pagination.pageNumber}
+          totalPages={pagination.totalPages}
+          hrefForPage={pagination.hrefForPage}
+          ariaLabel={pagination.ariaLabel}
+          rightSlot={pagination.rightSlot}
+        />
+      </div>
     </>
   );
 

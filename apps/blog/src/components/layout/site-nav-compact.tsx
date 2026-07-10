@@ -23,6 +23,8 @@ import {
     pageDielineOuterClass,
 } from '@/components/layout/page-dieline-section';
 import type {BlogCategoryChip} from '@/lib/blog-categories';
+import type {BlogPrimaryNavCta} from '@/lib/blog-primary-nav';
+import {externalLinkAttributes} from '@/lib/external-link';
 import {categoryHref} from '@/lib/blog-post-url';
 
 type SiteNavCompactContextValue = {
@@ -75,13 +77,13 @@ export function SiteNavTopRow({children}: SiteNavTopRowProps) {
 
 type SiteNavCompactProviderProps = {
     categories: BlogCategoryChip[];
-    contactHref: string;
+    cta: BlogPrimaryNavCta;
     children: ReactNode;
 };
 
 export function SiteNavCompactProvider({
     categories,
-    contactHref,
+    cta,
     children,
 }: SiteNavCompactProviderProps) {
     const [searchOpen, setSearchOpen] = useState(false);
@@ -283,7 +285,16 @@ export function SiteNavCompactProvider({
                             )}
 
                             <Button asChild>
-                                <Link href={contactHref}>Contact Us</Link>
+                                {cta.external ? (
+                                    <a
+                                        href={cta.href}
+                                        {...externalLinkAttributes(cta.href)}
+                                    >
+                                        {cta.label}
+                                    </a>
+                                ) : (
+                                    <Link href={cta.href}>{cta.label}</Link>
+                                )}
                             </Button>
                         </div>
                     </div>

@@ -418,11 +418,16 @@ const blogTopicsPageDoc = {
   topics: [ref('btgrp-packaging-type'), ref('btgrp-industry')],
 }
 
-/** Blog Navigation singleton — primary nav category order + footer link columns. */
+/**
+ * Blog Navigation singleton — primary nav (logo/CTA optional + category order)
+ * and footer link columns. Logo and CTA are left unset so the blog falls back
+ * to the built-in wordmark and "Contact Us" → /contribute.
+ */
 const blogNavigationDoc = {
   _id: 'blogNavigation',
   _type: 'blogNavigation',
   primaryNavigation: {
+    // logo / cta intentionally omitted — header uses built-in fallbacks
     categories: [
       ref('bcat-packaging-news'),
       ref('bcat-trends'),

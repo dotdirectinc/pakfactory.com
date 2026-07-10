@@ -76,14 +76,21 @@ export const ALGOLIA_INDEX_SETTINGS = {
   ],
 } as const;
 
+/**
+ * Sort → Algolia index map. `relevance` is kept for typeahead
+ * (`algolia-suggest.ts`). Search listing sorts (`newest` / `updated` /
+ * `popular`) are served by GROQ; `updated`/`popular` map to the primary
+ * index only so the Record type stays complete — there is no
+ * lastModified/viewCount replica (viewCount is not indexed).
+ */
 export const ALGOLIA_SORT_INDEX: Record<
-  "relevance" | "newest" | "oldest" | "title",
+  "relevance" | "newest" | "updated" | "popular",
   string
 > = {
   relevance: ALGOLIA_INDEX_NAME,
   newest: "posts_publishedAt_desc",
-  oldest: "posts_publishedAt_asc",
-  title: "posts_title_asc",
+  updated: ALGOLIA_INDEX_NAME,
+  popular: ALGOLIA_INDEX_NAME,
 };
 
 export const ALGOLIA_REPLICA_SETTINGS: Record<
@@ -137,6 +144,14 @@ export const ALGOLIA_MAX_CONTENT_CHARS = 8000;
 export const ALGOLIA_RECORD_TARGET_BYTES = 9500;
 export const ALGOLIA_MAX_TITLE_CHARS = 500;
 export const ALGOLIA_RECORD_WARN_BYTES = 9000;
+
+/**
+ * Words-per-minute for estimated reading time — must match
+ * `READING_TIME_WPM` in `packages/sanity/src/queries/blog.ts`.
+ * Computed at index time from the full `pt::text(body)` before
+ * adaptive content truncation, so long posts are not undercounted.
+ */
+export const ALGOLIA_READING_TIME_WPM = 238;
 
 export type AlgoliaPostImageRef = {
   assetRef?: string | null;
@@ -198,6 +213,8 @@ export type AlgoliaPostRecord = {
   lastModified: string | null;
   image: string | null;
   imageAlt: string;
+  /** Estimated minutes; same formula as GROQ `READING_TIME_MINUTES_PROJECTION`. */
+  readingTimeMinutes: number;
 };
 
 export type ImageUrlResolver = (assetRef?: string | null) => string | null;
@@ -207,7 +224,13 @@ export function toAlgoliaRecord(
   resolveImageUrl: ImageUrlResolver,
 ): AlgoliaPostRecord {
   const title = (source.title ?? "").slice(0, ALGOLIA_MAX_TITLE_CHARS);
-  const content = (source.content ?? "").slice(0, ALGOLIA_MAX_CONTENT_CHARS);
+  const fullContent = source.content ?? "";
+  // Compute from the untruncated body so adaptive truncation below does not
+  // undercount long posts. Formula mirrors GROQ READING_TIME_MINUTES_PROJECTION.
+  const readingTimeMinutes = Math.round(
+    fullContent.length / 5 / ALGOLIA_READING_TIME_WPM,
+  );
+  const content = fullContent.slice(0, ALGOLIA_MAX_CONTENT_CHARS);
   const imageUrl = resolveImageUrl(source.image?.assetRef);
 
   const record: AlgoliaPostRecord = {
@@ -227,6 +250,7 @@ export function toAlgoliaRecord(
     lastModified: source.lastModified ?? null,
     image: imageUrl,
     imageAlt: source.image?.alt ?? "",
+    readingTimeMinutes,
   };
 
   // Adaptive truncation: the fixed content cap isn't enough when other fields

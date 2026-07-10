@@ -30,11 +30,14 @@ export type BlogRobotsInput =
       pageNumber?: number;
       /** True when URL query changes the result set (not pagination alone). */
       hasActiveFilters?: boolean;
+      /** True when a non-default `?perPage=` is active (duplicate-content variant). */
+      hasNonDefaultPerPage?: boolean;
     };
 
 /**
  * Query params that narrow a listing beyond default sort/pagination.
  * `page` is intentionally excluded — pagination uses page number, not filter state.
+ * `perPage` is handled separately (non-default sizes are treated as paginated variants).
  */
 export const LISTING_FILTER_QUERY_KEYS = [
   "tag",
@@ -72,11 +75,26 @@ export function hasListingFilters(searchParams: SearchParams): boolean {
 }
 
 /**
+ * True when `?perPage=` is present and not the default listing size.
+ * Non-default page sizes are duplicate-content variants → noindex.
+ */
+export function hasNonDefaultPerPage(
+  searchParams: SearchParams,
+  defaultPerPage = 15,
+): boolean {
+  const raw = firstParam(searchParams.perPage);
+  if (raw === undefined || raw.trim() === "") return false;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1) return false;
+  return n !== defaultPerPage;
+}
+
+/**
  * Robots policy for blog routes (PROD-1495).
  *
  * - Post detail: always index, follow.
- * - Listing page 1, no filters: index, follow.
- * - Listing page 2+, or any filtered state: noindex, follow.
+ * - Listing page 1, no filters, default per-page: index, follow.
+ * - Listing page 2+, filtered state, or non-default per-page: noindex, follow.
  */
 export function getBlogRobotsDirective(input: BlogRobotsInput): BlogRobotsDirective {
   if (input.kind === "post") {
@@ -88,7 +106,11 @@ export function getBlogRobotsDirective(input: BlogRobotsInput): BlogRobotsDirect
   }
 
   const pageNumber = input.pageNumber ?? 1;
-  if (input.hasActiveFilters || pageNumber > 1) {
+  if (
+    input.hasActiveFilters ||
+    input.hasNonDefaultPerPage ||
+    pageNumber > 1
+  ) {
     return { index: false, follow: true };
   }
 
@@ -121,11 +143,15 @@ export function robotsDirectiveToMetadata(
 }
 
 /** Robots for `/all` archive (path-based pagination, PROD-1498). */
-export function getAllArchiveRobots(pageNumber: number): BlogRobotsDirective {
+export function getAllArchiveRobots(
+  pageNumber: number,
+  options?: { hasNonDefaultPerPage?: boolean },
+): BlogRobotsDirective {
   return getBlogRobotsDirective({
     kind: "all_archive",
     pageNumber,
     hasActiveFilters: false,
+    hasNonDefaultPerPage: options?.hasNonDefaultPerPage,
   });
 }
 
@@ -146,6 +172,7 @@ export function getTagListingRobots(
         kind: "tag",
         pageNumber,
         hasActiveFilters: hasListingFilters(searchParams),
+        hasNonDefaultPerPage: hasNonDefaultPerPage(searchParams),
       });
 
   // Per-tag overrides only tighten: tags default to noindex unless explicitly
@@ -170,5 +197,6 @@ export function getListingRobotsFromSearchParams(
     kind,
     pageNumber: parseListingPage(searchParams),
     hasActiveFilters: hasListingFilters(searchParams),
+    hasNonDefaultPerPage: hasNonDefaultPerPage(searchParams),
   });
 }

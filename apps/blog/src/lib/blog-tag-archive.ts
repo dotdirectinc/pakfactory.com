@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import type { HomePostCard } from "@/lib/blog-home";
 import {
+  DEFAULT_PAGE_SIZE,
   getTotalArchivePages,
   isArchivePageOutOfRange,
-  LISTING_PAGE_SIZE,
   parseArchivePageParam,
 } from "@/lib/blog-archive";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
@@ -63,6 +63,7 @@ export type TagArchivePageData = {
   totalCount: number;
   pageNumber: number;
   totalPages: number;
+  perPage: number;
   filters: TagListFilters;
   cooccurringTags: TagFacet[];
   authors: TagFacetAuthor[];
@@ -142,6 +143,7 @@ export function tagPageHref(
   tagSlug: string,
   pageNumber: number,
   filters: TagListFilters,
+  perPage?: number,
 ): string {
   const base = pageNumber <= 1 ? `/topics/${tagSlug}` : `/topics/${tagSlug}/page/${pageNumber}`;
   const params = new URLSearchParams();
@@ -149,6 +151,7 @@ export function tagPageHref(
   if (filters.year) params.set("year", filters.year);
   if (filters.month) params.set("month", filters.month);
   if (filters.sort !== "newest") params.set("sort", filters.sort);
+  if (perPage && perPage !== DEFAULT_PAGE_SIZE) params.set("perPage", String(perPage));
   const qs = params.toString();
   return qs ? `${base}?${qs}` : base;
 }
@@ -199,6 +202,7 @@ export async function fetchTagArchivePage(
   tagSlug: string,
   pageNumber: number,
   filters: TagListFilters,
+  perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<TagArchivePageData | null> {
   const tag = await fetchTagBySlug(tagSlug);
   if (!tag) return null;
@@ -213,15 +217,16 @@ export async function fetchTagArchivePage(
       .catch(() => 0);
   }
 
-  const totalPages = getTotalArchivePages(totalCount);
+  const totalPages = getTotalArchivePages(totalCount, perPage);
 
-  if (isArchivePageOutOfRange(pageNumber, totalCount)) {
+  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
     return {
       tag,
       posts: [],
       totalCount,
       pageNumber,
       totalPages,
+      perPage,
       filters,
       cooccurringTags: [],
       authors: [],
@@ -233,8 +238,8 @@ export async function fetchTagArchivePage(
   let authors: TagFacetAuthor[] = [];
 
   if (isSanityConfigured()) {
-    const start = (pageNumber - 1) * LISTING_PAGE_SIZE;
-    const end = start + LISTING_PAGE_SIZE;
+    const start = (pageNumber - 1) * perPage;
+    const end = start + perPage;
     const client = await getSanityClient();
     [posts, cooccurringTags, authors] = await Promise.all([
       client
@@ -265,6 +270,7 @@ export async function fetchTagArchivePage(
     totalCount,
     pageNumber,
     totalPages,
+    perPage,
     filters,
     cooccurringTags,
     authors,

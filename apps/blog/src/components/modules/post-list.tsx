@@ -106,7 +106,7 @@ export function PostList({
     );
   } else {
     list = (
-      <ul className={className ?? `grid gap-8 ${COLUMN_CLASSES[columns]}`}>
+      <ul className={className ?? `grid gap-x-8 gap-y-12 ${COLUMN_CLASSES[columns]}`}>
         {posts.map((post, index) => (
           <li key={post._id}>
             <PostCard
