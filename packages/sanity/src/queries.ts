@@ -70,6 +70,32 @@ export {
     POSTS_BY_CATEGORY_SLUG_QUERY,
 } from './queries/blog';
 
+export {
+    CASE_STUDIES_LISTING_QUERY,
+    CASE_STUDIES_PAGE_QUERY,
+    CASE_STUDY_BY_SLUG_QUERY,
+    CASE_STUDY_PATHS_QUERY,
+    CASE_STUDY_SITEMAP_QUERY,
+    CASE_STUDY_FILTER_OPTIONS_QUERY,
+    type CaseStudiesPageData,
+    type CaseStudyCard,
+    type CaseStudyDetail,
+    type CaseStudyPath,
+    type CaseStudyHighlight,
+    type CaseStudyTaxonomyItem,
+    type CaseStudyClientCard,
+    type CaseStudyClientDetail,
+    type CaseStudyHeroMedia,
+    type CaseStudySitemapEntry,
+    type CaseStudyFilterOptions,
+} from './queries/case-studies';
+
+export {
+    CASE_STUDY_RESERVED_SLUGS,
+    isBlockedCaseStudySlug,
+    type CaseStudyReservedSlug,
+} from './case-study-reserved-slugs';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,

@@ -1,4 +1,4 @@
-import Navbar from '@/components/common/navbar'
+import SiteNav from '@/components/layout/site-nav'
 
 const navigationData = [
   {
@@ -22,7 +22,7 @@ const navigationData = [
 const NavbarPage = () => {
   return (
     <div className='h-70'>
-      <Navbar navigationData={navigationData} />
+      <SiteNav navigationData={navigationData} />
     </div>
   )
 }

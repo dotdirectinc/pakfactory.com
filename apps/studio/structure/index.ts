@@ -1092,19 +1092,49 @@ export function coreEntitiesItems(
                     ]),
             ),
 
-        // ── Resources (Case Studies — rename pending confirmation) ────────────────
+        // ── Clients ───────────────────────────────────────────────────────────────
+        S.listItem()
+            .title('Clients')
+            .icon(UserIcon)
+            .schemaType('client')
+            .child(
+                S.documentTypeList('client')
+                    .title('Clients')
+                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
+            ),
+
+        // ── Case Studies ──────────────────────────────────────────────────────────
         ...(options.hideCaseStudies
             ? []
             : [
                   S.listItem()
                       .title('Case Studies')
                       .icon(CaseIcon)
-                      .schemaType('caseStudy')
                       .child(
-                          S.documentTypeList('caseStudy')
+                          S.list()
                               .title('Case Studies')
-                              .defaultOrdering([
-                                  {field: 'title', direction: 'asc'},
+                              .items([
+                                  S.listItem()
+                                      .title('Studies')
+                                      .icon(CaseIcon)
+                                      .schemaType('caseStudy')
+                                      .child(
+                                          S.documentTypeList('caseStudy')
+                                              .title('Case Studies')
+                                              .filter('_type == "caseStudy" && (status == "published" || status == "draft" || status == "scheduled" || !defined(status))')
+                                              .defaultOrdering([
+                                                  {field: 'publishedAt', direction: 'desc'},
+                                              ]),
+                                      ),
+                                  S.listItem()
+                                      .title('Page Settings')
+                                      .icon(CogIcon)
+                                      .child(
+                                          S.editor()
+                                              .id('caseStudiesPage')
+                                              .schemaType('caseStudiesPage')
+                                              .documentId('caseStudiesPage'),
+                                      ),
                               ]),
                       ),
               ]),
@@ -1283,16 +1313,6 @@ export function resourcesItems(
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
 
-        // ── Case Studies ──────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Case Studies')
-            .icon(CaseIcon)
-            .schemaType('caseStudy')
-            .child(
-                S.documentTypeList('caseStudy')
-                    .title('Case Studies')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
-            ),
     ];
 }
 
@@ -1490,7 +1510,7 @@ export const adminStructure = (S: StructureBuilder) =>
     S.list()
         .title('PakFactory')
         .items([
-            ...coreEntitiesItems(S, {hideCaseStudies: true}),
+            ...coreEntitiesItems(S),
             ...resourcesItems(S),
             globalNavigationItem(S),
             ...settingsItems(S, {blog: true, solutions: true}),

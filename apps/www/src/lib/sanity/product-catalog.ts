@@ -1,5 +1,5 @@
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import { ALL_PRODUCT_PAGES_WITH_PRODUCTS_QUERY } from "@pakfactory/sanity/queries";
 
 const SOLUTION_TYPE_LABEL: Record<string, string> = {

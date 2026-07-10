@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 import { MenuIcon } from "lucide-react";
 
-import MenuDropdown from "@/components/common/menu-dropdown";
-import MenuNavigation from "@/components/common/menu-navigation";
-import type { NavigationSection } from "@/components/common/menu-navigation";
-import Logo from "@/components/common/logo";
+import NavDropdown from "@/components/layout/nav-dropdown";
+import NavMenu from "@/components/layout/nav-menu";
+import type { NavigationSection } from "@/components/layout/nav-menu";
+import Logo from "@/components/layout/logo";
 import { Button } from "@pakfactory/ui/components/button";
 import { cn } from "@pakfactory/ui/lib/utils";
 
@@ -17,7 +17,7 @@ type HeaderProps = {
   className?: string;
 };
 
-const Header = ({ navigationData, className }: HeaderProps) => {
+const HeroHeader = ({ navigationData, className }: HeaderProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const Header = ({ navigationData, className }: HeaderProps) => {
           <Logo className="gap-3" />
         </a>
 
-        <MenuNavigation
+        <NavMenu
           navigationData={navigationData}
           className="grow max-md:hidden"
         />
@@ -62,7 +62,7 @@ const Header = ({ navigationData, className }: HeaderProps) => {
             <a href="#">Login</a>
           </Button>
 
-          <MenuDropdown
+          <NavDropdown
             align="end"
             navigationData={navigationData}
             trigger={
@@ -78,4 +78,4 @@ const Header = ({ navigationData, className }: HeaderProps) => {
   );
 };
 
-export default Header;
+export default HeroHeader;

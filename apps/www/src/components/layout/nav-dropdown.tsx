@@ -39,7 +39,7 @@ type Props = {
   align?: "center" | "end" | "start";
 };
 
-const MenuDropdown = ({
+const NavDropdown = ({
   trigger,
   navigationData,
   align = "start",
@@ -92,4 +92,4 @@ const MenuDropdown = ({
   );
 };
 
-export default MenuDropdown;
+export default NavDropdown;

@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PackageIcon } from "lucide-react";
 
-import type { AdvertisementCardProps } from "@/components/hero/hero-section-32/widget-advertisement";
+import type { AdvertisementCardProps } from "@/components/sections/advertisement-card";
 import { Button } from "@pakfactory/ui/components/button";
 import { TextFlip } from "@pakfactory/ui/components/text-flip";
 
@@ -48,7 +48,7 @@ const DEFAULT_FLIP = ["Show", "Event", "Ticket"];
 const DEFAULT_DESCRIPTION =
   "Skip the long lines and enjoy the best entertainment experiences hassle-free, allowing you to fully immerse yourself in the fun and excitement.";
 
-const HeroSection = ({
+const HomepageHero = ({
   upcomingShows = [],
   badgeLabel,
   flipWords = DEFAULT_FLIP,
@@ -148,4 +148,4 @@ const HeroSection = ({
   );
 };
 
-export default HeroSection;
+export default HomepageHero;
