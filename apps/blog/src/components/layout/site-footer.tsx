@@ -8,16 +8,21 @@ import {
     socialPlatformAriaLabel,
 } from '@/components/modules/social-platform-icon';
 import {
+    getFallbackFooterBuilder,
     getFallbackFooterColumns,
-    getFallbackFooterCta,
     type BlogAiEngine,
     type BlogAiLink,
     type BlogFooterColumns,
-    type BlogFooterCta,
+    type BlogFooterCtaAlign,
+    type BlogFooterCtaBlock,
     type BlogFooterLink,
     type BlogFooterSection,
     type BlogSocialLink,
 } from '@/lib/blog-footer-nav';
+import {
+    FOOTER_CTA_DIELINE_BORDER_DEFAULTS,
+    resolveDielineBorders,
+} from '@/lib/dieline-borders';
 import {externalLinkAttributes, EXTERNAL_LINK_REL} from '@/lib/external-link';
 
 const AI_ICON_SRC: Record<BlogAiEngine, string> = {
@@ -34,6 +39,18 @@ const AI_LABELS: Record<BlogAiEngine, string> = {
     perplexity: 'Perplexity',
     claude: 'Claude',
     grok: 'Grok',
+};
+
+const ALIGN_TEXT_CLASS: Record<BlogFooterCtaAlign, string> = {
+    left: 'text-left',
+    center: 'text-center',
+    right: 'text-right',
+};
+
+const ALIGN_JUSTIFY_CLASS: Record<BlogFooterCtaAlign, string> = {
+    left: 'justify-start',
+    center: 'justify-center',
+    right: 'justify-end',
 };
 
 function FooterLinkItem({link}: {link: BlogFooterLink}) {
@@ -76,11 +93,54 @@ function FooterSectionBlock({section}: {section: BlogFooterSection}) {
     );
 }
 
+function FooterCtaBlock({block}: {block: BlogFooterCtaBlock}) {
+    const {borderTop, borderBottom} = resolveDielineBorders(
+        block.showTopBorder,
+        block.showBottomBorder,
+        FOOTER_CTA_DIELINE_BORDER_DEFAULTS,
+    );
+    const borderClasses = [
+        borderTop ? 'border-t border-dashed border-foreground/10' : '',
+        borderBottom ? 'border-b border-dashed border-foreground/10' : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    return (
+        <div
+            className={`${borderClasses} px-8 py-16 ${ALIGN_TEXT_CLASS[block.align]}`}
+        >
+            <h2 className="whitespace-pre-line text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+                {block.message}
+            </h2>
+            <div
+                className={`mt-6 flex ${ALIGN_JUSTIFY_CLASS[block.align]}`}
+            >
+                <Button
+                    className="h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    asChild
+                >
+                    {block.external ? (
+                        <a
+                            href={block.href}
+                            {...externalLinkAttributes(block.href)}
+                        >
+                            {block.buttonLabel}
+                        </a>
+                    ) : (
+                        <Link href={block.href}>{block.buttonLabel}</Link>
+                    )}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 type SiteFooterProps = {
     columns?: BlogFooterColumns;
     social?: BlogSocialLink[];
     aiLinks?: BlogAiLink[];
-    cta?: BlogFooterCta;
+    builder?: BlogFooterCtaBlock[];
 };
 
 function FooterSocialIcon({link}: {link: BlogSocialLink}) {
@@ -125,11 +185,12 @@ export function SiteFooter({
     columns,
     social = [],
     aiLinks = [],
-    cta,
+    builder,
 }: SiteFooterProps) {
     const footerColumns =
         columns && columns.length > 0 ? columns : getFallbackFooterColumns();
-    const footerCta = cta ?? getFallbackFooterCta();
+    const footerBuilder =
+        builder && builder.length > 0 ? builder : getFallbackFooterBuilder();
 
     return (
         <footer className="bg-background">
@@ -137,29 +198,10 @@ export function SiteFooter({
                 {/* Giant wordmark */}
                 {/* <FooterWordmark /> */}
 
-                {/* Collaboration CTA */}
-                <div className="px-8 py-16 text-center border-t border-dashed border-foreground/10">
-                    <h2 className="whitespace-pre-line text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
-                        {footerCta.message}
-                    </h2>
-                    <Button
-                        className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                        asChild
-                    >
-                        {footerCta.external ? (
-                            <a
-                                href={footerCta.href}
-                                {...externalLinkAttributes(footerCta.href)}
-                            >
-                                {footerCta.buttonLabel}
-                            </a>
-                        ) : (
-                            <Link href={footerCta.href}>
-                                {footerCta.buttonLabel}
-                            </Link>
-                        )}
-                    </Button>
-                </div>
+                {/* Footer blocks (above navigation) */}
+                {footerBuilder.map((block) => (
+                    <FooterCtaBlock key={block.key} block={block} />
+                ))}
 
                 {/* Link columns */}
                 <div className="grid grid-cols-1 gap-0 border-t border-dashed border-border md:grid-cols-3">

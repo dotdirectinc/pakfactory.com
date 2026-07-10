@@ -1,6 +1,7 @@
 import { defineLocations } from 'sanity/presentation'
 import type { DocumentLocationResolvers } from 'sanity/presentation'
 import {
+  isBlogContributeSingleton,
   isBlogHomeSingleton,
   isBlogNotFoundSingleton,
   isBlogSearchSingleton,
@@ -56,6 +57,13 @@ export const blogLocations: DocumentLocationResolvers = {
       if (isBlogSearchSingleton(doc ?? undefined)) {
         return {
           locations: [{ title: doc?.title || 'Search page', href: '/search' }],
+        }
+      }
+      if (isBlogContributeSingleton(doc ?? undefined)) {
+        return {
+          locations: [
+            { title: doc?.title || 'Contribute page', href: '/contribute' },
+          ],
         }
       }
       return doc?.slug

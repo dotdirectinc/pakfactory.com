@@ -74,6 +74,8 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
     case "blogPage":
       if (doc.pageRole === "home") return "/";
       if (doc.pageRole === "topics") return "/topics";
+      if (doc.pageRole === "search") return "/search";
+      if (doc.pageRole === "contribute") return "/contribute";
       return slug ? `/${slug}` : null;
     case "post":
       return slug ? `/${slug}` : null;

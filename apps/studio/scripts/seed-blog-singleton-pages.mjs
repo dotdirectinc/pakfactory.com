@@ -1,8 +1,11 @@
 /**
- * Seed blog home, topics, 404, and search singleton page builders (no posts, nav, or industries).
+ * Seed blog home, topics, 404, search, and contribute singleton page builders
+ * (no posts, nav, or industries).
  *
  * From repo root:
  *   node apps/studio/scripts/seed-blog-singleton-pages.mjs
+ *
+ * Humans only — agents must not run this script (AGENTS.md Sanity content guardrails).
  */
 
 import { createClient } from '@sanity/client'
@@ -173,9 +176,28 @@ const blogSearchPageDoc = {
   ],
 }
 
+const blogContributePageDoc = {
+  _id: 'blogContributePage',
+  _type: 'blogPage',
+  pageRole: 'contribute',
+  language: 'en',
+  title: 'Contribute to Our Blog',
+  metaTitle: 'Contribute to Our Blog | PakFactory Blog',
+  metaDescription:
+    'Write for the PakFactory blog. We publish guest articles for the people who specify, design, and source custom packaging — brand owners, designers, and packaging teams.',
+  pageBuilder: [
+    {
+      _key: key(),
+      _type: 'ctaNewsletter',
+      heading: 'Get the latest packaging digest',
+      body: 'Subscribe now for latest packaging news, trends and more.',
+    },
+  ],
+}
+
 async function seed() {
   console.log(
-    `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics + 404 + search\n`,
+    `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics + 404 + search + contribute\n`,
   )
 
   const tx = client.transaction()
@@ -183,9 +205,10 @@ async function seed() {
   tx.createOrReplace(blogTopicsPageDoc)
   tx.createOrReplace(blogNotFoundPageDoc)
   tx.createOrReplace(blogSearchPageDoc)
+  tx.createOrReplace(blogContributePageDoc)
   await tx.commit()
 
-  const [home, topics, notFound, search] = await Promise.all([
+  const [home, topics, notFound, search, contribute] = await Promise.all([
     client.fetch(
       '*[_id == "blogHomePage"][0]{ _id, title, "sections": count(pageBuilder) }',
     ),
@@ -198,14 +221,18 @@ async function seed() {
     client.fetch(
       '*[_id == "blogSearchPage"][0]{ _id, title, "sections": count(pageBuilder) }',
     ),
+    client.fetch(
+      '*[_id == "blogContributePage"][0]{ _id, title, "sections": count(pageBuilder) }',
+    ),
   ])
 
-  console.log(`  ✓  blogHomePage     : ${home?.sections ?? 0} sections`)
-  console.log(`  ✓  blogTopicsPage   : ${topics?.sections ?? 0} sections`)
-  console.log(`  ✓  blogNotFoundPage : ${notFound?.sections ?? 0} sections`)
-  console.log(`  ✓  blogSearchPage   : ${search?.sections ?? 0} sections`)
+  console.log(`  ✓  blogHomePage       : ${home?.sections ?? 0} sections`)
+  console.log(`  ✓  blogTopicsPage     : ${topics?.sections ?? 0} sections`)
+  console.log(`  ✓  blogNotFoundPage   : ${notFound?.sections ?? 0} sections`)
+  console.log(`  ✓  blogSearchPage     : ${search?.sections ?? 0} sections`)
+  console.log(`  ✓  blogContributePage : ${contribute?.sections ?? 0} sections`)
   console.log(
-    '\n✅  Singleton page seed complete. Preview search at http://localhost:3003/search\n',
+    '\n✅  Singleton page seed complete. Preview contribute at http://localhost:3003/contribute\n',
   )
 }
 

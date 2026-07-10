@@ -10,12 +10,15 @@ import { ctaNewsletter } from './cta-newsletter'
 import { ctaRfq } from './cta-rfq'
 import { ctaPillars } from './cta-pillars'
 import { ctaSpotlight } from './cta-spotlight'
+import { ctaTextAndButton } from './cta-text-and-button'
 import { richTextBand } from './rich-text-band'
 import { promoBanner } from './promo-banner'
 import { pageBuilderPreviewUrl } from './page-builder-preview'
 
 /**
- * Page-builder block schemas. Mirrors apps/blog/src/components/blocks/registry.ts.
+ * Page-builder block schemas. Mirrors apps/blog/src/components/blocks/registry.ts
+ * for home/landing blocks. Also includes footer-only blocks (ctaTextAndButton)
+ * that are registered globally but not wired into home/landing arrays.
  */
 export const pageBuilderBlocks = [
   postFeaturedRow,
@@ -28,6 +31,7 @@ export const pageBuilderBlocks = [
   ctaRfq,
   ctaPillars,
   ctaSpotlight,
+  ctaTextAndButton,
   richTextBand,
   promoBanner,
 ]
@@ -123,4 +127,14 @@ export const pageBuilderLanding = defineType({
   type: 'array',
   of: landingPageBuilderBlocks.map(({ name }) => defineArrayMember({ type: name })),
   options: { insertMenu: insertMenuOptions(INSERT_GROUPS_LANDING) },
+})
+
+/** Footer-only blocks (blogNavigation.footerNavigation.builder). */
+export const footerPageBuilderBlocks = [ctaTextAndButton]
+
+export const pageBuilderFooter = defineType({
+  name: 'pageBuilderFooter',
+  title: 'Footer blocks',
+  type: 'array',
+  of: footerPageBuilderBlocks.map(({ name }) => defineArrayMember({ type: name })),
 })

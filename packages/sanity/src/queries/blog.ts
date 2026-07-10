@@ -422,6 +422,26 @@ export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" 
   "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
 }`;
 
+/**
+ * Contribute page singleton — SEO + page blocks for the reserved `/contribute`
+ * code route (form stays in the app).
+ */
+export const BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY = /* groq */ `*[
+  _type == "blogPage" && _id == $contributePageId && (language == $language || !defined(language))
+][0]{
+  title,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
 /** Populated topic group row for /topics grid (shared by index + page Overview queries). */
 const BLOG_TOPIC_GROUP_ROW_FIELDS = /* groq */ `
   _id,
@@ -896,14 +916,21 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   }
 )`;
 
-/** Footer CTA, link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
+/** Footer blocks, link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   _id,
-  "cta": footerNavigation.cta{
+  "builder": footerNavigation.builder[]{
+    _key,
+    _type,
     message,
     buttonLabel,
+    align,
+    showTopBorder,
+    showBottomBorder,
     linkType,
+    internalKind,
     externalUrl,
+    sitePath,
     "internalLink": internalLink->{
       _type,
       title,
@@ -924,7 +951,9 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
       "links": links[]{
         label,
         linkType,
+        internalKind,
         externalUrl,
+        sitePath,
         href,
         external,
         "internalLink": internalLink->{

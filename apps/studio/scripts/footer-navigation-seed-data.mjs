@@ -1,6 +1,11 @@
 /**
  * Default footer link columns for blogNavigation.footerNavigation.
  * Shared by seed-blog-dev.mjs and migrate-blog-navigation.mjs.
+ *
+ * Human follow-up: when reseeding, prefer seeding
+ * `footerNavigation.builder` with a `ctaTextAndButton` block
+ * (align: center, default copy) instead of relying on the app fallback.
+ * The old `footerNavigation.cta` object field has been removed from the schema.
  */
 
 const key = () => Math.random().toString(36).slice(2, 10)

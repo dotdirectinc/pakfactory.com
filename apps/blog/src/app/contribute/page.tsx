@@ -1,37 +1,22 @@
 import type { Metadata } from "next";
+import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { ContributeForm } from "@/components/modules/contribute-form";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import {
+  buildBlogContributeMetadata,
+  fetchBlogContributePage,
+  resolveContributePageDescription,
+  resolveContributePageTitle,
+} from "@/lib/blog-contribute-page";
 import { getContributeSubjectOptions } from "@/lib/contribute-options";
-import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
-const PAGE_TITLE = "Contribute to Our Blog";
-const PAGE_DESCRIPTION =
-  "Write for the PakFactory blog. We publish guest articles for the people who specify, design, and source custom packaging — brand owners, designers, and packaging teams. Pitch your idea below.";
-
 export async function generateMetadata(): Promise<Metadata> {
-  const canonical = absoluteUrl("/contribute");
-
-  return {
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    robots: robotsDirectiveToMetadata({ index: true, follow: true }),
-    alternates: { canonical },
-    openGraph: {
-      title: PAGE_TITLE,
-      description: PAGE_DESCRIPTION,
-      url: canonical,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title: PAGE_TITLE,
-      description: PAGE_DESCRIPTION,
-    },
-  };
+  const page = await fetchBlogContributePage();
+  return buildBlogContributeMetadata(page, { index: true, follow: true });
 }
 
 function ContributePositioning() {
@@ -61,14 +46,18 @@ function ContributePositioning() {
   );
 }
 
-export default function ContributePage() {
+export default async function ContributePage() {
+  const page = await fetchBlogContributePage();
+  const pageTitle = resolveContributePageTitle(page);
+  const pageDescription = resolveContributePageDescription(page);
+  const blocks = page?.pageBuilder ?? [];
   const pageUrl = absoluteUrl("/contribute");
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
       webPage({
-        name: PAGE_TITLE,
+        name: pageTitle,
         url: pageUrl,
-        description: PAGE_DESCRIPTION,
+        description: pageDescription,
       }),
       breadcrumbList([
         { name: "Blog", url: absoluteUrl("/") },
@@ -85,25 +74,29 @@ export default function ContributePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="mb-10">
-          <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "Contribute" }]} />
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{PAGE_TITLE}</h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">{PAGE_DESCRIPTION}</p>
+      <main>
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="mb-10">
+            <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "Contribute" }]} />
+            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{pageTitle}</h1>
+            <p className="mt-2 max-w-2xl text-muted-foreground">{pageDescription}</p>
+          </div>
+
+          {/*
+            Mobile: form first, positioning second (DOM order).
+            Desktop (lg+): positioning left (col 1), form right (col 2) via col-start.
+          */}
+          <div className="grid gap-10 lg:grid-cols-[2fr_3fr] lg:items-start">
+            <div className="lg:col-start-2 lg:row-start-1">
+              <ContributeForm subjectOptions={subjectOptions} />
+            </div>
+            <div className="lg:col-start-1 lg:row-start-1">
+              <ContributePositioning />
+            </div>
+          </div>
         </div>
 
-        {/*
-          Mobile: form first, positioning second (DOM order).
-          Desktop (lg+): positioning left (col 1), form right (col 2) via col-start.
-        */}
-        <div className="grid gap-10 lg:grid-cols-[2fr_3fr] lg:items-start">
-          <div className="lg:col-start-2 lg:row-start-1">
-            <ContributeForm subjectOptions={subjectOptions} />
-          </div>
-          <div className="lg:col-start-1 lg:row-start-1">
-            <ContributePositioning />
-          </div>
-        </div>
+        {blocks.length > 0 ? <BlockRenderer blocks={blocks} /> : null}
       </main>
     </>
   );

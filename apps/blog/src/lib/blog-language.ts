@@ -1,4 +1,5 @@
 import {
+  BLOG_CONTRIBUTE_PAGE_IDS,
   BLOG_HOME_PAGE_IDS,
   BLOG_TOPICS_PAGE_IDS,
   DEFAULT_BLOG_LANGUAGE,
@@ -54,6 +55,14 @@ export function blogNotFoundPageParams() {
 /** Params for the search page singleton query (page builder + popular row). */
 export function blogSearchPageParams() {
   return blogLanguageParams({
+    monthStart: monthStartIso(),
+  });
+}
+
+/** Params for the contribute page singleton query (SEO + page builder). */
+export function blogContributePageParams() {
+  return blogLanguageParams({
+    contributePageId: BLOG_CONTRIBUTE_PAGE_IDS.en,
     monthStart: monthStartIso(),
   });
 }

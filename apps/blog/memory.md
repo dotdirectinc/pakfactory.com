@@ -38,10 +38,19 @@ The sticky header category strip (`SiteNav` → `SiteNavCategories` in root `lay
 
 ## Footer navigation (blog footer link grid)
 
-The footer link columns (`SiteFooter` in root `layout.tsx`) read `blogNavigation.footerNavigation.columns` via `BLOG_FOOTER_NAV_QUERY` → `fetchBlogFooterNavigation()`. Order matches Studio **Navigation → Footer Navigation** (columns left to right, sections top to bottom). When the singleton is missing, fetch fails, or columns are empty, the footer falls back to hardcoded columns in `getFallbackFooterColumns()` (`apps/blog/src/lib/blog-footer-nav.ts`).
+The footer (`SiteFooter` in root `layout.tsx`) reads `blogNavigation.footerNavigation` via `BLOG_FOOTER_NAV_QUERY` → `fetchBlogFooterNavigation()`:
 
-- **Link model:** each footer link is **Internal** (reference to any [linkable document type](../../apps/studio/lib/linkable-document-types.ts) — blog, website, solutions, resources, static singletons) or **External** (full `https://…` URL). Hrefs resolve at fetch time via `@pakfactory/sanity/resolve-document-href`: blog docs → root-relative paths; www docs → absolute marketing URLs (`external: true`). Optional label overrides the referenced document title. Legacy `href` strings are still resolved until `migrate:blog-navigation` converts them.
-- **CMS scope:** link columns only — collaboration CTA, copyright, and social icons stay in code.
+- **`builder`** — drag-reorderable footer blocks rendered **above** the link columns. Currently only `ctaTextAndButton` ("CTA — Text and Button"; left/center/right `align`). Studio: **Navigation → Footer Navigation → Footer blocks**. When empty, the app falls back to a single centered CTA from `getFallbackFooterBuilder()` (`apps/blog/src/lib/blog-footer-nav.ts`).
+- **`columns`** — link grid (columns left to right, sections top to bottom). When missing/empty, falls back to `getFallbackFooterColumns()`.
+
+- **Link model:** each footer link (and CTA button link) uses shared Studio fields from [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts):
+  - **Internal** — choose **CMS content** (document reference) or **Site path** (curated code route).
+    - CMS content: any [linkable document type](../../apps/studio/lib/linkable-document-types.ts). Topic Landing, Search, and 404 `blogPage` singletons are **excluded** from the picker. Home and Contribute are linkable. Hrefs resolve via `@pakfactory/sanity/resolve-document-href`.
+    - Site path: curated routes from [`@pakfactory/sanity/blog-site-paths`](../../packages/sanity/src/blog-site-paths.ts) (`/`, `/all` only). Prefer Internal → CMS for Contribute (`blogContributePage`).
+  - **External** — full `https://…` URL.
+  - Legacy top-level `linkType: 'path'` and legacy `href` strings still resolve until editors migrate.
+- **CMS scope:** footer blocks (`builder`) + link columns + social / AI answer links. Copyright lines stay in code.
+- **Human ops after schema change:** the old `footerNavigation.cta` object field was removed. Re-add the collaboration CTA as a `CTA — Text and Button` block in Studio if it was previously configured. Prefer seeding `builder` with a `ctaTextAndButton` block when updating [`footer-navigation-seed-data.mjs`](../../apps/studio/scripts/footer-navigation-seed-data.mjs). Migrate Contribute footer links from external/site-path → Internal → CMS document `blogContributePage` after seeding that singleton.
 - **Backfill / migrate:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` seeds default footer columns when empty and converts legacy href-based links to references.
 - **Local seed:** `pnpm seed:blog-dev` writes primary nav and reference-based footer columns on `blogNavigation`.
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
@@ -223,6 +232,7 @@ Pinned document ids imply `pageRole` (source of truth for Studio field visibilit
 | `blogTopicsPage` | `topics` |
 | `blogNotFoundPage` | `notFound` |
 | `blogSearchPage` | `search` |
+| `blogContributePage` | `contribute` |
 
 - **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
 - **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
@@ -330,13 +340,18 @@ Document internationalization (`@sanity/document-internationalization`, EN + FR)
 
 **Jira:** [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) — S2.8 Build `/blog/contribute`. Public route **`/contribute`** (reserved segment; indexable).
 
+**Hybrid CMS (2026-07):** `/contribute` stays a reserved App Router route (form + API in code). SEO + page blocks come from singleton `blogPage` `pageRole: contribute` (id `blogContributePage`), desk **Pages → Contribute page**. Same pattern as Search/404 content sources — not slug-routable.
+
 | Deliverable               | Location                                             |
 | ------------------------- | ---------------------------------------------------- |
-| Page + metadata + JSON-LD | `src/app/contribute/page.tsx`                        |
-| Pitch form (client)       | `src/app/contribute/_components/contribute-form.tsx` |
+| Page + metadata + JSON-LD + blocks | `src/app/contribute/page.tsx`                 |
+| Fetch + SEO builder       | `src/lib/blog-contribute-page.ts`                    |
+| Pitch form (client)       | `src/components/modules/contribute-form.tsx`         |
 | Webhook proxy             | `src/app/api/contribute/route.ts`                    |
 | Subject/role options      | `src/lib/contribute-options.ts`                      |
 | `webPage` generator       | `packages/seo/src/generators/webPage.ts`             |
+| Studio singleton          | `BLOG_CONTRIBUTE_PAGE_IDS`, desk item, Presentation → `/contribute` |
+| Human seed                | `apps/studio/scripts/seed-blog-singleton-pages.mjs` (includes `blogContributePage`) |
 
 ### Decisions
 
@@ -345,6 +360,7 @@ Document internationalization (`@sanity/document-internationalization`, EN + FR)
 - **Roles:** industry expert, brand/manufacturer, agency/consultant, freelance writer, academic/researcher.
 - **Positioning copy:** on-brand draft in page — **content-team review** pending.
 - **Qualifications:** optional; honeypot field `website` rejected server-side.
+- **CMS:** SEO/Social + Page blocks on the singleton; form stays code-owned.
 
 ### Verify
 
@@ -358,7 +374,8 @@ curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
 
 - [ ] Set `CONTRIBUTE_WEBHOOK_URL` (or `NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL`) in Vercel when n8n → Zoho flow is ready
 - [ ] Content-team review of left-column positioning copy
-
+- [ ] After schema deploy: run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` (humans only) so `blogContributePage` exists
+- [ ] Migrate footer Contribute links to Internal → CMS document `blogContributePage`
 ## PROD-1503 — `/search` page (implemented)
 
 **Jira:** [PROD-1503](https://dotdirect.atlassian.net/browse/PROD-1503) — S2.7 Build `/blog/search`. Faceted-listing pattern mirroring the category archive. Uses **Sanity built-in `match`** (no external search infra, per AC).
