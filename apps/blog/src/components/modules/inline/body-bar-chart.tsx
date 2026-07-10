@@ -14,7 +14,23 @@ type BodyBarChartProps = {
 
 // Neutral default that matches the site theme; brand accent for highlights.
 const BAR_COLOR = "#dbdbe3";
-const BAR_HIGHLIGHT_COLOR = "#7aa45c";
+const BAR_HIGHLIGHT_COLOR = "#476333";
+
+function RotatedTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
+  return (
+    <text
+      x={x}
+      y={y}
+      dy={4}
+      textAnchor="end"
+      transform={`rotate(-45, ${x}, ${y})`}
+      fontSize={11}
+      fill="var(--muted-foreground)"
+    >
+      {payload?.value}
+    </text>
+  );
+}
 
 const chartConfig = {
   value: { label: "Value", color: BAR_COLOR },
@@ -41,6 +57,10 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
   const source = value.source?.trim();
 
   const axisLabelFill = "var(--muted-foreground)";
+  const manyPoints = data.length > 12;
+  // Rotate labels and reduce tick density when there are many data points.
+  const tickInterval = manyPoints ? Math.ceil(data.length / 10) - 1 : 0;
+  const xAxisHeight = manyPoints ? 60 : xAxisLabel ? 40 : 30;
 
   return (
     <figure className="my-8">
@@ -61,7 +81,9 @@ export function BodyBarChart({ value }: BodyBarChartProps) {
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            interval="preserveStartEnd"
+            interval={tickInterval}
+            height={xAxisHeight}
+            tick={manyPoints ? <RotatedTick /> : undefined}
             label={
               xAxisLabel
                 ? {

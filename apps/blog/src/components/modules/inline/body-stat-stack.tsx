@@ -15,7 +15,7 @@ export function BodyStatStack({ value }: BodyStatStackProps) {
 
   return (
     <figure className="my-8">
-      <div className="rounded-3xl bg-[#F4F4F5] p-8 sm:p-10">
+      <div className="rounded-3xl bg-muted p-8 sm:p-10">
         <dl className={cn("grid grid-cols-1 gap-8", cols)}>
           {stats.map((stat, i) => (
             <div key={stat._key ?? i}>
