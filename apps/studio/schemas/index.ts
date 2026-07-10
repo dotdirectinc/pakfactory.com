@@ -46,7 +46,7 @@ export const schemaTypes = [
   // Shared objects
   socialLink,
 
-  // Capability layer
+  // Customization layer
   capabilityCategory,
   capabilityType,
   capability,

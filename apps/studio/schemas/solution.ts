@@ -125,10 +125,10 @@ export const solution = defineType({
 
     defineField({
       name: 'relevantCapabilities',
-      title: 'Relevant capabilities',
+      title: 'Relevant customizations',
       type: 'array',
       group: 'content',
-      description: 'Capability categories most relevant to this solution (e.g. Finishing, Printing).',
+      description: 'Customization categories most relevant to this solution (e.g. Finishing, Printing).',
       of: [
         {
           type: 'reference',

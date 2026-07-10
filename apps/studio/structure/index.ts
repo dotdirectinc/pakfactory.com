@@ -534,13 +534,13 @@ export function knowledgeLibraryItems(
     return [
         S.divider().title('Knowledge Library'),
 
-        // ── Capabilities ──────────────────────────────────────────────────────────
+        // ── Customization ─────────────────────────────────────────────────────────
         S.listItem()
-            .title('Capabilities')
+            .title('Customization')
             .icon(ColorWheelIcon)
             .child(
                 S.list()
-                    .title('Capabilities')
+                    .title('Customization')
                     .items([
                         S.listItem()
                             .title('Browse by Category')
@@ -556,7 +556,7 @@ export function knowledgeLibraryItems(
                                             .params({categoryId})
                                             .child((typeId) =>
                                                 S.documentTypeList('capability')
-                                                    .title('Capabilities')
+                                                    .title('Customizations')
                                                     .filter(
                                                         'type._ref == $typeId',
                                                     )
@@ -566,11 +566,11 @@ export function knowledgeLibraryItems(
                             ),
 
                         S.listItem()
-                            .title('All Capabilities')
+                            .title('All Customizations')
                             .schemaType('capability')
                             .child(
                                 S.documentTypeList('capability').title(
-                                    'All Capabilities',
+                                    'All Customizations',
                                 ),
                             ),
 
@@ -580,25 +580,25 @@ export function knowledgeLibraryItems(
                             .title('Taxonomy')
                             .child(
                                 S.list()
-                                    .title('Capability Taxonomy')
+                                    .title('Customization Taxonomy')
                                     .items([
                                         S.listItem()
-                                            .title('Capability Categories')
+                                            .title('Customization Categories')
                                             .schemaType('capabilityCategory')
                                             .child(
                                                 S.documentTypeList(
                                                     'capabilityCategory',
                                                 ).title(
-                                                    'Capability Categories',
+                                                    'Customization Categories',
                                                 ),
                                             ),
                                         S.listItem()
-                                            .title('Capability Types')
+                                            .title('Customization Types')
                                             .schemaType('capabilityType')
                                             .child(
                                                 S.documentTypeList(
                                                     'capabilityType',
-                                                ).title('Capability Types'),
+                                                ).title('Customization Types'),
                                             ),
                                         S.listItem()
                                             .title('Attribute Groups')
@@ -1001,13 +1001,13 @@ export function coreEntitiesItems(
                     .defaultOrdering([{field: 'order', direction: 'asc'}]),
             ),
 
-        // ── Capabilities ──────────────────────────────────────────────────────────
+        // ── Customization ─────────────────────────────────────────────────────────
         S.listItem()
-            .title('Capabilities')
+            .title('Customization')
             .icon(ColorWheelIcon)
             .child(
                 S.list()
-                    .title('Capabilities')
+                    .title('Customization')
                     .items([
                         S.listItem()
                             .title('Browse by Category')
@@ -1023,7 +1023,7 @@ export function coreEntitiesItems(
                                             .params({categoryId})
                                             .child((typeId) =>
                                                 S.documentTypeList('capability')
-                                                    .title('Capabilities')
+                                                    .title('Customizations')
                                                     .filter(
                                                         'type._ref == $typeId',
                                                     )
@@ -1032,11 +1032,11 @@ export function coreEntitiesItems(
                                     ),
                             ),
                         S.listItem()
-                            .title('All Capabilities')
+                            .title('All Customizations')
                             .schemaType('capability')
                             .child(
                                 S.documentTypeList('capability').title(
-                                    'All Capabilities',
+                                    'All Customizations',
                                 ),
                             ),
                         S.divider(),
@@ -1044,7 +1044,7 @@ export function coreEntitiesItems(
                             .title('Taxonomy')
                             .child(
                                 S.list()
-                                    .title('Capability Taxonomy')
+                                    .title('Customization Taxonomy')
                                     .items([
                                         S.listItem()
                                             .title('Categories')

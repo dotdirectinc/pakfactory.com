@@ -3,7 +3,7 @@ import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../li
 
 export const capabilityType = defineType({
   name: 'capabilityType',
-  title: 'Capability Type',
+  title: 'Customization Type',
   type: 'document',
   groups: [
     { name: 'basic', title: 'Basic', default: true },
@@ -65,7 +65,7 @@ export const capabilityType = defineType({
       group: 'sharedSpecs',
       readOnly: true,
       initialValue:
-        'Data authored here is inherited by every capability Item of this type. Items can override individual sections using the Options panel on their Page tab.',
+        'Data authored here is inherited by every customization item of this type. Items can override individual sections using the Options panel on their Page tab.',
     }),
     defineField({
       name: 'colorRange',
