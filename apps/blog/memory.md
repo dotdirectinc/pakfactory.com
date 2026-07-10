@@ -40,15 +40,14 @@ The sticky header category strip (`SiteNav` → `SiteNavCategories` in root `lay
 
 The footer (`SiteFooter` in root `layout.tsx`) reads `blogNavigation.footerNavigation` via `BLOG_FOOTER_NAV_QUERY` → `fetchBlogFooterNavigation()`:
 
-- **`builder`** — drag-reorderable footer blocks rendered **above** the link columns. Currently only `ctaTextAndButton` ("CTA — Text and Button"; left/center/right `align`). Studio: **Navigation → Footer Navigation → Footer blocks**. When empty, the app falls back to a single centered CTA from `getFallbackFooterBuilder()` (`apps/blog/src/lib/blog-footer-nav.ts`).
-- **`columns`** — link grid (columns left to right, sections top to bottom). When missing/empty, falls back to `getFallbackFooterColumns()`.
+- **`builder`** — drag-reorderable footer blocks rendered **above** the link columns. Currently only `ctaTextAndButton` ("CTA — Text and Button"; left/center/right `align`). Studio: **Navigation → Footer Navigation → Footer blocks**. When the `blogNavigation` document exists but this section is empty, the CTA area renders empty. Full defaults (`getFallbackFooterBuilder()`) apply only when the document is missing / Sanity is unconfigured / the fetch fails.
+- **`columns`** — link grid (columns left to right, sections top to bottom). When the `blogNavigation` document exists but columns are empty, the grid renders empty. Full defaults (`getFallbackFooterColumns()`) apply only when the document is missing / Sanity is unconfigured / the fetch fails.
+- **`socialLinks` / `aiAnswerLinks`** — same rule: empty when the document exists but the section is empty; hardcoded defaults only as a safety net when the document is missing / Sanity is unconfigured / the fetch fails.
 
 - **Link model:** each footer link (and CTA button link) uses shared Studio fields from [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts):
-  - **Internal** — choose **CMS content** (document reference) or **Site path** (curated code route).
-    - CMS content: any [linkable document type](../../apps/studio/lib/linkable-document-types.ts). Topic Landing, Search, and 404 `blogPage` singletons are **excluded** from the picker. Home and Contribute are linkable. Hrefs resolve via `@pakfactory/sanity/resolve-document-href`.
-    - Site path: curated routes from [`@pakfactory/sanity/blog-site-paths`](../../packages/sanity/src/blog-site-paths.ts) (`/`, `/all` only). Prefer Internal → CMS for Contribute (`blogContributePage`).
+  - **Internal** — CMS document reference only (any [linkable document type](../../apps/studio/lib/linkable-document-types.ts)). Topic Landing, Search, and 404 `blogPage` singletons are **excluded** from the picker. Home and Contribute are linkable. Hrefs resolve via `@pakfactory/sanity/resolve-document-href`. The former Site path option was removed; anything that needs linking should be a CMS page.
   - **External** — full `https://…` URL.
-  - Legacy top-level `linkType: 'path'` and legacy `href` strings still resolve until editors migrate.
+  - Legacy top-level `linkType: 'path'`, stored `sitePath` / `internalKind: 'path'`, and legacy `href` strings still soft-resolve until editors re-point to a CMS document.
 - **CMS scope:** footer blocks (`builder`) + link columns + social / AI answer links. Copyright lines stay in code.
 - **Human ops after schema change:** the old `footerNavigation.cta` object field was removed. Re-add the collaboration CTA as a `CTA — Text and Button` block in Studio if it was previously configured. Prefer seeding `builder` with a `ctaTextAndButton` block when updating [`footer-navigation-seed-data.mjs`](../../apps/studio/scripts/footer-navigation-seed-data.mjs). Migrate Contribute footer links from external/site-path → Internal → CMS document `blogContributePage` after seeding that singleton.
 - **Backfill / migrate:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` seeds default footer columns when empty and converts legacy href-based links to references.
@@ -199,24 +198,21 @@ Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` 
 | Concern | Location |
 | --- | --- |
 | Singleton role + fields (`recommendedTopics`, `pageBuilder` via `pageBuilderHome`) | `apps/studio/schemas/blogPage.ts` (notFound-only, hidden otherwise) |
-| `promoBanner` block (reusable on home/topics/404) | `apps/studio/schemas/blocks/promo-banner.ts` |
 | Desk item **Pages → 404 page** | `apps/studio/structure/index.ts` (`blogNotFoundPageItem`) |
 | GROQ | `BLOG_NOT_FOUND_PAGE_BUILDER_QUERY` + `BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY` in `@pakfactory/sanity/queries` |
 | Data | `fetchBlogNotFoundPage()` → `{ topics, blocks }` in `src/lib/blog-data.ts` (uses `getPreviewableSanityClient()` for Presentation) |
 | Hero (fixed) | `src/components/modules/not-found-hero.tsx` — eyebrow + single `h1` + Explore-topics/curated chips + Back-to-Blog-Home |
-| Promo banner block | `src/components/blocks/promo-banner.tsx` → reuses `src/components/modules/promo-banner.tsx` |
 | Page compose | `src/app/not-found.tsx` — fixed hero + `BlockRenderer(blocks)` + newsletter CTA |
 | Presentation preview | `apps/studio/presentation/locations.ts` — `blogNotFoundPage` → `/404-preview` |
 
-**Phase 2 (shipped):** below-hero region is page-builder-driven via `pageBuilderHome` (`postPopularRow`, `promoBanner`, `ctaNewsletter`, etc.). Promo is authored only via the `promoBanner` block (inline `promo` object removed from schema).
+**Phase 2 (shipped):** below-hero region is page-builder-driven via `pageBuilderHome` (`postPopularRow`, `ctaNewsletter`, etc.). The former `promoBanner` block and inline `promo` object have been removed.
 
 **Human steps before ship:**
-1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo`, `promoBanner` block + 404 `pageBuilder` field).
+1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo` / `promoBanner`, 404 `pageBuilder` field).
 2. **One-time backfill (if "Page role Required"):** run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` or patch `pageRole: "notFound"` on `blogNotFoundPage` via Vision/API.
-3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Promo Banner + Newsletter), or use the seed script above.
+3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Newsletter), or use the seed script above. Remove any leftover `promoBanner` blocks from existing documents in Studio.
 4. Verify at `http://localhost:3003/404-preview` (Presentation uses the same URL).
-5. **AC#4** — final PakFactory promo copy + real images + CTA URL (editable via Promo Banner block).
-6. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
+5. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
 
 **Known:** studio `tsc` still nags `documentId` on the singleton `initialValue` — pre-existing (home/topics use the same signature; Sanity provides it at runtime; Vite build unaffected).
 

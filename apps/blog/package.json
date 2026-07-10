@@ -4,9 +4,9 @@
   "versionCode": 1,
   "private": true,
   "scripts": {
-    "dev": "next dev --port ${PORT:-3003}",
+    "dev": "next dev --port ${PORT:-3004}",
     "build": "next build",
-    "start": "next start --port ${PORT:-3003}",
+    "start": "next start --port ${PORT:-3004}",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

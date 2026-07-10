@@ -8,8 +8,6 @@ import {
     socialPlatformAriaLabel,
 } from '@/components/modules/social-platform-icon';
 import {
-    getFallbackFooterBuilder,
-    getFallbackFooterColumns,
     type BlogAiEngine,
     type BlogAiLink,
     type BlogFooterColumns,
@@ -113,9 +111,7 @@ function FooterCtaBlock({block}: {block: BlogFooterCtaBlock}) {
             <h2 className="whitespace-pre-line text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
                 {block.message}
             </h2>
-            <div
-                className={`mt-6 flex ${ALIGN_JUSTIFY_CLASS[block.align]}`}
-            >
+            <div className={`mt-6 flex ${ALIGN_JUSTIFY_CLASS[block.align]}`}>
                 <Button
                     className="h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     asChild
@@ -187,10 +183,8 @@ export function SiteFooter({
     aiLinks = [],
     builder,
 }: SiteFooterProps) {
-    const footerColumns =
-        columns && columns.length > 0 ? columns : getFallbackFooterColumns();
-    const footerBuilder =
-        builder && builder.length > 0 ? builder : getFallbackFooterBuilder();
+    const footerColumns = columns ?? [];
+    const footerBuilder = builder ?? [];
 
     return (
         <footer className="bg-background">
@@ -226,7 +220,7 @@ export function SiteFooter({
                         <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
                             © 2026 PakFactory
                         </p>
-                        <div className="flex items-center gap-11 text-foreground">
+                        <div className="flex items-center gap-5 text-foreground">
                             {social.map((link) => (
                                 <FooterSocialIcon
                                     key={link.platform}

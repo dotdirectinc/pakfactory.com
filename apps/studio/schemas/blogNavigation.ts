@@ -38,9 +38,7 @@ const footerSectionMember = defineArrayMember({
             select: {
               label: 'label',
               linkType: 'linkType',
-              internalKind: 'internalKind',
               externalUrl: 'externalUrl',
-              sitePath: 'sitePath',
               internalTitle: 'internalLink.title',
               internalType: 'internalLink._type',
               internalSlug: 'internalLink.slug.current',
@@ -48,9 +46,7 @@ const footerSectionMember = defineArrayMember({
             prepare({
               label,
               linkType,
-              internalKind,
               externalUrl,
-              sitePath,
               internalTitle,
               internalType,
               internalSlug,
@@ -60,15 +56,6 @@ const footerSectionMember = defineArrayMember({
                 return {
                   title,
                   subtitle: externalUrl ? `External · ${externalUrl}` : 'External link',
-                }
-              }
-              if (
-                linkType === 'path' ||
-                (linkType === 'internal' && internalKind === 'path')
-              ) {
-                return {
-                  title: label?.trim() || sitePath || 'Untitled link',
-                  subtitle: sitePath ? `Site path · ${sitePath}` : 'Site path',
                 }
               }
               const slugHint =

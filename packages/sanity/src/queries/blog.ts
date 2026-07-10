@@ -351,7 +351,21 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   },
   _type == "topicStrip" || _type == "tagStrip" => {
     heading,
-    "topics": coalesce(topics, tags)[]->{ _id, title, "slug": slug.current }
+    "topics": select(
+      count(coalesce(topics, tags)) > 0 => coalesce(topics, tags)[]->{ _id, title, "slug": slug.current },
+      *[
+        _type == "blogTag"
+        && (language == $language || !defined(language))
+        && defined(slug.current)
+        && count(*[
+          _type == "post"
+          && (!defined(language) || language == $language)
+          && defined(publishedAt)
+          && publishedAt <= now()
+          && ^._id in tags[]._ref
+        ]) > 0
+      ] | order(title asc){ _id, title, "slug": slug.current }
+    )
   },
   _type == "featuredVideos" => {
     heading,
@@ -377,7 +391,21 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     heading,
     body,
     ctaLabel,
-    ctaHref,
+    linkType,
+    externalUrl,
+    "internalLink": internalLink->{
+      _type,
+      title,
+      "slug": slug.current,
+      "name": name,
+      "term": term,
+      pageRole,
+      pageType,
+      category,
+      "handle": handle.current,
+      "collectionSlug": primaryCollection->slug.current,
+      "pageSlug": primaryLandingPage->slug.current
+    },
     imageEffect,
     "backgroundColor": coalesce(backgroundColor.hex, customBackgroundColor.hex),
     image{ ..., "alt": coalesce(alt, asset->altText) }
@@ -385,13 +413,6 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "richTextBand" => {
     heading,
     body
-  },
-  _type == "promoBanner" => {
-    heading,
-    body,
-    ctaLabel,
-    ctaUrl,
-    "images": images[]{ "url": asset->url }
   }
 }`;
 
@@ -928,8 +949,9 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
     showTopBorder,
     showBottomBorder,
     linkType,
-    internalKind,
     externalUrl,
+    // Legacy site-path fields — soft-resolved until editors re-point to CMS docs
+    internalKind,
     sitePath,
     "internalLink": internalLink->{
       _type,
@@ -951,8 +973,9 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
       "links": links[]{
         label,
         linkType,
-        internalKind,
         externalUrl,
+        // Legacy site-path fields — soft-resolved until editors re-point to CMS docs
+        internalKind,
         sitePath,
         href,
         external,

@@ -136,14 +136,6 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
 
 export type TopicChip = { _id?: string; title: string; slug: string };
 
-export type BlogPromo = {
-  heading?: string;
-  body?: string;
-  ctaLabel?: string;
-  ctaUrl?: string;
-  images?: { url?: string }[];
-};
-
 export type BlogNotFoundContent = {
   topics: TopicChip[];
   blocks: PageBuilderBlock[];
@@ -275,8 +267,9 @@ const getCachedBlogFooterNavigation = unstable_cache(
 
 /**
  * Footer link columns, social links, and AI answer links from Blog Navigation.
- * Falls back to hardcoded defaults when Sanity is unconfigured, fetch fails,
- * or editors have not configured footer content yet.
+ * When the `blogNavigation` document exists, empty sections render empty.
+ * Full hardcoded defaults apply only when Sanity is unconfigured, the fetch
+ * fails, or the document is missing.
  */
 export async function fetchBlogFooterNavigation(): Promise<BlogFooterData> {
   if (!isSanityConfigured()) {

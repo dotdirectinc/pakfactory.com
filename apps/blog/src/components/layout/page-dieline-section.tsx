@@ -73,7 +73,7 @@ type PageDielineFullBleedSectionProps = {
   borderBottom?: boolean;
   /**
    * Dashed left/right guides on the inner column. Defaults to true.
-   * Set false for bands that should only show horizontal dielines (e.g. promo banner).
+   * Set false for bands that should only show horizontal dielines.
    */
   borderX?: boolean;
   "aria-labelledby"?: string;

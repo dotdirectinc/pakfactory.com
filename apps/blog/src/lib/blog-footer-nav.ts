@@ -377,7 +377,7 @@ export function resolveFooterSocialLinks(
     })
     .filter((link): link is BlogSocialLink => link != null);
 
-  return links.length > 0 ? links : getFallbackSocialLinks();
+  return links.length > 0 ? links : doc?._id ? [] : getFallbackSocialLinks();
 }
 
 export function resolveFooterAiLinks(doc: BlogFooterNavDoc): BlogAiLink[] {
@@ -391,7 +391,7 @@ export function resolveFooterAiLinks(doc: BlogFooterNavDoc): BlogAiLink[] {
     })
     .filter((link): link is BlogAiLink => link != null);
 
-  return links.length > 0 ? links : getFallbackAiLinks();
+  return links.length > 0 ? links : doc?._id ? [] : getFallbackAiLinks();
 }
 
 function resolveFooterCtaAlign(value: string | null | undefined): BlogFooterCtaAlign {
@@ -439,13 +439,13 @@ export function resolveFooterBuilder(doc: BlogFooterNavDoc): BlogFooterCtaBlock[
     };
   });
 
-  return blocks.length > 0 ? blocks : getFallbackFooterBuilder();
+  return blocks.length > 0 ? blocks : doc?._id ? [] : getFallbackFooterBuilder();
 }
 
 export function resolveFooterData(doc: BlogFooterNavDoc): BlogFooterData {
   const columns = resolveFooterColumns(doc);
   return {
-    columns: columns.length > 0 ? columns : getFallbackFooterColumns(),
+    columns: doc?._id ? columns : getFallbackFooterColumns(),
     social: resolveFooterSocialLinks(doc),
     aiLinks: resolveFooterAiLinks(doc),
     builder: resolveFooterBuilder(doc),
@@ -467,7 +467,7 @@ export function resolveFooterLinkHref(link: FooterNavLinkRow): {
     };
   }
 
-  // Legacy top-level path, or Internal → Site path.
+  // Legacy: top-level path, or stored Internal → Site path (field removed from Studio).
   if (
     link.linkType === "path" ||
     (link.linkType === "internal" && link.internalKind === "path")

@@ -12,6 +12,7 @@ import {
     CTA_SPOTLIGHT_DIELINE_BORDER_DEFAULTS,
     resolveDielineBorders,
 } from '@/lib/dieline-borders';
+import {resolveFooterLinkHref} from '@/lib/blog-footer-nav';
 import {sanityImageAlt, sanityImageUrl} from '@/lib/sanity-image';
 import {externalLinkAttributes} from '@/lib/external-link';
 
@@ -33,7 +34,9 @@ export function CtaSpotlight({
     heading,
     body,
     ctaLabel,
-    ctaHref,
+    linkType,
+    externalUrl,
+    internalLink,
     imageEffect,
     backgroundColor,
     image,
@@ -51,7 +54,13 @@ export function CtaSpotlight({
 
     const imageUrl = sanityImageUrl(image, 1000);
     const imageAlt = sanityImageAlt(image) ?? '';
-    const href = ctaHref?.trim() || DEFAULT_CTA_HREF;
+    const resolved = resolveFooterLinkHref({
+        linkType,
+        externalUrl,
+        internalLink,
+        label: ctaLabel,
+    });
+    const href = resolved?.href ?? DEFAULT_CTA_HREF;
 
     return (
         <section
