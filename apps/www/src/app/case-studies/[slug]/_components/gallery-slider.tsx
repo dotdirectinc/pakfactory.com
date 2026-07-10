@@ -88,6 +88,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
     return () => { document.body.style.overflow = ""; };
   }, [modalIndex]);
 
+  const modalImg = modalIndex !== null ? images[modalIndex] : undefined;
   const isSquare = images[0]?.isSquare ?? false;
   const aspectClass = isSquare ? "aspect-square" : "aspect-video";
   const imgHeight = isSquare ? 800 : 450;
@@ -140,7 +141,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
       </div>
 
       {/* Lightbox modal */}
-      {modalIndex !== null && (
+      {modalIndex !== null && modalImg && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setModalIndex(null)}
@@ -171,15 +172,15 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={images[modalIndex].src}
-              alt={images[modalIndex].alt}
+              src={modalImg.src}
+              alt={modalImg.alt}
               width={1400}
               height={900}
               className="max-h-[82vh] w-auto max-w-full rounded-lg object-contain"
             />
-            {(images[modalIndex].caption || images[modalIndex].alt) && (
+            {(modalImg.caption || modalImg.alt) && (
               <p className="text-center text-sm text-white/70">
-                {images[modalIndex].caption ?? images[modalIndex].alt}
+                {modalImg.caption ?? modalImg.alt}
               </p>
             )}
             {images.length > 1 && (
