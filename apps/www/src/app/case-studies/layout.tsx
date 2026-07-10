@@ -10,8 +10,9 @@ import { BLOG_NAV_CATEGORIES_QUERY } from "@pakfactory/sanity/queries";
 import {
   BLOG_URL,
   BLOG_CATEGORIES,
-  FOOTER_COLUMNS,
+  FOOTER_AI_LINKS,
   FOOTER_SOCIAL,
+  buildFooterColumns,
 } from "@/lib/www-nav";
 
 export function generateMetadata(): Metadata {
@@ -54,6 +55,7 @@ export default async function CaseStudiesLayout({
   children: React.ReactNode;
 }) {
   const navCategories = await fetchNavCategories();
+  const footerColumns = buildFooterColumns(navCategories);
 
   return (
     <>
@@ -65,9 +67,10 @@ export default async function CaseStudiesLayout({
       />
       <main>{children}</main>
       <SiteFooter
-        columns={FOOTER_COLUMNS}
+        columns={footerColumns}
         contactHref={`${WWW_URL}/contact`}
         social={FOOTER_SOCIAL}
+        aiLinks={FOOTER_AI_LINKS}
       />
     </>
   );
