@@ -304,20 +304,12 @@ export const caseStudy = defineType({
     // ─── Publishing ───────────────────────────────────────────────────────────
 
     defineField({
-      name: 'status',
-      title: 'Status',
-      type: 'string',
+      name: 'archived',
+      title: 'Archived',
+      type: 'boolean',
       group: 'publishing',
-      options: {
-        list: [
-          { title: 'Draft', value: 'draft' },
-          { title: 'Scheduled', value: 'scheduled' },
-          { title: 'Published', value: 'published' },
-          { title: 'Archived', value: 'archived' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'draft',
+      description: 'Hide from the public site. Does not unpublish the document in Sanity.',
+      initialValue: false,
     }),
     defineField({
       name: 'publishedAt',
@@ -402,22 +394,22 @@ export const caseStudy = defineType({
       title: 'title',
       clientName: 'client.name',
       media: 'cardImage',
-      status: 'status',
+      archived: 'archived',
     },
     prepare({
       title,
       clientName,
       media,
-      status,
+      archived,
     }: {
       title?: string
       clientName?: string
       media?: unknown
-      status?: string
+      archived?: boolean
     }) {
       return {
         title: title ?? 'Untitled case study',
-        subtitle: [clientName, status ? `[${status}]` : null].filter(Boolean).join(' · '),
+        subtitle: [clientName, archived ? '[archived]' : null].filter(Boolean).join(' · '),
         media,
       }
     },

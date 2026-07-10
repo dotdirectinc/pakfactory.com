@@ -1121,7 +1121,19 @@ export function coreEntitiesItems(
                                       .child(
                                           S.documentTypeList('caseStudy')
                                               .title('Case Studies')
-                                              .filter('_type == "caseStudy" && (status == "published" || status == "draft" || status == "scheduled" || !defined(status))')
+                                              .filter('_type == "caseStudy" && archived != true')
+                                              .defaultOrdering([
+                                                  {field: 'publishedAt', direction: 'desc'},
+                                              ]),
+                                      ),
+                                  S.listItem()
+                                      .title('Archived')
+                                      .icon(CaseIcon)
+                                      .schemaType('caseStudy')
+                                      .child(
+                                          S.documentTypeList('caseStudy')
+                                              .title('Archived Case Studies')
+                                              .filter('_type == "caseStudy" && archived == true')
                                               .defaultOrdering([
                                                   {field: 'publishedAt', direction: 'desc'},
                                               ]),

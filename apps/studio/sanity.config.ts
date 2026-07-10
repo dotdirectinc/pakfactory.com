@@ -13,6 +13,7 @@ import {
 import { websiteLocations, blogLocations } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
+import { publishCaseStudy } from './actions/publishCaseStudy'
 import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import { CHANNELS } from './lib/channels'
@@ -163,6 +164,11 @@ const documentActions = (
   if (context.schemaType === 'blogTopicGroup') {
     actions = actions.map((action) =>
       action.action === 'publish' ? publishTopicGroupToTopicsPage : action,
+    )
+  }
+  if (context.schemaType === 'caseStudy') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishCaseStudy : action,
     )
   }
 
