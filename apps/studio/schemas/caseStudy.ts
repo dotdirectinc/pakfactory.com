@@ -115,14 +115,12 @@ export const caseStudy = defineType({
           },
         },
       ],
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'heroMedia',
       title: 'Hero media',
       type: 'object',
       group: 'content',
-      validation: (Rule) => Rule.required(),
       fields: [
         defineField({
           name: 'mediaType',
@@ -136,7 +134,6 @@ export const caseStudy = defineType({
             layout: 'radio',
           },
           initialValue: 'image',
-          validation: (Rule) => Rule.required(),
         }),
         defineField({
           name: 'image',
@@ -151,12 +148,6 @@ export const caseStudy = defineType({
           type: 'string',
           description: 'Describe the hero image for screen readers.',
           hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'image',
-          validation: (Rule) =>
-            Rule.custom((val, ctx) => {
-              const parent = ctx.parent as { mediaType?: string } | undefined
-              if (parent?.mediaType === 'image' && !val) return 'Alt text is required for images.'
-              return true
-            }),
         }),
         defineField({
           name: 'videoUrl',
@@ -182,7 +173,6 @@ export const caseStudy = defineType({
       group: 'content',
       options: { hotspot: true },
       description: 'Grid visual shown on the listing page card.',
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'cardImageAlt',
@@ -190,7 +180,6 @@ export const caseStudy = defineType({
       type: 'string',
       group: 'content',
       description: 'Describe the card image for accessibility.',
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'cardSummary',
@@ -199,7 +188,6 @@ export const caseStudy = defineType({
       rows: 2,
       group: 'content',
       description: '1–2 line summary shown on the listing card under the client name.',
-      validation: (Rule) => Rule.required(),
     }),
 
     // ─── Story ────────────────────────────────────────────────────────────────
@@ -211,7 +199,6 @@ export const caseStudy = defineType({
       group: 'story',
       description: 'The problem the client faced. Paragraphs, bullets, inline images, and blocks.',
       of: storyPtOf,
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'solution',
@@ -220,7 +207,6 @@ export const caseStudy = defineType({
       group: 'story',
       description: 'How PakFactory solved it. Main narrative section.',
       of: storyPtOf,
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'result',
@@ -229,7 +215,6 @@ export const caseStudy = defineType({
       group: 'story',
       description: 'Measurable outcomes. Supports inline images and gallery blocks.',
       of: storyPtOf,
-      validation: (Rule) => Rule.required(),
     }),
 
     // ─── Metrics ──────────────────────────────────────────────────────────────
@@ -251,7 +236,6 @@ export const caseStudy = defineType({
               title: 'Stat',
               type: 'string',
               description: 'Bold headline, e.g. "70k+ Boxes Manufactured".',
-              validation: (Rule) => Rule.required(),
             }),
             defineField({
               name: 'description',
@@ -282,7 +266,6 @@ export const caseStudy = defineType({
       of: [{ type: 'reference', to: [{ type: 'solution' }] }],
       description:
         'Solution filter + chips. Link to documents from Solutions → All (Industries and Use Cases). After migrating from the legacy industry taxonomy, re-select each value from the Solutions picker.',
-      validation: (Rule) => Rule.required().min(1),
     }),
     defineField({
       name: 'products',
@@ -291,7 +274,6 @@ export const caseStudy = defineType({
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
       description: 'Product filter + chips. Reuses the deployed Product Lines taxonomy.',
-      validation: (Rule) => Rule.required().min(1),
     }),
     defineField({
       name: 'expertiseAreas',
@@ -300,7 +282,6 @@ export const caseStudy = defineType({
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
       description: 'Expertise filter + chips (the 6 lifecycle stages).',
-      validation: (Rule) => Rule.required().min(1),
     }),
     defineField({
       name: 'capabilities',
@@ -337,14 +318,12 @@ export const caseStudy = defineType({
         layout: 'radio',
       },
       initialValue: 'draft',
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'publishedAt',
       title: 'Published at',
       type: 'datetime',
       group: 'publishing',
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'lastModified',
