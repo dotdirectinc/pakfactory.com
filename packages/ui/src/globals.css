@@ -461,3 +461,29 @@
         background-image: none;
     }
 }
+
+/* lg: responsive dividers — same pattern for `lg:border-r` / `lg:border-l`
+   (e.g. the blog detail sidebar which activates its right rule only at ≥ lg).
+   Covers both `border-dashed` (unprefixed) and `lg:border-dashed` (prefixed) pairings. */
+@media (min-width: 1024px) {
+    .lg\:border-r.border-dashed,
+    .lg\:border-r.lg\:border-dashed,
+    .lg\:border-l.border-dashed,
+    .lg\:border-l.lg\:border-dashed {
+        border-color: transparent;
+    }
+    .lg\:border-r.border-dashed,
+    .lg\:border-r.lg\:border-dashed {
+        background-image: linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+        background-size: 1px 12px;
+        background-position: right;
+        background-repeat: repeat-y;
+    }
+    .lg\:border-l.border-dashed,
+    .lg\:border-l.lg\:border-dashed {
+        background-image: linear-gradient(to bottom, var(--border) 0 6px, transparent 6px 12px);
+        background-size: 1px 12px;
+        background-position: left;
+        background-repeat: repeat-y;
+    }
+}

@@ -25,12 +25,12 @@ export function PostArticleColumn({
     <article id={POST_ARTICLE_ID}>
       {post.tldr?.length ? (
         <aside
-          className="mb-10 rounded-xl border border-primary/20 bg-primary/5 px-5 py-4"
+          className="mb-8 rounded-2xl border border-border bg-muted/40 p-6"
           aria-labelledby="post-tldr-heading"
         >
           <h2
             id="post-tldr-heading"
-            className="text-sm font-semibold uppercase tracking-wide text-primary"
+            className="text-base font-semibold text-foreground"
           >
             Key takeaways
           </h2>

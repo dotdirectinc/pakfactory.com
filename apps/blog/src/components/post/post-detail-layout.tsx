@@ -28,14 +28,12 @@ export function PostDetailLayout({
       <ReadingProgressBar />
       <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
       {header}
-      <PageDielineSection innerClassName="py-12 sm:py-16 lg:py-24">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)] lg:gap-16">
-          {/* Hidden below lg (author/share/Ask AI move to the article foot);
-              on desktop it stretches to the row height so the sidebar can make
-              just its lower part (TOC → Ask AI) sticky while the author scrolls. */}
-          <aside className="hidden min-w-0 lg:block">{sidebar}</aside>
-          <div className="min-w-0 max-w-[848px]">{article}</div>
-        </div>
+      {/* px-0 overrides the dieline's default px-8 so sidebar/article control
+          their own horizontal padding (px-14 and px-16 respectively). */}
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 pt-12 lg:grid-cols-[360px_1fr] lg:pt-24">
+        {/* Hidden below lg; on desktop stretches to row height for the sticky sidebar. */}
+        <aside className="hidden min-w-0 lg:block">{sidebar}</aside>
+        <div className="min-w-0 px-6 pb-24 lg:px-16">{article}</div>
       </PageDielineSection>
       {/* Footer bands use the full-bleed row helper, which is designed to break
           out of the page gutter — give it that gutter so the negative margins

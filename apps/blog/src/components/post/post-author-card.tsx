@@ -34,30 +34,42 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
   const photoUrl = sanityImageUrl(author?.photo, 128);
   const bio = author?.shortBio?.trim() || author?.experience?.trim();
 
+  const role = author?.role?.trim();
+
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-base font-medium text-muted-foreground">Written by</p>
-      <div className="flex flex-col gap-5">
+      <p className="text-sm font-medium text-muted-foreground">Written by</p>
+      <div className="flex flex-col gap-4">
         {author?.slug ? (
           <Link
             href={authorHref(author.slug)}
-            className="group flex w-fit items-center gap-5 rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="group flex w-fit items-center gap-3 rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
-            <Avatar className="size-16">
+            <Avatar className="size-10 shrink-0">
               {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
               <AvatarFallback>{initials(name)}</AvatarFallback>
             </Avatar>
-            <span className="font-semibold text-foreground underline underline-offset-4 transition-colors group-hover:text-foreground/80">
-              {name}
-            </span>
+            <div>
+              <span className="block font-semibold text-foreground underline underline-offset-4 transition-colors group-hover:text-foreground/80">
+                {name}
+              </span>
+              {role ? (
+                <span className="block text-sm text-muted-foreground">{role}</span>
+              ) : null}
+            </div>
           </Link>
         ) : (
-          <div className="flex items-center gap-5">
-            <Avatar className="size-16">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-10 shrink-0">
               {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
               <AvatarFallback>{initials(name)}</AvatarFallback>
             </Avatar>
-            <span className="font-semibold text-foreground">{name}</span>
+            <div>
+              <span className="block font-semibold text-foreground">{name}</span>
+              {role ? (
+                <span className="block text-sm text-muted-foreground">{role}</span>
+              ) : null}
+            </div>
           </div>
         )}
         {bio ? (

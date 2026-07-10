@@ -77,13 +77,13 @@ function PostBodyImage({ value }: { value: BodyImageValue }) {
 function createComponents(headingIdByKey: Record<string, string>): PortableTextComponents {
   return {
     block: {
-      normal: ({ children }) => <p className="mb-4 leading-7 text-foreground">{children}</p>,
+      normal: ({ children }) => <p className="mb-8 leading-7 text-muted-foreground">{children}</p>,
       h2: ({ children, value }) => {
         const id = value?._key ? headingIdByKey[value._key] : undefined;
         return (
           <h2
             id={id}
-            className="mt-10 mb-4 scroll-mt-28 text-2xl font-semibold tracking-tight text-foreground"
+            className="mt-10 mb-4 scroll-mt-28 text-2xl font-semibold tracking-tight text-foreground lg:text-3xl"
           >
             {children}
           </h2>
