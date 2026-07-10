@@ -319,7 +319,7 @@ export function PostCard({
           <CategoryBadge title={post.categoryTitle} slug={post.categorySlug} />
         )}
         <Link href={post.href} className="group block">
-          <h3 className="line-clamp-2 text-lg font-medium leading-snug text-card-foreground group-hover:underline">
+          <h3 className="line-clamp-2 text-2xl font-medium leading-snug text-card-foreground group-hover:underline">
             {post.title}
           </h3>
         </Link>

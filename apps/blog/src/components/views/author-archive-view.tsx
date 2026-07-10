@@ -1,7 +1,7 @@
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { PageDielineBlockRail } from "@/components/layout/page-dieline-section";
-import { Pagination } from "@/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
 import { PerPageSelect } from "@/components/modules/per-page-select";
 import { PostList } from "@/components/modules/post-list";
 import { AuthorHeader } from "@/components/views/author-header";
@@ -46,6 +46,7 @@ export function AuthorArchiveView({ data }: { data: AuthorArchivePageData }) {
                 authorPageHref(data.author.slug, page, perPage)
               }
               ariaLabel="Author archive pagination"
+              scrollTargetId={LISTING_TOP_ID}
               rightSlot={
                 <PerPageSelect
                   value={perPage}

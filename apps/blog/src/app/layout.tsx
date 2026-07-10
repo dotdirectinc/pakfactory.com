@@ -3,6 +3,7 @@ import {draftMode} from 'next/headers';
 import {GeistSans} from 'geist/font/sans';
 import {Inter} from 'next/font/google';
 import {VisualEditing} from 'next-sanity/visual-editing';
+import {AppToaster} from '@/components/common/app-toaster';
 import {SiteFooter} from '@/components/layout/site-footer';
 import {SiteNav} from '@/components/layout/site-nav';
 import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data';
@@ -42,6 +43,7 @@ export default async function RootLayout({
     return (
         <html lang="en" className={`${GeistSans.variable} ${inter.variable}`}>
             <body className="antialiased">
+                <AppToaster />
                 <SiteNav
                     categories={primaryNav.categories}
                     header={primaryNav.header}

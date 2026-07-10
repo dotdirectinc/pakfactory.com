@@ -1,5 +1,5 @@
-export function pagedHeading(title: string, pageNumber: number): string {
-  return pageNumber > 1 ? `${title} — Page ${pageNumber}` : title;
+export function pagedHeading(title: string, _pageNumber: number): string {
+  return title;
 }
 
 export function postCountLabel(totalCount: number): string {

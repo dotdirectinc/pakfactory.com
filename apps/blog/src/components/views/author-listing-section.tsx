@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {LISTING_TOP_ID} from '@/components/modules/pagination';
 import {AuthorLandingSection} from '@/components/views/author-landing-layout';
 
 type AuthorListingSectionProps = {
@@ -16,12 +17,12 @@ export function AuthorListingSection({
     return (
         <AuthorLandingSection>
             <section
-                aria-labelledby="author-posts"
+                aria-labelledby={LISTING_TOP_ID}
                 className="flex flex-col gap-8"
             >
                 <h2
-                    id="author-posts"
-                    className="text-3xl font-semibold tracking-tight text-foreground"
+                    id={LISTING_TOP_ID}
+                    className="scroll-mt-24 text-3xl font-semibold tracking-tight text-foreground"
                 >
                     {heading}
                 </h2>

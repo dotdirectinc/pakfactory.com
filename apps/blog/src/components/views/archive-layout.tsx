@@ -1,6 +1,9 @@
 import type { ComponentProps, ReactNode } from "react";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { Pagination } from "@/components/modules/pagination";
+import {
+  LISTING_TOP_ID,
+  Pagination,
+} from "@/components/modules/pagination";
 
 type ArchiveLayoutProps = {
   /** Pre-serialized JSON-LD string for this archive. */
@@ -25,6 +28,7 @@ type ArchiveLayoutProps = {
     hrefForPage: (page: number) => string;
     ariaLabel?: string;
     rightSlot?: ReactNode;
+    scrollTargetId?: string;
   };
 };
 
@@ -49,7 +53,9 @@ export function ArchiveLayout({
   const body = (
     <>
       {filters}
-      {children}
+      <div id={LISTING_TOP_ID} className="scroll-mt-24">
+        {children}
+      </div>
       {pagination.totalPages > 1 && (
         <div className="py-16">
           <Pagination
@@ -58,6 +64,7 @@ export function ArchiveLayout({
             hrefForPage={pagination.hrefForPage}
             ariaLabel={pagination.ariaLabel}
             rightSlot={pagination.rightSlot}
+            scrollTargetId={pagination.scrollTargetId ?? LISTING_TOP_ID}
           />
         </div>
       )}

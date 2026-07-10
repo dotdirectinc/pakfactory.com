@@ -58,7 +58,7 @@ export function PostList({
             key={post._id}
             className={
               index > 0
-                ? "mt-5 pt-5 lg:mt-4 lg:border-t lg:border-dashed lg:border-border lg:pt-4"
+                ? "mt-5 pt-5 lg:mt-4 lg:pt-4"
                 : undefined
             }
           >
