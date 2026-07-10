@@ -72,101 +72,77 @@ function PostBodyImage({value}: {value: BodyImageValue}) {
     );
 }
 
-function createComponents(
-    headingIdByKey: Record<string, string>,
-): PortableTextComponents {
-    return {
-        block: {
-            normal: ({children}) => (
-                <p className="mb-4 leading-7 text-foreground">{children}</p>
-            ),
-            h2: ({children, value}) => {
-                const id = value?._key ? headingIdByKey[value._key] : undefined;
-                return (
-                    <h2
-                        id={id}
-                        className="mt-10 mb-4 scroll-mt-28 text-3xl font-semibold tracking-tight text-foreground"
-                    >
-                        {children}
-                    </h2>
-                );
-            },
-            h3: ({children, value}) => {
-                const id = value?._key ? headingIdByKey[value._key] : undefined;
-                return (
-                    <h3
-                        id={id}
-                        className="mt-8 mb-3 scroll-mt-28 text-xl font-semibold tracking-tight text-foreground"
-                    >
-                        {children}
-                    </h3>
-                );
-            },
-            blockquote: ({children}) => (
-                <blockquote className="my-6 border-l-2 border-primary/40 pl-4 italic text-muted-foreground">
-                    {children}
-                </blockquote>
-            ),
-        },
-        list: {
-            bullet: ({children}) => (
-                <ul className="mb-4 list-disc space-y-2 pl-5 leading-7">
-                    {children}
-                </ul>
-            ),
-            number: ({children}) => (
-                <ol className="mb-4 list-decimal space-y-2 pl-5 leading-7">
-                    {children}
-                </ol>
-            ),
-        },
-        marks: {
-            link: ({value, children}) => {
-                const href: string = value?.href ?? '#';
-                return (
-                    <a
-                        href={href}
-                        className="font-medium text-primary underline-offset-4 hover:underline"
-                        {...externalLinkAttributes(href)}
-                    >
-                        {children}
-                    </a>
-                );
-            },
-        },
-        types: {
-            bodyImage: ({value}) => (
-                <PostBodyImage value={value as BodyImageValue} />
-            ),
-            bodyQuote: ({value}) => (
-                <BodyQuote value={value as PostBodyQuote} />
-            ),
-            bodyGallery: ({value}) => (
-                <BodyGallery value={value as PostBodyGallery} />
-            ),
-            bodyVideo: ({value}) => (
-                <BodyVideo value={value as PostBodyVideo} />
-            ),
-            bodyStatStack: ({value}) => (
-                <BodyStatStack value={value as PostBodyStatStack} />
-            ),
-            bodyBarChart: ({value}) => (
-                <BodyBarChart value={value as PostBodyBarChart} />
-            ),
-            bodyTable: ({value}) => (
-                <BodyTable value={value as PostBodyTable} />
-            ),
-            bodyEmbed: ({value}) => (
-                <BodyEmbed value={value as PostBodyEmbed} />
-            ),
-            bodyCallout: ({value}) => (
-                <BodyCallout value={value as PostBodyCallout} />
-            ),
-            widgetEmbed: ({value}) => (
-                <WidgetRenderer widget={(value as WidgetEmbedValue).widget} />
-            ),
-        },
-    };
+function createComponents(headingIdByKey: Record<string, string>): PortableTextComponents {
+  return {
+    block: {
+      normal: ({ children }) => <p className="mb-8 leading-7 text-muted-foreground">{children}</p>,
+      h2: ({ children, value }) => {
+        const id = value?._key ? headingIdByKey[value._key] : undefined;
+        return (
+          <h2
+            id={id}
+            className="mt-10 mb-4 scroll-mt-28 text-2xl font-semibold tracking-tight text-foreground lg:text-3xl"
+          >
+            {children}
+          </h2>
+        );
+      },
+      h3: ({ children, value }) => {
+        const id = value?._key ? headingIdByKey[value._key] : undefined;
+        return (
+          <h3
+            id={id}
+            className="mt-8 mb-3 scroll-mt-28 text-xl font-semibold tracking-tight text-foreground"
+          >
+            {children}
+          </h3>
+        );
+      },
+      blockquote: ({ children }) => (
+        <blockquote className="my-6 border-l-2 border-primary/40 pl-4 italic text-muted-foreground">
+          {children}
+        </blockquote>
+      ),
+    },
+    list: {
+      bullet: ({ children }) => (
+        <ul className="mb-4 list-disc space-y-2 pl-5 leading-7">{children}</ul>
+      ),
+      number: ({ children }) => (
+        <ol className="mb-4 list-decimal space-y-2 pl-5 leading-7">{children}</ol>
+      ),
+    },
+    marks: {
+      link: ({ value, children }) => {
+        const href: string = value?.href ?? "#";
+        return (
+          <a
+            href={href}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            {...externalLinkAttributes(href)}
+          >
+            {children}
+          </a>
+        );
+      },
+    },
+    types: {
+      bodyImage: ({ value }) => <PostBodyImage value={value as BodyImageValue} />,
+      bodyQuote: ({ value }) => <BodyQuote value={value as PostBodyQuote} />,
+      bodyGallery: ({ value }) => <BodyGallery value={value as PostBodyGallery} />,
+      bodyVideo: ({ value }) => <BodyVideo value={value as PostBodyVideo} />,
+      bodyStatStack: ({ value }) => (
+        <BodyStatStack value={value as PostBodyStatStack} />
+      ),
+      bodyBarChart: ({ value }) => <BodyBarChart value={value as PostBodyBarChart} />,
+      bodyTable: ({ value }) => <BodyTable value={value as PostBodyTable} />,
+      bodyEmbed: ({ value }) => <BodyEmbed value={value as PostBodyEmbed} />,
+      bodyCallout: ({ value }) => <BodyCallout value={value as PostBodyCallout} />,
+      widgetEmbed: ({ value }) => (
+        <WidgetRenderer widget={(value as WidgetEmbedValue).widget} />
+      ),
+    },
+  };
 }
 
 type PostPortableTextProps = {

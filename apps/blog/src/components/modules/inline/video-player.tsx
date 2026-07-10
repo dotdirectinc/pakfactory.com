@@ -28,8 +28,9 @@ export function VideoPlayer({
   const portrait = aspect === "9/16";
 
   // Portrait (TikTok / FB reels) matches the Instagram reel width.
+  // Landscape capped at 790 px per design spec.
   return (
-    <div className={portrait ? "mx-auto w-full max-w-[400px]" : "w-full"}>
+    <div className={portrait ? "mx-auto w-full max-w-[400px]" : "mx-auto w-full max-w-[790px]"}>
       <div
         className="relative w-full overflow-hidden rounded-lg bg-muted"
         style={{ aspectRatio: aspect }}
@@ -52,7 +53,7 @@ export function VideoPlayer({
             {posterUrl ? (
               // Poster comes from arbitrary provider CDNs (ytimg, vimeocdn,
               // dmcdn, tiktokcdn) — a plain img avoids whitelisting every host.
-              // eslint-disable-next-line @next/next/no-img-element
+              // (No next/image: hosts are unbounded. Lint has no no-img rule.)
               <img
                 src={posterUrl}
                 alt=""

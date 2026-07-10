@@ -1,7 +1,9 @@
-import { PostCard } from "@/components/modules/post-card";
+import Image from "next/image";
+import Link from "next/link";
 import { CategoryLandingSection } from "@/components/views/category-landing-layout";
 import type { HomePostCard } from "@/lib/blog-home";
-import { toPostCardDataList } from "@/lib/post-card-data";
+import { toPostCardData, toPostCardDataList } from "@/lib/post-card-data";
+import type { PostCardData } from "@/lib/post-card-data";
 
 const DEFAULT_HEADING = "Featured Posts";
 
@@ -11,73 +13,113 @@ type PostCategoryFeaturedRowProps = {
   categorySlug: string;
 };
 
-function FeaturedPlaceholder({ variant }: { variant: "hero" | "card" }) {
-  if (variant === "hero") {
-    return (
-      <article className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="min-h-[240px] flex-1 rounded-[14px] bg-muted lg:min-h-[400px]" />
-        <div className="flex flex-1 flex-col gap-4">
-          <div className="h-6 w-20 rounded-full bg-muted" />
-          <div className="h-10 w-full max-w-lg rounded-md bg-muted" />
-          <div className="h-12 w-full rounded-md bg-muted" />
-          <div className="h-5 w-48 rounded-md bg-muted" />
-        </div>
-      </article>
-    );
-  }
-
+function PostMeta({ post }: { post: PostCardData }) {
   return (
-    <article className="flex flex-col gap-6">
-      <div className="h-60 min-h-[180px] rounded-[14px] bg-muted" />
-      <div className="flex flex-col gap-3">
-        <div className="h-5 w-16 rounded-full bg-muted" />
-        <div className="h-8 w-full rounded-md bg-muted" />
-        <div className="h-4 w-40 rounded-md bg-muted" />
-      </div>
-    </article>
+    <p className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+      {post.authorName ? (
+        <span className="font-medium text-foreground">{post.authorName}</span>
+      ) : null}
+      {post.authorName && post.readingTimeLabel ? <span aria-hidden>·</span> : null}
+      {post.readingTimeLabel ? <span>{post.readingTimeLabel}</span> : null}
+      {(post.authorName || post.readingTimeLabel) && post.formattedDate ? (
+        <span aria-hidden>·</span>
+      ) : null}
+      {post.formattedDate ? <span>{post.formattedDate}</span> : null}
+    </p>
   );
 }
 
 /**
- * Category landing featured band (Figma hero + 3 cards).
- * Posts resolve from `featuredInCategory` on post documents.
+ * Category landing featured band — Figma node 2435:26983.
+ * Two-column layout: large lead post left (2fr) with hero image + excerpt,
+ * secondary text-only list right (1fr) with dashed dividers.
  */
 export function PostCategoryFeaturedRow({
   heading,
   posts,
   categorySlug,
 }: PostCategoryFeaturedRowProps) {
-  const cards = toPostCardDataList(posts ?? [], {
-    categorySlug,
-    imageWidth: 900,
-  });
-  const hero = cards[0] ?? null;
-  const secondary = cards.slice(1, 4);
-  const secondarySlots = [0, 1, 2] as const;
+  const all = posts ?? [];
+  const leadPost = all[0];
+  if (!leadPost) return null;
+
+  const lead = toPostCardData(leadPost, { categorySlug, imageWidth: 1200 });
+  const secondary = toPostCardDataList(all.slice(1, 4), { categorySlug });
   const sectionHeading = heading?.trim() || DEFAULT_HEADING;
 
-  if (!hero && secondary.length === 0) return null;
-
   return (
-    <CategoryLandingSection>
-      <h2 className="text-2xl font-semibold leading-8 tracking-tight text-foreground">
-        {sectionHeading}
-      </h2>
-      <div className="mt-12 flex flex-col gap-16">
-        {hero ? (
-          <PostCard post={hero} variant="categoryHero" showFeaturedBadge />
-        ) : (
-          <FeaturedPlaceholder variant="hero" />
-        )}
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-          {secondarySlots.map((slot) => {
-            const card = secondary[slot];
-            return card ? (
-              <PostCard key={card._id} post={card} showFeaturedBadge />
-            ) : (
-              <FeaturedPlaceholder key={slot} variant="card" />
-            );
-          })}
+    <CategoryLandingSection innerClassName="py-12">
+      <div className="flex flex-col gap-8">
+        <h2 className="text-2xl font-semibold leading-tight tracking-tight text-foreground lg:text-3xl">
+          {sectionHeading}
+        </h2>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr] lg:gap-10">
+          {/* Lead post — hero image + full text */}
+          <Link
+            href={lead.href}
+            className="group flex flex-col gap-5 text-foreground no-underline"
+          >
+            <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-muted">
+              {lead.imageUrl ? (
+                <Image
+                  src={lead.imageUrl}
+                  alt={lead.imageAlt ?? lead.title}
+                  fill
+                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                  sizes="(min-width: 1024px) 66vw, 100vw"
+                  priority
+                />
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {lead.categoryTitle ? (
+                <span className="text-xs font-medium text-muted-foreground">
+                  {lead.categoryTitle}
+                </span>
+              ) : null}
+              <h3 className="text-2xl font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary lg:text-3xl">
+                {lead.title}
+              </h3>
+              {lead.excerpt ? (
+                <p className="text-base leading-7 text-muted-foreground">
+                  {lead.excerpt}
+                </p>
+              ) : null}
+              <PostMeta post={lead} />
+            </div>
+          </Link>
+
+          {/* Secondary list — text only, no images, dashed dividers */}
+          {secondary.length > 0 ? (
+            <ul className="flex flex-col border-t border-dashed border-border pt-5">
+              {secondary.map((post, i) => (
+                <li
+                  key={post._id}
+                  className={
+                    i === 0
+                      ? "pb-5"
+                      : "border-t border-dashed border-border py-5"
+                  }
+                >
+                  <Link
+                    href={post.href}
+                    className="group flex flex-col gap-2 text-foreground no-underline"
+                  >
+                    {post.categoryTitle ? (
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {post.categoryTitle}
+                      </span>
+                    ) : null}
+                    <h3 className="text-lg font-medium leading-7 text-foreground transition-colors group-hover:text-primary">
+                      {post.title}
+                    </h3>
+                    <PostMeta post={post} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
     </CategoryLandingSection>

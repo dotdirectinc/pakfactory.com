@@ -60,7 +60,7 @@ function MetaDot() {
 
 function CategoryBadge({ title }: { title: string }) {
   return (
-    <p className="text-xs font-medium text-muted-foreground">{title}</p>
+    <span className="text-sm text-muted-foreground">{title}</span>
   );
 }
 
@@ -320,7 +320,7 @@ export function PostCard({
     return (
       <article className="flex flex-col gap-6">
         <Link href={post.href} className="group block">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[14px] bg-muted">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
             {post.imageUrl && (
               <Image
                 src={post.imageUrl}
@@ -353,7 +353,7 @@ export function PostCard({
     return (
       <article className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <Link href={post.href} className="group block min-w-0 flex-1">
-          <div className="relative min-h-[240px] overflow-hidden rounded-[14px] bg-muted lg:min-h-[400px]">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
             {post.imageUrl && (
               <Image
                 src={post.imageUrl}

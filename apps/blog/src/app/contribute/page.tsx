@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { ContributeForm } from "@/components/modules/contribute-form";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { PageHeader } from "@/components/modules/page-header";
+import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
 import {
   buildBlogContributeMetadata,
@@ -9,7 +11,6 @@ import {
   resolveContributePageDescription,
   resolveContributePageTitle,
 } from "@/lib/blog-contribute-page";
-import { getContributeSubjectOptions } from "@/lib/contribute-options";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
@@ -66,8 +67,6 @@ export default async function ContributePage() {
     ]),
   );
 
-  const subjectOptions = getContributeSubjectOptions();
-
   return (
     <>
       <script
@@ -75,26 +74,26 @@ export default async function ContributePage() {
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <main>
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          <div className="mb-10">
-            <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "Contribute" }]} />
-            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{pageTitle}</h1>
-            <p className="mt-2 max-w-2xl text-muted-foreground">{pageDescription}</p>
-          </div>
+        <PageDielineSection innerClassName="py-4">
+          <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "Contribute" }]} />
+        </PageDielineSection>
 
+        <PageHeader title={pageTitle} descriptionText={pageDescription} />
+
+        <PageDielineSection innerClassName="py-16">
           {/*
             Mobile: form first, positioning second (DOM order).
             Desktop (lg+): positioning left (col 1), form right (col 2) via col-start.
           */}
-          <div className="grid gap-10 lg:grid-cols-[2fr_3fr] lg:items-start">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-start lg:gap-16">
             <div className="lg:col-start-2 lg:row-start-1">
-              <ContributeForm subjectOptions={subjectOptions} />
+              <ContributeForm />
             </div>
             <div className="lg:col-start-1 lg:row-start-1">
               <ContributePositioning />
             </div>
           </div>
-        </div>
+        </PageDielineSection>
 
         {blocks.length > 0 ? <BlockRenderer blocks={blocks} /> : null}
       </main>

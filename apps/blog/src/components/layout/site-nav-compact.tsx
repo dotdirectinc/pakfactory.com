@@ -58,14 +58,18 @@ export function SiteNavTopRow({children}: SiteNavTopRowProps) {
     const {searchOpen} = useSiteNavCompact();
 
     return (
-        <PageDielineSection
-            innerClassName={cn(
-                'flex h-16 items-center justify-between border-dashed border-border',
+        // Border on a full-width wrapper so the divider spans the viewport (like
+        // the POC nav and the category tier below), not just the dieline column.
+        <div
+            className={cn(
+                'border-dashed border-border',
                 searchOpen ? 'max-lg:border-b-0 lg:border-b' : 'border-b',
             )}
         >
-            {children}
-        </PageDielineSection>
+            <PageDielineSection innerClassName="flex h-16 items-center justify-between">
+                {children}
+            </PageDielineSection>
+        </div>
     );
 }
 
