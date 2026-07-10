@@ -1,6 +1,7 @@
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import Image from "next/image";
 import { urlFor } from "@/lib/sanity/image";
+import { GallerySlider } from "./gallery-slider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -98,42 +99,35 @@ export const caseStudyPtComponents: PortableTextComponents = {
     ),
 
     caseStudyGalleryBlock: ({ value }) => {
-      const images: any[] = value.images ?? [];
-      const style: string = value.displayStyle ?? "twoUp";
+      const rawImages: any[] = value.images ?? [];
+      const isSquare = value.aspectRatio === "1:1";
 
-      const gridClass =
-        style === "twoUp"
-          ? "grid-cols-2 gap-3"
-          : style === "stacked"
-            ? "grid-cols-1 gap-3"
-            : "grid-cols-1"; // fullWidth
+      const resolved = rawImages
+        .map((item: any, i: number) => {
+          if (!item.image) return null;
+          return {
+            key: item._key ?? String(i),
+            src: urlFor(item.image).width(1200).url(),
+            alt: item.alt ?? "",
+            caption: item.caption ?? null,
+            isSquare,
+          };
+        })
+        .filter(Boolean) as { key: string; src: string; alt: string; caption: string | null; isSquare: boolean }[];
+
+      if (resolved.length === 0) return null;
+
+      const galleryCaption: string | undefined = value.caption?.trim();
 
       return (
-        <div className={`not-prose my-10 grid ${gridClass}`}>
-          {images.map((item: any, i: number) => {
-            if (!item.image) return null;
-            const src = urlFor(item.image).url();
-            return (
-              <figure
-                key={i}
-                className="relative aspect-video overflow-hidden rounded-xl"
-              >
-                <Image
-                  src={src}
-                  alt={item.alt ?? ""}
-                  fill
-                  className="object-cover"
-                  sizes={style === "twoUp" ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 800px"}
-                />
-                {item.caption && (
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-black/50 px-3 py-2 text-xs text-white">
-                    {item.caption}
-                  </figcaption>
-                )}
-              </figure>
-            );
-          })}
-        </div>
+        <figure className="not-prose my-10">
+          <GallerySlider images={resolved} />
+          {galleryCaption && (
+            <figcaption className="mt-3 text-center text-sm text-muted-foreground">
+              {galleryCaption}
+            </figcaption>
+          )}
+        </figure>
       );
     },
   },

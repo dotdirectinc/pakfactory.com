@@ -50,28 +50,34 @@ export const caseStudyGalleryBlock = defineType({
         Rule.required().min(2).error('Add at least two images to the gallery.'),
     }),
     defineField({
-      name: 'displayStyle',
-      title: 'Display style',
+      name: 'aspectRatio',
+      title: 'Image aspect ratio',
       type: 'string',
+      description: '16:9 for landscape photos; 1:1 for square crops.',
+      initialValue: '16:9',
       options: {
         list: [
-          { title: 'Two up (2-column grid)', value: 'twoUp' },
-          { title: 'Full width', value: 'fullWidth' },
-          { title: 'Stacked (single column)', value: 'stacked' },
+          { title: 'Landscape (16:9)', value: '16:9' },
+          { title: 'Square (1:1)', value: '1:1' },
         ],
         layout: 'radio',
       },
-      initialValue: 'twoUp',
+    }),
+    defineField({
+      name: 'caption',
+      title: 'Caption',
+      type: 'string',
+      description: 'Optional caption shown below the entire gallery.',
     }),
   ],
   preview: {
-    select: { images: 'images', style: 'displayStyle' },
-    prepare({ images, style }: { images?: unknown[]; style?: string }) {
+    select: { images: 'images', aspectRatio: 'aspectRatio' },
+    prepare({ images, aspectRatio }: { images?: unknown[]; aspectRatio?: string }) {
       const count = images?.length ?? 0
-      const styleLabel = style === 'fullWidth' ? 'Full width' : style === 'stacked' ? 'Stacked' : 'Two up'
+      const ratio = aspectRatio === '1:1' ? '1:1' : '16:9'
       return {
         title: 'Gallery',
-        subtitle: `${count} image${count !== 1 ? 's' : ''} · ${styleLabel}`,
+        subtitle: `${count} image${count !== 1 ? 's' : ''} · ${ratio}`,
         media: ImagesIcon,
       }
     },
