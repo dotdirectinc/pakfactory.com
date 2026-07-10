@@ -266,6 +266,10 @@ export default defineConfig([
           origin: WWW_PREVIEW_ORIGIN,
           previewMode: { enable: '/api/draft-mode/enable' },
         },
+        allowOrigins: [
+          'http://localhost:3000',
+          'https://pakfactory-com-www.vercel.app',
+        ],
         resolve: { locations: websiteLocations },
       }),
       colorInput(),
