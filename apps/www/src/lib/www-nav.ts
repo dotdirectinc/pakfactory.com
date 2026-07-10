@@ -1,9 +1,9 @@
 import type { NavCategory } from "@pakfactory/components/layout/site-nav";
 import type { AiLink, FooterColumns, FooterLink, SocialLink } from "@pakfactory/components/layout/site-footer";
-import { getSiteUrl } from "@/lib/site";
+import { getWwwUrl } from "@/lib/site";
 
 export const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfactory.com";
-const WWW_URL = getSiteUrl();
+const WWW_URL = getWwwUrl();
 
 export const BLOG_CATEGORIES: NavCategory[] = [
   { href: `${BLOG_URL}/design-and-structure`, title: "Design & Structure" },

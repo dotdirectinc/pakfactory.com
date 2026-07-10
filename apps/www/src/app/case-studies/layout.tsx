@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteNav } from "@pakfactory/components/layout/site-nav";
 import type { NavCategory } from "@pakfactory/components/layout/site-nav";
 import { SiteFooter } from "@pakfactory/components/layout/site-footer";
-import { getSiteUrl } from "@/lib/site";
+import { getWwwUrl } from "@/lib/site";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -21,7 +21,7 @@ export function generateMetadata(): Metadata {
   };
 }
 
-const WWW_URL = getSiteUrl();
+const WWW_URL = getWwwUrl();
 
 type SanityNavCategory = {
   _id: string;
