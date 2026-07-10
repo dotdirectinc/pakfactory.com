@@ -94,6 +94,19 @@ export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
 }`;
 
+/** Singleton `caseStudiesPage` document — hero copy, CTA config, SEO. */
+export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"][0] {
+  heroEyebrow,
+  heroHeading,
+  heroIntro,
+  detailCta { heading, primaryLabel, primaryHref, secondaryLabel, secondaryHref },
+  relatedSectionHeading,
+  relatedSectionIntro,
+  metaTitle,
+  metaDescription,
+  "ogImageUrl": ogImage.asset->url
+}`;
+
 /** All taxonomy options for the listing page filter UI — single round-trip. */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
   "solutions": *[_type == "industry"] | order(title asc) ${TAXONOMY_ITEM},
@@ -178,4 +191,22 @@ export type CaseStudyFilterOptions = {
   solutions: CaseStudyTaxonomyItem[];
   products: CaseStudyTaxonomyItem[];
   expertiseAreas: CaseStudyTaxonomyItem[];
+};
+
+export type CaseStudiesPageData = {
+  heroEyebrow: string | null;
+  heroHeading: string | null;
+  heroIntro: string | null;
+  detailCta: {
+    heading: string | null;
+    primaryLabel: string | null;
+    primaryHref: string | null;
+    secondaryLabel: string | null;
+    secondaryHref: string | null;
+  } | null;
+  relatedSectionHeading: string | null;
+  relatedSectionIntro: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImageUrl: string | null;
 };

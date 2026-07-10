@@ -8,12 +8,14 @@ import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-secti
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
+  CASE_STUDIES_PAGE_QUERY,
   CASE_STUDY_BY_SLUG_QUERY,
   CASE_STUDY_PATHS_QUERY,
+  type CaseStudiesPageData,
   type CaseStudyDetail,
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
-import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import { breadcrumbList, jsonLdGraph, serializeJsonLd, videoObject, webPage } from "@pakfactory/seo";
 import { absoluteUrl } from "@/lib/site";
 import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
 import { CaseStudyShare } from "./_components/case-study-share";
@@ -89,30 +91,56 @@ function DashedDivider() {
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  const study = isSanityConfigured()
-    ? await getPublishedSanityClient()
-        .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-        .catch(() => null)
-    : null;
+  const client = isSanityConfigured() ? getPublishedSanityClient() : null;
+
+  const [study, pageData] = await Promise.all([
+    client
+      ? client
+          .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+          .catch(() => null)
+      : Promise.resolve(null),
+    client
+      ? client
+          .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
 
   if (!study) notFound();
 
   const pageUrl = absoluteUrl(`/case-studies/${slug}`);
 
-  const jsonLd = serializeJsonLd(
-    jsonLdGraph([
-      breadcrumbList([
-        { name: "Home", url: absoluteUrl("/") },
-        { name: "Case Studies", url: absoluteUrl("/case-studies") },
-        { name: study.title, url: pageUrl },
-      ]),
-      webPage({
-        url: pageUrl,
-        name: study.title,
-        description: study.cardSummary ?? undefined,
-      }),
+  const isVideo = study.heroMedia?.mediaType === "video";
+  const videoThumbnail =
+    study.heroMedia?.videoThumbnailUrl ?? study.cardImageUrl;
+
+  const jsonLdNodes = [
+    breadcrumbList([
+      { name: "Home", url: absoluteUrl("/") },
+      { name: "Case Studies", url: absoluteUrl("/case-studies") },
+      { name: study.title, url: pageUrl },
     ]),
-  );
+    webPage({
+      url: pageUrl,
+      name: study.title,
+      description: study.cardSummary ?? undefined,
+    }),
+  ];
+
+  if (isVideo && study.heroMedia?.videoUrl && videoThumbnail && study.publishedAt) {
+    jsonLdNodes.push(
+      videoObject({
+        name: study.title,
+        description: study.cardSummary ?? study.title,
+        thumbnailUrl: videoThumbnail,
+        uploadDate: study.publishedAt,
+        contentUrl: study.heroMedia.videoUrl,
+        id: `${pageUrl}#video`,
+      }),
+    );
+  }
+
+  const jsonLd = serializeJsonLd(jsonLdGraph(jsonLdNodes));
 
   const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
 
@@ -219,6 +247,11 @@ export default async function CaseStudyPage({ params }: Props) {
             title={study.title}
             showCta
             className="hidden lg:flex"
+            ctaHeading={pageData?.detailCta?.heading}
+            primaryLabel={pageData?.detailCta?.primaryLabel}
+            primaryHref={pageData?.detailCta?.primaryHref}
+            secondaryLabel={pageData?.detailCta?.secondaryLabel}
+            secondaryHref={pageData?.detailCta?.secondaryHref}
           />
         </aside>
 
@@ -273,6 +306,11 @@ export default async function CaseStudyPage({ params }: Props) {
             title={study.title}
             showCta
             className="lg:hidden"
+            ctaHeading={pageData?.detailCta?.heading}
+            primaryLabel={pageData?.detailCta?.primaryLabel}
+            primaryHref={pageData?.detailCta?.primaryHref}
+            secondaryLabel={pageData?.detailCta?.secondaryLabel}
+            secondaryHref={pageData?.detailCta?.secondaryHref}
           />
         </div>
       </PageDielineSection>
@@ -286,10 +324,11 @@ export default async function CaseStudyPage({ params }: Props) {
           <header className="flex flex-wrap items-end justify-between gap-y-8 px-4 md:px-8">
             <div className="flex min-w-[280px] flex-1 flex-col gap-4">
               <h2 className="text-4xl font-medium leading-10 tracking-tight text-foreground">
-                See What&apos;s More
+                {pageData?.relatedSectionHeading?.trim() || "See What’s More"}
               </h2>
               <p className="text-lg leading-7 text-muted-foreground">
-                Stay informed with the latest case studies and advancements from our team.
+                {pageData?.relatedSectionIntro?.trim() ||
+                  "Stay informed with the latest case studies and advancements from our team."}
               </p>
             </div>
           </header>
