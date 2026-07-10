@@ -6,12 +6,19 @@ import { getWwwUrl } from "@/lib/site";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { BLOG_NAV_CATEGORIES_QUERY } from "@pakfactory/sanity/queries";
+import { BLOG_NAV_CATEGORIES_QUERY, BLOG_FOOTER_NAV_QUERY } from "@pakfactory/sanity/queries";
+import type { RawFooterDoc } from "@/lib/footer-nav";
+import {
+  resolveFooterColumns,
+  resolveFooterSocial,
+  resolveFooterAiLinks,
+} from "@/lib/footer-nav";
 import {
   BLOG_URL,
   BLOG_CATEGORIES,
-  FOOTER_AI_LINKS,
+  FOOTER_COLUMNS,
   FOOTER_SOCIAL,
+  FOOTER_AI_LINKS,
   buildFooterColumns,
 } from "@/lib/www-nav";
 
@@ -49,13 +56,40 @@ async function fetchNavCategories(): Promise<NavCategory[]> {
   }
 }
 
+async function fetchFooterData(navCategories: NavCategory[]) {
+  if (!isSanityConfigured()) {
+    return {
+      columns: buildFooterColumns(navCategories),
+      social: FOOTER_SOCIAL,
+      aiLinks: FOOTER_AI_LINKS,
+    };
+  }
+
+  try {
+    const doc = await getPublishedSanityClient().fetch<RawFooterDoc>(
+      BLOG_FOOTER_NAV_QUERY,
+    );
+    return {
+      columns: resolveFooterColumns(doc) ?? buildFooterColumns(navCategories),
+      social: resolveFooterSocial(doc) ?? FOOTER_SOCIAL,
+      aiLinks: resolveFooterAiLinks(doc) ?? FOOTER_AI_LINKS,
+    };
+  } catch {
+    return {
+      columns: buildFooterColumns(navCategories),
+      social: FOOTER_SOCIAL,
+      aiLinks: FOOTER_AI_LINKS,
+    };
+  }
+}
+
 export default async function CaseStudiesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const navCategories = await fetchNavCategories();
-  const footerColumns = buildFooterColumns(navCategories);
+  const footer = await fetchFooterData(navCategories);
 
   return (
     <>
@@ -67,10 +101,10 @@ export default async function CaseStudiesLayout({
       />
       <main>{children}</main>
       <SiteFooter
-        columns={footerColumns}
+        columns={footer.columns}
         contactHref={`${WWW_URL}/contact`}
-        social={FOOTER_SOCIAL}
-        aiLinks={FOOTER_AI_LINKS}
+        social={footer.social}
+        aiLinks={footer.aiLinks}
       />
     </>
   );
