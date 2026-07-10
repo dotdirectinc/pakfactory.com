@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
+import { ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
@@ -11,52 +14,53 @@ import {
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
 import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
-import { CaseStudyResult } from "@/components/ui/case-study-result";
 import { absoluteUrl } from "@/lib/site";
+import { CaseStudyCard as CaseStudyCardUI } from "@/components/modules/case-study-card";
+import { CaseStudyShare } from "./_components/case-study-share";
+import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
+import { CaseStudyMetaCard } from "./_components/case-study-meta-card";
 import {
-  MOCK_CASE_STUDY_DETAILS,
-  MOCK_SLUGS,
-} from "@/lib/mock/case-studies";
+  caseStudyPtComponents,
+  makeHeroIntroPtComponents,
+} from "./_components/pt-components";
 
 export const revalidate = 3600;
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const sanityPaths = isSanityConfigured()
-    ? await getPublishedSanityClient()
-        .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
-        .catch(() => [] as CaseStudyPath[])
-    : [];
-
-  const sanitySlugSet = new Set(sanityPaths.map((p) => p.slug));
-  // Include mock slugs only when Sanity has no documents yet.
-  const mockPaths = sanityPaths.length === 0
-    ? MOCK_SLUGS.map((slug) => ({ slug }))
-    : [];
-
-  return [...sanityPaths, ...mockPaths.filter((p) => !sanitySlugSet.has(p.slug))];
+  if (!isSanityConfigured()) return [];
+  return getPublishedSanityClient()
+    .fetch<CaseStudyPath[]>(CASE_STUDY_PATHS_QUERY)
+    .catch(() => [] as CaseStudyPath[]);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
 
-  const sanityStudy = isSanityConfigured()
+  const study = isSanityConfigured()
     ? await getPublishedSanityClient()
         .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
         .catch(() => null)
     : null;
-
-  const study = sanityStudy ?? MOCK_CASE_STUDY_DETAILS[slug] ?? null;
   if (!study) return {};
 
   const title = study.metaTitle?.trim() || study.title;
-  const description = study.metaDescription?.trim() || study.excerpt || undefined;
-  const canonical = absoluteUrl(`/case-studies/${slug}`);
+  const description =
+    study.metaDescription?.trim() || study.cardSummary || undefined;
+  const canonical = study.canonicalUrl || absoluteUrl(`/case-studies/${slug}`);
+  const robots = [
+    study.allowIndex === false ? "noindex" : "index",
+    study.allowFollow === false ? "nofollow" : "follow",
+    study.noImageIndex ? "noimageindex" : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return {
     title: `${title} | PakFactory`,
     description,
+    robots,
     alternates: { canonical },
     openGraph: {
       title,
@@ -67,17 +71,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+function DashedDivider() {
+  return (
+    <div
+      aria-hidden="true"
+      className="h-px w-full"
+      style={{
+        backgroundImage:
+          "linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px)",
+        backgroundSize: "12px 1px",
+        backgroundRepeat: "repeat-x",
+      }}
+    />
+  );
+}
+
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  const sanityStudy = isSanityConfigured()
+  const study = isSanityConfigured()
     ? await getPublishedSanityClient()
         .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
         .catch(() => null)
     : null;
-
-  // Fall back to mock data until PROD-1650 schema + documents exist in Sanity.
-  const study = sanityStudy ?? MOCK_CASE_STUDY_DETAILS[slug] ?? null;
 
   if (!study) notFound();
 
@@ -93,10 +109,12 @@ export default async function CaseStudyPage({ params }: Props) {
       webPage({
         url: pageUrl,
         name: study.title,
-        description: study.excerpt ?? undefined,
+        description: study.cardSummary ?? undefined,
       }),
     ]),
   );
+
+  const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
 
   return (
     <>
@@ -104,55 +122,197 @@ export default async function CaseStudyPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
-      <main className="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8">
-        {/* Hero */}
-        {study.heroImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={study.heroImageUrl}
-            alt={study.heroImageAlt ?? study.title}
-            className="mb-10 aspect-video w-full rounded-xl object-cover"
-          />
-        )}
 
-        {/* Meta */}
-        <div className="mb-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
-          {study.industry && (
-            <span className="font-medium uppercase tracking-wider">
-              {study.industry}
-            </span>
+      {/* Breadcrumb */}
+      <PageDielineSection innerClassName="border-b border-dashed border-border py-3">
+        <nav aria-label="Breadcrumb">
+          <ol className="flex items-center gap-1 text-sm text-muted-foreground">
+            <li>
+              <Link href="/" className="hover:text-foreground">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden>
+              <ChevronRight className="size-3.5" />
+            </li>
+            <li>
+              <Link href="/case-studies" className="hover:text-foreground">
+                Case Studies
+              </Link>
+            </li>
+            <li aria-hidden>
+              <ChevronRight className="size-3.5" />
+            </li>
+            <li className="truncate text-foreground" aria-current="page">
+              {study.title}
+            </li>
+          </ol>
+        </nav>
+      </PageDielineSection>
+
+      {/* Hero — title + intro left, meta card right */}
+      <PageDielineSection
+        className="border-b border-dashed border-border"
+        innerClassName="flex flex-col items-start gap-12 py-24 lg:flex-row lg:gap-[98px]"
+      >
+        {/* Left column */}
+        <div className="flex flex-1 flex-col gap-[42px]">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-[48px]">
+              {study.title}
+            </h1>
+            {Array.isArray(study.heroIntro) && study.heroIntro.length > 0 && (
+              <div className="max-w-2xl text-lg leading-7 text-foreground">
+                <PortableText
+                  value={study.heroIntro as PortableTextBlock[]}
+                  components={heroIntroPtComponents}
+                />
+              </div>
+            )}
+          </div>
+          {study.heroMedia && (
+            <CaseStudyHeroMedia heroMedia={study.heroMedia} title={study.title} />
           )}
-          {study.clientName && <span>{study.clientName}</span>}
         </div>
 
-        <h1 className="text-4xl font-bold tracking-tight">{study.title}</h1>
+        {/* Right column — meta card with client + taxonomy */}
+        <CaseStudyMetaCard
+          clientLogoUrl={study.client?.logoUrl}
+          clientName={study.client?.name}
+          solutions={study.solutions}
+          products={study.products}
+          expertiseAreas={study.expertiseAreas}
+          capabilities={study.capabilities}
+        />
+      </PageDielineSection>
 
-        {study.excerpt && (
-          <p className="mt-4 text-lg text-muted-foreground">{study.excerpt}</p>
-        )}
+      {/* Body — left sidebar + right content */}
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 lg:grid-cols-[300px_1fr]">
 
-        {/* Results */}
-        {study.results && study.results.length > 0 && (
-          <ul className="mt-10 grid gap-6 sm:grid-cols-3">
-            {study.results.map((r) => (
-              <li key={r._key}>
-                <CaseStudyResult
-                  value={r.value}
-                  metric={r.metric}
-                  description={r.description}
+        {/* ── Left sidebar ── */}
+        <aside className="flex flex-col gap-[42px] border-r border-dashed border-border px-4 pb-16 pt-24 md:px-8 lg:px-12">
+          {/* Metrics */}
+          {study.highlights && study.highlights.length > 0 && (
+            <div className="flex w-full flex-col gap-[42px]">
+              <p className="text-lg leading-7 text-muted-foreground">Metrics</p>
+              {study.highlights.map((h) => (
+                <div key={h._key} className="flex w-full flex-col gap-3">
+                  <p className="text-lg font-semibold leading-7 text-foreground">
+                    {h.title}
+                  </p>
+                  {h.description && (
+                    <p className="text-sm leading-5 text-muted-foreground">
+                      {h.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Share + CTA — desktop only; mobile version appears after Result */}
+          <div className="hidden lg:flex">
+            <div className="h-px w-[207px] border-t border-dashed border-border" />
+          </div>
+          <CaseStudyShare
+            url={pageUrl}
+            title={study.title}
+            showCta
+            className="hidden lg:flex"
+          />
+        </aside>
+
+        {/* ── Right content ── */}
+        <div className="flex flex-col gap-24 px-4 pb-24 pt-24 md:px-8 lg:px-16">
+
+          {/* Challenges */}
+          {Array.isArray(study.challenge) && study.challenge.length > 0 && (
+            <section className="flex flex-col gap-12">
+              <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
+                Challenges
+              </h2>
+              <DashedDivider />
+              <PortableText
+                value={study.challenge as PortableTextBlock[]}
+                components={caseStudyPtComponents}
+              />
+            </section>
+          )}
+
+          {/* Solutions */}
+          {Array.isArray(study.solution) && study.solution.length > 0 && (
+            <section className="flex flex-col gap-12">
+              <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
+                Solutions
+              </h2>
+              <DashedDivider />
+              <PortableText
+                value={study.solution as PortableTextBlock[]}
+                components={caseStudyPtComponents}
+              />
+            </section>
+          )}
+
+          {/* Result */}
+          {Array.isArray(study.result) && study.result.length > 0 && (
+            <section className="flex flex-col gap-12">
+              <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
+                Result
+              </h2>
+              <DashedDivider />
+              <PortableText
+                value={study.result as PortableTextBlock[]}
+                components={caseStudyPtComponents}
+              />
+            </section>
+          )}
+
+          {/* Share + CTA — mobile only (lg+ gets the sidebar version) */}
+          <CaseStudyShare
+            url={pageUrl}
+            title={study.title}
+            showCta
+            className="lg:hidden"
+          />
+        </div>
+      </PageDielineSection>
+
+      {/* See What's More — related studies */}
+      {study.relatedStudies && study.relatedStudies.length > 0 && (
+        <PageDielineSection
+          className="border-t border-dashed border-border"
+          innerClassName="flex flex-col gap-8 py-16 px-0"
+        >
+          <header className="flex flex-wrap items-end justify-between gap-y-8 px-4 md:px-8">
+            <div className="flex min-w-[280px] flex-1 flex-col gap-4">
+              <h2 className="text-4xl font-medium leading-10 tracking-tight text-foreground">
+                See What&apos;s More
+              </h2>
+              <p className="text-lg leading-7 text-muted-foreground">
+                Stay informed with the latest case studies and advancements from our team.
+              </p>
+            </div>
+          </header>
+
+          <ul className="grid grid-cols-1 gap-6 px-4 md:grid-cols-2 md:px-8 lg:grid-cols-3">
+            {study.relatedStudies.map((s) => (
+              <li key={s._id}>
+                <CaseStudyCardUI
+                  href={`/case-studies/${s.slug}`}
+                  title={s.title}
+                  clientName={s.client?.name}
+                  cardSummary={s.cardSummary}
+                  cardImageUrl={s.cardImageUrl}
+                  cardImageAlt={s.cardImageAlt}
+                  solutions={s.solutions}
+                  products={s.products}
+                  isVideo={s.heroMediaType === "video"}
                 />
               </li>
             ))}
           </ul>
-        )}
-
-        {/* Body */}
-        {Array.isArray(study.body) && study.body.length > 0 && (
-          <div className="prose prose-neutral mt-10 max-w-none dark:prose-invert">
-            <PortableText value={study.body as PortableTextBlock[]} />
-          </div>
-        )}
-      </main>
+        </PageDielineSection>
+      )}
     </>
   );
 }

@@ -1,5 +1,8 @@
 import type { NavLink } from "@pakfactory/ui/components/site-nav";
-import type { SiteFooterColumns } from "@pakfactory/ui/components/site-footer";
+import type {
+  SiteFooterColumns,
+  SiteFooterSocialLink,
+} from "@pakfactory/ui/components/site-footer";
 import { getSiteUrl } from "@/lib/site";
 
 const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfactory.com";
@@ -12,6 +15,13 @@ const WWW_URL = getSiteUrl();
 export const SOFT_LAUNCH_NAV_LINKS: NavLink[] = [
   { href: BLOG_URL, label: "Blog" },
   { href: `${WWW_URL}/case-studies`, label: "Case Studies" },
+];
+
+export const SOFT_LAUNCH_SOCIAL_LINKS: SiteFooterSocialLink[] = [
+  { platform: "facebook", url: "https://www.facebook.com/pakfactory" },
+  { platform: "instagram", url: "https://www.instagram.com/pakfactory" },
+  { platform: "x", url: "https://x.com/pakfactory" },
+  { platform: "linkedin", url: "https://www.linkedin.com/company/pakfactory" },
 ];
 
 export const SOFT_LAUNCH_FOOTER_COLUMNS: SiteFooterColumns = [

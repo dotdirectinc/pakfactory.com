@@ -74,11 +74,17 @@ export {
     CASE_STUDY_BY_SLUG_QUERY,
     CASE_STUDY_PATHS_QUERY,
     CASE_STUDY_SITEMAP_QUERY,
+    CASE_STUDY_FILTER_OPTIONS_QUERY,
     type CaseStudyCard,
     type CaseStudyDetail,
     type CaseStudyPath,
-    type CaseStudyResult,
+    type CaseStudyHighlight,
+    type CaseStudyTaxonomyItem,
+    type CaseStudyClientCard,
+    type CaseStudyClientDetail,
+    type CaseStudyHeroMedia,
     type CaseStudySitemapEntry,
+    type CaseStudyFilterOptions,
 } from './queries/case-studies';
 
 export {

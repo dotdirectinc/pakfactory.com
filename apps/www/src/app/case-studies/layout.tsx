@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@pakfactory/ui/components/site-nav";
 import { SiteFooter } from "@pakfactory/ui/components/site-footer";
-import { SOFT_LAUNCH_NAV_LINKS, SOFT_LAUNCH_FOOTER_COLUMNS } from "@/lib/www-nav";
+import { SOFT_LAUNCH_NAV_LINKS, SOFT_LAUNCH_FOOTER_COLUMNS, SOFT_LAUNCH_SOCIAL_LINKS } from "@/lib/www-nav";
 import { getSiteUrl } from "@/lib/site";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 
@@ -28,6 +28,7 @@ export default function CaseStudiesLayout({
       <SiteFooter
         columns={SOFT_LAUNCH_FOOTER_COLUMNS}
         contactHref={`${WWW_URL}/contact`}
+        social={SOFT_LAUNCH_SOCIAL_LINKS}
       />
     </>
   );
