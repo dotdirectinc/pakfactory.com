@@ -12,6 +12,13 @@ export type SocialLink = {
   url: string;
 };
 
+export type AiEngine = "chatgpt" | "gemini" | "perplexity" | "claude" | "grok";
+
+export type AiLink = {
+  engine: AiEngine;
+  url: string;
+};
+
 const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   instagram: "Instagram",
   facebook: "Facebook",
@@ -30,10 +37,27 @@ const PLATFORM_ICON_SRC: Record<SocialPlatform, string> = {
   x: "/logos/social/x.svg",
 };
 
+const AI_ICON_SRC: Record<AiEngine, string> = {
+  chatgpt: "/logos/ai/openai.svg",
+  gemini: "/logos/ai/gemini.svg",
+  perplexity: "/logos/ai/perplexity.svg",
+  claude: "/logos/ai/claude.svg",
+  grok: "/logos/ai/grok.svg",
+};
+
+const AI_LABELS: Record<AiEngine, string> = {
+  chatgpt: "ChatGPT",
+  gemini: "Gemini",
+  perplexity: "Perplexity",
+  claude: "Claude",
+  grok: "Grok",
+};
+
 type SiteFooterProps = {
   columns: FooterColumns;
   contactHref: string;
   social?: SocialLink[];
+  aiLinks?: AiLink[];
 };
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
@@ -59,7 +83,7 @@ function FooterSectionBlock({ section }: { section: FooterSection }) {
   );
 }
 
-export function SiteFooter({ columns, contactHref, social = [] }: SiteFooterProps) {
+export function SiteFooter({ columns, contactHref, social = [], aiLinks = [] }: SiteFooterProps) {
   return (
     <footer className="bg-background">
       <div className="mx-auto max-w-[var(--layout-max)] px-0">
@@ -88,13 +112,14 @@ export function SiteFooter({ columns, contactHref, social = [] }: SiteFooterProp
           ))}
         </div>
 
+        {/* Bottom row 1 — copyright + social icons */}
         <div className="border-t border-dashed border-foreground/10">
           <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
             <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
               © 2026 PakFactory
             </p>
             {social.length > 0 && (
-              <div className="flex items-center gap-6 text-foreground">
+              <div className="flex items-center gap-5 text-foreground">
                 {social.map((link) => {
                   const src = PLATFORM_ICON_SRC[link.platform];
                   return (
@@ -116,6 +141,36 @@ export function SiteFooter({ columns, contactHref, social = [] }: SiteFooterProp
                 })}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Bottom row 2 — AI answer links + full rights */}
+        <div className="border-t border-dashed border-foreground/10">
+          <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
+            <div className="flex flex-wrap items-center gap-6">
+              <p className="text-sm text-muted-foreground">See what AI says about PakFactory</p>
+              {aiLinks.length > 0 && (
+                <div className="flex h-4 items-center gap-3">
+                  {aiLinks.map((link) => {
+                    const src = AI_ICON_SRC[link.engine];
+                    if (!src) return null;
+                    return (
+                      <a
+                        key={link.engine}
+                        href={link.url}
+                        aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
+                        target="_blank"
+                        rel={EXTERNAL_LINK_REL}
+                        className="hover:opacity-80"
+                      >
+                        <img src={src} alt="" width={16} height={16} className="size-4" aria-hidden />
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">© 2026 PakFactory. All Rights Reserved</p>
           </div>
         </div>
       </div>

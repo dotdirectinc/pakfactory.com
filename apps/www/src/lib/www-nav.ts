@@ -1,16 +1,17 @@
 import type { NavCategory } from "@pakfactory/components/layout/site-nav";
-import type { FooterColumns, SocialLink } from "@pakfactory/components/layout/site-footer";
-import { getSiteUrl } from "@/lib/site";
+import type { AiLink, FooterColumns, FooterLink, SocialLink } from "@pakfactory/components/layout/site-footer";
+import { getWwwUrl } from "@/lib/site";
 
 export const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfactory.com";
-const WWW_URL = getSiteUrl();
+const WWW_URL = getWwwUrl();
 
 export const BLOG_CATEGORIES: NavCategory[] = [
-  { href: `${BLOG_URL}/packaging-news`, title: "Packaging News" },
-  { href: `${BLOG_URL}/trends`, title: "Trends" },
-  { href: `${BLOG_URL}/business-strategy`, title: "Business Strategy" },
+  { href: `${BLOG_URL}/design-and-structure`, title: "Design & Structure" },
+  { href: `${BLOG_URL}/materials-and-finishes`, title: "Materials & Finishes" },
   { href: `${BLOG_URL}/sustainability`, title: "Sustainability" },
-  { href: `${BLOG_URL}/design-inspiration`, title: "Design Inspiration" },
+  { href: `${BLOG_URL}/compliance`, title: "Compliance" },
+  { href: `${BLOG_URL}/cost-and-sourcing`, title: "Cost & Sourcing" },
+  { href: `${BLOG_URL}/branding`, title: "Branding" },
 ];
 
 export const FOOTER_SOCIAL: SocialLink[] = [
@@ -18,57 +19,82 @@ export const FOOTER_SOCIAL: SocialLink[] = [
   { platform: "facebook", url: "https://www.facebook.com/pakfactory" },
   { platform: "linkedin", url: "https://www.linkedin.com/company/pakfactory" },
   { platform: "youtube", url: "https://www.youtube.com/@pakfactory" },
+  { platform: "pinterest", url: "https://www.pinterest.com/pakfactory" },
 ];
 
-export const FOOTER_COLUMNS: FooterColumns = [
-  [
-    {
-      title: "Browse the Blog",
-      links: [
-        { label: "Packaging News", href: `${BLOG_URL}/packaging-news`, external: true },
-        { label: "Trends", href: `${BLOG_URL}/trends`, external: true },
-        { label: "Business Strategy", href: `${BLOG_URL}/business-strategy`, external: true },
-        { label: "Sustainability", href: `${BLOG_URL}/sustainability`, external: true },
-        { label: "Design Inspiration", href: `${BLOG_URL}/design-inspiration`, external: true },
-        { label: "All Topics", href: `${BLOG_URL}/topics`, external: true },
-      ],
-    },
-    {
-      title: "Explore PakFactory",
-      links: [
-        { label: "About", href: `${WWW_URL}/about`, external: false },
-        { label: "Case Studies", href: `${WWW_URL}/case-studies` },
-        { label: "Resources", href: `${WWW_URL}/resources`, external: false },
-        { label: "Get a Quote", href: `${WWW_URL}/contact`, external: false },
-        { label: "Contribute to the Blog", href: `${BLOG_URL}/contribute`, external: true },
-      ],
-    },
-  ],
-  [
-    {
-      title: "Custom Packaging",
-      links: [
-        { label: "Rigid Boxes", href: `${WWW_URL}/capabilities`, external: false },
-        { label: "Folding Cartons", href: `${WWW_URL}/capabilities`, external: false },
-        { label: "Custom Pouches", href: `${WWW_URL}/capabilities`, external: false },
-        { label: "Labels & Stickers", href: `${WWW_URL}/capabilities`, external: false },
-        { label: "View All", href: `${WWW_URL}/capabilities`, external: false },
-      ],
-    },
-  ],
-  [
-    {
-      title: "Browse by Topics",
-      links: [
-        { label: "Explore Topics", href: `${BLOG_URL}/topics`, external: true },
-      ],
-    },
-    {
-      title: "Company",
-      links: [
-        { label: "About PakFactory", href: `${WWW_URL}/about`, external: false },
-        { label: "Contact Us", href: `${WWW_URL}/contact`, external: false },
-      ],
-    },
-  ],
+const AI_PROMPT = encodeURIComponent(
+  "What is PakFactory (pakfactory.com)? Summarize what they do, who they serve, and cite your sources.",
+);
+
+export const FOOTER_AI_LINKS: AiLink[] = [
+  { engine: "chatgpt", url: `https://chatgpt.com/?q=${AI_PROMPT}` },
+  { engine: "gemini", url: `https://gemini.google.com/app?q=${AI_PROMPT}` },
+  { engine: "perplexity", url: `https://www.perplexity.ai/search?q=${AI_PROMPT}` },
+  { engine: "claude", url: `https://claude.ai/new?q=${AI_PROMPT}` },
+  { engine: "grok", url: `https://grok.com/?q=${AI_PROMPT}` },
 ];
+
+export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns {
+  const browseByCategories: FooterLink[] = blogCategories.map((c) => ({
+    label: c.title,
+    href: c.href,
+    external: true,
+  }));
+
+  return [
+    // Column 1 — blog content discovery
+    [
+      {
+        title: "Browse by Categories",
+        links: browseByCategories,
+      },
+      {
+        title: "Browse by Topics",
+        links: [
+          { label: "Packaging Type", href: `${BLOG_URL}/topics/packaging-type`, external: true },
+          { label: "Industry", href: `${BLOG_URL}/topics/industry`, external: true },
+          { label: "Packaging Material", href: `${BLOG_URL}/topics/packaging-material`, external: true },
+          { label: "Packaging Finish", href: `${BLOG_URL}/topics/packaging-finish`, external: true },
+          { label: "Printing", href: `${BLOG_URL}/topics/printing`, external: true },
+        ],
+      },
+    ],
+    // Column 2 — blog + company links
+    [
+      {
+        title: "Explore",
+        links: [
+          { label: "Contribute", href: `${BLOG_URL}/contribute`, external: true },
+          { label: "Product Inspiration", href: `${BLOG_URL}/topics`, external: true },
+          { label: "Customization", href: `${BLOG_URL}/topics`, external: true },
+        ],
+      },
+      {
+        title: "Company",
+        links: [
+          { label: "About Us", href: `${WWW_URL}/about` },
+          { label: "Contact Us", href: `${WWW_URL}/contact` },
+          { label: "Case Studies", href: `${WWW_URL}/case-studies` },
+          { label: "Hours & Locations", href: `${WWW_URL}/locations` },
+          { label: "Careers", href: `${WWW_URL}/careers` },
+          { label: "Help Center", href: `${WWW_URL}/help` },
+        ],
+      },
+    ],
+    // Column 3 — pakfactory.com sections
+    [
+      {
+        title: "Custom packaging",
+        links: [
+          { label: "Products", href: `${WWW_URL}/capabilities` },
+          { label: "Industries", href: `${WWW_URL}/industries` },
+          { label: "Services", href: `${WWW_URL}/solutions` },
+          { label: "Why PakFactory", href: `${WWW_URL}/why-pakfactory` },
+          { label: "Request a Quote", href: `${WWW_URL}/contact` },
+        ],
+      },
+    ],
+  ];
+}
+
+export const FOOTER_COLUMNS: FooterColumns = buildFooterColumns(BLOG_CATEGORIES);

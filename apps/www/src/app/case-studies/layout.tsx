@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteNav } from "@pakfactory/components/layout/site-nav";
 import type { NavCategory } from "@pakfactory/components/layout/site-nav";
 import { SiteFooter } from "@pakfactory/components/layout/site-footer";
-import { getSiteUrl } from "@/lib/site";
+import { getWwwUrl } from "@/lib/site";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -10,8 +10,9 @@ import { BLOG_NAV_CATEGORIES_QUERY } from "@pakfactory/sanity/queries";
 import {
   BLOG_URL,
   BLOG_CATEGORIES,
-  FOOTER_COLUMNS,
+  FOOTER_AI_LINKS,
   FOOTER_SOCIAL,
+  buildFooterColumns,
 } from "@/lib/www-nav";
 
 export function generateMetadata(): Metadata {
@@ -20,7 +21,7 @@ export function generateMetadata(): Metadata {
   };
 }
 
-const WWW_URL = getSiteUrl();
+const WWW_URL = getWwwUrl();
 
 type SanityNavCategory = {
   _id: string;
@@ -54,6 +55,7 @@ export default async function CaseStudiesLayout({
   children: React.ReactNode;
 }) {
   const navCategories = await fetchNavCategories();
+  const footerColumns = buildFooterColumns(navCategories);
 
   return (
     <>
@@ -65,9 +67,10 @@ export default async function CaseStudiesLayout({
       />
       <main>{children}</main>
       <SiteFooter
-        columns={FOOTER_COLUMNS}
+        columns={footerColumns}
         contactHref={`${WWW_URL}/contact`}
         social={FOOTER_SOCIAL}
+        aiLinks={FOOTER_AI_LINKS}
       />
     </>
   );
