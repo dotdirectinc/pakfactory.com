@@ -3,9 +3,16 @@
  * Used by blog footer nav and reusable for future cross-surface linking.
  */
 
+import {
+  BLOG_CONTRIBUTE_PAGE_IDS,
+  BLOG_HOME_PAGE_IDS,
+  BLOG_TOPICS_PAGE_IDS,
+} from "./languages";
+
 export type DocumentHrefSurface = "blog" | "www";
 
 export type SanityLinkDocument = {
+  _id?: string | null;
   _type?: string | null;
   title?: string | null;
   name?: string | null;
@@ -45,6 +52,23 @@ const STATIC_SINGLETON_PATHS: Record<string, string> = {
   termsOfService: "/terms",
 };
 
+/** Pinned blogPage singleton ids → public paths (role implied by id when pageRole is unset). */
+const BLOG_SINGLETON_ID_PATHS: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.values(BLOG_HOME_PAGE_IDS).map((id) => [id, "/"]),
+  ),
+  ...Object.fromEntries(
+    Object.values(BLOG_TOPICS_PAGE_IDS).map((id) => [id, "/topics"]),
+  ),
+  ...Object.fromEntries(
+    Object.values(BLOG_CONTRIBUTE_PAGE_IDS).map((id) => [id, "/contribute"]),
+  ),
+};
+
+function stripDraftId(id?: string | null): string {
+  return id?.replace(/^drafts\./, "") ?? "";
+}
+
 function normalizeOrigin(origin: string): string {
   return origin.replace(/\/+$/, "");
 }
@@ -76,6 +100,10 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
       if (doc.pageRole === "topics") return "/topics";
       if (doc.pageRole === "search") return "/search";
       if (doc.pageRole === "contribute") return "/contribute";
+      if (doc._id) {
+        const idPath = BLOG_SINGLETON_ID_PATHS[stripDraftId(doc._id)];
+        if (idPath) return idPath;
+      }
       return slug ? `/${slug}` : null;
     case "post":
       return slug ? `/${slug}` : null;

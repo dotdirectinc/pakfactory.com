@@ -4,6 +4,7 @@ import {
 } from "@pakfactory/sanity/resolve-document-href";
 import { sanityImageAlt, sanityImageUrl } from "@/lib/sanity-image";
 import { getWwwUrl } from "@/lib/site";
+import type { BlogGlobalSettings } from "@/lib/blog-global-settings";
 
 export const DEFAULT_HEADER_CTA_LABEL = "Contact Us";
 export const DEFAULT_HEADER_CTA_HREF = "/contribute";
@@ -26,13 +27,6 @@ export type BlogPrimaryNavHeader = {
   cta: BlogPrimaryNavCta;
 };
 
-type PrimaryNavLogoRow = {
-  url?: string | null;
-  alt?: string | null;
-  width?: number | null;
-  height?: number | null;
-} | null;
-
 type PrimaryNavCtaRow = {
   label?: string | null;
   linkType?: string | null;
@@ -41,7 +35,6 @@ type PrimaryNavCtaRow = {
 } | null;
 
 export type BlogPrimaryNavHeaderRow = {
-  logo?: PrimaryNavLogoRow;
   cta?: PrimaryNavCtaRow;
 } | null;
 
@@ -55,9 +48,11 @@ export function getDefaultPrimaryNavHeader(): BlogPrimaryNavHeader {
   };
 }
 
-function resolvePrimaryNavLogo(
-  logo: PrimaryNavLogoRow | undefined,
+/** Resolve Global Settings company logo for the blog header. */
+export function resolveCompanyLogo(
+  global: BlogGlobalSettings | null | undefined,
 ): BlogPrimaryNavLogo | undefined {
+  const logo = global?.companyLogo;
   if (!logo) return undefined;
   const src = sanityImageUrl(logo);
   if (!src) return undefined;
@@ -104,7 +99,6 @@ export function resolvePrimaryNavHeader(
   header: BlogPrimaryNavHeaderRow | undefined,
 ): BlogPrimaryNavHeader {
   return {
-    logo: resolvePrimaryNavLogo(header?.logo ?? undefined),
     cta: resolvePrimaryNavCta(header?.cta ?? undefined),
   };
 }

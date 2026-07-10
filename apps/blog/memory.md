@@ -27,11 +27,11 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ## Primary navigation (blog header)
 
-The sticky header (`SiteNav` in root `layout.tsx`) reads the Studio singleton `blogNavigation.primaryNavigation` via `BLOG_NAV_CATEGORIES_QUERY` → `fetchBlogNavCategories()` (returns `{ categories, header }`):
+The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCategories()` (returns `{ categories, header }`):
 
-- **`logo`** — optional header image. When set, replaces the built-in Box icon + "PakFactory Blog" wordmark. When empty / missing asset, the built-in lockup is used. Studio: **Navigation → Primary Navigation → Header logo**.
-- **`cta`** — optional header button (`label` + Internal/External link via [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts)). When label or link is empty, the blog falls back to **"Contact Us" → `/contribute`**. Drives both the desktop button and the mobile-menu CTA. Studio: **Navigation → Primary Navigation → Header CTA**.
-- **`categories`** — category strip order. Exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
+- **`logo`** — optional company logo from Global Settings → **Company → Company logo** (`BLOG_GLOBAL_SETTINGS_QUERY` → `resolveCompanyLogo`). When set, replaces the built-in Box icon + "PakFactory" wordmark; "Blog" label always shows beside it. When empty / missing asset, the built-in lockup is used.
+- **`cta`** — optional header button from `blogNavigation.primaryNavigation` (`label` + Internal/External link via [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts)). When label or link is empty, the blog falls back to **"Contact Us" → `/contribute`**. Drives both the desktop button and the mobile-menu CTA. Studio: **Navigation → Primary Navigation → Header CTA**.
+- **`categories`** — category strip order from `blogNavigation.primaryNavigation`. Exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
 
 - **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty.
 - **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with the dev category order (logo/CTA left unset so built-in fallbacks apply).

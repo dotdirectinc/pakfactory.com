@@ -13,6 +13,8 @@ type PostRelatedRowProps = {
     categoryTitle?: string;
     heading?: string;
     postsCount?: number;
+    showTopBorder?: boolean;
+    showBottomBorder?: boolean;
 };
 
 /**
@@ -25,6 +27,8 @@ export function PostRelatedRow({
     categorySlug,
     heading,
     postsCount,
+    showTopBorder,
+    showBottomBorder,
 }: PostRelatedRowProps) {
     if (posts.length === 0) return null;
 
@@ -34,7 +38,11 @@ export function PostRelatedRow({
     const sectionId = 'post-related-row-heading';
 
     return (
-        <PageDielineFullBleedSection borderBottom innerClassName="py-10">
+        <PageDielineFullBleedSection
+            innerClassName="py-16"
+            borderTop={showTopBorder}
+            borderBottom={showBottomBorder}
+        >
             <div aria-labelledby={sectionId} className="border-none">
                 <div className="mb-6 flex items-end justify-between gap-4">
                     <h2

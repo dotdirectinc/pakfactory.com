@@ -17,6 +17,7 @@ export const settings = defineType({
   // Singleton — only one document of this type ever exists.
   groups: [
     { name: 'identity', title: 'Identity & brand', default: true },
+    { name: 'company', title: 'Company' },
     { name: 'seoDefaults', title: 'SEO defaults' },
     { name: 'socialDefaults', title: 'Social defaults' },
     { name: 'crawlers', title: 'Crawlers & AI' },
@@ -52,24 +53,38 @@ export const settings = defineType({
       name: 'organization',
       title: 'Organization',
       type: 'object',
-      group: 'identity',
-      description: 'The company Organization entity — emitted as Organization JSON-LD.',
+      group: 'company',
+      description:
+        'Company identity — used in the blog header logo and Organization JSON-LD.',
       options: { collapsible: true, collapsed: false },
       fields: [
         defineField({
           name: 'legalName',
-          title: 'Legal name',
+          title: 'Company name',
           type: 'string',
           validation: (Rule) => Rule.required(),
         }),
-        defineField(taggedImageField({
-          name: 'logo',
-          title: 'Logo',
-          type: 'image',
-          mediaTags: [MEDIA_TAG.website],
-          options: { hotspot: true },
-          validation: (Rule) => Rule.required(),
-        })),
+        defineField(
+          taggedImageField({
+            name: 'logo',
+            title: 'Company logo',
+            type: 'image',
+            mediaTags: [MEDIA_TAG.website],
+            options: { hotspot: true },
+            description:
+              'Used in the blog header (replaces the default PakFactory wordmark) and Organization JSON-LD.',
+            fields: [
+              defineField({
+                name: 'alt',
+                title: 'Alt text override',
+                type: 'string',
+                description:
+                  'Optional. Falls back to the alt text on the image asset.',
+              }),
+            ],
+            validation: (Rule) => Rule.required(),
+          }),
+        ),
         defineField({ name: 'foundingDate', title: 'Founding date', type: 'date' }),
         defineField({
           name: 'contact',

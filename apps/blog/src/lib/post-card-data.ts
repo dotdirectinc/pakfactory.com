@@ -50,6 +50,7 @@ export function toPostCardData(
     imageUrl: sanityImageUrl(post.mainImage, imageWidth),
     imageAlt: sanityImageAlt(post.mainImage),
     categoryTitle: post.categoryTitle,
+    categorySlug: post.categorySlug,
     authorName: post.authorName,
     authorSlug: post.authorSlug,
     authorImageUrl: post.authorImageUrl,

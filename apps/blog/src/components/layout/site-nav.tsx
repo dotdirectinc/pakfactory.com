@@ -30,7 +30,7 @@ export function SiteNav({categories, header}: SiteNavProps) {
                     <SiteNavTopRow>
                         <Link
                             href="/"
-                            className="flex shrink-0 items-center gap-2 no-underline"
+                            className="group flex shrink-0 items-center gap-2 no-underline"
                         >
                             {logo ? (
                                 <Image
@@ -51,11 +51,11 @@ export function SiteNav({categories, header}: SiteNavProps) {
                                     <span className="text-[15px] font-semibold tracking-tight text-foreground lg:text-xl">
                                         PakFactory
                                     </span>
-                                    <span className="text-[15px] font-medium tracking-tight text-muted-foreground lg:text-xl">
-                                        Blog
-                                    </span>
                                 </>
                             )}
+                            <span className="text-[15px] font-medium tracking-tight text-muted-foreground transition-colors group-hover:text-primary lg:text-xl">
+                                Blog
+                            </span>
                         </Link>
 
                         <Button

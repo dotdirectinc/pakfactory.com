@@ -3,7 +3,6 @@ import { socialLinksField } from '../lib/social-link-schema'
 import { ALL_FIELDS_GROUP } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
 import { linkTargetFields } from '../lib/link-target-fields'
-import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
 
 const footerLinkFields = [
   ...linkTargetFields({ requireLinkType: true }),
@@ -149,26 +148,6 @@ export const blogNavigation = defineType({
       group: 'primary',
       options: { collapsible: false },
       fields: [
-        defineField(
-          taggedImageField({
-            name: 'logo',
-            title: 'Header logo',
-            type: 'image',
-            mediaTags: [MEDIA_TAG.blog],
-            options: { hotspot: true },
-            description:
-              'Optional. Replaces the default PakFactory Blog wordmark in the header. When empty, the built-in logo is used.',
-            fields: [
-              defineField({
-                name: 'alt',
-                title: 'Alt text override',
-                type: 'string',
-                description:
-                  'Optional. Falls back to the alt text on the image asset.',
-              }),
-            ],
-          }),
-        ),
         defineField({
           name: 'cta',
           title: 'Header CTA',

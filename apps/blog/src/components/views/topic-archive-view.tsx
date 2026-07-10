@@ -57,30 +57,35 @@ export function TopicArchiveView({
             }
         >
             <TopicListingSection
+                tagSlug={data.tag.slug}
+                filters={data.filters}
                 categoryOptions={categoryOptions}
+                perPage={perPage}
                 pagination={
-                    <Pagination
-                        pageNumber={data.pageNumber}
-                        totalPages={data.totalPages}
-                        hrefForPage={(page) =>
-                            tagPageHref(data.tag.slug, page, data.filters, perPage)
-                        }
-                        ariaLabel="Topic archive pagination"
-                        rightSlot={
-                            <PerPageSelect
-                                value={perPage}
-                                options={PAGE_SIZE_OPTIONS.map((size) => ({
-                                    size,
-                                    href: tagPageHref(
-                                        data.tag.slug,
-                                        1,
-                                        data.filters,
+                    data.totalPages > 1 ? (
+                        <Pagination
+                            pageNumber={data.pageNumber}
+                            totalPages={data.totalPages}
+                            hrefForPage={(page) =>
+                                tagPageHref(data.tag.slug, page, data.filters, perPage)
+                            }
+                            ariaLabel="Topic archive pagination"
+                            rightSlot={
+                                <PerPageSelect
+                                    value={perPage}
+                                    options={PAGE_SIZE_OPTIONS.map((size) => ({
                                         size,
-                                    ),
-                                }))}
-                            />
-                        }
-                    />
+                                        href: tagPageHref(
+                                            data.tag.slug,
+                                            1,
+                                            data.filters,
+                                            size,
+                                        ),
+                                    }))}
+                                />
+                            }
+                        />
+                    ) : null
                 }
             >
                 <PostList

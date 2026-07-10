@@ -4,9 +4,19 @@ import { BLOG_GLOBAL_SETTINGS_CACHE_TAG } from "@/lib/blog-cache";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 
+type CompanyLogoRow = {
+  url?: string | null;
+  alt?: string | null;
+  width?: number | null;
+  height?: number | null;
+} | null;
+
 export type BlogGlobalSettings = {
   defaultOgImageUrl?: string | null;
   organizationLogoUrl?: string | null;
+  companyLogo?: CompanyLogoRow;
+  companyName?: string | null;
+  companyAddress?: string | null;
   siteTitle?: string | null;
   robotsTxt?: string | null;
   llmsTxt?: string | null;

@@ -394,6 +394,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     linkType,
     externalUrl,
     "internalLink": internalLink->{
+      _id,
       _type,
       title,
       "slug": slug.current,
@@ -858,6 +859,14 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   siteTitle,
   "defaultOgImageUrl": defaultOgImage.asset->url,
   "organizationLogoUrl": organization.logo.asset->url,
+  "companyLogo": organization.logo{
+    "url": asset->url,
+    "alt": coalesce(alt, asset->altText),
+    "width": asset->metadata.dimensions.width,
+    "height": asset->metadata.dimensions.height
+  },
+  "companyName": organization.legalName,
+  "companyAddress": organization.contact.address,
   robotsTxt,
   llmsTxt,
   additionalEmbedHosts
@@ -903,7 +912,7 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
   }
 }`;
 
-/** Category nav order + header logo/CTA from Blog Navigation `primaryNavigation`. */
+/** Category nav order + header CTA from Blog Navigation `primaryNavigation`. */
 export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   *[_id == "blogNavigation"][0]{
     _id,
@@ -915,17 +924,12 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
       language
     },
     "header": {
-      "logo": primaryNavigation.logo{
-        "url": asset->url,
-        "alt": coalesce(alt, asset->altText),
-        "width": asset->metadata.dimensions.width,
-        "height": asset->metadata.dimensions.height
-      },
       "cta": primaryNavigation.cta{
         label,
         linkType,
         externalUrl,
         "internalLink": internalLink->{
+          _id,
           _type,
           title,
           "slug": slug.current,
@@ -971,6 +975,7 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
     internalKind,
     sitePath,
     "internalLink": internalLink->{
+      _id,
       _type,
       title,
       "slug": slug.current,
@@ -997,6 +1002,7 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
         href,
         external,
         "internalLink": internalLink->{
+          _id,
           _type,
           title,
           "slug": slug.current,
@@ -1022,7 +1028,7 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   }
 }`;
 
-/** Published posts carrying $tagSlug, with optional author/date narrowing (tag is the page, not a filter). */
+/** Published posts carrying $tagSlug, with optional author/date/category narrowing (tag is the page, not a filter). */
 const TAG_POST_FILTER = /* groq */ `_type == "post"
   && (!defined(language) || language == $language)
   && $tagSlug in tags[]->slug.current
@@ -1030,6 +1036,7 @@ const TAG_POST_FILTER = /* groq */ `_type == "post"
   && defined(publishedAt)
   && publishedAt <= now()
   && ($authorSlug == null || author->slug.current == $authorSlug)
+  && (count($categorySlugs) == 0 || category->slug.current in $categorySlugs)
   && ($yearStart == null || publishedAt >= $yearStart)
   && ($yearEnd == null || publishedAt < $yearEnd)`;
 
@@ -1048,6 +1055,16 @@ export const BLOG_TAG_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
 export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
   ${TAG_POST_FILTER}
 ] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Recently updated — editorial lastModified, falling back to Sanity _updatedAt. */
+export const BLOG_TAG_POSTS_PAGE_UPDATED_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(coalesce(lastModified, _updatedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Most popular — viewCount desc, then publishedAt as tiebreaker. */
+export const BLOG_TAG_POSTS_PAGE_POPULAR_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 /** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by topic group in the sidebar. */
 export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[
