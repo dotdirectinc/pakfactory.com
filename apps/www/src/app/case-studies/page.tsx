@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { getPublishedSanityClient } from "@/lib/sanity/client";
+import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   CASE_STUDIES_LISTING_QUERY,
@@ -53,7 +53,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CaseStudiesPage() {
-  const client = isSanityConfigured() ? getPublishedSanityClient() : null;
+  const client = isSanityConfigured() ? await getSanityClient() : null;
 
   const [studies, pageData] = await Promise.all([
     client

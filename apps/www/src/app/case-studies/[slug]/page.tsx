@@ -4,7 +4,7 @@ import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
 import { Breadcrumb } from "@pakfactory/components/layout/breadcrumb";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
-import { getPublishedSanityClient } from "@/lib/sanity/client";
+import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   CASE_STUDIES_PAGE_QUERY,
@@ -91,7 +91,7 @@ function DashedDivider() {
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  const client = isSanityConfigured() ? getPublishedSanityClient() : null;
+  const client = isSanityConfigured() ? await getSanityClient() : null;
 
   const [study, pageData] = await Promise.all([
     client
