@@ -1,18 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@pakfactory/ui/components/dropdown-menu";
 import { Input } from "@pakfactory/ui/components/input";
@@ -35,6 +29,9 @@ import {
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CaseStudyCard } from "@pakfactory/sanity/queries";
 import { CaseStudyCard as CaseStudyCardComponent } from "@/components/modules/case-study-card";
+import { Pagination } from "@pakfactory/components/modules/pagination";
+
+const PAGE_SIZES = [9, 18, 36];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,15 +97,21 @@ function TagDropdown({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 min-w-[200px] overflow-y-auto">
-        {options.map((opt) => (
-          <DropdownMenuCheckboxItem
-            key={opt._id}
-            checked={values.includes(opt._id)}
-            onCheckedChange={(c) => toggle(opt._id, c === true)}
-          >
-            {opt.title}
-          </DropdownMenuCheckboxItem>
-        ))}
+        {options.map((opt) => {
+          const isChecked = values.includes(opt._id);
+          return (
+            <DropdownMenuItem
+              key={opt._id}
+              onSelect={(e) => {
+                e.preventDefault();
+                toggle(opt._id, !isChecked);
+              }}
+              className={cn("cursor-pointer px-3", isChecked && "font-medium")}
+            >
+              {opt.title}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -175,20 +178,6 @@ function FilterSection({
   );
 }
 
-// ─── Pagination helpers ───────────────────────────────────────────────────────
-
-const PAGE_SIZES = [9, 12, 24];
-
-function pageItems(total: number, current: number): (number | "…")[] {
-  return Array.from({ length: total }, (_, i) => i + 1)
-    .filter((n) => n === 1 || n === total || Math.abs(n - current) <= 1)
-    .reduce<(number | "…")[]>((acc, n, i, arr) => {
-      if (i > 0 && (n as number) - (arr[i - 1] as number) > 1) acc.push("…");
-      acc.push(n);
-      return acc;
-    }, []);
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CaseStudyListingGrid({ studies }: Props) {
@@ -200,7 +189,7 @@ export function CaseStudyListingGrid({ studies }: Props) {
   const [products, setProducts] = useState<string[]>([]);
   const [expertises, setExpertises] = useState<string[]>([]);
   const [query, setQuery] = useState("");
-  const [pageSize, setPageSize] = useState(9);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0] ?? 9);
   const [page, setPage] = useState(1);
 
   // Reset to page 1 whenever a filter changes
@@ -247,99 +236,6 @@ export function CaseStudyListingGrid({ studies }: Props) {
 
   const activeFilterCount = solutions.length + products.length + expertises.length;
   const hasActiveFilters = activeFilterCount > 0 || query.length > 0;
-
-  const pagerItems = pageItems(totalPages, safePage);
-
-  const renderNav = () => (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-9 gap-1.5 px-2"
-        disabled={safePage === 1}
-        onClick={() => setPage((p) => Math.max(1, p - 1))}
-      >
-        <ChevronLeft className="size-3.5" aria-hidden />
-        Previous
-      </Button>
-      {pagerItems.map((n, i) =>
-        n === "…" ? (
-          <span key={`gap-${i}`} className="px-1 text-muted-foreground">
-            …
-          </span>
-        ) : n === safePage ? (
-          <Button
-            key={n}
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-9 shrink-0"
-            aria-current="page"
-            aria-label={`Page ${n}, current page`}
-            disabled
-          >
-            {n}
-          </Button>
-        ) : (
-          <Button
-            key={n}
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-9 shrink-0"
-            onClick={() => setPage(n as number)}
-            aria-label={`Page ${n}`}
-          >
-            {n}
-          </Button>
-        ),
-      )}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-9 gap-1.5 px-2"
-        disabled={safePage === totalPages}
-        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-      >
-        Next
-        <ChevronRight className="size-3.5" aria-hidden />
-      </Button>
-    </div>
-  );
-
-  const renderPerPage = () => (
-    <Select
-      value={String(pageSize)}
-      onValueChange={(v) => {
-        setPageSize(Number(v));
-        setPage(1);
-      }}
-    >
-      <SelectTrigger
-        aria-label="Items per page"
-        className="h-9 w-[110px] rounded-md border border-border bg-background text-sm text-muted-foreground shadow-none hover:text-foreground"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent align="end">
-        {PAGE_SIZES.map((n) => (
-          <SelectItem key={n} value={String(n)}>
-            {n}/page
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-
-  const pageInfo = (
-    <p className="text-sm text-muted-foreground">
-      Page{" "}
-      <span className="font-medium text-foreground">{safePage}</span> of{" "}
-      <span className="font-medium text-foreground">{totalPages}</span>
-    </p>
-  );
 
   return (
     <>
@@ -519,22 +415,35 @@ export function CaseStudyListingGrid({ studies }: Props) {
               </ul>
             )}
 
-            {/* Pagination — desktop: info left, nav center, per-page right */}
+            {/* Pagination */}
             {totalPages > 1 && (
-              <>
-                <div className="hidden pt-4 text-sm md:grid md:grid-cols-3 md:items-center">
-                  <div className="justify-self-start">{pageInfo}</div>
-                  <div className="justify-self-center">{renderNav()}</div>
-                  <div className="justify-self-end">{renderPerPage()}</div>
-                </div>
-                <div className="flex flex-col items-center gap-4 pt-4 text-sm md:hidden">
-                  {renderNav()}
-                  <div className="flex items-center gap-3">
-                    {pageInfo}
-                    {renderPerPage()}
-                  </div>
-                </div>
-              </>
+              <div className="border-t border-dashed border-border px-4 md:px-8">
+                <Pagination
+                  pageNumber={page}
+                  totalPages={totalPages}
+                  onPageChange={(p: number) => setPage(p)}
+                  rightSlot={
+                    <Select
+                      value={String(pageSize)}
+                      onValueChange={(v) => {
+                        setPageSize(Number(v));
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[100px] text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent align="end">
+                        {PAGE_SIZES.map((n) => (
+                          <SelectItem key={n} value={String(n)}>
+                            {n} / page
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  }
+                />
+              </div>
             )}
           </div>
         </div>

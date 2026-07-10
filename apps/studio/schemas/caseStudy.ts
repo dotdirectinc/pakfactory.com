@@ -43,13 +43,13 @@ export const caseStudy = defineType({
   type: 'document',
   icon: CaseIcon,
   groups: [
-    { name: 'content', title: '📝 Content', default: true },
-    { name: 'story', title: '📖 Story' },
-    { name: 'metrics', title: '📊 Metrics' },
-    { name: 'categorization', title: '🏷️ Categorization' },
-    { name: 'publishing', title: '👤 Publishing' },
-    { name: 'seo', title: '🔍 SEO' },
-    { name: 'social', title: '📣 Social' },
+    { name: 'content', title: 'Content', default: true },
+    { name: 'story', title: 'Story' },
+    { name: 'metrics', title: 'Metrics' },
+    { name: 'categorization', title: 'Categorization' },
+    { name: 'publishing', title: 'Publishing' },
+    { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
 
@@ -236,7 +236,7 @@ export const caseStudy = defineType({
 
     defineField({
       name: 'highlights',
-      title: 'Highlights',
+      title: 'Metrics',
       type: 'array',
       group: 'metrics',
       description: 'Key stats shown in the left rail. Recommend 2–4.',
@@ -312,8 +312,8 @@ export const caseStudy = defineType({
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
-      description: 'Manual override for the "See What\'s More" section. Empty → auto-fallback to newest 3.',
-      validation: (Rule) => Rule.max(3),
+      description: 'Manual override for the "See What\'s More" section. Empty → auto-fallback to newest 6.',
+      validation: (Rule) => Rule.max(6),
     }),
 
     // ─── Publishing ───────────────────────────────────────────────────────────

@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
-import { SiteNav } from "@pakfactory/ui/components/site-nav";
-import { SiteFooter } from "@pakfactory/ui/components/site-footer";
-import { SOFT_LAUNCH_NAV_LINKS, SOFT_LAUNCH_FOOTER_COLUMNS, SOFT_LAUNCH_SOCIAL_LINKS } from "@/lib/www-nav";
+import { SiteNav } from "@pakfactory/components/layout/site-nav";
+import type { NavCategory } from "@pakfactory/components/layout/site-nav";
+import { SiteFooter } from "@pakfactory/components/layout/site-footer";
 import { getSiteUrl } from "@/lib/site";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
+import { getPublishedSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
+import { BLOG_NAV_CATEGORIES_QUERY } from "@pakfactory/sanity/queries";
+import {
+  BLOG_URL,
+  BLOG_CATEGORIES,
+  FOOTER_COLUMNS,
+  FOOTER_SOCIAL,
+} from "@/lib/www-nav";
 
 export function generateMetadata(): Metadata {
   return {
@@ -13,22 +22,52 @@ export function generateMetadata(): Metadata {
 
 const WWW_URL = getSiteUrl();
 
-export default function CaseStudiesLayout({
+type SanityNavCategory = {
+  _id: string;
+  title: string;
+  navLabel?: string | null;
+  slug: string;
+};
+
+async function fetchNavCategories(): Promise<NavCategory[]> {
+  if (!isSanityConfigured()) return BLOG_CATEGORIES;
+  try {
+    const result = await getPublishedSanityClient().fetch<{
+      categories?: SanityNavCategory[] | null;
+    } | null>(BLOG_NAV_CATEGORIES_QUERY, { language: "en" });
+
+    const cats = result?.categories?.filter((c) => !!c.slug) ?? [];
+    if (cats.length === 0) return BLOG_CATEGORIES;
+
+    return cats.map((c) => ({
+      href: `${BLOG_URL}/${c.slug}`,
+      title: (c.navLabel?.trim() || c.title) ?? c.title,
+    }));
+  } catch {
+    return BLOG_CATEGORIES;
+  }
+}
+
+export default async function CaseStudiesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const navCategories = await fetchNavCategories();
+
   return (
     <>
       <SiteNav
-        navLinks={SOFT_LAUNCH_NAV_LINKS}
-        getQuoteHref={`${WWW_URL}/contact`}
+        categories={navCategories}
+        wwwHref={WWW_URL}
+        blogHref={BLOG_URL}
+        contactHref={`${WWW_URL}/contact`}
       />
       <main>{children}</main>
       <SiteFooter
-        columns={SOFT_LAUNCH_FOOTER_COLUMNS}
+        columns={FOOTER_COLUMNS}
         contactHref={`${WWW_URL}/contact`}
-        social={SOFT_LAUNCH_SOCIAL_LINKS}
+        social={FOOTER_SOCIAL}
       />
     </>
   );
