@@ -27,6 +27,7 @@ import {
 import {
   getFallbackFooterData,
   resolveFooterData,
+  resolveFooterLinkHref,
   type BlogFooterData,
   type BlogFooterNavDoc,
 } from "@/lib/blog-footer-nav";
@@ -44,8 +45,11 @@ import {
   resolvePrimaryNavHeader,
   type BlogPrimaryNavHeader,
   type BlogPrimaryNavHeaderRow,
+  type BlogPrimaryNavItem,
 } from "@/lib/blog-primary-nav";
+import { categoryHref } from "@/lib/blog-post-url";
 import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
+import type { SanityLinkDocument } from "@pakfactory/sanity/resolve-document-href";
 
 export type PopularPostCard = {
   _id: string;
@@ -63,41 +67,70 @@ export type PopularPostCard = {
 };
 
 export type BlogPrimaryNavData = {
-  categories: BlogCategoryChip[];
+  navItems: BlogPrimaryNavItem[];
   header: BlogPrimaryNavHeader;
 };
 
-type BlogNavCategoryRow = BlogCategoryChip & {
-  language?: string | null;
+type BlogNavCategoryRef = {
+  _id?: string;
+  title?: string | null;
   navLabel?: string | null;
+  slug?: string | null;
+  language?: string | null;
+};
+
+type BlogNavItemRow = {
+  _type?: string | null;
+  _key?: string | null;
+  category?: BlogNavCategoryRef | null;
+  label?: string | null;
+  linkType?: string | null;
+  externalUrl?: string | null;
+  internalLink?: SanityLinkDocument | null;
 };
 
 type BlogNavSettingsDoc = {
   _id?: string;
-  categories?: (BlogNavCategoryRow | null)[] | null;
+  categories?: (BlogNavItemRow | null)[] | null;
   header?: BlogPrimaryNavHeaderRow;
 } | null;
 
-function resolveNavCategories(
+function resolvePrimaryNavItems(
   doc: BlogNavSettingsDoc,
   language: string = DEFAULT_BLOG_LANGUAGE,
-): BlogCategoryChip[] {
-  if (doc?._id) {
-    return (doc.categories ?? [])
-      .filter((row): row is BlogNavCategoryRow => row != null)
-      .filter((row) => (row.language ?? language) === language)
-      .filter(
-        (row): row is BlogNavCategoryRow =>
-          Boolean(row.slug?.trim() && row.title?.trim()),
-      )
-      // Nav bar shows the category's Nav label when set, else its Name.
-      .map(({ _id, title, navLabel, slug }) => ({
-        _id,
-        title: navLabel?.trim() || title,
-        slug,
-      }));
+): BlogPrimaryNavItem[] {
+  if (!doc?._id) return [];
+
+  const items: BlogPrimaryNavItem[] = [];
+
+  for (const row of doc.categories ?? []) {
+    if (!row) continue;
+
+    const category = row.category;
+    if (category?.slug?.trim() && category?.title?.trim()) {
+      if ((category.language ?? language) !== language) continue;
+      items.push({
+        key: category._id ?? row._key ?? category.slug,
+        label: category.navLabel?.trim() || category.title,
+        href: categoryHref(category.slug),
+        categorySlug: category.slug,
+      });
+      continue;
+    }
+
+    if (row.linkType) {
+      const resolved = resolveFooterLinkHref(row);
+      if (!resolved) continue;
+      items.push({
+        key: row._key ?? resolved.href,
+        label: resolved.label,
+        href: resolved.href,
+        ...(resolved.external ? { external: true } : {}),
+      });
+    }
   }
-  return [];
+
+  return items;
 }
 
 function resolvePrimaryNav(
@@ -107,7 +140,7 @@ function resolvePrimaryNav(
 ): BlogPrimaryNavData {
   const header = resolvePrimaryNavHeader(doc?.header ?? undefined);
   return {
-    categories: resolveNavCategories(doc, language),
+    navItems: resolvePrimaryNavItems(doc, language),
     header: {
       ...header,
       logo: companyLogo,
@@ -126,7 +159,7 @@ async function loadBlogPrimaryNavFromClient(
 ): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {
     return {
-      categories: [],
+      navItems: [],
       header: getDefaultPrimaryNavHeader(),
     };
   }
@@ -262,7 +295,7 @@ export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
 export async function fetchBlogNavCategories(): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {
     return {
-      categories: [],
+      navItems: [],
       header: getDefaultPrimaryNavHeader(),
     };
   }

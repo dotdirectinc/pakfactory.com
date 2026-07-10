@@ -1,5 +1,6 @@
 import { Button } from "@pakfactory/ui/components/button";
-import { EXTERNAL_LINK_REL } from "../commons/external-link";
+import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import { EXTERNAL_LINK_REL, externalLinkAttributes } from "../commons/external-link";
 
 export type FooterLink = { label: string; href: string; external?: boolean };
 export type FooterSection = { title: string; links: FooterLink[] };
@@ -110,6 +111,7 @@ const PLATFORM_ICONS: Record<SocialPlatform, () => React.ReactElement> = {
 type SiteFooterProps = {
   columns: FooterColumns;
   contactHref: string;
+  contactLabel?: string;
   social?: SocialLink[];
   aiLinks?: AiLink[];
 };
@@ -137,11 +139,17 @@ function FooterSectionBlock({ section }: { section: FooterSection }) {
   );
 }
 
-export function SiteFooter({ columns, contactHref, social = [], aiLinks = [] }: SiteFooterProps) {
+export function SiteFooter({
+  columns,
+  contactHref,
+  contactLabel = "Let's talk",
+  social = [],
+  aiLinks = [],
+}: SiteFooterProps) {
   return (
     <footer className="bg-background">
-      <div className="mx-auto max-w-[var(--layout-max)] px-0">
-        <div className="border-dashed border-border px-8 py-10 text-center">
+      <PageDielineSection innerClassName="px-0">
+        <div className="border-t border-dashed border-foreground/10 px-8 py-16 text-center">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Let&apos;s collaborate and craft <br /> your vision
           </h2>
@@ -149,7 +157,9 @@ export function SiteFooter({ columns, contactHref, social = [], aiLinks = [] }: 
             className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             asChild
           >
-            <a href={contactHref}>Let&apos;s talk</a>
+            <a href={contactHref} {...externalLinkAttributes(contactHref)}>
+              {contactLabel}
+            </a>
           </Button>
         </div>
 
@@ -223,7 +233,7 @@ export function SiteFooter({ columns, contactHref, social = [], aiLinks = [] }: 
             <p className="text-sm text-muted-foreground">© 2026 PakFactory. All Rights Reserved</p>
           </div>
         </div>
-      </div>
+      </PageDielineSection>
     </footer>
   );
 }

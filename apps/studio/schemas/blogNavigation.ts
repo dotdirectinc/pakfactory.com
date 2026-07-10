@@ -4,6 +4,42 @@ import { ALL_FIELDS_GROUP } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
 import { linkTargetFields } from '../lib/link-target-fields'
 
+function linkTargetPreview({
+  label,
+  linkType,
+  externalUrl,
+  internalTitle,
+  internalType,
+  internalSlug,
+}: {
+  label?: string | null
+  linkType?: string | null
+  externalUrl?: string | null
+  internalTitle?: string | null
+  internalType?: string | null
+  internalSlug?: string | null
+}) {
+  const title = label?.trim() || internalTitle || 'Untitled link'
+  if (linkType === 'external') {
+    return {
+      title,
+      subtitle: externalUrl ? `External · ${externalUrl}` : 'External link',
+    }
+  }
+  const slugHint =
+    internalType === 'blogTag'
+      ? `/topics/${internalSlug ?? '…'}`
+      : internalType === 'author'
+        ? `/author/${internalSlug ?? '…'}`
+        : internalSlug
+          ? `/${internalSlug}`
+          : 'Internal link'
+  return {
+    title,
+    subtitle: internalType ? `${internalType} · ${slugHint}` : slugHint,
+  }
+}
+
 const footerLinkFields = [
   ...linkTargetFields({ requireLinkType: true }),
   defineField({
@@ -14,6 +50,35 @@ const footerLinkFields = [
       'Optional display text. When empty, the linked document title is used for internal links.',
   }),
 ]
+
+const primaryNavLinkFields = [
+  defineField({
+    name: 'label',
+    title: 'Label',
+    type: 'string',
+    description: 'Text shown in the primary navigation strip.',
+    validation: (Rule) => Rule.required(),
+  }),
+  ...linkTargetFields({ requireLinkType: true }),
+]
+
+const primaryNavLinkMember = defineArrayMember({
+  type: 'object',
+  name: 'primaryNavLink',
+  title: 'Custom link',
+  fields: primaryNavLinkFields,
+  preview: {
+    select: {
+      label: 'label',
+      linkType: 'linkType',
+      externalUrl: 'externalUrl',
+      internalTitle: 'internalLink.title',
+      internalType: 'internalLink._type',
+      internalSlug: 'internalLink.slug.current',
+    },
+    prepare: linkTargetPreview,
+  },
+})
 
 const footerSectionMember = defineArrayMember({
   type: 'object',
@@ -43,34 +108,7 @@ const footerSectionMember = defineArrayMember({
               internalType: 'internalLink._type',
               internalSlug: 'internalLink.slug.current',
             },
-            prepare({
-              label,
-              linkType,
-              externalUrl,
-              internalTitle,
-              internalType,
-              internalSlug,
-            }) {
-              const title = label?.trim() || internalTitle || 'Untitled link'
-              if (linkType === 'external') {
-                return {
-                  title,
-                  subtitle: externalUrl ? `External · ${externalUrl}` : 'External link',
-                }
-              }
-              const slugHint =
-                internalType === 'blogTag'
-                  ? `/topics/${internalSlug ?? '…'}`
-                  : internalType === 'author'
-                    ? `/author/${internalSlug ?? '…'}`
-                    : internalSlug
-                      ? `/${internalSlug}`
-                      : 'Internal link'
-              return {
-                title,
-                subtitle: internalType ? `${internalType} · ${slugHint}` : slugHint,
-              }
-            },
+            prepare: linkTargetPreview,
           },
         }),
       ],
@@ -167,12 +205,14 @@ export const blogNavigation = defineType({
         }),
         defineField({
           name: 'categories',
-          title: 'Category navigation order',
+          title: 'Primary navigation items',
           type: 'array',
           description:
-            'Categories shown in the primary nav / category strip, in display order. Drag to reorder.',
-          of: [{ type: 'reference', to: [{ type: 'blogCategory' }] }],
-          validation: (Rule) => Rule.unique(),
+            'Categories and optional custom internal or external links shown in the primary nav strip, in display order. Drag to reorder.',
+          of: [
+            { type: 'reference', to: [{ type: 'blogCategory' }] },
+            primaryNavLinkMember,
+          ],
         }),
       ],
     }),

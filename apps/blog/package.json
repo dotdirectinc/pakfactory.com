@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@pakfactory/components": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",
     "@pakfactory/ui": "workspace:*",

@@ -419,9 +419,12 @@ const blogTopicsPageDoc = {
 }
 
 /**
- * Blog Navigation singleton — primary nav (logo/CTA optional + category order)
- * and footer link columns. Logo and CTA are left unset so the blog falls back
- * to the built-in wordmark and "Contact Us" → /contribute.
+ * Blog Navigation singleton — primary nav (category refs + optional primaryNavLink
+ * custom links) and footer link columns. Logo and CTA are left unset so the blog
+ * falls back to the built-in wordmark and "Contact Us" → /contribute.
+ *
+ * To seed a custom nav link, append e.g. externalLink('https://www.pakfactory.com', 'PakFactory')
+ * from footer-navigation-seed-data.mjs to the categories array below.
  */
 const blogNavigationDoc = {
   _id: 'blogNavigation',

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { ChevronRight } from "lucide-react";
+import { Breadcrumb } from "@pakfactory/components/layout/breadcrumb";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -155,30 +154,14 @@ export default async function CaseStudyPage({ params }: Props) {
       />
 
       {/* Breadcrumb */}
-      <PageDielineSection innerClassName="border-b border-dashed border-border py-3">
-        <nav aria-label="Breadcrumb">
-          <ol className="flex items-center gap-1 text-sm text-muted-foreground">
-            <li>
-              <Link href={wwwHomeHref} className="hover:text-foreground">
-                Home
-              </Link>
-            </li>
-            <li aria-hidden>
-              <ChevronRight className="size-3.5" />
-            </li>
-            <li>
-              <Link href="/case-studies" className="hover:text-foreground">
-                Case Studies
-              </Link>
-            </li>
-            <li aria-hidden>
-              <ChevronRight className="size-3.5" />
-            </li>
-            <li className="truncate text-foreground" aria-current="page">
-              {study.title}
-            </li>
-          </ol>
-        </nav>
+      <PageDielineSection innerClassName="border-b border-dashed border-border py-4">
+        <Breadcrumb
+          items={[
+            { label: "Home", href: wwwHomeHref },
+            { label: "Case Studies", href: "/case-studies" },
+            { label: study.title },
+          ]}
+        />
       </PageDielineSection>
 
       {/* Hero — title + intro left, meta card right */}
