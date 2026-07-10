@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { CategoryArchiveView } from "@/components/views/category-archive-view";
+import { parsePerPage } from "@/lib/blog-archive";
 import {
   buildCategoryArchiveMetadata,
   categoryPageHref,
@@ -38,10 +39,12 @@ export async function generateMetadata({
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
+  const perPage = parsePerPage(sp.perPage);
   const data = await fetchCategoryArchivePage(
     category,
     pagination.pageNumber,
     filters,
+    perPage,
   );
   if (!data) return { title: "Category not found" };
 
@@ -75,14 +78,16 @@ export default async function CategoryArchivePaginatedPage({
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
+  const perPage = parsePerPage(sp.perPage);
   const data = await fetchCategoryArchivePage(
     category,
     pagination.pageNumber,
     filters,
+    perPage,
   );
 
   if (!data) notFound();
-  if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount)) {
+  if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount, perPage)) {
     notFound();
   }
 

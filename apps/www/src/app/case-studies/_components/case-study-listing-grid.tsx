@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+import { Button } from "@pakfactory/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -245,48 +252,60 @@ export function CaseStudyListingGrid({ studies }: Props) {
 
   const renderNav = () => (
     <div className="flex flex-wrap items-center justify-center gap-2">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
+        className="h-9 gap-1.5 px-2"
         disabled={safePage === 1}
         onClick={() => setPage((p) => Math.max(1, p - 1))}
-        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:text-foreground/70 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-          <path d="m15 18-6-6 6-6" />
-        </svg>
+        <ChevronLeft className="size-3.5" aria-hidden />
         Previous
-      </button>
+      </Button>
       {pagerItems.map((n, i) =>
         n === "…" ? (
-          <span key={`gap-${i}`} className="px-1 text-muted-foreground">…</span>
-        ) : (
-          <button
+          <span key={`gap-${i}`} className="px-1 text-muted-foreground">
+            …
+          </span>
+        ) : n === safePage ? (
+          <Button
             key={n}
             type="button"
-            onClick={() => setPage(n as number)}
-            aria-current={n === safePage ? "page" : undefined}
-            className={cn(
-              "size-9 rounded-md text-sm font-medium",
-              n === safePage
-                ? "border border-border bg-background text-foreground"
-                : "text-muted-foreground transition-colors hover:text-foreground",
-            )}
+            variant="outline"
+            size="icon"
+            className="size-9 shrink-0"
+            aria-current="page"
+            aria-label={`Page ${n}, current page`}
+            disabled
           >
             {n}
-          </button>
+          </Button>
+        ) : (
+          <Button
+            key={n}
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-9 shrink-0"
+            onClick={() => setPage(n as number)}
+            aria-label={`Page ${n}`}
+          >
+            {n}
+          </Button>
         ),
       )}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
+        className="h-9 gap-1.5 px-2"
         disabled={safePage === totalPages}
         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:text-foreground/70 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Next
-        <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-          <path d="m9 18 6-6-6-6" />
-        </svg>
-      </button>
+        <ChevronRight className="size-3.5" aria-hidden />
+      </Button>
     </div>
   );
 
@@ -298,10 +317,13 @@ export function CaseStudyListingGrid({ studies }: Props) {
         setPage(1);
       }}
     >
-      <SelectTrigger className="h-9 w-[110px] rounded-full border border-border bg-background text-sm">
+      <SelectTrigger
+        aria-label="Items per page"
+        className="h-9 w-[110px] rounded-md border border-border bg-background text-sm text-muted-foreground shadow-none hover:text-foreground"
+      >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent align="end">
         {PAGE_SIZES.map((n) => (
           <SelectItem key={n} value={String(n)}>
             {n}/page
@@ -312,9 +334,11 @@ export function CaseStudyListingGrid({ studies }: Props) {
   );
 
   const pageInfo = (
-    <span className="text-sm text-muted-foreground">
-      Page {safePage} of {totalPages}
-    </span>
+    <p className="text-sm text-muted-foreground">
+      Page{" "}
+      <span className="font-medium text-foreground">{safePage}</span> of{" "}
+      <span className="font-medium text-foreground">{totalPages}</span>
+    </p>
   );
 
   return (

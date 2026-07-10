@@ -125,10 +125,13 @@ export function Pagination({
         {nav}
         <div className="flex justify-end">{rightSlot ?? null}</div>
       </div>
-      {/* Mobile: nav centred on top, page info below */}
+      {/* Mobile: nav centred on top, page info + per-page below */}
       <div className="flex flex-col items-center gap-3 sm:hidden">
         {nav}
-        {pageInfo}
+        <div className="flex items-center gap-3">
+          {pageInfo}
+          {rightSlot ?? null}
+        </div>
       </div>
     </nav>
   );

@@ -139,14 +139,6 @@ const blogNotFoundPageDoc = {
     },
     {
       _key: key(),
-      _type: 'promoBanner',
-      heading: 'Custom packaging, made simple',
-      body: 'From concept to delivery, PakFactory helps you design, prototype, and produce packaging that stands out.',
-      ctaLabel: 'Get started',
-      ctaUrl: '/',
-    },
-    {
-      _key: key(),
       _type: 'ctaNewsletter',
       heading: 'Get the latest packaging digest',
       body: 'Subscribe now for latest packaging news, trends and more.',

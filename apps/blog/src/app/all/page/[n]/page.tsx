@@ -4,6 +4,7 @@ import { AllArchiveView } from "@/components/views/all-archive-view";
 import {
   archivePageHref,
   fetchAllArchivePage,
+  parsePerPage,
 } from "@/lib/blog-archive";
 import {
   isArchivePageOutOfRange,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/blog-archive-pagination";
 import {
   getAllArchiveRobots,
+  hasNonDefaultPerPage,
   robotsDirectiveToMetadata,
 } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
@@ -21,24 +23,33 @@ export const revalidate = 60;
 const ARCHIVE_DESCRIPTION =
   "Browse every PakFactory blog article in chronological order.";
 
+type PageProps = {
+  params: Promise<{ n: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
 export async function generateMetadata({
   params,
-}: {
-  params: Promise<{ n: string }>;
-}): Promise<Metadata> {
+  searchParams,
+}: PageProps): Promise<Metadata> {
   const { n: raw } = await params;
   const pagination = resolvePaginationRoute(raw, "/all");
   if (pagination.status !== "ok") {
     return { title: "All posts | PakFactory Blog" };
   }
 
+  const sp = await searchParams;
   const canonical = absoluteUrl(archivePageHref(pagination.pageNumber));
   const title = paginatedListTitle("All posts", pagination.pageNumber);
 
   return {
     title,
     description: ARCHIVE_DESCRIPTION,
-    robots: robotsDirectiveToMetadata(getAllArchiveRobots(pagination.pageNumber)),
+    robots: robotsDirectiveToMetadata(
+      getAllArchiveRobots(pagination.pageNumber, {
+        hasNonDefaultPerPage: hasNonDefaultPerPage(sp),
+      }),
+    ),
     alternates: { canonical },
     openGraph: {
       title,
@@ -56,16 +67,17 @@ export async function generateMetadata({
 
 export default async function AllPostsPaginatedPage({
   params,
-}: {
-  params: Promise<{ n: string }>;
-}) {
+  searchParams,
+}: PageProps) {
   const { n: raw } = await params;
   const pagination = resolvePaginationRoute(raw, "/all");
   if (pagination.status === "not-found") notFound();
   if (pagination.status === "redirect") redirect(pagination.href);
 
-  const data = await fetchAllArchivePage(pagination.pageNumber);
-  if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount)) {
+  const sp = await searchParams;
+  const perPage = parsePerPage(sp.perPage);
+  const data = await fetchAllArchivePage(pagination.pageNumber, perPage);
+  if (isArchivePageOutOfRange(pagination.pageNumber, data.totalCount, perPage)) {
     notFound();
   }
 

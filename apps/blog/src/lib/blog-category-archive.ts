@@ -3,8 +3,10 @@ import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
 import { getCategoryFallback } from "@/lib/blog-categories";
 import {
-  LISTING_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
   parseArchivePageParam,
+  parsePerPage,
+  PAGE_SIZE_OPTIONS,
 } from "@/lib/blog-archive";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import {
@@ -14,6 +16,7 @@ import {
 import {
   getBlogRobotsDirective,
   hasListingFilters,
+  hasNonDefaultPerPage,
   parseListingPage,
   type BlogRobotsDirective,
 } from "@/lib/seo";
@@ -32,6 +35,8 @@ import {
   BLOG_CATEGORY_TAGS_FACET_QUERY,
 } from "@pakfactory/sanity/queries";
 import type { TopicGroupRef } from "@/lib/tag-groups";
+
+export { DEFAULT_PAGE_SIZE, parsePerPage, PAGE_SIZE_OPTIONS };
 
 export type CategorySort = "newest" | "oldest" | "title";
 
@@ -76,15 +81,6 @@ export type CategoryArchivePageData = {
   /** Chips for the recommended-topics row (page 1); [] on deeper pages. */
   recommendedTopics: CategoryTopic[];
 };
-
-export const PAGE_SIZE_OPTIONS = [15, 30, 50] as const;
-export const DEFAULT_PAGE_SIZE = LISTING_PAGE_SIZE;
-
-export function parsePerPage(raw: string | string[] | undefined): number {
-  const str = Array.isArray(raw) ? raw[0] : raw;
-  const n = Number.parseInt(str ?? "", 10);
-  return (PAGE_SIZE_OPTIONS as readonly number[]).includes(n) ? n : DEFAULT_PAGE_SIZE;
-}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -197,6 +193,7 @@ export function getCategoryListingRobots(
     kind: "category",
     pageNumber,
     hasActiveFilters: hasListingFilters(searchParams),
+    hasNonDefaultPerPage: hasNonDefaultPerPage(searchParams),
   });
 }
 

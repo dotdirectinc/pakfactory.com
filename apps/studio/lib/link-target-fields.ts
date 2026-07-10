@@ -1,5 +1,4 @@
 import { defineField } from 'sanity'
-import { BLOG_SITE_PATH_OPTIONS } from '@pakfactory/sanity/blog-site-paths'
 import {
   LINKABLE_TYPE_FILTER,
   linkableReferenceTo,
@@ -16,7 +15,7 @@ export type LinkTargetFieldsOptions = {
 
 /**
  * Shared Internal / External link fields for Studio schemas.
- * Under Internal, editors choose CMS document or a curated site path.
+ * Internal always means a CMS document reference; External is a full URL.
  * Reuse anywhere editors pick a destination (footer links, CTA blocks, future nav).
  */
 export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
@@ -45,30 +44,6 @@ export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
   return [
     linkTypeField,
     defineField({
-      name: 'internalKind',
-      title: 'Internal destination',
-      type: 'string',
-      initialValue: 'document',
-      options: {
-        list: [
-          { title: 'CMS content', value: 'document' },
-          { title: 'Site path (blog code route)', value: 'path' },
-        ],
-        layout: 'radio',
-      },
-      description:
-        'CMS content links to a Sanity document. Site path is for App Router routes that are not documents (e.g. /all).',
-      hidden: ({ parent }) => parent?.linkType !== 'internal',
-      validation: (Rule) =>
-        Rule.custom((value, context) => {
-          const parent = context.parent as { linkType?: string } | undefined
-          if (parent?.linkType === 'internal' && !value) {
-            return 'Choose CMS content or a site path.'
-          }
-          return true
-        }),
-    }),
-    defineField({
       name: 'internalLink',
       title: 'Internal link',
       type: 'reference',
@@ -79,47 +54,12 @@ export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
         filter: LINKABLE_TYPE_FILTER,
         filterParams: linkableTypeFilterParams,
       },
-      hidden: ({ parent }) =>
-        parent?.linkType !== 'internal' || parent?.internalKind !== 'document',
+      hidden: ({ parent }) => parent?.linkType !== 'internal',
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          const parent = context.parent as
-            | { linkType?: string; internalKind?: string }
-            | undefined
-          if (
-            parent?.linkType === 'internal' &&
-            parent?.internalKind === 'document' &&
-            !value
-          ) {
+          const parent = context.parent as { linkType?: string } | undefined
+          if (parent?.linkType === 'internal' && !value) {
             return 'Select a CMS document for internal links.'
-          }
-          return true
-        }),
-    }),
-    defineField({
-      name: 'sitePath',
-      title: 'Site path',
-      type: 'string',
-      description:
-        'Curated blog App Router routes that are not Sanity documents (e.g. /all).',
-      options: {
-        list: [...BLOG_SITE_PATH_OPTIONS],
-        layout: 'radio',
-      },
-      hidden: ({ parent }) =>
-        !(
-          parent?.linkType === 'internal' && parent?.internalKind === 'path'
-        ) && parent?.linkType !== 'path',
-      validation: (Rule) =>
-        Rule.custom((value, context) => {
-          const parent = context.parent as
-            | { linkType?: string; internalKind?: string }
-            | undefined
-          const needsPath =
-            parent?.linkType === 'path' ||
-            (parent?.linkType === 'internal' && parent?.internalKind === 'path')
-          if (needsPath && !value) {
-            return 'Select a site path.'
           }
           return true
         }),

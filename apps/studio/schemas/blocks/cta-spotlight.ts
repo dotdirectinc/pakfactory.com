@@ -5,6 +5,7 @@ import {
   dielineBorderFields,
   dielineBorderPreviewSubtitle,
 } from '../../lib/dieline-border-fields'
+import { linkTargetFields } from '../../lib/link-target-fields'
 
 /**
  * ctaSpotlight — CTA card with heading, body, button, and a single image.
@@ -37,14 +38,7 @@ export const ctaSpotlight = defineType({
       type: 'string',
       description: 'Button text for the call to action.',
     }),
-    defineField({
-      name: 'ctaHref',
-      title: 'Button URL',
-      type: 'url',
-      description: 'Relative path (e.g. /contact) or a full URL.',
-      validation: (Rule) =>
-        Rule.uri({ allowRelative: true, scheme: ['http', 'https'] }),
-    }),
+    ...linkTargetFields({ requireLinkType: false }),
     defineField({
       name: 'image',
       title: 'Image',

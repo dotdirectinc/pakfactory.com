@@ -35,14 +35,17 @@ export default async function RootLayout({
     children: React.ReactNode;
 }) {
     const isDraft = (await draftMode()).isEnabled;
-    const [navCategories, footerData] = await Promise.all([
+    const [primaryNav, footerData] = await Promise.all([
         fetchBlogNavCategories(),
         fetchBlogFooterNavigation(),
     ]);
     return (
         <html lang="en" className={`${GeistSans.variable} ${inter.variable}`}>
             <body className="antialiased">
-                <SiteNav categories={navCategories} />
+                <SiteNav
+                    categories={primaryNav.categories}
+                    header={primaryNav.header}
+                />
                 {children}
                 <SiteFooter
                     columns={footerData.columns}

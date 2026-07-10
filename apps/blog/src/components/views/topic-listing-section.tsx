@@ -21,7 +21,7 @@ export function TopicListingSection({
     <TopicLandingSection>
       <TopicFilterBar categoryOptions={categoryOptions} />
       <div className="mt-12 flex flex-col gap-10">{children}</div>
-      {pagination}
+      <div className="py-16">{pagination}</div>
     </TopicLandingSection>
   );
 }

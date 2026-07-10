@@ -3,6 +3,7 @@ import { socialLinksField } from '../lib/social-link-schema'
 import { ALL_FIELDS_GROUP } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
 import { linkTargetFields } from '../lib/link-target-fields'
+import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
 
 const footerLinkFields = [
   ...linkTargetFields({ requireLinkType: true }),
@@ -38,9 +39,7 @@ const footerSectionMember = defineArrayMember({
             select: {
               label: 'label',
               linkType: 'linkType',
-              internalKind: 'internalKind',
               externalUrl: 'externalUrl',
-              sitePath: 'sitePath',
               internalTitle: 'internalLink.title',
               internalType: 'internalLink._type',
               internalSlug: 'internalLink.slug.current',
@@ -48,9 +47,7 @@ const footerSectionMember = defineArrayMember({
             prepare({
               label,
               linkType,
-              internalKind,
               externalUrl,
-              sitePath,
               internalTitle,
               internalType,
               internalSlug,
@@ -60,15 +57,6 @@ const footerSectionMember = defineArrayMember({
                 return {
                   title,
                   subtitle: externalUrl ? `External · ${externalUrl}` : 'External link',
-                }
-              }
-              if (
-                linkType === 'path' ||
-                (linkType === 'internal' && internalKind === 'path')
-              ) {
-                return {
-                  title: label?.trim() || sitePath || 'Untitled link',
-                  subtitle: sitePath ? `Site path · ${sitePath}` : 'Site path',
                 }
               }
               const slugHint =
@@ -161,6 +149,43 @@ export const blogNavigation = defineType({
       group: 'primary',
       options: { collapsible: false },
       fields: [
+        defineField(
+          taggedImageField({
+            name: 'logo',
+            title: 'Header logo',
+            type: 'image',
+            mediaTags: [MEDIA_TAG.blog],
+            options: { hotspot: true },
+            description:
+              'Optional. Replaces the default PakFactory Blog wordmark in the header. When empty, the built-in logo is used.',
+            fields: [
+              defineField({
+                name: 'alt',
+                title: 'Alt text override',
+                type: 'string',
+                description:
+                  'Optional. Falls back to the alt text on the image asset.',
+              }),
+            ],
+          }),
+        ),
+        defineField({
+          name: 'cta',
+          title: 'Header CTA',
+          type: 'object',
+          description:
+            'Optional header button. When label or link is empty, the blog falls back to "Contact Us" → /contribute.',
+          fields: [
+            defineField({
+              name: 'label',
+              title: 'Button label',
+              type: 'string',
+              description:
+                "Optional. Header button text. Defaults to 'Contact Us'.",
+            }),
+            ...linkTargetFields({ requireLinkType: false }),
+          ],
+        }),
         defineField({
           name: 'categories',
           title: 'Category navigation order',

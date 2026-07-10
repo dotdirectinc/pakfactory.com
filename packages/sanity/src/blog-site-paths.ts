@@ -1,10 +1,9 @@
 /**
- * Curated blog App Router paths that are not Sanity documents (or not preferred
- * as CMS picks). Used by Studio link fields (`internalKind: 'path'`) and blog
- * href resolution.
+ * Curated blog App Router paths that are not Sanity documents.
+ * Used only for legacy soft-resolve of stored footer `sitePath` / `linkType: 'path'`
+ * data after Studio removed the site-path editor option (Internal is CMS-only now).
  *
- * Prefer this list over free-form relative paths so editors cannot typo routes.
- * CMS-managed singletons (home, topics, search, contribute) are linked via
+ * Prefer linking CMS-managed singletons (home, topics, search, contribute) via
  * Internal → CMS document instead.
  */
 
@@ -24,7 +23,7 @@ export function isBlogSitePath(value: string | null | undefined): value is BlogS
   return BLOG_SITE_PATH_VALUES.has(value);
 }
 
-/** Sanity `options.list` entries for the sitePath field. */
+/** Sanity `options.list` entries — kept for any remaining Studio/seed callers. */
 export const BLOG_SITE_PATH_OPTIONS = BLOG_SITE_PATHS.map(({ title, value }) => ({
   title,
   value,

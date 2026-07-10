@@ -27,9 +27,9 @@ export const topicStrip = defineType({
       name: 'topics',
       title: 'Topics',
       type: 'array',
-      description: 'Curated topics shown as pills, in display order.',
+      description:
+        'Leave empty to automatically show all topics that have published posts (A–Z). Add topics to curate a specific set in display order.',
       of: [{ type: 'reference', to: [{ type: 'blogTag' }] }],
-      validation: (Rule) => Rule.min(1),
     }),
     ...dielineBorderFields(),
   ],
@@ -44,7 +44,7 @@ export const topicStrip = defineType({
       const borders = dielineBorderPreviewSubtitle(showTopBorder, showBottomBorder)
       const topics = count
         ? `${count} topic${count === 1 ? '' : 's'}`
-        : 'No topics selected'
+        : 'All topics (auto)'
       return {
         title: heading || 'Topic Strip',
         subtitle: [topics, borders].filter(Boolean).join(' · '),

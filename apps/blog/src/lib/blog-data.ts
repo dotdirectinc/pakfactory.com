@@ -38,6 +38,12 @@ import {
   BLOG_CATEGORY_FALLBACK,
   type BlogCategoryChip,
 } from "@/lib/blog-categories";
+import {
+  getDefaultPrimaryNavHeader,
+  resolvePrimaryNavHeader,
+  type BlogPrimaryNavHeader,
+  type BlogPrimaryNavHeaderRow,
+} from "@/lib/blog-primary-nav";
 
 export type PopularPostCard = {
   _id: string;
@@ -54,6 +60,11 @@ export type PopularPostCard = {
   readingTimeMinutes?: number;
 };
 
+export type BlogPrimaryNavData = {
+  categories: BlogCategoryChip[];
+  header: BlogPrimaryNavHeader;
+};
+
 type BlogNavCategoryRow = BlogCategoryChip & {
   language?: string | null;
   navLabel?: string | null;
@@ -62,6 +73,7 @@ type BlogNavCategoryRow = BlogCategoryChip & {
 type BlogNavSettingsDoc = {
   _id?: string;
   categories?: (BlogNavCategoryRow | null)[] | null;
+  header?: BlogPrimaryNavHeaderRow;
 } | null;
 
 function resolveNavCategories(
@@ -86,25 +98,38 @@ function resolveNavCategories(
   return [];
 }
 
+function resolvePrimaryNav(
+  doc: BlogNavSettingsDoc,
+  language: string = DEFAULT_BLOG_LANGUAGE,
+): BlogPrimaryNavData {
+  return {
+    categories: resolveNavCategories(doc, language),
+    header: resolvePrimaryNavHeader(doc?.header ?? undefined),
+  };
+}
+
 function monthStartIso(): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
-async function loadBlogNavCategoriesFromClient(
+async function loadBlogPrimaryNavFromClient(
   fetchDoc: () => Promise<BlogNavSettingsDoc>,
   language: string = DEFAULT_BLOG_LANGUAGE,
-): Promise<BlogCategoryChip[]> {
+): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {
-    return [];
+    return {
+      categories: [],
+      header: getDefaultPrimaryNavHeader(),
+    };
   }
   const doc = await fetchDoc().catch(() => null);
-  return resolveNavCategories(doc, language);
+  return resolvePrimaryNav(doc, language);
 }
 
-async function loadPublishedBlogNavCategories(): Promise<BlogCategoryChip[]> {
+async function loadPublishedBlogPrimaryNav(): Promise<BlogPrimaryNavData> {
   const params = blogLanguageParams();
-  return loadBlogNavCategoriesFromClient(
+  return loadBlogPrimaryNavFromClient(
     () =>
       getPublishedSanityClient().fetch<BlogNavSettingsDoc>(
         BLOG_NAV_CATEGORIES_QUERY,
@@ -114,8 +139,8 @@ async function loadPublishedBlogNavCategories(): Promise<BlogCategoryChip[]> {
   );
 }
 
-const getCachedBlogNavCategories = unstable_cache(
-  loadPublishedBlogNavCategories,
+const getCachedBlogPrimaryNav = unstable_cache(
+  loadPublishedBlogPrimaryNav,
   ["blog-nav-categories"],
   {
     revalidate: BLOG_REVALIDATE_SECONDS,
@@ -135,14 +160,6 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
 }
 
 export type TopicChip = { _id?: string; title: string; slug: string };
-
-export type BlogPromo = {
-  heading?: string;
-  body?: string;
-  ctaLabel?: string;
-  ctaUrl?: string;
-  images?: { url?: string }[];
-};
 
 export type BlogNotFoundContent = {
   topics: TopicChip[];
@@ -222,27 +239,30 @@ export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
 }
 
 /**
- * Sub-nav categories — exact order from Blog Navigation `primaryNavigation.categories`.
- * Returns only what editors configured; empty when unset, missing settings,
- * Sanity unconfigured, or fetch fails. Slug/language/null-ref filtering happens in
- * `resolveNavCategories` (GROQ preserves editor order on dereferenced categories).
+ * Primary nav — category strip order plus optional header logo/CTA from
+ * Blog Navigation `primaryNavigation`. Categories are only what editors
+ * configured (empty when unset). Header logo/CTA fall back to the built-in
+ * wordmark and "Contact Us" → /contribute when unset.
  */
-export async function fetchBlogNavCategories(): Promise<BlogCategoryChip[]> {
+export async function fetchBlogNavCategories(): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {
-    return [];
+    return {
+      categories: [],
+      header: getDefaultPrimaryNavHeader(),
+    };
   }
 
   if ((await draftMode()).isEnabled) {
     const client = await getSanityClient();
     const params = blogLanguageParams();
-    return loadBlogNavCategoriesFromClient(
+    return loadBlogPrimaryNavFromClient(
       () =>
         client.fetch<BlogNavSettingsDoc>(BLOG_NAV_CATEGORIES_QUERY, params),
       params.language,
     );
   }
 
-  return getCachedBlogNavCategories();
+  return getCachedBlogPrimaryNav();
 }
 
 async function loadBlogFooterNavigationFromClient(
@@ -275,8 +295,9 @@ const getCachedBlogFooterNavigation = unstable_cache(
 
 /**
  * Footer link columns, social links, and AI answer links from Blog Navigation.
- * Falls back to hardcoded defaults when Sanity is unconfigured, fetch fails,
- * or editors have not configured footer content yet.
+ * When the `blogNavigation` document exists, empty sections render empty.
+ * Full hardcoded defaults apply only when Sanity is unconfigured, the fetch
+ * fails, or the document is missing.
  */
 export async function fetchBlogFooterNavigation(): Promise<BlogFooterData> {
   if (!isSanityConfigured()) {
