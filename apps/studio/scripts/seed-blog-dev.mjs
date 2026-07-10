@@ -320,7 +320,7 @@ const blogHomePageDoc = {
       _key: key(),
       _type: 'postFeaturedRow',
       featuredPost: ref('post-dev-pn-1'),
-      latestPostsCount: 4,
+      latestPostsCount: 3,
     },
     {
       _key: key(),

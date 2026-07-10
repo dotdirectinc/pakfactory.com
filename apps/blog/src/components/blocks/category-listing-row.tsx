@@ -1,4 +1,4 @@
-import { Pagination } from "@/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
 import { PerPageSelect } from "@/components/modules/per-page-select";
 import { PostList } from "@/components/modules/post-list";
 import { CategoryListingSection } from "@/components/views/category-listing-section";
@@ -45,6 +45,7 @@ export function CategoryListingRow({
               categoryPageHref(categorySlug, page, filters, size)
             }
             ariaLabel="Category archive pagination"
+            scrollTargetId={LISTING_TOP_ID}
             rightSlot={
               <PerPageSelect
                 value={size}

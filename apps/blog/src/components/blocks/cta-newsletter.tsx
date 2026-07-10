@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import Link from 'next/link';
+import {toast} from 'sonner';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import type {
@@ -30,16 +31,12 @@ export function CtaNewsletter({
     showBottomBorder,
 }: BlockProps<CtaNewsletterBlock>) {
     const [email, setEmail] = useState('');
-    const [status, setStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>(
-        'idle',
-    );
-    const [message, setMessage] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [company, setCompany] = useState(''); // honeypot — real users leave empty
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        setStatus('loading');
-        setMessage(null);
+        setIsLoading(true);
         try {
             const res = await fetch('/api/newsletter', {
                 method: 'POST',
@@ -50,18 +47,17 @@ export function CtaNewsletter({
                 message?: string;
             };
             if (!res.ok) {
-                setStatus('error');
-                setMessage(
+                toast.error(
                     data.message ?? 'Something went wrong. Try again later.',
                 );
                 return;
             }
-            setStatus('ok');
-            setMessage(data.message ?? "Thanks — you're on the list.");
+            toast.success(data.message ?? "Thanks — you're on the list.");
             setEmail('');
         } catch {
-            setStatus('error');
-            setMessage('Something went wrong. Try again later.');
+            toast.error('Something went wrong. Try again later.');
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -122,18 +118,18 @@ export function CtaNewsletter({
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            disabled={status === 'loading'}
+                            disabled={isLoading}
                             className="h-full min-h-0 flex-1 rounded-full border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
                         />
                         <Button
                             type="submit"
-                            disabled={status === 'loading'}
+                            disabled={isLoading}
                             className="h-full shrink-0 rounded-full px-6"
                         >
-                            {status === 'loading' ? 'Signing up…' : 'Sign Up'}
+                            {isLoading ? 'Signing up…' : 'Sign Up'}
                         </Button>
                     </div>
-                    <p className="mt-3 text-xs text-muted-foreground">
+                    <p className="mt-3 text-xs text-muted-foreground/50">
                         By subscribing you agree to receive the packaging digest
                         and accept our{' '}
                         <Link
@@ -144,14 +140,6 @@ export function CtaNewsletter({
                         </Link>
                         .
                     </p>
-                    {message && (
-                        <p
-                            className={`mt-2 text-sm ${status === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
-                            role={status === 'error' ? 'alert' : 'status'}
-                        >
-                            {message}
-                        </p>
-                    )}
                 </form>
             </div>
         </PageDielineFullBleedSection>
