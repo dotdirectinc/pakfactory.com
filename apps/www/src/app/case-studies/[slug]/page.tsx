@@ -51,8 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description =
     study.metaDescription?.trim() || study.cardSummary || undefined;
   const canonical = study.canonicalUrl || absoluteUrl(`/case-studies/${slug}`);
+  const globalNoIndex = process.env.WWW_DISABLE_INDEXING === "true";
   const robots = [
-    study.allowIndex === false ? "noindex" : "index",
+    globalNoIndex || study.allowIndex === false ? "noindex" : "index",
     study.allowFollow === false ? "nofollow" : "follow",
     study.noImageIndex ? "noimageindex" : null,
   ]
