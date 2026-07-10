@@ -74,7 +74,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
       <p className="text-base font-medium text-muted-foreground">
         Ask AI about this article
       </p>
-      <div className="flex w-full items-center justify-between">
+      <div className="flex items-center justify-start gap-5">
         {PROVIDERS.map((provider) => {
           const href = provider.build(q);
           return (

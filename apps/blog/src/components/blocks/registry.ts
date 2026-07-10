@@ -10,7 +10,7 @@ import { CtaRfq } from "@/components/blocks/cta-rfq";
 import { CtaSpotlight } from "@/components/blocks/cta-spotlight";
 import { FeaturedVideos } from "@/components/blocks/featured-videos";
 import { PostCategoryRow } from "@/components/blocks/post-category-row";
-import { PostFeaturedRow } from "@/components/blocks/post-featured-row";
+import { PostFeaturedBlock } from "@/components/blocks/post-featured-block";
 import { PostPopularRow } from "@/components/blocks/post-popular-row";
 import { PostSpotlightRow } from "@/components/blocks/post-spotlight-row";
 import { RichTextBand } from "@/components/blocks/rich-text-band";
@@ -160,7 +160,7 @@ export type PageBuilderBlock =
 export type BlockProps<T extends PageBuilderBlock> = Omit<T, "_type" | "_key">;
 
 export const BLOCK_COMPONENTS = {
-  postFeaturedRow: PostFeaturedRow,
+  postFeaturedRow: PostFeaturedBlock,
   postCategoryRow: PostCategoryRow,
   postPopularRow: PostPopularRow,
   postSpotlightRow: PostSpotlightRow,

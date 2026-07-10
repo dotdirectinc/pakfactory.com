@@ -1,5 +1,5 @@
 import {Breadcrumb} from '@/components/layout/breadcrumb';
-import {Pagination} from '@/components/modules/pagination';
+import {Pagination, LISTING_TOP_ID} from '@/components/modules/pagination';
 import {PerPageSelect} from '@/components/modules/per-page-select';
 import {PostList} from '@/components/modules/post-list';
 import {PageHeader} from '@/components/modules/page-header';
@@ -70,6 +70,7 @@ export function TopicArchiveView({
                                 tagPageHref(data.tag.slug, page, data.filters, perPage)
                             }
                             ariaLabel="Topic archive pagination"
+                            scrollTargetId={LISTING_TOP_ID}
                             rightSlot={
                                 <PerPageSelect
                                     value={perPage}
