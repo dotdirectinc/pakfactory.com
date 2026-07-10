@@ -1,8 +1,8 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import Link from 'next/link';
-import {getPublishedSanityClient, getSanityClient} from '@/sanity/client';
-import {isSanityConfigured} from '@/sanity/env';
+import {getPublishedSanityClient, getSanityClient} from '@/lib/sanity/client';
+import {isSanityConfigured} from '@/lib/sanity/env';
 import {
     CAPABILITY_BY_CATEGORY_AND_SLUG_QUERY,
     CAPABILITY_PATHS_QUERY,

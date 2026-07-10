@@ -1,14 +1,11 @@
 import { createClient, type SanityClient } from "next-sanity";
 import { draftMode } from "next/headers";
 import {
-  createImageUrlBuilder,
-  type SanityImageSource,
-} from "@sanity/image-url";
-import {
   getSanityApiVersion,
   getSanityDataset,
   getSanityProjectId,
 } from "./env";
+export { urlFor } from "./image";
 
 let publishedClient: SanityClient | null = null;
 let draftsClient: SanityClient | null = null;
@@ -73,15 +70,3 @@ export async function getSanityClient(): Promise<SanityClient> {
   return publishedClient;
 }
 
-export function urlFor(source: SanityImageSource) {
-  const projectId = getSanityProjectId();
-  if (!projectId) {
-    throw new Error(
-      "Sanity project id missing. Set NEXT_PUBLIC_SANITY_PROJECT_ID in .env.local.",
-    );
-  }
-  return createImageUrlBuilder({
-    projectId,
-    dataset: getSanityDataset(),
-  }).image(source);
-}

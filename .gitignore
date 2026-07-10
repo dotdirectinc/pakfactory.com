@@ -4,6 +4,7 @@ node_modules
 # Next.js
 .next
 out
+next-env.d.ts
 
 # Build
 dist
@@ -37,4 +38,5 @@ Thumbs.db
 package-lock.json
 yarn.lock
 
-apps/blog/next-env.d.ts
+.claude/training/*
+docs/*

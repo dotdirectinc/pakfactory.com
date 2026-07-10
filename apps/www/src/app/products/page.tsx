@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
-import CategoryFilter from '@/components/products/category-filter';
-import ProductGrid from '@/components/products/product-grid';
-import SectionHeader from '@/components/products/section-header';
+import CategoryFilter from '@/components/modules/category-filter';
+import ProductGrid from '@/components/modules/product-grid';
+import SectionHeader from '@/components/modules/section-header';
 
 export const dynamic = 'force-dynamic';
 

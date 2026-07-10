@@ -38,7 +38,7 @@ type MenuNavigationProps = {
   className?: string;
 };
 
-const MenuNavigation = ({
+const NavMenu = ({
   navigationData,
   className,
 }: MenuNavigationProps) => {
@@ -86,4 +86,4 @@ const MenuNavigation = ({
   );
 };
 
-export default MenuNavigation;
+export default NavMenu;
