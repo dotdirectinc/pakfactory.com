@@ -24,6 +24,13 @@ export const PROMO_BANNER_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
   bottom: true,
 };
 
+
+/** Defaults for the spotlight CTA (no dashed edges unless explicitly enabled). */
+export const CTA_SPOTLIGHT_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
+  top: false,
+  bottom: false,
+};
+
 export function resolveDielineBorders(
   showTopBorder: boolean | undefined,
   showBottomBorder: boolean | undefined,

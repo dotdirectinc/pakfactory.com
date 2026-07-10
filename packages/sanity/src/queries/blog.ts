@@ -373,6 +373,15 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "ctaPillars" => {
     "pillars": pillars[]{ title, description, href, ctaLabel }
   },
+  _type == "ctaSpotlight" => {
+    heading,
+    body,
+    ctaLabel,
+    ctaHref,
+    imageEffect,
+    "backgroundColor": coalesce(backgroundColor.hex, customBackgroundColor.hex),
+    image{ ..., "alt": coalesce(alt, asset->altText) }
+  },
   _type == "richTextBand" => {
     heading,
     body

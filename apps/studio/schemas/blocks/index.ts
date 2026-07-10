@@ -9,6 +9,7 @@ import { featuredVideos } from './featured-videos'
 import { ctaNewsletter } from './cta-newsletter'
 import { ctaRfq } from './cta-rfq'
 import { ctaPillars } from './cta-pillars'
+import { ctaSpotlight } from './cta-spotlight'
 import { richTextBand } from './rich-text-band'
 import { promoBanner } from './promo-banner'
 import { pageBuilderPreviewUrl } from './page-builder-preview'
@@ -26,6 +27,7 @@ export const pageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
+  ctaSpotlight,
   richTextBand,
   promoBanner,
 ]
@@ -41,6 +43,7 @@ export const homePageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
+  ctaSpotlight,
   promoBanner,
 ]
 
@@ -50,6 +53,7 @@ export const landingPageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
+  ctaSpotlight,
   richTextBand,
 ]
 
@@ -64,7 +68,7 @@ const INSERT_GROUPS_HOME = [
   {
     name: 'cta',
     title: 'CTA',
-    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars'],
+    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars', 'ctaSpotlight'],
   },
   { name: 'promo', title: 'Promo', of: ['promoBanner'] },
 ]
@@ -74,7 +78,7 @@ const INSERT_GROUPS_LANDING = [
   {
     name: 'cta',
     title: 'CTA',
-    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars'],
+    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars', 'ctaSpotlight'],
   },
   { name: 'content', title: 'Content', of: ['richTextBand'] },
 ]

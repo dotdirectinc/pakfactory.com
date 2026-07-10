@@ -3,6 +3,7 @@ import type { DocumentActionComponent, DocumentActionsContext, Template } from '
 import { structureTool } from 'sanity/structure'
 import { presentationTool } from 'sanity/presentation'
 import { visionTool } from '@sanity/vision'
+import { colorInput } from '@sanity/color-input'
 import { media } from 'sanity-plugin-media'
 import {
   documentInternationalization,
@@ -211,6 +212,7 @@ export default defineConfig([
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
       blogI18nPlugin,
+      colorInput(),
       media(),
       visionTool(),
     ],
@@ -241,6 +243,7 @@ export default defineConfig([
         ],
         resolve: { locations: blogLocations },
       }),
+      colorInput(),
       media(),
       visionTool(),
     ],
@@ -265,6 +268,7 @@ export default defineConfig([
         },
         resolve: { locations: websiteLocations },
       }),
+      colorInput(),
       media(),
       visionTool(),
     ],
