@@ -2,7 +2,7 @@
 
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import Image from "next/image";
-import { urlFor } from "@/lib/sanity/client";
+import { urlFor } from "@/lib/sanity/image";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
