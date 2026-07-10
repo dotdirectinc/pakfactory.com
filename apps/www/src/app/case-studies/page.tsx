@@ -20,7 +20,7 @@ import { absoluteUrl } from "@/lib/site";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { CaseStudyListingGrid } from "./_components/case-study-listing-grid";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 const PAGE_URL = absoluteUrl("/case-studies");
 

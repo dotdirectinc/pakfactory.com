@@ -15,11 +15,59 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
+  // Mouse-drag state
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartScrollLeft = useRef(0);
+  const hasDragged = useRef(false);
+
   function handleScroll() {
     const track = trackRef.current;
     if (!track) return;
     const max = track.scrollWidth - track.clientWidth;
     setProgress(max > 0 ? track.scrollLeft / max : 0);
+  }
+
+  function onMouseDown(e: React.MouseEvent) {
+    const track = trackRef.current;
+    if (!track) return;
+    isDragging.current = true;
+    hasDragged.current = false;
+    dragStartX.current = e.pageX - track.offsetLeft;
+    dragStartScrollLeft.current = track.scrollLeft;
+    track.style.cursor = "grabbing";
+    track.style.userSelect = "none";
+    // Disable scroll-snap while dragging so it doesn't fight the drag
+    track.style.scrollSnapType = "none";
+  }
+
+  function onMouseMove(e: React.MouseEvent) {
+    if (!isDragging.current) return;
+    const track = trackRef.current;
+    if (!track) return;
+    const x = e.pageX - track.offsetLeft;
+    const delta = x - dragStartX.current;
+    if (Math.abs(delta) > 4) hasDragged.current = true;
+    track.scrollLeft = dragStartScrollLeft.current - delta;
+  }
+
+  function onMouseUp() {
+    const track = trackRef.current;
+    if (!track) return;
+    isDragging.current = false;
+    track.style.cursor = "";
+    track.style.userSelect = "";
+    // Re-enable scroll-snap and snap to nearest slide
+    track.style.scrollSnapType = "x mandatory";
+  }
+
+  function onMouseLeave() {
+    if (isDragging.current) onMouseUp();
+  }
+
+  // Prevent click-through after a drag (e.g. on images wrapped in links)
+  function onClickCapture(e: React.MouseEvent) {
+    if (hasDragged.current) e.stopPropagation();
   }
 
   const isSquare = images[0]?.isSquare ?? false;
@@ -31,7 +79,12 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
       <div
         ref={trackRef}
         onScroll={handleScroll}
-        className="flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseLeave}
+        onClickCapture={onClickCapture}
+        className="flex cursor-grab gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ scrollSnapType: "x mandatory" }}
       >
         {images.map((img) => (
@@ -45,10 +98,11 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
               alt={img.alt}
               width={800}
               height={imgHeight}
+              draggable={false}
               className={`${aspectClass} h-auto w-full rounded-lg object-cover`}
             />
             {(img.caption || img.alt) && (
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 select-none text-sm text-muted-foreground">
                 {img.caption ?? img.alt}
               </p>
             )}
