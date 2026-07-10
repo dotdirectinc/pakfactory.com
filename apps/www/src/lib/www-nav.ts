@@ -6,11 +6,12 @@ export const BLOG_URL = process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfac
 const WWW_URL = getSiteUrl();
 
 export const BLOG_CATEGORIES: NavCategory[] = [
-  { href: `${BLOG_URL}/packaging-news`, title: "Packaging News" },
-  { href: `${BLOG_URL}/trends`, title: "Trends" },
-  { href: `${BLOG_URL}/business-strategy`, title: "Business Strategy" },
+  { href: `${BLOG_URL}/design-and-structure`, title: "Design & Structure" },
+  { href: `${BLOG_URL}/materials-and-finishes`, title: "Materials & Finishes" },
   { href: `${BLOG_URL}/sustainability`, title: "Sustainability" },
-  { href: `${BLOG_URL}/design-inspiration`, title: "Design Inspiration" },
+  { href: `${BLOG_URL}/compliance`, title: "Compliance" },
+  { href: `${BLOG_URL}/cost-and-sourcing`, title: "Cost & Sourcing" },
+  { href: `${BLOG_URL}/branding`, title: "Branding" },
 ];
 
 export const FOOTER_SOCIAL: SocialLink[] = [
@@ -34,51 +35,62 @@ export const FOOTER_AI_LINKS: AiLink[] = [
 ];
 
 export function buildFooterColumns(blogCategories: NavCategory[]): FooterColumns {
-  const browseLinks: FooterLink[] = [
-    ...blogCategories.map((c) => ({ label: c.title, href: c.href, external: true })),
-    { label: "All Topics", href: `${BLOG_URL}/topics`, external: true },
-  ];
+  const browseByCategories: FooterLink[] = blogCategories.map((c) => ({
+    label: c.title,
+    href: c.href,
+    external: true,
+  }));
 
   return [
+    // Column 1 — blog content discovery
     [
       {
-        title: "Browse the Blog",
-        links: browseLinks,
+        title: "Browse by Categories",
+        links: browseByCategories,
       },
       {
-        title: "Explore PakFactory",
+        title: "Browse by Topics",
         links: [
-          { label: "About", href: `${WWW_URL}/about` },
+          { label: "Packaging Type", href: `${BLOG_URL}/topics/packaging-type`, external: true },
+          { label: "Industry", href: `${BLOG_URL}/topics/industry`, external: true },
+          { label: "Packaging Material", href: `${BLOG_URL}/topics/packaging-material`, external: true },
+          { label: "Packaging Finish", href: `${BLOG_URL}/topics/packaging-finish`, external: true },
+          { label: "Printing", href: `${BLOG_URL}/topics/printing`, external: true },
+        ],
+      },
+    ],
+    // Column 2 — blog + company links
+    [
+      {
+        title: "Explore",
+        links: [
+          { label: "Contribute", href: `${BLOG_URL}/contribute`, external: true },
+          { label: "Product Inspiration", href: `${BLOG_URL}/topics`, external: true },
+          { label: "Customization", href: `${BLOG_URL}/topics`, external: true },
+        ],
+      },
+      {
+        title: "Company",
+        links: [
+          { label: "About Us", href: `${WWW_URL}/about` },
+          { label: "Contact Us", href: `${WWW_URL}/contact` },
           { label: "Case Studies", href: `${WWW_URL}/case-studies` },
-          { label: "Resources", href: `${WWW_URL}/resources` },
-          { label: "Get a Quote", href: `${WWW_URL}/contact` },
-          { label: "Contribute to the Blog", href: `${BLOG_URL}/contribute`, external: true },
+          { label: "Hours & Locations", href: `${WWW_URL}/locations` },
+          { label: "Careers", href: `${WWW_URL}/careers` },
+          { label: "Help Center", href: `${WWW_URL}/help` },
         ],
       },
     ],
+    // Column 3 — pakfactory.com sections
     [
       {
-        title: "Capabilities",
+        title: "Custom packaging",
         links: [
-          { label: "Rigid Boxes", href: `${WWW_URL}/capabilities` },
-          { label: "Folding Cartons", href: `${WWW_URL}/capabilities` },
-          { label: "Custom Pouches", href: `${WWW_URL}/capabilities` },
-          { label: "Labels & Stickers", href: `${WWW_URL}/capabilities` },
-          { label: "View All", href: `${WWW_URL}/capabilities` },
-        ],
-      },
-    ],
-    [
-      {
-        title: "Our Services",
-        links: [
-          { label: "Packaging Strategy", href: `${WWW_URL}/solutions` },
-          { label: "Packaging Design", href: `${WWW_URL}/solutions` },
-          { label: "Prototyping", href: `${WWW_URL}/solutions` },
-          { label: "Managed Manufacturing", href: `${WWW_URL}/solutions` },
-          { label: "Logistics", href: `${WWW_URL}/solutions` },
-          { label: "Packaging Fulfillment", href: `${WWW_URL}/solutions` },
-          { label: "View All", href: `${WWW_URL}/solutions` },
+          { label: "Products", href: `${WWW_URL}/capabilities` },
+          { label: "Industries", href: `${WWW_URL}/industries` },
+          { label: "Services", href: `${WWW_URL}/solutions` },
+          { label: "Why PakFactory", href: `${WWW_URL}/why-pakfactory` },
+          { label: "Request a Quote", href: `${WWW_URL}/contact` },
         ],
       },
     ],
