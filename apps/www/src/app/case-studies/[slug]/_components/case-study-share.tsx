@@ -44,9 +44,24 @@ type Props = {
   title: string;
   className?: string;
   showCta?: boolean;
+  ctaHeading?: string | null;
+  primaryLabel?: string | null;
+  primaryHref?: string | null;
+  secondaryLabel?: string | null;
+  secondaryHref?: string | null;
 };
 
-export function CaseStudyShare({ url, title, className, showCta = false }: Props) {
+export function CaseStudyShare({
+  url,
+  title,
+  className,
+  showCta = false,
+  ctaHeading,
+  primaryLabel,
+  primaryHref,
+  secondaryLabel,
+  secondaryHref,
+}: Props) {
   const [copied, setCopied] = useState(false);
 
   function handleCopyLink() {
@@ -107,20 +122,20 @@ export function CaseStudyShare({ url, title, className, showCta = false }: Props
       {showCta && (
         <>
           <p className="w-full text-lg font-medium leading-7 text-foreground">
-            Ready to build packaging your customers remember?
+            {ctaHeading ?? "Ready to build packaging your customers remember?"}
           </p>
           <div className="flex w-full flex-col gap-5">
             <a
-              href="/contact"
+              href={primaryHref ?? "/contact"}
               className="inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-6 text-base font-medium leading-6 text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
             >
-              Contact Sales
+              {primaryLabel ?? "Contact Sales"}
             </a>
             <a
-              href="/solutions"
+              href={secondaryHref ?? "/solutions"}
               className="inline-flex h-11 w-full items-center justify-center rounded-full border border-border bg-background px-6 text-base font-medium leading-6 text-foreground shadow-xs transition-colors hover:bg-muted"
             >
-              Explore Solutions
+              {secondaryLabel ?? "Explore Solutions"}
             </a>
           </div>
         </>

@@ -71,10 +71,12 @@ export {
 
 export {
     CASE_STUDIES_LISTING_QUERY,
+    CASE_STUDIES_PAGE_QUERY,
     CASE_STUDY_BY_SLUG_QUERY,
     CASE_STUDY_PATHS_QUERY,
     CASE_STUDY_SITEMAP_QUERY,
     CASE_STUDY_FILTER_OPTIONS_QUERY,
+    type CaseStudiesPageData,
     type CaseStudyCard,
     type CaseStudyDetail,
     type CaseStudyPath,
