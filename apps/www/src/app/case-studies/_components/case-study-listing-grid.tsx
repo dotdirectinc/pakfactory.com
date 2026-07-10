@@ -53,7 +53,7 @@ function deriveOptions(
       if (!seen.has(item._id)) seen.set(item._id, { _id: item._id, title: item.title });
     }
   }
-  return Array.from(seen.values()).sort((a, b) => a.title.localeCompare(b.title));
+  return Array.from(seen.values()).sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
 }
 
 // ─── TagDropdown ──────────────────────────────────────────────────────────────
