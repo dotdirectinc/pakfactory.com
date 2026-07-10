@@ -304,7 +304,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'capabilities',
-      title: 'Capabilities',
+      title: 'Customizations',
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'capability' }] }],

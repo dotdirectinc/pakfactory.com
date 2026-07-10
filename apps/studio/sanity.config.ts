@@ -102,7 +102,7 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
-      S.view.component(ProductRelatedCapabilitiesView).title('Capabilities'),
+      S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
     ])
   }
   return S.document().views([S.view.form()])
