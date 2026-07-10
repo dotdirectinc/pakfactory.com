@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
+import { Check, ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import {
   DropdownMenu,
@@ -53,7 +53,7 @@ function deriveOptions(
       if (!seen.has(item._id)) seen.set(item._id, { _id: item._id, title: item.title });
     }
   }
-  return Array.from(seen.values()).sort((a, b) => a.title.localeCompare(b.title));
+  return Array.from(seen.values()).sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
 }
 
 // ─── TagDropdown ──────────────────────────────────────────────────────────────
@@ -80,20 +80,20 @@ function TagDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors",
-            active > 0
-              ? "border-foreground bg-foreground text-background"
-              : "border-border bg-background text-foreground hover:bg-muted/50",
-          )}
+          className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         >
-          {label}
-          {active > 0 && (
-            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-background px-1 text-[10px] font-semibold leading-none text-foreground">
-              {active}
-            </span>
-          )}
-          <ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
+          <span className="flex items-center gap-1.5">
+            {label}
+            {active > 0 && (
+              <span
+                aria-hidden
+                className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium leading-none text-primary-foreground"
+              >
+                {active}
+              </span>
+            )}
+          </span>
+          <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 min-w-[200px] overflow-y-auto">
@@ -106,9 +106,10 @@ function TagDropdown({
                 e.preventDefault();
                 toggle(opt._id, !isChecked);
               }}
-              className={cn("cursor-pointer px-3", isChecked && "font-medium")}
+              className="flex cursor-pointer items-center justify-between gap-4 pr-2"
             >
-              {opt.title}
+              <span>{opt.title}</span>
+              {isChecked && <Check className="size-4 shrink-0" aria-hidden />}
             </DropdownMenuItem>
           );
         })}
@@ -240,7 +241,7 @@ export function CaseStudyListingGrid({ studies }: Props) {
   return (
     <>
       {/* Filter bar */}
-      <section className="border-b border-dashed border-border bg-background">
+      <section className="sticky top-16 z-30 border-b border-dashed border-border bg-background">
         <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
           <div className="flex flex-wrap items-center justify-between gap-4 py-8">
             {/* Desktop filters */}
@@ -402,12 +403,10 @@ export function CaseStudyListingGrid({ studies }: Props) {
                       href={`/case-studies/${study.slug}`}
                       title={study.title}
                       clientName={study.client?.name}
-                      cardSummary={study.cardSummary}
                       cardImageUrl={study.cardImageUrl}
                       cardImageAlt={study.cardImageAlt}
                       solutions={study.solutions}
                       products={study.products}
-                      isVideo={study.heroMediaType === "video"}
                       priority={i < 3}
                     />
                   </li>

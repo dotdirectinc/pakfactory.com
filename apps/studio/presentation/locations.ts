@@ -107,6 +107,13 @@ export const blogLocations: DocumentLocationResolvers = {
 // produces no location while those fields are absent and lights up automatically
 // once the product model lands. No-op today, correct tomorrow.
 export const websiteLocations: DocumentLocationResolvers = {
+  caseStudy: defineLocations({
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? { locations: [{ title: doc.title || 'Case Study', href: `/case-studies/${doc.slug}` }] }
+        : { locations: [] },
+  }),
   product: defineLocations({
     select: {
       title: 'title',

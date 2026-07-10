@@ -1,8 +1,12 @@
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import {draftMode} from 'next/headers';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import {SanityVisualEditing} from '@/components/layout/sanity-visual-editing';
 import './globals.css';
+
+export const viewport: Viewport = {
+    themeColor: '#1d2058',
+};
 
 export const metadata: Metadata = {
     title: 'PakFactory',
