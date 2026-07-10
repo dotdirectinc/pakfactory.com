@@ -9,6 +9,15 @@
 
 const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
+const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  "title": coalesce(headline, internalTitle),
+  "slug": slug.current,
+  solutionType
+}`;
+
+const CLIENT_INDUSTRY_ITEM = /* groq */ `industry->${SOLUTION_TAXONOMY_ITEM}`;
+
 // ─── Field projections ────────────────────────────────────────────────────────
 
 const CASE_STUDY_CARD_FIELDS = /* groq */ `{
@@ -21,7 +30,7 @@ const CASE_STUDY_CARD_FIELDS = /* groq */ `{
   "cardImageUrl": cardImage.asset->url,
   cardImageAlt,
   "client": client->{ name, "logoUrl": logo.asset->url },
-  "solutions": solutions[]->${TAXONOMY_ITEM},
+  "solutions": solutions[]->${SOLUTION_TAXONOMY_ITEM},
   "products": products[]->${TAXONOMY_ITEM},
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
   "heroMediaType": heroMedia.mediaType
@@ -36,7 +45,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   cardSummary,
   "cardImageUrl": cardImage.asset->url,
   cardImageAlt,
-  "client": client->{ name, "logoUrl": logo.asset->url, website },
+  "client": client->{ name, "logoUrl": logo.asset->url, website, ${CLIENT_INDUSTRY_ITEM} },
   heroIntro,
   heroMedia {
     mediaType,
@@ -48,7 +57,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
     "videoThumbnailUrl": videoThumbnail.asset->url,
     "videoThumbnailHotspot": videoThumbnail.hotspot
   },
-  "solutions": solutions[]->${TAXONOMY_ITEM},
+  "solutions": solutions[]->${SOLUTION_TAXONOMY_ITEM},
   "products": products[]->${TAXONOMY_ITEM},
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
   "capabilities": capabilities[]->${TAXONOMY_ITEM},
@@ -109,7 +118,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"]
 
 /** All taxonomy options for the listing page filter UI — single round-trip. */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "industry"] | order(title asc) ${TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && defined(slug.current)] | order(coalesce(headline, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productCategory"] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(order asc) ${TAXONOMY_ITEM}
 }`;
@@ -120,6 +129,7 @@ export type CaseStudyTaxonomyItem = {
   _id: string;
   title: string;
   slug: string;
+  solutionType?: string;
 };
 
 export type CaseStudyHighlight = {
@@ -133,8 +143,11 @@ export type CaseStudyClientCard = {
   logoUrl: string | null;
 };
 
+export type CaseStudyClientIndustry = CaseStudyTaxonomyItem | null;
+
 export type CaseStudyClientDetail = CaseStudyClientCard & {
   website: string | null;
+  industry?: CaseStudyClientIndustry;
 };
 
 export type CaseStudyHeroMedia = {

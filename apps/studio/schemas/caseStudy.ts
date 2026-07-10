@@ -270,14 +270,18 @@ export const caseStudy = defineType({
     }),
 
     // ─── Categorization ───────────────────────────────────────────────────────
+    // solutions[] → `solution` (Solutions → All). Content ops: re-select each value
+    // after deploy; legacy `industry` refs break. Example maps: Pet Products → Pet,
+    // Cosmetics & Beauty → Beauty & Cosmetics, Apparel & Fashion → Apparel & Fashion.
 
     defineField({
       name: 'solutions',
       title: 'Solutions',
       type: 'array',
       group: 'categorization',
-      of: [{ type: 'reference', to: [{ type: 'industry' }] }],
-      description: 'Solution filter + chips. Solutions = the deployed Industry taxonomy.',
+      of: [{ type: 'reference', to: [{ type: 'solution' }] }],
+      description:
+        'Solution filter + chips. Link to documents from Solutions → All (Industries and Use Cases). After migrating from the legacy industry taxonomy, re-select each value from the Solutions picker.',
       validation: (Rule) => Rule.required().min(1),
     }),
     defineField({
