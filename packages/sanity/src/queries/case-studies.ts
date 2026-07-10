@@ -57,8 +57,8 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   solution,
   result,
   "relatedStudies": select(
-    count(relatedStudies) > 0 => relatedStudies[]->${CASE_STUDY_CARD_FIELDS},
-    *[_type == "caseStudy" && status == "published" && _id != ^._id] | order(publishedAt desc)[0...3]${CASE_STUDY_CARD_FIELDS}
+    count(relatedStudies) > 0 => relatedStudies[0...6]->${CASE_STUDY_CARD_FIELDS},
+    *[_type == "caseStudy" && status == "published" && _id != ^._id] | order(publishedAt desc)[0...6]${CASE_STUDY_CARD_FIELDS}
   ),
   metaTitle,
   metaDescription,
@@ -196,7 +196,7 @@ export type CaseStudyFilterOptions = {
 export type CaseStudiesPageData = {
   heroEyebrow: string | null;
   heroHeading: string | null;
-  heroIntro: string | null;
+  heroIntro: unknown;
   detailCta: {
     heading: string | null;
     primaryLabel: string | null;

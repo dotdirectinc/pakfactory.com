@@ -45,10 +45,32 @@ export const caseStudiesPage = defineType({
     defineField({
       name: 'heroIntro',
       title: 'Hero intro',
-      type: 'text',
-      rows: 3,
+      type: 'array',
       group: 'hero',
-      description: 'Supporting paragraph below the H1.',
+      description: 'Supporting paragraph(s) below the H1. Supports bold, italic, and hyperlinks.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          lists: [],
+          marks: {
+            decorators: [
+              { title: 'Bold', value: 'strong' },
+              { title: 'Italic', value: 'em' },
+            ],
+            annotations: [
+              {
+                name: 'link',
+                type: 'object',
+                title: 'Link',
+                fields: [
+                  defineField({ name: 'href', type: 'url', title: 'URL' }),
+                ],
+              },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'heroBackgroundImage',

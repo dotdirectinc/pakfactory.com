@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { PortableText } from "@portabletext/react";
+import type { PortableTextBlock } from "@portabletext/types";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import {
@@ -69,9 +71,9 @@ export default async function CaseStudiesPage() {
   const eyebrow = pageData?.heroEyebrow?.trim() || "WORK WE’RE PROUD OF";
   const heading =
     pageData?.heroHeading?.trim() || "Real brands. Real packaging. Real results.";
-  const intro =
-    pageData?.heroIntro?.trim() ||
-    "From first launches to established brands, these stories show how thoughtful packaging can solve real business challenges and create memorable customer experiences.";
+  const heroIntro = pageData?.heroIntro;
+  const hasHeroIntro = Array.isArray(heroIntro) && heroIntro.length > 0;
+  const FALLBACK_INTRO = "From first launches to established brands, these stories show how thoughtful packaging can solve real business challenges and create memorable customer experiences.";
 
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
@@ -110,9 +112,24 @@ export default async function CaseStudiesPage() {
         <h1 className="text-[36px] font-semibold leading-10 tracking-tight">
           {heading}
         </h1>
-        <p className="max-w-[1141px] text-xl leading-7 text-muted-foreground">
-          {intro}
-        </p>
+        {hasHeroIntro ? (
+          <div className="max-w-[1141px] text-xl leading-7 text-muted-foreground">
+            <PortableText
+              value={heroIntro as PortableTextBlock[]}
+              components={{
+                block: { normal: ({ children }) => <p className="text-xl leading-7 text-muted-foreground">{children}</p> },
+                marks: {
+                  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                  link: ({ value, children }) => (
+                    <a href={value?.href} className="underline underline-offset-4 hover:no-underline" target="_blank" rel="noopener noreferrer">{children}</a>
+                  ),
+                },
+              }}
+            />
+          </div>
+        ) : (
+          <p className="max-w-[1141px] text-xl leading-7 text-muted-foreground">{FALLBACK_INTRO}</p>
+        )}
       </PageDielineSection>
 
       {/* Filter bar + grid — client component handles all interactive state */}
