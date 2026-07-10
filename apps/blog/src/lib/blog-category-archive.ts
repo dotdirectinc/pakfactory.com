@@ -3,8 +3,6 @@ import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
 import { getCategoryFallback } from "@/lib/blog-categories";
 import {
-  getTotalArchivePages,
-  isArchivePageOutOfRange,
   LISTING_PAGE_SIZE,
   parseArchivePageParam,
 } from "@/lib/blog-archive";
@@ -71,12 +69,22 @@ export type CategoryArchivePageData = {
   totalCount: number;
   pageNumber: number;
   totalPages: number;
+  perPage: number;
   filters: CategoryListFilters;
   tags: CategoryFacetTag[];
   authors: CategoryFacetAuthor[];
   /** Chips for the recommended-topics row (page 1); [] on deeper pages. */
   recommendedTopics: CategoryTopic[];
 };
+
+export const PAGE_SIZE_OPTIONS = [15, 30, 50] as const;
+export const DEFAULT_PAGE_SIZE = LISTING_PAGE_SIZE;
+
+export function parsePerPage(raw: string | string[] | undefined): number {
+  const str = Array.isArray(raw) ? raw[0] : raw;
+  const n = Number.parseInt(str ?? "", 10);
+  return (PAGE_SIZE_OPTIONS as readonly number[]).includes(n) ? n : DEFAULT_PAGE_SIZE;
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -167,16 +175,18 @@ export function categoryPageHref(
   categorySlug: string,
   pageNumber: number,
   filters: CategoryListFilters,
+  perPage?: number,
 ): string {
-  const base = pageNumber <= 1 ? `/${categorySlug}` : `/${categorySlug}/page/${pageNumber}`;
   const params = new URLSearchParams();
+  if (pageNumber > 1) params.set("page", String(pageNumber));
   if (filters.tag) params.set("tag", filters.tag);
   if (filters.author) params.set("author", filters.author);
   if (filters.year) params.set("year", filters.year);
   if (filters.month) params.set("month", filters.month);
   if (filters.sort !== "newest") params.set("sort", filters.sort);
+  if (perPage && perPage !== DEFAULT_PAGE_SIZE) params.set("perPage", String(perPage));
   const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
+  return qs ? `/${categorySlug}?${qs}` : `/${categorySlug}`;
 }
 
 export function getCategoryListingRobots(
@@ -253,14 +263,16 @@ export async function fetchCategoryArchivePage(
   categorySlug: string,
   pageNumber: number,
   filters: CategoryListFilters,
+  perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<CategoryArchivePageData | null> {
   const category = await fetchCategoryBySlug(categorySlug);
   if (!category) return null;
 
-  const excludeFeatured =
-    pageNumber === 1 && !hasActiveCategoryFilters(filters);
+  const hasFilters = hasActiveCategoryFilters(filters);
+  // Exclude featured posts from the listing only on page 1 (to avoid duplication with the featured band).
+  const excludeFeaturedFromListing = pageNumber === 1 && !hasFilters;
   const groqParams = groqFilterParams(categorySlug, filters, {
-    excludeFeatured,
+    excludeFeatured: excludeFeaturedFromListing,
   });
   let totalCount = 0;
   let featuredPosts: HomePostCard[] = [];
@@ -268,13 +280,11 @@ export async function fetchCategoryArchivePage(
 
   if (isSanityConfigured()) {
     const client = await getSanityClient();
-    // Featured band + recommended-topics row are page-1-only sections.
-    const wantsPageOneExtras = pageNumber === 1;
     [totalCount, featuredPosts, recommendedTopics] = await Promise.all([
       client
         .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
         .catch(() => 0),
-      excludeFeatured
+      !hasFilters
         ? client
             .fetch<HomePostCard[]>(
               BLOG_CATEGORY_FEATURED_POSTS_QUERY,
@@ -282,21 +292,20 @@ export async function fetchCategoryArchivePage(
             )
             .catch(() => [])
         : Promise.resolve([] as HomePostCard[]),
-      wantsPageOneExtras
-        ? client
-            .fetch<CategoryTopic[] | null>(
-              BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
-              blogLanguageParams({ categorySlug }),
-            )
-            .then((topics) => topics ?? [])
-            .catch(() => [])
-        : Promise.resolve([] as CategoryTopic[]),
+      client
+        .fetch<CategoryTopic[] | null>(
+          BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
+          blogLanguageParams({ categorySlug }),
+        )
+        .then((topics) => topics ?? [])
+        .catch(() => []),
     ]);
   }
 
-  const totalPages = getTotalArchivePages(totalCount);
+  const totalPages = totalCount === 0 ? 1 : Math.ceil(totalCount / perPage);
+  const isOutOfRange = pageNumber < 1 || pageNumber > totalPages;
 
-  if (isArchivePageOutOfRange(pageNumber, totalCount)) {
+  if (isOutOfRange) {
     return {
       category,
       posts: [],
@@ -304,6 +313,7 @@ export async function fetchCategoryArchivePage(
       totalCount,
       pageNumber,
       totalPages,
+      perPage,
       filters,
       tags: [],
       authors: [],
@@ -316,8 +326,8 @@ export async function fetchCategoryArchivePage(
   let authors: CategoryFacetAuthor[] = [];
 
   if (isSanityConfigured()) {
-    const start = (pageNumber - 1) * LISTING_PAGE_SIZE;
-    const end = start + LISTING_PAGE_SIZE;
+    const start = (pageNumber - 1) * perPage;
+    const end = start + perPage;
     const client = await getSanityClient();
     [posts, tags, authors] = await Promise.all([
       client
@@ -349,6 +359,7 @@ export async function fetchCategoryArchivePage(
     totalCount,
     pageNumber,
     totalPages,
+    perPage,
     filters,
     tags,
     authors,
@@ -362,4 +373,4 @@ export function parseCategoryPageFromSearchParams(
   return parseListingPage(searchParams);
 }
 
-export { parseArchivePageParam, isArchivePageOutOfRange };
+export { parseArchivePageParam };

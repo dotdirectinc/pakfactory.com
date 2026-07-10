@@ -2,6 +2,7 @@ import { cache } from "react";
 import {
   fetchCategoryArchivePage,
   parseCategoryFilters,
+  DEFAULT_PAGE_SIZE,
   type CategoryArchivePageData,
 } from "@/lib/blog-category-archive";
 import { fetchBlogPageBySlug, type BlogPageRecord } from "@/lib/blog-page";
@@ -28,12 +29,14 @@ export async function resolveBlogSegment(
   options?: {
     searchParams?: SearchParams;
     page?: number;
+    perPage?: number;
   },
 ): Promise<SegmentResolution> {
   const page = options?.page ?? 1;
+  const perPage = options?.perPage ?? DEFAULT_PAGE_SIZE;
   const filters = parseCategoryFilters(options?.searchParams ?? {});
 
-  const categoryData = await cachedFetchCategoryArchivePage(segment, page, filters);
+  const categoryData = await cachedFetchCategoryArchivePage(segment, page, filters, perPage);
   if (categoryData) return { kind: "category", data: categoryData };
 
   const cmsPage = await cachedFetchBlogPageBySlug(segment);

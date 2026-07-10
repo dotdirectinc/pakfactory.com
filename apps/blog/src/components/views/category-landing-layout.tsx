@@ -36,13 +36,15 @@ export function CategoryLandingLayout({
 export function CategoryLandingSection({
   children,
   className,
+  innerClassName,
 }: {
   children: ReactNode;
   className?: string;
+  innerClassName?: string;
 }) {
   return (
     <section className={className ?? ""}>
-      <PageDielineSection innerClassName="py-16 sm:py-24">
+      <PageDielineSection innerClassName={innerClassName ?? "py-16 sm:py-24"}>
         {children}
       </PageDielineSection>
     </section>
