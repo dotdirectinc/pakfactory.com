@@ -1,0 +1,182 @@
+name: Sanity nightly backup
+
+on:
+  schedule:
+    # 01:00 UTC every night
+    - cron: "0 1 * * *"
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Export → Drive + sync to dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── Setup ──────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # ── Install rclone ─────────────────────────────────────────────────────
+      - name: Install rclone
+        run: |
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+
+      # ── Configure rclone with GDrive service account ───────────────────────
+      - name: Configure rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          cat > /tmp/gdrive-sa.json << 'SAEOF'
+          ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          SAEOF
+          cat > ~/.config/rclone/rclone.conf << EOF
+          [gdrive]
+          type = drive
+          service_account_file = /tmp/gdrive-sa.json
+          EOF
+
+      # ── Compute date strings ───────────────────────────────────────────────
+      - name: Set date variables
+        id: dates
+        run: |
+          # MMDDYYYY folder format per spec (e.g. 07132026)
+          echo "folder=$(date -u '+%m%d%Y')"   >> "$GITHUB_OUTPUT"
+          echo "stamp=$(date -u '+%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+          # Is today the 1st? → save a monthly copy too
+          echo "is_first=$([ $(date -u +%d) = '01' ] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+
+      # ── Export production dataset ──────────────────────────────────────────
+      - name: Export production dataset
+        env:
+          SANITY_BACKUP_TOKEN: ${{ secrets.SANITY_BACKUP_TOKEN }}
+        run: |
+          mkdir -p backups
+          npx sanity@latest dataset export production \
+            "backups/sanity-production-${{ steps.dates.outputs.stamp }}.tar.gz" \
+            -p 8293wrxp \
+            --token "$SANITY_BACKUP_TOKEN"
+          echo "BACKUP_FILE=backups/sanity-production-${{ steps.dates.outputs.stamp }}.tar.gz" >> "$GITHUB_ENV"
+
+      # ── Upload to Google Drive ─────────────────────────────────────────────
+      - name: Upload to Google Drive (nightly)
+        run: |
+          rclone copy "$BACKUP_FILE" \
+            "gdrive:${{ steps.dates.outputs.folder }}/" \
+            --drive-root-folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" \
+            --progress
+
+      # ── Monthly copy (1st of month) ────────────────────────────────────────
+      - name: Upload to Google Drive (monthly copy)
+        if: steps.dates.outputs.is_first == 'true'
+        run: |
+          MONTH_FOLDER="monthly/$(date -u '+%Y%m')"
+          rclone copy "$BACKUP_FILE" \
+            "gdrive:${MONTH_FOLDER}/" \
+            --drive-root-folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" \
+            --progress
+          echo "📅 Monthly copy saved to ${MONTH_FOLDER}/"
+
+      # ── Prune old nightly backups (keep 30 days) ───────────────────────────
+      - name: Prune old nightly backups
+        run: |
+          node - << 'EOF'
+          // Delete nightly folders (MMDDYYYY) older than 30 days
+          import { execSync } from "node:child_process";
+          const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - 30);
+
+          // List top-level folders that look like MMDDYYYY
+          const result = execSync(
+            `rclone lsf "gdrive:" --drive-root-folder-id "${FOLDER_ID}" --dirs-only`
+          ).toString().trim();
+
+          for (const entry of result.split("\n").filter(Boolean)) {
+            const folder = entry.replace(/\/$/, "");
+            // Parse MMDDYYYY
+            if (!/^\d{8}$/.test(folder)) continue;
+            const mm = folder.slice(0, 2), dd = folder.slice(2, 4), yyyy = folder.slice(4, 8);
+            const folderDate = new Date(`${yyyy}-${mm}-${dd}`);
+            if (isNaN(folderDate.getTime())) continue;
+            if (folderDate < cutoff) {
+              console.log(`🗑  Pruning nightly: ${folder}`);
+              execSync(
+                `rclone purge "gdrive:${folder}/" --drive-root-folder-id "${FOLDER_ID}"`,
+                { stdio: "inherit" }
+              );
+            }
+          }
+          console.log("✅  Nightly prune complete.");
+          EOF
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+
+      # ── Prune old monthly backups (keep 12 months) ─────────────────────────
+      - name: Prune old monthly backups
+        run: |
+          node - << 'EOF'
+          import { execSync } from "node:child_process";
+          const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
+          const cutoff = new Date();
+          cutoff.setMonth(cutoff.getMonth() - 12);
+
+          let result;
+          try {
+            result = execSync(
+              `rclone lsf "gdrive:monthly/" --drive-root-folder-id "${FOLDER_ID}" --dirs-only`
+            ).toString().trim();
+          } catch {
+            // monthly/ folder may not exist yet
+            process.exit(0);
+          }
+
+          for (const entry of result.split("\n").filter(Boolean)) {
+            const folder = entry.replace(/\/$/, "");
+            // Parse YYYYMM
+            if (!/^\d{6}$/.test(folder)) continue;
+            const yyyy = folder.slice(0, 4), mm = folder.slice(4, 6);
+            const folderDate = new Date(`${yyyy}-${mm}-01`);
+            if (isNaN(folderDate.getTime())) continue;
+            if (folderDate < cutoff) {
+              console.log(`🗑  Pruning monthly: ${folder}`);
+              execSync(
+                `rclone purge "gdrive:monthly/${folder}/" --drive-root-folder-id "${FOLDER_ID}"`,
+                { stdio: "inherit" }
+              );
+            }
+          }
+          console.log("✅  Monthly prune complete.");
+          EOF
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+
+      # ── Sync production → development ──────────────────────────────────────
+      - name: Sync production → development
+        env:
+          SANITY_BACKUP_TOKEN: ${{ secrets.SANITY_BACKUP_TOKEN }}
+        run: |
+          npx sanity@latest dataset import "$BACKUP_FILE" development \
+            --replace \
+            -p 8293wrxp \
+            --token "$SANITY_BACKUP_TOKEN"
+          echo "✅ Development dataset updated from production backup."
+
+      # ── Cleanup temp files ─────────────────────────────────────────────────
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f /tmp/gdrive-sa.json
+          rm -rf backups/
+
+      # ── Notify on failure ──────────────────────────────────────────────────
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Sanity nightly backup FAILED — check the workflow run for details."
+          echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -40,3 +40,6 @@ yarn.lock
 
 .claude/training/*
 docs/*
+
+apps/studio/backup
+backups/

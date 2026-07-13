@@ -17,7 +17,15 @@
     "seed:blog-dev": "pnpm --filter @pakfactory/studio run seed:blog-dev",
     "migrate:product-single-refs": "pnpm --filter @pakfactory/sanity run migrate:product-single-refs",
     "update:llms-txt": "pnpm --filter @pakfactory/sanity run update:llms-txt",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "sanity:switch:dev": "node scripts/sanity/switch-dataset.mjs development",
+    "sanity:switch:prod": "node scripts/sanity/switch-dataset.mjs production",
+    "sanity:backup:dev": "node scripts/sanity/backup.mjs development",
+    "sanity:backup:prod": "node scripts/sanity/backup.mjs production",
+    "sanity:restore:dev": "node scripts/sanity/restore.mjs development",
+    "sanity:restore:prod": "node scripts/sanity/restore.mjs production",
+    "sanity:diff": "node scripts/sanity/diff-datasets.mjs",
+    "sanity:sync-prod-to-dev": "node scripts/sanity/sync-prod-to-dev.mjs"
   },
   "devDependencies": {
     "@pakfactory/sanity": "workspace:^",
