@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import type {CSSProperties} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
 // import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
@@ -76,7 +77,7 @@ function FooterLinkItem({link}: {link: BlogFooterLink}) {
 
 function FooterSectionBlock({section}: {section: BlogFooterSection}) {
     return (
-        <div className="flex min-w-[200px] flex-1 flex-col gap-3">
+        <div className="flex min-w-[200px] flex-col gap-3">
             <p className="pb-2 text-lg font-medium leading-7 text-foreground">
                 {section.title}
             </p>
@@ -185,6 +186,10 @@ export function SiteFooter({
 }: SiteFooterProps) {
     const footerColumns = columns ?? [];
     const footerBuilder = builder ?? [];
+    const sectionRows = Math.max(
+        1,
+        ...footerColumns.map((column) => column.length),
+    );
 
     return (
         <footer className="bg-background">
@@ -198,11 +203,18 @@ export function SiteFooter({
                 ))}
 
                 {/* Link columns */}
-                <div className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-0 md:px-0 md:py-0">
+                <div
+                    className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
+                    style={
+                        {
+                            '--footer-section-rows': sectionRows,
+                        } as CSSProperties
+                    }
+                >
                     {footerColumns.map((column, colIdx) => (
                         <div
                             key={colIdx}
-                            className="flex flex-col gap-16 border-dashed border-border md:border-r md:px-8 md:py-16 md:last:border-r-0"
+                            className="flex flex-col gap-16 border-dashed border-border md:grid md:grid-rows-subgrid md:gap-y-16 md:border-r md:px-8 md:py-16 md:last:border-r-0 md:[grid-row:span_var(--footer-section-rows)]"
                         >
                             {column.map((section) => (
                                 <FooterSectionBlock

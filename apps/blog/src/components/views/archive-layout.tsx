@@ -29,6 +29,8 @@ type ArchiveLayoutProps = {
     ariaLabel?: string;
     rightSlot?: ReactNode;
     scrollTargetId?: string;
+    /** When false, hide the pagination bar (e.g. empty listing). */
+    show?: boolean;
   };
 };
 
@@ -56,7 +58,7 @@ export function ArchiveLayout({
       <div id={LISTING_TOP_ID} className="scroll-mt-24">
         {children}
       </div>
-      {pagination.totalPages > 1 && (
+      {pagination.show !== false && (
         <div className="py-16">
           <Pagination
             pageNumber={pagination.pageNumber}
