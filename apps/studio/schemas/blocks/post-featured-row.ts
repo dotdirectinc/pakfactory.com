@@ -9,7 +9,7 @@ import {
 /**
  * postFeaturedRow — page-leading Featured Post: one pinned featured post plus a
  * column of the latest posts. Page-builder block
- * (apps/blog components/blocks/post-featured-row).
+ * (apps/blog components/blocks/post-featured-block).
  */
 export const postFeaturedRow = defineType({
     name: 'postFeaturedRow',
@@ -31,8 +31,8 @@ export const postFeaturedRow = defineType({
             type: 'number',
             description:
                 'How many posts to show in the "Latest posts" column beside the hero.',
-            initialValue: 4,
-            validation: (Rule) => Rule.min(1).max(8).integer(),
+            initialValue: 3,
+            validation: (Rule) => Rule.min(1).max(3).integer(),
         }),
         ...dielineBorderFields(),
     ],

@@ -1,44 +1,28 @@
 'use client';
 
-import Link from 'next/link';
-import {usePathname} from 'next/navigation';
 import {NavSearchForm} from '@/components/modules/search-form';
-import {cn} from '@pakfactory/ui/lib/utils';
-import type {BlogCategoryChip} from '@/lib/blog-categories';
-import {categoryHref} from '@/lib/blog-post-url';
+import {PrimaryNavLink} from '@/components/layout/primary-nav-link';
+import type {BlogPrimaryNavItem} from '@/lib/blog-primary-nav';
 
 type SiteNavCategoriesProps = {
-    categories: BlogCategoryChip[];
+    navItems: BlogPrimaryNavItem[];
 };
 
-export function SiteNavCategories({categories}: SiteNavCategoriesProps) {
-    const pathname = usePathname();
-
+export function SiteNavCategories({navItems}: SiteNavCategoriesProps) {
     return (
         <div className="hidden w-full items-center justify-between lg:flex">
-            {categories.length > 0 ? (
+            {navItems.length > 0 ? (
                 <nav
-                    className="flex min-w-0 flex-1 items-center gap-8 text-base font-medium"
-                    aria-label="Blog categories"
+                    className="flex min-w-0 flex-1 items-center gap-8 text-sm font-medium"
+                    aria-label="Blog navigation"
                 >
-                    {categories.map(({slug, title}) => {
-                        const href = categoryHref(slug);
-                        const isActive =
-                            pathname === href ||
-                            pathname.startsWith(`${href}/page/`);
-                        return (
-                            <Link
-                                key={slug}
-                                href={href}
-                                className={cn(
-                                    'text-foreground transition-colors hover:text-primary',
-                                    isActive && 'font-semibold text-primary',
-                                )}
-                            >
-                                {title}
-                            </Link>
-                        );
-                    })}
+                    {navItems.map((item) => (
+                        <PrimaryNavLink
+                            key={item.key}
+                            item={item}
+                            className="text-foreground transition-colors hover:text-primary"
+                        />
+                    ))}
                 </nav>
             ) : (
                 <div className="min-w-0 flex-1" />
@@ -47,7 +31,7 @@ export function SiteNavCategories({categories}: SiteNavCategoriesProps) {
             <NavSearchForm
                 id="site-nav-search"
                 className="shrink-0"
-                fieldClassName="w-[328px]"
+                fieldClassName="w-[240px]"
             />
         </div>
     );

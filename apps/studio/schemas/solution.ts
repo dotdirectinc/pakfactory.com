@@ -125,10 +125,10 @@ export const solution = defineType({
 
     defineField({
       name: 'relevantCapabilities',
-      title: 'Relevant capabilities',
+      title: 'Relevant customizations',
       type: 'array',
       group: 'content',
-      description: 'Capability categories most relevant to this solution (e.g. Finishing, Printing).',
+      description: 'Customization categories most relevant to this solution (e.g. Finishing, Printing).',
       of: [
         {
           type: 'reference',
@@ -151,14 +151,17 @@ export const solution = defineType({
       ],
     }),
 
-    // relatedCaseStudies — add once caseStudy schema is built
-    // defineField({
-    //   name: 'relatedCaseStudies',
-    //   title: 'Related case studies',
-    //   type: 'array',
-    //   group: 'content',
-    //   of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
-    // }),
+    // relatedCaseStudies — manual curation; empty → case study detail auto-fallback
+    defineField({
+      name: 'relatedCaseStudies',
+      title: 'Related case studies',
+      type: 'array',
+      group: 'content',
+      of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
+      description:
+        'Featured on this solution page. Leave empty to omit until the www solution template wires this field.',
+      validation: (Rule) => Rule.max(6),
+    }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 

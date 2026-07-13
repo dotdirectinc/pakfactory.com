@@ -1,46 +1,53 @@
 "use client";
-import { Suspense } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/blog-category-archive";
 
-function PerPageSelectInner({ currentPerPage = DEFAULT_PAGE_SIZE }: { currentPerPage?: number }) {
+import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@pakfactory/ui/components/select";
+
+export type PerPageOption = {
+  size: number;
+  href: string;
+};
+
+type PerPageSelectProps = {
+  value: number;
+  options: PerPageOption[];
+};
+
+/**
+ * Controlled per-page selector — callers supply option hrefs so this stays
+ * route-agnostic (ADR-013). Changing size navigates to the matching href
+ * (typically page 1 of the listing with the new size).
+ */
+export function PerPageSelect({ value, options }: PerPageSelectProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-
-  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const size = Number(e.target.value);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("page");
-    if (size === DEFAULT_PAGE_SIZE) {
-      params.delete("perPage");
-    } else {
-      params.set("perPage", String(size));
-    }
-    const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
-  }
 
   return (
-    <select
-      value={String(currentPerPage)}
-      onChange={handleChange}
-      aria-label="Posts per page"
-      className="cursor-pointer rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm text-muted-foreground outline-none hover:text-foreground"
+    <Select
+      value={String(value)}
+      onValueChange={(next) => {
+        const option = options.find((o) => String(o.size) === next);
+        if (option) router.push(option.href);
+      }}
     >
-      {PAGE_SIZE_OPTIONS.map((size) => (
-        <option key={size} value={String(size)}>
-          {size}/page
-        </option>
-      ))}
-    </select>
-  );
-}
-
-export function PerPageSelect(props: { currentPerPage?: number }) {
-  return (
-    <Suspense>
-      <PerPageSelectInner {...props} />
-    </Suspense>
+      <SelectTrigger
+        aria-label="Posts per page"
+        className="h-9 w-[110px] rounded-md border border-border bg-background text-sm text-muted-foreground shadow-none hover:text-foreground"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        {options.map((option) => (
+          <SelectItem key={option.size} value={String(option.size)}>
+            {option.size}/page
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

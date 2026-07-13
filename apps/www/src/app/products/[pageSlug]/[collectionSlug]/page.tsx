@@ -1,8 +1,8 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {cache} from 'react';
-import ProductList from '@/components/products/product-list';
-import HeroSection from '@/components/products/hero-section-01';
+import ProductList from '@/components/modules/product-list';
+import ProductHero from '@/components/sections/product-hero';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -11,15 +11,15 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@pakfactory/ui/components/breadcrumb';
-import {getPublishedSanityClient, getSanityClient} from '@/sanity/client';
-import {isSanityConfigured} from '@/sanity/env';
+import {getPublishedSanityClient, getSanityClient} from '@/lib/sanity/client';
+import {isSanityConfigured} from '@/lib/sanity/env';
 import {getCollectionsForProductPage} from '@pakfactory/sanity/product-page-collections';
 import {
     PRODUCT_COLLECTION_META_FOR_PATH_QUERY,
     PRODUCT_PAGE_COLLECTION_PATHS_QUERY,
     PRODUCTS_FOR_PAGE_AND_COLLECTION_QUERY,
 } from '@pakfactory/sanity/queries';
-import {normalizeSegment} from '../../path-utils';
+import {normalizeSegment} from '@/lib/products/path-utils';
 
 export const revalidate = 60;
 
@@ -205,7 +205,7 @@ export default async function ProductCollectionPage({
                 </Breadcrumb>
             </div>
 
-            <HeroSection
+            <ProductHero
                 badgeLabel="Collection"
                 badgeCaption={displayTitle}
                 headline={heroTitle}

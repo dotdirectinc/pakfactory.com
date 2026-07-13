@@ -58,7 +58,7 @@ export function PostList({
             key={post._id}
             className={
               index > 0
-                ? "mt-5 pt-5 lg:mt-4 lg:border-t lg:border-dashed lg:border-border lg:pt-4"
+                ? "mt-5 pt-5 lg:mt-4 lg:pt-4"
                 : undefined
             }
           >
@@ -106,7 +106,7 @@ export function PostList({
     );
   } else {
     list = (
-      <ul className={className ?? `grid gap-8 ${COLUMN_CLASSES[columns]}`}>
+      <ul className={className ?? `grid gap-x-8 gap-y-12 ${COLUMN_CLASSES[columns]}`}>
         {posts.map((post, index) => (
           <li key={post._id}>
             <PostCard

@@ -3,7 +3,7 @@ import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../li
 
 export const capability = defineType({
   name: 'capability',
-  title: 'Capability',
+  title: 'Customization',
   type: 'document',
   groups: [
     { name: 'basic', title: 'Basic', default: true },
@@ -38,7 +38,7 @@ export const capability = defineType({
             `*[_type == "capability" && slug.current == $slug && !(_id in [$id, $draftId])][0]._id`,
             { slug: slug.current, id, draftId }
           )
-          return existing ? 'Slug must be unique across all capabilities' : true
+          return existing ? 'Slug must be unique across all customizations' : true
         }),
     }),
     defineField({
@@ -101,7 +101,7 @@ export const capability = defineType({
       title: 'Applicable product categories',
       type: 'array',
       group: 'attributes',
-      description: 'Which product groupings use this capability?',
+      description: 'Which product groupings use this customization?',
       of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
     }),
     defineField({
@@ -248,7 +248,7 @@ export const capability = defineType({
       title: 'Show color range',
       type: 'boolean',
       group: 'page',
-      description: 'Inherit color range from parent Capability Type.',
+      description: 'Inherit color range from parent Customization Type.',
       initialValue: false,
     }),
     defineField({
@@ -274,7 +274,7 @@ export const capability = defineType({
       title: 'Show thickness table',
       type: 'boolean',
       group: 'page',
-      description: 'Inherit thickness table from parent Capability Type.',
+      description: 'Inherit thickness table from parent Customization Type.',
       initialValue: false,
     }),
     defineField({
@@ -301,14 +301,14 @@ export const capability = defineType({
       title: 'Show flute type table',
       type: 'boolean',
       group: 'page',
-      description: 'Inherit flute type table from parent Capability Type.',
+      description: 'Inherit flute type table from parent Customization Type.',
       initialValue: false,
     }),
 
     // Related items
     defineField({
       name: 'applicableCapabilities',
-      title: 'Applicable capabilities',
+      title: 'Applicable customizations',
       type: 'array',
       group: 'page',
       description: 'What can be applied TO or used WITH this?',
@@ -329,7 +329,7 @@ export const capability = defineType({
     }),
     defineField({
       name: 'relatedCapabilities',
-      title: 'Related capabilities',
+      title: 'Related customizations',
       type: 'array',
       group: 'page',
       description: 'See also — cross-category links.',

@@ -18,7 +18,7 @@ The www `page` document type is wrong for Blog — it targets marketing-site `pa
 | -------- | ------ |
 | Landing URL shape | **`/{slug}`** at root — insert `blogPage` lookup between category and post in the resolver; strict slug validation |
 | Prefixed `/pages/{slug}` | Rejected unless product reopens — avoids collision but weak campaign URLs |
-| Contribute route | **Stays a code route** (`/contribute`) — not migrated to CMS in this ADR |
+| Contribute route | **Hybrid:** reserved `/contribute` code route + `blogPage` singleton (`pageRole: contribute`, id `blogContributePage`) for SEO + page blocks. Form/API stay in app code. (ADR originally left contribute fully code-owned; amended 2026-07.) |
 | `pageRole: static` vs `landing` | Both exist in schema; Studio lists **Landing pages** and **Static pages** separately; same block allowlist initially |
 | Draft workflow | **`publishedAt` required** for resolver + sitemap; unpublished docs invisible on site |
 | Shopify analogy | Homepage/landings = **section-based page templates**; posts and categories = **fixed templates** |

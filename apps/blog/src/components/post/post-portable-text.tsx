@@ -1,77 +1,75 @@
-import Image from "next/image";
+import Image from 'next/image';
 import {
-  PortableText as PortableTextRoot,
-  type PortableTextComponents,
-} from "@portabletext/react";
-import type { PortableTextBlock } from "@portabletext/types";
-import { BodyCallout } from "@/components/modules/inline/body-callout";
-import { BodyQuote } from "@/components/modules/inline/body-quote";
-import { BodyGallery } from "@/components/modules/inline/body-gallery";
-import { BodyTable } from "@/components/modules/inline/body-table";
-import { BodyVideo } from "@/components/modules/inline/body-video";
-import { BodyStatStack } from "@/components/modules/inline/body-stat-stack";
-import { BodyBarChart } from "@/components/modules/inline/body-bar-chart";
-import { BodyEmbed } from "@/components/modules/inline/body-embed";
-import { WidgetRenderer } from "@/components/modules/widget/widget-renderer";
-import { CAPTION_CLASS } from "@/lib/blog-caption";
+    PortableText as PortableTextRoot,
+    type PortableTextComponents,
+} from '@portabletext/react';
+import type {PortableTextBlock} from '@portabletext/types';
+import {BodyCallout} from '@/components/modules/inline/body-callout';
+import {BodyQuote} from '@/components/modules/inline/body-quote';
+import {BodyGallery} from '@/components/modules/inline/body-gallery';
+import {BodyTable} from '@/components/modules/inline/body-table';
+import {BodyVideo} from '@/components/modules/inline/body-video';
+import {BodyStatStack} from '@/components/modules/inline/body-stat-stack';
+import {BodyBarChart} from '@/components/modules/inline/body-bar-chart';
+import {BodyEmbed} from '@/components/modules/inline/body-embed';
+import {WidgetRenderer} from '@/components/modules/widget/widget-renderer';
+import {CAPTION_CLASS} from '@/lib/blog-caption';
 import type {
-  PostBodyBarChart,
-  PostBodyCallout,
-  PostBodyGallery,
-  PostBodyQuote,
-  PostBodyStatStack,
-  PostBodyTable,
-  PostBodyEmbed,
-  PostBodyVideo,
-  PostBodyWidget,
-} from "@/lib/blog-post";
-import { sanityImageUrl } from "@/lib/sanity-image";
-import { EXTERNAL_LINK_REL, externalLinkAttributes } from "@/lib/external-link";
+    PostBodyBarChart,
+    PostBodyCallout,
+    PostBodyGallery,
+    PostBodyQuote,
+    PostBodyStatStack,
+    PostBodyTable,
+    PostBodyEmbed,
+    PostBodyVideo,
+    PostBodyWidget,
+} from '@/lib/blog-post';
+import {sanityImageUrl} from '@/lib/sanity-image';
+import {EXTERNAL_LINK_REL, externalLinkAttributes} from '@/lib/external-link';
 
 type BodyImageValue = {
-  alt?: string;
-  caption?: string;
-  link?: string;
-  linkNofollow?: boolean;
-  asset?: unknown;
+    alt?: string;
+    caption?: string;
+    link?: string;
+    linkNofollow?: boolean;
+    asset?: unknown;
 };
 
 type WidgetEmbedValue = {
-  widget?: PostBodyWidget | null;
+    widget?: PostBodyWidget | null;
 };
 
-function PostBodyImage({ value }: { value: BodyImageValue }) {
-  const imageUrl = sanityImageUrl(value.asset, 1200);
-  if (!imageUrl) return null;
+function PostBodyImage({value}: {value: BodyImageValue}) {
+    const imageUrl = sanityImageUrl(value.asset, 1200);
+    if (!imageUrl) return null;
 
-  const img = (
-    <Image
-      src={imageUrl}
-      alt={value.alt ?? ""}
-      width={1200}
-      height={675}
-      className="h-auto w-full rounded-lg object-cover"
-    />
-  );
+    const img = (
+        <Image
+            src={imageUrl}
+            alt={value.alt ?? ''}
+            width={1200}
+            height={675}
+            className="h-auto w-full rounded-lg object-cover"
+        />
+    );
 
-  return (
-    <figure className="my-8">
-      {value.link ? (
-        <a
-          href={value.link}
-          rel={EXTERNAL_LINK_REL}
-          target="_blank"
-        >
-          {img}
-        </a>
-      ) : (
-        img
-      )}
-      {value.caption ? (
-        <figcaption className={CAPTION_CLASS}>{value.caption}</figcaption>
-      ) : null}
-    </figure>
-  );
+    return (
+        <figure className="my-8">
+            {value.link ? (
+                <a href={value.link} rel={EXTERNAL_LINK_REL} target="_blank">
+                    {img}
+                </a>
+            ) : (
+                img
+            )}
+            {value.caption ? (
+                <figcaption className={CAPTION_CLASS}>
+                    {value.caption}
+                </figcaption>
+            ) : null}
+        </figure>
+    );
 }
 
 function createComponents(headingIdByKey: Record<string, string>): PortableTextComponents {
@@ -148,25 +146,25 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
 }
 
 type PostPortableTextProps = {
-  value?: PortableTextBlock[];
-  headingIdByKey?: Record<string, string>;
-  className?: string;
+    value?: PortableTextBlock[];
+    headingIdByKey?: Record<string, string>;
+    className?: string;
 };
 
 /** Post body renderer with heading anchors, body images, and embedded widgets. */
 export function PostPortableText({
-  value,
-  headingIdByKey = {},
-  className,
+    value,
+    headingIdByKey = {},
+    className,
 }: PostPortableTextProps) {
-  if (!value?.length) return null;
+    if (!value?.length) return null;
 
-  return (
-    <div className={className}>
-      <PortableTextRoot
-        value={value}
-        components={createComponents(headingIdByKey)}
-      />
-    </div>
-  );
+    return (
+        <div className={className}>
+            <PortableTextRoot
+                value={value}
+                components={createComponents(headingIdByKey)}
+            />
+        </div>
+    );
 }

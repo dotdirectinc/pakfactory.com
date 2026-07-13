@@ -39,6 +39,10 @@ type PageDielineSectionProps = {
   children: ReactNode;
   className?: string;
   innerClassName?: string;
+  /** Dashed top edge on the inner dieline column (opt-in; avoids double-dash when stacking bands). */
+  borderTop?: boolean;
+  /** Dashed bottom edge on the inner dieline column (opt-in). */
+  borderBottom?: boolean;
 };
 
 /**
@@ -54,10 +58,22 @@ export function PageDielineSection({
   children,
   className,
   innerClassName,
+  borderTop = false,
+  borderBottom = false,
 }: PageDielineSectionProps) {
   return (
     <div className={pageDielineOuterClass(className)}>
-      <div className={pageDielineInnerClass(innerClassName)}>{children}</div>
+      <div
+        className={pageDielineInnerClass(
+          cn(
+            innerClassName,
+            borderTop && "border-t border-dashed border-border",
+            borderBottom && "border-b border-dashed border-border",
+          ),
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -71,6 +87,11 @@ type PageDielineFullBleedSectionProps = {
   borderTop?: boolean;
   /** Dashed bottom edge on the inner dieline column (opt-in). */
   borderBottom?: boolean;
+  /**
+   * Dashed left/right guides on the inner column. Defaults to true.
+   * Set false for bands that should only show horizontal dielines.
+   */
+  borderX?: boolean;
   "aria-labelledby"?: string;
   id?: string;
 };
@@ -86,9 +107,12 @@ export function PageDielineFullBleedSection({
   shellClassName,
   borderTop = false,
   borderBottom = false,
+  borderX = true,
   "aria-labelledby": ariaLabelledBy,
   id,
 }: PageDielineFullBleedSectionProps) {
+  const columnClass = borderX ? pageDielineInnerClass : pageDielineContentClass;
+
   return (
     <section
       id={id}
@@ -97,7 +121,7 @@ export function PageDielineFullBleedSection({
     >
       <div className={pageFullBleedSectionContentClass(shellClassName)}>
         <div
-          className={pageDielineInnerClass(
+          className={columnClass(
             cn(
               innerClassName,
               borderTop && "border-t border-dashed border-border",

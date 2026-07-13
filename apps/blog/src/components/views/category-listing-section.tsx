@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LISTING_TOP_ID } from "@/components/modules/pagination";
 import { CategoryLandingSection } from "@/components/views/category-landing-layout";
 
 type CategoryListingSectionProps = {
@@ -17,8 +18,10 @@ export function CategoryListingSection({
 }: CategoryListingSectionProps) {
   return (
     <CategoryLandingSection innerClassName="py-16">
-      <div className="flex flex-col gap-10">{children}</div>
-      {pagination}
+      <div id={LISTING_TOP_ID} className="scroll-mt-24 flex flex-col gap-10">
+        {children}
+      </div>
+      {pagination && <div className="py-16">{pagination}</div>}
     </CategoryLandingSection>
   );
 }

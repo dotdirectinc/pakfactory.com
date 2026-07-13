@@ -40,3 +40,8 @@ export const BLOG_SEARCH_PAGE_IDS = {
   en: 'blogSearchPage',
   fr: 'blogSearchPage-fr',
 } as const
+
+export const BLOG_CONTRIBUTE_PAGE_IDS = {
+  en: 'blogContributePage',
+  fr: 'blogContributePage-fr',
+} as const

@@ -43,7 +43,7 @@ export function PostPopularRow({
             <div className="mb-6">
                 <h2
                     id={sectionId}
-                    className="text-2xl font-semibold tracking-tight"
+                    className="text-3xl font-semibold tracking-tight"
                 >
                     {sectionHeading}
                 </h2>

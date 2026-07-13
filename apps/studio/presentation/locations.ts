@@ -1,6 +1,7 @@
 import { defineLocations } from 'sanity/presentation'
 import type { DocumentLocationResolvers } from 'sanity/presentation'
 import {
+  isBlogContributeSingleton,
   isBlogHomeSingleton,
   isBlogNotFoundSingleton,
   isBlogSearchSingleton,
@@ -58,6 +59,13 @@ export const blogLocations: DocumentLocationResolvers = {
           locations: [{ title: doc?.title || 'Search page', href: '/search' }],
         }
       }
+      if (isBlogContributeSingleton(doc ?? undefined)) {
+        return {
+          locations: [
+            { title: doc?.title || 'Contribute page', href: '/contribute' },
+          ],
+        }
+      }
       return doc?.slug
         ? { locations: [{ title: doc.title || 'Page', href: `/${doc.slug}` }] }
         : { locations: [] }
@@ -99,6 +107,13 @@ export const blogLocations: DocumentLocationResolvers = {
 // produces no location while those fields are absent and lights up automatically
 // once the product model lands. No-op today, correct tomorrow.
 export const websiteLocations: DocumentLocationResolvers = {
+  caseStudy: defineLocations({
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? { locations: [{ title: doc.title || 'Case Study', href: `/case-studies/${doc.slug}` }] }
+        : { locations: [] },
+  }),
   product: defineLocations({
     select: {
       title: 'title',

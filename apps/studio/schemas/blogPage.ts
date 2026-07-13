@@ -1,6 +1,7 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { DocumentsIcon, HomeIcon } from '@sanity/icons'
 import {
+  isBlogContributeSingleton,
   isBlogHomeSingleton,
   isBlogNotFoundSingleton,
   isBlogPageSingleton,
@@ -72,6 +73,7 @@ export const blogPage = defineType({
           { title: 'Topics index (singleton)', value: 'topics' },
           { title: '404 page (singleton)', value: 'notFound' },
           { title: 'Search page (singleton)', value: 'search' },
+          { title: 'Contribute page (singleton)', value: 'contribute' },
           { title: 'Landing page', value: 'landing' },
           { title: 'Static page', value: 'static' },
         ],
@@ -90,6 +92,9 @@ export const blogPage = defineType({
         if (id === 'blogHomePage' || id === 'blogHomePage-fr') return 'home'
         if (id === 'blogNotFoundPage' || id === 'blogNotFoundPage-fr') return 'notFound'
         if (id === 'blogSearchPage' || id === 'blogSearchPage-fr') return 'search'
+        if (id === 'blogContributePage' || id === 'blogContributePage-fr') {
+          return 'contribute'
+        }
         return 'landing'
       },
     }),
@@ -187,12 +192,13 @@ export const blogPage = defineType({
       type: 'pageBuilderHome',
       group: 'builder',
       description:
-        'Page-builder blocks (homepage, topics index, 404 page, and search page).',
+        'Page-builder blocks (homepage, topics index, 404, search, and contribute).',
       hidden: ({ document }) =>
         !isBlogHomeSingleton(document) &&
         !isBlogTopicsSingleton(document) &&
         !isBlogNotFoundSingleton(document) &&
-        !isBlogSearchSingleton(document),
+        !isBlogSearchSingleton(document) &&
+        !isBlogContributeSingleton(document),
     }),
     defineField({
       name: 'pageBuilderLanding',
@@ -228,6 +234,12 @@ export const blogPage = defineType({
         return {
           title: title || 'Search page',
           subtitle: 'Singleton · /search content source',
+        }
+      }
+      if (pageRole === 'contribute') {
+        return {
+          title: title || 'Contribute page',
+          subtitle: 'Singleton · /contribute content source',
         }
       }
       return {

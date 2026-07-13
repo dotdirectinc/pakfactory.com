@@ -44,6 +44,7 @@ export type HomePostCard = {
   categorySlug?: string;
   categoryTitle?: string;
   authorName?: string;
+  authorSlug?: string;
   authorImageUrl?: string;
   readingTimeMinutes?: number;
 };

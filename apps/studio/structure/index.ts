@@ -35,6 +35,7 @@ import {
     BLOG_TOPICS_PAGE_IDS,
     BLOG_NOT_FOUND_PAGE_IDS,
     BLOG_SEARCH_PAGE_IDS,
+    BLOG_CONTRIBUTE_PAGE_IDS,
 } from '../lib/languages';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,12 +190,27 @@ function blogSearchPageItem(S: StructureBuilder): ListItemBuilder {
         );
 }
 
+function blogContributePageItem(S: StructureBuilder): ListItemBuilder {
+    // Content source for the reserved `/contribute` code route (form stays in app).
+    return S.listItem()
+        .id('blogContributePage')
+        .title('Contribute page')
+        .icon(EnvelopeIcon)
+        .child(
+            S.editor()
+                .id(BLOG_CONTRIBUTE_PAGE_IDS.en)
+                .schemaType('blogPage')
+                .documentId(BLOG_CONTRIBUTE_PAGE_IDS.en),
+        );
+}
+
 function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     const pageItems: ListItemBuilder[] = [
         blogHomepageItem(S),
         blogTopicsPageItem(S),
         blogNotFoundPageItem(S),
         blogSearchPageItem(S),
+        blogContributePageItem(S),
     ];
 
     if (BLOG_STUDIO_LANDING_PAGES) {
@@ -518,13 +534,13 @@ export function knowledgeLibraryItems(
     return [
         S.divider().title('Knowledge Library'),
 
-        // ── Capabilities ──────────────────────────────────────────────────────────
+        // ── Customization ─────────────────────────────────────────────────────────
         S.listItem()
-            .title('Capabilities')
+            .title('Customization')
             .icon(ColorWheelIcon)
             .child(
                 S.list()
-                    .title('Capabilities')
+                    .title('Customization')
                     .items([
                         S.listItem()
                             .title('Browse by Category')
@@ -540,7 +556,7 @@ export function knowledgeLibraryItems(
                                             .params({categoryId})
                                             .child((typeId) =>
                                                 S.documentTypeList('capability')
-                                                    .title('Capabilities')
+                                                    .title('Customizations')
                                                     .filter(
                                                         'type._ref == $typeId',
                                                     )
@@ -550,11 +566,11 @@ export function knowledgeLibraryItems(
                             ),
 
                         S.listItem()
-                            .title('All Capabilities')
+                            .title('All Customizations')
                             .schemaType('capability')
                             .child(
                                 S.documentTypeList('capability').title(
-                                    'All Capabilities',
+                                    'All Customizations',
                                 ),
                             ),
 
@@ -564,25 +580,25 @@ export function knowledgeLibraryItems(
                             .title('Taxonomy')
                             .child(
                                 S.list()
-                                    .title('Capability Taxonomy')
+                                    .title('Customization Taxonomy')
                                     .items([
                                         S.listItem()
-                                            .title('Capability Categories')
+                                            .title('Customization Categories')
                                             .schemaType('capabilityCategory')
                                             .child(
                                                 S.documentTypeList(
                                                     'capabilityCategory',
                                                 ).title(
-                                                    'Capability Categories',
+                                                    'Customization Categories',
                                                 ),
                                             ),
                                         S.listItem()
-                                            .title('Capability Types')
+                                            .title('Customization Types')
                                             .schemaType('capabilityType')
                                             .child(
                                                 S.documentTypeList(
                                                     'capabilityType',
-                                                ).title('Capability Types'),
+                                                ).title('Customization Types'),
                                             ),
                                         S.listItem()
                                             .title('Attribute Groups')
@@ -985,13 +1001,13 @@ export function coreEntitiesItems(
                     .defaultOrdering([{field: 'order', direction: 'asc'}]),
             ),
 
-        // ── Capabilities ──────────────────────────────────────────────────────────
+        // ── Customization ─────────────────────────────────────────────────────────
         S.listItem()
-            .title('Capabilities')
+            .title('Customization')
             .icon(ColorWheelIcon)
             .child(
                 S.list()
-                    .title('Capabilities')
+                    .title('Customization')
                     .items([
                         S.listItem()
                             .title('Browse by Category')
@@ -1007,7 +1023,7 @@ export function coreEntitiesItems(
                                             .params({categoryId})
                                             .child((typeId) =>
                                                 S.documentTypeList('capability')
-                                                    .title('Capabilities')
+                                                    .title('Customizations')
                                                     .filter(
                                                         'type._ref == $typeId',
                                                     )
@@ -1016,11 +1032,11 @@ export function coreEntitiesItems(
                                     ),
                             ),
                         S.listItem()
-                            .title('All Capabilities')
+                            .title('All Customizations')
                             .schemaType('capability')
                             .child(
                                 S.documentTypeList('capability').title(
-                                    'All Capabilities',
+                                    'All Customizations',
                                 ),
                             ),
                         S.divider(),
@@ -1028,7 +1044,7 @@ export function coreEntitiesItems(
                             .title('Taxonomy')
                             .child(
                                 S.list()
-                                    .title('Capability Taxonomy')
+                                    .title('Customization Taxonomy')
                                     .items([
                                         S.listItem()
                                             .title('Categories')
@@ -1076,19 +1092,61 @@ export function coreEntitiesItems(
                     ]),
             ),
 
-        // ── Resources (Case Studies — rename pending confirmation) ────────────────
+        // ── Clients ───────────────────────────────────────────────────────────────
+        S.listItem()
+            .title('Clients')
+            .icon(UserIcon)
+            .schemaType('client')
+            .child(
+                S.documentTypeList('client')
+                    .title('Clients')
+                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
+            ),
+
+        // ── Case Studies ──────────────────────────────────────────────────────────
         ...(options.hideCaseStudies
             ? []
             : [
                   S.listItem()
                       .title('Case Studies')
                       .icon(CaseIcon)
-                      .schemaType('caseStudy')
                       .child(
-                          S.documentTypeList('caseStudy')
+                          S.list()
                               .title('Case Studies')
-                              .defaultOrdering([
-                                  {field: 'title', direction: 'asc'},
+                              .items([
+                                  S.listItem()
+                                      .title('Studies')
+                                      .icon(CaseIcon)
+                                      .schemaType('caseStudy')
+                                      .child(
+                                          S.documentTypeList('caseStudy')
+                                              .title('Case Studies')
+                                              .filter('_type == "caseStudy" && archived != true')
+                                              .defaultOrdering([
+                                                  {field: 'publishedAt', direction: 'desc'},
+                                              ]),
+                                      ),
+                                  S.listItem()
+                                      .title('Archived')
+                                      .icon(CaseIcon)
+                                      .schemaType('caseStudy')
+                                      .child(
+                                          S.documentTypeList('caseStudy')
+                                              .title('Archived Case Studies')
+                                              .filter('_type == "caseStudy" && archived == true')
+                                              .defaultOrdering([
+                                                  {field: 'publishedAt', direction: 'desc'},
+                                              ]),
+                                      ),
+                                  S.listItem()
+                                      .title('Page Settings')
+                                      .icon(CogIcon)
+                                      .child(
+                                          S.editor()
+                                              .id('caseStudiesPage')
+                                              .schemaType('caseStudiesPage')
+                                              .documentId('caseStudiesPage'),
+                                      ),
                               ]),
                       ),
               ]),
@@ -1267,16 +1325,6 @@ export function resourcesItems(
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
 
-        // ── Case Studies ──────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Case Studies')
-            .icon(CaseIcon)
-            .schemaType('caseStudy')
-            .child(
-                S.documentTypeList('caseStudy')
-                    .title('Case Studies')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
-            ),
     ];
 }
 
@@ -1474,7 +1522,7 @@ export const adminStructure = (S: StructureBuilder) =>
     S.list()
         .title('PakFactory')
         .items([
-            ...coreEntitiesItems(S, {hideCaseStudies: true}),
+            ...coreEntitiesItems(S),
             ...resourcesItems(S),
             globalNavigationItem(S),
             ...settingsItems(S, {blog: true, solutions: true}),

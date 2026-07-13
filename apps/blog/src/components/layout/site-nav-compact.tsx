@@ -8,6 +8,7 @@ import {
     useId,
     useRef,
     useState,
+    type CSSProperties,
     type ReactNode,
     type RefObject,
 } from 'react';
@@ -16,14 +17,15 @@ import {ArrowRight, Search, X} from 'lucide-react';
 import {usePathname} from 'next/navigation';
 import {Button} from '@pakfactory/ui/components/button';
 import {NavSearchForm} from '@/components/modules/search-form';
+import {PrimaryNavLink} from '@/components/layout/primary-nav-link';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {
     PageDielineSection,
     pageDielineInnerClass,
     pageDielineOuterClass,
 } from '@/components/layout/page-dieline-section';
-import type {BlogCategoryChip} from '@/lib/blog-categories';
-import {categoryHref} from '@/lib/blog-post-url';
+import type {BlogPrimaryNavCta, BlogPrimaryNavItem} from '@/lib/blog-primary-nav';
+import {externalLinkAttributes} from '@/lib/external-link';
 
 type SiteNavCompactContextValue = {
     searchOpen: boolean;
@@ -58,30 +60,26 @@ export function SiteNavTopRow({children}: SiteNavTopRowProps) {
     const {searchOpen} = useSiteNavCompact();
 
     return (
-        // Border on a full-width wrapper so the divider spans the viewport (like
-        // the POC nav and the category tier below), not just the dieline column.
-        <div
-            className={cn(
-                'border-dashed border-border',
+        <PageDielineSection
+            innerClassName={cn(
+                'flex h-16 items-center justify-between',
                 searchOpen ? 'max-lg:border-b-0 lg:border-b' : 'border-b',
             )}
         >
-            <PageDielineSection innerClassName="flex h-16 items-center justify-between">
-                {children}
-            </PageDielineSection>
-        </div>
+            {children}
+        </PageDielineSection>
     );
 }
 
 type SiteNavCompactProviderProps = {
-    categories: BlogCategoryChip[];
-    contactHref: string;
+    navItems: BlogPrimaryNavItem[];
+    cta: BlogPrimaryNavCta;
     children: ReactNode;
 };
 
 export function SiteNavCompactProvider({
-    categories,
-    contactHref,
+    navItems,
+    cta,
     children,
 }: SiteNavCompactProviderProps) {
     const [searchOpen, setSearchOpen] = useState(false);
@@ -195,7 +193,14 @@ export function SiteNavCompactProvider({
                 menuTriggerRef,
             }}
         >
-            <div ref={headerShellRef}>
+            <div
+                ref={headerShellRef}
+                style={
+                    {
+                        '--nav-search-bottom': `${headerBottom}px`,
+                    } as CSSProperties
+                }
+            >
                 {children}
 
                 {searchOpen ? (
@@ -245,45 +250,43 @@ export function SiteNavCompactProvider({
                                 'flex h-full flex-col justify-between py-8',
                             )}
                         >
-                            {categories.length > 0 ? (
+                            {navItems.length > 0 ? (
                                 <nav
-                                    aria-label="Blog categories"
+                                    aria-label="Blog navigation"
                                     className="flex flex-col gap-12"
                                 >
-                                    {categories.map(({slug, title}) => {
-                                        const href = categoryHref(slug);
-                                        const isActive =
-                                            pathname === href ||
-                                            pathname.startsWith(
-                                                `${href}/page/`,
-                                            );
-
-                                        return (
-                                            <Link
-                                                key={slug}
-                                                href={href}
-                                                onClick={closeMenu}
-                                                className={cn(
-                                                    'flex items-center justify-between text-xl font-medium text-foreground no-underline',
-                                                    isActive && 'text-primary',
-                                                )}
-                                            >
-                                                {title}
+                                    {navItems.map((item) => (
+                                        <PrimaryNavLink
+                                            key={item.key}
+                                            item={item}
+                                            onClick={closeMenu}
+                                            activeClassName="text-primary"
+                                            className="flex items-center justify-between text-xl font-medium text-foreground no-underline"
+                                            trailing={
                                                 <ArrowRight
                                                     className="size-6 shrink-0"
                                                     strokeWidth={1.75}
                                                     aria-hidden
                                                 />
-                                            </Link>
-                                        );
-                                    })}
+                                            }
+                                        />
+                                    ))}
                                 </nav>
                             ) : (
                                 <div />
                             )}
 
                             <Button asChild>
-                                <a href={contactHref}>Contact Us</a>
+                                {cta.external ? (
+                                    <a
+                                        href={cta.href}
+                                        {...externalLinkAttributes(cta.href)}
+                                    >
+                                        {cta.label}
+                                    </a>
+                                ) : (
+                                    <Link href={cta.href}>{cta.label}</Link>
+                                )}
                             </Button>
                         </div>
                     </div>

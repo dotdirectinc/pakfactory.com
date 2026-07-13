@@ -29,10 +29,9 @@ export {
     BLOG_CATEGORY_TAGS_FACET_QUERY,
     BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
     BLOG_SEARCH_POSTS_COUNT_QUERY,
-    BLOG_SEARCH_POSTS_PAGE_RELEVANCE_QUERY,
     BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY,
-    BLOG_SEARCH_POSTS_PAGE_OLDEST_QUERY,
-    BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY,
+    BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY,
+    BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY,
     POST_BY_SLUG_QUERY,
     POST_BY_CATEGORY_AND_SLUG_QUERY,
     BLOG_CATEGORIES_QUERY,
@@ -40,6 +39,7 @@ export {
     BLOG_NOT_FOUND_PAGE_BUILDER_QUERY,
     BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY,
     BLOG_SEARCH_PAGE_BUILDER_QUERY,
+    BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY,
     BLOG_REDIRECTS_QUERY,
     BLOG_RSS_POSTS_QUERY,
     BLOG_SITEMAP_POSTS_QUERY,
@@ -48,6 +48,8 @@ export {
     BLOG_TAG_POSTS_PAGE_NEWEST_QUERY,
     BLOG_TAG_POSTS_PAGE_OLDEST_QUERY,
     BLOG_TAG_POSTS_PAGE_TITLE_QUERY,
+    BLOG_TAG_POSTS_PAGE_UPDATED_QUERY,
+    BLOG_TAG_POSTS_PAGE_POPULAR_QUERY,
     BLOG_TAG_COOCCURRING_TAGS_QUERY,
     BLOG_TAG_AUTHORS_FACET_QUERY,
     AUTHOR_BY_SLUG_QUERY,
@@ -68,6 +70,32 @@ export {
     POPULAR_POSTS_LATEST_QUERY,
     POSTS_BY_CATEGORY_SLUG_QUERY,
 } from './queries/blog';
+
+export {
+    CASE_STUDIES_LISTING_QUERY,
+    CASE_STUDIES_PAGE_QUERY,
+    CASE_STUDY_BY_SLUG_QUERY,
+    CASE_STUDY_PATHS_QUERY,
+    CASE_STUDY_SITEMAP_QUERY,
+    CASE_STUDY_FILTER_OPTIONS_QUERY,
+    type CaseStudiesPageData,
+    type CaseStudyCard,
+    type CaseStudyDetail,
+    type CaseStudyPath,
+    type CaseStudyHighlight,
+    type CaseStudyTaxonomyItem,
+    type CaseStudyClientCard,
+    type CaseStudyClientDetail,
+    type CaseStudyHeroMedia,
+    type CaseStudySitemapEntry,
+    type CaseStudyFilterOptions,
+} from './queries/case-studies';
+
+export {
+    CASE_STUDY_RESERVED_SLUGS,
+    isBlockedCaseStudySlug,
+    type CaseStudyReservedSlug,
+} from './case-study-reserved-slugs';
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,

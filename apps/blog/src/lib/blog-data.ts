@@ -27,6 +27,7 @@ import {
 import {
   getFallbackFooterData,
   resolveFooterData,
+  resolveFooterLinkHref,
   type BlogFooterData,
   type BlogFooterNavDoc,
 } from "@/lib/blog-footer-nav";
@@ -38,6 +39,17 @@ import {
   BLOG_CATEGORY_FALLBACK,
   type BlogCategoryChip,
 } from "@/lib/blog-categories";
+import {
+  getDefaultPrimaryNavHeader,
+  resolveCompanyLogo,
+  resolvePrimaryNavHeader,
+  type BlogPrimaryNavHeader,
+  type BlogPrimaryNavHeaderRow,
+  type BlogPrimaryNavItem,
+} from "@/lib/blog-primary-nav";
+import { categoryHref } from "@/lib/blog-post-url";
+import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
+import type { SanityLinkDocument } from "@pakfactory/sanity/resolve-document-href";
 
 export type PopularPostCard = {
   _id: string;
@@ -49,40 +61,91 @@ export type PopularPostCard = {
   categorySlug?: string;
   categoryTitle?: string;
   authorName?: string;
+  authorSlug?: string;
   authorImageUrl?: string;
   readingTimeMinutes?: number;
 };
 
-type BlogNavCategoryRow = BlogCategoryChip & {
-  language?: string | null;
+export type BlogPrimaryNavData = {
+  navItems: BlogPrimaryNavItem[];
+  header: BlogPrimaryNavHeader;
+};
+
+type BlogNavCategoryRef = {
+  _id?: string;
+  title?: string | null;
   navLabel?: string | null;
+  slug?: string | null;
+  language?: string | null;
+};
+
+type BlogNavItemRow = {
+  _type?: string | null;
+  _key?: string | null;
+  category?: BlogNavCategoryRef | null;
+  label?: string | null;
+  linkType?: string | null;
+  externalUrl?: string | null;
+  internalLink?: SanityLinkDocument | null;
 };
 
 type BlogNavSettingsDoc = {
   _id?: string;
-  categories?: (BlogNavCategoryRow | null)[] | null;
+  categories?: (BlogNavItemRow | null)[] | null;
+  header?: BlogPrimaryNavHeaderRow;
 } | null;
 
-function resolveNavCategories(
+function resolvePrimaryNavItems(
   doc: BlogNavSettingsDoc,
   language: string = DEFAULT_BLOG_LANGUAGE,
-): BlogCategoryChip[] {
-  if (doc?._id) {
-    return (doc.categories ?? [])
-      .filter((row): row is BlogNavCategoryRow => row != null)
-      .filter((row) => (row.language ?? language) === language)
-      .filter(
-        (row): row is BlogNavCategoryRow =>
-          Boolean(row.slug?.trim() && row.title?.trim()),
-      )
-      // Nav bar shows the category's Nav label when set, else its Name.
-      .map(({ _id, title, navLabel, slug }) => ({
-        _id,
-        title: navLabel?.trim() || title,
-        slug,
-      }));
+): BlogPrimaryNavItem[] {
+  if (!doc?._id) return [];
+
+  const items: BlogPrimaryNavItem[] = [];
+
+  for (const row of doc.categories ?? []) {
+    if (!row) continue;
+
+    const category = row.category;
+    if (category?.slug?.trim() && category?.title?.trim()) {
+      if ((category.language ?? language) !== language) continue;
+      items.push({
+        key: category._id ?? row._key ?? category.slug,
+        label: category.navLabel?.trim() || category.title,
+        href: categoryHref(category.slug),
+        categorySlug: category.slug,
+      });
+      continue;
+    }
+
+    if (row.linkType) {
+      const resolved = resolveFooterLinkHref(row);
+      if (!resolved) continue;
+      items.push({
+        key: row._key ?? resolved.href,
+        label: resolved.label,
+        href: resolved.href,
+        ...(resolved.external ? { external: true } : {}),
+      });
+    }
   }
-  return [];
+
+  return items;
+}
+
+function resolvePrimaryNav(
+  doc: BlogNavSettingsDoc,
+  language: string = DEFAULT_BLOG_LANGUAGE,
+  companyLogo?: ReturnType<typeof resolveCompanyLogo>,
+): BlogPrimaryNavData {
+  const header = resolvePrimaryNavHeader(doc?.header ?? undefined);
+  return {
+    navItems: resolvePrimaryNavItems(doc, language),
+    header: {
+      ...header,
+      logo: companyLogo,
+    },
+  };
 }
 
 function monthStartIso(): string {
@@ -90,20 +153,30 @@ function monthStartIso(): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
-async function loadBlogNavCategoriesFromClient(
+async function loadBlogPrimaryNavFromClient(
   fetchDoc: () => Promise<BlogNavSettingsDoc>,
   language: string = DEFAULT_BLOG_LANGUAGE,
-): Promise<BlogCategoryChip[]> {
+): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {
-    return [];
+    return {
+      navItems: [],
+      header: getDefaultPrimaryNavHeader(),
+    };
   }
-  const doc = await fetchDoc().catch(() => null);
-  return resolveNavCategories(doc, language);
+  const [doc, globalSettings] = await Promise.all([
+    fetchDoc().catch(() => null),
+    fetchBlogGlobalSettings(),
+  ]);
+  return resolvePrimaryNav(
+    doc,
+    language,
+    resolveCompanyLogo(globalSettings),
+  );
 }
 
-async function loadPublishedBlogNavCategories(): Promise<BlogCategoryChip[]> {
+async function loadPublishedBlogPrimaryNav(): Promise<BlogPrimaryNavData> {
   const params = blogLanguageParams();
-  return loadBlogNavCategoriesFromClient(
+  return loadBlogPrimaryNavFromClient(
     () =>
       getPublishedSanityClient().fetch<BlogNavSettingsDoc>(
         BLOG_NAV_CATEGORIES_QUERY,
@@ -113,8 +186,8 @@ async function loadPublishedBlogNavCategories(): Promise<BlogCategoryChip[]> {
   );
 }
 
-const getCachedBlogNavCategories = unstable_cache(
-  loadPublishedBlogNavCategories,
+const getCachedBlogPrimaryNav = unstable_cache(
+  loadPublishedBlogPrimaryNav,
   ["blog-nav-categories"],
   {
     revalidate: BLOG_REVALIDATE_SECONDS,
@@ -134,14 +207,6 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
 }
 
 export type TopicChip = { _id?: string; title: string; slug: string };
-
-export type BlogPromo = {
-  heading?: string;
-  body?: string;
-  ctaLabel?: string;
-  ctaUrl?: string;
-  images?: { url?: string }[];
-};
 
 export type BlogNotFoundContent = {
   topics: TopicChip[];
@@ -221,27 +286,31 @@ export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
 }
 
 /**
- * Sub-nav categories — exact order from Blog Navigation `primaryNavigation.categories`.
- * Returns only what editors configured; empty when unset, missing settings,
- * Sanity unconfigured, or fetch fails. Slug/language/null-ref filtering happens in
- * `resolveNavCategories` (GROQ preserves editor order on dereferenced categories).
+ * Primary nav — category strip order plus header CTA from Blog Navigation
+ * `primaryNavigation`, and company logo from Global Settings → Company.
+ * Categories are only what editors configured (empty when unset). Header CTA
+ * falls back to the built-in "Contact Us" → /contribute when unset. Company
+ * logo falls back to the built-in Box + PakFactory wordmark when unset.
  */
-export async function fetchBlogNavCategories(): Promise<BlogCategoryChip[]> {
+export async function fetchBlogNavCategories(): Promise<BlogPrimaryNavData> {
   if (!isSanityConfigured()) {
-    return [];
+    return {
+      navItems: [],
+      header: getDefaultPrimaryNavHeader(),
+    };
   }
 
   if ((await draftMode()).isEnabled) {
     const client = await getSanityClient();
     const params = blogLanguageParams();
-    return loadBlogNavCategoriesFromClient(
+    return loadBlogPrimaryNavFromClient(
       () =>
         client.fetch<BlogNavSettingsDoc>(BLOG_NAV_CATEGORIES_QUERY, params),
       params.language,
     );
   }
 
-  return getCachedBlogNavCategories();
+  return getCachedBlogPrimaryNav();
 }
 
 async function loadBlogFooterNavigationFromClient(
@@ -274,8 +343,9 @@ const getCachedBlogFooterNavigation = unstable_cache(
 
 /**
  * Footer link columns, social links, and AI answer links from Blog Navigation.
- * Falls back to hardcoded defaults when Sanity is unconfigured, fetch fails,
- * or editors have not configured footer content yet.
+ * When the `blogNavigation` document exists, empty sections render empty.
+ * Full hardcoded defaults apply only when Sanity is unconfigured, the fetch
+ * fails, or the document is missing.
  */
 export async function fetchBlogFooterNavigation(): Promise<BlogFooterData> {
   if (!isSanityConfigured()) {

@@ -7,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@pakfactory/ui/components/avatar";
+import { authorHref, categoryHref } from "@/lib/blog-post-url";
 
 /** Plain, client-safe post card props — resolved server-side before render. */
 export type PostCardData = {
@@ -17,7 +18,9 @@ export type PostCardData = {
   imageUrl?: string;
   imageAlt?: string;
   categoryTitle?: string;
+  categorySlug?: string;
   authorName?: string;
+  authorSlug?: string;
   authorImageUrl?: string;
   publishedAt?: string;
   formattedDate?: string;
@@ -56,9 +59,16 @@ function MetaDot() {
   );
 }
 
-function CategoryBadge({ title }: { title: string }) {
+function CategoryBadge({ title, slug }: { title: string; slug?: string }) {
+  const cls = "text-sm text-muted-foreground";
+  if (!slug) return <span className={cls}>{title}</span>;
   return (
-    <span className="text-sm text-muted-foreground">{title}</span>
+    <Link
+      href={categoryHref(slug)}
+      className={`${cls} w-fit transition-colors hover:text-foreground hover:underline hover:underline-offset-4`}
+    >
+      {title}
+    </Link>
   );
 }
 
@@ -73,12 +83,16 @@ function FeaturedBadge() {
 function CardBadge({
   showFeaturedBadge,
   categoryTitle,
+  categorySlug,
 }: {
   showFeaturedBadge?: boolean;
   categoryTitle?: string;
+  categorySlug?: string;
 }) {
   if (showFeaturedBadge) return <FeaturedBadge />;
-  if (categoryTitle) return <CategoryBadge title={categoryTitle} />;
+  if (categoryTitle) {
+    return <CategoryBadge title={categoryTitle} slug={categorySlug} />;
+  }
   return null;
 }
 
@@ -117,7 +131,18 @@ function PostMeta({
     return (
       <div className="flex flex-col gap-1">
         {post.authorName && (
-          <p className="text-sm text-foreground">{post.authorName}</p>
+          <p className="text-sm text-foreground">
+            {post.authorSlug ? (
+              <Link
+                href={authorHref(post.authorSlug)}
+                className="transition-colors hover:text-primary hover:underline hover:underline-offset-4"
+              >
+                {post.authorName}
+              </Link>
+            ) : (
+              post.authorName
+            )}
+          </p>
         )}
         {metaSegments.length > 0 && (
           <p className="flex flex-wrap items-center gap-2 text-sm">
@@ -136,6 +161,17 @@ function PostMeta({
   const segments: ReactNode[] = [];
 
   if (post.authorName) {
+    const authorLabel = post.authorSlug ? (
+      <Link
+        href={authorHref(post.authorSlug)}
+        className="transition-colors hover:text-primary hover:underline hover:underline-offset-4"
+      >
+        {post.authorName}
+      </Link>
+    ) : (
+      <span>{post.authorName}</span>
+    );
+
     segments.push(
       <span
         key="author"
@@ -149,7 +185,7 @@ function PostMeta({
             <AvatarFallback>{authorInitials(post.authorName)}</AvatarFallback>
           </Avatar>
         )}
-        <span>{post.authorName}</span>
+        {authorLabel}
       </span>,
     );
   }
@@ -256,9 +292,9 @@ export function PostCard({
             )}
           </div>
         </Link>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {post.categoryTitle && (
-            <CategoryBadge title={post.categoryTitle} />
+            <CategoryBadge title={post.categoryTitle} slug={post.categorySlug} />
           )}
           <Link href={post.href} className="group block">
             <h3 className="text-2xl font-semibold leading-snug tracking-tight text-card-foreground group-hover:underline lg:text-3xl">
@@ -280,10 +316,10 @@ export function PostCard({
     return (
       <article className="flex flex-col gap-2">
         {post.categoryTitle && (
-          <CategoryBadge title={post.categoryTitle} />
+          <CategoryBadge title={post.categoryTitle} slug={post.categorySlug} />
         )}
         <Link href={post.href} className="group block">
-          <h3 className="line-clamp-2 text-lg font-medium leading-snug text-card-foreground group-hover:underline">
+          <h3 className="line-clamp-2 text-2xl font-medium leading-snug text-card-foreground group-hover:underline">
             {post.title}
           </h3>
         </Link>
@@ -309,10 +345,11 @@ export function PostCard({
             )}
           </div>
         </Link>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <CardBadge
             showFeaturedBadge={showFeaturedBadge}
             categoryTitle={post.categoryTitle}
+            categorySlug={post.categorySlug}
           />
           <Link href={post.href} className="group block">
             <h3 className="text-5xl font-semibold leading-none text-card-foreground group-hover:underline">
@@ -381,6 +418,7 @@ export function PostCard({
           <CardBadge
             showFeaturedBadge={showFeaturedBadge}
             categoryTitle={post.categoryTitle}
+            categorySlug={post.categorySlug}
           />
           <Link href={post.href} className="group block">
             <h3 className="text-2xl font-medium leading-8 text-card-foreground group-hover:underline">
@@ -421,10 +459,11 @@ export function PostCard({
           )}
         </div>
       </Link>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <CardBadge
           showFeaturedBadge={showFeaturedBadge}
           categoryTitle={post.categoryTitle}
+          categorySlug={post.categorySlug}
         />
         <Link href={post.href} className="group block">
           <h3 className="text-lg font-medium leading-7 text-card-foreground transition-colors group-hover:text-primary">

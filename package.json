@@ -28,6 +28,11 @@
     "node": ">=20.19"
   },
   "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "overrides": {
+      "@sanity/client": "7.22.1"
+    }
+  },
   "dependencies": {
     "@sanity/blueprints": "^0.21.0",
     "dotenv": "^16.6.1"

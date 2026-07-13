@@ -72,6 +72,7 @@ const POST_CARD_FIELDS = /* groq */ `{
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
   "authorName": author->name,
+  "authorSlug": author->slug.current,
   "authorImageUrl": author->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
@@ -350,7 +351,21 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   },
   _type == "topicStrip" || _type == "tagStrip" => {
     heading,
-    "topics": coalesce(topics, tags)[]->{ _id, title, "slug": slug.current }
+    "topics": select(
+      count(coalesce(topics, tags)) > 0 => coalesce(topics, tags)[]->{ _id, title, "slug": slug.current },
+      *[
+        _type == "blogTag"
+        && (language == $language || !defined(language))
+        && defined(slug.current)
+        && count(*[
+          _type == "post"
+          && (!defined(language) || language == $language)
+          && defined(publishedAt)
+          && publishedAt <= now()
+          && ^._id in tags[]._ref
+        ]) > 0
+      ] | order(title asc){ _id, title, "slug": slug.current }
+    )
   },
   _type == "featuredVideos" => {
     heading,
@@ -372,16 +387,33 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   _type == "ctaPillars" => {
     "pillars": pillars[]{ title, description, href, ctaLabel }
   },
-  _type == "richTextBand" => {
-    heading,
-    body
-  },
-  _type == "promoBanner" => {
+  _type == "ctaSpotlight" => {
     heading,
     body,
     ctaLabel,
-    ctaUrl,
-    "images": images[]{ "url": asset->url }
+    linkType,
+    externalUrl,
+    "internalLink": internalLink->{
+      _id,
+      _type,
+      title,
+      "slug": slug.current,
+      "name": name,
+      "term": term,
+      pageRole,
+      pageType,
+      category,
+      "handle": handle.current,
+      "collectionSlug": primaryCollection->slug.current,
+      "pageSlug": primaryLandingPage->slug.current
+    },
+    imageEffect,
+    "backgroundColor": coalesce(backgroundColor.hex, customBackgroundColor.hex),
+    image{ ..., "alt": coalesce(alt, asset->altText) }
+  },
+  _type == "richTextBand" => {
+    heading,
+    body
   }
 }`;
 
@@ -409,6 +441,26 @@ export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" 
     title,
     "slug": slug.current
   },
+  "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
+}`;
+
+/**
+ * Contribute page singleton — SEO + page blocks for the reserved `/contribute`
+ * code route (form stays in the app).
+ */
+export const BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY = /* groq */ `*[
+  _type == "blogPage" && _id == $contributePageId && (language == $language || !defined(language))
+][0]{
+  title,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
   "pageBuilder": pageBuilder[]${PAGE_BUILDER_BLOCKS_PROJECTION}
 }`;
 
@@ -688,30 +740,20 @@ export const BLOG_SEARCH_POSTS_COUNT_QUERY = /* groq */ `count(*[
   ${SEARCH_POST_FILTER}
 ])`;
 
-/**
- * Relevance-ordered (default): field-weighted score on title/excerpt/body.
- * Tags stay in the filter for recall but are not boosted — `score()` rejects
- * dereferencing expressions like `tags[@->title match ...]`.
- */
-export const BLOG_SEARCH_POSTS_PAGE_RELEVANCE_QUERY = /* groq */ `*[
-  ${SEARCH_POST_FILTER}
-] | score(
-    boost(title match $searchTerm, 5),
-    boost(excerpt match $searchTerm, 2),
-    pt::text(body) match $searchTerm
-  ) | order(_score desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
-
+/** Newest (date posted) — default search sort. */
 export const BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
   ${SEARCH_POST_FILTER}
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-export const BLOG_SEARCH_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
+/** Recently updated — editorial lastModified, falling back to Sanity _updatedAt. */
+export const BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY = /* groq */ `*[
   ${SEARCH_POST_FILTER}
-] | order(publishedAt asc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(lastModified, _updatedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-export const BLOG_SEARCH_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
+/** Most popular — viewCount desc, then publishedAt as tiebreaker. */
+export const BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY = /* groq */ `*[
   ${SEARCH_POST_FILTER}
-] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 /** Industry pills for blog home (studio `industry` documents). */
 export const INDUSTRIES_FOR_BLOG_HOME_QUERY = /* groq */ `*[
@@ -817,6 +859,14 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   siteTitle,
   "defaultOgImageUrl": defaultOgImage.asset->url,
   "organizationLogoUrl": organization.logo.asset->url,
+  "companyLogo": organization.logo{
+    "url": asset->url,
+    "alt": coalesce(alt, asset->altText),
+    "width": asset->metadata.dimensions.width,
+    "height": asset->metadata.dimensions.height
+  },
+  "companyName": organization.legalName,
+  "companyAddress": organization.contact.address,
   robotsTxt,
   llmsTxt,
   additionalEmbedHosts
@@ -862,33 +912,108 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
   }
 }`;
 
-/** Category nav order from Blog Navigation `primaryNavigation.categories` (editor drag-and-drop). */
+/** Primary nav items (categories + custom links) + header CTA from Blog Navigation `primaryNavigation`. */
 export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
   *[_id == "blogNavigation"][0]{
     _id,
-    "categories": primaryNavigation.categories[]->{
-      _id,
-      title,
-      navLabel,
-      "slug": slug.current,
-      language
+    "categories": primaryNavigation.categories[]{
+      _type,
+      _key,
+      "category": select(defined(_ref) => @->{
+        _id,
+        title,
+        navLabel,
+        "slug": slug.current,
+        language
+      }),
+      label,
+      linkType,
+      externalUrl,
+      "internalLink": internalLink->{
+        _id,
+        _type,
+        title,
+        "slug": slug.current,
+        "name": name,
+        "term": term,
+        pageRole,
+        pageType,
+        category,
+        "handle": handle.current,
+        "collectionSlug": primaryCollection->slug.current,
+        "pageSlug": primaryLandingPage->slug.current
+      }
+    },
+    "header": {
+      "cta": primaryNavigation.cta{
+        label,
+        linkType,
+        externalUrl,
+        "internalLink": internalLink->{
+          _id,
+          _type,
+          title,
+          "slug": slug.current,
+          "name": name,
+          "term": term,
+          pageRole,
+          pageType,
+          category,
+          "handle": handle.current,
+          "collectionSlug": primaryCollection->slug.current,
+          "pageSlug": primaryLandingPage->slug.current
+        }
+      }
     }
   },
   *[_id == "blogSettings"][0]{
     _id,
-    "categories": categoryOrder[]->{
-      _id,
-      title,
-      navLabel,
-      "slug": slug.current,
-      language
-    }
+    "categories": categoryOrder[]{
+      _type,
+      _key,
+      "category": select(defined(_ref) => @->{
+        _id,
+        title,
+        navLabel,
+        "slug": slug.current,
+        language
+      })
+    },
+    "header": null
   }
 )`;
 
-/** Footer link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
+/** Footer blocks, link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   _id,
+  "builder": footerNavigation.builder[]{
+    _key,
+    _type,
+    message,
+    buttonLabel,
+    align,
+    showTopBorder,
+    showBottomBorder,
+    linkType,
+    externalUrl,
+    // Legacy site-path fields — soft-resolved until editors re-point to CMS docs
+    internalKind,
+    sitePath,
+    "internalLink": internalLink->{
+      _id,
+      _type,
+      title,
+      "slug": slug.current,
+      "name": name,
+      "term": term,
+      pageRole,
+      pageType,
+      category,
+      "handle": handle.current,
+      "collectionSlug": primaryCollection->slug.current,
+      "pageSlug": primaryLandingPage->slug.current
+    }
+  },
   "columns": footerNavigation.columns[]{
     "sections": sections[]{
       title,
@@ -896,9 +1021,13 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
         label,
         linkType,
         externalUrl,
+        // Legacy site-path fields — soft-resolved until editors re-point to CMS docs
+        internalKind,
+        sitePath,
         href,
         external,
         "internalLink": internalLink->{
+          _id,
           _type,
           title,
           "slug": slug.current,
@@ -924,7 +1053,7 @@ export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
   }
 }`;
 
-/** Published posts carrying $tagSlug, with optional author/date narrowing (tag is the page, not a filter). */
+/** Published posts carrying $tagSlug, with optional author/date/category narrowing (tag is the page, not a filter). */
 const TAG_POST_FILTER = /* groq */ `_type == "post"
   && (!defined(language) || language == $language)
   && $tagSlug in tags[]->slug.current
@@ -932,6 +1061,7 @@ const TAG_POST_FILTER = /* groq */ `_type == "post"
   && defined(publishedAt)
   && publishedAt <= now()
   && ($authorSlug == null || author->slug.current == $authorSlug)
+  && (count($categorySlugs) == 0 || category->slug.current in $categorySlugs)
   && ($yearStart == null || publishedAt >= $yearStart)
   && ($yearEnd == null || publishedAt < $yearEnd)`;
 
@@ -950,6 +1080,16 @@ export const BLOG_TAG_POSTS_PAGE_OLDEST_QUERY = /* groq */ `*[
 export const BLOG_TAG_POSTS_PAGE_TITLE_QUERY = /* groq */ `*[
   ${TAG_POST_FILTER}
 ] | order(title asc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Recently updated — editorial lastModified, falling back to Sanity _updatedAt. */
+export const BLOG_TAG_POSTS_PAGE_UPDATED_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(coalesce(lastModified, _updatedAt) desc)[$start...$end]${POST_CARD_FIELDS}`;
+
+/** Most popular — viewCount desc, then publishedAt as tiebreaker. */
+export const BLOG_TAG_POSTS_PAGE_POPULAR_QUERY = /* groq */ `*[
+  ${TAG_POST_FILTER}
+] | order(coalesce(viewCount, 0) desc, publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
 /** Other tags co-occurring on posts that carry $tagSlug (excludes the tag itself) — grouped by topic group in the sidebar. */
 export const BLOG_TAG_COOCCURRING_TAGS_QUERY = /* groq */ `*[

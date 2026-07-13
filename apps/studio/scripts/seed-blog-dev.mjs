@@ -320,7 +320,7 @@ const blogHomePageDoc = {
       _key: key(),
       _type: 'postFeaturedRow',
       featuredPost: ref('post-dev-pn-1'),
-      latestPostsCount: 4,
+      latestPostsCount: 3,
     },
     {
       _key: key(),
@@ -418,11 +418,19 @@ const blogTopicsPageDoc = {
   topics: [ref('btgrp-packaging-type'), ref('btgrp-industry')],
 }
 
-/** Blog Navigation singleton — primary nav category order + footer link columns. */
+/**
+ * Blog Navigation singleton — primary nav (category refs + optional primaryNavLink
+ * custom links) and footer link columns. Logo and CTA are left unset so the blog
+ * falls back to the built-in wordmark and "Contact Us" → /contribute.
+ *
+ * To seed a custom nav link, append e.g. externalLink('https://www.pakfactory.com', 'PakFactory')
+ * from footer-navigation-seed-data.mjs to the categories array below.
+ */
 const blogNavigationDoc = {
   _id: 'blogNavigation',
   _type: 'blogNavigation',
   primaryNavigation: {
+    // logo / cta intentionally omitted — header uses built-in fallbacks
     categories: [
       ref('bcat-packaging-news'),
       ref('bcat-trends'),

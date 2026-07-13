@@ -15,13 +15,15 @@ import { blogCategory } from './blogCategory'
 import { blogTopicGroup } from './blogTopicGroup'
 import { blogTag } from './blogTag'
 import { bodyImage } from './bodyImage'
-import { inlineBlocks } from './inline'
+import { inlineBlocks, caseStudyInlineBlocks } from './inline'
 import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
 import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticPages'
 import { expertiseStage } from './expertiseStage'
+import { client } from './client'
 import { caseStudy } from './caseStudy'
+import { caseStudiesPage } from './caseStudiesPage'
 import { glossaryTerm, guide, helpArticle } from './resources'
 import { blogNavigation } from './blogNavigation'
 import { blogSettings } from './blogSettings'
@@ -37,13 +39,14 @@ import {
   pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
+  pageBuilderFooter,
 } from './blocks'
 
 export const schemaTypes = [
   // Shared objects
   socialLink,
 
-  // Capability layer
+  // Customization layer
   capabilityCategory,
   capabilityType,
   capability,
@@ -65,7 +68,9 @@ export const schemaTypes = [
   // Solutions & Core Entities
   solution,
   expertiseStage,
+  client,
   caseStudy,
+  caseStudiesPage,
   solutionsSettings,
 
   // Resources
@@ -80,6 +85,7 @@ export const schemaTypes = [
   blogTag,
   bodyImage,
   ...inlineBlocks,
+  ...caseStudyInlineBlocks,
   contentWidget,
   widgetEmbed,
   page,
@@ -92,6 +98,7 @@ export const schemaTypes = [
   pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
+  pageBuilderFooter,
 
   // Singletons
   settings,

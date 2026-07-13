@@ -17,6 +17,14 @@ export const ALGOLIA_RECORD_TARGET_BYTES = 9500;
 export const ALGOLIA_MAX_TITLE_CHARS = 500;
 export const ALGOLIA_RECORD_WARN_BYTES = 9000;
 
+/**
+ * Words-per-minute for estimated reading time — must match
+ * `READING_TIME_WPM` in `packages/sanity/src/queries/blog.ts`.
+ * Computed at index time from the full `pt::text(body)` before
+ * adaptive content truncation, so long posts are not undercounted.
+ */
+export const ALGOLIA_READING_TIME_WPM = 238;
+
 export type AlgoliaPostImageRef = {
   assetRef?: string | null;
   alt?: string | null;
@@ -73,6 +81,8 @@ export type AlgoliaPostRecord = {
   lastModified: string | null;
   image: string | null;
   imageAlt: string;
+  /** Estimated minutes; same formula as GROQ `READING_TIME_MINUTES_PROJECTION`. */
+  readingTimeMinutes: number;
 };
 
 export function imageUrlFromAssetRef(
@@ -95,7 +105,13 @@ export function toAlgoliaRecord(
   dataset: string,
 ): AlgoliaPostRecord {
   const title = (source.title ?? "").slice(0, ALGOLIA_MAX_TITLE_CHARS);
-  const content = (source.content ?? "").slice(0, ALGOLIA_MAX_CONTENT_CHARS);
+  const fullContent = source.content ?? "";
+  // Compute from the untruncated body so adaptive truncation below does not
+  // undercount long posts. Formula mirrors GROQ READING_TIME_MINUTES_PROJECTION.
+  const readingTimeMinutes = Math.round(
+    fullContent.length / 5 / ALGOLIA_READING_TIME_WPM,
+  );
+  const content = fullContent.slice(0, ALGOLIA_MAX_CONTENT_CHARS);
   const imageUrl = imageUrlFromAssetRef(
     source.image?.assetRef,
     projectId,
@@ -119,6 +135,7 @@ export function toAlgoliaRecord(
     lastModified: source.lastModified ?? null,
     image: imageUrl,
     imageAlt: source.image?.alt ?? "",
+    readingTimeMinutes,
   };
 
   // Adaptive truncation — keep the WHOLE record under budget (mirror of

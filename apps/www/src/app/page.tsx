@@ -2,8 +2,8 @@ import type {PortableTextBlock} from '@portabletext/types';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {PortableText} from '@portabletext/react';
-import {getSanityClient} from '@/sanity/client';
-import {isSanityConfigured} from '@/sanity/env';
+import {getSanityClient} from '@/lib/sanity/client';
+import {isSanityConfigured} from '@/lib/sanity/env';
 import {HOME_PAGE_QUERY} from '@pakfactory/sanity/queries';
 import {Button} from '@pakfactory/ui/components/button';
 

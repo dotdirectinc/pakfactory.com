@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm turbo run build --filter=@pakfactory/www",
+  "ignoreCommand": "case $VERCEL_GIT_COMMIT_REF in main|staging) exit 1;; esac; echo $VERCEL_GIT_COMMIT_REF | grep -qv www"
+}

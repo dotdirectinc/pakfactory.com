@@ -190,7 +190,7 @@ export function TopicsGrid({
     expandedSlug,
 }: TopicsGridProps) {
     return (
-        <div className="grid grid-cols-1 gap-x-12 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
             <div className="flex flex-col gap-12">
                 {leftColumnGroups.map((group) => (
                     <TopicBlock

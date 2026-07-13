@@ -27,10 +27,17 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ## Primary navigation (blog header)
 
-The sticky header category strip (`SiteNav` → `SiteNavCategories` in root `layout.tsx`) reads **only** the Studio singleton `blogNavigation.primaryNavigation.categories` via `BLOG_NAV_CATEGORIES_QUERY` → `fetchBlogNavCategories()`. Order is exactly what editors drag in **Navigation → Primary Navigation**. When the singleton is missing or empty, the strip is hidden (no fallback to all categories).
+The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCategories()` (returns `{ navItems, header }`):
 
-- **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty.
-- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with the dev category order.
+- **`logo`** — optional company logo from Global Settings → **Company → Company logo** (`BLOG_GLOBAL_SETTINGS_QUERY` → `resolveCompanyLogo`). When set, replaces the built-in Box icon + "PakFactory" wordmark; "Blog" label always shows beside it. When empty / missing asset, the built-in lockup is used.
+- **`cta`** — optional header button from `blogNavigation.primaryNavigation` (`label` + Internal/External link via [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts)). When label or link is empty, the blog falls back to **"Contact Us" → `/contribute`**. Drives both the desktop button and the mobile-menu CTA. Studio: **Navigation → Primary Navigation → Header CTA**.
+- **`navItems`** — primary nav strip from `blogNavigation.primaryNavigation.categories` (field title: **Primary navigation items**). Editors drag a mixed ordered list of:
+  - **`blogCategory` references** — label from category Nav label (or Name); href `/{slug}`; archive active-state preserved.
+  - **`primaryNavLink` custom links** — required label + Internal/External link (same [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts) + [`resolveFooterLinkHref()`](./src/lib/blog-footer-nav.ts) stack as footer). Cross-surface www internal links render as external anchors.
+  When the singleton is missing or the list is empty, the strip is hidden (no fallback to all categories).
+
+- **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty. Existing category-only refs remain valid (no content migration).
+- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with dev category refs only (logo/CTA left unset). To test custom links locally, add a `primaryNavLink` object to the `categories` array in `seed-blog-dev.mjs` (see `footer-navigation-seed-data.mjs` `externalLink()` / `internalLink()` helpers).
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` / `blogCategory` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 - **Out of scope here:** `/all` browse sidebar, search, and 404 still use `fetchBlogCategories()` (all categories, alphabetical).
 
@@ -38,10 +45,18 @@ The sticky header category strip (`SiteNav` → `SiteNavCategories` in root `lay
 
 ## Footer navigation (blog footer link grid)
 
-The footer link columns (`SiteFooter` in root `layout.tsx`) read `blogNavigation.footerNavigation.columns` via `BLOG_FOOTER_NAV_QUERY` → `fetchBlogFooterNavigation()`. Order matches Studio **Navigation → Footer Navigation** (columns left to right, sections top to bottom). When the singleton is missing, fetch fails, or columns are empty, the footer falls back to hardcoded columns in `getFallbackFooterColumns()` (`apps/blog/src/lib/blog-footer-nav.ts`).
+The footer (`SiteFooter` in root `layout.tsx`) reads `blogNavigation.footerNavigation` via `BLOG_FOOTER_NAV_QUERY` → `fetchBlogFooterNavigation()`:
 
-- **Link model:** each footer link is **Internal** (reference to any [linkable document type](../../apps/studio/lib/linkable-document-types.ts) — blog, website, solutions, resources, static singletons) or **External** (full `https://…` URL). Hrefs resolve at fetch time via `@pakfactory/sanity/resolve-document-href`: blog docs → root-relative paths; www docs → absolute marketing URLs (`external: true`). Optional label overrides the referenced document title. Legacy `href` strings are still resolved until `migrate:blog-navigation` converts them.
-- **CMS scope:** link columns only — collaboration CTA, copyright, and social icons stay in code.
+- **`builder`** — drag-reorderable footer blocks rendered **above** the link columns. Currently only `ctaTextAndButton` ("CTA — Text and Button"; left/center/right `align`). Studio: **Navigation → Footer Navigation → Footer blocks**. When the `blogNavigation` document exists but this section is empty, the CTA area renders empty. Full defaults (`getFallbackFooterBuilder()`) apply only when the document is missing / Sanity is unconfigured / the fetch fails.
+- **`columns`** — link grid (columns left to right, sections top to bottom). When the `blogNavigation` document exists but columns are empty, the grid renders empty. Full defaults (`getFallbackFooterColumns()`) apply only when the document is missing / Sanity is unconfigured / the fetch fails.
+- **`socialLinks` / `aiAnswerLinks`** — same rule: empty when the document exists but the section is empty; hardcoded defaults only as a safety net when the document is missing / Sanity is unconfigured / the fetch fails.
+
+- **Link model:** each footer link (and CTA button link) uses shared Studio fields from [`link-target-fields.ts`](../../apps/studio/lib/link-target-fields.ts):
+  - **Internal** — CMS document reference only (any [linkable document type](../../apps/studio/lib/linkable-document-types.ts)). Topic Landing, Search, and 404 `blogPage` singletons are **excluded** from the picker. Home and Contribute are linkable. Hrefs resolve via `@pakfactory/sanity/resolve-document-href`. The former Site path option was removed; anything that needs linking should be a CMS page.
+  - **External** — full `https://…` URL.
+  - Legacy top-level `linkType: 'path'`, stored `sitePath` / `internalKind: 'path'`, and legacy `href` strings still soft-resolve until editors re-point to a CMS document.
+- **CMS scope:** footer blocks (`builder`) + link columns + social / AI answer links. Copyright lines stay in code.
+- **Human ops after schema change:** the old `footerNavigation.cta` object field was removed. Re-add the collaboration CTA as a `CTA — Text and Button` block in Studio if it was previously configured. Prefer seeding `builder` with a `ctaTextAndButton` block when updating [`footer-navigation-seed-data.mjs`](../../apps/studio/scripts/footer-navigation-seed-data.mjs). Migrate Contribute footer links from external/site-path → Internal → CMS document `blogContributePage` after seeding that singleton.
 - **Backfill / migrate:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` seeds default footer columns when empty and converts legacy href-based links to references.
 - **Local seed:** `pnpm seed:blog-dev` writes primary nav and reference-based footer columns on `blogNavigation`.
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
@@ -190,24 +205,21 @@ Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` 
 | Concern | Location |
 | --- | --- |
 | Singleton role + fields (`recommendedTopics`, `pageBuilder` via `pageBuilderHome`) | `apps/studio/schemas/blogPage.ts` (notFound-only, hidden otherwise) |
-| `promoBanner` block (reusable on home/topics/404) | `apps/studio/schemas/blocks/promo-banner.ts` |
 | Desk item **Pages → 404 page** | `apps/studio/structure/index.ts` (`blogNotFoundPageItem`) |
 | GROQ | `BLOG_NOT_FOUND_PAGE_BUILDER_QUERY` + `BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY` in `@pakfactory/sanity/queries` |
 | Data | `fetchBlogNotFoundPage()` → `{ topics, blocks }` in `src/lib/blog-data.ts` (uses `getPreviewableSanityClient()` for Presentation) |
 | Hero (fixed) | `src/components/modules/not-found-hero.tsx` — eyebrow + single `h1` + Explore-topics/curated chips + Back-to-Blog-Home |
-| Promo banner block | `src/components/blocks/promo-banner.tsx` → reuses `src/components/modules/promo-banner.tsx` |
 | Page compose | `src/app/not-found.tsx` — fixed hero + `BlockRenderer(blocks)` + newsletter CTA |
 | Presentation preview | `apps/studio/presentation/locations.ts` — `blogNotFoundPage` → `/404-preview` |
 
-**Phase 2 (shipped):** below-hero region is page-builder-driven via `pageBuilderHome` (`postPopularRow`, `promoBanner`, `ctaNewsletter`, etc.). Promo is authored only via the `promoBanner` block (inline `promo` object removed from schema).
+**Phase 2 (shipped):** below-hero region is page-builder-driven via `pageBuilderHome` (`postPopularRow`, `ctaNewsletter`, etc.). The former `promoBanner` block and inline `promo` object have been removed.
 
 **Human steps before ship:**
-1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo`, `promoBanner` block + 404 `pageBuilder` field).
+1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo` / `promoBanner`, 404 `pageBuilder` field).
 2. **One-time backfill (if "Page role Required"):** run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` or patch `pageRole: "notFound"` on `blogNotFoundPage` via Vision/API.
-3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Promo Banner + Newsletter), or use the seed script above.
+3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Newsletter), or use the seed script above. Remove any leftover `promoBanner` blocks from existing documents in Studio.
 4. Verify at `http://localhost:3003/404-preview` (Presentation uses the same URL).
-5. **AC#4** — final PakFactory promo copy + real images + CTA URL (editable via Promo Banner block).
-6. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
+5. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
 
 **Known:** studio `tsc` still nags `documentId` on the singleton `initialValue` — pre-existing (home/topics use the same signature; Sanity provides it at runtime; Vite build unaffected).
 
@@ -223,6 +235,7 @@ Pinned document ids imply `pageRole` (source of truth for Studio field visibilit
 | `blogTopicsPage` | `topics` |
 | `blogNotFoundPage` | `notFound` |
 | `blogSearchPage` | `search` |
+| `blogContributePage` | `contribute` |
 
 - **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
 - **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
@@ -276,11 +289,12 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 | Sync Function | `functions/algolia-document-sync/` |
 | Shared projection + record mapper | `packages/sanity/src/algolia/post-record.ts` |
 | Index configure + backfill (human) | `apps/studio/scripts/algolia-configure-index.ts`, `algolia-initial-sync.ts` |
-| Search backend swap | `apps/blog/src/lib/blog-search.ts` — env-gated `liteClient`; GROQ fallback |
+| `/search` listings | `apps/blog/src/lib/blog-search.ts` — **GROQ only** + `POST_CARD_FIELDS` (same strategy as category archives) |
+| Nav typeahead | `apps/blog/src/lib/algolia-suggest.ts` — Algolia when `NEXT_PUBLIC_ALGOLIA_*` is set |
 
-**Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
+**Env (root `.env.example`):** `NEXT_PUBLIC_ALGOLIA_APP_ID`, `NEXT_PUBLIC_ALGOLIA_API_KEY` (search key, blog app — **typeahead only**); `ALGOLIA_APP_ID`, `ALGOLIA_WRITE_KEY` (Function + scripts only — never `NEXT_PUBLIC_`, never under `apps/blog`).
 
-**Human deploy order:**
+**Human deploy order** (Algolia index for typeahead / sync):
 1. Create Algolia app + index `posts`; set env in root `.env`, Vercel blog project, and Function env (`SANITY_PROJECT_ID`, `SANITY_DATASET` from Studio).
 2. `npx sanity blueprints deploy`
 3. `cd apps/studio && npx sanity exec scripts/algolia-configure-index.ts --with-user-token`
@@ -288,6 +302,12 @@ pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 5. Test: `npx sanity functions test algolia-document-sync --document-id <post-id> --dataset development --with-user-token`
 
 **Agents:** implement schema/code only; never run backfill, blueprint deploy, or patch Sanity documents.
+
+### Search cards — GROQ parity with category archives
+
+`/search` uses the same `PostCard` / `PostList` / `toPostCardDataList` pipeline as home and category listings. Listing data always comes from GROQ queries that project `POST_CARD_FIELDS`, so cards get `authorSlug` and `readingTimeMinutes` (→ `Xmin read`) without depending on Algolia index shape.
+
+Algolia is **not** used for the `/search` results grid — only for nav typeahead. Keep `packages/sanity/src/algolia/post-record.ts` and `functions/algolia-document-sync/record.ts` in sync when changing the record shape (typeahead / sync still use those records; `readingTimeMinutes` on the index is optional metadata).
 
 ### Nav search typeahead (follow-on)
 
@@ -330,13 +350,18 @@ Document internationalization (`@sanity/document-internationalization`, EN + FR)
 
 **Jira:** [PROD-1504](https://dotdirect.atlassian.net/browse/PROD-1504) — S2.8 Build `/blog/contribute`. Public route **`/contribute`** (reserved segment; indexable).
 
+**Hybrid CMS (2026-07):** `/contribute` stays a reserved App Router route (form + API in code). SEO + page blocks come from singleton `blogPage` `pageRole: contribute` (id `blogContributePage`), desk **Pages → Contribute page**. Same pattern as Search/404 content sources — not slug-routable.
+
 | Deliverable               | Location                                             |
 | ------------------------- | ---------------------------------------------------- |
-| Page + metadata + JSON-LD | `src/app/contribute/page.tsx`                        |
-| Pitch form (client)       | `src/app/contribute/_components/contribute-form.tsx` |
+| Page + metadata + JSON-LD + blocks | `src/app/contribute/page.tsx`                 |
+| Fetch + SEO builder       | `src/lib/blog-contribute-page.ts`                    |
+| Pitch form (client)       | `src/components/modules/contribute-form.tsx`         |
 | Webhook proxy             | `src/app/api/contribute/route.ts`                    |
 | Subject/role options      | `src/lib/contribute-options.ts`                      |
 | `webPage` generator       | `packages/seo/src/generators/webPage.ts`             |
+| Studio singleton          | `BLOG_CONTRIBUTE_PAGE_IDS`, desk item, Presentation → `/contribute` |
+| Human seed                | `apps/studio/scripts/seed-blog-singleton-pages.mjs` (includes `blogContributePage`) |
 
 ### Decisions
 
@@ -345,6 +370,7 @@ Document internationalization (`@sanity/document-internationalization`, EN + FR)
 - **Roles:** industry expert, brand/manufacturer, agency/consultant, freelance writer, academic/researcher.
 - **Positioning copy:** on-brand draft in page — **content-team review** pending.
 - **Qualifications:** optional; honeypot field `website` rejected server-side.
+- **CMS:** SEO/Social + Page blocks on the singleton; form stays code-owned.
 
 ### Verify
 
@@ -358,7 +384,8 @@ curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
 
 - [ ] Set `CONTRIBUTE_WEBHOOK_URL` (or `NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL`) in Vercel when n8n → Zoho flow is ready
 - [ ] Content-team review of left-column positioning copy
-
+- [ ] After schema deploy: run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` (humans only) so `blogContributePage` exists
+- [ ] Migrate footer Contribute links to Internal → CMS document `blogContributePage`
 ## PROD-1503 — `/search` page (implemented)
 
 **Jira:** [PROD-1503](https://dotdirect.atlassian.net/browse/PROD-1503) — S2.7 Build `/blog/search`. Faceted-listing pattern mirroring the category archive. Uses **Sanity built-in `match`** (no external search infra, per AC).

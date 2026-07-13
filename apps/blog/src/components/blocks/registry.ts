@@ -1,17 +1,18 @@
 import type { ComponentType } from "react";
 import type { PortableTextBlock } from "@portabletext/types";
+import type { SanityLinkDocument } from "@pakfactory/sanity/resolve-document-href";
 
 import type { HomePostCard } from "@/lib/blog-home";
 import type { VideoPostInput } from "@/lib/resolve-video-source";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import { CtaPillars } from "@/components/blocks/cta-pillars";
 import { CtaRfq } from "@/components/blocks/cta-rfq";
+import { CtaSpotlight } from "@/components/blocks/cta-spotlight";
 import { FeaturedVideos } from "@/components/blocks/featured-videos";
 import { PostCategoryRow } from "@/components/blocks/post-category-row";
-import { PostFeaturedRow } from "@/components/blocks/post-featured-row";
+import { PostFeaturedBlock } from "@/components/blocks/post-featured-block";
 import { PostPopularRow } from "@/components/blocks/post-popular-row";
 import { PostSpotlightRow } from "@/components/blocks/post-spotlight-row";
-import { PromoBanner } from "@/components/blocks/promo-banner";
 import { RichTextBand } from "@/components/blocks/rich-text-band";
 import { TopicStrip } from "@/components/blocks/topic-strip";
 
@@ -112,22 +113,35 @@ export type CtaPillarsBlock = {
   pillars: BlockPillar[];
 };
 
+/** A single resolved image field on a page-builder block. */
+export type BlockImage = {
+  alt?: string;
+  asset?: unknown;
+  hotspot?: unknown;
+  crop?: unknown;
+};
+
+export type CtaSpotlightBlock = {
+  _type: "ctaSpotlight";
+  _key: string;
+  heading?: string;
+  body?: string;
+  ctaLabel?: string;
+  linkType?: string | null;
+  externalUrl?: string | null;
+  internalLink?: SanityLinkDocument | null;
+  imageEffect?: "contained" | "floating";
+  /** Hex string from Sanity color input (e.g. `#052e16`). Defaults to brand green when empty. */
+  backgroundColor?: string;
+  image?: BlockImage;
+} & DielineBorderFields;
+
 export type RichTextBandBlock = {
   _type: "richTextBand";
   _key: string;
   heading?: string;
   body?: PortableTextBlock[];
 };
-
-export type PromoBannerBlock = {
-  _type: "promoBanner";
-  _key: string;
-  heading?: string;
-  body?: string;
-  ctaLabel?: string;
-  ctaUrl?: string;
-  images?: { url?: string }[];
-} & DielineBorderFields;
 
 /** Discriminated union of every page-builder array member. */
 export type PageBuilderBlock =
@@ -140,13 +154,13 @@ export type PageBuilderBlock =
   | CtaNewsletterBlock
   | CtaRfqBlock
   | CtaPillarsBlock
-  | RichTextBandBlock
-  | PromoBannerBlock;
+  | CtaSpotlightBlock
+  | RichTextBandBlock;
 
 export type BlockProps<T extends PageBuilderBlock> = Omit<T, "_type" | "_key">;
 
 export const BLOCK_COMPONENTS = {
-  postFeaturedRow: PostFeaturedRow,
+  postFeaturedRow: PostFeaturedBlock,
   postCategoryRow: PostCategoryRow,
   postPopularRow: PostPopularRow,
   postSpotlightRow: PostSpotlightRow,
@@ -155,8 +169,8 @@ export const BLOCK_COMPONENTS = {
   ctaNewsletter: CtaNewsletter,
   ctaRfq: CtaRfq,
   ctaPillars: CtaPillars,
+  ctaSpotlight: CtaSpotlight,
   richTextBand: RichTextBand,
-  promoBanner: PromoBanner,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as const satisfies Record<PageBuilderBlock["_type"], ComponentType<any>>;
 

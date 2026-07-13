@@ -5,6 +5,8 @@ import { tagHref } from "@/lib/blog-post-url";
 
 type CategoryRecommendedTopicsProps = {
   topics: CategoryTopic[];
+  borderTop?: boolean;
+  borderBottom?: boolean;
 };
 
 /**
@@ -15,6 +17,8 @@ type CategoryRecommendedTopicsProps = {
  */
 export function CategoryRecommendedTopics({
   topics,
+  borderTop,
+  borderBottom,
 }: CategoryRecommendedTopicsProps) {
   const items = topics
     .filter((topic) => topic.slug && topic.title)
@@ -27,7 +31,11 @@ export function CategoryRecommendedTopics({
   if (items.length === 0) return null;
 
   return (
-    <PageDielineSection innerClassName="py-8">
+    <PageDielineSection
+      innerClassName="py-8"
+      borderTop={borderTop}
+      borderBottom={borderBottom}
+    >
       <TopicChipRow
         label="Recommended topics:"
         topics={items}

@@ -2,64 +2,46 @@ import { defineArrayMember, defineField, defineType } from 'sanity'
 import { socialLinksField } from '../lib/social-link-schema'
 import { ALL_FIELDS_GROUP } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
-import {
-  LINKABLE_TYPE_FILTER,
-  linkableReferenceTo,
-  linkableTypeFilterParams,
-} from '../lib/linkable-document-types'
+import { linkTargetFields } from '../lib/link-target-fields'
+
+function linkTargetPreview({
+  label,
+  linkType,
+  externalUrl,
+  internalTitle,
+  internalType,
+  internalSlug,
+}: {
+  label?: string | null
+  linkType?: string | null
+  externalUrl?: string | null
+  internalTitle?: string | null
+  internalType?: string | null
+  internalSlug?: string | null
+}) {
+  const title = label?.trim() || internalTitle || 'Untitled link'
+  if (linkType === 'external') {
+    return {
+      title,
+      subtitle: externalUrl ? `External · ${externalUrl}` : 'External link',
+    }
+  }
+  const slugHint =
+    internalType === 'blogTag'
+      ? `/topics/${internalSlug ?? '…'}`
+      : internalType === 'author'
+        ? `/author/${internalSlug ?? '…'}`
+        : internalSlug
+          ? `/${internalSlug}`
+          : 'Internal link'
+  return {
+    title,
+    subtitle: internalType ? `${internalType} · ${slugHint}` : slugHint,
+  }
+}
 
 const footerLinkFields = [
-  defineField({
-    name: 'linkType',
-    title: 'Link type',
-    type: 'string',
-    options: {
-      list: [
-        { title: 'Internal (CMS content)', value: 'internal' },
-        { title: 'External URL', value: 'external' },
-      ],
-      layout: 'radio',
-    },
-    initialValue: 'internal',
-    validation: (Rule) => Rule.required(),
-  }),
-  defineField({
-    name: 'internalLink',
-    title: 'Internal link',
-    type: 'reference',
-    to: linkableReferenceTo,
-    description:
-      'Pick any routable CMS document (blog, website, solutions, resources). Slug changes update the link automatically.',
-    options: {
-      filter: LINKABLE_TYPE_FILTER,
-      filterParams: linkableTypeFilterParams,
-    },
-    hidden: ({ parent }) => parent?.linkType !== 'internal',
-    validation: (Rule) =>
-      Rule.custom((value, context) => {
-        const parent = context.parent as { linkType?: string } | undefined
-        if (parent?.linkType === 'internal' && !value) {
-          return 'Select a CMS document for internal links.'
-        }
-        return true
-      }),
-  }),
-  defineField({
-    name: 'externalUrl',
-    title: 'External URL',
-    type: 'url',
-    description:
-      'Full marketing-site URL (e.g. https://www.pakfactory.com/about). Renders as a plain anchor.',
-    hidden: ({ parent }) => parent?.linkType !== 'external',
-    validation: (Rule) =>
-      Rule.custom((value, context) => {
-        const parent = context.parent as { linkType?: string } | undefined
-        if (parent?.linkType === 'external' && !value) {
-          return 'External URL is required.'
-        }
-        return true
-      }),
-  }),
+  ...linkTargetFields({ requireLinkType: true }),
   defineField({
     name: 'label',
     title: 'Label',
@@ -68,6 +50,35 @@ const footerLinkFields = [
       'Optional display text. When empty, the linked document title is used for internal links.',
   }),
 ]
+
+const primaryNavLinkFields = [
+  defineField({
+    name: 'label',
+    title: 'Label',
+    type: 'string',
+    description: 'Text shown in the primary navigation strip.',
+    validation: (Rule) => Rule.required(),
+  }),
+  ...linkTargetFields({ requireLinkType: true }),
+]
+
+const primaryNavLinkMember = defineArrayMember({
+  type: 'object',
+  name: 'primaryNavLink',
+  title: 'Custom link',
+  fields: primaryNavLinkFields,
+  preview: {
+    select: {
+      label: 'label',
+      linkType: 'linkType',
+      externalUrl: 'externalUrl',
+      internalTitle: 'internalLink.title',
+      internalType: 'internalLink._type',
+      internalSlug: 'internalLink.slug.current',
+    },
+    prepare: linkTargetPreview,
+  },
+})
 
 const footerSectionMember = defineArrayMember({
   type: 'object',
@@ -97,27 +108,7 @@ const footerSectionMember = defineArrayMember({
               internalType: 'internalLink._type',
               internalSlug: 'internalLink.slug.current',
             },
-            prepare({ label, linkType, externalUrl, internalTitle, internalType, internalSlug }) {
-              const title = label?.trim() || internalTitle || 'Untitled link'
-              if (linkType === 'external') {
-                return {
-                  title,
-                  subtitle: externalUrl ? `External · ${externalUrl}` : 'External link',
-                }
-              }
-              const slugHint =
-                internalType === 'blogTag'
-                  ? `/topics/${internalSlug ?? '…'}`
-                  : internalType === 'author'
-                    ? `/author/${internalSlug ?? '…'}`
-                    : internalSlug
-                      ? `/${internalSlug}`
-                      : 'Internal link'
-              return {
-                title,
-                subtitle: internalType ? `${internalType} · ${slugHint}` : slugHint,
-              }
-            },
+            prepare: linkTargetPreview,
           },
         }),
       ],
@@ -196,13 +187,32 @@ export const blogNavigation = defineType({
       options: { collapsible: false },
       fields: [
         defineField({
+          name: 'cta',
+          title: 'Header CTA',
+          type: 'object',
+          description:
+            'Optional header button. When label or link is empty, the blog falls back to "Contact Us" → /contribute.',
+          fields: [
+            defineField({
+              name: 'label',
+              title: 'Button label',
+              type: 'string',
+              description:
+                "Optional. Header button text. Defaults to 'Contact Us'.",
+            }),
+            ...linkTargetFields({ requireLinkType: false }),
+          ],
+        }),
+        defineField({
           name: 'categories',
-          title: 'Category navigation order',
+          title: 'Primary navigation items',
           type: 'array',
           description:
-            'Categories shown in the primary nav / category strip, in display order. Drag to reorder.',
-          of: [{ type: 'reference', to: [{ type: 'blogCategory' }] }],
-          validation: (Rule) => Rule.unique(),
+            'Categories and optional custom internal or external links shown in the primary nav strip, in display order. Drag to reorder.',
+          of: [
+            { type: 'reference', to: [{ type: 'blogCategory' }] },
+            primaryNavLinkMember,
+          ],
         }),
       ],
     }),
@@ -212,9 +222,16 @@ export const blogNavigation = defineType({
       type: 'object',
       group: 'footer',
       description:
-        'Footer link grid, social icons, and AI answer-engine links. The collaboration CTA and copyright lines are not editable here.',
+        'Footer blocks (above the navigation), footer link grid, social icons, and AI answer-engine links. Copyright lines are not editable here.',
       options: { collapsible: false },
       fields: [
+        defineField({
+          name: 'builder',
+          title: 'Footer blocks',
+          type: 'pageBuilderFooter',
+          description:
+            'Blocks rendered above the footer navigation. Currently: CTA — Text and Button.',
+        }),
         defineField({
           name: 'columns',
           title: 'Footer columns',

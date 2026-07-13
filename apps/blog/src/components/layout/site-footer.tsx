@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import {MessageSquareText} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 // import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
@@ -9,18 +8,20 @@ import {
     socialPlatformAriaLabel,
 } from '@/components/modules/social-platform-icon';
 import {
-    getFallbackFooterColumns,
     type BlogAiEngine,
     type BlogAiLink,
     type BlogFooterColumns,
+    type BlogFooterCtaAlign,
+    type BlogFooterCtaBlock,
     type BlogFooterLink,
     type BlogFooterSection,
     type BlogSocialLink,
 } from '@/lib/blog-footer-nav';
-import {getWwwUrl} from '@/lib/site';
+import {
+    FOOTER_CTA_DIELINE_BORDER_DEFAULTS,
+    resolveDielineBorders,
+} from '@/lib/dieline-borders';
 import {externalLinkAttributes, EXTERNAL_LINK_REL} from '@/lib/external-link';
-
-const WWW = getWwwUrl();
 
 const AI_ICON_SRC: Record<BlogAiEngine, string> = {
     chatgpt: '/logos/ai/openai.svg',
@@ -38,13 +39,29 @@ const AI_LABELS: Record<BlogAiEngine, string> = {
     grok: 'Grok',
 };
 
+const ALIGN_TEXT_CLASS: Record<BlogFooterCtaAlign, string> = {
+    left: 'text-left',
+    center: 'text-center',
+    right: 'text-right',
+};
+
+const ALIGN_JUSTIFY_CLASS: Record<BlogFooterCtaAlign, string> = {
+    left: 'justify-start',
+    center: 'justify-center',
+    right: 'justify-end',
+};
+
 function FooterLinkItem({link}: {link: BlogFooterLink}) {
     const className =
         'block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground';
 
     if (link.external) {
         return (
-            <a href={link.href} className={className} {...externalLinkAttributes(link.href)}>
+            <a
+                href={link.href}
+                className={className}
+                {...externalLinkAttributes(link.href)}
+            >
                 {link.label}
             </a>
         );
@@ -74,10 +91,52 @@ function FooterSectionBlock({section}: {section: BlogFooterSection}) {
     );
 }
 
+function FooterCtaBlock({block}: {block: BlogFooterCtaBlock}) {
+    const {borderTop, borderBottom} = resolveDielineBorders(
+        block.showTopBorder,
+        block.showBottomBorder,
+        FOOTER_CTA_DIELINE_BORDER_DEFAULTS,
+    );
+    const borderClasses = [
+        borderTop ? 'border-t border-dashed border-foreground/10' : '',
+        borderBottom ? 'border-b border-dashed border-foreground/10' : '',
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    return (
+        <div
+            className={`${borderClasses} px-8 py-16 ${ALIGN_TEXT_CLASS[block.align]}`}
+        >
+            <h2 className="whitespace-pre-line text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+                {block.message}
+            </h2>
+            <div className={`mt-6 flex ${ALIGN_JUSTIFY_CLASS[block.align]}`}>
+                <Button
+                    className="h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    asChild
+                >
+                    {block.external ? (
+                        <a
+                            href={block.href}
+                            {...externalLinkAttributes(block.href)}
+                        >
+                            {block.buttonLabel}
+                        </a>
+                    ) : (
+                        <Link href={block.href}>{block.buttonLabel}</Link>
+                    )}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 type SiteFooterProps = {
     columns?: BlogFooterColumns;
     social?: BlogSocialLink[];
     aiLinks?: BlogAiLink[];
+    builder?: BlogFooterCtaBlock[];
 };
 
 function FooterSocialIcon({link}: {link: BlogSocialLink}) {
@@ -122,10 +181,10 @@ export function SiteFooter({
     columns,
     social = [],
     aiLinks = [],
+    builder,
 }: SiteFooterProps) {
-    const footerColumns =
-        columns && columns.length > 0 ? columns : getFallbackFooterColumns();
-    const talkHref = `${WWW}/contact`;
+    const footerColumns = columns ?? [];
+    const footerBuilder = builder ?? [];
 
     return (
         <footer className="bg-background">
@@ -133,25 +192,17 @@ export function SiteFooter({
                 {/* Giant wordmark */}
                 {/* <FooterWordmark /> */}
 
-                {/* Collaboration CTA */}
-                <div className=" border-dashed border-border px-8 py-10 text-center">
-                    <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
-                        Let&apos;s collaborate and craft <br /> your vision
-                    </h2>
-                    <Button
-                        className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                        asChild
-                    >
-                        <a href={talkHref}>Let&apos;s talk</a>
-                    </Button>
-                </div>
+                {/* Footer blocks (above navigation) */}
+                {footerBuilder.map((block) => (
+                    <FooterCtaBlock key={block.key} block={block} />
+                ))}
 
                 {/* Link columns */}
-                <div className="grid grid-cols-1 gap-0 border-t border-dashed border-border md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-0 md:px-0 md:py-0">
                     {footerColumns.map((column, colIdx) => (
                         <div
                             key={colIdx}
-                            className="flex flex-col gap-16 border-dashed border-border px-8 py-16 md:border-r md:last:border-r-0"
+                            className="flex flex-col gap-16 border-dashed border-border md:border-r md:px-8 md:py-16 md:last:border-r-0"
                         >
                             {column.map((section) => (
                                 <FooterSectionBlock
@@ -169,7 +220,7 @@ export function SiteFooter({
                         <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
                             © 2026 PakFactory
                         </p>
-                        <div className="flex items-center gap-11 text-foreground">
+                        <div className="flex items-center gap-5 text-foreground">
                             {social.map((link) => (
                                 <FooterSocialIcon
                                     key={link.platform}

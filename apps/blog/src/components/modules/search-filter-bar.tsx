@@ -12,10 +12,9 @@ import {
 } from "@/lib/blog-search";
 
 const SEARCH_SORT_OPTIONS: FilterOption[] = [
-  { value: "relevance", label: "Relevance" },
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-  { value: "title", label: "Title A–Z" },
+  { value: "newest", label: "Newest (date posted)" },
+  { value: "updated", label: "Recently updated" },
+  { value: "popular", label: "Most popular" },
 ];
 
 type SearchFilterBarProps = {

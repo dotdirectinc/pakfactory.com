@@ -9,12 +9,15 @@ import { featuredVideos } from './featured-videos'
 import { ctaNewsletter } from './cta-newsletter'
 import { ctaRfq } from './cta-rfq'
 import { ctaPillars } from './cta-pillars'
+import { ctaSpotlight } from './cta-spotlight'
+import { ctaTextAndButton } from './cta-text-and-button'
 import { richTextBand } from './rich-text-band'
-import { promoBanner } from './promo-banner'
 import { pageBuilderPreviewUrl } from './page-builder-preview'
 
 /**
- * Page-builder block schemas. Mirrors apps/blog/src/components/blocks/registry.ts.
+ * Page-builder block schemas. Mirrors apps/blog/src/components/blocks/registry.ts
+ * for home/landing blocks. Also includes footer-only blocks (ctaTextAndButton)
+ * that are registered globally but not wired into home/landing arrays.
  */
 export const pageBuilderBlocks = [
   postFeaturedRow,
@@ -26,8 +29,9 @@ export const pageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
+  ctaSpotlight,
+  ctaTextAndButton,
   richTextBand,
-  promoBanner,
 ]
 
 /** Homepage + topics index blocks (post-driven rows + full CTA set). */
@@ -41,7 +45,7 @@ export const homePageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
-  promoBanner,
+  ctaSpotlight,
 ]
 
 /** Landing/static allowlist (ADR-009). */
@@ -50,6 +54,7 @@ export const landingPageBuilderBlocks = [
   ctaNewsletter,
   ctaRfq,
   ctaPillars,
+  ctaSpotlight,
   richTextBand,
 ]
 
@@ -64,9 +69,8 @@ const INSERT_GROUPS_HOME = [
   {
     name: 'cta',
     title: 'CTA',
-    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars'],
+    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars', 'ctaSpotlight'],
   },
-  { name: 'promo', title: 'Promo', of: ['promoBanner'] },
 ]
 
 const INSERT_GROUPS_LANDING = [
@@ -74,7 +78,7 @@ const INSERT_GROUPS_LANDING = [
   {
     name: 'cta',
     title: 'CTA',
-    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars'],
+    of: ['ctaNewsletter', 'ctaRfq', 'ctaPillars', 'ctaSpotlight'],
   },
   { name: 'content', title: 'Content', of: ['richTextBand'] },
 ]
@@ -119,4 +123,14 @@ export const pageBuilderLanding = defineType({
   type: 'array',
   of: landingPageBuilderBlocks.map(({ name }) => defineArrayMember({ type: name })),
   options: { insertMenu: insertMenuOptions(INSERT_GROUPS_LANDING) },
+})
+
+/** Footer-only blocks (blogNavigation.footerNavigation.builder). */
+export const footerPageBuilderBlocks = [ctaTextAndButton]
+
+export const pageBuilderFooter = defineType({
+  name: 'pageBuilderFooter',
+  title: 'Footer blocks',
+  type: 'array',
+  of: footerPageBuilderBlocks.map(({ name }) => defineArrayMember({ type: name })),
 })

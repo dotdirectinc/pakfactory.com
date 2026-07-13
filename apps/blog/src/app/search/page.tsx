@@ -8,7 +8,7 @@ import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { PageHeader } from "@/components/modules/page-header";
 import { SearchFilterBar } from "@/components/modules/search-filter-bar";
 import { PostList } from "@/components/modules/post-list";
-import { Pagination } from "@/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
 import { TopicChipRow } from "@/components/ui/topic-chip-row";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
@@ -19,6 +19,10 @@ import {
   fetchBlogSearchPage,
 } from "@/lib/blog-data";
 import {
+  PAGE_SIZE_OPTIONS,
+  parsePerPage,
+} from "@/lib/blog-archive";
+import {
   fetchSearchPage,
   getSearchRobots,
   parseSearchFilters,
@@ -28,6 +32,7 @@ import {
 } from "@/lib/blog-search";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
+import { PerPageSelect } from "@/components/modules/per-page-select";
 
 export const revalidate = 60;
 
@@ -88,8 +93,9 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const query = parseSearchQuery(sp);
   const filters = parseSearchFilters(sp);
   const pageNumber = parseSearchPage(sp);
+  const perPage = parsePerPage(sp.perPage);
   const [data, searchPage] = await Promise.all([
-    fetchSearchPage(query, pageNumber, filters),
+    fetchSearchPage(query, pageNumber, filters, perPage),
     fetchBlogSearchPage(),
   ]);
   const { posts, totalCount, totalPages } = data;
@@ -123,7 +129,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
             filters={filters}
             categoryOptions={categoryOptions}
           />
-          <div className="mt-12">
+          <div id={LISTING_TOP_ID} className="scroll-mt-24 mt-12">
             <PostList
               posts={toPostCardDataList(posts)}
               columns={3}
@@ -131,14 +137,28 @@ export default async function SearchPage({ searchParams }: PageProps) {
               emptyMessage="No posts on this page."
             />
           </div>
-          <div className="mt-10">
-            <Pagination
-              pageNumber={pageNumber}
-              totalPages={totalPages}
-              hrefForPage={(page) => searchPageHref(query, page, filters)}
-              ariaLabel="Search results pagination"
-            />
-          </div>
+          {totalPages > 1 && (
+            <div className="py-16">
+              <Pagination
+                pageNumber={pageNumber}
+                totalPages={totalPages}
+                hrefForPage={(page) =>
+                  searchPageHref(query, page, filters, perPage)
+                }
+                ariaLabel="Search results pagination"
+                scrollTargetId={LISTING_TOP_ID}
+                rightSlot={
+                  <PerPageSelect
+                    value={perPage}
+                    options={PAGE_SIZE_OPTIONS.map((size) => ({
+                      size,
+                      href: searchPageHref(query, 1, filters, size),
+                    }))}
+                  />
+                }
+              />
+            </div>
+          )}
         </PageDielineSection>
         <SearchBelowFold blocks={blocks} />
       </main>

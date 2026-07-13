@@ -50,7 +50,7 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
               <AvatarFallback>{initials(name)}</AvatarFallback>
             </Avatar>
             <div>
-              <span className="block font-semibold text-foreground underline underline-offset-4 transition-colors group-hover:text-foreground/80">
+              <span className="block font-semibold text-foreground transition-colors group-hover:text-foreground/80">
                 {name}
               </span>
               {role ? (

@@ -3,6 +3,7 @@ import type { DocumentActionComponent, DocumentActionsContext, Template } from '
 import { structureTool } from 'sanity/structure'
 import { presentationTool } from 'sanity/presentation'
 import { visionTool } from '@sanity/vision'
+import { colorInput } from '@sanity/color-input'
 import { media } from 'sanity-plugin-media'
 import {
   documentInternationalization,
@@ -12,6 +13,7 @@ import {
 import { websiteLocations, blogLocations } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
+import { publishCaseStudy } from './actions/publishCaseStudy'
 import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopicsPage'
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import { CHANNELS } from './lib/channels'
@@ -38,7 +40,7 @@ const dataset = process.env.SANITY_STUDIO_DATASET || 'development'
 // Each surface must run @sanity/visual-editing + a draft-mode enable route for the
 // overlays to work; apps/www already does, apps/blog wiring lands on the blog branch.
 const WWW_PREVIEW_ORIGIN =
-  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000'
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'https://pakfactory-com-www.vercel.app'
 const BLOG_PREVIEW_ORIGIN =
   process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003'
 
@@ -101,7 +103,7 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
-      S.view.component(ProductRelatedCapabilitiesView).title('Capabilities'),
+      S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
     ])
   }
   return S.document().views([S.view.form()])
@@ -164,6 +166,11 @@ const documentActions = (
       action.action === 'publish' ? publishTopicGroupToTopicsPage : action,
     )
   }
+  if (context.schemaType === 'caseStudy') {
+    actions = actions.map((action) =>
+      action.action === 'publish' ? publishCaseStudy : action,
+    )
+  }
 
   if (isBlogI18nSchemaType(context.schemaType)) {
     actions = [
@@ -211,6 +218,7 @@ export default defineConfig([
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
       blogI18nPlugin,
+      colorInput(),
       media(),
       visionTool(),
     ],
@@ -241,6 +249,7 @@ export default defineConfig([
         ],
         resolve: { locations: blogLocations },
       }),
+      colorInput(),
       media(),
       visionTool(),
     ],
@@ -263,8 +272,13 @@ export default defineConfig([
           origin: WWW_PREVIEW_ORIGIN,
           previewMode: { enable: '/api/draft-mode/enable' },
         },
+        allowOrigins: [
+          'http://localhost:3000',
+          'https://pakfactory-com-www.vercel.app',
+        ],
         resolve: { locations: websiteLocations },
       }),
+      colorInput(),
       media(),
       visionTool(),
     ],
