@@ -62,7 +62,7 @@ export function TopicArchiveView({
                 categoryOptions={categoryOptions}
                 perPage={perPage}
                 pagination={
-                    data.totalPages > 1 ? (
+                    data.totalCount > 0 ? (
                         <Pagination
                             pageNumber={data.pageNumber}
                             totalPages={data.totalPages}

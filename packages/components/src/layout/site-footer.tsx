@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { EXTERNAL_LINK_REL, externalLinkAttributes } from "../commons/external-link";
@@ -126,7 +127,7 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 
 function FooterSectionBlock({ section }: { section: FooterSection }) {
   return (
-    <div className="flex min-w-[200px] flex-1 flex-col gap-3">
+    <div className="flex min-w-[200px] flex-col gap-3">
       <p className="pb-2 text-lg font-medium leading-7 text-foreground">{section.title}</p>
       <ul className="flex flex-col gap-3">
         {section.links.map((link) => (
@@ -146,6 +147,8 @@ export function SiteFooter({
   social = [],
   aiLinks = [],
 }: SiteFooterProps) {
+  const sectionRows = Math.max(1, ...columns.map((column) => column.length));
+
   return (
     <footer className="bg-background">
       <PageDielineSection innerClassName="px-0">
@@ -163,11 +166,18 @@ export function SiteFooter({
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-0 md:px-0 md:py-0">
+        <div
+          className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
+          style={
+            {
+              "--footer-section-rows": sectionRows,
+            } as CSSProperties
+          }
+        >
           {columns.map((column, colIdx) => (
             <div
               key={colIdx}
-              className="flex flex-col gap-16 border-dashed border-border md:border-r md:px-8 md:py-16 md:last:border-r-0"
+              className="flex flex-col gap-16 border-dashed border-border md:grid md:grid-rows-subgrid md:gap-y-16 md:border-r md:px-8 md:py-16 md:last:border-r-0 md:[grid-row:span_var(--footer-section-rows)]"
             >
               {column.map((section) => (
                 <FooterSectionBlock key={section.title} section={section} />

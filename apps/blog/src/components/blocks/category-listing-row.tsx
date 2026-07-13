@@ -15,6 +15,7 @@ type CategoryListingRowProps = {
   posts: HomePostCard[];
   pageNumber: number;
   totalPages: number;
+  totalCount: number;
   categorySlug: string;
   filters: CategoryListFilters;
   perPage?: number;
@@ -26,6 +27,7 @@ export function CategoryListingRow({
   posts,
   pageNumber,
   totalPages,
+  totalCount,
   categorySlug,
   filters,
   perPage,
@@ -37,7 +39,7 @@ export function CategoryListingRow({
   return (
     <CategoryListingSection
       pagination={
-        totalPages > 1 ? (
+        totalCount > 0 ? (
           <Pagination
             pageNumber={pageNumber}
             totalPages={totalPages}

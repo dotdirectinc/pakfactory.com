@@ -38,6 +38,7 @@ export async function AllArchiveView({ data }: { data: AllArchivePageData }) {
         totalPages: data.totalPages,
         hrefForPage: (page) => archivePageHref(page, perPage),
         ariaLabel: "Archive pagination",
+        show: data.totalCount > 0,
         rightSlot: (
           <PerPageSelect
             value={perPage}

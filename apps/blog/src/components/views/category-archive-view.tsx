@@ -58,6 +58,7 @@ export function CategoryArchiveView({
         posts={data.posts}
         pageNumber={data.pageNumber}
         totalPages={data.totalPages}
+        totalCount={data.totalCount}
         categorySlug={data.category.slug}
         filters={data.filters}
         perPage={data.perPage}
