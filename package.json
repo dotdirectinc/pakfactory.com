@@ -25,7 +25,12 @@
     "sanity:restore:dev": "node scripts/sanity/restore.mjs development",
     "sanity:restore:prod": "node scripts/sanity/restore.mjs production",
     "sanity:diff": "node scripts/sanity/diff-datasets.mjs",
-    "sanity:sync-prod-to-dev": "node scripts/sanity/sync-prod-to-dev.mjs"
+    "sanity:sync-prod-to-dev": "node scripts/sanity/sync-prod-to-dev.mjs",
+    "sanity:backup:delta": "node scripts/sanity/backup-delta.mjs",
+    "sanity:restore:delta:dev": "node scripts/sanity/restore-delta.mjs development",
+    "sanity:restore:delta:prod": "node scripts/sanity/restore-delta.mjs production",
+    "sanity:deploy:dev": "SANITY_STUDIO_DATASET=development pnpm --filter @pakfactory/studio run deploy",
+    "sanity:deploy:prod": "SANITY_STUDIO_DATASET=production pnpm --filter @pakfactory/studio run deploy"
   },
   "devDependencies": {
     "@pakfactory/sanity": "workspace:^",
