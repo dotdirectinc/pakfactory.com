@@ -10,7 +10,6 @@ export type CaseStudyCardProps = {
   clientName?: string | null;
   cardImageUrl?: string | null;
   cardImageAlt?: string | null;
-  solutions?: CaseStudyTaxonomyItem[] | null;
   products?: CaseStudyTaxonomyItem[] | null;
   className?: string;
   priority?: boolean;

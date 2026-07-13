@@ -46,11 +46,30 @@ export const client = defineType({
     }),
   ],
   preview: {
-    select: { title: 'name', media: 'logo', website: 'website' },
-    prepare({ title, media, website }: { title?: string; media?: unknown; website?: string }) {
+    select: {
+      title: 'name',
+      media: 'logo',
+      website: 'website',
+      industryHeadline: 'industry.headline',
+      industryInternal: 'industry.internalTitle',
+    },
+    prepare({
+      title,
+      media,
+      website,
+      industryHeadline,
+      industryInternal,
+    }: {
+      title?: string
+      media?: unknown
+      website?: string
+      industryHeadline?: string
+      industryInternal?: string
+    }) {
+      const industryTitle = industryHeadline || industryInternal
       return {
         title: title ?? 'Unnamed client',
-        subtitle: website ?? '',
+        subtitle: [industryTitle, website].filter(Boolean).join(' · '),
         media,
       }
     },

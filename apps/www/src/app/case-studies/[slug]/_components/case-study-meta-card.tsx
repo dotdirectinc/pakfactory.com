@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import type { CaseStudyTaxonomyItem } from "@pakfactory/sanity/queries";
+import type {
+  CaseStudyClientDetail,
+  CaseStudyTaxonomyItem,
+} from "@pakfactory/sanity/queries";
 
 function MetaDivider() {
   return (
@@ -62,30 +65,39 @@ function MetaBlock({
 }
 
 type Props = {
-  clientLogoUrl?: string | null;
-  clientName?: string | null;
-  solutions?: CaseStudyTaxonomyItem[] | null;
+  client?: CaseStudyClientDetail | null;
   products?: CaseStudyTaxonomyItem[] | null;
   expertiseAreas?: CaseStudyTaxonomyItem[] | null;
   capabilities?: CaseStudyTaxonomyItem[] | null;
 };
 
 export function CaseStudyMetaCard({
-  clientLogoUrl,
-  clientName,
-  solutions,
+  client,
   products,
   expertiseAreas,
   capabilities,
 }: Props) {
+  const solutionItems = client?.industry ? [client.industry] : [];
   const sections = [
-    { label: "Solution", items: solutions ?? [] },
+    { label: "Solution", items: solutionItems },
     { label: "Product", items: products ?? [] },
     { label: "Expertise", items: expertiseAreas ?? [] },
     { label: "Capabilities", items: capabilities ?? [] },
   ].filter((s) => s.items.length > 0);
 
-  const hasClient = clientLogoUrl || clientName;
+  const hasClient = Boolean(client?.logoUrl || client?.name);
+
+  const clientMark = client?.logoUrl ? (
+    <Image
+      src={client.logoUrl}
+      alt={client.name ?? "Client logo"}
+      width={176}
+      height={73}
+      className="h-[73px] w-auto max-w-[176px] object-contain"
+    />
+  ) : (
+    <p className="text-center text-lg font-semibold text-foreground">{client?.name}</p>
+  );
 
   return (
     <aside className="relative flex w-full shrink-0 flex-col items-center gap-6 rounded-[14px] py-6 text-border lg:w-[304px]">
@@ -108,18 +120,20 @@ export function CaseStudyMetaCard({
 
       {hasClient && (
         <div className="flex w-full items-center justify-center px-6 text-foreground">
-          {clientLogoUrl ? (
-            <Image
-              src={clientLogoUrl}
-              alt={clientName ?? "Client logo"}
-              width={176}
-              height={73}
-              className="h-[73px] w-auto max-w-[176px] object-contain"
-            />
+          {client?.website ? (
+            <a
+              href={client.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={
+                client.name ? `Visit ${client.name} website` : "Visit client website"
+              }
+              className="inline-flex transition-opacity hover:opacity-80"
+            >
+              {clientMark}
+            </a>
           ) : (
-            <p className="text-center text-lg font-semibold text-foreground">
-              {clientName}
-            </p>
+            clientMark
           )}
         </div>
       )}
