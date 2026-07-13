@@ -1,17 +1,15 @@
-import {
-  breadcrumbList,
-  collectionPage,
-  itemList,
-  jsonLdGraph,
-  organization,
-  serializeJsonLd,
-} from "@pakfactory/seo";
+import { collectionPage, itemList } from "@pakfactory/seo";
 import type { HomePostCard } from "@/lib/blog-home";
 import type { CategoryDocument } from "@/lib/blog-category-archive";
 import { categoryPageHref } from "@/lib/blog-category-archive";
 import type { CategoryListFilters } from "@/lib/blog-category-archive";
+import {
+  blogBreadcrumbList,
+  pakfactoryOrganization,
+  serializeBlogJsonLd,
+} from "@/lib/blog-jsonld";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 
 export function buildCategoryArchiveJsonLd(
   category: CategoryDocument,
@@ -19,19 +17,12 @@ export function buildCategoryArchiveJsonLd(
   pageNumber: number,
   filters: CategoryListFilters,
 ): string {
-  const wwwUrl = normalizeSiteUrl(getWwwUrl());
   const pageUrl = absoluteUrl(categoryPageHref(category.slug, pageNumber, filters));
-  const orgId = `${wwwUrl}#organization`;
   const collectionId = `${pageUrl}#collection`;
   const itemListId = `${pageUrl}#itemlist`;
   const pageLabel =
     pageNumber > 1 ? `${category.title} — Page ${pageNumber}` : category.title;
-
-  const org = organization({
-    name: "PakFactory",
-    url: wwwUrl,
-    id: orgId,
-  });
+  const { org } = pakfactoryOrganization();
 
   const collection = collectionPage({
     id: collectionId,
@@ -42,8 +33,7 @@ export function buildCategoryArchiveJsonLd(
       `Articles in ${category.title} from PakFactory Blog.`,
   });
 
-  const crumbs = breadcrumbList([
-    { name: "Blog", url: absoluteUrl("/") },
+  const crumbs = blogBreadcrumbList([
     { name: category.title, url: pageUrl },
   ]);
 
@@ -56,5 +46,5 @@ export function buildCategoryArchiveJsonLd(
     })),
   });
 
-  return serializeJsonLd(jsonLdGraph([org, collection, crumbs, list]));
+  return serializeBlogJsonLd([org, collection, crumbs, list]);
 }

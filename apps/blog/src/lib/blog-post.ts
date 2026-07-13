@@ -2,19 +2,20 @@ import type { Metadata } from "next";
 import type { PortableTextBlock } from "@portabletext/types";
 import {
   blogPosting,
-  breadcrumbList,
   faqPage,
-  jsonLdGraph,
   newsArticle,
-  organization,
   person,
-  serializeJsonLd,
 } from "@pakfactory/seo";
 import type { HomePostCard } from "@/lib/blog-home";
+import {
+  blogBreadcrumbList,
+  pakfactoryOrganization,
+  serializeBlogJsonLd,
+} from "@/lib/blog-jsonld";
 import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { authorPersonId } from "@/lib/author-jsonld";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
-import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import { absoluteUrl } from "@/lib/site";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -198,19 +199,13 @@ export async function buildPostMetadata(post: BlogPostDetail): Promise<Metadata>
 
 export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
   const ctx = await fetchSeoContext();
-  const wwwUrl = normalizeSiteUrl(getWwwUrl());
   const postUrl = postCanonicalUrl(post);
-  const orgId = `${wwwUrl}#organization`;
+  const { org, orgId } = pakfactoryOrganization({
+    logo: ctx.organizationLogoUrl ?? undefined,
+  });
   const authorSlug = post.author?.slug ?? undefined;
   const authorPageUrl = authorSlug ? absoluteUrl(authorHref(authorSlug)) : undefined;
   const authorId = authorSlug ? authorPersonId(authorSlug) : `${postUrl}#author`;
-
-  const org = organization({
-    name: "PakFactory",
-    url: wwwUrl,
-    id: orgId,
-    ...(ctx.organizationLogoUrl ? { logo: ctx.organizationLogoUrl } : {}),
-  });
 
   const mainImageUrl = sanityImageUrl(post.mainImage);
   const authorImageUrl = post.author
@@ -247,6 +242,10 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
   const description =
     post.tldrText?.trim() || post.excerpt?.trim() || undefined;
 
+  const keywords = (post.tags ?? [])
+    .map((tag) => tag.title?.trim())
+    .filter((title): title is string => Boolean(title));
+
   const articleInput = {
     id: postUrl,
     url: postUrl,
@@ -261,6 +260,8 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
     ...(mainImageUrl ? { image: mainImageUrl } : {}),
     ...(authorRef ? { author: authorRef } : {}),
     publisher: publisherRef,
+    ...(post.categoryTitle ? { articleSection: post.categoryTitle } : {}),
+    ...(keywords.length > 0 ? { keywords } : {}),
     mainEntityOfPage: {
       "@type": "WebPage" as const,
       "@id": postUrl,
@@ -272,8 +273,7 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
       ? newsArticle(articleInput)
       : blogPosting(articleInput);
 
-  const crumbs = breadcrumbList([
-    { name: "Blog", url: absoluteUrl("/") },
+  const crumbs = blogBreadcrumbList([
     ...(post.categorySlug && post.categoryTitle
       ? [
           {
@@ -305,5 +305,5 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
     );
   }
 
-  return serializeJsonLd(jsonLdGraph(nodes));
+  return serializeBlogJsonLd(nodes);
 }

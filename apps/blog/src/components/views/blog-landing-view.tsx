@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
 import { pageDielineOuterClass } from "@/components/layout/page-dieline-section";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
 import type { BlogPageRecord } from "@/lib/blog-page";
+import { buildWebPageJsonLd } from "@/lib/blog-jsonld";
 import { absoluteUrl } from "@/lib/site";
 
 type BlogLandingViewProps = {
@@ -13,20 +14,15 @@ export function BlogLandingView({ page }: BlogLandingViewProps) {
   const blocks = page.pageBuilder ?? [];
   const url = absoluteUrl(`/${page.slug}`);
 
-  const jsonLd = jsonLdGraph([
-    webPage({
-      name: page.title,
-      url,
-      description: page.metaDescription?.trim() || undefined,
-    }),
-  ]);
+  const jsonLd = buildWebPageJsonLd({
+    name: page.title,
+    url,
+    description: page.metaDescription?.trim() || undefined,
+  });
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
-      />
+      <JsonLdScript jsonLd={jsonLd} />
       <main className={pageDielineOuterClass()}>
         <div className="mx-auto max-w-6xl px-6 pt-8">
           <nav className="text-sm text-muted-foreground">

@@ -11,7 +11,7 @@ import type {
  * publishCaseStudy — custom publish action for `caseStudy`.
  *
  * Sets `publishedAt` on first publish when empty, then runs the default publish.
- * Visibility on www is controlled by Sanity publish state + `archived != true`.
+ * Visibility on www is controlled by Sanity publish state.
  */
 
 type CaseStudyDoc = SanityDocument & { publishedAt?: string }

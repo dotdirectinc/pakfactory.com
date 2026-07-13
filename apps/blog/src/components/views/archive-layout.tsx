@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
 import {
   LISTING_TOP_ID,
   Pagination,
@@ -75,10 +76,7 @@ export function ArchiveLayout({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd }}
-      />
+      <JsonLdScript jsonLd={jsonLd} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8">
           <Breadcrumb items={crumbs} />

@@ -6,7 +6,8 @@ import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { PageHeader } from "@/components/modules/page-header";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { WidgetNewsletter } from "@/components/modules/widget/widget-newsletter";
-import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
+import { buildWebPageJsonLd } from "@/lib/blog-jsonld";
 import { robotsDirectiveToMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site";
 
@@ -27,27 +28,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function ContributeThankYouPage() {
   const pageUrl = absoluteUrl("/contribute/thank-you");
-  const jsonLd = serializeJsonLd(
-    jsonLdGraph([
-      webPage({
-        name: "Pitch received — PakFactory Blog",
-        url: pageUrl,
-        description: PAGE_DESCRIPTION,
-      }),
-      breadcrumbList([
-        { name: "Blog", url: absoluteUrl("/") },
-        { name: "Contribute", url: absoluteUrl("/contribute") },
-        { name: "Thank you", url: pageUrl },
-      ]),
-    ]),
-  );
+  const jsonLd = buildWebPageJsonLd({
+    name: "Pitch received — PakFactory Blog",
+    url: pageUrl,
+    description: PAGE_DESCRIPTION,
+    trail: [
+      { name: "Contribute", url: absoluteUrl("/contribute") },
+      { name: "Thank you", url: pageUrl },
+    ],
+  });
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd }}
-      />
+      <JsonLdScript jsonLd={jsonLd} />
       <main>
         <PageDielineSection innerClassName="py-4">
           <Breadcrumb

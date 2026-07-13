@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
 
 type AuthorLandingLayoutProps = {
   jsonLd: string;
@@ -19,10 +20,7 @@ export function AuthorLandingLayout({
 }: AuthorLandingLayoutProps) {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd }}
-      />
+      <JsonLdScript jsonLd={jsonLd} />
       <main>
         <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
         {header}

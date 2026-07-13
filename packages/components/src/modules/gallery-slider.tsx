@@ -108,7 +108,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
           onMouseUp={onMouseUp}
           onMouseLeave={onMouseUp}
           onClickCapture={onClickCapture}
-          className="flex cursor-grab gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex w-full cursor-grab gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {images.map((img, idx) => (
             <div

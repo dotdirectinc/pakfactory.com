@@ -17,6 +17,7 @@ import {
   serializeJsonLd,
 } from "@pakfactory/seo";
 import { absoluteUrl } from "@/lib/site";
+import { pakfactoryOrganization } from "@/lib/case-study-jsonld";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { CaseStudyListingGrid } from "./_components/case-study-listing-grid";
 
@@ -75,16 +76,22 @@ export default async function CaseStudiesPage() {
   const hasHeroIntro = Array.isArray(heroIntro) && heroIntro.length > 0;
   const FALLBACK_INTRO = "From first launches to established brands, these stories show how thoughtful packaging can solve real business challenges and create memorable customer experiences.";
 
+  const collectionTitle = pageData?.metaTitle?.trim() || FALLBACK_TITLE;
+  const collectionDescription =
+    pageData?.metaDescription?.trim() || FALLBACK_DESCRIPTION;
+  const { org } = pakfactoryOrganization();
+
   const jsonLd = serializeJsonLd(
     jsonLdGraph([
+      org,
       breadcrumbList([
         { name: "Home", url: absoluteUrl("/") },
         { name: "Case Studies", url: PAGE_URL },
       ]),
       collectionPage({
-        name: FALLBACK_TITLE,
+        name: collectionTitle,
         url: PAGE_URL,
-        description: FALLBACK_DESCRIPTION,
+        description: collectionDescription,
       }),
       itemList({
         name: "Case Studies",
