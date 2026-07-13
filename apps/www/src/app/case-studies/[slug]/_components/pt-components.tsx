@@ -75,23 +75,21 @@ export const caseStudyPtComponents: PortableTextComponents = {
         )}
         <div className="absolute inset-0 bg-black/55" />
         <blockquote className="relative flex min-h-[280px] flex-col justify-between p-8 md:p-10">
-          <div>
-            <span className="block font-serif text-5xl leading-none text-white/80">&ldquo;</span>
-            <p className="mt-3 max-w-[75%] text-xl font-semibold leading-snug text-white md:text-2xl">
-              {value.quote}
-            </p>
-          </div>
+          {/* Opening mark inline with the quote — no gap between them */}
+          <p className="max-w-[65%] text-2xl font-semibold leading-snug text-white md:text-3xl">
+            <span className="mr-1 align-top font-serif text-4xl leading-[0.75] text-white/80">&ldquo;</span>
+            {value.quote}
+          </p>
+          {/* Attribution: closing mark stacked above name → role, all right-aligned */}
           {(value.attributionName || value.attributionRole) && (
-            <figcaption className="mt-6 flex items-end justify-end gap-x-2">
-              <span className="self-end pb-1 font-serif text-3xl leading-none text-white/60">&rdquo;</span>
-              <div className="text-right">
-                {value.attributionName && (
-                  <p className="text-base font-bold text-white">{value.attributionName}</p>
-                )}
-                {value.attributionRole && (
-                  <p className="text-sm text-white/70">{value.attributionRole}</p>
-                )}
-              </div>
+            <figcaption className="mt-6 flex flex-col items-end gap-1 text-right">
+              <span className="font-serif text-3xl leading-none text-white/60">&rdquo;</span>
+              {value.attributionName && (
+                <p className="text-base font-bold text-white">{value.attributionName}</p>
+              )}
+              {value.attributionRole && (
+                <p className="text-sm text-white/70">{value.attributionRole}</p>
+              )}
             </figcaption>
           )}
         </blockquote>
