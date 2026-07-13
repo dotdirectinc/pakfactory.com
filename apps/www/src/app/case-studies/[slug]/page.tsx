@@ -15,8 +15,8 @@ import {
   type CaseStudyDetail,
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
-import { breadcrumbList, jsonLdGraph, serializeJsonLd, videoObject, webPage } from "@pakfactory/seo";
 import { absoluteUrl } from "@/lib/site";
+import { buildCaseStudyJsonLd } from "@/lib/case-study-jsonld";
 import { CaseStudyShare } from "./_components/case-study-share";
 import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
 import { CaseStudyMetaCard } from "./_components/case-study-meta-card";
@@ -110,38 +110,7 @@ export default async function CaseStudyPage({ params }: Props) {
   if (!study) notFound();
 
   const pageUrl = absoluteUrl(`/case-studies/${slug}`);
-
-  const isVideo = study.heroMedia?.mediaType === "video";
-  const videoThumbnail =
-    study.heroMedia?.videoThumbnailUrl ?? study.cardImageUrl;
-
-  const jsonLdNodes = [
-    breadcrumbList([
-      { name: "Home", url: absoluteUrl("/") },
-      { name: "Case Studies", url: absoluteUrl("/case-studies") },
-      { name: study.title, url: pageUrl },
-    ]),
-    webPage({
-      url: pageUrl,
-      name: study.title,
-      description: study.cardSummary ?? undefined,
-    }),
-  ];
-
-  if (isVideo && study.heroMedia?.videoUrl && videoThumbnail && study.publishedAt) {
-    jsonLdNodes.push(
-      videoObject({
-        name: study.title,
-        description: study.cardSummary ?? study.title,
-        thumbnailUrl: videoThumbnail,
-        uploadDate: study.publishedAt,
-        contentUrl: study.heroMedia.videoUrl,
-        id: `${pageUrl}#video`,
-      }),
-    );
-  }
-
-  const jsonLd = serializeJsonLd(jsonLdGraph(jsonLdNodes));
+  const jsonLd = buildCaseStudyJsonLd(study);
 
   const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
   const contactHref = absoluteUrl("/contact");

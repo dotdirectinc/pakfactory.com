@@ -1,14 +1,12 @@
-import {
-  breadcrumbList,
-  collectionPage,
-  itemList,
-  jsonLdGraph,
-  organization,
-  serializeJsonLd,
-} from "@pakfactory/seo";
+import { collectionPage, itemList } from "@pakfactory/seo";
 import { tagHref } from "@/lib/blog-post-url";
 import type { TopicGroup } from "@/lib/blog-topics-index";
-import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
+import {
+  blogBreadcrumbList,
+  pakfactoryOrganization,
+  serializeBlogJsonLd,
+} from "@/lib/blog-jsonld";
+import { absoluteUrl } from "@/lib/site";
 
 const TITLE = "Explore topics";
 const DESCRIPTION =
@@ -19,11 +17,8 @@ export function buildTopicsIndexJsonLd(
   groups: TopicGroup[],
   description: string = DESCRIPTION,
 ): string {
-  const wwwUrl = normalizeSiteUrl(getWwwUrl());
   const pageUrl = absoluteUrl("/topics");
-  const orgId = `${wwwUrl}#organization`;
-
-  const org = organization({ name: "PakFactory", url: wwwUrl, id: orgId });
+  const { org } = pakfactoryOrganization();
 
   const collection = collectionPage({
     id: `${pageUrl}#collection`,
@@ -32,10 +27,7 @@ export function buildTopicsIndexJsonLd(
     description,
   });
 
-  const crumbs = breadcrumbList([
-    { name: "Blog", url: absoluteUrl("/") },
-    { name: TITLE, url: pageUrl },
-  ]);
+  const crumbs = blogBreadcrumbList([{ name: TITLE, url: pageUrl }]);
 
   const list = itemList({
     id: `${pageUrl}#itemlist`,
@@ -48,5 +40,5 @@ export function buildTopicsIndexJsonLd(
     ),
   });
 
-  return serializeJsonLd(jsonLdGraph([org, collection, crumbs, list]));
+  return serializeBlogJsonLd([org, collection, crumbs, list]);
 }

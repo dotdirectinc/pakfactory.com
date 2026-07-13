@@ -2,7 +2,6 @@
  * Case Studies GROQ — field names mirror the `caseStudy` schema (PROD-1893).
  *
  * Canonical URL: pakfactory.com/case-studies/{slug}
- * All queries gate on archived != true so soft-archived docs never appear.
  * Sanity's published perspective (www client) gates on document publish state.
  */
 
@@ -66,7 +65,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   result,
   "relatedStudies": select(
     count(relatedStudies) > 0 => relatedStudies[0...6]->${CASE_STUDY_CARD_FIELDS},
-    *[_type == "caseStudy" && archived != true && _id != ^._id] | order(publishedAt desc)[0...6]${CASE_STUDY_CARD_FIELDS}
+    *[_type == "caseStudy" && _id != ^._id] | order(publishedAt desc)[0...6]${CASE_STUDY_CARD_FIELDS}
   ),
   metaTitle,
   metaDescription,
@@ -81,22 +80,22 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
 
 /** All published case studies for the listing page — ordered newest first. */
 export const CASE_STUDIES_LISTING_QUERY = /* groq */ `*[
-  _type == "caseStudy" && archived != true && defined(slug.current)
+  _type == "caseStudy" && defined(slug.current)
 ] | order(publishedAt desc) ${CASE_STUDY_CARD_FIELDS}`;
 
 /** Single case study by slug for the detail page. */
 export const CASE_STUDY_BY_SLUG_QUERY = /* groq */ `*[
-  _type == "caseStudy" && slug.current == $slug && archived != true
+  _type == "caseStudy" && slug.current == $slug
 ][0] ${CASE_STUDY_DETAIL_FIELDS}`;
 
-/** All slugs for generateStaticParams (includes all non-archived for preview support). */
+/** All slugs for generateStaticParams. */
 export const CASE_STUDY_PATHS_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current) && archived != true
+  _type == "caseStudy" && defined(slug.current)
 ]{ "slug": slug.current }`;
 
 /** Slugs + last-modified for sitemap generation — published only. */
 export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
-  _type == "caseStudy" && archived != true && defined(slug.current)
+  _type == "caseStudy" && defined(slug.current)
 ] | order(publishedAt desc) {
   "slug": slug.current,
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
