@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import {
+  breadcrumbList,
+  jsonLdGraph,
+  serializeJsonLd,
+  webPage,
+} from "@pakfactory/seo";
 import { pageDielineOuterClass } from "@/components/layout/page-dieline-section";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import type { BlogPageRecord } from "@/lib/blog-page";
@@ -19,6 +24,10 @@ export function BlogLandingView({ page }: BlogLandingViewProps) {
       url,
       description: page.metaDescription?.trim() || undefined,
     }),
+    breadcrumbList([
+      { name: "Blog", url: absoluteUrl("/") },
+      { name: page.title, url },
+    ]),
   ]);
 
   return (

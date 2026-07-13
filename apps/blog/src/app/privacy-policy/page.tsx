@@ -1,6 +1,12 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import type {PortableTextBlock} from '@portabletext/types';
+import {
+    breadcrumbList,
+    jsonLdGraph,
+    serializeJsonLd,
+    webPage,
+} from '@pakfactory/seo';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
 import {PageHeader} from '@/components/modules/page-header';
 import {PortableText} from '@/components/ui/portable-text';
@@ -55,8 +61,33 @@ export default async function PrivacyPolicyPage() {
     // page); in dev render a placeholder so the route is visible while authoring.
     if (!hasBody && process.env.NODE_ENV === 'production') notFound();
 
+    const pageUrl = absoluteUrl('/privacy-policy');
+    const title = doc?.metaTitle || PAGE_TITLE;
+    const jsonLd = hasBody
+        ? serializeJsonLd(
+              jsonLdGraph([
+                  webPage({
+                      name: title,
+                      url: pageUrl,
+                      description: doc?.metaDescription?.trim() || undefined,
+                  }),
+                  breadcrumbList([
+                      {name: 'Blog', url: absoluteUrl('/')},
+                      {name: PAGE_TITLE, url: pageUrl},
+                  ]),
+              ]),
+          )
+        : null;
+
     return (
-        <main>
+        <>
+            {jsonLd ? (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{__html: jsonLd}}
+                />
+            ) : null}
+            <main>
             <PageHeader title={PAGE_TITLE} />
             <PageDielineSection innerClassName="py-12 sm:py-16">
                 <div className="max-w-5xl mx-auto">
@@ -75,6 +106,7 @@ export default async function PrivacyPolicyPage() {
                     )}
                 </div>
             </PageDielineSection>
-        </main>
+            </main>
+        </>
     );
 }

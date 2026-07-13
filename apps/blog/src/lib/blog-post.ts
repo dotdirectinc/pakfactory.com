@@ -247,6 +247,10 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
   const description =
     post.tldrText?.trim() || post.excerpt?.trim() || undefined;
 
+  const keywords = (post.tags ?? [])
+    .map((tag) => tag.title?.trim())
+    .filter((title): title is string => Boolean(title));
+
   const articleInput = {
     id: postUrl,
     url: postUrl,
@@ -261,6 +265,8 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
     ...(mainImageUrl ? { image: mainImageUrl } : {}),
     ...(authorRef ? { author: authorRef } : {}),
     publisher: publisherRef,
+    ...(post.categoryTitle ? { articleSection: post.categoryTitle } : {}),
+    ...(keywords.length > 0 ? { keywords } : {}),
     mainEntityOfPage: {
       "@type": "WebPage" as const,
       "@id": postUrl,
