@@ -1,7 +1,7 @@
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import Image from "next/image";
 import { urlFor } from "@/lib/sanity/image";
-import { GallerySlider } from "./gallery-slider";
+import { GallerySlider } from "@pakfactory/components/modules/gallery-slider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

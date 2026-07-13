@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@pakfactory/ui": "workspace:*",
-    "@pakfactory/sanity": "workspace:*"
+    "@pakfactory/sanity": "workspace:*",
+    "lucide-react": "^0.468.0"
   },
   "peerDependencies": {
     "next": ">=15.0.0",
