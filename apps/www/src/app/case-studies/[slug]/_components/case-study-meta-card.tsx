@@ -64,6 +64,7 @@ function MetaBlock({
 type Props = {
   clientLogoUrl?: string | null;
   clientName?: string | null;
+  clientWebsite?: string | null;
   solutions?: CaseStudyTaxonomyItem[] | null;
   products?: CaseStudyTaxonomyItem[] | null;
   expertiseAreas?: CaseStudyTaxonomyItem[] | null;
@@ -73,6 +74,7 @@ type Props = {
 export function CaseStudyMetaCard({
   clientLogoUrl,
   clientName,
+  clientWebsite,
   solutions,
   products,
   expertiseAreas,
@@ -108,7 +110,29 @@ export function CaseStudyMetaCard({
 
       {hasClient && (
         <div className="flex w-full items-center justify-center px-6 text-foreground">
-          {clientLogoUrl ? (
+          {clientWebsite ? (
+            <a
+              href={clientWebsite}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Visit ${clientName ?? "client"} website`}
+              className="transition-opacity hover:opacity-75"
+            >
+              {clientLogoUrl ? (
+                <Image
+                  src={clientLogoUrl}
+                  alt={clientName ?? "Client logo"}
+                  width={176}
+                  height={73}
+                  className="h-[73px] w-auto max-w-[176px] object-contain"
+                />
+              ) : (
+                <p className="text-center text-lg font-semibold text-foreground underline underline-offset-4">
+                  {clientName}
+                </p>
+              )}
+            </a>
+          ) : clientLogoUrl ? (
             <Image
               src={clientLogoUrl}
               alt={clientName ?? "Client logo"}

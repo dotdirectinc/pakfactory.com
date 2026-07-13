@@ -194,6 +194,7 @@ export default async function CaseStudyPage({ params }: Props) {
         <CaseStudyMetaCard
           clientLogoUrl={study.client?.logoUrl}
           clientName={study.client?.name}
+          clientWebsite={study.client?.website}
           solutions={study.solutions}
           products={study.products}
           expertiseAreas={study.expertiseAreas}

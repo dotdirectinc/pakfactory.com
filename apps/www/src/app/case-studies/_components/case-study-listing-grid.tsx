@@ -429,7 +429,7 @@ export function CaseStudyListingGrid({ studies }: Props) {
                         setPage(1);
                       }}
                     >
-                      <SelectTrigger className="h-8 w-[100px] text-sm">
+                      <SelectTrigger className="h-8 w-[120px] text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent align="end">
