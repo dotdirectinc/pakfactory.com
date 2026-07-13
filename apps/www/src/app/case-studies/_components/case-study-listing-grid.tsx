@@ -45,12 +45,23 @@ type Props = {
 
 function deriveOptions(
   studies: CaseStudyCard[],
-  key: "solutions" | "products" | "expertiseAreas",
+  key: "products" | "expertiseAreas",
 ): FilterOption[] {
   const seen = new Map<string, FilterOption>();
   for (const s of studies) {
     for (const item of s[key] ?? []) {
       if (!seen.has(item._id)) seen.set(item._id, { _id: item._id, title: item.title });
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
+}
+
+function deriveIndustryOptions(studies: CaseStudyCard[]): FilterOption[] {
+  const seen = new Map<string, FilterOption>();
+  for (const s of studies) {
+    const industry = s.client?.industry;
+    if (industry && !seen.has(industry._id)) {
+      seen.set(industry._id, { _id: industry._id, title: industry.title });
     }
   }
   return Array.from(seen.values()).sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
@@ -182,7 +193,7 @@ function FilterSection({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CaseStudyListingGrid({ studies }: Props) {
-  const solutionOptions = useMemo(() => deriveOptions(studies, "solutions"), [studies]);
+  const solutionOptions = useMemo(() => deriveIndustryOptions(studies), [studies]);
   const productOptions = useMemo(() => deriveOptions(studies, "products"), [studies]);
   const expertiseOptions = useMemo(() => deriveOptions(studies, "expertiseAreas"), [studies]);
 
@@ -204,14 +215,19 @@ export function CaseStudyListingGrid({ studies }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return studies.filter((s) => {
-      if (solutions.length && !s.solutions?.some((t) => solutions.includes(t._id))) return false;
+      if (
+        solutions.length &&
+        !(s.client?.industry && solutions.includes(s.client.industry._id))
+      ) {
+        return false;
+      }
       if (products.length && !s.products?.some((t) => products.includes(t._id))) return false;
       if (expertises.length && !s.expertiseAreas?.some((t) => expertises.includes(t._id))) return false;
       if (q) {
         const haystack = [
           s.client?.name ?? "",
           s.title,
-          ...(s.solutions?.map((t) => t.title) ?? []),
+          s.client?.industry?.title ?? "",
           ...(s.products?.map((t) => t.title) ?? []),
           ...(s.expertiseAreas?.map((t) => t.title) ?? []),
         ]
@@ -405,7 +421,6 @@ export function CaseStudyListingGrid({ studies }: Props) {
                       clientName={study.client?.name}
                       cardImageUrl={study.cardImageUrl}
                       cardImageAlt={study.cardImageAlt}
-                      solutions={study.solutions}
                       products={study.products}
                       priority={i < 3}
                     />

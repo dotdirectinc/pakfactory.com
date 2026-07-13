@@ -192,10 +192,7 @@ export default async function CaseStudyPage({ params }: Props) {
 
         {/* Right column — meta card with client + taxonomy */}
         <CaseStudyMetaCard
-          clientLogoUrl={study.client?.logoUrl}
-          clientName={study.client?.name}
-          clientWebsite={study.client?.website}
-          solutions={study.solutions}
+          client={study.client}
           products={study.products}
           expertiseAreas={study.expertiseAreas}
           capabilities={study.capabilities}

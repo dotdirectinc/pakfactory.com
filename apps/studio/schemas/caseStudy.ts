@@ -1,5 +1,5 @@
 import { CaseIcon } from '@sanity/icons'
-import { defineField, defineType } from 'sanity'
+import { ALL_FIELDS_GROUP, defineField, defineType } from 'sanity'
 
 // Shared PT config for the three story sections.
 // Uses bodyImage (blog's deployed inline image), testimonialBlock, and caseStudyGalleryBlock.
@@ -43,9 +43,8 @@ export const caseStudy = defineType({
   type: 'document',
   icon: CaseIcon,
   groups: [
-    { name: 'content', title: 'Content', default: true },
-    { name: 'story', title: 'Story' },
-    { name: 'metrics', title: 'Metrics' },
+    { ...ALL_FIELDS_GROUP, default: true },
+    { name: 'content', title: 'Content' },
     { name: 'categorization', title: 'Categorization' },
     { name: 'publishing', title: 'Publishing' },
     { name: 'seo', title: 'SEO' },
@@ -77,7 +76,8 @@ export const caseStudy = defineType({
       type: 'reference',
       to: [{ type: 'client' }],
       group: 'content',
-      description: 'The brand entity. Card and hero read client→name; sidebar logo reads client→logo.',
+      description:
+        'The brand entity. Card and hero use client→name; sidebar logo uses client→logo; Solution chip uses client→industry.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -190,13 +190,13 @@ export const caseStudy = defineType({
       description: '1–2 line summary shown on the listing card under the client name.',
     }),
 
-    // ─── Story ────────────────────────────────────────────────────────────────
+    // ─── Story + Metrics (Content tab) ────────────────────────────────────────
 
     defineField({
       name: 'challenge',
       title: 'Challenge',
       type: 'array',
-      group: 'story',
+      group: 'content',
       description: 'The problem the client faced. Paragraphs, bullets, inline images, and blocks.',
       of: storyPtOf,
     }),
@@ -204,7 +204,7 @@ export const caseStudy = defineType({
       name: 'solution',
       title: 'Solution',
       type: 'array',
-      group: 'story',
+      group: 'content',
       description: 'How PakFactory solved it. Main narrative section.',
       of: storyPtOf,
     }),
@@ -212,18 +212,15 @@ export const caseStudy = defineType({
       name: 'result',
       title: 'Result',
       type: 'array',
-      group: 'story',
+      group: 'content',
       description: 'Measurable outcomes. Supports inline images and gallery blocks.',
       of: storyPtOf,
     }),
-
-    // ─── Metrics ──────────────────────────────────────────────────────────────
-
     defineField({
       name: 'highlights',
       title: 'Metrics',
       type: 'array',
-      group: 'metrics',
+      group: 'content',
       description: 'Key stats shown in the left rail. Recommend 2–4.',
       of: [
         {
@@ -254,19 +251,8 @@ export const caseStudy = defineType({
     }),
 
     // ─── Categorization ───────────────────────────────────────────────────────
-    // solutions[] → `solution` (Solutions → All). Content ops: re-select each value
-    // after deploy; legacy `industry` refs break. Example maps: Pet Products → Pet,
-    // Cosmetics & Beauty → Beauty & Cosmetics, Apparel & Fashion → Apparel & Fashion.
+    // Solution chip + listing filter come from client→industry (not a field here).
 
-    defineField({
-      name: 'solutions',
-      title: 'Solutions',
-      type: 'array',
-      group: 'categorization',
-      of: [{ type: 'reference', to: [{ type: 'solution' }] }],
-      description:
-        'Solution filter + chips. Link to documents from Solutions → All (Industries and Use Cases). After migrating from the legacy industry taxonomy, re-select each value from the Solutions picker.',
-    }),
     defineField({
       name: 'products',
       title: 'Products',

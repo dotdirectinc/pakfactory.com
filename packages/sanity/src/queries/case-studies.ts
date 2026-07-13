@@ -30,8 +30,7 @@ const CASE_STUDY_CARD_FIELDS = /* groq */ `{
   cardSummary,
   "cardImageUrl": cardImage.asset->url,
   cardImageAlt,
-  "client": client->{ name, "logoUrl": logo.asset->url },
-  "solutions": solutions[]->${SOLUTION_TAXONOMY_ITEM},
+  "client": client->{ name, "logoUrl": logo.asset->url, ${CLIENT_INDUSTRY_ITEM} },
   "products": products[]->${TAXONOMY_ITEM},
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
   "heroMediaType": heroMedia.mediaType
@@ -46,7 +45,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   cardSummary,
   "cardImageUrl": cardImage.asset->url,
   cardImageAlt,
-  "client": client->{ name, "logoUrl": logo.asset->url, website, ${CLIENT_INDUSTRY_ITEM} },
+  "client": client->{ name, "slug": slug.current, "logoUrl": logo.asset->url, website, ${CLIENT_INDUSTRY_ITEM} },
   heroIntro,
   heroMedia {
     mediaType,
@@ -58,7 +57,6 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
     "videoThumbnailUrl": videoThumbnail.asset->url,
     "videoThumbnailHotspot": videoThumbnail.hotspot
   },
-  "solutions": solutions[]->${SOLUTION_TAXONOMY_ITEM},
   "products": products[]->${TAXONOMY_ITEM},
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
   "capabilities": capabilities[]->${TAXONOMY_ITEM},
@@ -119,7 +117,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"]
 
 /** All taxonomy options for the listing page filter UI — single round-trip. */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && defined(slug.current)] | order(coalesce(headline, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productCategory"] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(order asc) ${TAXONOMY_ITEM}
 }`;
@@ -139,16 +137,17 @@ export type CaseStudyHighlight = {
   description: string | null;
 };
 
+export type CaseStudyClientIndustry = CaseStudyTaxonomyItem | null;
+
 export type CaseStudyClientCard = {
   name: string;
   logoUrl: string | null;
+  industry?: CaseStudyClientIndustry;
 };
 
-export type CaseStudyClientIndustry = CaseStudyTaxonomyItem | null;
-
 export type CaseStudyClientDetail = CaseStudyClientCard & {
+  slug: string | null;
   website: string | null;
-  industry?: CaseStudyClientIndustry;
 };
 
 export type CaseStudyHeroMedia = {
@@ -172,7 +171,6 @@ export type CaseStudyCard = {
   cardImageUrl: string | null;
   cardImageAlt: string | null;
   client: CaseStudyClientCard | null;
-  solutions: CaseStudyTaxonomyItem[] | null;
   products: CaseStudyTaxonomyItem[] | null;
   expertiseAreas: CaseStudyTaxonomyItem[] | null;
   heroMediaType: 'image' | 'video' | null;
