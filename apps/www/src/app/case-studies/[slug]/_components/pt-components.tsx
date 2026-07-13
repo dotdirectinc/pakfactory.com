@@ -61,8 +61,10 @@ export const caseStudyPtComponents: PortableTextComponents = {
     },
 
     testimonialBlock: ({ value }) => (
-      <figure className="not-prose relative my-10 min-h-[280px] overflow-hidden rounded-2xl">
-        {value.backgroundImage ? (
+      // Structure mirrors the POC: section → image fill → overlay → centered content → blockquote
+      <figure className="not-prose relative my-10 overflow-hidden rounded-[14px] bg-foreground px-10 py-[30px]">
+        {/* Fill 1 — background image at 100% */}
+        {value.backgroundImage && (
           <Image
             src={urlFor(value.backgroundImage).width(900).height(500).url()}
             alt={value.backgroundImageAlt ?? ""}
@@ -70,31 +72,38 @@ export const caseStudyPtComponents: PortableTextComponents = {
             className="object-cover"
             sizes="800px"
           />
-        ) : (
-          <div className="absolute inset-0 bg-foreground" />
         )}
-        <div className="absolute inset-0 bg-black/55" />
-        <blockquote className="relative flex min-h-[280px] flex-col justify-between p-8 md:p-10">
-          {/* Quote row: text on the left, closing mark at the right end aligned to the last line */}
-          <div className="flex items-end justify-between gap-4">
-            <p className="max-w-[65%] text-2xl font-normal leading-snug text-white md:text-3xl">
-              <span className="mr-2 align-top text-3xl leading-none text-white md:text-4xl">&ldquo;</span>
-              {value.quote}
+        {/* Fill 2 — #000 at 70% on top of the image */}
+        <div aria-hidden="true" className="absolute inset-0 bg-black/70" />
+
+        <div className="relative flex flex-col items-center gap-3">
+          <blockquote className="flex items-start gap-2.5">
+            <span
+              aria-hidden="true"
+              className="select-none text-2xl font-bold leading-none text-[#f4f1eb]/90"
+            >
+              &ldquo;
+            </span>
+            <p className="max-w-[559px] text-2xl leading-8 text-[#f4f1eb]">{value.quote}</p>
+            <span
+              aria-hidden="true"
+              className="select-none self-end text-2xl font-bold leading-none text-[#f4f1eb]/90"
+            >
+              &rdquo;
+            </span>
+          </blockquote>
+
+          {value.attributionName && (
+            <p className="w-full max-w-[620px] text-right text-base font-bold leading-6 text-[#f4f1eb]">
+              {value.attributionName}
             </p>
-            <span className="shrink-0 text-3xl leading-none text-white md:text-4xl">&rdquo;</span>
-          </div>
-          {/* Attribution: name → role, right-aligned */}
-          {(value.attributionName || value.attributionRole) && (
-            <figcaption className="mt-6 flex flex-col items-end gap-1 text-right">
-              {value.attributionName && (
-                <p className="text-base font-bold text-white">{value.attributionName}</p>
-              )}
-              {value.attributionRole && (
-                <p className="text-sm font-normal text-white/80">{value.attributionRole}</p>
-              )}
-            </figcaption>
           )}
-        </blockquote>
+          {value.attributionRole && (
+            <p className="w-full max-w-[620px] text-right text-sm leading-5 text-[#f4f1eb]">
+              {value.attributionRole}
+            </p>
+          )}
+        </div>
       </figure>
     ),
 

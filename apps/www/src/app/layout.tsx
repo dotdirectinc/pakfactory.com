@@ -1,4 +1,7 @@
 import type {Metadata, Viewport} from 'next';
+// Loads the actual 'Geist Variable' font family referenced by --font-geist-sans
+// in @pakfactory/ui globals (same package the POC uses).
+import '@fontsource-variable/geist';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import './globals.css';
 
