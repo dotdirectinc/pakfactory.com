@@ -33,6 +33,7 @@ import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapab
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
 const dataset = process.env.SANITY_STUDIO_DATASET || 'development'
+const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` : ''
 
 // ── Presentation (live site preview) ─────────────────────────────────────────
 // Per-workspace: the Website workspace previews apps/www, Blog previews apps/blog.
@@ -209,7 +210,7 @@ export default defineConfig([
   // ── Admin — full access (default workspace at /) ───────────────────────────
   {
     name: 'admin',
-    title: 'Global',
+    title: `Global${datasetSuffix}`,
     basePath: '/admin',
     projectId,
     dataset,
@@ -227,7 +228,7 @@ export default defineConfig([
   // ── Blog — editorial team ──────────────────────────────────────────────────
   {
     name: 'blog',
-    title: 'Blog',
+    title: `Blog${datasetSuffix}`,
     basePath: '/blog',
     projectId,
     dataset,
@@ -258,7 +259,7 @@ export default defineConfig([
   // ── Website — marketing / web team ────────────────────────────────────────
   {
     name: 'website',
-    title: 'Marketing Website',
+    title: `Marketing Website${datasetSuffix}`,
     basePath: '/website',
     projectId,
     dataset,
