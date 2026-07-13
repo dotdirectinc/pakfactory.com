@@ -1,7 +1,7 @@
 import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type { PostBodyGallery } from "@/lib/blog-post";
 import { sanityImageUrl } from "@/lib/sanity-image";
-import { GallerySlider } from "./gallery-slider";
+import { GallerySlider } from "@pakfactory/components/modules/gallery-slider";
 
 type BodyGalleryProps = {
   value: PostBodyGallery;

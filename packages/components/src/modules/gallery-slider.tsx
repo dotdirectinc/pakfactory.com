@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
-type SliderImage = {
+export type SliderImage = {
   key: string;
   src: string;
   alt: string;
@@ -12,6 +12,11 @@ type SliderImage = {
   isSquare: boolean;
 };
 
+/**
+ * Peek-scroll image gallery with free mouse drag, scroll-progress bar, and
+ * click-to-open lightbox. No scroll-snap — the track stops exactly where
+ * the user releases. Shared across blog and www.
+ */
 export function GallerySlider({ images }: { images: SliderImage[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
@@ -59,16 +64,12 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
     track.style.userSelect = "";
   }
 
-  function onMouseLeave() {
-    if (isDragging.current) onMouseUp();
-  }
-
-  // Suppress click after drag so images don't open the modal on drag-release
+  // Suppress click-to-open-lightbox when the user dragged instead of clicking
   function onClickCapture(e: React.MouseEvent) {
     if (hasDragged.current) e.stopPropagation();
   }
 
-  // Lightbox keyboard nav
+  // Keyboard nav while lightbox is open
   useEffect(() => {
     if (modalIndex === null) return;
     function onKey(e: KeyboardEvent) {
@@ -82,10 +83,12 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [modalIndex, images.length]);
 
-  // Lock body scroll while modal is open
+  // Lock body scroll while lightbox is open
   useEffect(() => {
     document.body.style.overflow = modalIndex !== null ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [modalIndex]);
 
   const modalImg = modalIndex !== null ? images[modalIndex] : undefined;
@@ -95,15 +98,15 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
 
   return (
     <>
-      {/* Slider track — no scroll-snap so drag stops exactly where released */}
       <div>
+        {/* Scrollable track — no scroll-snap; drag stops exactly where released */}
         <div
           ref={trackRef}
           onScroll={handleScroll}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={onMouseLeave}
+          onMouseLeave={onMouseUp}
           onClickCapture={onClickCapture}
           className="flex cursor-grab gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
@@ -121,32 +124,31 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
                 draggable={false}
                 className={`${aspectClass} h-auto w-full cursor-pointer rounded-lg object-cover transition-opacity hover:opacity-90`}
               />
-              {(img.caption || img.alt) && (
+              {(img.caption || img.alt) ? (
                 <p className="mt-2 select-none text-sm text-muted-foreground">
                   {img.caption ?? img.alt}
                 </p>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
 
-        {images.length > 1 && (
+        {images.length > 1 ? (
           <div className="mt-4 h-px w-full bg-border">
             <div
               className="h-full bg-foreground transition-[width] duration-100"
               style={{ width: `${Math.round(progress * 100)}%` }}
             />
           </div>
-        )}
+        ) : null}
       </div>
 
-      {/* Lightbox modal */}
-      {modalIndex !== null && modalImg && (
+      {/* Lightbox */}
+      {modalIndex !== null && modalImg ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setModalIndex(null)}
         >
-          {/* Close */}
           <button
             className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
             onClick={() => setModalIndex(null)}
@@ -155,8 +157,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
             <X className="h-5 w-5" />
           </button>
 
-          {/* Prev */}
-          {modalIndex > 0 && (
+          {modalIndex > 0 ? (
             <button
               className="absolute left-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
               onClick={(e) => { e.stopPropagation(); setModalIndex(modalIndex - 1); }}
@@ -164,9 +165,8 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
-          )}
+          ) : null}
 
-          {/* Image */}
           <div
             className="flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-3"
             onClick={(e) => e.stopPropagation()}
@@ -178,20 +178,19 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
               height={900}
               className="max-h-[82vh] w-auto max-w-full rounded-lg object-contain"
             />
-            {(modalImg.caption || modalImg.alt) && (
+            {(modalImg.caption || modalImg.alt) ? (
               <p className="text-center text-sm text-white/70">
                 {modalImg.caption ?? modalImg.alt}
               </p>
-            )}
-            {images.length > 1 && (
+            ) : null}
+            {images.length > 1 ? (
               <p className="text-xs text-white/40">
                 {modalIndex + 1} / {images.length}
               </p>
-            )}
+            ) : null}
           </div>
 
-          {/* Next */}
-          {modalIndex < images.length - 1 && (
+          {modalIndex < images.length - 1 ? (
             <button
               className="absolute right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
               onClick={(e) => { e.stopPropagation(); setModalIndex(modalIndex + 1); }}
@@ -199,9 +198,9 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
             >
               <ChevronRight className="h-6 w-6" />
             </button>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
     </>
   );
 }
