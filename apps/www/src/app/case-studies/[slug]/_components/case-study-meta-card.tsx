@@ -87,6 +87,18 @@ export function CaseStudyMetaCard({
 
   const hasClient = Boolean(client?.logoUrl || client?.name);
 
+  const clientMark = client?.logoUrl ? (
+    <Image
+      src={client.logoUrl}
+      alt={client.name ?? "Client logo"}
+      width={176}
+      height={73}
+      className="h-[73px] w-auto max-w-[176px] object-contain"
+    />
+  ) : (
+    <p className="text-center text-lg font-semibold text-foreground">{client?.name}</p>
+  );
+
   return (
     <aside className="relative flex w-full shrink-0 flex-col items-center gap-6 rounded-[14px] py-6 text-border lg:w-[304px]">
       {/* Dashed SVG border that follows the corner curve */}
@@ -107,29 +119,21 @@ export function CaseStudyMetaCard({
       </svg>
 
       {hasClient && (
-        <div className="flex w-full flex-col items-center justify-center gap-2 px-6 text-foreground">
-          {client?.logoUrl ? (
-            <Image
-              src={client.logoUrl}
-              alt={client.name ?? "Client logo"}
-              width={176}
-              height={73}
-              className="h-[73px] w-auto max-w-[176px] object-contain"
-            />
-          ) : (
-            <p className="text-center text-lg font-semibold text-foreground">
-              {client?.name}
-            </p>
-          )}
-          {client?.website && (
+        <div className="flex w-full items-center justify-center px-6 text-foreground">
+          {client?.website ? (
             <a
               href={client.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="max-w-full truncate text-center text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              aria-label={
+                client.name ? `Visit ${client.name} website` : "Visit client website"
+              }
+              className="inline-flex transition-opacity hover:opacity-80"
             >
-              {client.website.replace(/^https?:\/\//, "")}
+              {clientMark}
             </a>
+          ) : (
+            clientMark
           )}
         </div>
       )}
