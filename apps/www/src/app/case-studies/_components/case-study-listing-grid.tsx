@@ -430,10 +430,10 @@ export function CaseStudyListingGrid({ studies }: Props) {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {filtered.length > 0 && (
               <div className="border-t border-dashed border-border px-4 md:px-8">
                 <Pagination
-                  pageNumber={page}
+                  pageNumber={safePage}
                   totalPages={totalPages}
                   onPageChange={(p: number) => setPage(p)}
                   rightSlot={

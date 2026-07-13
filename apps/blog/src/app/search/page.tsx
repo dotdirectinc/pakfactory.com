@@ -137,7 +137,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
               emptyMessage="No posts on this page."
             />
           </div>
-          {totalPages > 1 && (
+          {totalCount > 0 && (
             <div className="py-16">
               <Pagination
                 pageNumber={pageNumber}
