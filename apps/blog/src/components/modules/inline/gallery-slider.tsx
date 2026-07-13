@@ -10,10 +10,15 @@ type SliderImage = {
   isSquare: boolean;
 };
 
-/** Client-side peek-scroll gallery with scroll-progress bar. */
+/** Client-side peek-scroll gallery with free-drag and scroll-progress bar. */
 export function GallerySlider({ images }: { images: SliderImage[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
+
+  // Mouse-drag state — no scroll-snap so the track stops exactly where released.
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartScrollLeft = useRef(0);
 
   function handleScroll() {
     const track = trackRef.current;
@@ -22,34 +27,62 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
     setProgress(max > 0 ? track.scrollLeft / max : 0);
   }
 
+  function onMouseDown(e: React.MouseEvent) {
+    const track = trackRef.current;
+    if (!track) return;
+    isDragging.current = true;
+    dragStartX.current = e.pageX - track.offsetLeft;
+    dragStartScrollLeft.current = track.scrollLeft;
+    track.style.cursor = "grabbing";
+    track.style.userSelect = "none";
+  }
+
+  function onMouseMove(e: React.MouseEvent) {
+    if (!isDragging.current) return;
+    const track = trackRef.current;
+    if (!track) return;
+    const x = e.pageX - track.offsetLeft;
+    track.scrollLeft = dragStartScrollLeft.current - (x - dragStartX.current);
+  }
+
+  function onMouseUp() {
+    const track = trackRef.current;
+    if (!track) return;
+    isDragging.current = false;
+    track.style.cursor = "";
+    track.style.userSelect = "";
+  }
+
   const isSquare = images[0]?.isSquare ?? false;
   const aspectClass = isSquare ? "aspect-square" : "aspect-video";
   const imgHeight = isSquare ? 800 : 450;
 
   return (
     <div>
-      {/* Scrollable slide track — shows main image + ~25% peek of next */}
+      {/* Scrollable slide track — no scroll-snap; drag stops exactly where released */}
       <div
         ref={trackRef}
         onScroll={handleScroll}
-        className="flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ scrollSnapType: "x mandatory" }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        className="flex cursor-grab gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {images.map((img) => (
-          <div
-            key={img.key}
-            className="w-[75%] flex-shrink-0"
-            style={{ scrollSnapAlign: "start" }}
-          >
+          <div key={img.key} className="w-[75%] flex-shrink-0">
             <Image
               src={img.src}
               alt={img.alt}
               width={800}
               height={imgHeight}
+              draggable={false}
               className={`${aspectClass} h-auto w-full rounded-lg object-cover`}
             />
             {img.alt ? (
-              <p className="mt-2 text-sm text-muted-foreground">{img.alt}</p>
+              <p className="mt-2 select-none text-sm text-muted-foreground">
+                {img.alt}
+              </p>
             ) : null}
           </div>
         ))}
