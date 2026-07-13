@@ -25,6 +25,19 @@ export function makeHeroIntroPtComponents(clientWebsite?: string | null): Portab
         ) : (
           <strong className="font-semibold text-foreground">{children}</strong>
         ),
+      link: ({ value, children }: PortableTextMarkComponentProps<any>) =>
+        value?.href ? (
+          <a
+            href={value.href}
+            className="text-primary underline underline-offset-4 hover:no-underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {children}
+          </a>
+        ) : (
+          <>{children}</>
+        ),
     },
     block: {
       normal: ({ children }) => (
