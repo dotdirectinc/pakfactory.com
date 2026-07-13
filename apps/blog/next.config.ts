@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components"],
   turbopack: {
     resolveAlias: {
       "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
