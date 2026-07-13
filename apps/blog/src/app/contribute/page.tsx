@@ -4,13 +4,14 @@ import { ContributeForm } from "@/components/modules/contribute-form";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { PageHeader } from "@/components/modules/page-header";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
-import { breadcrumbList, jsonLdGraph, serializeJsonLd, webPage } from "@pakfactory/seo";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
 import {
   buildBlogContributeMetadata,
   fetchBlogContributePage,
   resolveContributePageDescription,
   resolveContributePageTitle,
 } from "@/lib/blog-contribute-page";
+import { buildWebPageJsonLd } from "@/lib/blog-jsonld";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
@@ -53,26 +54,16 @@ export default async function ContributePage() {
   const pageDescription = resolveContributePageDescription(page);
   const blocks = page?.pageBuilder ?? [];
   const pageUrl = absoluteUrl("/contribute");
-  const jsonLd = serializeJsonLd(
-    jsonLdGraph([
-      webPage({
-        name: pageTitle,
-        url: pageUrl,
-        description: pageDescription,
-      }),
-      breadcrumbList([
-        { name: "Blog", url: absoluteUrl("/") },
-        { name: "Contribute", url: pageUrl },
-      ]),
-    ]),
-  );
+  const jsonLd = buildWebPageJsonLd({
+    name: pageTitle,
+    url: pageUrl,
+    description: pageDescription,
+    crumbLabel: "Contribute",
+  });
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd }}
-      />
+      <JsonLdScript jsonLd={jsonLd} />
       <main>
         <PageDielineSection innerClassName="py-4">
           <Breadcrumb items={[{ label: "Blog", href: "/" }, { label: "Contribute" }]} />

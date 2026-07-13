@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CategoryArchiveView } from "@/components/views/category-archive-view";
 import { PostDetailView } from "@/components/views/post-detail-view";
 import { BlogLandingView } from "@/components/views/blog-landing-view";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
 import {
   buildCategoryArchiveMetadata,
   categoryPageHref,
@@ -99,10 +100,7 @@ export default async function CategoryRootPage({
       const jsonLd = await buildPostJsonLd(resolution.data);
       return (
         <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: jsonLd }}
-          />
+          <JsonLdScript jsonLd={jsonLd} />
           <PostDetailView post={resolution.data} />
         </>
       );

@@ -1,15 +1,11 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import type {PortableTextBlock} from '@portabletext/types';
-import {
-    breadcrumbList,
-    jsonLdGraph,
-    serializeJsonLd,
-    webPage,
-} from '@pakfactory/seo';
+import {JsonLdScript} from '@/components/ui/json-ld-script';
 import {PageDielineSection} from '@/components/layout/page-dieline-section';
 import {PageHeader} from '@/components/modules/page-header';
 import {PortableText} from '@/components/ui/portable-text';
+import {buildWebPageJsonLd} from '@/lib/blog-jsonld';
 import {getSanityClient} from '@/lib/sanity/client';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {absoluteUrl} from '@/lib/site';
@@ -64,48 +60,36 @@ export default async function PrivacyPolicyPage() {
     const pageUrl = absoluteUrl('/privacy-policy');
     const title = doc?.metaTitle || PAGE_TITLE;
     const jsonLd = hasBody
-        ? serializeJsonLd(
-              jsonLdGraph([
-                  webPage({
-                      name: title,
-                      url: pageUrl,
-                      description: doc?.metaDescription?.trim() || undefined,
-                  }),
-                  breadcrumbList([
-                      {name: 'Blog', url: absoluteUrl('/')},
-                      {name: PAGE_TITLE, url: pageUrl},
-                  ]),
-              ]),
-          )
+        ? buildWebPageJsonLd({
+              name: title,
+              url: pageUrl,
+              description: doc?.metaDescription?.trim() || undefined,
+              crumbLabel: PAGE_TITLE,
+          })
         : null;
 
     return (
         <>
-            {jsonLd ? (
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{__html: jsonLd}}
-                />
-            ) : null}
+            {jsonLd ? <JsonLdScript jsonLd={jsonLd} /> : null}
             <main>
-            <PageHeader title={PAGE_TITLE} />
-            <PageDielineSection innerClassName="py-12 sm:py-16">
-                <div className="max-w-5xl mx-auto">
-                    {hasBody ? (
-                        <PortableText
-                            value={doc!.body}
-                            className="text-base text-foreground"
-                        />
-                    ) : (
-                        <p className="text-base text-muted-foreground">
-                            This privacy policy hasn&apos;t been published yet.
-                            Add and <strong>publish</strong> it in Sanity Studio
-                            under Marketing Website &rarr; Static Pages &rarr;
-                            Legal &rarr; Privacy Policy.
-                        </p>
-                    )}
-                </div>
-            </PageDielineSection>
+                <PageHeader title={PAGE_TITLE} />
+                <PageDielineSection innerClassName="py-12 sm:py-16">
+                    <div className="max-w-5xl mx-auto">
+                        {hasBody ? (
+                            <PortableText
+                                value={doc!.body}
+                                className="text-base text-foreground"
+                            />
+                        ) : (
+                            <p className="text-base text-muted-foreground">
+                                This privacy policy hasn&apos;t been published yet.
+                                Add and <strong>publish</strong> it in Sanity Studio
+                                under Marketing Website &rarr; Static Pages &rarr;
+                                Legal &rarr; Privacy Policy.
+                            </p>
+                        )}
+                    </div>
+                </PageDielineSection>
             </main>
         </>
     );

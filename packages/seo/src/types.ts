@@ -89,7 +89,7 @@ export type BlogInput = {
   id?: string;
 };
 
-/** Shared shape for BlogPosting / NewsArticle generators */
+/** Shared shape for BlogPosting / NewsArticle / Article generators */
 export type ArticleLikeInput = {
   /** Canonical URL of the article */
   url: string;
@@ -119,6 +119,8 @@ export type ArticleLikeInput = {
 export type BlogPostingInput = ArticleLikeInput;
 
 export type NewsArticleInput = ArticleLikeInput;
+
+export type ArticleInput = ArticleLikeInput;
 
 export type FaqPageItem = {
   question: string;

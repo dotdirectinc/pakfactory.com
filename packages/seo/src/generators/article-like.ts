@@ -1,7 +1,7 @@
 import type { ArticleLikeInput } from "../types";
 
 export function articleLike(
-  type: "BlogPosting" | "NewsArticle",
+  type: "BlogPosting" | "NewsArticle" | "Article",
   input: ArticleLikeInput,
 ): Record<string, unknown> {
   const doc: Record<string, unknown> = {

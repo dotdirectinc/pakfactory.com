@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
+import { blog } from "@pakfactory/seo";
+import { pageDielineOuterClass } from "@/components/layout/page-dieline-section";
+import { JsonLdScript } from "@/components/ui/json-ld-script";
+import { BlockRenderer } from "@/components/blocks/block-renderer";
 import {
-    blog,
-    jsonLdGraph,
-    organization,
-    serializeJsonLd,
-} from '@pakfactory/seo';
-import {pageDielineOuterClass} from '@/components/layout/page-dieline-section';
-import { BlockRenderer } from '@/components/blocks/block-renderer';
+  buildBlogHomeMetadata,
+  fetchBlogHomePage,
+  getBlogHomeDebugInfo,
+  resolveHomePageH1,
+} from "@/lib/blog-home";
+import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import {
-    buildBlogHomeMetadata,
-    fetchBlogHomePage,
-    getBlogHomeDebugInfo,
-    resolveHomePageH1,
-} from '@/lib/blog-home';
-import { fetchBlogGlobalSettings } from '@/lib/blog-global-settings';
-import { buildHomeVideoObjectNodes } from '@/lib/home-jsonld';
-import { getListingRobotsFromSearchParams } from '@/lib/seo';
-import {getWwwUrl, normalizeSiteUrl, siteBaseUrl} from '@/lib/site';
+  pakfactoryOrganization,
+  serializeBlogJsonLd,
+} from "@/lib/blog-jsonld";
+import { buildHomeVideoObjectNodes } from "@/lib/home-jsonld";
+import { getListingRobotsFromSearchParams } from "@/lib/seo";
+import { siteBaseUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -46,33 +46,26 @@ export default async function BlogHomePage() {
         process.env.NODE_ENV === 'development' && blocks.length === 0;
 
     const siteUrl = siteBaseUrl();
-    const orgId = `${siteUrl}#organization`;
+    const { org, orgId } = pakfactoryOrganization();
     const blogId = `${siteUrl}#blog`;
     const blogDescription =
         home?.metaDescription?.trim() || HOME_DESCRIPTION_FALLBACK;
 
-    const jsonLd = jsonLdGraph([
-        organization({
-            name: 'PakFactory',
-            url: normalizeSiteUrl(getWwwUrl()),
-            id: orgId,
-        }),
+    const jsonLd = serializeBlogJsonLd([
+        org,
         blog({
             name: pageH1,
             url: siteUrl,
             description: blogDescription,
             id: blogId,
-            publisher: {'@id': orgId},
+            publisher: { "@id": orgId },
         }),
         ...buildHomeVideoObjectNodes(blocks),
     ]);
 
     return (
         <>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{__html: serializeJsonLd(jsonLd)}}
-            />
+            <JsonLdScript jsonLd={jsonLd} />
             <main className={pageDielineOuterClass()}>
                 <h1 className="sr-only">{pageH1}</h1>
                 {showDevEmptyHint && (

@@ -1,5 +1,6 @@
 export type {
   ArticleLikeInput,
+  ArticleInput,
   BlogPostingInput,
   BreadcrumbItem,
   BlogInput,
@@ -17,6 +18,7 @@ export type {
 } from "./types";
 export { SCHEMA_CONTEXT } from "./types";
 
+export { article } from "./generators/article";
 export { faqPage } from "./generators/faqPage";
 export { blog } from "./generators/blog";
 export { blogPosting } from "./generators/blogPosting";
