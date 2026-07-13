@@ -85,7 +85,7 @@ export const caseStudy = defineType({
       title: 'Hero intro',
       type: 'array',
       group: 'content',
-      description: 'Intro paragraph. Bold and "Client link" annotation only — no headings. The Client link mark resolves to the client\'s website URL at render time.',
+      description: 'Intro paragraph. Bold, "Client link", and "Link" (custom external URL) annotations only — no headings. The Client link mark resolves to the client\'s website URL at render time; the Link mark uses the URL you enter.',
       of: [
         {
           type: 'block',
@@ -109,6 +109,15 @@ export const caseStudy = defineType({
                     hidden: true,
                     initialValue: true,
                   }),
+                ],
+              },
+              {
+                // Custom external link — same shape as the body sections' link mark.
+                name: 'link',
+                type: 'object',
+                title: 'Link',
+                fields: [
+                  defineField({ name: 'href', type: 'url', title: 'URL' }),
                 ],
               },
             ],

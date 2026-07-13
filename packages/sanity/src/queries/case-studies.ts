@@ -177,7 +177,7 @@ export type CaseStudyCard = {
 
 export type CaseStudyDetail = CaseStudyCard & {
   client: CaseStudyClientDetail | null;
-  heroIntro: unknown; // Portable Text (restricted: bold + clientLink)
+  heroIntro: unknown; // Portable Text (restricted: bold + clientLink + link)
   heroMedia: CaseStudyHeroMedia | null;
   capabilities: CaseStudyTaxonomyItem[] | null;
   highlights: CaseStudyHighlight[] | null;
