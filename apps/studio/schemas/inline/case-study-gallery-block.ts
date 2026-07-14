@@ -1,5 +1,50 @@
 import { ImagesIcon } from '@sanity/icons'
-import { defineField, defineType } from 'sanity'
+import { defineArrayMember, defineField, defineType } from 'sanity'
+
+/** Shared alt + caption fields for both the native image member and the legacy object. */
+const imageMetaFields = [
+  defineField({
+    name: 'alt',
+    title: 'Alt text',
+    type: 'string',
+    description: 'Describe the image for accessibility.',
+    validation: (Rule) => Rule.required(),
+  }),
+  defineField({
+    name: 'caption',
+    title: 'Caption',
+    type: 'string',
+    description: 'Optional label shown below the image, e.g. "Insert" or "Tab opening".',
+  }),
+]
+
+/**
+ * Legacy object wrapper kept so existing case-study galleries remain editable after
+ * the array was flattened to native `image` members (bulk upload). Prefer the
+ * native Image member for new uploads; flatten legacy items with
+ * `pnpm --filter @pakfactory/studio run migrate:case-study-gallery`.
+ */
+const legacyGalleryImageMember = defineArrayMember({
+  type: 'object',
+  name: 'galleryImage',
+  title: 'Image (legacy)',
+  fields: [
+    defineField({
+      name: 'image',
+      title: 'Image',
+      type: 'image',
+      options: { hotspot: true },
+      validation: (Rule) => Rule.required(),
+    }),
+    ...imageMetaFields,
+  ],
+  preview: {
+    select: { media: 'image', title: 'alt', caption: 'caption' },
+    prepare({ media, title, caption }: { media?: unknown; title?: string; caption?: string }) {
+      return { media, title: caption ?? title ?? 'Image (legacy)' }
+    },
+  },
+})
 
 export const caseStudyGalleryBlock = defineType({
   name: 'caseStudyGalleryBlock',
@@ -11,40 +56,23 @@ export const caseStudyGalleryBlock = defineType({
       name: 'images',
       title: 'Images',
       type: 'array',
+      description:
+        'Drag or select multiple files to add images in bulk. Prefer the Image type; "Image (legacy)" exists only for older content.',
       of: [
-        {
-          type: 'object',
-          name: 'galleryImage',
+        // Native image first — enables Sanity multi-file / drag-and-drop upload.
+        defineArrayMember({
+          type: 'image',
           title: 'Image',
-          fields: [
-            defineField({
-              name: 'image',
-              title: 'Image',
-              type: 'image',
-              options: { hotspot: true },
-              validation: (Rule) => Rule.required(),
-            }),
-            defineField({
-              name: 'alt',
-              title: 'Alt text',
-              type: 'string',
-              description: 'Describe the image for accessibility.',
-              validation: (Rule) => Rule.required(),
-            }),
-            defineField({
-              name: 'caption',
-              title: 'Caption',
-              type: 'string',
-              description: 'Optional label shown below the image, e.g. "Insert" or "Tab opening".',
-            }),
-          ],
+          options: { hotspot: true },
+          fields: imageMetaFields,
           preview: {
-            select: { media: 'image', title: 'alt', caption: 'caption' },
+            select: { media: 'asset', title: 'alt', caption: 'caption' },
             prepare({ media, title, caption }: { media?: unknown; title?: string; caption?: string }) {
               return { media, title: caption ?? title ?? 'Image' }
             },
           },
-        },
+        }),
+        legacyGalleryImageMember,
       ],
       validation: (Rule) =>
         Rule.required().min(2).error('Add at least two images to the gallery.'),
