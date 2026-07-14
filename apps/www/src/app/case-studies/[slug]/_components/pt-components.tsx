@@ -126,10 +126,12 @@ export const caseStudyPtComponents: PortableTextComponents = {
 
       const resolved = rawImages
         .map((item: any, i: number) => {
-          if (!item.image) return null;
+          // Native image member has asset on the item; legacy galleryImage nests under image.
+          const imageValue = item.asset ? item : item.image;
+          if (!imageValue) return null;
           return {
             key: item._key ?? String(i),
-            src: urlFor(item.image).width(1200).url(),
+            src: urlFor(imageValue).width(1200).url(),
             alt: item.alt ?? "",
             caption: item.caption ?? null,
             isSquare,
