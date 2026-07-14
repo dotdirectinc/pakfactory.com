@@ -54,13 +54,13 @@ jobs:
       # ── Export production dataset ──────────────────────────────────────────
       - name: Export production dataset
         env:
-          SANITY_BACKUP_TOKEN: ${{ secrets.SANITY_BACKUP_TOKEN }}
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_BACKUP_TOKEN }}
         run: |
           mkdir -p backups
           npx sanity@latest dataset export production \
             "backups/sanity-production-${{ steps.dates.outputs.stamp }}.tar.gz" \
             -p 8293wrxp \
-            --token "$SANITY_BACKUP_TOKEN"
+            --overwrite
           echo "BACKUP_FILE=backups/sanity-production-${{ steps.dates.outputs.stamp }}.tar.gz" >> "$GITHUB_ENV"
 
       # ── Upload to Google Drive ─────────────────────────────────────────────
@@ -159,12 +159,11 @@ jobs:
       # ── Sync production → development ──────────────────────────────────────
       - name: Sync production → development
         env:
-          SANITY_BACKUP_TOKEN: ${{ secrets.SANITY_BACKUP_TOKEN }}
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_BACKUP_TOKEN }}
         run: |
           npx sanity@latest dataset import "$BACKUP_FILE" development \
             --replace \
-            -p 8293wrxp \
-            --token "$SANITY_BACKUP_TOKEN"
+            -p 8293wrxp
           echo "✅ Development dataset updated from production backup."
 
       # ── Cleanup temp files ─────────────────────────────────────────────────
