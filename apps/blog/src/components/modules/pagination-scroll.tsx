@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  consumePaginationScrollIntent,
+  scrollToPaginationTarget,
+  setPaginationScrollIntent,
+} from "@pakfactory/components/commons/path-pagination";
 
-const PAGINATION_SCROLL_INTENT_KEY = "blog:pagination-scroll";
-
-export function setPaginationScrollIntent(): void {
-  sessionStorage.setItem(PAGINATION_SCROLL_INTENT_KEY, "1");
-}
-
-function consumePaginationScrollIntent(): boolean {
-  if (sessionStorage.getItem(PAGINATION_SCROLL_INTENT_KEY) !== "1") return false;
-  sessionStorage.removeItem(PAGINATION_SCROLL_INTENT_KEY);
-  return true;
-}
+export { setPaginationScrollIntent };
 
 type PaginationScrollProps = {
   targetId: string;
@@ -26,9 +21,7 @@ export function PaginationScroll({
 }: PaginationScrollProps) {
   useEffect(() => {
     if (!consumePaginationScrollIntent()) return;
-    document
-      .getElementById(targetId)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToPaginationTarget(targetId);
   }, [targetId, pageNumber]);
 
   return null;
