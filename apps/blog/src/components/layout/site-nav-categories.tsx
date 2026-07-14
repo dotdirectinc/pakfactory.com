@@ -59,7 +59,7 @@ export function SiteNavCategories({navItems}: SiteNavCategoriesProps) {
             <NavSearchForm
                 id="site-nav-search"
                 className="shrink-0"
-                fieldClassName="w-[240px]"
+                fieldClassName="w-[240px] transition-[width] duration-300 ease-out focus-within:w-[320px] motion-reduce:transition-none"
             />
         </div>
     );

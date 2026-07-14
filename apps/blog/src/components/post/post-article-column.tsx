@@ -31,6 +31,7 @@ export function PostArticleColumn({
           <PostPortableText
             value={post.tldr as PortableTextBlock[]}
             variant="tldr"
+            className="flex flex-col gap-4"
           />
         </div>
       ) : null}
