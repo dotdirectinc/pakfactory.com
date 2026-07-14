@@ -82,7 +82,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'heroIntro',
-      title: 'Hero intro',
+      title: 'Intro',
       type: 'array',
       group: 'content',
       description: 'Intro paragraph. Bold, "Client link", and "Link" (custom external URL) annotations only — no headings. The Client link mark resolves to the client\'s website URL at render time; the Link mark uses the URL you enter.',
@@ -128,7 +128,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'heroMedia',
-      title: 'Hero media',
+      title: 'Feature Image',
       type: 'object',
       group: 'content',
       fields: [
@@ -178,7 +178,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'cardImage',
-      title: 'Card image',
+      title: 'Thumbnail Image',
       type: 'image',
       group: 'content',
       options: { hotspot: true },
@@ -186,7 +186,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'cardImageAlt',
-      title: 'Card image alt',
+      title: 'Thumbnail image alt',
       type: 'string',
       group: 'content',
       description: 'Describe the card image for accessibility.',
