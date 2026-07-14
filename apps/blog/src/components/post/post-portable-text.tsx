@@ -2,6 +2,7 @@ import Image from 'next/image';
 import {
     PortableText as PortableTextRoot,
     type PortableTextComponents,
+    type PortableTextListItemComponent,
 } from '@portabletext/react';
 import type {PortableTextBlock} from '@portabletext/types';
 import {BodyCallout} from '@/components/modules/inline/body-callout';
@@ -145,10 +146,38 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
   };
 }
 
+const NumberedListItem: PortableTextListItemComponent = function NumberedListItem({ children, index }) {
+    return (
+        <li className="flex items-start gap-4">
+            <span className="shrink-0 text-2xl font-semibold tabular-nums leading-7 text-primary/40">
+                {String(index + 1).padStart(2, '0')}
+            </span>
+            <span className="text-base leading-7 text-foreground">{children}</span>
+        </li>
+    );
+}
+
+const TLDR_COMPONENTS: PortableTextComponents = {
+    block: {
+        normal: ({ children }) => (
+            <p className="text-base leading-7 text-foreground">{children}</p>
+        ),
+    },
+    list: {
+        bullet: ({ children }) => <ul className="flex flex-col gap-4">{children}</ul>,
+        number: ({ children }) => <ol className="flex flex-col gap-4">{children}</ol>,
+    },
+    listItem: {
+        bullet: NumberedListItem,
+        number: NumberedListItem,
+    },
+};
+
 type PostPortableTextProps = {
     value?: PortableTextBlock[];
     headingIdByKey?: Record<string, string>;
     className?: string;
+    variant?: 'default' | 'tldr';
 };
 
 /** Post body renderer with heading anchors, body images, and embedded widgets. */
@@ -156,15 +185,16 @@ export function PostPortableText({
     value,
     headingIdByKey = {},
     className,
+    variant = 'default',
 }: PostPortableTextProps) {
     if (!value?.length) return null;
 
+    const components =
+        variant === 'tldr' ? TLDR_COMPONENTS : createComponents(headingIdByKey);
+
     return (
         <div className={className}>
-            <PortableTextRoot
-                value={value}
-                components={createComponents(headingIdByKey)}
-            />
+            <PortableTextRoot value={value} components={components} />
         </div>
     );
 }

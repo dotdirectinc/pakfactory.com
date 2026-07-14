@@ -51,6 +51,32 @@ function authorInitials(name?: string): string {
   return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
 }
 
+const ARROW_CLASS =
+  "ml-0.5 inline-block size-4 shrink-0 align-[-2px] opacity-0 -translate-x-0.5 translate-y-0.5 transition-[opacity,transform] duration-300 ease-out [transition-delay:0ms,300ms] transform-gpu group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 group-hover:[transition-delay:0ms,0ms]";
+
+/** Renders the title with the arrow always pinned to the last word (no line-break between them). */
+function TitleWithArrow({ title }: { title: string }) {
+  const trimmed = title.trim();
+  const lastSpace = trimmed.lastIndexOf(" ");
+  if (lastSpace === -1) {
+    return (
+      <>
+        {trimmed}
+        <ArrowUpRight aria-hidden className={ARROW_CLASS} />
+      </>
+    );
+  }
+  return (
+    <>
+      {trimmed.slice(0, lastSpace)}{" "}
+      <span className="whitespace-nowrap">
+        {trimmed.slice(lastSpace + 1)}
+        <ArrowUpRight aria-hidden className={ARROW_CLASS} />
+      </span>
+    </>
+  );
+}
+
 function MetaDot() {
   return (
     <span
@@ -468,11 +494,7 @@ export function PostCard({
         />
         <Link href={post.href} className="block">
           <h3 className="text-lg font-semibold leading-7 text-card-foreground transition-colors group-hover:text-primary">
-            {post.title}
-            <ArrowUpRight
-              aria-hidden
-              className="ml-1 inline-block size-4 shrink-0 -translate-x-0.5 translate-y-0.5 opacity-0 transition-[opacity,transform] duration-300 ease-out [transition-delay:0ms,300ms] transform-gpu group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 group-hover:[transition-delay:0ms,0ms]"
-            />
+            <TitleWithArrow title={post.title} />
           </h3>
         </Link>
         <PostMeta post={post} tone="listing" />
