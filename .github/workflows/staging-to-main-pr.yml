@@ -1,0 +1,103 @@
+name: Promote staging → main (auto PR)
+
+# Keeps a single, self-updating promotion PR from `staging` into `main`.
+#
+# • On every push to `staging` (i.e. each feature PR merged in), open a PR
+#   staging → main if none is open yet.
+# • If a promotion PR is already open (and not yet merged), REUSE it — just
+#   refresh the title/summary with the latest set of included PRs + commits.
+#
+# Token: prefers a PAT in `secrets.PROMOTE_PAT` so the opened PR triggers the
+# required "Only staging can merge into main" check (enforce-branch-flow.yml runs
+# on pull_request_target, which the default GITHUB_TOKEN does NOT trigger). Falls
+# back to GITHUB_TOKEN with a warning in the PR body. If you use the fallback,
+# also enable Settings → Actions → General → "Allow GitHub Actions to create and
+# approve pull requests".
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: staging-to-main-pr
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Open or update staging → main PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure base refs
+        run: |
+          git fetch --no-tags --prune origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/staging:refs/remotes/origin/staging
+
+      - name: Create or update promotion PR
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTE_PAT || secrets.GITHUB_TOKEN }}
+          USING_PAT: ${{ secrets.PROMOTE_PAT != '' }}
+        run: |
+          set -euo pipefail
+          BASE=main
+          HEAD=staging
+          TITLE="Promote staging → main"
+
+          AHEAD=$(git rev-list --count "origin/$BASE..origin/$HEAD")
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "staging is not ahead of main — nothing to promote."
+            exit 0
+          fi
+
+          # ---- Build the PR body ----
+          BODY="$(mktemp)"
+          {
+            echo "🔁 **Automated promotion** of \`staging\` → \`main\`."
+            echo
+            echo "_Updated $(date -u '+%Y-%m-%d %H:%M UTC') · staging @ \`${GITHUB_SHA::7}\` · ${AHEAD} commit(s) ahead of main._"
+            echo
+
+            # PR numbers referenced by commit subjects (merge commits + squash "(#NN)")
+            PRS="$(git log --pretty='%s' "origin/$BASE..origin/$HEAD" \
+                   | grep -oE '#[0-9]+' | tr -d '#' | awk '!seen[$0]++' || true)"
+            if [ -n "${PRS:-}" ]; then
+              echo "### Pull requests included"
+              for n in $PRS; do
+                if LINE="$(gh pr view "$n" --json number,title,author \
+                          --jq '"- #\(.number) \(.title) — @\(.author.login)"' 2>/dev/null)"; then
+                  echo "$LINE"
+                else
+                  echo "- #$n"
+                fi
+              done
+              echo
+            fi
+
+            echo "### Commits ($AHEAD)"
+            git log --no-merges --pretty='- %s (`%h`)' "origin/$BASE..origin/$HEAD" | head -80
+            TOTAL_NM="$(git rev-list --no-merges --count "origin/$BASE..origin/$HEAD")"
+            if [ "$TOTAL_NM" -gt 80 ]; then echo "- …and $((TOTAL_NM - 80)) more"; fi
+
+            if [ "${USING_PAT}" != "true" ]; then
+              echo
+              echo "> ⚠️ Opened with the default \`GITHUB_TOKEN\` — the required **\"Only staging can merge into main\"** check may not run automatically. Add a \`PROMOTE_PAT\` secret (repo scope) so future PRs trigger it, or push a trivial edit to this PR to fire it."
+            fi
+          } > "$BODY"
+
+          NUM="$(gh pr list --base "$BASE" --head "$HEAD" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$NUM" ]; then
+            gh pr edit "$NUM" --title "$TITLE" --body-file "$BODY"
+            echo "Updated existing promotion PR #$NUM"
+          else
+            gh pr create --base "$BASE" --head "$HEAD" --title "$TITLE" --body-file "$BODY"
+            echo "Opened new promotion PR"
+          fi
