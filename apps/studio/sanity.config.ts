@@ -32,7 +32,7 @@ import { ProductStyleCategoryProductsView } from './components/ProductStyleCateg
 import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
-const dataset = process.env.SANITY_STUDIO_DATASET || 'development'
+const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
 const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` : ''
 
 // ── Presentation (live site preview) ─────────────────────────────────────────
