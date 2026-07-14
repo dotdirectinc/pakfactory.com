@@ -25,6 +25,7 @@
     "sanity:restore:dev": "node scripts/sanity/restore.mjs development",
     "sanity:restore:prod": "node scripts/sanity/restore.mjs production",
     "sanity:diff": "node scripts/sanity/diff-datasets.mjs",
+    "sanity:fill-gaps": "node scripts/sanity/fill-gaps.mjs",
     "sanity:sync-prod-to-dev": "node scripts/sanity/sync-prod-to-dev.mjs",
     "sanity:backup:delta": "node scripts/sanity/backup-delta.mjs",
     "sanity:restore:delta:dev": "node scripts/sanity/restore-delta.mjs development",
