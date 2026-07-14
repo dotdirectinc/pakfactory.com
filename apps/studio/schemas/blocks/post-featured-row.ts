@@ -7,8 +7,9 @@ import {
 } from '../../lib/dieline-border-fields';
 
 /**
- * postFeaturedRow — page-leading Featured Post: one pinned featured post plus a
- * column of the latest posts. Page-builder block
+ * postFeaturedRow — page-leading Featured Post: exactly four editor-selected
+ * posts rendered as the rotating home hero (lead crossfades through the four;
+ * right rail lists them). Page-builder block
  * (apps/blog components/blocks/post-featured-block).
  */
 export const postFeaturedRow = defineType({
@@ -18,35 +19,35 @@ export const postFeaturedRow = defineType({
     icon: StarIcon,
     fields: [
         defineField({
-            name: 'featuredPost',
-            title: 'Featured post',
-            type: 'reference',
-            to: [{type: 'post'}],
+            name: 'featuredPosts',
+            title: 'Featured posts',
+            type: 'array',
+            of: [{type: 'reference', to: [{type: 'post'}]}],
             description:
-                'The hero post shown at the top of the section. Leave empty to fall back to the most recent post.',
-        }),
-        defineField({
-            name: 'latestPostsCount',
-            title: 'Latest posts count',
-            type: 'number',
-            description:
-                'How many posts to show in the "Latest posts" column beside the hero.',
-            initialValue: 3,
-            validation: (Rule) => Rule.min(1).max(3).integer(),
+                'Up to four posts for the rotating home hero, in display order (first shown initially). Leave empty to fall back to recently published posts, featured-flagged first.',
+            validation: (Rule) => Rule.max(4).unique(),
         }),
         ...dielineBorderFields(),
     ],
     preview: {
         select: {
-            title: 'featuredPost.title',
+            title: 'featuredPosts.0.title',
+            posts: 'featuredPosts',
             showTopBorder: 'showTopBorder',
             showBottomBorder: 'showBottomBorder',
         },
-        prepare({title, showTopBorder, showBottomBorder}) {
+        prepare({title, posts, showTopBorder, showBottomBorder}) {
             const borders = dielineBorderPreviewSubtitle(showTopBorder, showBottomBorder);
+            const count = Array.isArray(posts) ? posts.length : 0;
+            const selection =
+                count > 1
+                    ? `${title} +${count - 1} more`
+                    : count === 1
+                      ? title
+                      : 'Auto — recent featured posts';
             return {
         title: 'Post — Featured Post',
-                subtitle: [title || 'Latest post (auto)', borders].filter(Boolean).join(' · '),
+                subtitle: [selection, borders].filter(Boolean).join(' · '),
             };
         },
     },

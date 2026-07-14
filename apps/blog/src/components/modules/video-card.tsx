@@ -70,7 +70,7 @@ export function VideoCardThumbnail({
           src={video.thumbnailUrl}
           alt=""
           fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          className="object-cover"
           sizes={isLead ? "(min-width: 1024px) 717px, 100vw" : "(min-width: 1024px) 25vw, 50vw"}
           unoptimized={video.thumbnailUrl.includes("img.youtube.com")}
         />
@@ -78,7 +78,7 @@ export function VideoCardThumbnail({
         <div className="absolute inset-0 bg-muted" aria-hidden />
       )}
       <span className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
-        <span className="flex size-14 items-center justify-center rounded-full bg-background/95 text-foreground shadow-md">
+        <span className="flex size-14 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md transition-transform duration-300 group-hover:scale-110">
           <Play className="size-6 fill-current" aria-hidden />
         </span>
       </span>

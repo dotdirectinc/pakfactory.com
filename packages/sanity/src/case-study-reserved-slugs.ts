@@ -5,6 +5,7 @@
  */
 export const CASE_STUDY_RESERVED_SLUGS = [
   "api",
+  "page",
   "sitemap.xml",
 ] as const;
 

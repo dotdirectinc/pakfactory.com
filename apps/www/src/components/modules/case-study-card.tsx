@@ -25,8 +25,8 @@ export function CaseStudyCard({
   priority = false,
 }: CaseStudyCardProps) {
   return (
-    <article className={cn("group flex flex-col gap-[14px]", className)}>
-      <Link href={href} className="relative block">
+    <article className={cn(className)}>
+      <Link href={href} className="group flex flex-col gap-[14px]">
         <div className="relative aspect-square overflow-hidden rounded-[10px] bg-muted">
           {cardImageUrl ? (
             <Image
@@ -43,22 +43,26 @@ export function CaseStudyCard({
             </div>
           )}
         </div>
-      </Link>
-      <div className="flex flex-col gap-[14px]">
-        <div className="flex flex-col gap-2.5">
-          {clientName && (
-            <p className="text-sm font-medium leading-5 text-muted-foreground">{clientName}</p>
-          )}
-          <p className="text-base font-semibold leading-6 text-foreground">{title}</p>
+        <div className="flex flex-col gap-[14px]">
+          <div className="flex flex-col gap-2.5">
+            {clientName && (
+              <p className="text-sm font-medium leading-5 text-muted-foreground">
+                {clientName}
+              </p>
+            )}
+            <p className="text-base font-semibold leading-6 text-foreground transition-colors group-hover:text-primary">
+              {title}
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors group-hover:text-primary/80">
+            Read Story
+            <ArrowRight
+              className="size-4 transition-transform duration-300 group-hover:translate-x-0.5"
+              strokeWidth={1.75}
+            />
+          </span>
         </div>
-        <Link
-          href={href}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
-        >
-          Read Story
-          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={1.75} />
-        </Link>
-      </div>
+      </Link>
     </article>
   );
 }

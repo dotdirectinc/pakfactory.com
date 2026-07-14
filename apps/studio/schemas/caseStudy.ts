@@ -1,4 +1,4 @@
-import { CaseIcon } from '@sanity/icons'
+import { CaseIcon, EarthGlobeIcon } from '@sanity/icons'
 import { ALL_FIELDS_GROUP, defineField, defineType } from 'sanity'
 
 // Shared PT config for the three story sections.
@@ -82,7 +82,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'heroIntro',
-      title: 'Hero intro',
+      title: 'Intro',
       type: 'array',
       group: 'content',
       description: 'Intro paragraph. Bold, "Client link", and "Link" (custom external URL) annotations only — no headings. The Client link mark resolves to the client\'s website URL at render time; the Link mark uses the URL you enter.',
@@ -98,6 +98,7 @@ export const caseStudy = defineType({
                 name: 'clientLink',
                 type: 'object',
                 title: 'Client link',
+                icon: EarthGlobeIcon,
                 // URL is NOT stored here — it resolves from client→website at render time.
                 // Renders bold-only when the client has no website.
                 // The hidden field satisfies Sanity's minimum-one-field requirement.
@@ -127,7 +128,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'heroMedia',
-      title: 'Hero media',
+      title: 'Feature Image',
       type: 'object',
       group: 'content',
       fields: [
@@ -177,7 +178,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'cardImage',
-      title: 'Card image',
+      title: 'Thumbnail Image',
       type: 'image',
       group: 'content',
       options: { hotspot: true },
@@ -185,7 +186,7 @@ export const caseStudy = defineType({
     }),
     defineField({
       name: 'cardImageAlt',
-      title: 'Card image alt',
+      title: 'Thumbnail image alt',
       type: 'string',
       group: 'content',
       description: 'Describe the card image for accessibility.',
