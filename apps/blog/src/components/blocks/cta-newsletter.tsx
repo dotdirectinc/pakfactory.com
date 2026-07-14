@@ -9,6 +9,7 @@ import type {
     CtaNewsletterBlock,
     BlockProps,
 } from '@/components/blocks/registry';
+import {captureEvent} from '@/lib/analytics';
 import {PageDielineFullBleedSection} from '@/components/layout/page-dieline-section';
 import {
     NEWSLETTER_DIELINE_BORDER_DEFAULTS,
@@ -37,6 +38,7 @@ export function CtaNewsletter({
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setIsLoading(true);
+        captureEvent('newsletter_signup_submitted', {placement: 'cta-band'});
         try {
             const res = await fetch('/api/newsletter', {
                 method: 'POST',
@@ -47,14 +49,23 @@ export function CtaNewsletter({
                 message?: string;
             };
             if (!res.ok) {
+                captureEvent('newsletter_signup_failed', {
+                    placement: 'cta-band',
+                    status: res.status,
+                });
                 toast.error(
                     data.message ?? 'Something went wrong. Try again later.',
                 );
                 return;
             }
+            captureEvent('newsletter_signup_succeeded', {placement: 'cta-band'});
             toast.success(data.message ?? "Thanks — you're on the list.");
             setEmail('');
         } catch {
+            captureEvent('newsletter_signup_failed', {
+                placement: 'cta-band',
+                status: 'network_error',
+            });
             toast.error('Something went wrong. Try again later.');
         } finally {
             setIsLoading(false);

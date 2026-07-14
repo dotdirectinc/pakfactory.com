@@ -319,8 +319,12 @@ const blogHomePageDoc = {
     {
       _key: key(),
       _type: 'postFeaturedRow',
-      featuredPost: ref('post-dev-pn-1'),
-      latestPostsCount: 3,
+      featuredPosts: [
+        ref('post-dev-pn-1'),
+        ref('post-dev-trends-1'),
+        ref('post-dev-bs-1'),
+        ref('post-dev-sus-1'),
+      ],
     },
     {
       _key: key(),

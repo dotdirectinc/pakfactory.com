@@ -29,11 +29,11 @@ export function PostDetailLayout({
       <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
       {header}
       {/* px-0 overrides the dieline's default px-8 so sidebar/article control
-          their own horizontal padding (px-14 and px-16 respectively). */}
-      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 pt-12 lg:grid-cols-[360px_1fr] lg:pt-24">
+          their own horizontal padding (pl-6/pr-8 and px-32 respectively). */}
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 pt-12 lg:grid-cols-[280px_1fr] lg:pt-24">
         {/* Hidden below lg; on desktop stretches to row height for the sticky sidebar. */}
         <aside className="hidden min-w-0 lg:block">{sidebar}</aside>
-        <div className="min-w-0 px-6 pb-24 lg:px-16">{article}</div>
+        <div className="min-w-0 px-6 pb-24 lg:px-32">{article}</div>
       </PageDielineSection>
       {/* Footer bands use the full-bleed row helper, which is designed to break
           out of the page gutter — give it that gutter so the negative margins

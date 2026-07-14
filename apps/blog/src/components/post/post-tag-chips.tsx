@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PostTag } from "@/lib/blog-post";
 import { tagHref } from "@/lib/blog-post-url";
+import { TOPIC_CHIP_CLASS, TopicExploreChip } from "@/components/ui/topic-chip";
 
 type PostTagChipsProps = {
   tags: PostTag[];
@@ -15,14 +16,14 @@ export function PostTagChips({ tags }: PostTagChipsProps) {
       <ul className="flex flex-wrap gap-2">
         {tags.map((tag) => (
           <li key={tag._id ?? tag.slug}>
-            <Link
-              href={tagHref(tag.slug)}
-              className="inline-flex items-center rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-foreground/30"
-            >
+            <Link href={tagHref(tag.slug)} className={TOPIC_CHIP_CLASS}>
               {tag.title}
             </Link>
           </li>
         ))}
+        <li>
+          <TopicExploreChip href="/topics" label="Explore all topics" />
+        </li>
       </ul>
     </div>
   );
