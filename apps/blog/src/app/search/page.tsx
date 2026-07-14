@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { SearchTracker } from "@/components/modules/analytics/search-tracker";
 import {
   PageDielineBlockRail,
   PageDielineSection,
@@ -105,6 +106,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
   const header = (
     <>
+      <SearchTracker query={query} resultsCount={totalCount} page={pageNumber} />
       <PageDielineSection innerClassName="py-4">
         <Breadcrumb items={CRUMBS} />
       </PageDielineSection>
