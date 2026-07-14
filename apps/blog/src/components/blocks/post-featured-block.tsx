@@ -3,44 +3,44 @@ import type {
     BlockProps,
 } from '@/components/blocks/registry';
 import {PageDielineFullBleedSection} from '@/components/layout/page-dieline-section';
-import {PostFeaturedRow} from '@/components/modules/post-featured-row';
+import {PostFeaturedRotator} from '@/components/modules/post-featured-rotator';
 import {
     POST_ROW_DIELINE_BORDER_DEFAULTS,
     resolveDielineBorders,
 } from '@/lib/dieline-borders';
-import {toPostCardData, toPostCardDataList} from '@/lib/post-card-data';
+import type {HomePostCard} from '@/lib/blog-home';
+import {toPostCardData} from '@/lib/post-card-data';
 
-const FEATURED_RIGHT_RAIL_LIMIT = 3;
+const HERO_SLIDE_COUNT = 4;
 
 /**
- * `postFeaturedRow` page-builder block — a featured post plus a column of the
- * latest posts. Falls back to the newest post when no post is pinned.
+ * `postFeaturedRow` page-builder block — exactly four editor-selected posts
+ * rendered as the rotating home hero (lead crossfade + right-rail rows; see
+ * modules/post-featured-rotator). The Studio field is optional: when empty
+ * (or referenced posts are unpublished), falls back to recently published
+ * posts — featured-flagged (`featuredInCategory`) first — so the page never
+ * renders an empty hero.
  */
 export function PostFeaturedBlock({
-    featured,
-    latest,
-    latestPostsCount,
+    slides,
+    fallbackLatest,
     showTopBorder,
     showBottomBorder,
 }: BlockProps<PostFeaturedRowBlock>) {
-    const resolvedFeatured = featured ?? latest[0] ?? null;
-    // When no post is pinned, the newest post becomes the hero — drop it from
-    // the "Latest" column so it is not shown twice.
-    const latestPool = featured ? latest : latest.slice(1);
-    const count = Math.min(
-        latestPostsCount ?? FEATURED_RIGHT_RAIL_LIMIT,
-        FEATURED_RIGHT_RAIL_LIMIT,
+    const selected = (slides ?? []).filter(
+        (post): post is HomePostCard => Boolean(post),
     );
-
-    const featuredCard = resolvedFeatured
-        ? toPostCardData(resolvedFeatured, {imageWidth: 900})
-        : null;
-    const latestCards = toPostCardDataList(latestPool).slice(0, count);
+    const pool = selected.length >= 2 ? selected : fallbackLatest;
+    const slideCards = pool
+        .slice(0, HERO_SLIDE_COUNT)
+        .map((post) => toPostCardData(post, {imageWidth: 900}));
     const {borderTop, borderBottom} = resolveDielineBorders(
         showTopBorder,
         showBottomBorder,
         POST_ROW_DIELINE_BORDER_DEFAULTS,
     );
+
+    if (slideCards.length === 0) return null;
 
     return (
         <PageDielineFullBleedSection
@@ -49,12 +49,10 @@ export function PostFeaturedBlock({
             borderBottom={borderBottom}
             innerClassName="py-8 lg:py-16"
         >
-            <PostFeaturedRow
+            <PostFeaturedRotator
                 heading="Featured Posts"
                 headingId="post-featured-block-heading"
-                lead={featuredCard}
-                secondary={latestCards}
-                emptyLeadMessage='No featured post yet. Pin one in Studio with "Feature on blog home".'
+                slides={slideCards}
             />
         </PageDielineFullBleedSection>
     );

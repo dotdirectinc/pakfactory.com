@@ -68,7 +68,7 @@ export default function PackagingHero({
                     src={src}
                     alt={image.alt}
                     fill
-                    className="object-contain object-center drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)] lg:object-right"
+                    className="object-contain object-center lg:object-right"
                     sizes="(max-width: 1024px) 90vw, 42vw"
                     priority
                   />

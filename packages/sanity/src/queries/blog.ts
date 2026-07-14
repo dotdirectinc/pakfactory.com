@@ -285,11 +285,11 @@ export const POPULAR_POSTS_THIS_MONTH_QUERY = /* groq */ `*[
   && publishedAt >= $monthStart
 ] | order(coalesce(viewCount, 0) desc, publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
-/** CMS-pinned hero post from the homepage page builder (`postFeaturedRow.featuredPost`). */
+/** First hero slide from the homepage page builder (`postFeaturedRow.featuredPosts[0]`). */
 export const FEATURED_HOME_POST_QUERY = /* groq */ `*[
   (_type == "blogPage" && _id == $homePageId && (language == $language || !defined(language)))
   || (_type == "blogHomePage" && $language == "en")
-][0].pageBuilder[_type == "postFeaturedRow"][0].featuredPost->${POST_CARD_FIELDS}`;
+][0].pageBuilder[_type == "postFeaturedRow"][0].featuredPosts[0]->${POST_CARD_FIELDS}`;
 
 /** Latest posts for home hero sidebar (excludes featured id when provided). */
 export const LATEST_HOME_POSTS_QUERY = /* groq */ `*[
@@ -308,21 +308,20 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
   showTopBorder,
   showBottomBorder,
   _type == "postFeaturedRow" => {
-    latestPostsCount,
-    "featured": featuredPost->${POST_CARD_FIELDS},
-    "latest": *[
+    "slides": featuredPosts[]->${POST_CARD_FIELDS},
+    "fallbackLatest": *[
       _type == "post"
   && (!defined(language) || language == $language)
       && defined(slug.current)
       && defined(publishedAt)
       && publishedAt <= now()
-      && (^.featuredPost._ref == null || _id != ^.featuredPost._ref)
-    ] | order(publishedAt desc)[0...8]${POST_CARD_FIELDS}
+    ] | order(coalesce(featuredInCategory, false) desc, publishedAt desc)[0...4]${POST_CARD_FIELDS}
   },
   _type == "postCategoryRow" => {
     postsCount,
     "categorySlug": category->slug.current,
     "categoryTitle": category->title,
+    "categoryDescription": pt::text(category->description),
     "posts": *[
       _type == "post"
   && (!defined(language) || language == $language)

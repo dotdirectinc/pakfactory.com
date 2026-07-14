@@ -1,10 +1,10 @@
-import { PostFeaturedRow } from "@/components/modules/post-featured-row";
+import { PostFeaturedRotator } from "@/components/modules/post-featured-rotator";
 import { CategoryLandingSection } from "@/components/views/category-landing-layout";
 import type { HomePostCard } from "@/lib/blog-home";
-import { toPostCardData, toPostCardDataList } from "@/lib/post-card-data";
+import { toPostCardData } from "@/lib/post-card-data";
 
 const DEFAULT_HEADING = "Featured Posts";
-const FEATURED_RIGHT_RAIL_LIMIT = 3;
+const FEATURED_SLIDE_LIMIT = 4;
 
 type PostCategoryFeaturedRowProps = {
   heading?: string;
@@ -13,7 +13,10 @@ type PostCategoryFeaturedRowProps = {
 };
 
 /**
- * Category landing featured band — composes the shared lead + right-rail split.
+ * Category landing featured band — same rotating hero UI as the home page
+ * (modules/post-featured-rotator), fed by the category's own data source:
+ * posts pinned via `featuredInCategory` (unchanged). UI unified 2026-07-14;
+ * data logic deliberately left per-surface.
  */
 export function PostCategoryFeaturedRow({
   heading,
@@ -21,23 +24,16 @@ export function PostCategoryFeaturedRow({
   categorySlug,
 }: PostCategoryFeaturedRowProps) {
   const all = posts ?? [];
-  const leadPost = all[0];
-  if (!leadPost) return null;
+  if (all.length === 0) return null;
 
-  const lead = toPostCardData(leadPost, { categorySlug, imageWidth: 1200 });
-  const secondary = toPostCardDataList(
-    all.slice(1, FEATURED_RIGHT_RAIL_LIMIT + 1),
-    { categorySlug },
-  );
+  const slides = all
+    .slice(0, FEATURED_SLIDE_LIMIT)
+    .map((post) => toPostCardData(post, { categorySlug, imageWidth: 1200 }));
   const sectionHeading = heading?.trim() || DEFAULT_HEADING;
 
   return (
     <CategoryLandingSection innerClassName="py-12">
-      <PostFeaturedRow
-        heading={sectionHeading}
-        lead={lead}
-        secondary={secondary}
-      />
+      <PostFeaturedRotator heading={sectionHeading} slides={slides} />
     </CategoryLandingSection>
   );
 }

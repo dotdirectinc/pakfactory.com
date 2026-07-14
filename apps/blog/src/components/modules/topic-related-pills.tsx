@@ -2,15 +2,9 @@ import Link from "next/link";
 import { Compass } from "lucide-react";
 import type { TagFacet } from "@/lib/blog-tag-archive";
 import { tagHref } from "@/lib/blog-post-url";
+import { TOPIC_CHIP_CLASS } from "@/components/ui/topic-chip";
 
 const MAX_RELATED_TOPICS = 8;
-
-/**
- * POC topic chip — white rounded-full pill with hairline border + soft shadow.
- * Mirrors the POC BlogTopicHeader chip (Figma topic detail header).
- */
-const TOPIC_CHIP_CLASS =
-  "inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] transition-colors hover:border-foreground/30";
 
 type TopicRelatedPillsProps = {
   topics: TagFacet[];

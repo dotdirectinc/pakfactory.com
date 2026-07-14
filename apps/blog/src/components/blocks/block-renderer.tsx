@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import { BLOCK_COMPONENTS } from "@/components/blocks/registry";
+import { Reveal } from "@/components/ui/reveal";
 
 type BlockRendererProps = {
   /** The ordered `pageBuilder` array from a Sanity page document. */
@@ -13,13 +14,17 @@ type BlockRendererProps = {
  * page order. Each item is matched to a component by `_type` via the block
  * registry; an unregistered `_type` renders a dev-only placeholder (and `null`
  * in production) so a missing component never silently drops content.
+ *
+ * Every block after the first is wrapped in `<Reveal>` (one-shot scroll-in
+ * fade/slide per the PROD-1947 motion spec); the leading block — usually the
+ * hero — renders instantly, matching the approved POC.
  */
 export function BlockRenderer({ blocks }: BlockRendererProps) {
   if (!blocks || blocks.length === 0) return null;
 
   return (
     <>
-      {blocks.map((block) => {
+      {blocks.map((block, index) => {
         const Component = BLOCK_COMPONENTS[block._type] as unknown as
           | ComponentType<PageBuilderBlock>
           | undefined;
@@ -30,7 +35,12 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
           ) : null;
         }
 
-        return <Component key={block._key} {...block} />;
+        const rendered = <Component {...block} />;
+        return index === 0 ? (
+          <div key={block._key}>{rendered}</div>
+        ) : (
+          <Reveal key={block._key}>{rendered}</Reveal>
+        );
       })}
     </>
   );

@@ -7,37 +7,55 @@
     /* 1280px matches the POC / Figma inner block (1280 inside a 1440 artboard,
        80px gutters). See docs/pak-brand-token-migration.md §5. */
     --layout-max: 1280px;
-    /* ── Pak brand palette (light) — see docs/pak-brand-token-migration.md §3 ── */
-    --background: #f4f1eb;         /* warm cream */
+    /* ── Pak brand palette (light) — neutral theme per approved blog-poc
+       (warm cream → white migration, 2026-07-14, PROD-1947 design-token work).
+       Previous warm values: bg #f4f1eb · secondary/muted/accent #ece8df ·
+       muted-fg #6e6e6e · border/input #d4cfc4. See docs/pak-brand-token-migration.md §3 ── */
+    --background: #ffffff;         /* white (was warm cream #f4f1eb) */
     --foreground: #1a1a1a;
     --card: #ffffff;
     --card-foreground: #1a1a1a;
     --popover: #ffffff;
     --popover-foreground: #1a1a1a;
-    --primary: #2b5f2d;            /* PakFactory forest green */
+    --primary: #2b5f2d;            /* PakFactory forest green (unchanged) */
     --primary-foreground: #ffffff;
-    --secondary: #ece8df;          /* warm beige */
+    --primary-hover: #245125;      /* primary darkened ~6% */
+    --primary-active: #1f4521;     /* primary darkened ~12% */
+    --secondary: #f5f5f3;          /* neutral grey (was warm beige) */
     --secondary-foreground: #1a1a1a;
-    --muted: #ece8df;
-    --muted-foreground: #6e6e6e;
-    --accent: #ece8df;
+    --muted: #f5f5f3;
+    --muted-foreground: #575757;   /* darker for AA contrast on white */
+    --accent: #f5f5f3;
     --accent-foreground: #1a1a1a;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: #d4cfc4;             /* warm taupe */
-    --input: #d4cfc4;
+    --border: #e5e4e0;             /* neutral (was warm taupe) */
+    --input: #e5e4e0;
     --ring: #2b5f2d;
+
+    /* Primary opacity ramp — hover fills, tints (POC: bg-[var(--opacity-primary-10)]) */
+    --opacity-primary-10: rgba(43, 95, 45, 0.1);
+    --opacity-primary-20: rgba(43, 95, 45, 0.2);
+    --opacity-primary-30: rgba(43, 95, 45, 0.3);
+    --opacity-primary-40: rgba(43, 95, 45, 0.4);
+    --opacity-primary-50: rgba(43, 95, 45, 0.5);
+    --opacity-primary-60: rgba(43, 95, 45, 0.6);
+
+    /* Neutral opacity ramp — overlays, scrims */
+    --opacity-neutral-lighter: rgba(71, 72, 87, 0.1);
+    --opacity-neutral-main: rgba(71, 72, 87, 0.3);
+    --opacity-neutral-darker: rgba(71, 72, 87, 0.6);
     --chart-1: rgb(245 73 0);
     --chart-2: rgb(0 150 137);
     --chart-3: rgb(16 78 100);
     --chart-4: rgb(255 185 0);
     --chart-5: rgb(254 154 0);
-    --sidebar: #f4f1eb;
+    --sidebar: #ffffff;
     --sidebar-foreground: #1a1a1a;
     --sidebar-primary: #2b5f2d;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #ece8df;
+    --sidebar-accent: #f5f5f3;
     --sidebar-accent-foreground: #1a1a1a;
-    --sidebar-border: #d4cfc4;
+    --sidebar-border: #e5e4e0;
     --sidebar-ring: #2b5f2d;
 
     --font-geist-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
@@ -89,6 +107,14 @@
     /* primary gradient (Figma "primary-gradient" fill) */
     --primary-gradient: linear-gradient(135deg, #2b5f2d 0%, #4a8a4d 100%);
 
+    /* ── Motion timing scale (PROD-1947 motion spec) ──
+       fast: chips/small controls · base: hovers · slow: text entrances ·
+       reveal: section reveals + hero crossfade */
+    --motion-fast: 200ms;
+    --motion-base: 300ms;
+    --motion-slow: 500ms;
+    --motion-reveal: 700ms;
+
     /* primary-tinted elevation ladder */
     --shadow-primary-2xs: 0 1px var(--opacity-primary-20);
     --shadow-primary-xs: 0 1px 2px 0 var(--opacity-primary-20);
@@ -101,6 +127,16 @@
     --shadow-primary-xl:
         0 20px 25px -5px var(--opacity-primary-40), 0 8px 10px -6px var(--opacity-primary-40);
     --shadow-primary-2xl: 0 25px 50px -12px var(--opacity-primary-50);
+}
+
+/* ── Wide-screen layout (from approved blog-poc) ─────────────────────────────
+   On monitors 1600px and wider, expand the dieline content column from
+   1280px to 1440px so the page doesn't sit in a sea of empty margin.
+   Laptops and smaller screens keep the 1280px Figma spec. ── */
+@media (min-width: 1600px) {
+    :root {
+        --layout-max: 1440px;
+    }
 }
 
 .dark {
