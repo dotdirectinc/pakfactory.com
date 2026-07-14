@@ -1,17 +1,21 @@
 {
   "name": "@pakfactory/www",
   "version": "0.0.0",
+  "versionCode": 1,
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "next dev --port 3003",
     "build": "next build",
     "start": "next start --port 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pakfactory/sanity": "*",
-    "@pakfactory/ui": "*",
+    "@fontsource-variable/geist": "^5.2.8",
+    "@pakfactory/components": "workspace:*",
+    "@pakfactory/sanity": "workspace:*",
+    "@pakfactory/seo": "workspace:*",
+    "@pakfactory/ui": "workspace:*",
     "@portabletext/react": "^6.0.3",
     "@portabletext/types": "^4.0.2",
     "@sanity/image-url": "^2.1.1",

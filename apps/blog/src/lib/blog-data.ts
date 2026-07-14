@@ -1,0 +1,397 @@
+import { unstable_cache, unstable_noStore as noStore } from "next/cache";
+import { draftMode } from "next/headers";
+import {
+  getPreviewableSanityClient,
+  getPublishedSanityClient,
+  getSanityClient,
+} from "@/lib/sanity/client";
+import {
+  blogLanguageParams,
+  blogNotFoundPageParams,
+  blogSearchPageParams,
+} from "@/lib/blog-language";
+import { isSanityConfigured } from "@/lib/sanity/env";
+import { DEFAULT_BLOG_LANGUAGE } from "@pakfactory/sanity/languages";
+import type { PageBuilderBlock } from "@/components/blocks/registry";
+import { enrichPopularRowBlocks } from "@/lib/page-builder";
+import {
+  BLOG_CATEGORIES_QUERY,
+  BLOG_FOOTER_NAV_QUERY,
+  BLOG_NAV_CATEGORIES_QUERY,
+  BLOG_NOT_FOUND_PAGE_BUILDER_QUERY,
+  BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY,
+  BLOG_SEARCH_PAGE_BUILDER_QUERY,
+  POPULAR_POSTS_LATEST_QUERY,
+  POPULAR_POSTS_THIS_MONTH_QUERY,
+} from "@pakfactory/sanity/queries";
+import {
+  getFallbackFooterData,
+  resolveFooterData,
+  resolveFooterLinkHref,
+  type BlogFooterData,
+  type BlogFooterNavDoc,
+} from "@/lib/blog-footer-nav";
+import {
+  BLOG_REVALIDATE_SECONDS,
+  BLOG_SETTINGS_CACHE_TAG,
+} from "@/lib/blog-cache";
+import {
+  BLOG_CATEGORY_FALLBACK,
+  type BlogCategoryChip,
+} from "@/lib/blog-categories";
+import {
+  getDefaultPrimaryNavHeader,
+  resolveCompanyLogo,
+  resolvePrimaryNavHeader,
+  type BlogPrimaryNavHeader,
+  type BlogPrimaryNavHeaderRow,
+  type BlogPrimaryNavItem,
+} from "@/lib/blog-primary-nav";
+import { categoryHref } from "@/lib/blog-post-url";
+import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
+import type { SanityLinkDocument } from "@pakfactory/sanity/resolve-document-href";
+
+export type PopularPostCard = {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  publishedAt?: string;
+  mainImage?: unknown;
+  categorySlug?: string;
+  categoryTitle?: string;
+  authorName?: string;
+  authorSlug?: string;
+  authorImageUrl?: string;
+  readingTimeMinutes?: number;
+};
+
+export type BlogPrimaryNavData = {
+  navItems: BlogPrimaryNavItem[];
+  header: BlogPrimaryNavHeader;
+};
+
+type BlogNavCategoryRef = {
+  _id?: string;
+  title?: string | null;
+  navLabel?: string | null;
+  slug?: string | null;
+  language?: string | null;
+};
+
+type BlogNavItemRow = {
+  _type?: string | null;
+  _key?: string | null;
+  category?: BlogNavCategoryRef | null;
+  label?: string | null;
+  linkType?: string | null;
+  externalUrl?: string | null;
+  internalLink?: SanityLinkDocument | null;
+};
+
+type BlogNavSettingsDoc = {
+  _id?: string;
+  categories?: (BlogNavItemRow | null)[] | null;
+  header?: BlogPrimaryNavHeaderRow;
+} | null;
+
+function resolvePrimaryNavItems(
+  doc: BlogNavSettingsDoc,
+  language: string = DEFAULT_BLOG_LANGUAGE,
+): BlogPrimaryNavItem[] {
+  if (!doc?._id) return [];
+
+  const items: BlogPrimaryNavItem[] = [];
+
+  for (const row of doc.categories ?? []) {
+    if (!row) continue;
+
+    const category = row.category;
+    if (category?.slug?.trim() && category?.title?.trim()) {
+      if ((category.language ?? language) !== language) continue;
+      items.push({
+        key: category._id ?? row._key ?? category.slug,
+        label: category.navLabel?.trim() || category.title,
+        href: categoryHref(category.slug),
+        categorySlug: category.slug,
+      });
+      continue;
+    }
+
+    if (row.linkType) {
+      const resolved = resolveFooterLinkHref(row);
+      if (!resolved) continue;
+      items.push({
+        key: row._key ?? resolved.href,
+        label: resolved.label,
+        href: resolved.href,
+        ...(resolved.external ? { external: true } : {}),
+      });
+    }
+  }
+
+  return items;
+}
+
+function resolvePrimaryNav(
+  doc: BlogNavSettingsDoc,
+  language: string = DEFAULT_BLOG_LANGUAGE,
+  companyLogo?: ReturnType<typeof resolveCompanyLogo>,
+): BlogPrimaryNavData {
+  const header = resolvePrimaryNavHeader(doc?.header ?? undefined);
+  return {
+    navItems: resolvePrimaryNavItems(doc, language),
+    header: {
+      ...header,
+      logo: companyLogo,
+    },
+  };
+}
+
+function monthStartIso(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
+async function loadBlogPrimaryNavFromClient(
+  fetchDoc: () => Promise<BlogNavSettingsDoc>,
+  language: string = DEFAULT_BLOG_LANGUAGE,
+): Promise<BlogPrimaryNavData> {
+  if (!isSanityConfigured()) {
+    return {
+      navItems: [],
+      header: getDefaultPrimaryNavHeader(),
+    };
+  }
+  const [doc, globalSettings] = await Promise.all([
+    fetchDoc().catch(() => null),
+    fetchBlogGlobalSettings(),
+  ]);
+  return resolvePrimaryNav(
+    doc,
+    language,
+    resolveCompanyLogo(globalSettings),
+  );
+}
+
+async function loadPublishedBlogPrimaryNav(): Promise<BlogPrimaryNavData> {
+  const params = blogLanguageParams();
+  return loadBlogPrimaryNavFromClient(
+    () =>
+      getPublishedSanityClient().fetch<BlogNavSettingsDoc>(
+        BLOG_NAV_CATEGORIES_QUERY,
+        params,
+      ),
+    params.language,
+  );
+}
+
+const getCachedBlogPrimaryNav = unstable_cache(
+  loadPublishedBlogPrimaryNav,
+  ["blog-nav-categories"],
+  {
+    revalidate: BLOG_REVALIDATE_SECONDS,
+    tags: [BLOG_SETTINGS_CACHE_TAG],
+  },
+);
+
+export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
+  if (!isSanityConfigured()) {
+    return [...BLOG_CATEGORY_FALLBACK];
+  }
+  const rows = await (await getSanityClient())
+    .fetch<BlogCategoryChip[]>(BLOG_CATEGORIES_QUERY, blogLanguageParams())
+    .catch(() => []);
+  if (rows.length > 0) return rows;
+  return [...BLOG_CATEGORY_FALLBACK];
+}
+
+export type TopicChip = { _id?: string; title: string; slug: string };
+
+export type BlogNotFoundContent = {
+  topics: TopicChip[];
+  blocks: PageBuilderBlock[];
+};
+
+export type BlogSearchContent = {
+  topics: TopicChip[];
+  blocks: PageBuilderBlock[];
+};
+
+/**
+ * 404 page content — the `blogNotFoundPage` singleton's curated recovery topics
+ * (falling back to the newest topics when none are curated) and page-builder blocks.
+ */
+export async function fetchBlogNotFoundPage(): Promise<BlogNotFoundContent> {
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+  if (!isSanityConfigured()) return { topics: [], blocks: [] };
+  const client = await getPreviewableSanityClient();
+  const page = await client
+    .fetch<{
+      topics?: TopicChip[];
+      pageBuilder?: PageBuilderBlock[] | null;
+    } | null>(BLOG_NOT_FOUND_PAGE_BUILDER_QUERY, blogNotFoundPageParams())
+    .catch(() => null);
+
+  let topics = (page?.topics ?? []).filter((t) => t?.slug);
+  if (topics.length === 0) {
+    const fallback = await client
+      .fetch<TopicChip[]>(BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY, blogLanguageParams())
+      .catch(() => []);
+    topics = (fallback ?? []).filter((t) => t?.slug);
+  }
+
+  const blocks = await enrichPopularRowBlocks(page?.pageBuilder);
+
+  return {
+    topics,
+    blocks,
+  };
+}
+
+/**
+ * Search page content — the `blogSearchPage` singleton's curated recommended
+ * topics (falling back to newest topics) and page-builder blocks. Content source
+ * for the reserved `/search` route; not slug-routable.
+ */
+export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+  if (!isSanityConfigured()) return { topics: [], blocks: [] };
+  const client = await getPreviewableSanityClient();
+  const page = await client
+    .fetch<{
+      topics?: TopicChip[];
+      pageBuilder?: PageBuilderBlock[] | null;
+    } | null>(BLOG_SEARCH_PAGE_BUILDER_QUERY, blogSearchPageParams())
+    .catch(() => null);
+
+  let topics = (page?.topics ?? []).filter((t) => t?.slug);
+  if (topics.length === 0) {
+    const fallback = await client
+      .fetch<TopicChip[]>(BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY, blogLanguageParams())
+      .catch(() => []);
+    topics = (fallback ?? []).filter((t) => t?.slug);
+  }
+
+  const blocks = await enrichPopularRowBlocks(page?.pageBuilder);
+
+  return {
+    topics,
+    blocks,
+  };
+}
+
+/**
+ * Primary nav — category strip order plus header CTA from Blog Navigation
+ * `primaryNavigation`, and company logo from Global Settings → Company.
+ * Categories are only what editors configured (empty when unset). Header CTA
+ * falls back to the built-in "Contact Us" → /contribute when unset. Company
+ * logo falls back to the built-in Box + PakFactory wordmark when unset.
+ */
+export async function fetchBlogNavCategories(): Promise<BlogPrimaryNavData> {
+  if (!isSanityConfigured()) {
+    return {
+      navItems: [],
+      header: getDefaultPrimaryNavHeader(),
+    };
+  }
+
+  if ((await draftMode()).isEnabled) {
+    const client = await getSanityClient();
+    const params = blogLanguageParams();
+    return loadBlogPrimaryNavFromClient(
+      () =>
+        client.fetch<BlogNavSettingsDoc>(BLOG_NAV_CATEGORIES_QUERY, params),
+      params.language,
+    );
+  }
+
+  return getCachedBlogPrimaryNav();
+}
+
+async function loadBlogFooterNavigationFromClient(
+  fetchDoc: () => Promise<BlogFooterNavDoc>,
+): Promise<BlogFooterData> {
+  if (!isSanityConfigured()) {
+    return getFallbackFooterData();
+  }
+
+  const doc = await fetchDoc().catch(() => null);
+  return resolveFooterData(doc);
+}
+
+async function loadPublishedBlogFooterNavigation(): Promise<BlogFooterData> {
+  return loadBlogFooterNavigationFromClient(() =>
+    getPublishedSanityClient().fetch<BlogFooterNavDoc>(
+      BLOG_FOOTER_NAV_QUERY,
+    ),
+  );
+}
+
+const getCachedBlogFooterNavigation = unstable_cache(
+  loadPublishedBlogFooterNavigation,
+  ["blog-footer-navigation"],
+  {
+    revalidate: BLOG_REVALIDATE_SECONDS,
+    tags: [BLOG_SETTINGS_CACHE_TAG],
+  },
+);
+
+/**
+ * Footer link columns, social links, and AI answer links from Blog Navigation.
+ * When the `blogNavigation` document exists, empty sections render empty.
+ * Full hardcoded defaults apply only when Sanity is unconfigured, the fetch
+ * fails, or the document is missing.
+ */
+export async function fetchBlogFooterNavigation(): Promise<BlogFooterData> {
+  if (!isSanityConfigured()) {
+    return getFallbackFooterData();
+  }
+
+  if ((await draftMode()).isEnabled) {
+    const client = await getSanityClient();
+    return loadBlogFooterNavigationFromClient(() =>
+      client.fetch<BlogFooterNavDoc>(BLOG_FOOTER_NAV_QUERY),
+    );
+  }
+
+  return getCachedBlogFooterNavigation();
+}
+
+export async function fetchPopularPostsThisMonth(): Promise<PopularPostCard[]> {
+  if (!isSanityConfigured()) return [];
+
+  const client = await getSanityClient();
+  const monthStart = monthStartIso();
+
+  const thisMonth = await client
+    .fetch<PopularPostCard[]>(
+      POPULAR_POSTS_THIS_MONTH_QUERY,
+      blogLanguageParams({ monthStart }),
+    )
+    .catch(() => []);
+
+  if (thisMonth.length >= 3) return thisMonth.slice(0, 3);
+
+  const latest = await client
+    .fetch<PopularPostCard[]>(
+      POPULAR_POSTS_LATEST_QUERY,
+      blogLanguageParams(),
+    )
+    .catch(() => []);
+
+  const seen = new Set(thisMonth.map((p) => p._id));
+  const merged = [...thisMonth];
+  for (const post of latest) {
+    if (merged.length >= 3) break;
+    if (!seen.has(post._id)) {
+      seen.add(post._id);
+      merged.push(post);
+    }
+  }
+  return merged.slice(0, 3);
+}

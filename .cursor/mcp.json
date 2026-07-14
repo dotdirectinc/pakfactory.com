@@ -9,6 +9,15 @@
       "command": "npx",
       "args": ["-y", "shadcn-studio-mcp@latest"],
       "cwd": "${workspaceFolder}/packages/ui"
+    },
+    "figma": {
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "ctx7sk-527b2402-5c40-4623-9396-341015c401fb"
+      }
     }
   }
 }

@@ -1,6 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "NEXT_PUBLIC_SANITY_PROJECT_ID",
+    "NEXT_PUBLIC_SANITY_DATASET",
+    "NEXT_PUBLIC_SANITY_API_VERSION",
+    "NEXT_PUBLIC_SANITY_STUDIO_URL",
+    "SANITY_API_READ_TOKEN",
+    "SANITY_STUDIO_PROJECT_ID",
+    "SANITY_STUDIO_DATASET",
+    "SANITY_STUDIO_PREVIEW_URL",
+    "PORT"
+  ],
   "tasks": {
     "dev": {
       "cache": false,
@@ -13,7 +24,11 @@
         "SANITY_API_READ_TOKEN",
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
-        "SANITY_STUDIO_PREVIEW_URL"
+        "SANITY_STUDIO_PREVIEW_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "CONTRIBUTE_WEBHOOK_URL",
+        "NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL",
+        "PORT"
       ]
     },
     "build": {
@@ -24,10 +39,55 @@
         "NEXT_PUBLIC_SANITY_DATASET",
         "NEXT_PUBLIC_SANITY_API_VERSION",
         "NEXT_PUBLIC_SANITY_STUDIO_URL",
+        "NEXT_PUBLIC_SITE_URL",
         "SANITY_API_READ_TOKEN",
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL"
+      ]
+    },
+    "@pakfactory/www#build": {
+      "dependsOn": [
+        "@pakfactory/sanity#typecheck",
+        "@pakfactory/ui#typecheck"
+      ],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET",
+        "NEXT_PUBLIC_SANITY_API_VERSION",
+        "NEXT_PUBLIC_SANITY_STUDIO_URL",
+        "SANITY_STUDIO_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "SANITY_API_READ_TOKEN",
+        "SANITY_STUDIO_PROJECT_ID",
+        "SANITY_STUDIO_DATASET",
+        "SANITY_STUDIO_PREVIEW_URL",
+        "SANITY_REVALIDATE_SECRET",
+        "WWW_DISABLE_INDEXING"
+      ]
+    },
+    "@pakfactory/blog#build": {
+      "dependsOn": [
+        "@pakfactory/seo#typecheck",
+        "@pakfactory/sanity#typecheck",
+        "@pakfactory/ui#typecheck"
+      ],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET",
+        "NEXT_PUBLIC_SANITY_API_VERSION",
+        "NEXT_PUBLIC_SANITY_STUDIO_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_BLOG_BASE_PATH",
+        "SANITY_API_READ_TOKEN",
+        "SANITY_STUDIO_PROJECT_ID",
+        "SANITY_STUDIO_DATASET",
+        "SANITY_STUDIO_PREVIEW_URL",
+        "SANITY_REVALIDATE_SECRET",
+        "CONTRIBUTE_WEBHOOK_URL",
+        "NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL"
       ]
     },
     "lint": {},

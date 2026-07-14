@@ -1,5 +1,5 @@
-import { getSanityClient } from "@/sanity/client";
-import { isSanityConfigured } from "@/sanity/env";
+import { getSanityClient } from "@/lib/sanity/client";
+import { isSanityConfigured } from "@/lib/sanity/env";
 import { PRODUCT_PAGE_SLUGS_QUERY } from "@pakfactory/sanity/queries";
 
 export type ProductProgramRow = { slug: string; title: string };

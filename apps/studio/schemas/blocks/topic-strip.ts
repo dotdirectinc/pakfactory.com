@@ -1,0 +1,55 @@
+import { defineField, defineType } from 'sanity'
+import { TagIcon } from '@sanity/icons'
+import { BlockItemPreview } from '../../components/BlockItemPreview'
+import {
+  dielineBorderFields,
+  dielineBorderPreviewSubtitle,
+} from '../../lib/dieline-border-fields'
+
+/**
+ * topicStrip — curated topic chips with an "Explore topics" pill (404/search parity).
+ * Page-builder block (apps/blog components/blocks/topic-strip).
+ */
+export const topicStrip = defineType({
+  name: 'topicStrip',
+  title: 'Topic Strip',
+  type: 'object',
+  icon: TagIcon,
+  fields: [
+    defineField({
+      name: 'heading',
+      title: 'Heading',
+      type: 'string',
+      description: 'Label above the chips, e.g. "Browse by topic".',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'topics',
+      title: 'Topics',
+      type: 'array',
+      description:
+        'Leave empty to automatically show all topics that have published posts (A–Z). Add topics to curate a specific set in display order.',
+      of: [{ type: 'reference', to: [{ type: 'blogTag' }] }],
+    }),
+    ...dielineBorderFields(),
+  ],
+  preview: {
+    select: {
+      heading: 'heading',
+      count: 'topics.length',
+      showTopBorder: 'showTopBorder',
+      showBottomBorder: 'showBottomBorder',
+    },
+    prepare({ heading, count, showTopBorder, showBottomBorder }) {
+      const borders = dielineBorderPreviewSubtitle(showTopBorder, showBottomBorder)
+      const topics = count
+        ? `${count} topic${count === 1 ? '' : 's'}`
+        : 'All topics (auto)'
+      return {
+        title: heading || 'Topic Strip',
+        subtitle: [topics, borders].filter(Boolean).join(' · '),
+      }
+    },
+  },
+  components: { preview: BlockItemPreview },
+})

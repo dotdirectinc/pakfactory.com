@@ -8,15 +8,94 @@ export const POSTS_QUERY = /* groq */ `*[_type == "post" && defined(slug.current
   "author": author->{name, "slug": slug.current}
 }`;
 
-export const POST_BY_SLUG_QUERY = /* groq */ `*[_type == "post" && slug.current == $slug][0]{
-  _id,
-  title,
-  "slug": slug.current,
-  body,
-  publishedAt,
-  mainImage,
-  "author": author->{name, "slug": slug.current, image}
-}`;
+export {
+    BLOG_ALL_POSTS_COUNT_QUERY,
+    BLOG_ALL_POSTS_PAGE_QUERY,
+    BLOG_GLOBAL_SETTINGS_QUERY,
+    BLOG_NAV_CATEGORIES_QUERY,
+    BLOG_FOOTER_NAV_QUERY,
+    BLOG_SETTINGS_QUERY,
+    BLOG_HOME_PAGE_BUILDER_QUERY,
+    BLOG_TOPICS_PAGE_BUILDER_QUERY,
+    BLOG_PAGE_BY_SLUG_QUERY,
+    BLOG_LANDING_PAGES_SITEMAP_QUERY,
+    BLOG_CATEGORY_AUTHORS_FACET_QUERY,
+    BLOG_CATEGORY_BY_SLUG_QUERY,
+    BLOG_CATEGORY_FEATURED_POSTS_QUERY,
+    BLOG_CATEGORY_POSTS_COUNT_QUERY,
+    BLOG_CATEGORY_POSTS_PAGE_NEWEST_QUERY,
+    BLOG_CATEGORY_POSTS_PAGE_OLDEST_QUERY,
+    BLOG_CATEGORY_POSTS_PAGE_TITLE_QUERY,
+    BLOG_CATEGORY_TAGS_FACET_QUERY,
+    BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
+    BLOG_SEARCH_POSTS_COUNT_QUERY,
+    BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY,
+    BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY,
+    BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY,
+    POST_BY_SLUG_QUERY,
+    POST_BY_CATEGORY_AND_SLUG_QUERY,
+    BLOG_CATEGORIES_QUERY,
+    BLOG_NOT_FOUND_PAGE_QUERY,
+    BLOG_NOT_FOUND_PAGE_BUILDER_QUERY,
+    BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY,
+    BLOG_SEARCH_PAGE_BUILDER_QUERY,
+    BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY,
+    BLOG_REDIRECTS_QUERY,
+    BLOG_RSS_POSTS_QUERY,
+    BLOG_SITEMAP_POSTS_QUERY,
+    BLOG_TAG_BY_SLUG_QUERY,
+    BLOG_TAG_POSTS_COUNT_QUERY,
+    BLOG_TAG_POSTS_PAGE_NEWEST_QUERY,
+    BLOG_TAG_POSTS_PAGE_OLDEST_QUERY,
+    BLOG_TAG_POSTS_PAGE_TITLE_QUERY,
+    BLOG_TAG_POSTS_PAGE_UPDATED_QUERY,
+    BLOG_TAG_POSTS_PAGE_POPULAR_QUERY,
+    BLOG_TAG_COOCCURRING_TAGS_QUERY,
+    BLOG_TAG_AUTHORS_FACET_QUERY,
+    AUTHOR_BY_SLUG_QUERY,
+    AUTHOR_POSTS_COUNT_QUERY,
+    AUTHOR_POSTS_PAGE_QUERY,
+    AUTHORS_FOR_SITEMAP_QUERY,
+    CATEGORIES_FOR_SITEMAP_QUERY,
+    TAGS_FOR_SITEMAP_QUERY,
+    BLOG_SITEMAP_POST_COUNT_QUERY,
+    BLOG_SITEMAP_TAG_COUNT_QUERY,
+    BLOG_SITEMAP_POSTS_PAGE_QUERY,
+    BLOG_SITEMAP_TAGS_PAGE_QUERY,
+    FEATURED_HOME_POST_QUERY,
+    INDUSTRIES_FOR_BLOG_HOME_QUERY,
+    BLOG_INDUSTRY_TAGS_QUERY,
+    LATEST_HOME_POSTS_QUERY,
+    POPULAR_POSTS_THIS_MONTH_QUERY,
+    POPULAR_POSTS_LATEST_QUERY,
+    POSTS_BY_CATEGORY_SLUG_QUERY,
+} from './queries/blog';
+
+export {
+    CASE_STUDIES_LISTING_QUERY,
+    CASE_STUDIES_PAGE_QUERY,
+    CASE_STUDY_BY_SLUG_QUERY,
+    CASE_STUDY_PATHS_QUERY,
+    CASE_STUDY_SITEMAP_QUERY,
+    CASE_STUDY_FILTER_OPTIONS_QUERY,
+    type CaseStudiesPageData,
+    type CaseStudyCard,
+    type CaseStudyDetail,
+    type CaseStudyPath,
+    type CaseStudyHighlight,
+    type CaseStudyTaxonomyItem,
+    type CaseStudyClientCard,
+    type CaseStudyClientDetail,
+    type CaseStudyHeroMedia,
+    type CaseStudySitemapEntry,
+    type CaseStudyFilterOptions,
+} from './queries/case-studies';
+
+export {
+    CASE_STUDY_RESERVED_SLUGS,
+    isBlockedCaseStudySlug,
+    type CaseStudyReservedSlug,
+} from './case-study-reserved-slugs';
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
@@ -101,7 +180,8 @@ export const PRODUCT_PAGE_BY_SLUG_QUERY = /* groq */ `*[_type == "productPage" &
 /** Unique `productCollection` IDs from products on this `productPage` (one collection per product). */
 const productCollectionRefsForPageIdExpr = /* groq */ `array::unique(*[_type == "product" && primaryLandingPage._ref == $pageId && defined(primaryCollection._ref)].primaryCollection._ref)`;
 
-export const PRODUCT_COLLECTION_REFS_FOR_PAGE_ID_QUERY = productCollectionRefsForPageIdExpr;
+export const PRODUCT_COLLECTION_REFS_FOR_PAGE_ID_QUERY =
+    productCollectionRefsForPageIdExpr;
 
 /** `productCollection` rows from products on this landing page; use published id for `$pageId`. */
 export const PRODUCT_COLLECTIONS_FROM_PRODUCTS_FOR_PAGE_ID_QUERY = /* groq */ `*[_type == "productCollection" && _id in ${productCollectionRefsForPageIdExpr}] | order(title asc) {

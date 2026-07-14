@@ -4,6 +4,7 @@ node_modules
 # Next.js
 .next
 out
+next-env.d.ts
 
 # Build
 dist
@@ -21,6 +22,7 @@ dist
 
 # Sanity
 sanity.schema.json
+.sanity/
 
 # OS
 .DS_Store
@@ -29,3 +31,15 @@ Thumbs.db
 # IDE
 .vscode
 !.vscode/settings.json
+
+# Lockfiles — pnpm is the package manager for this monorepo.
+# The root pnpm-lock.yaml MUST be committed; npm/yarn lockfiles are never allowed
+# (applies in every dir, so this also ignores apps/*/package-lock.json).
+package-lock.json
+yarn.lock
+
+.claude/training/*
+docs/*
+
+apps/studio/backup
+backups/

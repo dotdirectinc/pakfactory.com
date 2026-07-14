@@ -1,10 +1,6 @@
 {
   "name": "pakfactory-sanity-poc",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo run dev",
     "dev:www": "turbo run dev --filter=@pakfactory/www",
@@ -16,16 +12,43 @@
     "build:studio": "turbo run build --filter=@pakfactory/studio",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "seed:demo": "npm run seed:demo --workspace=@pakfactory/sanity",
-    "migrate:product-single-refs": "npm run migrate:product-single-refs --workspace=@pakfactory/sanity",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "versions:apps": "pnpm --filter @pakfactory/www pkg get name version versionCode && pnpm --filter @pakfactory/blog pkg get name version versionCode && pnpm --filter @pakfactory/studio pkg get name version versionCode",
+    "seed:demo": "pnpm --filter @pakfactory/sanity run seed:demo",
+    "seed:blog-dev": "pnpm --filter @pakfactory/studio run seed:blog-dev",
+    "migrate:product-single-refs": "pnpm --filter @pakfactory/sanity run migrate:product-single-refs",
+    "update:llms-txt": "pnpm --filter @pakfactory/sanity run update:llms-txt",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "sanity:switch:dev": "node scripts/sanity/switch-dataset.mjs development",
+    "sanity:switch:prod": "node scripts/sanity/switch-dataset.mjs production",
+    "sanity:backup:dev": "node scripts/sanity/backup.mjs development",
+    "sanity:backup:prod": "node scripts/sanity/backup.mjs production",
+    "sanity:restore:dev": "node scripts/sanity/restore.mjs development",
+    "sanity:restore:prod": "node scripts/sanity/restore.mjs production",
+    "sanity:diff": "node scripts/sanity/diff-datasets.mjs",
+    "sanity:sync-prod-to-dev": "node scripts/sanity/sync-prod-to-dev.mjs",
+    "sanity:backup:delta": "node scripts/sanity/backup-delta.mjs",
+    "sanity:restore:delta:dev": "node scripts/sanity/restore-delta.mjs development",
+    "sanity:restore:delta:prod": "node scripts/sanity/restore-delta.mjs production",
+    "sanity:deploy": "pnpm --filter @pakfactory/studio run deploy",
+    "sanity:deploy:prod": "SANITY_STUDIO_DATASET=production pnpm --filter @pakfactory/studio run deploy",
+    "sanity:deploy:dev": "SANITY_STUDIO_DATASET=development pnpm --filter @pakfactory/studio run deploy"
   },
   "devDependencies": {
+    "@pakfactory/sanity": "workspace:^",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"
   },
   "engines": {
     "node": ">=20.19"
   },
-  "packageManager": "npm@10.9.2"
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "overrides": {
+      "@sanity/client": "7.22.1"
+    }
+  },
+  "dependencies": {
+    "@sanity/blueprints": "^0.21.0",
+    "dotenv": "^16.6.1"
+  }
 }

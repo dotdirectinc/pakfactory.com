@@ -1,0 +1,112 @@
+import { capabilityCategory } from './capabilityCategory'
+import { socialLink } from '../lib/social-link-schema'
+import { capabilityType } from './capabilityType'
+import { capability } from './capability'
+import { attributeGroup } from './attributeGroup'
+import { attribute } from './attribute'
+import { productCategory } from './productCategory'
+import { productStyleCategory } from './productStyleCategory'
+import { industry } from './industry'
+import { industryCategory } from './industryCategory'
+import { useCase } from './useCase'
+import { product } from './product'
+import { author } from './author'
+import { blogCategory } from './blogCategory'
+import { blogTopicGroup } from './blogTopicGroup'
+import { blogTag } from './blogTag'
+import { bodyImage } from './bodyImage'
+import { inlineBlocks, caseStudyInlineBlocks } from './inline'
+import { contentWidget } from './contentWidget'
+import { widgetEmbed } from './widgetEmbed'
+import { solution } from './solution'
+import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticPages'
+import { expertiseStage } from './expertiseStage'
+import { client } from './client'
+import { caseStudy } from './caseStudy'
+import { caseStudiesPage } from './caseStudiesPage'
+import { glossaryTerm, guide, helpArticle } from './resources'
+import { blogNavigation } from './blogNavigation'
+import { blogSettings } from './blogSettings'
+import { blogPage } from './blogPage'
+import { solutionsSettings } from './solutionsSettings'
+import { page } from './page'
+import { post } from './post'
+import { videoPost } from './videoPost'
+import { redirect } from './redirect'
+import { settings } from './settings'
+import {
+  pageBuilderBlocks,
+  pageBuilder,
+  pageBuilderHome,
+  pageBuilderLanding,
+  pageBuilderFooter,
+} from './blocks'
+
+export const schemaTypes = [
+  // Shared objects
+  socialLink,
+
+  // Customization layer
+  capabilityCategory,
+  capabilityType,
+  capability,
+
+  // Attribute layer
+  attributeGroup,
+  attribute,
+
+  // Product taxonomy
+  productCategory,
+  productStyleCategory,
+  industry,
+  industryCategory,
+  useCase,
+
+  // Product layer
+  product,
+
+  // Solutions & Core Entities
+  solution,
+  expertiseStage,
+  client,
+  caseStudy,
+  caseStudiesPage,
+  solutionsSettings,
+
+  // Resources
+  glossaryTerm,
+  guide,
+  helpArticle,
+
+  // Editorial
+  author,
+  blogCategory,
+  blogTopicGroup,
+  blogTag,
+  bodyImage,
+  ...inlineBlocks,
+  ...caseStudyInlineBlocks,
+  contentWidget,
+  widgetEmbed,
+  page,
+  post,
+  videoPost,
+  redirect,
+
+  // Page builder
+  ...pageBuilderBlocks,
+  pageBuilder,
+  pageBuilderHome,
+  pageBuilderLanding,
+  pageBuilderFooter,
+
+  // Singletons
+  settings,
+  blogNavigation,
+  blogSettings,
+  blogPage,
+  aboutPage,
+  contactPage,
+  privacyPolicy,
+  termsOfService,
+]

@@ -5,9 +5,11 @@ alwaysApply: true
 
 # Workspace instructions
 
-Follow **[AGENTS.md](../../AGENTS.md)** at the repository root for all product, engineering, collaboration, and **MCP** defaults (including Context7 via `resolve-library-id` then `query-docs`), when that file exists.
+Follow **[AGENTS.md](../../AGENTS.md)** at the repository root for all product, engineering, collaboration, and **MCP** defaults (including Context7 via `resolve-library-id` then `query-docs`).
 
-Do not contradict `AGENTS.md`. If something tool-specific is needed, keep it minimal here and expand only in `AGENTS.md`.
+Do not contradict `AGENTS.md`. Blog 3.0 ticket → code map: **[docs/blog-3-jira-conventions.md](../../docs/blog-3-jira-conventions.md)**. If something tool-specific is needed, keep it minimal here and expand only in `AGENTS.md`.
+
+**Before building, read the ADRs.** Decisions are tool-agnostic and live in the register at **[docs/adr/README.md](../../docs/adr/README.md)** (e.g. ADR-005 component organization, ADR-006 design tokens) — the *same* canon Claude Code follows. Using Cursor never changes the rules; if a task would contradict an ADR, stop and flag it rather than diverging. See `AGENTS.md` § "Decision compliance".
 
 ## Preserve shared UI primitives (no preemptive changes)
 
