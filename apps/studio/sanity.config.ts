@@ -32,6 +32,8 @@ import { ProductStyleCategoryProductsView } from './components/ProductStyleCateg
 import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
+const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
+const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` : ''
 
 // ── Presentation (live site preview) ─────────────────────────────────────────
 // Per-workspace: the Website workspace previews apps/www, Blog previews apps/blog.
@@ -205,17 +207,13 @@ const makeNewDocumentOptions =
   }
 
 export default defineConfig([
-  // ══════════════════════════════════════════════════════════════════════════
-  // PRODUCTION workspaces — always point at the live dataset
-  // ══════════════════════════════════════════════════════════════════════════
-
-  // ── Admin — full access ───────────────────────────────────────────────────
+  // ── Admin — full access (default workspace at /) ───────────────────────────
   {
     name: 'admin',
-    title: 'Global',
+    title: `Global${datasetSuffix}`,
     basePath: '/admin',
     projectId,
-    dataset: 'production',
+    dataset,
     schema,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
@@ -227,13 +225,13 @@ export default defineConfig([
     ],
   },
 
-  // ── Blog — editorial team ─────────────────────────────────────────────────
+  // ── Blog — editorial team ──────────────────────────────────────────────────
   {
     name: 'blog',
-    title: 'Blog',
+    title: `Blog${datasetSuffix}`,
     basePath: '/blog',
     projectId,
-    dataset: 'production',
+    dataset,
     schema,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions('blog') },
     plugins: [
@@ -261,10 +259,10 @@ export default defineConfig([
   // ── Website — marketing / web team ────────────────────────────────────────
   {
     name: 'website',
-    title: 'Marketing Website',
+    title: `Marketing Website${datasetSuffix}`,
     basePath: '/website',
     projectId,
-    dataset: 'production',
+    dataset,
     schema,
     plugins: [
       structureTool({ structure: websiteStructure, defaultDocumentNode }),
@@ -287,89 +285,7 @@ export default defineConfig([
     ],
   },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // DEVELOPMENT workspaces — safe sandbox, always separate from production
-  // ══════════════════════════════════════════════════════════════════════════
-
-  // ── Admin [DEV] ───────────────────────────────────────────────────────────
-  {
-    name: 'admin-dev',
-    title: 'Global [DEV]',
-    basePath: '/admin-dev',
-    projectId,
-    dataset: 'development',
-    schema,
-    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
-    plugins: [
-      structureTool({ structure: adminStructure, defaultDocumentNode }),
-      blogI18nPlugin,
-      colorInput(),
-      media(),
-      visionTool(),
-    ],
-  },
-
-  // ── Blog [DEV] ────────────────────────────────────────────────────────────
-  {
-    name: 'blog-dev',
-    title: 'Blog [DEV]',
-    basePath: '/blog-dev',
-    projectId,
-    dataset: 'development',
-    schema,
-    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions('blog') },
-    plugins: [
-      structureTool({ structure: blogStructure, defaultDocumentNode }),
-      blogI18nPlugin,
-      presentationTool({
-        name: 'presentation',
-        title: 'Presentation',
-        previewUrl: {
-          origin: BLOG_PREVIEW_ORIGIN,
-          previewMode: { enable: '/api/draft-mode/enable' },
-        },
-        allowOrigins: [
-          'http://localhost:3003',
-          'https://pakfactory-blog.vercel.app',
-        ],
-        resolve: { locations: blogLocations },
-      }),
-      colorInput(),
-      media(),
-      visionTool(),
-    ],
-  },
-
-  // ── Website [DEV] — marketing / web team ──────────────────────────────────
-  {
-    name: 'website-dev',
-    title: 'Marketing Website [DEV]',
-    basePath: '/website-dev',
-    projectId,
-    dataset: 'development',
-    schema,
-    plugins: [
-      structureTool({ structure: websiteStructure, defaultDocumentNode }),
-      presentationTool({
-        name: 'presentation',
-        title: 'Presentation',
-        previewUrl: {
-          origin: WWW_PREVIEW_ORIGIN,
-          previewMode: { enable: '/api/draft-mode/enable' },
-        },
-        allowOrigins: [
-          'http://localhost:3000',
-          'https://pakfactory-com-www.vercel.app',
-        ],
-        resolve: { locations: websiteLocations },
-      }),
-      colorInput(),
-      media(),
-      visionTool(),
-    ],
-  },
-
-  // ── Solutions — add back when Solutions workflow is defined ───────────────
+  // ── Solutions — add back when Solutions workflow is defined ──────────────
   // { name: 'solutions', title: 'Solutions', basePath: '/solutions', ... }
 
   // ── Academy — add back when Academy schema is built ───────────────────────
