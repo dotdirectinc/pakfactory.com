@@ -153,7 +153,7 @@ jobs:
       # ── Sync production → development ──────────────────────────────────────
       - name: Sync production → development
         env:
-          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_API_WRITE_TOKEN }}
         run: |
           npx sanity@latest dataset import "$BACKUP_FILE" --dataset development \
             --replace \
