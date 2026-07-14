@@ -7,12 +7,15 @@ name: Promote staging → main (auto PR)
 # • If a promotion PR is already open (and not yet merged), REUSE it — just
 #   refresh the title/summary with the latest set of included PRs + commits.
 #
-# Token: prefers a PAT in `secrets.PROMOTE_PAT` so the opened PR triggers the
-# required "Only staging can merge into main" check (enforce-branch-flow.yml runs
-# on pull_request_target, which the default GITHUB_TOKEN does NOT trigger). Falls
-# back to GITHUB_TOKEN with a warning in the PR body. If you use the fallback,
-# also enable Settings → Actions → General → "Allow GitHub Actions to create and
-# approve pull requests".
+# Token: the default GITHUB_TOKEN is sufficient — no PAT required. main's required
+# checks are `ci-success` and `Validate branch name`, and BOTH also run on `push`
+# to staging, so they are already stamped on the staging commit that this PR
+# points at (a PR opened by GITHUB_TOKEN does not fire `pull_request`, but inherits
+# those statuses). The promotion PR still needs manual approval before merge.
+#
+# One repo setting is required: Settings → Actions → General →
+# "Allow GitHub Actions to create and approve pull requests" must be enabled so the
+# Action can open the PR.
 
 on:
   push:
@@ -44,8 +47,7 @@ jobs:
 
       - name: Create or update promotion PR
         env:
-          GH_TOKEN: ${{ secrets.PROMOTE_PAT || secrets.GITHUB_TOKEN }}
-          USING_PAT: ${{ secrets.PROMOTE_PAT != '' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           BASE=main
@@ -87,10 +89,8 @@ jobs:
             TOTAL_NM="$(git rev-list --no-merges --count "origin/$BASE..origin/$HEAD")"
             if [ "$TOTAL_NM" -gt 80 ]; then echo "- …and $((TOTAL_NM - 80)) more"; fi
 
-            if [ "${USING_PAT}" != "true" ]; then
-              echo
-              echo "> ⚠️ Opened with the default \`GITHUB_TOKEN\` — the required **\"Only staging can merge into main\"** check may not run automatically. Add a \`PROMOTE_PAT\` secret (repo scope) so future PRs trigger it, or push a trivial edit to this PR to fire it."
-            fi
+            echo
+            echo "> Auto-generated. Requires manual review/approval before merging into \`main\`."
           } > "$BODY"
 
           NUM="$(gh pr list --base "$BASE" --head "$HEAD" --state open --json number --jq '.[0].number // empty')"
