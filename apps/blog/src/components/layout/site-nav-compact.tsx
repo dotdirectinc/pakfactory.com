@@ -63,7 +63,9 @@ export function SiteNavTopRow({children}: SiteNavTopRowProps) {
         <PageDielineSection
             innerClassName={cn(
                 'flex h-16 items-center justify-between',
-                searchOpen ? 'max-lg:border-b-0 lg:border-b' : 'border-b',
+                searchOpen
+                    ? 'lg:border-b lg:border-dashed lg:border-border'
+                    : 'border-b border-dashed border-border',
             )}
         >
             {children}

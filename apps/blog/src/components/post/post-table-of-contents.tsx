@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { TocEntry } from "@/lib/post-toc";
 
@@ -54,6 +54,16 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
     nav.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
   }, [activeId]);
 
+  function handleTocClick(event: MouseEvent<HTMLAnchorElement>, id: string) {
+    event.preventDefault();
+    setActiveId(id);
+    const heading = document.getElementById(id);
+    if (heading) {
+      heading.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    history.pushState(null, "", `#${id}`);
+  }
+
   if (entries.length === 0) return null;
 
   return (
@@ -79,6 +89,7 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
                     href={`#${entry.id}`}
                     data-toc-id={entry.id}
                     aria-current={isActive ? "location" : undefined}
+                    onClick={(event) => handleTocClick(event, entry.id)}
                     className={cn(
                       "block rounded-lg px-3 py-1.5 text-sm leading-5 transition-colors",
                       isActive

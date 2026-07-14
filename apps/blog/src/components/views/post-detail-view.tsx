@@ -1,4 +1,5 @@
 import {Breadcrumb} from '@/components/layout/breadcrumb';
+import {PostReadTracker} from '@/components/modules/analytics/post-read-tracker';
 import {CtaNewsletter} from '@/components/blocks/cta-newsletter';
 import {PostArticleColumn} from '@/components/post/post-article-column';
 import {PostDetailHeader} from '@/components/post/post-detail-header';
@@ -46,7 +47,18 @@ export function PostDetailView({post}: PostDetailViewProps) {
 
     return (
         <PostDetailLayout
-            breadcrumb={<Breadcrumb items={breadcrumbItems} />}
+            breadcrumb={
+                <>
+                    <PostReadTracker
+                        slug={post.slug}
+                        category={post.categoryTitle}
+                        tags={(post.tags ?? []).map((tag) => tag.title)}
+                        author={post.author?.name}
+                        readingTimeMinutes={post.readingTimeMinutes ?? undefined}
+                    />
+                    <Breadcrumb items={breadcrumbItems} />
+                </>
+            }
             header={
                 <PostDetailHeader
                     title={post.title}

@@ -80,7 +80,7 @@ export function SiteNav({navItems, header}: SiteNavProps) {
 
             {/* Bottom tier — category navigation + search (desktop only) */}
             <div className="bg-background">
-                <div className="hidden border-y border-dashed border-border lg:block">
+                <div className="hidden border-b border-dashed border-border lg:block">
                     <PageDielineSection innerClassName="flex h-16 items-center">
                         <SiteNavCategories navItems={navItems} />
                     </PageDielineSection>
