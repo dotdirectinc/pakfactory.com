@@ -61,7 +61,7 @@ export function VideoPlayer({
                 className="absolute inset-0 h-full w-full object-cover"
               />
             ) : null}
-            <span className="relative flex size-16 items-center justify-center rounded-full border-2 border-white/90 text-white drop-shadow-md transition group-hover:scale-105 group-hover:border-white">
+            <span className="relative flex size-16 items-center justify-center rounded-full border-2 border-white/90 text-white transition group-hover:scale-105 group-hover:border-white">
               <svg
                 viewBox="0 0 24 24"
                 className="ml-0.5 size-6 fill-none stroke-current"

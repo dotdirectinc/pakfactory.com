@@ -1,4 +1,4 @@
-import { CaseIcon } from '@sanity/icons'
+import { CaseIcon, EarthGlobeIcon } from '@sanity/icons'
 import { ALL_FIELDS_GROUP, defineField, defineType } from 'sanity'
 
 // Shared PT config for the three story sections.
@@ -98,6 +98,7 @@ export const caseStudy = defineType({
                 name: 'clientLink',
                 type: 'object',
                 title: 'Client link',
+                icon: EarthGlobeIcon,
                 // URL is NOT stored here — it resolves from client→website at render time.
                 // Renders bold-only when the client has no website.
                 // The hidden field satisfies Sanity's minimum-one-field requirement.

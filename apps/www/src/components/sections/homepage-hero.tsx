@@ -130,7 +130,7 @@ const HomepageHero = ({
                     src={bannerSrc}
                     alt={bannerAlt}
                     fill
-                    className="object-contain object-center drop-shadow-[0_20px_40px_rgba(0,0,0,0.12)]"
+                    className="object-contain object-center"
                     sizes="(max-width: 1024px) 90vw, 50vw"
                     priority
                   />

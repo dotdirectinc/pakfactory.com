@@ -44,9 +44,10 @@ export type DielineBorderFields = {
 export type PostFeaturedRowBlock = {
   _type: "postFeaturedRow";
   _key: string;
-  latestPostsCount?: number;
-  featured: HomePostCard | null;
-  latest: HomePostCard[];
+  /** Editor-selected hero slides (exactly 4 in Studio; null until populated). */
+  slides: HomePostCard[] | null;
+  /** Newest posts — rendered when `slides` has fewer than 2 published entries. */
+  fallbackLatest: HomePostCard[];
 } & DielineBorderFields;
 
 export type PostCategoryRowBlock = {
@@ -55,6 +56,8 @@ export type PostCategoryRowBlock = {
   postsCount?: number;
   categorySlug?: string;
   categoryTitle?: string;
+  /** Plain-text category intro (pt::text of blogCategory.description). */
+  categoryDescription?: string;
   posts: HomePostCard[];
 } & DielineBorderFields;
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@pakfactory/ui/components/badge";
 import {
   Avatar,
@@ -444,15 +445,15 @@ export function PostCard({
   }
 
   return (
-    <article className="flex flex-col gap-4">
-      <Link href={post.href} className="group block">
+    <article className="group flex flex-col gap-4">
+      <Link href={post.href} className="block">
         <div className="relative aspect-video overflow-hidden rounded-xl bg-secondary">
           {post.imageUrl && (
             <Image
               src={post.imageUrl}
               alt={post.imageAlt ?? ""}
               fill
-              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              className="object-cover"
               sizes="(max-width: 1024px) 50vw, 320px"
               priority={priority || undefined}
             />
@@ -465,9 +466,13 @@ export function PostCard({
           categoryTitle={post.categoryTitle}
           categorySlug={post.categorySlug}
         />
-        <Link href={post.href} className="group block">
-          <h3 className="text-lg font-medium leading-7 text-card-foreground transition-colors group-hover:text-primary">
+        <Link href={post.href} className="block">
+          <h3 className="text-lg font-semibold leading-7 text-card-foreground transition-colors group-hover:text-primary">
             {post.title}
+            <ArrowUpRight
+              aria-hidden
+              className="ml-1 inline-block size-4 shrink-0 -translate-x-0.5 translate-y-0.5 opacity-0 transition-[opacity,transform] duration-300 ease-out [transition-delay:0ms,300ms] transform-gpu group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 group-hover:[transition-delay:0ms,0ms]"
+            />
           </h3>
         </Link>
         <PostMeta post={post} tone="listing" />
