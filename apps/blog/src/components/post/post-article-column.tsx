@@ -24,13 +24,13 @@ export function PostArticleColumn({
   return (
     <article id={POST_ARTICLE_ID} className="flex flex-col gap-8">
       {post.tldr?.length ? (
-        <div className="border-y border-dashed border-border py-6">
+        <div className="flex flex-col gap-5 border-y border-dashed border-border py-6">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
             Key takeaways
           </p>
           <PostPortableText
             value={post.tldr as PortableTextBlock[]}
-            className="mt-3 text-sm leading-relaxed text-foreground"
+            variant="tldr"
           />
         </div>
       ) : null}
