@@ -29,8 +29,7 @@
     "sanity:backup:delta": "node scripts/sanity/backup-delta.mjs",
     "sanity:restore:delta:dev": "node scripts/sanity/restore-delta.mjs development",
     "sanity:restore:delta:prod": "node scripts/sanity/restore-delta.mjs production",
-    "sanity:deploy:dev": "SANITY_STUDIO_DATASET=development pnpm --filter @pakfactory/studio run deploy",
-    "sanity:deploy:prod": "SANITY_STUDIO_DATASET=production pnpm --filter @pakfactory/studio run deploy"
+    "sanity:deploy": "pnpm --filter @pakfactory/studio run deploy"
   },
   "devDependencies": {
     "@pakfactory/sanity": "workspace:^",
