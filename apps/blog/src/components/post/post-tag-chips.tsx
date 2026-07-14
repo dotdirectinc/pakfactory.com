@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { PostTag } from "@/lib/blog-post";
 import { tagHref } from "@/lib/blog-post-url";
-import { TOPIC_CHIP_CLASS } from "@/components/ui/topic-chip";
+import { TOPIC_CHIP_CLASS, TopicExploreChip } from "@/components/ui/topic-chip";
 
 type PostTagChipsProps = {
   tags: PostTag[];
@@ -21,6 +21,9 @@ export function PostTagChips({ tags }: PostTagChipsProps) {
             </Link>
           </li>
         ))}
+        <li>
+          <TopicExploreChip href="/topics" label="Explore all topics" />
+        </li>
       </ul>
     </div>
   );

@@ -43,12 +43,12 @@ export function PostDetailHeader({
             categorySlug ? (
               <Link
                 href={categoryHref(categorySlug)}
-                className="w-fit text-base font-medium text-muted-foreground hover:text-foreground"
+                className="w-fit text-xs font-semibold uppercase tracking-[0.08em] text-primary hover:text-primary/80"
               >
                 {categoryTitle}
               </Link>
             ) : (
-              <span className="text-base font-medium text-muted-foreground">
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
                 {categoryTitle}
               </span>
             )

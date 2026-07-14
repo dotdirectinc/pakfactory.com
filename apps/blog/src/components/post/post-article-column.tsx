@@ -22,23 +22,17 @@ export function PostArticleColumn({
   shareTitle,
 }: PostArticleColumnProps) {
   return (
-    <article id={POST_ARTICLE_ID}>
+    <article id={POST_ARTICLE_ID} className="flex flex-col gap-8">
       {post.tldr?.length ? (
-        <aside
-          className="mb-8 rounded-2xl border border-border bg-muted/40 p-6"
-          aria-labelledby="post-tldr-heading"
-        >
-          <h2
-            id="post-tldr-heading"
-            className="text-base font-semibold text-foreground"
-          >
+        <div className="border-y border-dashed border-border py-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
             Key takeaways
-          </h2>
+          </p>
           <PostPortableText
             value={post.tldr as PortableTextBlock[]}
             className="mt-3 text-sm leading-relaxed text-foreground"
           />
-        </aside>
+        </div>
       ) : null}
 
       {post.body?.length ? (
@@ -52,18 +46,16 @@ export function PostArticleColumn({
       <PostFaqSection items={post.faqItems ?? []} />
       <PostTagChips tags={post.tags ?? []} />
 
-      {/* Mobile: author, share, Ask AI at the foot of the article — the sticky
-          sidebar is hidden below lg, and the table of contents is intentionally
-          omitted here. */}
+      {/* Mobile: author, share, Ask AI at the foot of the article */}
       {post.author?.name ? (
-        <div className="mt-10 border-t border-dashed border-border pt-8 lg:hidden">
+        <div className="border-t border-dashed border-border pt-8 lg:hidden">
           <PostAuthorCard author={post.author} />
         </div>
       ) : null}
-      <div className="mt-8 border-t border-dashed border-border pt-8 lg:hidden">
+      <div className="border-t border-dashed border-border pt-8 lg:hidden">
         <PostShareButtons url={shareUrl} title={shareTitle} />
       </div>
-      <div className="mt-8 border-t border-dashed border-border pt-8 lg:hidden">
+      <div className="border-t border-dashed border-border pt-8 lg:hidden">
         <PostAskAi url={shareUrl} title={shareTitle} />
       </div>
     </article>
