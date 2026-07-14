@@ -30,6 +30,11 @@ import { cn } from "@pakfactory/ui/lib/utils";
 import type { CaseStudyCard } from "@pakfactory/sanity/queries";
 import { CaseStudyCard as CaseStudyCardComponent } from "@/components/modules/case-study-card";
 import { Pagination } from "@pakfactory/components/modules/pagination";
+import { usePathPagination } from "@pakfactory/components/modules/use-path-pagination";
+import {
+  CASE_STUDIES_BASE_PATH,
+  CASE_STUDIES_LISTING_TOP_ID,
+} from "./case-studies-listing-constants";
 
 const PAGE_SIZES = [9, 18, 36];
 
@@ -39,6 +44,8 @@ type FilterOption = { _id: string; title: string };
 
 type Props = {
   studies: CaseStudyCard[];
+  /** 1-based page from `/case-studies` or `/case-studies/page/[n]`. */
+  initialPage?: number;
 };
 
 // ─── Derive filter options from actual case study data ────────────────────────
@@ -192,7 +199,10 @@ function FilterSection({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function CaseStudyListingGrid({ studies }: Props) {
+export function CaseStudyListingGrid({
+  studies,
+  initialPage = 1,
+}: Props) {
   const solutionOptions = useMemo(() => deriveIndustryOptions(studies), [studies]);
   const productOptions = useMemo(() => deriveOptions(studies, "products"), [studies]);
   const expertiseOptions = useMemo(() => deriveOptions(studies, "expertiseAreas"), [studies]);
@@ -202,15 +212,7 @@ export function CaseStudyListingGrid({ studies }: Props) {
   const [expertises, setExpertises] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0] ?? 9);
-  const [page, setPage] = useState(1);
-
-  // Reset to page 1 whenever a filter changes
-  const updateAndReset =
-    <T,>(setter: (v: T) => void) =>
-    (next: T) => {
-      setter(next);
-      setPage(1);
-    };
+  const [page, setPage] = useState(() => Math.max(1, Math.floor(initialPage)));
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -243,12 +245,27 @@ export function CaseStudyListingGrid({ studies }: Props) {
   const safePage = Math.min(page, totalPages);
   const visible = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
+  const { goToPage } = usePathPagination({
+    basePath: CASE_STUDIES_BASE_PATH,
+    page: safePage,
+    onPageChange: setPage,
+    scrollTargetId: CASE_STUDIES_LISTING_TOP_ID,
+  });
+
+  // Reset to page 1 whenever a filter changes
+  const updateAndReset =
+    <T,>(setter: (v: T) => void) =>
+    (next: T) => {
+      setter(next);
+      goToPage(1);
+    };
+
   const clearFilters = () => {
     setSolutions([]);
     setProducts([]);
     setExpertises([]);
     setQuery("");
-    setPage(1);
+    goToPage(1);
   };
 
   const activeFilterCount = solutions.length + products.length + expertises.length;
@@ -380,7 +397,7 @@ export function CaseStudyListingGrid({ studies }: Props) {
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
-                  setPage(1);
+                  goToPage(1);
                 }}
                 className="h-10 rounded-full border border-border bg-background pl-9 text-sm"
               />
@@ -390,7 +407,10 @@ export function CaseStudyListingGrid({ studies }: Props) {
       </section>
 
       {/* Results grid */}
-      <section className="bg-background">
+      <section
+        id={CASE_STUDIES_LISTING_TOP_ID}
+        className="scroll-mt-[calc(6rem+10px)] bg-background"
+      >
         <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
           <div className="flex flex-col gap-10 py-12">
             {visible.length === 0 ? (
@@ -435,13 +455,13 @@ export function CaseStudyListingGrid({ studies }: Props) {
                 <Pagination
                   pageNumber={safePage}
                   totalPages={totalPages}
-                  onPageChange={(p: number) => setPage(p)}
+                  onPageChange={goToPage}
                   rightSlot={
                     <Select
                       value={String(pageSize)}
                       onValueChange={(v) => {
                         setPageSize(Number(v));
-                        setPage(1);
+                        goToPage(1);
                       }}
                     >
                       <SelectTrigger className="h-8 w-[120px] text-sm">
