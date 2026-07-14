@@ -26,24 +26,10 @@ const PROVIDERS = [
     prefill: false,
   },
   {
-    id: "perplexity",
-    label: "Perplexity",
-    icon: "/logos/ai/perplexity.svg",
-    build: (q: string) => `https://www.perplexity.ai/search?q=${q}`,
-    prefill: true,
-  },
-  {
     id: "claude",
     label: "Claude",
     icon: "/logos/ai/claude.svg",
     build: (q: string) => `https://claude.ai/new?q=${q}`,
-    prefill: true,
-  },
-  {
-    id: "grok",
-    label: "Grok",
-    icon: "/logos/ai/grok.svg",
-    build: (q: string) => `https://grok.com/?q=${q}`,
     prefill: true,
   },
 ] as const;
