@@ -11,7 +11,8 @@
     "seed:blog-dev": "node scripts/seed-blog-dev.mjs",
     "seed:blog-singleton-pages": "node scripts/seed-blog-singleton-pages.mjs",
     "migrate:blog-i18n-en": "node scripts/migrate-blog-i18n-en.mjs",
-    "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs"
+    "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs",
+    "migrate:case-study-gallery": "node scripts/migrate-case-study-gallery.mjs"
   },
   "dependencies": {
     "@pakfactory/sanity": "workspace:*",
