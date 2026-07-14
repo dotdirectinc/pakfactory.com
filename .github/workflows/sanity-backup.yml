@@ -35,10 +35,12 @@ jobs:
         run: |
           mkdir -p ~/.config/rclone
           printf '%s' "$GDRIVE_SA_JSON" > /tmp/gdrive-sa.json
-          cat > ~/.config/rclone/rclone.conf << 'EOF'
+          cat > ~/.config/rclone/rclone.conf << EOF
           [gdrive]
           type = drive
           service_account_file = /tmp/gdrive-sa.json
+          team_drive = ${{ secrets.GDRIVE_SHARED_DRIVE_ID }}
+          root_folder_id = ${{ secrets.GDRIVE_FOLDER_ID }}
           EOF
 
       # ── Compute date strings ───────────────────────────────────────────────
@@ -58,17 +60,16 @@ jobs:
         run: |
           mkdir -p backups
           npx sanity@latest dataset export production \
-            "backups/sanity-production-${{ steps.dates.outputs.stamp }}.tar.gz" \
+            "backups/production.tar.gz" \
             -p 8293wrxp \
             --overwrite
-          echo "BACKUP_FILE=backups/sanity-production-${{ steps.dates.outputs.stamp }}.tar.gz" >> "$GITHUB_ENV"
+          echo "BACKUP_FILE=backups/production.tar.gz" >> "$GITHUB_ENV"
 
-      # ── Upload to Google Drive ─────────────────────────────────────────────
+      # ── Upload to Google Drive (MMDDYYYY/production.tar.gz) ───────────────
       - name: Upload to Google Drive (nightly)
         run: |
           rclone copy "$BACKUP_FILE" \
             "gdrive:${{ steps.dates.outputs.folder }}/" \
-            --drive-root-folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" \
             --progress
 
       # ── Monthly copy (1st of month) ────────────────────────────────────────
@@ -78,7 +79,6 @@ jobs:
           MONTH_FOLDER="monthly/$(date -u '+%Y%m')"
           rclone copy "$BACKUP_FILE" \
             "gdrive:${MONTH_FOLDER}/" \
-            --drive-root-folder-id "${{ secrets.GDRIVE_FOLDER_ID }}" \
             --progress
           echo "📅 Monthly copy saved to ${MONTH_FOLDER}/"
 
@@ -88,13 +88,12 @@ jobs:
           node - << 'EOF'
           // Delete nightly folders (MMDDYYYY) older than 30 days
           import { execSync } from "node:child_process";
-          const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
           const cutoff = new Date();
           cutoff.setDate(cutoff.getDate() - 30);
 
           // List top-level folders that look like MMDDYYYY
           const result = execSync(
-            `rclone lsf "gdrive:" --drive-root-folder-id "${FOLDER_ID}" --dirs-only`
+            `rclone lsf "gdrive:" --dirs-only`
           ).toString().trim();
 
           for (const entry of result.split("\n").filter(Boolean)) {
@@ -107,29 +106,26 @@ jobs:
             if (folderDate < cutoff) {
               console.log(`🗑  Pruning nightly: ${folder}`);
               execSync(
-                `rclone purge "gdrive:${folder}/" --drive-root-folder-id "${FOLDER_ID}"`,
+                `rclone purge "gdrive:${folder}/"`,
                 { stdio: "inherit" }
               );
             }
           }
           console.log("✅  Nightly prune complete.");
           EOF
-        env:
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
 
       # ── Prune old monthly backups (keep 12 months) ─────────────────────────
       - name: Prune old monthly backups
         run: |
           node - << 'EOF'
           import { execSync } from "node:child_process";
-          const FOLDER_ID = process.env.GDRIVE_FOLDER_ID;
           const cutoff = new Date();
           cutoff.setMonth(cutoff.getMonth() - 12);
 
           let result;
           try {
             result = execSync(
-              `rclone lsf "gdrive:monthly/" --drive-root-folder-id "${FOLDER_ID}" --dirs-only`
+              `rclone lsf "gdrive:monthly/" --dirs-only`
             ).toString().trim();
           } catch {
             // monthly/ folder may not exist yet
@@ -146,15 +142,13 @@ jobs:
             if (folderDate < cutoff) {
               console.log(`🗑  Pruning monthly: ${folder}`);
               execSync(
-                `rclone purge "gdrive:monthly/${folder}/" --drive-root-folder-id "${FOLDER_ID}"`,
+                `rclone purge "gdrive:monthly/${folder}/"`,
                 { stdio: "inherit" }
               );
             }
           }
           console.log("✅  Monthly prune complete.");
           EOF
-        env:
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
 
       # ── Sync production → development ──────────────────────────────────────
       - name: Sync production → development
