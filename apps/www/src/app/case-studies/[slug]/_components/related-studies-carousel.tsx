@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { SanityImage } from "@/components/ui/sanity-image";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CaseStudyCard } from "@pakfactory/sanity/queries";
 
@@ -16,7 +16,7 @@ function RelatedStudyCard({ study }: { study: CaseStudyCard }) {
       <a href={href} className="block">
         <div className="relative h-[376px] w-full overflow-hidden rounded-[10px] bg-muted">
           {study.cardImageUrl ? (
-            <Image
+            <SanityImage
               src={study.cardImageUrl}
               alt={study.cardImageAlt ?? displayName}
               fill

@@ -4,7 +4,7 @@ import type { PostCardData } from "@/components/modules/post-card";
 import type { PopularPostCard } from "@/lib/blog-data";
 import type { HomePostCard } from "@/lib/blog-home";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { sanityImageAlt, sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageAlt, sanityImageBaseUrl } from "@/lib/sanity-image";
 
 export type { PostCardData };
 
@@ -31,15 +31,13 @@ function formatReadingTime(minutes?: number): string | undefined {
 type ToPostCardDataOptions = {
   /** When set, used for href resolution (overrides post.categorySlug). */
   categorySlug?: string;
-  /** Image width passed to sanityImageUrl. */
-  imageWidth?: number;
 };
 
 export function toPostCardData(
   post: HomePostCard,
   options: ToPostCardDataOptions = {},
 ): PostCardData {
-  const { categorySlug, imageWidth = 400 } = options;
+  const { categorySlug } = options;
   const href = postDetailHref(post.slug, categorySlug ?? post.categorySlug);
 
   return {
@@ -47,7 +45,7 @@ export function toPostCardData(
     href,
     title: post.title,
     excerpt: post.excerpt,
-    imageUrl: sanityImageUrl(post.mainImage, imageWidth),
+    imageUrl: sanityImageBaseUrl(post.mainImage),
     imageAlt: sanityImageAlt(post.mainImage),
     categoryTitle: post.categoryTitle,
     categorySlug: post.categorySlug,

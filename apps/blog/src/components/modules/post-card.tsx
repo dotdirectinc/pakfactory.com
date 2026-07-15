@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@pakfactory/ui/components/badge";
 import {
@@ -8,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@pakfactory/ui/components/avatar";
+import { SanityImage } from "@/components/ui/sanity-image";
 import { authorHref, categoryHref } from "@/lib/blog-post-url";
 
 /** Plain, client-safe post card props — resolved server-side before render. */
@@ -308,7 +308,7 @@ export function PostCard({
         <Link href={post.href} className="group block">
           <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
             {post.imageUrl && (
-              <Image
+              <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt ?? ""}
                 fill
@@ -361,7 +361,7 @@ export function PostCard({
         <Link href={post.href} className="group block">
           <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
             {post.imageUrl && (
-              <Image
+              <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt ?? ""}
                 fill
@@ -395,7 +395,7 @@ export function PostCard({
         <Link href={post.href} className="group block min-w-0 flex-1">
           <div className="relative aspect-[16/9] overflow-hidden rounded-[14px] bg-muted">
             {post.imageUrl && (
-              <Image
+              <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt ?? ""}
                 fill
@@ -430,7 +430,7 @@ export function PostCard({
         <Link href={post.href} className="group shrink-0">
           <div className="relative size-[200px] overflow-hidden rounded-[14px] bg-muted">
             {post.imageUrl && (
-              <Image
+              <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt ?? ""}
                 fill
@@ -475,7 +475,7 @@ export function PostCard({
       <Link href={post.href} className="block">
         <div className="relative aspect-video overflow-hidden rounded-xl bg-secondary">
           {post.imageUrl && (
-            <Image
+            <SanityImage
               src={post.imageUrl}
               alt={post.imageAlt ?? ""}
               fill

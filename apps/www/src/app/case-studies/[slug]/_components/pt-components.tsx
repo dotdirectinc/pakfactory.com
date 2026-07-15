@@ -1,6 +1,6 @@
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
-import Image from "next/image";
-import { urlFor } from "@/lib/sanity/image";
+import { SanityImage } from "@/components/ui/sanity-image";
+import { sanityImageBaseUrl } from "@/lib/sanity/image";
 import { GallerySlider } from "@pakfactory/components/modules/gallery-slider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -52,11 +52,12 @@ export const caseStudyPtComponents: PortableTextComponents = {
   types: {
     bodyImage: ({ value }) => {
       if (!value?.asset) return null;
-      const src = urlFor(value.asset).url();
+      const src = sanityImageBaseUrl(value.asset);
+      if (!src) return null;
       return (
         <figure className="not-prose my-10 w-full">
           <div className="relative aspect-video overflow-hidden rounded-xl">
-            <Image
+            <SanityImage
               src={src}
               alt={value.alt ?? ""}
               fill
@@ -73,13 +74,17 @@ export const caseStudyPtComponents: PortableTextComponents = {
       );
     },
 
-    testimonialBlock: ({ value }) => (
+    testimonialBlock: ({ value }) => {
+      const bgSrc = value.backgroundImage
+        ? sanityImageBaseUrl(value.backgroundImage)
+        : undefined;
       // Structure mirrors the POC: section → image fill → overlay → centered content → blockquote
+      return (
       <figure className="not-prose relative my-10 overflow-hidden rounded-[14px] bg-foreground px-10 py-[30px]">
         {/* Fill 1 — background image at 100% */}
-        {value.backgroundImage && (
-          <Image
-            src={urlFor(value.backgroundImage).width(900).height(500).url()}
+        {bgSrc && (
+          <SanityImage
+            src={bgSrc}
             alt={value.backgroundImageAlt ?? ""}
             fill
             className="object-cover"
@@ -118,7 +123,8 @@ export const caseStudyPtComponents: PortableTextComponents = {
           )}
         </div>
       </figure>
-    ),
+      );
+    },
 
     caseStudyGalleryBlock: ({ value }) => {
       const rawImages: any[] = value.images ?? [];
@@ -129,9 +135,11 @@ export const caseStudyPtComponents: PortableTextComponents = {
           // Native image member has asset on the item; legacy galleryImage nests under image.
           const imageValue = item.asset ? item : item.image;
           if (!imageValue) return null;
+          const src = sanityImageBaseUrl(imageValue);
+          if (!src) return null;
           return {
             key: item._key ?? String(i),
-            src: urlFor(imageValue).width(1200).url(),
+            src,
             alt: item.alt ?? "",
             caption: item.caption ?? null,
             isSquare,
