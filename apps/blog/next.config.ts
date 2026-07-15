@@ -31,7 +31,17 @@ if (process.env.NODE_ENV === "development") {
   }
 }
 
+/**
+ * Subpath hosting (PROD-1596 flip): `NEXT_PUBLIC_BLOG_BASE_PATH=/blog` serves the
+ * whole app under `/blog` (routes, assets, next/link, rewrites/redirects) — the
+ * same env var `src/lib/site.ts` uses for canonicals/JSON-LD/RSS/sitemaps, so one
+ * variable flips both. Unset (staging/local) → app stays at origin root.
+ * Production: CloudFront routes `pakfactory.com/blog*` to the Vercel origin.
+ */
+const basePath = process.env.NEXT_PUBLIC_BLOG_BASE_PATH?.trim() || undefined;
+
 const nextConfig: NextConfig = {
+  ...(basePath ? { basePath } : {}),
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components"],
   turbopack: {
     resolveAlias: {
