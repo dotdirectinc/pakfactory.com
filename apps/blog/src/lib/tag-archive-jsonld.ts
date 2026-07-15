@@ -1,18 +1,17 @@
 import { collectionPage, itemList } from "@pakfactory/seo";
-import type { HomePostCard } from "@/lib/blog-home";
 import type { TagDocument, TagListFilters } from "@/lib/blog-tag-archive";
-import { tagPageHref } from "@/lib/blog-tag-archive";
+import { tagPageHref } from "@/lib/blog-tag-url";
 import {
   blogBreadcrumbList,
   pakfactoryOrganization,
   serializeBlogJsonLd,
 } from "@/lib/blog-jsonld";
-import { postDetailHref } from "@/lib/blog-post-url";
+import type { TopicListingPost } from "@/lib/listing-posts";
 import { absoluteUrl } from "@/lib/site";
 
 export function buildTagArchiveJsonLd(
   tag: TagDocument,
-  posts: HomePostCard[],
+  posts: TopicListingPost[],
   pageNumber: number,
   filters: TagListFilters,
 ): string {
@@ -39,7 +38,7 @@ export function buildTagArchiveJsonLd(
     name: tag.title,
     items: posts.map((post) => ({
       name: post.title,
-      url: absoluteUrl(postDetailHref(post.slug, post.categorySlug)),
+      url: absoluteUrl(post.href),
     })),
   });
 

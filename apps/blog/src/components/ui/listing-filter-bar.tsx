@@ -32,6 +32,8 @@ type ListingFilterBarProps = {
   sortOptions: FilterOption[];
   sortValue: string;
   onSortChange: (value: string) => void;
+  /** When true, signals an in-flight server navigation (aria-busy + subtle dim). */
+  isPending?: boolean;
   className?: string;
 };
 
@@ -51,14 +53,19 @@ export function ListingFilterBar({
   sortOptions,
   sortValue,
   onSortChange,
+  isPending = false,
   className,
 }: ListingFilterBarProps) {
   const count = selected.length;
 
   return (
     <div
+      aria-busy={isPending || undefined}
+      data-pending={isPending || undefined}
       className={cn(
         "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
+        "transition-opacity",
+        isPending && "opacity-70",
         className,
       )}
     >

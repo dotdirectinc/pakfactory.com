@@ -1,45 +1,50 @@
 import type { Metadata } from "next";
 import type { HomePostCard } from "@/lib/blog-home";
 import type { BlogSearchContent } from "@/lib/blog-data";
-import {
-  archivePageSlice,
-  DEFAULT_PAGE_SIZE,
-  getTotalArchivePages,
-  isArchivePageOutOfRange,
-} from "@/lib/blog-archive";
-import { parseListingPage, type BlogRobotsDirective } from "@/lib/seo";
+import { DEFAULT_PAGE_SIZE } from "@/lib/blog-archive";
+import type { BlogRobotsDirective } from "@/lib/seo";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import { buildDocMetadata } from "@/lib/resolve-seo";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import { toPostCardData } from "@/lib/post-card-data";
 import {
-  BLOG_SEARCH_POSTS_COUNT_QUERY,
-  BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY,
-  BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY,
-  BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY,
-} from "@pakfactory/sanity/queries";
+  resolveListingPage,
+  type ListingPost,
+} from "@/lib/listing-posts";
+import {
+  parseSearchFilters,
+  parseSearchPage,
+  parseSearchQuery,
+  searchPageHref,
+  type SearchListFilters,
+  type SearchSort,
+} from "@/lib/blog-search-url";
+import { BLOG_SEARCH_ALL_POSTS_QUERY } from "@pakfactory/sanity/queries";
 
 const SEARCH_TITLE_FALLBACK = "Search";
 const SEARCH_META_TITLE_FALLBACK = "Search | PakFactory Blog";
 const SEARCH_DESCRIPTION_FALLBACK =
   "Search the PakFactory blog for custom packaging guides on design, materials, sustainability, compliance, cost, and branding.";
 
-/** Newest (date posted) is the default; the filter bar can re-sort. */
-export type SearchSort = "newest" | "updated" | "popular";
-
-export type SearchListFilters = {
-  /** Selected category slugs (empty = all). Wired to the URL as repeated `?category=`. */
-  categories: string[];
-  sort: SearchSort;
-};
+export type { SearchListFilters, SearchSort };
+export {
+  parseSearchFilters,
+  parseSearchPage,
+  parseSearchQuery,
+  searchPageHref,
+} from "@/lib/blog-search-url";
 
 export type SearchPageData = {
   /** Raw user query (trimmed), echoed into the input + result count. */
   query: string;
   /** Tokenized GROQ term; null when the query is empty (→ empty state). */
   searchTerm: string | null;
-  posts: HomePostCard[];
+  /** Full match set (capped) for client-side filter/sort/paginate. */
+  allPosts: ListingPost[];
+  /** SSR/crawler page slice matching the current URL. */
+  posts: ListingPost[];
   totalCount: number;
   pageNumber: number;
   totalPages: number;
@@ -47,43 +52,10 @@ export type SearchPageData = {
   filters: SearchListFilters;
 };
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  if (value === undefined) return undefined;
-  return Array.isArray(value) ? value[0] : value;
-}
-
-/** Collect a repeated/comma-separated query param into a de-duped, trimmed list. */
-function paramList(value: string | string[] | undefined): string[] {
-  if (value === undefined) return [];
-  const raw = Array.isArray(value) ? value : [value];
-  const values = raw
-    .flatMap((entry) => entry.split(","))
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return Array.from(new Set(values));
-}
-
-export function parseSearchQuery(searchParams: SearchParams): string {
-  return firstParam(searchParams.q)?.trim() ?? "";
-}
-
-export function parseSearchSort(raw: string | undefined): SearchSort {
-  if (raw === "updated" || raw === "popular") return raw;
-  return "newest";
-}
-
-export function parseSearchFilters(searchParams: SearchParams): SearchListFilters {
-  return {
-    categories: paramList(searchParams.category),
-    sort: parseSearchSort(firstParam(searchParams.sort)),
-  };
-}
-
-export function parseSearchPage(searchParams: SearchParams): number {
-  return parseListingPage(searchParams);
-}
+type SearchAllPostRow = HomePostCard & {
+  sortUpdatedAt?: string;
+  viewCount?: number;
+};
 
 /**
  * Tokenize the user query for Sanity `match`: strip GROQ-significant
@@ -101,83 +73,33 @@ export function buildSearchTerm(query: string): string | null {
   return tokens.map((token) => `${token}*`).join(" ");
 }
 
-function searchPageQuery(sort: SearchSort): string {
-  switch (sort) {
-    case "updated":
-      return BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY;
-    case "popular":
-      return BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY;
-    default:
-      return BLOG_SEARCH_POSTS_PAGE_NEWEST_QUERY;
-  }
+function toListingPost(row: SearchAllPostRow): ListingPost {
+  const card = toPostCardData(row);
+  return {
+    ...card,
+    slug: row.slug,
+    sortUpdatedAt: row.sortUpdatedAt || row.publishedAt || "",
+    viewCount:
+      typeof row.viewCount === "number" && Number.isFinite(row.viewCount)
+        ? row.viewCount
+        : 0,
+  };
 }
 
 /**
- * Search listings use GROQ + `POST_CARD_FIELDS` (same strategy as category
- * archives) so cards get authorSlug + readingTimeMinutes. Algolia is reserved
- * for nav typeahead (`algolia-suggest.ts`), not the `/search` results grid.
+ * Load all matches for `searchTerm` (text only — category/sort apply in-browser).
+ * Caps at 500 newest via the GROQ slice.
  */
-async function fetchSearchPageFromGroq(
-  searchTerm: string,
-  pageNumber: number,
-  filters: SearchListFilters,
-  perPage: number,
-): Promise<{ posts: HomePostCard[]; totalCount: number }> {
-  const groqParams = blogLanguageParams({
-    searchTerm,
-    categorySlugs: filters.categories,
-    yearStart: null,
-    yearEnd: null,
-  });
-
-  let totalCount = 0;
-  if (isSanityConfigured()) {
-    const client = await getSanityClient();
-    totalCount = await client
-      .fetch<number>(BLOG_SEARCH_POSTS_COUNT_QUERY, groqParams)
-      .catch(() => 0);
-  }
-
-  let posts: HomePostCard[] = [];
-  if (
-    isSanityConfigured() &&
-    !isArchivePageOutOfRange(pageNumber, totalCount, perPage)
-  ) {
-    const { start, end } = archivePageSlice(pageNumber, perPage);
-    const client = await getSanityClient();
-    posts = await client
-      .fetch<HomePostCard[]>(searchPageQuery(filters.sort), {
-        ...groqParams,
-        start,
-        end,
-      })
-      .catch(() => []);
-  }
-
-  return { posts, totalCount };
-}
-
-/**
- * Build a `/search` URL. `q` and active filters are query params; newest
- * sort and page 1 are omitted (defaults). Categories serialize as repeated
- * `?category=` params.
- */
-export function searchPageHref(
-  query: string,
-  pageNumber: number,
-  filters: SearchListFilters,
-  perPage?: number,
-): string {
-  const params = new URLSearchParams();
-  if (query) params.set("q", query);
-  if (pageNumber > 1) params.set("page", String(pageNumber));
-  for (const slug of filters.categories) params.append("category", slug);
-  if (filters.sort !== "newest") params.set("sort", filters.sort);
-  if (perPage && perPage !== DEFAULT_PAGE_SIZE) {
-    params.set("perPage", String(perPage));
-  }
-  const qs = params.toString();
-  return qs ? `/search?${qs}` : "/search";
+async function fetchSearchAllPosts(searchTerm: string): Promise<ListingPost[]> {
+  if (!isSanityConfigured()) return [];
+  const client = await getSanityClient();
+  const rows = await client
+    .fetch<SearchAllPostRow[]>(
+      BLOG_SEARCH_ALL_POSTS_QUERY,
+      blogLanguageParams({ searchTerm }),
+    )
+    .catch(() => []);
+  return rows.map(toListingPost);
 }
 
 /** Search pages are never indexed, but links are still followed (PROD-1503 AC). */
@@ -237,6 +159,10 @@ export async function buildBlogSearchMetadata(
   });
 }
 
+/**
+ * Search dataset: one Sanity fetch for all matches of `q`, then category/sort/
+ * page applied in memory (same pattern as topic archives).
+ */
 export async function fetchSearchPage(
   query: string,
   pageNumber: number,
@@ -253,21 +179,28 @@ export async function fetchSearchPage(
   };
 
   if (!searchTerm) {
-    return { ...base, posts: [], totalCount: 0, totalPages: 1 };
+    return {
+      ...base,
+      allPosts: [],
+      posts: [],
+      totalCount: 0,
+      totalPages: 1,
+    };
   }
 
-  const { posts, totalCount } = await fetchSearchPageFromGroq(
-    searchTerm,
-    pageNumber,
-    filters,
-    perPage,
-  );
+  const allPosts = await fetchSearchAllPosts(searchTerm);
+  const { pagePosts, totalCount, totalPages, isOutOfRange } =
+    resolveListingPage(allPosts, filters, pageNumber, perPage);
 
-  const totalPages = getTotalArchivePages(totalCount, perPage);
-
-  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
-    return { ...base, posts: [], totalCount, totalPages };
+  if (isOutOfRange) {
+    return { ...base, allPosts, posts: [], totalCount, totalPages };
   }
 
-  return { ...base, posts, totalCount, totalPages };
+  return {
+    ...base,
+    allPosts,
+    posts: pagePosts,
+    totalCount,
+    totalPages,
+  };
 }

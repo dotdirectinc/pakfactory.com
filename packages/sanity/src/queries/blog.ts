@@ -408,7 +408,9 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     },
     imageEffect,
     "backgroundColor": coalesce(backgroundColor.hex, customBackgroundColor.hex),
-    image{ ..., "alt": coalesce(alt, asset->altText) }
+    image{ ..., "alt": coalesce(alt, asset->altText) },
+    topBorderWidth,
+    bottomBorderWidth
   },
   _type == "richTextBand" => {
     heading,
@@ -1124,6 +1126,60 @@ const TAG_POST_FILTER = /* groq */ `_type == "post"
 export const BLOG_TAG_POSTS_COUNT_QUERY = /* groq */ `count(*[
   ${TAG_POST_FILTER}
 ])`;
+
+/**
+ * Full topic/search listing post set for client-side filter/sort/paginate.
+ * Includes sortUpdatedAt + viewCount for Updated / Popular sorts without a refetch.
+ */
+const LISTING_POST_FIELDS = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  excerpt,
+  publishedAt,
+  "sortUpdatedAt": coalesce(lastModified, _updatedAt),
+  "viewCount": coalesce(viewCount, 0),
+  mainImage{
+    ...,
+    "alt": coalesce(alt, asset->altText)
+  },
+  "categorySlug": category->slug.current,
+  "categoryTitle": category->title,
+  "authorName": author->name,
+  "authorSlug": author->slug.current,
+  "authorImageUrl": author->photo.asset->url,
+  ${READING_TIME_MINUTES_PROJECTION}
+}`;
+
+export const BLOG_TAG_ALL_POSTS_QUERY = /* groq */ `*[
+  _type == "post"
+  && (!defined(language) || language == $language)
+  && $tagSlug in tags[]->slug.current
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+] | order(publishedAt desc)${LISTING_POST_FIELDS}`;
+
+/**
+ * Search match set for client-side category/sort/paginate (no category in GROQ).
+ * Caps at 500 newest matches to bound RSC payload size.
+ */
+const SEARCH_ALL_POST_FILTER = /* groq */ `_type == "post"
+  && (!defined(language) || language == $language)
+  && defined(slug.current)
+  && defined(publishedAt)
+  && publishedAt <= now()
+  && (
+    title match $searchTerm
+    || category->title match $searchTerm
+    || excerpt match $searchTerm
+    || pt::text(body) match $searchTerm
+    || count(tags[@->title match $searchTerm]) > 0
+  )`;
+
+export const BLOG_SEARCH_ALL_POSTS_QUERY = /* groq */ `*[
+  ${SEARCH_ALL_POST_FILTER}
+] | order(publishedAt desc)[0...500]${LISTING_POST_FIELDS}`;
 
 export const BLOG_TAG_POSTS_PAGE_NEWEST_QUERY = /* groq */ `*[
   ${TAG_POST_FILTER}
