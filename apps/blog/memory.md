@@ -616,6 +616,21 @@ Marketing bands use `@pakfactory/ui` **`Card`**, **`Button`**, **`Badge`**, **`I
 
 ---
 
+## Analytics — GTM via Sanity Global Settings
+
+Product analytics is owned by **marketing through GTM**, not an in-app PostHog SDK.
+
+| Piece | Where |
+| ----- | ----- |
+| Container ID | Sanity **Global Settings → Integrations → `gtmId`** (e.g. `GTM-XXXXXXX`) |
+| Inject | `@next/third-parties` `<GoogleTagManager />` in [`src/app/layout.tsx`](./src/app/layout.tsx) |
+| Gate | Inject only when `gtmId` is set **and** `VERCEL_ENV === 'production'` (unset locally → no GTM; preview → no GTM even if dataset has an ID) |
+| Custom events | [`src/lib/analytics.ts`](./src/lib/analytics.ts) `captureEvent` → `sendGTMEvent` / `dataLayer` |
+
+Funnel events marketing can trigger on in GTM: `post_read`, `search_performed` (incl. `zero_results`), `newsletter_signup_submitted` / `_succeeded` / `_failed`. Trackers: `components/modules/analytics/`.
+
+**Humans:** set `gtmId` in Studio on the settings singleton. Agents do not patch Sanity documents.
+
 ## Local dev — env, port, Sanity seed (2026-05-25)
 
 ### Default port
