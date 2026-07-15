@@ -139,6 +139,30 @@ type SiteFooterProps = {
     builder?: BlogFooterCtaBlock[];
 };
 
+/**
+ * POC footer order (BlogFooter SOCIAL_ICONS) — enforced in code so the design
+ * stays deterministic regardless of how editors order the Sanity array.
+ * Platforms not listed sort after, keeping their editor order.
+ */
+const FOOTER_SOCIAL_ORDER = [
+    'facebook',
+    'instagram',
+    'linkedin',
+    'youtube',
+    'pinterest',
+] as const;
+
+function sortFooterSocialLinks(links: BlogSocialLink[]): BlogSocialLink[] {
+    const rank = (platform: string) => {
+        const i = FOOTER_SOCIAL_ORDER.indexOf(
+            platform as (typeof FOOTER_SOCIAL_ORDER)[number],
+        );
+        return i === -1 ? FOOTER_SOCIAL_ORDER.length : i;
+    };
+    return [...links].sort((a, b) => rank(a.platform) - rank(b.platform));
+}
+
+/** POC round-bordered circle — same treatment as the article share row. */
 function FooterSocialIcon({link}: {link: BlogSocialLink}) {
     return (
         <a
@@ -146,9 +170,9 @@ function FooterSocialIcon({link}: {link: BlogSocialLink}) {
             aria-label={socialPlatformAriaLabel(link.platform)}
             target="_blank"
             rel={EXTERNAL_LINK_REL}
-            className="text-foreground hover:opacity-80"
+            className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-[var(--opacity-primary-10)] hover:text-primary"
         >
-            <SocialPlatformIcon platform={link.platform} size={20} />
+            <SocialPlatformIcon platform={link.platform} size={16} />
         </a>
     );
 }
@@ -231,8 +255,8 @@ export function SiteFooter({
                         <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
                             © 2026 PakFactory
                         </p>
-                        <div className="flex items-center gap-5 text-foreground">
-                            {social.map((link) => (
+                        <div className="flex items-center gap-2.5">
+                            {sortFooterSocialLinks(social).map((link) => (
                                 <FooterSocialIcon
                                     key={link.platform}
                                     link={link}
