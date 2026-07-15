@@ -32,6 +32,10 @@
     --input: #e5e4e0;
     --ring: #2b5f2d;
 
+    /* Brand cream — warm neutral surface/accent (reintroduced 2026-07-15) */
+    --brand-cream: #f4f1eb;
+    --brand-cream-foreground: #1a1a1a;
+
     /* Primary opacity ramp — hover fills, tints (POC: bg-[var(--opacity-primary-10)]) */
     --opacity-primary-10: rgba(43, 95, 45, 0.1);
     --opacity-primary-20: rgba(43, 95, 45, 0.2);
@@ -172,6 +176,9 @@
     --sidebar-border: rgb(255 255 255 / 0.1);
     --sidebar-ring: rgb(115 115 115);
 
+    --brand-cream: #1c1a16;            /* warm-tinted dark surface (sibling of --card #171717) */
+    --brand-cream-foreground: rgb(250 250 250);
+
     --shadow-2xs: 0 1px 3px 0px rgb(0 0 0 / 0.05);
     --shadow-xs: 0 1px 3px 0px rgb(0 0 0 / 0.05);
     --shadow-sm:
@@ -205,6 +212,8 @@
     --color-muted-foreground: var(--muted-foreground);
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
+    --color-brand-cream: var(--brand-cream);
+    --color-brand-cream-foreground: var(--brand-cream-foreground);
     --color-destructive: var(--destructive);
     --color-border: var(--border);
     --color-input: var(--input);

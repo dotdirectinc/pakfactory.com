@@ -55,7 +55,7 @@ export function WidgetNewsletter({ heading, body }: WidgetNewsletterProps) {
   return (
     <PageDielineFullBleedSection
       aria-labelledby="widget-newsletter-heading"
-      sectionClassName="bg-accent"
+      sectionClassName="bg-brand-cream"
       innerClassName="py-10 sm:py-12"
     >
       <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16">

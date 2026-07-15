@@ -9,9 +9,11 @@ type PostTableOfContentsProps = {
 };
 
 const MAX_HEIGHT_PX = 264;
+const FADE_HEIGHT_PX = 24; // matches Tailwind h-6
 
 export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(entries[0]?.id ?? null);
+  const [scrolledFromTop, setScrolledFromTop] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   // Scroll-spy — highlight the section currently in view.
@@ -54,6 +56,20 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
     nav.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
   }, [activeId]);
 
+  // Show the top fade only after the list has scrolled away from the top.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const updateScrolledFromTop = () => {
+      setScrolledFromTop(nav.scrollTop > 0);
+    };
+
+    updateScrolledFromTop();
+    nav.addEventListener("scroll", updateScrolledFromTop, { passive: true });
+    return () => nav.removeEventListener("scroll", updateScrolledFromTop);
+  }, [entries]);
+
   function handleTocClick(event: MouseEvent<HTMLAnchorElement>, id: string) {
     event.preventDefault();
     setActiveId(id);
@@ -67,20 +83,31 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
   if (entries.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         Jump to section
       </p>
       <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-background to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 bg-gradient-to-t from-background to-transparent" />
+        {scrolledFromTop ? (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-background to-transparent"
+            style={{ height: FADE_HEIGHT_PX }}
+          />
+        ) : null}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-background to-transparent"
+          style={{ height: FADE_HEIGHT_PX }}
+        />
         <nav
           ref={navRef}
           aria-label="Table of contents"
           style={{ maxHeight: MAX_HEIGHT_PX }}
           className="overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
         >
-          <ol className="flex flex-col gap-0.5">
+          <ol
+            className="flex flex-col gap-0.5"
+            style={{ paddingBottom: FADE_HEIGHT_PX }}
+          >
             {entries.map((entry) => {
               const isActive = activeId === entry.id;
               return (
@@ -91,10 +118,10 @@ export function PostTableOfContents({ entries }: PostTableOfContentsProps) {
                     aria-current={isActive ? "location" : undefined}
                     onClick={(event) => handleTocClick(event, entry.id)}
                     className={cn(
-                      "block rounded-lg px-3 py-1.5 text-sm leading-5 transition-colors",
+                      "block py-1.5 text-sm leading-5 transition-colors",
                       isActive
-                        ? "bg-[var(--opacity-primary-10)] font-medium text-primary"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                        ? "font-semibold text-primary"
+                        : "font-normal text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {entry.text}

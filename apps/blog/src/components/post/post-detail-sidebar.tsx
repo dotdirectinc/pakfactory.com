@@ -37,13 +37,11 @@ export function PostDetailSidebar({
           </div>
         ) : null}
 
-        <div className="border-b border-dashed border-border py-8">
+        <div className="py-8">
           <PostShareButtons url={shareUrl} title={shareTitle} />
         </div>
 
-        <div className="pt-8">
-          <PostAskAi url={shareUrl} title={shareTitle} />
-        </div>
+        <PostAskAi url={shareUrl} title={shareTitle} />
       </PostStickyGroup>
     </div>
   );
