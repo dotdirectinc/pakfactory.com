@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { PackageIcon } from "lucide-react";
 
+import { SanityImage } from "@/components/ui/sanity-image";
+import { isSanityCdnUrl } from "@/lib/sanity/image";
 import { Button } from "@pakfactory/ui/components/button";
 import { cn } from "@pakfactory/ui/lib/utils";
 
@@ -64,14 +66,25 @@ export default function PackagingHero({
             <div className="relative flex w-full justify-center lg:col-span-5 lg:justify-end">
               <div className="relative aspect-4/3 w-full max-w-md lg:max-w-none lg:aspect-square">
                 {src ? (
-                  <Image
-                    src={src}
-                    alt={image.alt}
-                    fill
-                    className="object-contain object-center lg:object-right"
-                    sizes="(max-width: 1024px) 90vw, 42vw"
-                    priority
-                  />
+                  isSanityCdnUrl(src) ? (
+                    <SanityImage
+                      src={src}
+                      alt={image.alt}
+                      fill
+                      className="object-contain object-center lg:object-right"
+                      sizes="(max-width: 1024px) 90vw, 42vw"
+                      priority
+                    />
+                  ) : (
+                    <Image
+                      src={src}
+                      alt={image.alt}
+                      fill
+                      className="object-contain object-center lg:object-right"
+                      sizes="(max-width: 1024px) 90vw, 42vw"
+                      priority
+                    />
+                  )
                 ) : (
                   <div className="bg-muted/30 text-muted-foreground flex h-full w-full items-center justify-center rounded-2xl">
                     <PackageIcon className="size-16 stroke-1 opacity-40" />
