@@ -16,6 +16,7 @@ import {
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
 import { absoluteUrl } from "@/lib/site";
+import { plainTextFromBlocks } from "@/lib/portable-text";
 import { buildCaseStudyJsonLd } from "@/lib/case-study-jsonld";
 import { CaseStudyShare } from "./_components/case-study-share";
 import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
@@ -47,9 +48,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : null;
   if (!study) return {};
 
-  const title = study.metaTitle?.trim() || study.title;
+  const title =
+    study.metaTitle?.trim() ||
+    (study.client?.name
+      ? `${study.client.name} Packaging Case Study`
+      : study.title);
   const description =
-    study.metaDescription?.trim() || study.cardSummary || undefined;
+    study.metaDescription?.trim() ||
+    study.cardSummary ||
+    plainTextFromBlocks(study.heroIntro as PortableTextBlock[] | undefined) ||
+    undefined;
   const canonical = study.canonicalUrl || absoluteUrl(`/case-studies/${slug}`);
   const globalNoIndex = process.env.WWW_DISABLE_INDEXING === "true";
   const robots = [

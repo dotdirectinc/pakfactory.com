@@ -3,23 +3,24 @@ import type { Metadata } from "next";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import { enrichPopularRowBlocks } from "@/lib/page-builder";
 import { blogContributePageParams } from "@/lib/blog-language";
-import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import {
   buildDocMetadata,
   type DocSeoFields,
 } from "@/lib/resolve-seo";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import type { BlogRobotsDirective } from "@/lib/seo";
 import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY } from "@pakfactory/sanity/queries";
 
-const CONTRIBUTE_TITLE_FALLBACK = "Contribute to Our Blog";
-const CONTRIBUTE_META_TITLE_FALLBACK = "Contribute to Our Blog | PakFactory Blog";
+const CONTRIBUTE_TITLE_FALLBACK = "Write for Us";
+const CONTRIBUTE_META_TITLE_FALLBACK = "Write for Us | PakFactory Blog";
 const CONTRIBUTE_DESCRIPTION_FALLBACK =
-  "Write for the PakFactory blog. We publish guest articles for the people who specify, design, and source custom packaging — brand owners, designers, and packaging teams. Pitch your idea below.";
+  "Pitch a guest post for the PakFactory blog. See the packaging topics we publish, who we're looking for, and how to submit.";
 
 export type BlogContributePageDoc = DocSeoFields & {
   title?: string | null;
+  description?: string | null;
   pageBuilder?: PageBuilderBlock[] | null;
 };
 
@@ -82,17 +83,28 @@ export async function buildBlogContributeMetadata(
   page: BlogContributePageDoc | null,
   robots: BlogRobotsDirective,
 ): Promise<Metadata> {
-  const settings = await fetchBlogGlobalSettings();
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "pageDefaults");
+  const pageTitle = page?.title?.trim() || CONTRIBUTE_TITLE_FALLBACK;
+
   return buildDocMetadata({
-    title: CONTRIBUTE_META_TITLE_FALLBACK,
+    title: pageTitle,
     descriptionFallback: CONTRIBUTE_DESCRIPTION_FALLBACK,
     featuredImageUrl: page?.ogImageUrl,
     selfCanonicalPath: "/contribute",
-    defaultOgImageUrl: settings?.defaultOgImageUrl,
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
     seo: page ?? {},
     robots,
-    titleOverride: page?.metaTitle?.trim()
-      ? undefined
-      : CONTRIBUTE_META_TITLE_FALLBACK,
+    titleOverride:
+      page?.metaTitle?.trim() || defaults?.metaTitleFormat?.trim()
+        ? undefined
+        : CONTRIBUTE_META_TITLE_FALLBACK,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      title: pageTitle,
+      description: page?.description,
+      sitename: ctx.siteName,
+    },
   });
 }

@@ -4,20 +4,20 @@ import type { PageBuilderBlock } from "@/components/blocks/registry";
 import type { TopicsPageGroupRow } from "@/lib/blog-topics-index";
 import { enrichPopularRowBlocks } from "@/lib/page-builder";
 import { blogTopicsPageParams } from "@/lib/blog-language";
-import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import {
   buildDocMetadata,
   type DocSeoFields,
 } from "@/lib/resolve-seo";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import type { BlogRobotsDirective } from "@/lib/seo";
 import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { BLOG_TOPICS_PAGE_BUILDER_QUERY } from "@pakfactory/sanity/queries";
 
-const TOPICS_TITLE_FALLBACK = "Explore topics";
-const TOPICS_META_TITLE_FALLBACK = "Explore topics | PakFactory Blog";
+const TOPICS_TITLE_FALLBACK = "Browse Packaging Topics";
+const TOPICS_META_TITLE_FALLBACK = "Browse Packaging Topics | PakFactory Blog";
 const TOPICS_DESCRIPTION_FALLBACK =
-  "Browse PakFactory blog topics across packaging materials, types, finishes, and industries.";
+  "Browse every packaging topic on the PakFactory blog, by industry, packaging type, material, and finish.";
 
 export type BlogTopicsPageDoc = DocSeoFields & {
   title?: string | null;
@@ -94,17 +94,29 @@ export async function buildBlogTopicsMetadata(
   page: BlogTopicsPageDoc | null,
   robots: BlogRobotsDirective,
 ): Promise<Metadata> {
-  const settings = await fetchBlogGlobalSettings();
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "pageDefaults");
+  const pageTitle = page?.title?.trim() || TOPICS_TITLE_FALLBACK;
+  const overviewDescription = resolveTopicsPageDescription(page);
+
   return buildDocMetadata({
-    title: TOPICS_META_TITLE_FALLBACK,
+    title: pageTitle,
     descriptionFallback: TOPICS_DESCRIPTION_FALLBACK,
     featuredImageUrl: page?.ogImageUrl,
     selfCanonicalPath: "/topics",
-    defaultOgImageUrl: settings?.defaultOgImageUrl,
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
     seo: page ?? {},
     robots,
-    titleOverride: page?.metaTitle?.trim()
-      ? undefined
-      : TOPICS_META_TITLE_FALLBACK,
+    titleOverride:
+      page?.metaTitle?.trim() || defaults?.metaTitleFormat?.trim()
+        ? undefined
+        : TOPICS_META_TITLE_FALLBACK,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      title: pageTitle,
+      description: overviewDescription,
+      sitename: ctx.siteName,
+    },
   });
 }

@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import type { HomePostCard } from "@/lib/blog-home";
+import type { BlogSearchContent } from "@/lib/blog-data";
 import {
   archivePageSlice,
   DEFAULT_PAGE_SIZE,
@@ -6,6 +8,8 @@ import {
   isArchivePageOutOfRange,
 } from "@/lib/blog-archive";
 import { parseListingPage, type BlogRobotsDirective } from "@/lib/seo";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
+import { buildDocMetadata } from "@/lib/resolve-seo";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
@@ -15,6 +19,11 @@ import {
   BLOG_SEARCH_POSTS_PAGE_POPULAR_QUERY,
   BLOG_SEARCH_POSTS_PAGE_UPDATED_QUERY,
 } from "@pakfactory/sanity/queries";
+
+const SEARCH_TITLE_FALLBACK = "Search";
+const SEARCH_META_TITLE_FALLBACK = "Search | PakFactory Blog";
+const SEARCH_DESCRIPTION_FALLBACK =
+  "Search the PakFactory blog for custom packaging guides on design, materials, sustainability, compliance, cost, and branding.";
 
 /** Newest (date posted) is the default; the filter bar can re-sort. */
 export type SearchSort = "newest" | "updated" | "popular";
@@ -174,6 +183,58 @@ export function searchPageHref(
 /** Search pages are never indexed, but links are still followed (PROD-1503 AC). */
 export function getSearchRobots(): BlogRobotsDirective {
   return { index: false, follow: true };
+}
+
+/**
+ * Search metadata: empty state uses CMS SEO + Blog Settings pageDefaults;
+ * results (`?q=`) keep a query-specific title/description. Always noindex.
+ */
+export async function buildBlogSearchMetadata(
+  query: string,
+  page: BlogSearchContent | null,
+): Promise<Metadata> {
+  const robots = getSearchRobots();
+
+  if (query) {
+    return buildDocMetadata({
+      title: `Search results for “${query}”`,
+      descriptionFallback: `Blog articles matching “${query}”.`,
+      selfCanonicalPath: "/search",
+      seo: {},
+      robots,
+      titleOverride: `Search results for “${query}” | PakFactory Blog`,
+    });
+  }
+
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "pageDefaults");
+  const pageTitle = page?.title?.trim() || SEARCH_TITLE_FALLBACK;
+  const {
+    topics: _topics,
+    blocks: _blocks,
+    ...seo
+  } = page ?? { topics: [], blocks: [] };
+
+  return buildDocMetadata({
+    title: pageTitle,
+    descriptionFallback: SEARCH_DESCRIPTION_FALLBACK,
+    featuredImageUrl: page?.ogImageUrl,
+    selfCanonicalPath: "/search",
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
+    seo,
+    robots,
+    titleOverride:
+      page?.metaTitle?.trim() || defaults?.metaTitleFormat?.trim()
+        ? undefined
+        : SEARCH_META_TITLE_FALLBACK,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      title: pageTitle,
+      description: page?.description,
+      sitename: ctx.siteName,
+    },
+  });
 }
 
 export async function fetchSearchPage(

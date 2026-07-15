@@ -2,10 +2,7 @@ import type { HomePostCard } from "@/lib/blog-home";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import {
-  BLOG_ALL_POSTS_COUNT_QUERY,
-  BLOG_ALL_POSTS_PAGE_QUERY,
-} from "@pakfactory/sanity/queries";
+import { BLOG_ALL_POSTS_ARCHIVE_QUERY } from "@pakfactory/sanity/queries";
 
 /** Shared listing page size (all archive + category + topic archives). */
 export const LISTING_PAGE_SIZE = 15;
@@ -76,37 +73,30 @@ export function archivePageHref(
   return base;
 }
 
-async function fetchPostCount(): Promise<number> {
-  if (!isSanityConfigured()) return 0;
-  const client = await getSanityClient();
-  return client
-    .fetch<number>(BLOG_ALL_POSTS_COUNT_QUERY, blogLanguageParams())
-    .catch(() => 0);
-}
-
 export async function fetchAllArchivePage(
   pageNumber: number,
   perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<AllArchivePageData> {
-  const totalCount = await fetchPostCount();
-  const totalPages = getTotalArchivePages(totalCount, perPage);
-
-  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
-    return { posts: [], totalCount, pageNumber, totalPages, perPage };
-  }
-
   if (!isSanityConfigured()) {
     return { posts: [], totalCount: 0, pageNumber, totalPages: 1, perPage };
   }
 
+  // Single round-trip: total count + this page's slice in one query.
   const { start, end } = archivePageSlice(pageNumber, perPage);
   const client = await getSanityClient();
-  const posts = await client
-    .fetch<HomePostCard[]>(
-      BLOG_ALL_POSTS_PAGE_QUERY,
+  const { totalCount, posts } = await client
+    .fetch<{ totalCount: number; posts: HomePostCard[] }>(
+      BLOG_ALL_POSTS_ARCHIVE_QUERY,
       blogLanguageParams({ start, end }),
     )
-    .catch(() => []);
+    .catch(() => ({ totalCount: 0, posts: [] }));
+
+  const totalPages = getTotalArchivePages(totalCount, perPage);
+
+  // Out-of-range pages return an (empty) slice cheaply; the route 404s on this.
+  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
+    return { posts: [], totalCount, pageNumber, totalPages, perPage };
+  }
 
   return { posts, totalCount, pageNumber, totalPages, perPage };
 }

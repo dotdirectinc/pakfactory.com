@@ -320,7 +320,7 @@ export const caseStudy = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      description: '"| PakFactory" appended automatically. Max 60 characters.',
+      description: 'Shown in search results and the browser tab. Falls back to the title when blank.',
       validation: (Rule) =>
         Rule.max(60).warning('Titles over 60 characters may be truncated.'),
     }),
@@ -330,7 +330,7 @@ export const caseStudy = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      description: 'Fallback: cardSummary → heroIntro. Aim for 155–165 characters.',
+      description: 'The SERP snippet. Falls back to the card summary, then the intro, when blank.',
       validation: (Rule) =>
         Rule.max(160).warning('Descriptions over 160 characters are typically truncated.'),
     }),

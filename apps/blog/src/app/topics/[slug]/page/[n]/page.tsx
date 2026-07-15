@@ -15,6 +15,7 @@ import {
   resolvePaginationRoute,
 } from "@/lib/blog-archive-pagination";
 import { fetchBlogCategories } from "@/lib/blog-data";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import { getTagListingRobots } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -37,18 +38,26 @@ export async function generateMetadata({
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
   const perPage = parsePerPage(sp.perPage);
-  const data = await fetchTagArchivePage(
-    slug,
-    pagination.pageNumber,
-    filters,
-    perPage,
-  );
+  const [data, seoCtx] = await Promise.all([
+    fetchTagArchivePage(slug, pagination.pageNumber, filters, perPage),
+    fetchSeoContext(),
+  ]);
   if (!data) return { title: "Topic not found" };
 
+  const tagDefaults = typeDefaults(seoCtx, "tagDefaults");
   return buildTagArchiveMetadata(
     data.tag,
     tagPageHref(slug, pagination.pageNumber, filters),
-    getTagListingRobots(pagination.pageNumber, sp, data.totalCount > 0, data.tag),
+    getTagListingRobots(
+      pagination.pageNumber,
+      sp,
+      data.totalCount > 0,
+      data.tag,
+      {
+        postCount: data.totalCount,
+        autoNoindexThreshold: tagDefaults?.autoNoindexThreshold,
+      },
+    ),
     {
       titleOverride: paginatedListTitle(data.tag.title, pagination.pageNumber),
       descriptionOverride: paginatedEntityDescription(

@@ -15,6 +15,8 @@ export type BlogTypeDefaults = {
   noImageIndex?: boolean | null;
   sitemapPriority?: number | null;
   sitemapChangefreq?: string | null;
+  /** Topic defaults only — force noindex when post count is below this. */
+  autoNoindexThreshold?: number | null;
 };
 
 export type BlogSettings = {
@@ -22,6 +24,7 @@ export type BlogSettings = {
   categoryDefaults?: BlogTypeDefaults | null;
   tagDefaults?: BlogTypeDefaults | null;
   authorDefaults?: BlogTypeDefaults | null;
+  pageDefaults?: BlogTypeDefaults | null;
 };
 
 async function loadBlogSettings(): Promise<BlogSettings | null> {

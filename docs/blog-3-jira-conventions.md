@@ -49,10 +49,10 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 - Utility: **`getBlogRobotsDirective`** / **`getListingRobotsFromSearchParams`** in `apps/blog/src/lib/seo.ts`.
 - **Post detail:** always `index, follow`.
-- **Listing** (`blog_index`, future `category` / `tag` / `author`):
-    - Page **1**, no filter query params → `index, follow`.
-    - Page **≥ 2** or **any filter** (`tag`, `category`, `q`, `query`, `author`, `year`, `month`) → **`noindex, follow`**.
-- Pagination uses `page` only — **`page` is not a filter**.
+- **Listing** (`blog_index`, `category` / `tag` / `author` / `all_archive`):
+    - Unfiltered pages (including page **≥ 2**), default per-page → `index, follow`, each self-canonical to itself.
+    - **Any filter** (`tag`, `category`, `q`, `query`, `author`, `year`, `month`) or non-default `?perPage=` → **`noindex, follow`**.
+- Pagination uses path `/page/N` (and optional `page` query) — **pagination alone is not a filter**.
 
 ## PROD-1496 — URLs and deployment
 
@@ -142,7 +142,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 
 ## PROD-1501 — Author profiles
 
-- **Route:** `/author/[slug]` (page 1) and `/author/[slug]/page/[n]` (pagination); page 1 canonical at `/author/[slug]`; page 2+ → **noindex, follow** (PROD-1495). `author` is a reserved root segment.
+- **Route:** `/author/[slug]` (page 1) and `/author/[slug]/page/[n]` (pagination); page 1 canonical at `/author/[slug]`; page 2+ self-canonical and indexable when unfiltered (PROD-1495). Thin authors (no bio / ≤1 post) → **noindex, follow**. `author` is a reserved root segment.
 - **Posts:** SSR `PostList` in a 3-col grid; **15 per page** (`LISTING_PAGE_SIZE`, same as topic/category); path-based `<Pagination>` — no client load-more API.
 - **JSON-LD:** `Person` (`jobTitle`=role, `description`=bio text, `sameAs`=[LinkedIn]) + `BreadcrumbList`, via `@pakfactory/seo` `person()` (extended with `jobTitle`/`description`/`sameAs`). `authorPersonId(slug)` = `…/author/{slug}#person`.
 - **Article back-ref:** every post's `Article.author` `@id` is `authorPersonId(post.author.slug)`, so posts link back to the author page (`blog-post.ts`).

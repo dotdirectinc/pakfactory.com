@@ -87,12 +87,12 @@ function MetaDot() {
 }
 
 function CategoryBadge({ title, slug }: { title: string; slug?: string }) {
-  const cls = "text-sm text-muted-foreground";
+  const cls = "text-sm font-medium text-primary";
   if (!slug) return <span className={cls}>{title}</span>;
   return (
     <Link
       href={categoryHref(slug)}
-      className={`${cls} w-fit transition-colors hover:text-foreground hover:underline hover:underline-offset-4`}
+      className={`${cls} w-fit transition-colors hover:text-primary/80 hover:underline hover:underline-offset-4`}
     >
       {title}
     </Link>

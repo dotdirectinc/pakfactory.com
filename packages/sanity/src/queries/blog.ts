@@ -421,6 +421,17 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
  * Requires `$language` and `$monthStart` params (see blogNotFoundPageParams).
  */
 export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  title,
+  description,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
   "topics": recommendedTopics[]->{
     _id,
     title,
@@ -435,6 +446,17 @@ export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPag
  * Requires `$language` and `$monthStart` params (see blogSearchPageParams).
  */
 export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogSearchPage"][0]{
+  title,
+  description,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
   "topics": recommendedTopics[]->{
     _id,
     title,
@@ -451,6 +473,7 @@ export const BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY = /* groq */ `*[
   _type == "blogPage" && _id == $contributePageId && (language == $language || !defined(language))
 ][0]{
   title,
+  description,
   metaTitle,
   metaDescription,
   ogTitle,
@@ -543,6 +566,7 @@ export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
   title,
   pageRole,
   "slug": slug.current,
+  description,
   metaTitle,
   metaDescription,
   ogTitle,
@@ -794,6 +818,28 @@ export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
   && publishedAt <= now()
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
+/**
+ * All-posts archive in a single round-trip — total count + one page slice.
+ * Collapses the former count + page queries into one request (PROD-2008 perf).
+ * `$start` inclusive, `$end` exclusive.
+ */
+export const BLOG_ALL_POSTS_ARCHIVE_QUERY = /* groq */ `{
+  "totalCount": count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(slug.current)
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ]),
+  "posts": *[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(slug.current)
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}
+}`;
+
 /** Latest 20 published posts for RSS 2.0 (`/rss.xml`, PROD-1505). */
 export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   _type == "post"
@@ -899,9 +945,19 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
     allowFollow,
     noImageIndex,
     sitemapPriority,
-    sitemapChangefreq
+    sitemapChangefreq,
+    autoNoindexThreshold
   },
   authorDefaults{
+    metaTitleFormat,
+    metaDescriptionFormat,
+    allowIndex,
+    allowFollow,
+    noImageIndex,
+    sitemapPriority,
+    sitemapChangefreq
+  },
+  pageDefaults{
     metaTitleFormat,
     metaDescriptionFormat,
     allowIndex,
@@ -1171,19 +1227,24 @@ export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
   ${AUTHOR_POST_FILTER}
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-/** Authors with at least one published post (sitemap).
+/** Authors eligible for sitemap: ≥2 published posts and a bio (short or long).
+ * Thin authors (no bio / 0–1 posts) stay noindex and are omitted here.
  * Posts with language null/missing are treated as belonging to the default
  * language so authors seeded before the language field was added are included. */
 export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "author"
   && defined(slug.current)
+  && (
+    (defined(shortBio) && shortBio != "")
+    || length(pt::text(bio)) > 0
+  )
   && count(*[
     _type == "post"
     && (!defined(language) || language == $language)
     && author._ref == ^._id
     && defined(publishedAt)
     && publishedAt <= now()
-  ]) > 0
+  ]) > 1
 ]{
   "slug": slug.current,
   _updatedAt
