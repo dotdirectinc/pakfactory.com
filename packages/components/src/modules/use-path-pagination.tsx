@@ -53,14 +53,22 @@ export function usePathPagination({
   );
 
   useEffect(() => {
-    const onPopState = () => {
+    const syncFromUrl = () => {
       const parsed = parsePathPage(window.location.pathname, basePath);
       if (parsed == null) return;
       onPageChange(parsed);
     };
 
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    // Sync once on mount. After navigating into a detail page and pressing
+    // browser-back, the listing remounts and its `popstate` fires *before* this
+    // listener is registered — so a listener alone misses it. The server
+    // `initialPage` can also be stale relative to the restored URL (pagination
+    // is soft pushState, so the base route may be cached). Reading the actual
+    // pathname on mount keeps the displayed page in sync with the URL.
+    syncFromUrl();
+
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, [basePath, onPageChange]);
 
   return { goToPage, hrefForPage };
