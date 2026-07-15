@@ -34,7 +34,7 @@ export function PostDetailHeader({
   const readLabel = formatReadTime(readingTimeMinutes);
 
   return (
-    <section aria-labelledby="post-heading" className="bg-muted">
+    <section aria-labelledby="post-heading" className="bg-brand-cream">
       <PageDielineSection innerClassName="grid grid-cols-1 items-center gap-8 py-10 md:py-12 lg:grid-cols-2">
         {/* Text column */}
       <div className="flex flex-col gap-6">
