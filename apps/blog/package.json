@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@next/third-parties": "^16.2.10",
     "@pakfactory/components": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",
@@ -26,7 +27,6 @@
     "next": "^16.2.3",
     "next-sanity": "^12.2.2",
     "nodemailer": "^9.0.3",
-    "posthog-js": "^1.400.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sonner": "^2.0.7"

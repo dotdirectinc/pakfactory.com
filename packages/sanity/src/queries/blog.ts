@@ -868,7 +868,8 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "companyAddress": organization.contact.address,
   robotsTxt,
   llmsTxt,
-  additionalEmbedHosts
+  additionalEmbedHosts,
+  gtmId
 }`;
 
 /** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */
