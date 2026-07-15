@@ -5,10 +5,10 @@ import { useEffect } from "react";
 import { captureEvent } from "@/lib/analytics";
 
 /**
- * SearchTracker — fires `search_performed` once per executed query.
- * `zero_results` is the content-gap signal (brain: *blog-analytics-funnels*
- * F3 / Findability). Renders nothing; mounted by the /search page with the
- * server-resolved result count.
+ * SearchTracker — fires `search_performed` once per executed query (GTM
+ * dataLayer via `captureEvent`). `zero_results` is the content-gap signal
+ * (brain: *blog-analytics-funnels* F3 / Findability). Renders nothing;
+ * mounted by the /search page with the server-resolved result count.
  */
 type SearchTrackerProps = {
   query: string;
