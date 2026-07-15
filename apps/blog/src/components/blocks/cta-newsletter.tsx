@@ -81,7 +81,7 @@ export function CtaNewsletter({
     return (
         <PageDielineFullBleedSection
             aria-labelledby="cta-newsletter-heading"
-            sectionClassName="bg-accent"
+            sectionClassName="bg-brand-cream"
             borderTop={borderTop}
             borderBottom={borderBottom}
             innerClassName="py-10 sm:py-12"
