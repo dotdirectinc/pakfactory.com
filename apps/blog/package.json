@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
     "@next/third-parties": "^16.2.10",
     "@pakfactory/components": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
@@ -21,7 +22,6 @@
     "@sanity/image-url": "^2.1.1",
     "@sanity/visual-editing": "^5.3.3",
     "algoliasearch": "^5.55.2",
-    "geist": "^1.4.2",
     "gsap": "^3.15.0",
     "lucide-react": "^0.468.0",
     "next": "^16.2.3",

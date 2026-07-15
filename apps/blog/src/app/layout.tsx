@@ -1,6 +1,12 @@
 import type {Metadata} from 'next';
 import {draftMode} from 'next/headers';
-import {GeistSans} from 'geist/font/sans';
+// Self-host the 'Geist Variable' family that packages/ui globals.css references
+// via --font-geist-sans (same mechanism as apps/www). Do NOT use next/font's
+// `geist/font/sans`: it publishes --font-geist-sans under a hashed family name
+// that competes with the globals `:root` value, so whichever wins the cascade is
+// non-deterministic — and the 'Geist Variable' @font-face was never registered,
+// leaving machines without Geist installed on the system-font fallback (PROD-2010).
+import '@fontsource-variable/geist';
 import {Inter} from 'next/font/google';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {VisualEditing} from 'next-sanity/visual-editing';
@@ -61,7 +67,7 @@ export default async function RootLayout({
     const gtmId = resolveGtmId(globalSettings?.gtmId);
     const envLabel = resolveEnvBadgeLabel();
     return (
-        <html lang="en" className={`${GeistSans.variable} ${inter.variable}`}>
+        <html lang="en" className={inter.variable}>
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
                 <AppToaster />
