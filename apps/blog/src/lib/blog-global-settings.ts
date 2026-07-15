@@ -22,6 +22,8 @@ export type BlogGlobalSettings = {
   llmsTxt?: string | null;
   /** Admin-managed extra hosts allowed for the bodyEmbed iframe widget. */
   additionalEmbedHosts?: string[] | null;
+  /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
+  gtmId?: string | null;
 };
 
 async function loadBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {

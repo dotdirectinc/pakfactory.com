@@ -7,7 +7,8 @@ import { captureEvent } from "@/lib/analytics";
 /**
  * PostReadTracker — fires `post_read` once per view when the reader is
  * genuinely engaged: ≥60% page scroll AND ≥30s dwell (both, per the funnel
- * design on the brain's *blog-analytics-funnels* page). Renders nothing.
+ * design on the brain's *blog-analytics-funnels* page). Pushes to GTM
+ * dataLayer via `captureEvent`. Renders nothing.
  */
 const DWELL_MS = 30_000;
 const SCROLL_RATIO = 0.6;

@@ -16,6 +16,7 @@ import {
   jsonLdGraph,
   serializeJsonLd,
 } from "@pakfactory/seo";
+import { pathPaginationHref } from "@pakfactory/components/commons/path-pagination";
 import { absoluteUrl } from "@/lib/site";
 import { pakfactoryOrganization } from "@/lib/case-study-jsonld";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
@@ -28,9 +29,9 @@ export { CASE_STUDIES_BASE_PATH, CASE_STUDIES_LISTING_TOP_ID } from "./case-stud
 
 const PAGE_URL = absoluteUrl(CASE_STUDIES_BASE_PATH);
 
-const FALLBACK_TITLE = "Case Studies | PakFactory";
+const FALLBACK_TITLE = "Packaging Case Studies | PakFactory";
 const FALLBACK_DESCRIPTION =
-  "See how PakFactory has helped brands create custom packaging that protects products and elevates unboxing experiences.";
+  "See how brands solved real packaging challenges with PakFactory: rigid boxes, folding cartons, tins, and inserts, across food, beauty, and retail.";
 
 type ListingData = {
   studies: CaseStudyCardData[];
@@ -68,18 +69,21 @@ export async function buildCaseStudiesListingMetadata(
   const title = pageData?.metaTitle?.trim() || FALLBACK_TITLE;
   const description = pageData?.metaDescription?.trim() || FALLBACK_DESCRIPTION;
   const ogImageUrl = pageData?.ogImageUrl;
+  const canonicalPath = pathPaginationHref(CASE_STUDIES_BASE_PATH, pageNumber);
+  const canonical = absoluteUrl(canonicalPath);
+  const pageTitle =
+    pageNumber > 1
+      ? `${title.replace(/\s*\|\s*PakFactory$/, "")} - Page ${pageNumber} | PakFactory`
+      : title;
 
   return {
-    title:
-      pageNumber > 1 ? `${title.replace(/\s*\|\s*PakFactory$/, "")} — Page ${pageNumber} | PakFactory` : title,
+    title: pageTitle,
     description,
-    alternates: { canonical: PAGE_URL },
-    robots:
-      pageNumber > 1 ? { index: false, follow: true } : undefined,
+    alternates: { canonical },
     openGraph: {
-      title,
+      title: pageTitle,
       description,
-      url: PAGE_URL,
+      url: canonical,
       ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
     },
   };

@@ -13,6 +13,7 @@ import {
   buildAuthorMetadata,
   fetchAuthorArchivePage,
   getAuthorListingRobots,
+  isThinAuthor,
 } from "@/lib/blog-author";
 import { hasNonDefaultPerPage } from "@/lib/seo";
 
@@ -48,6 +49,7 @@ export async function generateMetadata({
     authorPageHref(slug, pagination.pageNumber),
     getAuthorListingRobots(pagination.pageNumber, {
       hasNonDefaultPerPage: hasNonDefaultPerPage(sp),
+      thinAuthor: isThinAuthor(data.author, data.totalCount),
     }),
     {
       titleOverride: paginatedListTitle(data.author.name, pagination.pageNumber),

@@ -15,6 +15,8 @@ export type BlogTypeDefaults = {
   noImageIndex?: boolean | null;
   sitemapPriority?: number | null;
   sitemapChangefreq?: string | null;
+  /** Topic defaults only — force noindex when post count is below this. */
+  autoNoindexThreshold?: number | null;
 };
 
 export type BlogSettings = {
