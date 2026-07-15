@@ -1,13 +1,13 @@
 // Source: shadcn-studio (hero-section-32/widget-advertisement)
 "use client";
 
-import Image from "next/image";
 import {
   EllipsisVerticalIcon,
   MessageSquareIcon,
   ThumbsUpIcon,
 } from "lucide-react";
 
+import { SanityImage } from "@/components/ui/sanity-image";
 import { Avatar, AvatarFallback, AvatarImage } from "@pakfactory/ui/components/avatar";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
@@ -116,7 +116,7 @@ const AdvertisementCard = ({
         <div className="relative">
           <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
             {hasSanityBanner && bannerUrl ? (
-              <Image
+              <SanityImage
                 src={bannerUrl}
                 alt={bannerAlt?.trim() || cardTitle}
                 fill

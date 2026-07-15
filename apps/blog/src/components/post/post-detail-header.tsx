@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
+import { SanityImage } from "@/components/ui/sanity-image";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { formatPostDate, formatReadTime } from "@/lib/post-format";
 import { categoryHref } from "@/lib/blog-post-url";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageBaseUrl } from "@/lib/sanity-image";
 
 type PostDetailHeaderProps = {
   title: string;
@@ -28,7 +28,7 @@ export function PostDetailHeader({
   mainImage,
   mainImageAlt,
 }: PostDetailHeaderProps) {
-  const heroUrl = sanityImageUrl(mainImage, 1400);
+  const heroUrl = sanityImageBaseUrl(mainImage);
   const publishedLabel = formatPostDate(publishedAt);
   const updatedLabel = formatPostDate(lastModified ?? publishedAt);
   const readLabel = formatReadTime(readingTimeMinutes);
@@ -86,7 +86,7 @@ export function PostDetailHeader({
       {/* Hero image column */}
       <figure className="relative aspect-video w-full overflow-hidden rounded-2xl bg-secondary">
         {heroUrl ? (
-          <Image
+          <SanityImage
             src={heroUrl}
             alt={mainImageAlt ?? title}
             fill

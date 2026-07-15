@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 
 import type { PostCardData } from "@/components/modules/post-card";
+import { SanityImage } from "@/components/ui/sanity-image";
 
 const ROTATE_MS = 5000;
 const DESKTOP_MQ = "(min-width: 1024px)";
@@ -120,7 +120,7 @@ export function PostFeaturedRotator({
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-secondary shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]">
             {slides.map((post, i) =>
               post.imageUrl ? (
-                <Image
+                <SanityImage
                   key={post._id}
                   src={post.imageUrl}
                   alt={i === active ? (post.imageAlt ?? post.title) : ""}
@@ -166,7 +166,7 @@ export function PostFeaturedRotator({
                 >
                   {post.imageUrl ? (
                     <span className="relative w-20 shrink-0 self-stretch overflow-hidden rounded-md bg-secondary lg:hidden">
-                      <Image
+                      <SanityImage
                         src={post.imageUrl}
                         alt=""
                         fill

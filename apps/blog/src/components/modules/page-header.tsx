@@ -1,8 +1,10 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 import type { PortableTextBlock } from "@portabletext/types";
 import { PageDielineSection } from "@/components/layout/page-dieline-section";
 import { PortableText } from "@/components/ui/portable-text";
+import { SanityImage } from "@/components/ui/sanity-image";
+import { isSanityCdnUrl } from "@/lib/sanity-image";
+import Image from "next/image";
 
 type PageHeaderProps = {
   title: string;
@@ -54,14 +56,25 @@ export function PageHeader({
         </div>
         {bannerSrc ? (
           <div className="relative aspect-[21/9] max-w-full overflow-hidden rounded-[14px]">
-            <Image
-              src={bannerSrc}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 880px) 100vw, 880px"
-              priority
-            />
+            {isSanityCdnUrl(bannerSrc) ? (
+              <SanityImage
+                src={bannerSrc}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 880px) 100vw, 880px"
+                priority
+              />
+            ) : (
+              <Image
+                src={bannerSrc}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 880px) 100vw, 880px"
+                priority
+              />
+            )}
           </div>
         ) : null}
         {belowContent}

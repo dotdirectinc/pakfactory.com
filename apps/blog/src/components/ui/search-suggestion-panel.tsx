@@ -5,10 +5,12 @@ import {Folder, Tag} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import type {SearchSuggestion, SearchSuggestTab} from '@/lib/algolia-suggest';
 import {SearchHighlight} from '@/components/ui/search-highlight';
+import {SanityImage} from '@/components/ui/sanity-image';
 import {
     SearchSuggestTabs,
     type SearchSuggestTabOption,
 } from '@/components/ui/search-suggest-tabs';
+import {isSanityCdnUrl} from '@/lib/sanity-image';
 
 type SearchSuggestionPanelProps = {
     listboxId: string;
@@ -32,15 +34,26 @@ function optionId(listboxId: string, index: number): string {
 
 function SuggestionLeading({item}: {item: SearchSuggestion}) {
     if (item.kind === 'post' && item.imageUrl) {
+        const {imageUrl, imageAlt} = item;
         return (
             <span className="relative size-10 shrink-0 overflow-hidden rounded-md bg-muted">
-                <Image
-                    src={item.imageUrl}
-                    alt={item.imageAlt ?? ''}
-                    fill
-                    sizes="40px"
-                    className="object-cover"
-                />
+                {isSanityCdnUrl(imageUrl) ? (
+                    <SanityImage
+                        src={imageUrl}
+                        alt={imageAlt ?? ''}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                    />
+                ) : (
+                    <Image
+                        src={imageUrl}
+                        alt={imageAlt ?? ''}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                    />
+                )}
             </span>
         );
     }
