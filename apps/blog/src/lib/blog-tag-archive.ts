@@ -224,39 +224,20 @@ export async function fetchTagArchivePage(
 
   const groqParams = groqFilterParams(tagSlug, filters);
   let totalCount = 0;
-
-  if (isSanityConfigured()) {
-    const client = await getSanityClient();
-    totalCount = await client
-      .fetch<number>(BLOG_TAG_POSTS_COUNT_QUERY, groqParams)
-      .catch(() => 0);
-  }
-
-  const totalPages = getTotalArchivePages(totalCount, perPage);
-
-  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
-    return {
-      tag,
-      posts: [],
-      totalCount,
-      pageNumber,
-      totalPages,
-      perPage,
-      filters,
-      cooccurringTags: [],
-      authors: [],
-    };
-  }
-
   let posts: HomePostCard[] = [];
   let cooccurringTags: TagFacet[] = [];
   let authors: TagFacetAuthor[] = [];
 
+  // Count, page slice, and both facet sets are independent — one parallel
+  // round-trip instead of a separate count wave followed by the batch.
   if (isSanityConfigured()) {
     const start = (pageNumber - 1) * perPage;
     const end = start + perPage;
     const client = await getSanityClient();
-    [posts, cooccurringTags, authors] = await Promise.all([
+    [totalCount, posts, cooccurringTags, authors] = await Promise.all([
+      client
+        .fetch<number>(BLOG_TAG_POSTS_COUNT_QUERY, groqParams)
+        .catch(() => 0),
       client
         .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {
           ...groqParams,
@@ -277,6 +258,22 @@ export async function fetchTagArchivePage(
         )
         .catch(() => []),
     ]);
+  }
+
+  const totalPages = getTotalArchivePages(totalCount, perPage);
+
+  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
+    return {
+      tag,
+      posts: [],
+      totalCount,
+      pageNumber,
+      totalPages,
+      perPage,
+      filters,
+      cooccurringTags: [],
+      authors: [],
+    };
   }
 
   return {

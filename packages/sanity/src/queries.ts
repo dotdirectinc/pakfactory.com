@@ -11,6 +11,7 @@ export const POSTS_QUERY = /* groq */ `*[_type == "post" && defined(slug.current
 export {
     BLOG_ALL_POSTS_COUNT_QUERY,
     BLOG_ALL_POSTS_PAGE_QUERY,
+    BLOG_ALL_POSTS_ARCHIVE_QUERY,
     BLOG_GLOBAL_SETTINGS_QUERY,
     BLOG_NAV_CATEGORIES_QUERY,
     BLOG_FOOTER_NAV_QUERY,
