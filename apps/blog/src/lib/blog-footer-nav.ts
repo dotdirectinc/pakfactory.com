@@ -537,6 +537,37 @@ export function resolveFooterLinkHref(link: FooterNavLinkRow): {
     return null;
 }
 
+/**
+ * TEMP (launch polish): the Studio "Browse by Topics" footer section still
+ * links to legacy Magento pages (custom-packaging-products.html,
+ * option-library.html, …). Until editors relink them in Studio (linkType
+ * "path" with sitePath "/topics?group=…"), remap those axis links onto the
+ * blog's own topics index so they render as internal links under the same
+ * base path as the "Browse by Categories" links. Remove once Studio content
+ * is updated — the remap only fires on external *.html old-site URLs inside
+ * a "Browse by Topics" section, so corrected content bypasses it naturally.
+ */
+const LEGACY_TOPICS_SECTION = /browse by topics/i;
+const LEGACY_OLD_SITE_LINK = /^https?:\/\/(www\.)?pakfactory\.com\/.+\.html/i;
+/** Footer axis label → blog topics path (slugs from live `blogTopicGroup` docs). */
+const TOPIC_AXIS_PATHS: Record<string, string> = {
+    'packaging type': '/topics?group=packaging-type',
+    industry: '/topics?group=industry',
+    'packaging material': '/topics?group=material',
+    'packaging finish': '/topics?group=finish',
+};
+
+function remapLegacyTopicLink(
+    sectionTitle: string,
+    link: {label: string; href: string; external?: boolean},
+): {label: string; href: string; external?: boolean} {
+    if (!LEGACY_TOPICS_SECTION.test(sectionTitle)) return link;
+    if (!link.external || !LEGACY_OLD_SITE_LINK.test(link.href)) return link;
+    const mapped =
+        TOPIC_AXIS_PATHS[link.label.trim().toLowerCase()] ?? '/topics';
+    return {label: link.label, href: mapped};
+}
+
 export function resolveFooterColumns(doc: BlogFooterNavDoc): BlogFooterColumns {
     if (!doc?._id) {
         return [];
@@ -564,11 +595,13 @@ export function resolveFooterColumns(doc: BlogFooterNavDoc): BlogFooterColumns {
                                 ReturnType<typeof resolveFooterLinkHref>
                             > => link != null,
                         )
-                        .map(({label, href, external}) => ({
-                            label,
-                            href,
-                            ...(external ? {external: true} : {}),
-                        }));
+                        .map(({label, href, external}) =>
+                            remapLegacyTopicLink(title, {
+                                label,
+                                href,
+                                ...(external ? {external: true} : {}),
+                            }),
+                        );
 
                     return {title, links};
                 })

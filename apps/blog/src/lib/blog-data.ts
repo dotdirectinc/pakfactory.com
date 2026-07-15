@@ -96,6 +96,14 @@ type BlogNavSettingsDoc = {
   header?: BlogPrimaryNavHeaderRow;
 } | null;
 
+/**
+ * TEMP (pre-launch): custom nav rows hidden from the primary nav until their
+ * destinations are ready. The rows stay untouched in Studio — delete a label
+ * from this set to restore it. Currently hidden: "Case Studies" (www page not
+ * launched yet; re-add when it ships).
+ */
+const HIDDEN_NAV_LABELS = new Set(["case studies"]);
+
 function resolvePrimaryNavItems(
   doc: BlogNavSettingsDoc,
   language: string = DEFAULT_BLOG_LANGUAGE,
@@ -122,6 +130,7 @@ function resolvePrimaryNavItems(
     if (row.linkType) {
       const resolved = resolveFooterLinkHref(row);
       if (!resolved) continue;
+      if (HIDDEN_NAV_LABELS.has(resolved.label.trim().toLowerCase())) continue;
       items.push({
         key: row._key ?? resolved.href,
         label: resolved.label,
