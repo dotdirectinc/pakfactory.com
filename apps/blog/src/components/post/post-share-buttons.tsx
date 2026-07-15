@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Link2 } from "lucide-react";
+import { Check, Link } from "lucide-react";
 import { useState } from "react";
 import { SocialPlatformIcon } from "@/components/modules/social-platform-icon";
 import { EXTERNAL_LINK_REL } from "@/lib/external-link";
@@ -43,23 +43,24 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
     }
   }
 
+  // POC `ShareLink` — round-bordered circle that lifts and tints green on hover.
   const iconLink =
-    "flex size-5 items-center justify-center rounded-sm text-foreground outline-none transition-opacity hover:opacity-70 focus-visible:ring-[3px] focus-visible:ring-ring/50";
+    "flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-[var(--opacity-primary-10)] hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-base font-medium text-muted-foreground">Share article</p>
-      <div className="flex items-center justify-start gap-5">
+      <div className="flex items-center gap-2.5">
         <button
           type="button"
           onClick={copyLink}
           aria-label={copied ? "Link copied" : "Copy link"}
-          className="flex size-5 cursor-pointer items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className={`${iconLink} cursor-pointer`}
         >
           {copied ? (
-            <Check className="size-5" aria-hidden />
+            <Check className="size-4" aria-hidden />
           ) : (
-            <Link2 className="size-5" aria-hidden />
+            <Link className="size-4" aria-hidden />
           )}
         </button>
         {NETWORKS.map((network) => (
@@ -71,7 +72,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
             aria-label={network.label}
             className={iconLink}
           >
-            <SocialPlatformIcon platform={network.id} size={20} />
+            <SocialPlatformIcon platform={network.id} size={16} />
           </a>
         ))}
       </div>
