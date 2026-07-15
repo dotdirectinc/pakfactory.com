@@ -1,17 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import {
-    Box,
-    Compass,
-    Factory,
-    Layers,
-    Palette,
-    Sparkles,
-    Store,
-    Tag,
-    type LucideIcon,
-} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
 import type {TopicGroup, TopicLink} from '@/lib/blog-topics-index';
 import {tagHref} from '@/lib/blog-post-url';
@@ -24,20 +13,6 @@ export const TOPICS_PER_COLUMN = 6;
 
 /** Collapsed two-column block: max visible slots including "View all". */
 export const TOPICS_COLLAPSED_MAX_VISIBLE = 12;
-
-const TOPIC_GROUP_ICONS: Record<string, LucideIcon> = {
-    'packaging-type': Box,
-    industry: Factory,
-    finish: Sparkles,
-    material: Layers,
-    channel: Store,
-    'design-style': Palette,
-    topic: Compass,
-};
-
-function iconForTopicGroup(slug: string): LucideIcon {
-    return TOPIC_GROUP_ICONS[slug] ?? Tag;
-}
 
 const topicLinkClass =
     'text-base leading-6 text-muted-foreground transition-colors hover:text-foreground';
@@ -150,7 +125,6 @@ function TopicBlock({group, expandedSlug}: TopicBlockProps) {
     const [expanded, setExpanded] = useState(expandedSlug === group.value);
     const {topics} = group;
     const showToggle = topics.length >= TOPICS_COLLAPSED_MAX_VISIBLE;
-    const Icon = iconForTopicGroup(group.value);
 
     const {columnOne, columnTwo, showViewAll} = collapsedTopics(topics);
 
@@ -165,49 +139,44 @@ function TopicBlock({group, expandedSlug}: TopicBlockProps) {
     };
 
     return (
-        <div className="flex gap-3">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Icon className="size-4" aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-                <h2 className="flex items-center gap-2 text-xl font-medium leading-8 text-foreground">
-                    <span>{group.title}</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                        {topics.length}
-                    </span>
-                </h2>
-                {topics.length <= TOPIC_BLOCK_TWO_COLUMN_THRESHOLD ? (
-                    <ul className="mt-4 flex flex-col gap-2.5">
-                        {topics.map((topic) => (
-                            <TopicLinkItem key={topic._id} topic={topic} />
-                        ))}
-                    </ul>
-                ) : expanded ? (
-                    <TopicTwoColumnGrid
-                        left={splitIntoColumns(topics)[0]}
-                        right={splitIntoColumns(topics)[1]}
-                        toggle={
-                            showToggle ? (
-                                <TopicToggleButton onClick={collapseGroup}>
-                                    Show less
-                                </TopicToggleButton>
-                            ) : undefined
-                        }
-                    />
-                ) : (
-                    <TopicTwoColumnGrid
-                        left={columnOne}
-                        right={columnTwo}
-                        toggle={
-                            showViewAll ? (
-                                <TopicToggleButton onClick={expandGroup}>
-                                    View all
-                                </TopicToggleButton>
-                            ) : undefined
-                        }
-                    />
-                )}
-            </div>
+        <div className="min-w-0">
+            <h2 className="flex items-center gap-2 text-xl font-medium leading-8 text-foreground">
+                <span>{group.title}</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                    {topics.length}
+                </span>
+            </h2>
+            {topics.length <= TOPIC_BLOCK_TWO_COLUMN_THRESHOLD ? (
+                <ul className="mt-4 flex flex-col gap-2.5">
+                    {topics.map((topic) => (
+                        <TopicLinkItem key={topic._id} topic={topic} />
+                    ))}
+                </ul>
+            ) : expanded ? (
+                <TopicTwoColumnGrid
+                    left={splitIntoColumns(topics)[0]}
+                    right={splitIntoColumns(topics)[1]}
+                    toggle={
+                        showToggle ? (
+                            <TopicToggleButton onClick={collapseGroup}>
+                                Show less
+                            </TopicToggleButton>
+                        ) : undefined
+                    }
+                />
+            ) : (
+                <TopicTwoColumnGrid
+                    left={columnOne}
+                    right={columnTwo}
+                    toggle={
+                        showViewAll ? (
+                            <TopicToggleButton onClick={expandGroup}>
+                                View all
+                            </TopicToggleButton>
+                        ) : undefined
+                    }
+                />
+            )}
         </div>
     );
 }
