@@ -15,6 +15,9 @@ import { CogIcon } from '@sanity/icons'
 const TOKEN_HELP =
   'Tokens: %title%, %name%, %job_title%, %excerpt%, %description%, %shortBio%, %sitename%. One change affects every page of this type, so keep it generic.'
 
+const PAGE_TOKEN_HELP =
+  'For blog pages, %title% and %description% map to the page Overview title and description. Other tokens apply the same way across page roles (home, topics, search, contribute, 404, landing, static).'
+
 const CHANGEFREQ = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
 
 type TypeDefaults = {
@@ -103,6 +106,7 @@ export const blogSettings = defineType({
     { name: 'category', title: 'Category defaults' },
     { name: 'tag', title: 'Topic defaults' },
     { name: 'author', title: 'Author defaults' },
+    { name: 'page', title: 'Page defaults' },
     { name: 'general', title: 'General' },
   ],
   fields: [
@@ -168,6 +172,20 @@ export const blogSettings = defineType({
         metaDescriptionFormat: '%shortBio%',
         indexDefault: true,
         sitemap: { priority: 0.3, changefreq: 'monthly' },
+      }),
+    }),
+    defineField({
+      name: 'pageDefaults',
+      title: 'Page defaults',
+      type: 'object',
+      group: 'page',
+      options: { collapsible: false },
+      description: PAGE_TOKEN_HELP,
+      fields: typeDefaultFields({
+        metaTitleFormat: '%title% | PakFactory Blog',
+        metaDescriptionFormat: '%description%',
+        indexDefault: true,
+        sitemap: { priority: 0.5, changefreq: 'weekly' },
       }),
     }),
 

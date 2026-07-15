@@ -421,6 +421,17 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
  * Requires `$language` and `$monthStart` params (see blogNotFoundPageParams).
  */
 export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogNotFoundPage"][0]{
+  title,
+  description,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
   "topics": recommendedTopics[]->{
     _id,
     title,
@@ -435,6 +446,17 @@ export const BLOG_NOT_FOUND_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPag
  * Requires `$language` and `$monthStart` params (see blogSearchPageParams).
  */
 export const BLOG_SEARCH_PAGE_BUILDER_QUERY = /* groq */ `*[_type == "blogPage" && _id == "blogSearchPage"][0]{
+  title,
+  description,
+  metaTitle,
+  metaDescription,
+  ogTitle,
+  ogDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonical,
+  "ogImageUrl": ogImage.asset->url,
   "topics": recommendedTopics[]->{
     _id,
     title,
@@ -451,6 +473,7 @@ export const BLOG_CONTRIBUTE_PAGE_BUILDER_QUERY = /* groq */ `*[
   _type == "blogPage" && _id == $contributePageId && (language == $language || !defined(language))
 ][0]{
   title,
+  description,
   metaTitle,
   metaDescription,
   ogTitle,
@@ -543,6 +566,7 @@ export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
   title,
   pageRole,
   "slug": slug.current,
+  description,
   metaTitle,
   metaDescription,
   ogTitle,
@@ -925,6 +949,15 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
     autoNoindexThreshold
   },
   authorDefaults{
+    metaTitleFormat,
+    metaDescriptionFormat,
+    allowIndex,
+    allowFollow,
+    noImageIndex,
+    sitemapPriority,
+    sitemapChangefreq
+  },
+  pageDefaults{
     metaTitleFormat,
     metaDescriptionFormat,
     allowIndex,

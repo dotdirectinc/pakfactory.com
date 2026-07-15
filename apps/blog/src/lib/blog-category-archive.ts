@@ -199,6 +199,23 @@ export function getCategoryListingRobots(
   });
 }
 
+/** Stale Studio values that must not override Blog Settings formats. */
+export function isLegacyCategoryMetaTitle(
+  metaTitle: string | null | undefined,
+): boolean {
+  return Boolean(
+    metaTitle?.trim() && /custom packaging insights/i.test(metaTitle),
+  );
+}
+
+/** SEO fields with legacy category meta titles cleared so formats can apply. */
+export function categorySeoForMetadata(
+  category: CategoryDocument,
+): DocSeoFields {
+  if (!isLegacyCategoryMetaTitle(category.metaTitle)) return category;
+  return { ...category, metaTitle: null };
+}
+
 export async function buildCategoryArchiveMetadata(
   category: CategoryDocument,
   selfCanonicalPath: string,
@@ -215,10 +232,12 @@ export async function buildCategoryArchiveMetadata(
     featuredImageUrl: category.bannerImageUrl || category.ogImageUrl,
     selfCanonicalPath,
     defaultOgImageUrl: ctx.defaultOgImageUrl,
-    seo: category,
+    seo: categorySeoForMetadata(category),
     robots,
     titleOverride: options?.titleOverride,
     descriptionOverride: options?.descriptionOverride,
+    // Do not invent `| PakFactory Blog` — brand comes from Studio format/meta only.
+    titleSuffix: "",
     metaTitleFormat: defaults?.metaTitleFormat,
     metaDescriptionFormat: defaults?.metaDescriptionFormat,
     formatTokens: {
@@ -227,6 +246,20 @@ export async function buildCategoryArchiveMetadata(
       sitename: ctx.siteName,
     },
   });
+}
+
+/** Resolved page-1 listing title (document meta → Blog Settings format → bare name). */
+export async function resolveCategoryListingTitle(
+  category: CategoryDocument,
+): Promise<string> {
+  const meta = await buildCategoryArchiveMetadata(
+    category,
+    `/${category.slug}`,
+    { index: true, follow: true },
+  );
+  return typeof meta.title === "string" && meta.title.trim()
+    ? meta.title.trim()
+    : category.title;
 }
 
 /**

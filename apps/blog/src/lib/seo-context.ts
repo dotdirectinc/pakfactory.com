@@ -24,7 +24,12 @@ export async function fetchSeoContext(): Promise<SeoContext> {
 
 export function typeDefaults(
   ctx: SeoContext,
-  key: "postDefaults" | "categoryDefaults" | "tagDefaults" | "authorDefaults",
+  key:
+    | "postDefaults"
+    | "categoryDefaults"
+    | "tagDefaults"
+    | "authorDefaults"
+    | "pageDefaults",
 ): BlogTypeDefaults | null | undefined {
   return ctx.blogSettings?.[key] ?? undefined;
 }

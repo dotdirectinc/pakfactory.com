@@ -2,11 +2,11 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import { getPreviewableSanityClient } from "@/lib/sanity/client";
 import { blogHomePageParams, blogLanguageParams } from "@/lib/blog-language";
-import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import {
   buildDocMetadata,
   type DocSeoFields,
 } from "@/lib/resolve-seo";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import {
   getListingRobotsFromSearchParams,
   type BlogRobotsDirective,
@@ -235,18 +235,29 @@ export async function buildBlogHomeMetadata(
   home: BlogHomePageDoc | null,
   robots: BlogRobotsDirective,
 ): Promise<Metadata> {
-  const settings = await fetchBlogGlobalSettings();
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "pageDefaults");
+  const pageTitle = home?.title?.trim() || "PakFactory Blog";
+
   return buildDocMetadata({
-    title: "PakFactory Blog",
+    title: pageTitle,
     descriptionFallback: HOME_DESCRIPTION_FALLBACK,
     featuredImageUrl: home?.ogImageUrl,
     selfCanonicalPath: "/",
-    defaultOgImageUrl: settings?.defaultOgImageUrl,
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
     seo: home ?? {},
     robots,
-    titleOverride: home?.metaTitle?.trim()
-      ? undefined
-      : HOME_TITLE_FALLBACK,
+    // Last resort when CMS meta and Blog Settings formats are both blank.
+    titleOverride:
+      home?.metaTitle?.trim() || defaults?.metaTitleFormat?.trim()
+        ? undefined
+        : HOME_TITLE_FALLBACK,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      title: pageTitle,
+      sitename: ctx.siteName,
+    },
   });
 }
 

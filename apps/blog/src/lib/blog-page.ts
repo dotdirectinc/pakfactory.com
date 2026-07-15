@@ -1,10 +1,10 @@
 import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
-import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLandingPageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import {
   buildDocMetadata,
   type DocSeoFields,
@@ -16,6 +16,7 @@ export type BlogPageRecord = DocSeoFields & {
   title: string;
   pageRole: "landing" | "static";
   slug: string;
+  description?: string | null;
   ogImageUrl?: string | null;
   publishedAt?: string | null;
   _updatedAt?: string | null;
@@ -47,15 +48,23 @@ export async function fetchBlogPageBySlug(
 export async function buildBlogPageMetadata(
   page: BlogPageRecord,
 ): Promise<Metadata> {
-  const settings = await fetchBlogGlobalSettings();
+  const ctx = await fetchSeoContext();
+  const defaults = typeDefaults(ctx, "pageDefaults");
 
   return buildDocMetadata({
     title: page.title,
     descriptionFallback: `Read ${page.title} on PakFactory Blog.`,
     featuredImageUrl: page.ogImageUrl,
     selfCanonicalPath: `/${page.slug}`,
-    defaultOgImageUrl: settings?.defaultOgImageUrl,
+    defaultOgImageUrl: ctx.defaultOgImageUrl,
     seo: page,
+    metaTitleFormat: defaults?.metaTitleFormat,
+    metaDescriptionFormat: defaults?.metaDescriptionFormat,
+    formatTokens: {
+      title: page.title,
+      description: page.description,
+      sitename: ctx.siteName,
+    },
   });
 }
 

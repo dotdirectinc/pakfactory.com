@@ -14,6 +14,7 @@ import { isSanityConfigured } from "@/lib/sanity/env";
 import { DEFAULT_BLOG_LANGUAGE } from "@pakfactory/sanity/languages";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import { enrichPopularRowBlocks } from "@/lib/page-builder";
+import type { DocSeoFields } from "@/lib/resolve-seo";
 import {
   BLOG_CATEGORIES_QUERY,
   BLOG_FOOTER_NAV_QUERY,
@@ -208,12 +209,16 @@ export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
 
 export type TopicChip = { _id?: string; title: string; slug: string };
 
-export type BlogNotFoundContent = {
+export type BlogNotFoundContent = DocSeoFields & {
+  title?: string | null;
+  description?: string | null;
   topics: TopicChip[];
   blocks: PageBuilderBlock[];
 };
 
-export type BlogSearchContent = {
+export type BlogSearchContent = DocSeoFields & {
+  title?: string | null;
+  description?: string | null;
   topics: TopicChip[];
   blocks: PageBuilderBlock[];
 };
@@ -229,10 +234,15 @@ export async function fetchBlogNotFoundPage(): Promise<BlogNotFoundContent> {
   if (!isSanityConfigured()) return { topics: [], blocks: [] };
   const client = await getPreviewableSanityClient();
   const page = await client
-    .fetch<{
-      topics?: TopicChip[];
-      pageBuilder?: PageBuilderBlock[] | null;
-    } | null>(BLOG_NOT_FOUND_PAGE_BUILDER_QUERY, blogNotFoundPageParams())
+    .fetch<
+      | (DocSeoFields & {
+          title?: string | null;
+          description?: string | null;
+          topics?: TopicChip[];
+          pageBuilder?: PageBuilderBlock[] | null;
+        })
+      | null
+    >(BLOG_NOT_FOUND_PAGE_BUILDER_QUERY, blogNotFoundPageParams())
     .catch(() => null);
 
   let topics = (page?.topics ?? []).filter((t) => t?.slug);
@@ -245,7 +255,14 @@ export async function fetchBlogNotFoundPage(): Promise<BlogNotFoundContent> {
 
   const blocks = await enrichPopularRowBlocks(page?.pageBuilder);
 
+  const {
+    topics: _topics,
+    pageBuilder: _pageBuilder,
+    ...seo
+  } = page ?? {};
+
   return {
+    ...seo,
     topics,
     blocks,
   };
@@ -263,10 +280,15 @@ export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
   if (!isSanityConfigured()) return { topics: [], blocks: [] };
   const client = await getPreviewableSanityClient();
   const page = await client
-    .fetch<{
-      topics?: TopicChip[];
-      pageBuilder?: PageBuilderBlock[] | null;
-    } | null>(BLOG_SEARCH_PAGE_BUILDER_QUERY, blogSearchPageParams())
+    .fetch<
+      | (DocSeoFields & {
+          title?: string | null;
+          description?: string | null;
+          topics?: TopicChip[];
+          pageBuilder?: PageBuilderBlock[] | null;
+        })
+      | null
+    >(BLOG_SEARCH_PAGE_BUILDER_QUERY, blogSearchPageParams())
     .catch(() => null);
 
   let topics = (page?.topics ?? []).filter((t) => t?.slug);
@@ -279,7 +301,14 @@ export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
 
   const blocks = await enrichPopularRowBlocks(page?.pageBuilder);
 
+  const {
+    topics: _topics,
+    pageBuilder: _pageBuilder,
+    ...seo
+  } = page ?? {};
+
   return {
+    ...seo,
     topics,
     blocks,
   };

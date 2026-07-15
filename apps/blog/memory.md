@@ -93,7 +93,7 @@ Shared helper: [`src/lib/resolve-seo.ts`](./src/lib/resolve-seo.ts) (`buildDocMe
 ### C. Global + settings-driven defaults
 
 - [x] **OG image global default** — `BLOG_GLOBAL_SETTINGS_QUERY` + `fetchBlogGlobalSettings()` → `buildDocMetadata` / post JSON-LD org logo.
-- [ ] **Blog Settings token formats** — `blogSettings` now has `postDefaults`/`categoryDefaults`/`tagDefaults`/`authorDefaults` (metaTitle/metaDescription **format strings** with tokens, sitemap priority/changefreq, robots defaults). Resolve tokens at render when a doc's own `metaTitle`/`metaDescription` is blank.
+- [x] **Blog Settings token formats** — `blogSettings` has `postDefaults`/`categoryDefaults`/`tagDefaults`/`authorDefaults`/`pageDefaults` (metaTitle/metaDescription **format strings** with tokens, sitemap priority/changefreq, robots defaults). Resolved at render via `buildDocMetadata` + `resolveFormatString` when a doc's own `metaTitle`/`metaDescription` is blank. **Page defaults** cover `blogPage` roles (home, topics, search, contribute, 404, landing, static).
 - [ ] **Sitemap** — read per-type `priority`/`changefreq` defaults from Blog Settings in `sitemap.ts`.
 
 ### D. Dead-seed / removed-field cleanup

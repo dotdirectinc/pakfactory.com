@@ -24,15 +24,13 @@ import {
   parsePerPage,
 } from "@/lib/blog-archive";
 import {
+  buildBlogSearchMetadata,
   fetchSearchPage,
-  getSearchRobots,
   parseSearchFilters,
   parseSearchPage,
   parseSearchQuery,
   searchPageHref,
 } from "@/lib/blog-search";
-import { robotsDirectiveToMetadata } from "@/lib/seo";
-import { absoluteUrl } from "@/lib/site";
 import { PerPageSelect } from "@/components/modules/per-page-select";
 
 export const revalidate = 60;
@@ -73,20 +71,8 @@ export async function generateMetadata({
   searchParams,
 }: PageProps): Promise<Metadata> {
   const query = parseSearchQuery(await searchParams);
-  const title = query
-    ? `Search results for “${query}” | PakFactory Blog`
-    : "Search | PakFactory Blog";
-  const description = query
-    ? `Blog articles matching “${query}”.`
-    : "Search PakFactory Blog for packaging insights, trends, and guides.";
-
-  return {
-    title,
-    description,
-    // Empty, results, and zero-results are all noindex, follow (PROD-1503).
-    robots: robotsDirectiveToMetadata(getSearchRobots()),
-    alternates: { canonical: absoluteUrl("/search") },
-  };
+  const searchPage = await fetchBlogSearchPage();
+  return buildBlogSearchMetadata(query, searchPage);
 }
 
 export default async function SearchPage({ searchParams }: PageProps) {
