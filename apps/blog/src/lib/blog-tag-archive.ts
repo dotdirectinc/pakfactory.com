@@ -20,18 +20,25 @@ import {
 import { getSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import { toPostCardData } from "@/lib/post-card-data";
 import {
+  resolveListingPage,
+  type ListingPost,
+} from "@/lib/listing-posts";
+import {
+  type TagListFilters,
+  type TagSort,
+} from "@/lib/blog-tag-url";
+import {
+  BLOG_TAG_ALL_POSTS_QUERY,
   BLOG_TAG_AUTHORS_FACET_QUERY,
   BLOG_TAG_BY_SLUG_QUERY,
   BLOG_TAG_COOCCURRING_TAGS_QUERY,
-  BLOG_TAG_POSTS_COUNT_QUERY,
-  BLOG_TAG_POSTS_PAGE_NEWEST_QUERY,
-  BLOG_TAG_POSTS_PAGE_UPDATED_QUERY,
-  BLOG_TAG_POSTS_PAGE_POPULAR_QUERY,
 } from "@pakfactory/sanity/queries";
 import type { TopicGroupRef } from "@/lib/tag-groups";
 
-export type TagSort = "newest" | "updated" | "popular";
+export type { TagListFilters, TagSort };
+export { parseTagFilters, parseTagSort, tagPageHref } from "@/lib/blog-tag-url";
 
 export type TagDocument = DocSeoFields & {
   _id?: string;
@@ -49,18 +56,12 @@ export type TagFacet = {
 };
 export type TagFacetAuthor = { _id?: string; name: string; slug: string };
 
-/** Tag is the page itself, so it is not a filter — author/date/category/sort narrow the set. */
-export type TagListFilters = {
-  categories: string[];
-  author?: string;
-  year?: string;
-  month?: string;
-  sort: TagSort;
-};
-
 export type TagArchivePageData = {
   tag: TagDocument;
-  posts: HomePostCard[];
+  /** Full unfiltered topic set — client filter/sort/paginate from this. */
+  allPosts: ListingPost[];
+  /** SSR/crawler page slice matching the current URL. */
+  posts: ListingPost[];
   totalCount: number;
   pageNumber: number;
   totalPages: number;
@@ -70,105 +71,22 @@ export type TagArchivePageData = {
   authors: TagFacetAuthor[];
 };
 
-type SearchParams = Record<string, string | string[] | undefined>;
+type TagAllPostRow = HomePostCard & {
+  sortUpdatedAt?: string;
+  viewCount?: number;
+};
 
-function firstParam(value: string | string[] | undefined): string | undefined {
-  if (value === undefined) return undefined;
-  return Array.isArray(value) ? value[0] : value;
-}
-
-/** Collect a repeated/comma-separated query param into a de-duped, trimmed list. */
-function paramList(value: string | string[] | undefined): string[] {
-  if (value === undefined) return [];
-  const raw = Array.isArray(value) ? value : [value];
-  const values = raw
-    .flatMap((entry) => entry.split(","))
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return Array.from(new Set(values));
-}
-
-export function parseTagSort(raw: string | undefined): TagSort {
-  if (raw === "updated" || raw === "popular") return raw;
-  return "newest";
-}
-
-export function parseTagFilters(searchParams: SearchParams): TagListFilters {
+function toTopicListingPost(row: TagAllPostRow): ListingPost {
+  const card = toPostCardData(row);
   return {
-    categories: paramList(searchParams.category),
-    author: firstParam(searchParams.author)?.trim() || undefined,
-    year: firstParam(searchParams.year)?.trim() || undefined,
-    month: firstParam(searchParams.month)?.trim() || undefined,
-    sort: parseTagSort(firstParam(searchParams.sort)),
+    ...card,
+    slug: row.slug,
+    sortUpdatedAt: row.sortUpdatedAt || row.publishedAt || "",
+    viewCount:
+      typeof row.viewCount === "number" && Number.isFinite(row.viewCount)
+        ? row.viewCount
+        : 0,
   };
-}
-
-function yearMonthBounds(
-  year?: string,
-  month?: string,
-): { yearStart: string | null; yearEnd: string | null } {
-  if (!year) return { yearStart: null, yearEnd: null };
-  const y = Number.parseInt(year, 10);
-  if (!Number.isFinite(y)) return { yearStart: null, yearEnd: null };
-
-  if (month) {
-    const m = Number.parseInt(month, 10);
-    if (!Number.isFinite(m) || m < 1 || m > 12) {
-      return {
-        yearStart: new Date(Date.UTC(y, 0, 1)).toISOString(),
-        yearEnd: new Date(Date.UTC(y + 1, 0, 1)).toISOString(),
-      };
-    }
-    return {
-      yearStart: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
-      yearEnd: new Date(Date.UTC(y, m, 1)).toISOString(),
-    };
-  }
-
-  return {
-    yearStart: new Date(Date.UTC(y, 0, 1)).toISOString(),
-    yearEnd: new Date(Date.UTC(y + 1, 0, 1)).toISOString(),
-  };
-}
-
-function groqFilterParams(tagSlug: string, filters: TagListFilters) {
-  const { yearStart, yearEnd } = yearMonthBounds(filters.year, filters.month);
-  return blogLanguageParams({
-    tagSlug,
-    authorSlug: filters.author ?? null,
-    categorySlugs: filters.categories,
-    yearStart,
-    yearEnd,
-  });
-}
-
-function postsPageQuery(sort: TagSort): string {
-  switch (sort) {
-    case "updated":
-      return BLOG_TAG_POSTS_PAGE_UPDATED_QUERY;
-    case "popular":
-      return BLOG_TAG_POSTS_PAGE_POPULAR_QUERY;
-    default:
-      return BLOG_TAG_POSTS_PAGE_NEWEST_QUERY;
-  }
-}
-
-export function tagPageHref(
-  tagSlug: string,
-  pageNumber: number,
-  filters: TagListFilters,
-  perPage?: number,
-): string {
-  const base = pageNumber <= 1 ? `/topics/${tagSlug}` : `/topics/${tagSlug}/page/${pageNumber}`;
-  const params = new URLSearchParams();
-  for (const slug of filters.categories) params.append("category", slug);
-  if (filters.author) params.set("author", filters.author);
-  if (filters.year) params.set("year", filters.year);
-  if (filters.month) params.set("month", filters.month);
-  if (filters.sort !== "newest") params.set("sort", filters.sort);
-  if (perPage && perPage !== DEFAULT_PAGE_SIZE) params.set("perPage", String(perPage));
-  const qs = params.toString();
-  return qs ? `${base}?${qs}` : base;
 }
 
 export async function buildTagArchiveMetadata(
@@ -213,37 +131,31 @@ export async function fetchTagBySlug(slug: string): Promise<TagDocument | null> 
   return doc?.slug ? doc : null;
 }
 
+/**
+ * Topic archive dataset: one Sanity wave loads the tag doc, the full post set
+ * (unfiltered), and facets. Category/sort/page are applied in memory so the
+ * listing island can update cards instantly without another round-trip.
+ */
 export async function fetchTagArchivePage(
   tagSlug: string,
   pageNumber: number,
   filters: TagListFilters,
   perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<TagArchivePageData | null> {
-  const tag = await fetchTagBySlug(tagSlug);
-  if (!tag) return null;
-
-  const groqParams = groqFilterParams(tagSlug, filters);
-  let totalCount = 0;
-  let posts: HomePostCard[] = [];
+  let tag: TagDocument | null = null;
+  let rows: TagAllPostRow[] = [];
   let cooccurringTags: TagFacet[] = [];
   let authors: TagFacetAuthor[] = [];
 
-  // Count, page slice, and both facet sets are independent — one parallel
-  // round-trip instead of a separate count wave followed by the batch.
   if (isSanityConfigured()) {
-    const start = (pageNumber - 1) * perPage;
-    const end = start + perPage;
     const client = await getSanityClient();
-    [totalCount, posts, cooccurringTags, authors] = await Promise.all([
+    [tag, rows, cooccurringTags, authors] = await Promise.all([
+      fetchTagBySlug(tagSlug),
       client
-        .fetch<number>(BLOG_TAG_POSTS_COUNT_QUERY, groqParams)
-        .catch(() => 0),
-      client
-        .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {
-          ...groqParams,
-          start,
-          end,
-        })
+        .fetch<TagAllPostRow[]>(
+          BLOG_TAG_ALL_POSTS_QUERY,
+          blogLanguageParams({ tagSlug }),
+        )
         .catch(() => []),
       client
         .fetch<TagFacet[]>(
@@ -258,13 +170,20 @@ export async function fetchTagArchivePage(
         )
         .catch(() => []),
     ]);
+  } else {
+    tag = await fetchTagBySlug(tagSlug);
   }
 
-  const totalPages = getTotalArchivePages(totalCount, perPage);
+  if (!tag) return null;
 
-  if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
+  const allPosts = rows.map(toTopicListingPost);
+  const { pagePosts, totalCount, totalPages, isOutOfRange } =
+    resolveListingPage(allPosts, filters, pageNumber, perPage);
+
+  if (isOutOfRange) {
     return {
       tag,
+      allPosts,
       posts: [],
       totalCount,
       pageNumber,
@@ -278,7 +197,8 @@ export async function fetchTagArchivePage(
 
   return {
     tag,
-    posts,
+    allPosts,
+    posts: pagePosts,
     totalCount,
     pageNumber,
     totalPages,
@@ -289,7 +209,9 @@ export async function fetchTagArchivePage(
   };
 }
 
-export function parseTagPageFromSearchParams(searchParams: SearchParams): number {
+export function parseTagPageFromSearchParams(
+  searchParams: Record<string, string | string[] | undefined>,
+): number {
   return parseListingPage(searchParams);
 }
 
@@ -298,5 +220,6 @@ export {
   isArchivePageOutOfRange,
   getBlogRobotsDirective,
   hasListingFilters,
+  getTotalArchivePages,
   type BlogRobotsDirective,
 };

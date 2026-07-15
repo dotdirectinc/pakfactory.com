@@ -93,17 +93,16 @@ function FooterSectionBlock({section}: {section: BlogFooterSection}) {
 }
 
 function FooterCtaBlock({block}: {block: BlogFooterCtaBlock}) {
-    const {borderTop, borderBottom} = resolveDielineBorders(
-        block.showTopBorder,
+    // Top dashed edge is always off: the footer owns the newsletter→CTA seam
+    // and deliberately has no line there (Studio showTopBorder is a no-op).
+    const {borderBottom} = resolveDielineBorders(
+        false,
         block.showBottomBorder,
         FOOTER_CTA_DIELINE_BORDER_DEFAULTS,
     );
-    const borderClasses = [
-        borderTop ? 'border-t border-dashed border-foreground/10' : '',
-        borderBottom ? 'border-b border-dashed border-foreground/10' : '',
-    ]
-        .filter(Boolean)
-        .join(' ');
+    const borderClasses = borderBottom
+        ? 'border-b border-dashed border-foreground/10'
+        : '';
 
     return (
         <div

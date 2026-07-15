@@ -7,31 +7,23 @@ import {
 } from "@/components/layout/page-dieline-section";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { PageHeader } from "@/components/modules/page-header";
-import { SearchFilterBar } from "@/components/modules/search-filter-bar";
-import { PostList } from "@/components/modules/post-list";
-import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
+import { SearchListingClient } from "@/components/modules/search-listing-client";
 import { TopicChipRow } from "@/components/ui/topic-chip-row";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
-import { toPostCardDataList } from "@/lib/post-card-data";
 import { tagHref } from "@/lib/blog-post-url";
 import {
   fetchBlogCategories,
   fetchBlogSearchPage,
 } from "@/lib/blog-data";
-import {
-  PAGE_SIZE_OPTIONS,
-  parsePerPage,
-} from "@/lib/blog-archive";
+import { parsePerPage } from "@/lib/blog-archive";
 import {
   buildBlogSearchMetadata,
   fetchSearchPage,
   parseSearchFilters,
   parseSearchPage,
   parseSearchQuery,
-  searchPageHref,
 } from "@/lib/blog-search";
-import { PerPageSelect } from "@/components/modules/per-page-select";
 
 export const revalidate = 60;
 
@@ -85,14 +77,18 @@ export default async function SearchPage({ searchParams }: PageProps) {
     fetchSearchPage(query, pageNumber, filters, perPage),
     fetchBlogSearchPage(),
   ]);
-  const { posts, totalCount, totalPages } = data;
+  const { allPosts, pageNumber: currentPage } = data;
   const { topics: recommendedTopics, blocks } = searchPage;
 
   const headerTitle = query ? `Search Results for: “${query}”` : "Search the blog";
 
   const header = (
     <>
-      <SearchTracker query={query} resultsCount={totalCount} page={pageNumber} />
+      <SearchTracker
+        query={query}
+        resultsCount={allPosts.length}
+        page={currentPage}
+      />
       <PageDielineSection innerClassName="py-4">
         <Breadcrumb items={CRUMBS} />
       </PageDielineSection>
@@ -100,8 +96,8 @@ export default async function SearchPage({ searchParams }: PageProps) {
     </>
   );
 
-  // ── Results state ──────────────────────────────────────────────────────────
-  if (query && totalCount > 0) {
+  // ── Results state (any matches for q — filters can still empty the grid) ──
+  if (query && allPosts.length > 0) {
     const categories = await fetchBlogCategories();
     const categoryOptions = categories.map((category) => ({
       value: category.slug,
@@ -112,41 +108,14 @@ export default async function SearchPage({ searchParams }: PageProps) {
       <main>
         {header}
         <PageDielineSection innerClassName="py-16 sm:py-24">
-          <SearchFilterBar
+          <SearchListingClient
             query={query}
-            filters={filters}
+            allPosts={allPosts}
             categoryOptions={categoryOptions}
+            initialFilters={filters}
+            initialPage={pageNumber}
+            initialPerPage={perPage}
           />
-          <div id={LISTING_TOP_ID} className="scroll-mt-24 mt-12">
-            <PostList
-              posts={toPostCardDataList(posts)}
-              columns={3}
-              priorityFirst
-              emptyMessage="No posts on this page."
-            />
-          </div>
-          {totalCount > 0 && (
-            <div className="py-16">
-              <Pagination
-                pageNumber={pageNumber}
-                totalPages={totalPages}
-                hrefForPage={(page) =>
-                  searchPageHref(query, page, filters, perPage)
-                }
-                ariaLabel="Search results pagination"
-                scrollTargetId={LISTING_TOP_ID}
-                rightSlot={
-                  <PerPageSelect
-                    value={perPage}
-                    options={PAGE_SIZE_OPTIONS.map((size) => ({
-                      size,
-                      href: searchPageHref(query, 1, filters, size),
-                    }))}
-                  />
-                }
-              />
-            </div>
-          )}
         </PageDielineSection>
         <SearchBelowFold blocks={blocks} />
       </main>

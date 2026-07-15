@@ -71,5 +71,42 @@ export function usePathPagination({
     return () => window.removeEventListener("popstate", syncFromUrl);
   }, [basePath, onPageChange]);
 
+  // Soft pushState never remounts the route, so generateMetadata does not
+  // re-run. Keep the in-DOM canonical / og:url tags aligned with the current
+  // page path, preserving the server-emitted origin.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const path = pathPaginationHref(basePath, page);
+
+    const withPagePath = (value: string | null): string | null => {
+      if (!value) return null;
+      try {
+        const url = new URL(value);
+        url.pathname = path;
+        url.search = "";
+        return url.toString();
+      } catch {
+        return null;
+      }
+    };
+
+    const canonical = document.querySelector<HTMLLinkElement>(
+      'link[rel="canonical"]',
+    );
+    if (canonical) {
+      const next = withPagePath(canonical.href);
+      if (next) canonical.href = next;
+    }
+
+    const ogUrl = document.querySelector<HTMLMetaElement>(
+      'meta[property="og:url"]',
+    );
+    if (ogUrl) {
+      const next = withPagePath(ogUrl.content);
+      if (next) ogUrl.content = next;
+    }
+  }, [basePath, page]);
+
   return { goToPage, hrefForPage };
 }

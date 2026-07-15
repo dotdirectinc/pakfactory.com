@@ -137,6 +137,10 @@ export type CtaSpotlightBlock = {
   /** Hex string from Sanity color input (e.g. `#052e16`). Defaults to brand green when empty. */
   backgroundColor?: string;
   image?: BlockImage;
+  /** Full viewport vs centered column for the top dashed edge. Defaults to max. */
+  topBorderWidth?: "full" | "max";
+  /** Full viewport vs centered column for the bottom dashed edge. Defaults to max. */
+  bottomBorderWidth?: "full" | "max";
 } & DielineBorderFields;
 
 export type RichTextBandBlock = {

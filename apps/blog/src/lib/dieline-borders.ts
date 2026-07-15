@@ -18,10 +18,10 @@ export const CTA_RFQ_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
   bottom: false,
 };
 
-/** Defaults for the spotlight CTA (no dashed edges unless explicitly enabled). */
+/** Defaults for the spotlight CTA (match Studio dielineBorderFields initialValue). */
 export const CTA_SPOTLIGHT_DIELINE_BORDER_DEFAULTS: DielineBorderDefaults = {
-  top: false,
-  bottom: false,
+  top: true,
+  bottom: true,
 };
 
 /**

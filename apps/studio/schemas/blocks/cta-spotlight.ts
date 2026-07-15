@@ -1,11 +1,19 @@
 import { defineField, defineType } from 'sanity'
 import { ImageIcon } from '@sanity/icons'
 import { BlockItemPreview } from '../../components/BlockItemPreview'
-import {
-  dielineBorderFields,
-  dielineBorderPreviewSubtitle,
-} from '../../lib/dieline-border-fields'
+import { dielineBorderFields } from '../../lib/dieline-border-fields'
 import { linkTargetFields } from '../../lib/link-target-fields'
+
+const borderWidthOptions = {
+  list: [
+    { title: 'Max width (centered column)', value: 'max' },
+    { title: 'Full width (edge to edge)', value: 'full' },
+  ],
+  layout: 'radio' as const,
+}
+
+/** Keep fields in the document model but hide dash UI until product is ready. */
+const hideDashConfig = () => true
 
 /**
  * ctaSpotlight — CTA card with heading, body, button, and a single image.
@@ -78,20 +86,39 @@ export const ctaSpotlight = defineType({
         'Optional. Card background. Defaults to brand green when empty.',
       options: { disableAlpha: true },
     }),
-    ...dielineBorderFields(),
+    ...dielineBorderFields().map((field) =>
+      defineField({ ...field, hidden: hideDashConfig }),
+    ),
+    defineField({
+      name: 'topBorderWidth',
+      title: 'Top dashed border width',
+      type: 'string',
+      initialValue: 'max',
+      options: borderWidthOptions,
+      hidden: hideDashConfig,
+      description:
+        'Full width spans the viewport; max width aligns to the centered content column.',
+    }),
+    defineField({
+      name: 'bottomBorderWidth',
+      title: 'Bottom dashed border width',
+      type: 'string',
+      initialValue: 'max',
+      options: borderWidthOptions,
+      hidden: hideDashConfig,
+      description:
+        'Full width spans the viewport; max width aligns to the centered content column.',
+    }),
   ],
   preview: {
     select: {
       heading: 'heading',
       media: 'image',
-      showTopBorder: 'showTopBorder',
-      showBottomBorder: 'showBottomBorder',
     },
-    prepare({ heading, media, showTopBorder, showBottomBorder }) {
-      const borders = dielineBorderPreviewSubtitle(showTopBorder, showBottomBorder)
+    prepare({ heading, media }) {
       return {
         title: 'CTA — Spotlight',
-        subtitle: [heading || 'Spotlight CTA', borders].filter(Boolean).join(' · '),
+        subtitle: heading || 'Spotlight CTA',
         media,
       }
     },
