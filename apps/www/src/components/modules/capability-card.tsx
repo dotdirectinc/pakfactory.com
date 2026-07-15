@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
+import { SanityImage } from '@/components/ui/sanity-image';
 import { Badge } from '@pakfactory/ui/components/badge';
 import {
     Card,
@@ -30,7 +30,7 @@ export function CapabilityCard({ item }: Props) {
                 <CardContent className="p-0">
                     <div className="relative aspect-[4/3] w-full bg-muted">
                         {item.imageUrl ? (
-                            <Image
+                            <SanityImage
                                 src={item.imageUrl}
                                 alt={item.imageAlt ?? item.title}
                                 fill

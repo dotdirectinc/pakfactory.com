@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import {
     PortableText as PortableTextRoot,
     type PortableTextComponents,
@@ -15,6 +14,7 @@ import {BodyBarChart} from '@/components/modules/inline/body-bar-chart';
 import {BodyEmbed} from '@/components/modules/inline/body-embed';
 import {WidgetRenderer} from '@/components/modules/widget/widget-renderer';
 import {CAPTION_CLASS} from '@/lib/blog-caption';
+import {SanityImage} from '@/components/ui/sanity-image';
 import type {
     PostBodyBarChart,
     PostBodyCallout,
@@ -26,7 +26,7 @@ import type {
     PostBodyVideo,
     PostBodyWidget,
 } from '@/lib/blog-post';
-import {sanityImageUrl} from '@/lib/sanity-image';
+import {sanityImageBaseUrl} from '@/lib/sanity-image';
 import {EXTERNAL_LINK_REL, externalLinkAttributes} from '@/lib/external-link';
 
 type BodyImageValue = {
@@ -42,15 +42,16 @@ type WidgetEmbedValue = {
 };
 
 function PostBodyImage({value}: {value: BodyImageValue}) {
-    const imageUrl = sanityImageUrl(value.asset, 1200);
+    const imageUrl = sanityImageBaseUrl(value.asset);
     if (!imageUrl) return null;
 
     const img = (
-        <Image
+        <SanityImage
             src={imageUrl}
             alt={value.alt ?? ''}
             width={1200}
             height={675}
+            sizes="(max-width: 768px) 100vw, 720px"
             className="h-auto w-full rounded-lg object-cover"
         />
     );

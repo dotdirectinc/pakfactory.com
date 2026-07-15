@@ -28,7 +28,7 @@ export function PostCategoryFeaturedRow({
 
   const slides = all
     .slice(0, FEATURED_SLIDE_LIMIT)
-    .map((post) => toPostCardData(post, { categorySlug, imageWidth: 1200 }));
+    .map((post) => toPostCardData(post, { categorySlug }));
   const sectionHeading = heading?.trim() || DEFAULT_HEADING;
 
   return (

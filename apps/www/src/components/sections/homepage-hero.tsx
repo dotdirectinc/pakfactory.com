@@ -4,6 +4,8 @@ import Link from "next/link";
 import { PackageIcon } from "lucide-react";
 
 import type { AdvertisementCardProps } from "@/components/sections/advertisement-card";
+import { SanityImage } from "@/components/ui/sanity-image";
+import { isSanityCdnUrl } from "@/lib/sanity/image";
 import { Button } from "@pakfactory/ui/components/button";
 import { TextFlip } from "@pakfactory/ui/components/text-flip";
 
@@ -126,14 +128,25 @@ const HomepageHero = ({
             <div className="relative mx-auto flex w-full max-w-lg items-center justify-center lg:max-w-none">
               <div className="relative aspect-[4/3] w-full max-w-md lg:max-w-full lg:aspect-square">
                 {bannerSrc ? (
-                  <Image
-                    src={bannerSrc}
-                    alt={bannerAlt}
-                    fill
-                    className="object-contain object-center"
-                    sizes="(max-width: 1024px) 90vw, 50vw"
-                    priority
-                  />
+                  isSanityCdnUrl(bannerSrc) ? (
+                    <SanityImage
+                      src={bannerSrc}
+                      alt={bannerAlt}
+                      fill
+                      className="object-contain object-center"
+                      sizes="(max-width: 1024px) 90vw, 50vw"
+                      priority
+                    />
+                  ) : (
+                    <Image
+                      src={bannerSrc}
+                      alt={bannerAlt}
+                      fill
+                      className="object-contain object-center"
+                      sizes="(max-width: 1024px) 90vw, 50vw"
+                      priority
+                    />
+                  )
                 ) : (
                   <div className="bg-muted/40 text-muted-foreground flex h-full w-full items-center justify-center rounded-2xl">
                     <PackageIcon className="size-16 stroke-1 opacity-40" />

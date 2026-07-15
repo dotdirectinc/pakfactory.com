@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { CaseStudyHeroMedia as HeroMediaData } from "@pakfactory/sanity/queries";
+import { SanityImage } from "@/components/ui/sanity-image";
+import { isSanityCdnUrl } from "@/lib/sanity/image";
 
 function getYouTubeId(url: string): string | null {
   try {
@@ -25,7 +27,7 @@ export function CaseStudyHeroMedia({ heroMedia, title }: Props) {
   if (heroMedia.mediaType === "image" && heroMedia.imageUrl) {
     return (
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-secondary">
-        <Image
+        <SanityImage
           src={heroMedia.imageUrl}
           alt={heroMedia.alt ?? title}
           fill
@@ -64,16 +66,26 @@ export function CaseStudyHeroMedia({ heroMedia, title }: Props) {
         className="group relative aspect-video w-full overflow-hidden rounded-2xl bg-secondary"
         aria-label={`Play video: ${title}`}
       >
-        {thumbnailUrl && (
-          <Image
-            src={thumbnailUrl}
-            alt={heroMedia.alt ?? title}
-            fill
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
-            sizes="(max-width: 1024px) 100vw, 1280px"
-            priority
-          />
-        )}
+        {thumbnailUrl &&
+          (isSanityCdnUrl(thumbnailUrl) ? (
+            <SanityImage
+              src={thumbnailUrl}
+              alt={heroMedia.alt ?? title}
+              fill
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+              sizes="(max-width: 1024px) 100vw, 1280px"
+              priority
+            />
+          ) : (
+            <Image
+              src={thumbnailUrl}
+              alt={heroMedia.alt ?? title}
+              fill
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+              sizes="(max-width: 1024px) 100vw, 1280px"
+              priority
+            />
+          ))}
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/30">
           <div className="flex size-20 items-center justify-center rounded-full bg-black/70 text-white backdrop-blur-sm transition-transform group-hover:scale-110">
             <svg

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import {ArrowRight} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -8,12 +7,13 @@ import {
     PageDielineSection,
     pageFullBleedRowClass,
 } from '@/components/layout/page-dieline-section';
+import {SanityImage} from '@/components/ui/sanity-image';
 import {
     CTA_SPOTLIGHT_DIELINE_BORDER_DEFAULTS,
     resolveDielineBorders,
 } from '@/lib/dieline-borders';
 import {resolveFooterLinkHref} from '@/lib/blog-footer-nav';
-import {sanityImageAlt, sanityImageUrl} from '@/lib/sanity-image';
+import {sanityImageAlt, sanityImageBaseUrl} from '@/lib/sanity-image';
 import {externalLinkAttributes} from '@/lib/external-link';
 
 const DEFAULT_HEADING = "Let's skip the chatter and start building!";
@@ -52,7 +52,7 @@ export function CtaSpotlight({
     const hex = backgroundColor?.trim() || undefined;
     const isFloating = imageEffect === 'floating';
 
-    const imageUrl = sanityImageUrl(image, 1000);
+    const imageUrl = sanityImageBaseUrl(image);
     const imageAlt = sanityImageAlt(image) ?? '';
     const resolved = resolveFooterLinkHref({
         linkType,
@@ -97,7 +97,7 @@ export function CtaSpotlight({
                             isFloating ? (
                                 <div className="relative order-first h-56 w-full overflow-visible ">
                                     <div className="absolute inset-0 md:-inset-x-4 md:-inset-y-16 lg:-inset-y-24">
-                                        <Image
+                                        <SanityImage
                                             src={imageUrl}
                                             alt={imageAlt}
                                             fill
@@ -108,7 +108,7 @@ export function CtaSpotlight({
                                 </div>
                             ) : (
                                 <div className="relative order-first h-56 w-full overflow-hidden rounded-2xl md:h-72">
-                                    <Image
+                                    <SanityImage
                                         src={imageUrl}
                                         alt={imageAlt}
                                         fill

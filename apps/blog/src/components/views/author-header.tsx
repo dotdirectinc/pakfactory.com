@@ -1,12 +1,12 @@
-import Image from "next/image";
 import { PortableText } from "@/components/ui/portable-text";
+import { SanityImage } from "@/components/ui/sanity-image";
 import { PageDielineFullBleedSection } from "@/components/layout/page-dieline-section";
 import {
   SocialPlatformIcon,
 } from "@/components/modules/social-platform-icon";
 import type { AuthorDoc } from "@/lib/blog-author";
 import { isSocialPlatform } from "@pakfactory/sanity/social-platforms";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageBaseUrl } from "@/lib/sanity-image";
 import { EXTERNAL_LINK_REL } from "@/lib/external-link";
 
 type AuthorHeaderProps = {
@@ -15,7 +15,7 @@ type AuthorHeaderProps = {
 
 /** Author profile hero: role above name, experience below name, long bio, social links. */
 export function AuthorHeader({ author }: AuthorHeaderProps) {
-  const photoUrl = sanityImageUrl(author.photo, 596);
+  const photoUrl = sanityImageBaseUrl(author.photo);
   const socialLinks =
     author.socialLinks?.filter(
       (link) =>
@@ -30,11 +30,12 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
     <PageDielineFullBleedSection sectionClassName="bg-accent" innerClassName="py-16 sm:py-24">
       <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-start lg:gap-16">
         {photoUrl ? (
-          <Image
+          <SanityImage
             src={photoUrl}
             alt={author.name}
             width={298}
             height={298}
+            sizes="(min-width: 1024px) 298px, 240px"
             className="size-[240px] shrink-0 rounded-[14px] object-cover lg:size-[298px]"
             priority
           />

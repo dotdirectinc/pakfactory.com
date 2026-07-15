@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import Image from "next/image";
+import Image, { type ImageLoader } from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 export type SliderImage = {
@@ -12,10 +12,38 @@ export type SliderImage = {
   isSquare: boolean;
 };
 
+const DEFAULT_QUALITY = 80;
+
+/** Resize Sanity CDN URLs per srcset candidate; leave other hosts to Next defaults. */
+const sanityCdnLoader: ImageLoader = ({ src, width, quality }) => {
+  try {
+    const url = new URL(src);
+    if (url.hostname !== "cdn.sanity.io") return src;
+    url.searchParams.set("w", String(width));
+    url.searchParams.set("q", String(quality ?? DEFAULT_QUALITY));
+    url.searchParams.set("auto", "format");
+    url.searchParams.set("fit", "max");
+    return url.toString();
+  } catch {
+    return src;
+  }
+};
+
+function loaderFor(src: string): ImageLoader | undefined {
+  try {
+    return new URL(src).hostname === "cdn.sanity.io" ? sanityCdnLoader : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Peek-scroll image gallery with free mouse drag, scroll-progress bar, and
  * click-to-open lightbox. No scroll-snap — the track stops exactly where
  * the user releases. Shared across blog and www.
+ *
+ * Sanity CDN sources are resized via an in-component loader (avoids passing
+ * functions from Server Components).
  */
 export function GallerySlider({ images }: { images: SliderImage[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -122,6 +150,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
                 width={800}
                 height={imgHeight}
                 draggable={false}
+                loader={loaderFor(img.src)}
                 className={`${aspectClass} h-auto w-full cursor-pointer rounded-lg object-cover transition-opacity hover:opacity-90`}
               />
               {(img.caption || img.alt) ? (
@@ -176,6 +205,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
               alt={modalImg.alt}
               width={1400}
               height={900}
+              loader={loaderFor(modalImg.src)}
               className="max-h-[82vh] w-auto max-w-full rounded-lg object-contain"
             />
             {(modalImg.caption || modalImg.alt) ? (

@@ -9,7 +9,7 @@ import {
   resolveDielineBorders,
 } from "@/lib/dieline-borders";
 import { resolveVideoSource, type ResolvedVideoSource } from "@/lib/resolve-video-source";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageBaseUrl } from "@/lib/sanity-image";
 import { externalLinkAttributes } from "@/lib/external-link";
 
 function uniqueGridVideos(
@@ -40,7 +40,7 @@ export function FeaturedVideos({
   showTopBorder,
   showBottomBorder,
 }: BlockProps<FeaturedVideosBlock>) {
-  const resolveThumb = (thumbnail: unknown) => sanityImageUrl(thumbnail, 1280);
+  const resolveThumb = (thumbnail: unknown) => sanityImageBaseUrl(thumbnail);
 
   const lead = featuredVideo
     ? resolveVideoSource(featuredVideo, resolveThumb)
