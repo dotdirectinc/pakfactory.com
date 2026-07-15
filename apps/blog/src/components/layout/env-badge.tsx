@@ -11,7 +11,7 @@ export function EnvBadge({ label }: EnvBadgeProps) {
     <div
       role="status"
       aria-label={`Environment: ${label}`}
-      className="pointer-events-none fixed bottom-4 right-4 z-50 rounded-full border border-amber-700/40 bg-amber-500 px-2.5 py-1 text-xs font-semibold tracking-wide text-amber-950 shadow-md"
+      className="pointer-events-none fixed bottom-4 right-4 z-50 rounded-full border border-white/20 bg-black px-2.5 py-1 text-xs font-semibold tracking-wide text-white shadow-md"
     >
       {label}
     </div>
