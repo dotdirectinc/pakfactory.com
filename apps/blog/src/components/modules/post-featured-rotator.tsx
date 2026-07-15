@@ -135,20 +135,30 @@ export function PostFeaturedRotator({
               ) : null,
             )}
           </div>
-          <div
-            key={lead._id}
-            className="flex flex-col gap-2.5 duration-500 animate-in fade-in slide-in-from-bottom-2 max-lg:animate-none"
-          >
-            <CategoryLabel title={lead.categoryTitle} />
-            <h3 className="text-2xl font-semibold leading-snug tracking-tight text-foreground lg:text-3xl">
-              {lead.title}
-            </h3>
-            {lead.excerpt && (
-              <p className="text-base leading-7 text-muted-foreground">
-                {lead.excerpt}
-              </p>
-            )}
-            <Meta post={lead} />
+          {/* Stack all slides' text so the lead column reserves tallest height (no band shift). */}
+          <div className="grid">
+            {slides.map((post, i) => (
+              <div
+                key={post._id}
+                aria-hidden={i !== active}
+                className={`col-start-1 row-start-1 flex flex-col gap-2.5 transition-opacity duration-700 ease-out ${
+                  i === active
+                    ? "opacity-100"
+                    : "pointer-events-none opacity-0"
+                } ${i !== 0 ? "max-lg:hidden" : ""}`}
+              >
+                <CategoryLabel title={post.categoryTitle} />
+                <h3 className="text-2xl font-semibold leading-snug tracking-tight text-foreground lg:text-3xl">
+                  {post.title}
+                </h3>
+                {post.excerpt && (
+                  <p className="text-base leading-7 text-muted-foreground">
+                    {post.excerpt}
+                  </p>
+                )}
+                <Meta post={post} />
+              </div>
+            ))}
           </div>
         </Link>
 

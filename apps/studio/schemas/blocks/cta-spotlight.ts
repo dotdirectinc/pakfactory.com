@@ -7,6 +7,14 @@ import {
 } from '../../lib/dieline-border-fields'
 import { linkTargetFields } from '../../lib/link-target-fields'
 
+const borderWidthOptions = {
+  list: [
+    { title: 'Max width (centered column)', value: 'max' },
+    { title: 'Full width (edge to edge)', value: 'full' },
+  ],
+  layout: 'radio' as const,
+}
+
 /**
  * ctaSpotlight — CTA card with heading, body, button, and a single image.
  * The image can render contained (clipped inside the card) or floating
@@ -79,6 +87,26 @@ export const ctaSpotlight = defineType({
       options: { disableAlpha: true },
     }),
     ...dielineBorderFields(),
+    defineField({
+      name: 'topBorderWidth',
+      title: 'Top dashed border width',
+      type: 'string',
+      initialValue: 'max',
+      options: borderWidthOptions,
+      hidden: ({ parent }) => parent?.showTopBorder === false,
+      description:
+        'Full width spans the viewport; max width aligns to the centered content column.',
+    }),
+    defineField({
+      name: 'bottomBorderWidth',
+      title: 'Bottom dashed border width',
+      type: 'string',
+      initialValue: 'max',
+      options: borderWidthOptions,
+      hidden: ({ parent }) => parent?.showBottomBorder === false,
+      description:
+        'Full width spans the viewport; max width aligns to the centered content column.',
+    }),
   ],
   preview: {
     select: {
