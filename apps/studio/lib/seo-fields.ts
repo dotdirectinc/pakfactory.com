@@ -29,7 +29,8 @@ export function seoFields({ group, canonical = false, indexDefault = true }: Seo
       type: 'string',
       group,
       validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
-      description: 'Shown in search results and the browser tab. Falls back to the title when blank.',
+      description:
+        'Shown in search results and the browser tab. When blank, Blog Settings type format applies (e.g. Category defaults), then the content title. A filled value always wins over formats.',
     }),
     defineField({
       name: 'metaDescription',
@@ -38,7 +39,8 @@ export function seoFields({ group, canonical = false, indexDefault = true }: Seo
       rows: 3,
       group,
       validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
-      description: 'The SERP snippet. Falls back to the excerpt/description when blank.',
+      description:
+        'The SERP snippet. When blank, Blog Settings type format applies, then excerpt/description. A filled value always wins over formats.',
     }),
     ...(canonical
       ? [

@@ -119,21 +119,16 @@ Every content document type (`post`, `blogCategory`, `blogTag`, `author`, `blogP
 
 **Fallback chains the GROQ/metadata layer must resolve** (blank field → correct output; resolved in the query/`generateMetadata`, never in the schema):
 
-- `metaTitle` → `title` (post/page) / name.
-- `metaDescription` → `excerpt` (post) / `description` (category/tag) .
+- `metaTitle` → Blog Settings type format (`%title%` / `%name%` …) → `title` (post/page) / name + brand suffix.
+- `metaDescription` → Blog Settings type format → `excerpt` (post) / `description` (category/tag/page) / code last-resort.
 - `ogTitle` → `metaTitle` → `title`.
 - `ogDescription` → `metaDescription` → (description/excerpt).
 - `ogImage` → featured/hero image → **global default** (`settings.defaultSocialImage`).
 - `canonical` blank → page self-canonical via `absoluteUrl()`.
 
-> **⚠️ `blogPage` migration (action required when wiring).** `blogPage` previously used an inverted `noindex` boolean; it now uses the shared `allowIndex`/`allowFollow`/`noImageIndex` trio. **Two consumers still read the old field and must be updated:**
->
-> - [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts) — L175 projection (`noindex,`) and L190 filter (`&& noindex != true` → `&& allowIndex != false`).
-> - [`src/lib/blog-page.ts`](./src/lib/blog-page.ts) — L17 type (`noindex?: boolean`) and L56 robots (`page.noindex ? { index:false, follow:true } : undefined` → derive from `allowIndex`/`allowFollow`/`noImageIndex`).
->
-> Until updated it degrades gracefully (field absent → pages stay indexed/included), so there is no crash — but an editor's noindex toggle won't take effect until this is wired.
+**Blog Settings formats** (Studio → Blog → Blog Settings): `postDefaults`, `categoryDefaults`, `tagDefaults`, `authorDefaults`, and **`pageDefaults`** (all `blogPage` roles: home, topics, search, contribute, 404, landing, static). Token resolution: [`src/lib/resolve-format-string.ts`](./src/lib/resolve-format-string.ts) via [`buildDocMetadata`](./src/lib/resolve-seo.ts).
 
-**Status:** schemas use the shared helper today; the **GROQ projections + metadata fallback resolution are not yet wired** — see the wiring backlog in [`memory.md`](./memory.md) § "Studio ↔ blog SEO/Social wiring".
+**Status:** shared SEO helper + Blog Settings formats + most route metadata builders are wired — remaining backlog in [`memory.md`](./memory.md) § "Studio ↔ blog SEO/Social wiring".
 
 ## Homepage page builder (shipped)
 

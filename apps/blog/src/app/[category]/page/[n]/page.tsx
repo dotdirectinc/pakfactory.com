@@ -9,11 +9,12 @@ import {
   fetchCategoryBySlug,
   getCategoryListingRobots,
   parseCategoryFilters,
+  resolveCategoryListingTitle,
 } from "@/lib/blog-category-archive";
 import {
   isArchivePageOutOfRange,
   paginatedEntityDescription,
-  paginatedListTitle,
+  paginatedTitleFromResolved,
   resolvePaginationRoute,
 } from "@/lib/blog-archive-pagination";
 import { categoryHref } from "@/lib/blog-post-url";
@@ -35,7 +36,7 @@ export async function generateMetadata({
     pagination.status === "not-found" ||
     pagination.status === "redirect"
   ) {
-    return { title: "Category | PakFactory Blog" };
+    return { title: "Category" };
   }
 
   const sp = await searchParams;
@@ -46,13 +47,15 @@ export async function generateMetadata({
   const categoryDoc = await fetchCategoryBySlug(category);
   if (!categoryDoc) return { title: "Category not found" };
 
+  const resolvedTitle = await resolveCategoryListingTitle(categoryDoc);
+
   return buildCategoryArchiveMetadata(
     categoryDoc,
     categoryPageHref(category, pagination.pageNumber, filters),
     getCategoryListingRobots(pagination.pageNumber, sp),
     {
-      titleOverride: paginatedListTitle(
-        categoryDoc.title,
+      titleOverride: paginatedTitleFromResolved(
+        resolvedTitle,
         pagination.pageNumber,
       ),
       descriptionOverride: paginatedEntityDescription(

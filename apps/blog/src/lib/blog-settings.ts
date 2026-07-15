@@ -24,6 +24,7 @@ export type BlogSettings = {
   categoryDefaults?: BlogTypeDefaults | null;
   tagDefaults?: BlogTypeDefaults | null;
   authorDefaults?: BlogTypeDefaults | null;
+  pageDefaults?: BlogTypeDefaults | null;
 };
 
 async function loadBlogSettings(): Promise<BlogSettings | null> {
