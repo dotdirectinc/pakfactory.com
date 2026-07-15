@@ -1,6 +1,6 @@
 import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type { PostBodyGallery } from "@/lib/blog-post";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { sanityImageBaseUrl } from "@/lib/sanity-image";
 import { GallerySlider } from "@pakfactory/components/modules/gallery-slider";
 
 type BodyGalleryProps = {
@@ -19,7 +19,7 @@ export function BodyGallery({ value }: BodyGalleryProps) {
   const isSquare = value.aspectRatio === "1:1";
   const resolved: ResolvedImage[] = (value.images ?? [])
     .map((img, i) => {
-      const src = sanityImageUrl(img.asset, 1200);
+      const src = sanityImageBaseUrl(img.asset);
       if (!src) return null;
       return { key: img._key ?? String(i), src, alt: img.alt ?? "", isSquare };
     })

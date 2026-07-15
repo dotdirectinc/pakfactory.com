@@ -1,8 +1,8 @@
 // Source: shadcn-studio (product-list)
-import Image from 'next/image';
 import Link from 'next/link';
 import {PackageIcon} from 'lucide-react';
 
+import {SanityImage} from '@/components/ui/sanity-image';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -44,11 +44,12 @@ function ProductListCard({
         >
             <div className="relative flex aspect-square w-full shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#ececec]">
                 {product.thumbUrl ? (
-                    <Image
+                    <SanityImage
                         src={product.thumbUrl}
                         alt={product.thumbAlt ?? displayName}
                         width={480}
                         height={480}
+                        sizes="(max-width: 640px) 50vw, 240px"
                         className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                 ) : (

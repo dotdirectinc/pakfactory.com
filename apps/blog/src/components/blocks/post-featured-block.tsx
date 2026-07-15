@@ -33,7 +33,7 @@ export function PostFeaturedBlock({
     const pool = selected.length >= 2 ? selected : fallbackLatest;
     const slideCards = pool
         .slice(0, HERO_SLIDE_COUNT)
-        .map((post) => toPostCardData(post, {imageWidth: 900}));
+        .map((post) => toPostCardData(post));
     const {borderTop, borderBottom} = resolveDielineBorders(
         showTopBorder,
         showBottomBorder,

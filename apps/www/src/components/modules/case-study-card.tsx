@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { SanityImage } from "@/components/ui/sanity-image";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CaseStudyTaxonomyItem } from "@pakfactory/sanity/queries";
 
@@ -29,7 +29,7 @@ export function CaseStudyCard({
       <Link href={href} className="group flex flex-col gap-[14px]">
         <div className="relative aspect-square overflow-hidden rounded-[10px] bg-muted">
           {cardImageUrl ? (
-            <Image
+            <SanityImage
               src={cardImageUrl}
               alt={cardImageAlt ?? title}
               fill

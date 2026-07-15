@@ -2,6 +2,8 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { Play } from "lucide-react";
 import { cn } from "@pakfactory/ui/lib/utils";
+import { SanityImage } from "@/components/ui/sanity-image";
+import { isSanityCdnUrl } from "@/lib/sanity-image";
 import type { ResolvedVideoSource } from "@/lib/resolve-video-source";
 
 type VideoCardProps = {
@@ -66,14 +68,24 @@ export function VideoCardThumbnail({
   return wrapper(
     <div className={cn("relative aspect-video w-full", isLead && "min-h-[200px]")}>
       {video.thumbnailUrl ? (
-        <Image
-          src={video.thumbnailUrl}
-          alt=""
-          fill
-          className="object-cover"
-          sizes={isLead ? "(min-width: 1024px) 717px, 100vw" : "(min-width: 1024px) 25vw, 50vw"}
-          unoptimized={video.thumbnailUrl.includes("img.youtube.com")}
-        />
+        isSanityCdnUrl(video.thumbnailUrl) ? (
+          <SanityImage
+            src={video.thumbnailUrl}
+            alt=""
+            fill
+            className="object-cover"
+            sizes={isLead ? "(min-width: 1024px) 717px, 100vw" : "(min-width: 1024px) 25vw, 50vw"}
+          />
+        ) : (
+          <Image
+            src={video.thumbnailUrl}
+            alt=""
+            fill
+            className="object-cover"
+            sizes={isLead ? "(min-width: 1024px) 717px, 100vw" : "(min-width: 1024px) 25vw, 50vw"}
+            unoptimized={video.thumbnailUrl.includes("img.youtube.com")}
+          />
+        )
       ) : (
         <div className="absolute inset-0 bg-muted" aria-hidden />
       )}

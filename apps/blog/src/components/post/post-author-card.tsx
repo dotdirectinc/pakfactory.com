@@ -31,7 +31,8 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
   const name = author?.name?.trim();
   if (!name) return null;
 
-  const photoUrl = sanityImageUrl(author?.photo, 128);
+  // AvatarImage is not next/image — request a 2x-ready fixed size.
+  const photoUrl = sanityImageUrl(author?.photo, 256);
   const bio = author?.shortBio?.trim() || author?.experience?.trim();
 
   const role = author?.role?.trim();
