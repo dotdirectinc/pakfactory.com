@@ -794,6 +794,28 @@ export const BLOG_ALL_POSTS_PAGE_QUERY = /* groq */ `*[
   && publishedAt <= now()
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
+/**
+ * All-posts archive in a single round-trip — total count + one page slice.
+ * Collapses the former count + page queries into one request (PROD-2008 perf).
+ * `$start` inclusive, `$end` exclusive.
+ */
+export const BLOG_ALL_POSTS_ARCHIVE_QUERY = /* groq */ `{
+  "totalCount": count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(slug.current)
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ]),
+  "posts": *[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && defined(slug.current)
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}
+}`;
+
 /** Latest 20 published posts for RSS 2.0 (`/rss.xml`, PROD-1505). */
 export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   _type == "post"

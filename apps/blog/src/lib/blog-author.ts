@@ -177,10 +177,16 @@ export async function fetchAuthorArchivePage(
   pageNumber: number,
   perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<AuthorArchivePageData | null> {
-  const author = await fetchAuthorBySlug(authorSlug);
+  // Author doc, count, and page slice are all independent (keyed by slug only) —
+  // fetch them in one parallel round-trip instead of three sequential ones.
+  const { start, end } = archivePageSlice(pageNumber, perPage);
+  const [author, totalCount, rows] = await Promise.all([
+    fetchAuthorBySlug(authorSlug),
+    fetchAuthorPostsCount(authorSlug),
+    fetchAuthorPosts(authorSlug, start, end),
+  ]);
   if (!author) return null;
 
-  const totalCount = await fetchAuthorPostsCount(authorSlug);
   const totalPages = getTotalArchivePages(totalCount, perPage);
 
   if (isArchivePageOutOfRange(pageNumber, totalCount, perPage)) {
@@ -193,9 +199,6 @@ export async function fetchAuthorArchivePage(
       perPage,
     };
   }
-
-  const { start, end } = archivePageSlice(pageNumber, perPage);
-  const rows = await fetchAuthorPosts(authorSlug, start, end);
 
   return {
     author,

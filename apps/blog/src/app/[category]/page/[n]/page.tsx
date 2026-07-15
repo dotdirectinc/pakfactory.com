@@ -6,6 +6,7 @@ import {
   buildCategoryArchiveMetadata,
   categoryPageHref,
   fetchCategoryArchivePage,
+  fetchCategoryBySlug,
   getCategoryListingRobots,
   parseCategoryFilters,
 } from "@/lib/blog-category-archive";
@@ -39,27 +40,24 @@ export async function generateMetadata({
 
   const sp = await searchParams;
   const filters = parseCategoryFilters(sp);
-  const perPage = parsePerPage(sp.perPage);
-  const data = await fetchCategoryArchivePage(
-    category,
-    pagination.pageNumber,
-    filters,
-    perPage,
-  );
-  if (!data) return { title: "Category not found" };
+  // Metadata only needs the category doc — avoid re-running the full archive
+  // fetch here (the page render does that). `fetchCategoryBySlug` is cache()'d,
+  // so this shares one doc fetch with the render below.
+  const categoryDoc = await fetchCategoryBySlug(category);
+  if (!categoryDoc) return { title: "Category not found" };
 
   return buildCategoryArchiveMetadata(
-    data.category,
+    categoryDoc,
     categoryPageHref(category, pagination.pageNumber, filters),
     getCategoryListingRobots(pagination.pageNumber, sp),
     {
       titleOverride: paginatedListTitle(
-        data.category.title,
+        categoryDoc.title,
         pagination.pageNumber,
       ),
       descriptionOverride: paginatedEntityDescription(
-        data.category.title,
-        data.category.descriptionText,
+        categoryDoc.title,
+        categoryDoc.descriptionText,
         pagination.pageNumber,
       ),
     },
