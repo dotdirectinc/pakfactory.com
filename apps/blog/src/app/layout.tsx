@@ -5,6 +5,7 @@ import {Inter} from 'next/font/google';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {VisualEditing} from 'next-sanity/visual-editing';
 import {AppToaster} from '@/components/common/app-toaster';
+import {EnvBadge} from '@/components/layout/env-badge';
 import {SiteFooter} from '@/components/layout/site-footer';
 import {SiteNav} from '@/components/layout/site-nav';
 import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data';
@@ -40,6 +41,12 @@ function resolveGtmId(gtmId: string | null | undefined): string | null {
     return gtmId.trim();
 }
 
+/** Staging/preview → Staging; local next dev (no VERCEL_ENV) → Local; prod → null. */
+function resolveEnvBadgeLabel(): 'Staging' | 'Local' | null {
+    if (process.env.VERCEL_ENV === 'production') return null;
+    return process.env.VERCEL_ENV ? 'Staging' : 'Local';
+}
+
 export default async function RootLayout({
     children,
 }: {
@@ -52,6 +59,7 @@ export default async function RootLayout({
         fetchBlogGlobalSettings(),
     ]);
     const gtmId = resolveGtmId(globalSettings?.gtmId);
+    const envLabel = resolveEnvBadgeLabel();
     return (
         <html lang="en" className={`${GeistSans.variable} ${inter.variable}`}>
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
@@ -69,6 +77,7 @@ export default async function RootLayout({
                     builder={footerData.builder}
                 />
                 {isDraft && <VisualEditing />}
+                {envLabel ? <EnvBadge label={envLabel} /> : null}
             </body>
         </html>
     );
