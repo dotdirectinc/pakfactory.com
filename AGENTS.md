@@ -128,7 +128,7 @@ Shipped prerequisites are documented in **[`docs/blog-3-jira-conventions.md`](do
 | **Package manager** ([PROD-1486](https://dotdirect.atlassian.net/browse/PROD-1486)) | **pnpm 9** only; `workspace:*` for `@pakfactory/*`; ADR-002                                                                                               |
 | **JSON-LD** ([PROD-1487](https://dotdirect.atlassian.net/browse/PROD-1487))         | Use **`@pakfactory/seo`** only — see [`packages/seo/CLAUDE.md`](packages/seo/CLAUDE.md)                                                                   |
 | **AI IDE config** ([PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516))   | This file + [`CLAUDE.md`](CLAUDE.md) + [`.cursor/rules/`](.cursor/rules/) + [`.claude/skills/`](.claude/skills/)                                          |
-| **Listing robots** ([PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495))  | `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` — paginated/filtered listings **noindex, follow**; posts **index, follow**                         |
+| **Listing robots** ([PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495))  | `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` — unfiltered paginated listings **index, follow** (self-canonical); filtered / odd-`perPage` listings **noindex, follow**; posts **index, follow**                         |
 | **Deploy & URLs** ([PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496))   | Blog app at deployment **root** (no URL `/blog` prefix); `NEXT_PUBLIC_SITE_URL` = blog origin; Vercel ops in [`apps/blog/memory.md`](apps/blog/memory.md) |
 
 Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.net/browse/PROD-1480).

@@ -114,7 +114,7 @@ export const blogSettings = defineType({
       group: 'post',
       options: { collapsible: false },
       fields: typeDefaultFields({
-        metaTitleFormat: '%title% | PakFactory Blog',
+        metaTitleFormat: '%title%',
         metaDescriptionFormat: '%excerpt%',
         indexDefault: true,
         sitemap: { priority: 0.7, changefreq: 'weekly' },
@@ -127,7 +127,7 @@ export const blogSettings = defineType({
       group: 'category',
       options: { collapsible: false },
       fields: typeDefaultFields({
-        metaTitleFormat: '%name% — Custom Packaging Insights | PakFactory Blog',
+        metaTitleFormat: '%name% | PakFactory Blog',
         metaDescriptionFormat: '%description%',
         indexDefault: true,
         sitemap: { priority: 0.8, changefreq: 'weekly' },
@@ -140,7 +140,7 @@ export const blogSettings = defineType({
       group: 'tag',
       options: { collapsible: false },
       fields: typeDefaultFields({
-        metaTitleFormat: 'Posts about %name% | PakFactory Blog',
+        metaTitleFormat: '%name% | PakFactory Blog',
         metaDescriptionFormat: '%description%',
         indexDefault: false,
         // tags are noindex by default → no sitemap entry

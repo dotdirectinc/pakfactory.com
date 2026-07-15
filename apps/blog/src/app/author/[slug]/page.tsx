@@ -8,6 +8,7 @@ import {
   buildAuthorMetadata,
   fetchAuthorArchivePage,
   getAuthorListingRobots,
+  isThinAuthor,
 } from "@/lib/blog-author";
 import { hasNonDefaultPerPage } from "@/lib/seo";
 
@@ -33,6 +34,7 @@ export async function generateMetadata({
     authorPageHref(slug, 1),
     getAuthorListingRobots(1, {
       hasNonDefaultPerPage: hasNonDefaultPerPage(sp),
+      thinAuthor: isThinAuthor(data.author, data.totalCount),
     }),
   );
 }

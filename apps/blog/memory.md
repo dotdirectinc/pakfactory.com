@@ -500,7 +500,9 @@ curl -sI https://blog.pakfactory.com/unknown-slug | head -8
 
 ### Purpose
 
-Paginated archive and filtered listing URLs should not be indexed (`noindex, follow`). Only page 1 of each listing type (unfiltered) and individual post pages are indexable.
+Filtered listing URLs and non-default `?perPage=` variants should not be indexed (`noindex, follow`). Unfiltered paginated archives (page 2+) stay **indexable** with a **self-canonical** for each page. Individual post pages are always indexable.
+
+Updated 2026-07-15 to match the Blog Meta Titles & Descriptions decision (paginated = indexable + self-canonical).
 
 ### What was shipped
 
@@ -516,14 +518,15 @@ Paginated archive and filtered listing URLs should not be indexed (`noindex, fol
 | Input                                  | `index` | `follow` |
 | -------------------------------------- | ------- | -------- |
 | `kind: 'post'`                         | `true`  | `true`   |
-| Listing, page 1, no filters            | `true`  | `true`   |
-| Listing, page ≥ 2                      | `false` | `true`   |
+| Listing, no filters, default per-page  | `true`  | `true`   |
+| Listing, page ≥ 2, unfiltered          | `true`  | `true`   |
 | Listing, any active filter query param | `false` | `true`   |
+| Listing, non-default `?perPage=`       | `false` | `true`   |
 
-**Listing kinds:** `blog_index`, `category`, `tag`, `author` (latter three ready for future archive routes).
+**Listing kinds:** `blog_index`, `category`, `tag`, `author`, `all_archive`.
 
 **Filter query keys** (non-empty value → filtered): `tag`, `category`, `q`, `query`, `author`, `year`, `month`.  
-**Not a filter:** `page` (pagination only) — parsed via `parseListingPage()`.
+**Not a filter:** `page` / path `/page/N` (pagination only) — parsed via `parseListingPage()` / archive path params.
 
 ### Routes
 
@@ -905,7 +908,7 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 
 - **Kicker:** `topicGroupTitle(tag.topicGroup)` → e.g. `Industry`; omitted when ungrouped.
 - **Sidebar:** co-occurring tags (other tags on this tag's posts) grouped by `topicGroup`; **the current tag's own group row is hidden**; empty groups omitted. Plus author + date + sort. Filter state (`author`, `year`, `month`, `sort`) in URL — **`tag` is the page, not a filter**.
-- **Robots:** page 1 unfiltered **with ≥1 post → index, follow**; **empty tag / page ≥2 / any filter → noindex, follow**. The empty→noindex clause is unique to tags (`getTagListingRobots`).
+- **Robots:** unfiltered (incl. page ≥2) **with ≥ `autoNoindexThreshold` posts (default 5) and `allowIndex` → index, follow**; **empty / below-threshold / any filter → noindex, follow**. Threshold + empty gates are unique to tags (`getTagListingRobots`).
 - **Posts** span categories; each `PostCard` links via its own `post.categorySlug` (`/{category}/{post}`).
 - **Unknown tag slug → `notFound()`**; out-of-range page → `notFound()`.
 

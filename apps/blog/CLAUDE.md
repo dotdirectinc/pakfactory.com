@@ -54,9 +54,9 @@ Use **Server Components** by default. Do not replace content navigation with cli
 
 ## Listing robots (PROD-1495)
 
-- Use **`getBlogRobotsDirective`** / **`getListingRobotsFromSearchParams`** from [`src/lib/seo.ts`](./src/lib/seo.ts) in **`generateMetadata`** on listing routes (index today; future category/tag/author archives).
+- Use **`getBlogRobotsDirective`** / **`getListingRobotsFromSearchParams`** from [`src/lib/seo.ts`](./src/lib/seo.ts) in **`generateMetadata`** on listing routes (index today; category/tag/author archives).
 - **Post pages:** always **index, follow** (`kind: 'post'`).
-- **Listings:** page **1** with no filter query params → **index, follow**; page **≥ 2** or any filter param (`tag`, `category`, `q`, `query`, `author`, `year`, `month`) → **noindex, follow**. Pagination uses **`page` only** — `page` is not a filter.
+- **Listings:** unfiltered pages (including page **≥ 2**) with default per-page → **index, follow**, each self-canonical to its own URL; any filter param (`tag`, `category`, `q`, `query`, `author`, `year`, `month`) or non-default `?perPage=` → **noindex, follow**. Pagination uses path `/page/N` (and optional `page` query) — pagination alone is **not** a filter.
 
 ## Sanity query patterns
 
