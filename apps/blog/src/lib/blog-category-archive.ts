@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import type { PortableTextBlock } from "@portabletext/types";
 import type { HomePostCard } from "@/lib/blog-home";
@@ -228,7 +229,12 @@ export async function buildCategoryArchiveMetadata(
   });
 }
 
-export async function fetchCategoryBySlug(
+/**
+ * Category document by slug. Wrapped in React `cache()` so `generateMetadata`
+ * and the page render share a single fetch per request instead of each hitting
+ * Sanity (metadata only needs the category doc, not the whole archive).
+ */
+export const fetchCategoryBySlug = cache(async function fetchCategoryBySlug(
   slug: string,
 ): Promise<CategoryDocument | null> {
   const fallback = getCategoryFallback(slug);
@@ -255,7 +261,7 @@ export async function fetchCategoryBySlug(
     return { title: fallback.title, slug: fallback.slug, descriptionText: "" };
   }
   return null;
-}
+});
 
 export async function fetchCategoryArchivePage(
   categorySlug: string,
@@ -263,47 +269,80 @@ export async function fetchCategoryArchivePage(
   filters: CategoryListFilters,
   perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<CategoryArchivePageData | null> {
-  const category = await fetchCategoryBySlug(categorySlug);
-  if (!category) return null;
-
   const hasFilters = hasActiveCategoryFilters(filters);
   // Exclude featured posts from the listing only on page 1 (to avoid duplication with the featured band).
   const excludeFeaturedFromListing = pageNumber === 1 && !hasFilters;
   const groqParams = groqFilterParams(categorySlug, filters, {
     excludeFeatured: excludeFeaturedFromListing,
   });
+  const start = (pageNumber - 1) * perPage;
+  const end = start + perPage;
+
+  let category: CategoryDocument | null = null;
   let totalCount = 0;
   let featuredPosts: HomePostCard[] = [];
   let recommendedTopics: CategoryTopic[] = [];
+  let posts: HomePostCard[] = [];
+  let tags: CategoryFacetTag[] = [];
+  let authors: CategoryFacetAuthor[] = [];
 
+  // The category doc, count, featured band, topics, page slice, and both facet
+  // sets are all independent (keyed by slug/filters, not by each other) — issue
+  // them in one parallel round-trip instead of the former three sequential waves.
   if (isSanityConfigured()) {
     const client = await getSanityClient();
-    [totalCount, featuredPosts, recommendedTopics] = await Promise.all([
-      client
-        .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
-        .catch(() => 0),
-      !hasFilters
-        ? client
-            .fetch<HomePostCard[]>(
-              BLOG_CATEGORY_FEATURED_POSTS_QUERY,
-              blogLanguageParams({ categorySlug }),
-            )
-            .catch(() => [])
-        : Promise.resolve([] as HomePostCard[]),
-      client
-        .fetch<CategoryTopic[] | null>(
-          BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
-          blogLanguageParams({ categorySlug }),
-        )
-        .then((topics) => topics ?? [])
-        .catch(() => []),
-    ]);
+    [category, totalCount, featuredPosts, recommendedTopics, posts, tags, authors] =
+      await Promise.all([
+        fetchCategoryBySlug(categorySlug),
+        client
+          .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
+          .catch(() => 0),
+        !hasFilters
+          ? client
+              .fetch<HomePostCard[]>(
+                BLOG_CATEGORY_FEATURED_POSTS_QUERY,
+                blogLanguageParams({ categorySlug }),
+              )
+              .catch(() => [])
+          : Promise.resolve([] as HomePostCard[]),
+        client
+          .fetch<CategoryTopic[] | null>(
+            BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
+            blogLanguageParams({ categorySlug }),
+          )
+          .then((topics) => topics ?? [])
+          .catch(() => []),
+        client
+          .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {
+            ...groqParams,
+            start,
+            end,
+          })
+          .catch(() => []),
+        client
+          .fetch<CategoryFacetTag[]>(
+            BLOG_CATEGORY_TAGS_FACET_QUERY,
+            blogLanguageParams({ categorySlug }),
+          )
+          .catch(() => []),
+        client
+          .fetch<CategoryFacetAuthor[]>(
+            BLOG_CATEGORY_AUTHORS_FACET_QUERY,
+            blogLanguageParams({ categorySlug }),
+          )
+          .catch(() => []),
+      ]);
+  } else {
+    category = await fetchCategoryBySlug(categorySlug);
   }
+
+  if (!category) return null;
 
   const totalPages = totalCount === 0 ? 1 : Math.ceil(totalCount / perPage);
   const isOutOfRange = pageNumber < 1 || pageNumber > totalPages;
 
   if (isOutOfRange) {
+    // Out-of-range pages 404; drop the (already-fetched) listing + facets.
     return {
       category,
       posts: [],
@@ -317,37 +356,6 @@ export async function fetchCategoryArchivePage(
       authors: [],
       recommendedTopics,
     };
-  }
-
-  let posts: HomePostCard[] = [];
-  let tags: CategoryFacetTag[] = [];
-  let authors: CategoryFacetAuthor[] = [];
-
-  if (isSanityConfigured()) {
-    const start = (pageNumber - 1) * perPage;
-    const end = start + perPage;
-    const client = await getSanityClient();
-    [posts, tags, authors] = await Promise.all([
-      client
-        .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {
-          ...groqParams,
-          start,
-          end,
-        })
-        .catch(() => []),
-      client
-        .fetch<CategoryFacetTag[]>(
-          BLOG_CATEGORY_TAGS_FACET_QUERY,
-          blogLanguageParams({ categorySlug }),
-        )
-        .catch(() => []),
-      client
-        .fetch<CategoryFacetAuthor[]>(
-          BLOG_CATEGORY_AUTHORS_FACET_QUERY,
-          blogLanguageParams({ categorySlug }),
-        )
-        .catch(() => []),
-    ]);
   }
 
   return {
