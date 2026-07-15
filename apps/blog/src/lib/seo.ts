@@ -90,11 +90,13 @@ export function hasNonDefaultPerPage(
 }
 
 /**
- * Robots policy for blog routes (PROD-1495).
+ * Robots policy for blog routes (PROD-1495, updated for self-canonical pagination).
  *
  * - Post detail: always index, follow.
- * - Listing page 1, no filters, default per-page: index, follow.
- * - Listing page 2+, filtered state, or non-default per-page: noindex, follow.
+ * - Listing pages (including page 2+), no filters, default per-page: index, follow.
+ * - Filtered state or non-default per-page: noindex, follow.
+ * Pagination uses path segments (`/page/N`) with self-canonicals; each page is
+ * treated as its own indexable URL. Filters / odd `?perPage=` stay noindex.
  */
 export function getBlogRobotsDirective(input: BlogRobotsInput): BlogRobotsDirective {
   if (input.kind === "post") {
@@ -105,12 +107,7 @@ export function getBlogRobotsDirective(input: BlogRobotsInput): BlogRobotsDirect
     return { index: false, follow: true };
   }
 
-  const pageNumber = input.pageNumber ?? 1;
-  if (
-    input.hasActiveFilters ||
-    input.hasNonDefaultPerPage ||
-    pageNumber > 1
-  ) {
+  if (input.hasActiveFilters || input.hasNonDefaultPerPage) {
     return { index: false, follow: true };
   }
 
@@ -156,28 +153,44 @@ export function getAllArchiveRobots(
 }
 
 /**
- * Robots for `/topics/{slug}` archives (PROD-1500). Like other listings, but an
- * **empty** tag (no published posts) is `noindex` even on page 1 to avoid
- * indexing thin/empty pages.
+ * Robots for `/topics/{slug}` archives (PROD-1500). Like other listings, but:
+ * - an **empty** tag (no published posts) is `noindex`;
+ * - tags with fewer than `autoNoindexThreshold` posts are forced `noindex`
+ *   even when an editor opts the tag into indexing.
  */
 export function getTagListingRobots(
   pageNumber: number,
   searchParams: SearchParams,
   hasPosts: boolean,
   tag?: DocSeoOverrides,
+  options?: {
+    /** Published post count for this topic (used with autoNoindexThreshold). */
+    postCount?: number;
+    /** From Blog Settings `tagDefaults.autoNoindexThreshold` (default 5). */
+    autoNoindexThreshold?: number | null;
+  },
 ): BlogRobotsDirective {
-  const base = !hasPosts
-    ? { index: false, follow: true }
-    : getBlogRobotsDirective({
-        kind: "tag",
-        pageNumber,
-        hasActiveFilters: hasListingFilters(searchParams),
-        hasNonDefaultPerPage: hasNonDefaultPerPage(searchParams),
-      });
+  const threshold =
+    typeof options?.autoNoindexThreshold === "number"
+      ? options.autoNoindexThreshold
+      : 5;
+  const postCount = options?.postCount ?? (hasPosts ? 1 : 0);
+  const belowThreshold = postCount < threshold;
+
+  const base =
+    !hasPosts || belowThreshold
+      ? { index: false, follow: true }
+      : getBlogRobotsDirective({
+          kind: "tag",
+          pageNumber,
+          hasActiveFilters: hasListingFilters(searchParams),
+          hasNonDefaultPerPage: hasNonDefaultPerPage(searchParams),
+        });
 
   // Per-tag overrides only tighten: tags default to noindex unless explicitly
   // opted in (spec § 4); follow defaults ON; noImageIndex defaults OFF.
-  const allowIndex = tag?.allowIndex === true;
+  // Below-threshold forces noindex even when allowIndex is opted in.
+  const allowIndex = tag?.allowIndex === true && !belowThreshold;
   const allowFollow = tag?.allowFollow !== false;
   const noImageIndex = tag?.noImageIndex === true;
 

@@ -9,6 +9,7 @@ import {
   tagPageHref,
 } from "@/lib/blog-tag-archive";
 import { fetchBlogCategories } from "@/lib/blog-data";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import { getTagListingRobots } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -26,13 +27,20 @@ export async function generateMetadata({
   const sp = await searchParams;
   const filters = parseTagFilters(sp);
   const perPage = parsePerPage(sp.perPage);
-  const data = await fetchTagArchivePage(slug, 1, filters, perPage);
+  const [data, seoCtx] = await Promise.all([
+    fetchTagArchivePage(slug, 1, filters, perPage),
+    fetchSeoContext(),
+  ]);
   if (!data) return { title: "Topic not found" };
 
+  const tagDefaults = typeDefaults(seoCtx, "tagDefaults");
   return buildTagArchiveMetadata(
     data.tag,
     tagPageHref(slug, 1, filters),
-    getTagListingRobots(1, sp, data.totalCount > 0, data.tag),
+    getTagListingRobots(1, sp, data.totalCount > 0, data.tag, {
+      postCount: data.totalCount,
+      autoNoindexThreshold: tagDefaults?.autoNoindexThreshold,
+    }),
   );
 }
 
