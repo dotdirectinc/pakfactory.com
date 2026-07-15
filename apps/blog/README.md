@@ -78,7 +78,7 @@ Server Components by default; `export const revalidate = 60` unless a route need
 - The single root segment `/[category]` resolves to a **category archive** (known slug) or otherwise a **post**; unknown → `notFound()`.
 - **Reserved segments:** `all`, `rss.xml`, `sitemap.xml`, `api`, `search`, `tag`, `author`, `contribute`. A post slug must never collide with these.
 - **Build URLs only via `src/lib/site.ts`:** `absoluteUrl(path)` (canonicals, JSON-LD, RSS, sitemap) and `sitePath(path)` (relative metadata). Never concatenate `getSiteUrl()` with a raw path — that skips the `basePath` prefix under subpath hosting.
-- **Listing routes** are `noindex, follow` on page ≥2 or when any filter query param is present; page 1 unfiltered and post pages are indexable (`getBlogRobotsDirective`, PROD-1495).
+- **Listing routes** are `index, follow` when unfiltered (including page ≥2, each self-canonical); `noindex, follow` when any filter query param or non-default `?perPage=` is present; post pages are always indexable (`getBlogRobotsDirective`, PROD-1495).
 
 ## Sanity & content
 

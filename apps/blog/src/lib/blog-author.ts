@@ -102,10 +102,33 @@ export function authorPageHref(
   return base;
 }
 
+/**
+ * True when an author page is thin for search: no bio, or fewer than 2 posts.
+ * Thin author pages are forced noindex (blog meta decision 2026-07-15).
+ */
+export function isThinAuthor(
+  author: Pick<AuthorDoc, "shortBio" | "bioText" | "bio">,
+  postCount: number,
+): boolean {
+  const hasBio = Boolean(
+    author.shortBio?.trim() ||
+      author.bioText?.trim() ||
+      (Array.isArray(author.bio) && author.bio.length > 0),
+  );
+  return !hasBio || postCount <= 1;
+}
+
 export function getAuthorListingRobots(
   pageNumber: number,
-  options?: { hasNonDefaultPerPage?: boolean },
+  options?: {
+    hasNonDefaultPerPage?: boolean;
+    /** Force noindex for thin authors (no bio / 0–1 posts). */
+    thinAuthor?: boolean;
+  },
 ): BlogRobotsDirective {
+  if (options?.thinAuthor) {
+    return { index: false, follow: true };
+  }
   return getBlogRobotsDirective({
     kind: "author",
     pageNumber,

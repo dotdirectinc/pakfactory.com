@@ -34,7 +34,7 @@ description: >-
 ### Robots (listing pages, PROD-1495)
 
 - Post detail: **index, follow** (`getBlogRobotsDirective({ kind: 'post' })`).
-- Blog index / archives: page 1 unfiltered → index; page ≥2 or filter query params → **noindex, follow** (`getListingRobotsFromSearchParams`).
+- Blog index / archives: unfiltered pages (including page ≥2) → index + self-canonical; filter query params or non-default `perPage` → **noindex, follow** (`getListingRobotsFromSearchParams`).
 
 ### Content structure
 

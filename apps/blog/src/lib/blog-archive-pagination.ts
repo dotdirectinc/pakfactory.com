@@ -23,7 +23,7 @@ export function resolvePaginationRoute(
 
 export function paginatedListTitle(label: string, pageNumber: number): string {
   if (pageNumber <= 1) return label;
-  return `${label} — Page ${pageNumber} | PakFactory Blog`;
+  return `${label} - Page ${pageNumber} | PakFactory Blog`;
 }
 
 export function paginatedEntityDescription(

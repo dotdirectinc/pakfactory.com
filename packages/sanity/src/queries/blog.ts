@@ -899,7 +899,8 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
     allowFollow,
     noImageIndex,
     sitemapPriority,
-    sitemapChangefreq
+    sitemapChangefreq,
+    autoNoindexThreshold
   },
   authorDefaults{
     metaTitleFormat,
@@ -1171,19 +1172,24 @@ export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
   ${AUTHOR_POST_FILTER}
 ] | order(publishedAt desc)[$start...$end]${POST_CARD_FIELDS}`;
 
-/** Authors with at least one published post (sitemap).
+/** Authors eligible for sitemap: ≥2 published posts and a bio (short or long).
+ * Thin authors (no bio / 0–1 posts) stay noindex and are omitted here.
  * Posts with language null/missing are treated as belonging to the default
  * language so authors seeded before the language field was added are included. */
 export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "author"
   && defined(slug.current)
+  && (
+    (defined(shortBio) && shortBio != "")
+    || length(pt::text(bio)) > 0
+  )
   && count(*[
     _type == "post"
     && (!defined(language) || language == $language)
     && author._ref == ^._id
     && defined(publishedAt)
     && publishedAt <= now()
-  ]) > 0
+  ]) > 1
 ]{
   "slug": slug.current,
   _updatedAt
