@@ -27,7 +27,7 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
   const hasBio = Boolean(author.bio?.length);
 
   return (
-    <PageDielineFullBleedSection sectionClassName="bg-accent" innerClassName="py-16 sm:py-24">
+    <PageDielineFullBleedSection sectionClassName="bg-brand-cream" innerClassName="py-16 sm:py-24">
       <div className="flex flex-col items-start gap-10 lg:flex-row lg:items-start lg:gap-16">
         {photoUrl ? (
           <SanityImage

@@ -35,7 +35,7 @@ const PROVIDERS = [
 ] as const;
 
 const CHIP_CLASS =
-  "inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:text-primary hover:shadow-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
+  "inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-[var(--opacity-primary-10)] hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
 export function PostAskAi({ url, title }: PostAskAiProps) {
   const [copied, setCopied] = useState(false);
@@ -58,7 +58,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-[var(--opacity-primary-10)] p-5">
+    <div className="flex flex-col gap-3 rounded-2xl bg-brand-cream p-5">
       <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Sparkles className="size-4 text-primary" strokeWidth={1.75} aria-hidden />
         Ask AI about this article
