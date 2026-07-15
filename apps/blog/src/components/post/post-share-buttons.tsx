@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { Check, Link2 } from "lucide-react";
 import { useState } from "react";
+import { SocialPlatformIcon } from "@/components/modules/social-platform-icon";
 import { EXTERNAL_LINK_REL } from "@/lib/external-link";
 
 type PostShareButtonsProps = {
@@ -14,19 +14,16 @@ const NETWORKS = [
   {
     id: "linkedin",
     label: "Share on LinkedIn",
-    icon: "/logos/social/linkedin.svg",
     href: (u: string) => `https://www.linkedin.com/sharing/share-offsite/?url=${u}`,
   },
   {
     id: "x",
     label: "Share on X",
-    icon: "/logos/social/x.svg",
     href: (u: string, t: string) => `https://twitter.com/intent/tweet?url=${u}&text=${t}`,
   },
   {
     id: "facebook",
     label: "Share on Facebook",
-    icon: "/logos/social/facebook.svg",
     href: (u: string) => `https://www.facebook.com/sharer/sharer.php?u=${u}`,
   },
 ] as const;
@@ -74,14 +71,7 @@ export function PostShareButtons({ url, title }: PostShareButtonsProps) {
             aria-label={network.label}
             className={iconLink}
           >
-            <Image
-              src={network.icon}
-              alt=""
-              width={20}
-              height={20}
-              className="size-5"
-              aria-hidden
-            />
+            <SocialPlatformIcon platform={network.id} size={20} />
           </a>
         ))}
       </div>

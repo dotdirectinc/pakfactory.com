@@ -1,8 +1,19 @@
-import Image from "next/image";
-import { Globe } from "lucide-react";
+import type { ComponentType } from "react";
+import {
+  Facebook,
+  Ghost,
+  Globe,
+  Instagram,
+  Linkedin,
+  Youtube,
+} from "lucide-react";
+import {
+  DiscordBrandIcon,
+  PinterestBrandIcon,
+  XBrandIcon,
+} from "@/components/ui/social-brand-icon";
 import {
   isSocialPlatform,
-  socialPlatformIconSrc,
   socialPlatformTitle,
   type SocialPlatform,
 } from "@pakfactory/sanity/social-platforms";
@@ -14,6 +25,30 @@ type SocialPlatformIconProps = {
   className?: string;
 };
 
+type IconComponent = ComponentType<{
+  size?: number | string;
+  className?: string;
+  "aria-hidden"?: boolean;
+}>;
+
+/**
+ * Platform → icon (PROD-2016: shadcn/lucide set). Lucide covers most platforms;
+ * X / Pinterest / Discord use official brand paths drawn on the lucide grid
+ * (see `ui/social-brand-icon`). All render `currentColor`, so anchors control
+ * color and hover states.
+ */
+const PLATFORM_ICONS: Record<SocialPlatform, IconComponent> = {
+  linkedin: Linkedin,
+  website: Globe,
+  instagram: Instagram,
+  x: XBrandIcon,
+  pinterest: PinterestBrandIcon,
+  snapchat: Ghost,
+  discord: DiscordBrandIcon,
+  facebook: Facebook,
+  youtube: Youtube,
+};
+
 export function SocialPlatformIcon({
   platform,
   label,
@@ -22,26 +57,8 @@ export function SocialPlatformIcon({
 }: SocialPlatformIconProps) {
   if (!isSocialPlatform(platform)) return null;
 
-  const iconSrc = socialPlatformIconSrc(platform);
-  const icon = iconSrc ? (
-    <Image
-      src={iconSrc}
-      alt=""
-      width={size}
-      height={size}
-      className="shrink-0"
-      style={{ width: size, height: size }}
-      aria-hidden
-    />
-  ) : platform === "website" ? (
-    <Globe
-      className="shrink-0 text-muted-foreground"
-      style={{ width: size, height: size }}
-      aria-hidden
-    />
-  ) : null;
-
-  if (!icon) return null;
+  const Icon = PLATFORM_ICONS[platform];
+  const icon = <Icon size={size} className="shrink-0" aria-hidden />;
 
   if (label) {
     return (
