@@ -7,8 +7,11 @@ import type {
 } from "@pakfactory/components/layout/site-footer";
 import { getWwwUrl } from "@/lib/site";
 
+// Released blog lives at pakfactory.com/blog. The old blog.pakfactory.com
+// subdomain 301-redirects to the blog home and drops the path, so links must
+// use the /blog path form.
 export const BLOG_URL =
-  process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.pakfactory.com";
+  process.env.NEXT_PUBLIC_BLOG_URL ?? "https://pakfactory.com/blog";
 const WWW_URL = getWwwUrl();
 
 export const BLOG_NAV_FALLBACK: PrimaryNavItem[] = [
@@ -19,9 +22,9 @@ export const BLOG_NAV_FALLBACK: PrimaryNavItem[] = [
     external: true,
   },
   {
-    key: "materials-and-finishes",
+    key: "materials-printing-and-finishes",
     label: "Materials & Finishes",
-    href: `${BLOG_URL}/materials-and-finishes`,
+    href: `${BLOG_URL}/materials-printing-and-finishes`,
     external: true,
   },
   {
@@ -31,21 +34,21 @@ export const BLOG_NAV_FALLBACK: PrimaryNavItem[] = [
     external: true,
   },
   {
-    key: "compliance",
+    key: "compliance-and-regulated",
     label: "Compliance",
-    href: `${BLOG_URL}/compliance`,
+    href: `${BLOG_URL}/compliance-and-regulated`,
     external: true,
   },
   {
-    key: "cost-and-sourcing",
+    key: "cost-operations-sourcing",
     label: "Cost & Sourcing",
-    href: `${BLOG_URL}/cost-and-sourcing`,
+    href: `${BLOG_URL}/cost-operations-sourcing`,
     external: true,
   },
   {
-    key: "branding",
+    key: "branding-presentation",
     label: "Branding",
-    href: `${BLOG_URL}/branding`,
+    href: `${BLOG_URL}/branding-presentation`,
     external: true,
   },
 ];
@@ -89,17 +92,13 @@ export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
       {
         title: "Browse by Topics",
         links: [
-          { label: "Packaging Type", href: `${WWW_URL}/topics/packaging-type` },
-          { label: "Industry", href: `${WWW_URL}/topics/industry` },
-          {
-            label: "Packaging Material",
-            href: `${WWW_URL}/topics/packaging-material`,
-          },
-          {
-            label: "Packaging Finish",
-            href: `${WWW_URL}/topics/packaging-finish`,
-          },
-          { label: "Printing", href: `${WWW_URL}/topics/printing` },
+          // These group labels have no individual blog page; all point to the
+          // released blog /topics index (the specific group-slug pages 404).
+          { label: "Packaging Type", href: `${BLOG_URL}/topics`, external: true },
+          { label: "Industry", href: `${BLOG_URL}/topics`, external: true },
+          { label: "Packaging Material", href: `${BLOG_URL}/topics`, external: true },
+          { label: "Packaging Finish", href: `${BLOG_URL}/topics`, external: true },
+          { label: "Printing", href: `${BLOG_URL}/topics`, external: true },
         ],
       },
     ],
