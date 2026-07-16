@@ -16,7 +16,6 @@
     "seed:demo": "pnpm --filter @pakfactory/sanity run seed:demo",
     "seed:blog-dev": "pnpm --filter @pakfactory/studio run seed:blog-dev",
     "migrate:product-single-refs": "pnpm --filter @pakfactory/sanity run migrate:product-single-refs",
-    "update:llms-txt": "pnpm --filter @pakfactory/sanity run update:llms-txt",
     "clean": "turbo run clean && rm -rf node_modules",
     "sanity:switch:dev": "node scripts/sanity/switch-dataset.mjs development",
     "sanity:switch:prod": "node scripts/sanity/switch-dataset.mjs production",

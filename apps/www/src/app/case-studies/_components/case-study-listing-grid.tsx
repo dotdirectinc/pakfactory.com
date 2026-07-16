@@ -274,7 +274,7 @@ export function CaseStudyListingGrid({
   return (
     <>
       {/* Filter bar */}
-      <section className="sticky top-16 z-30 border-b border-dashed border-border bg-background">
+      <section className="sticky top-0 z-30 border-b border-dashed border-border bg-background">
         <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
           <div className="flex flex-wrap items-center justify-between gap-4 py-8">
             {/* Desktop filters */}

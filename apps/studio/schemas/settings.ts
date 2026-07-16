@@ -201,21 +201,29 @@ export const settings = defineType({
     }),
 
     // ── Crawlers & AI ─────────────────────────────────────────────────────────
+    // RFC 9309: robots.txt is per-host, root-only — pakfactory.com/robots.txt is
+    // Magento's file and the ONLY one crawlers read (subdirectory copies are
+    // ignored). The former `robotsTxt`/`llmsTxt` fields fed per-app routes that
+    // were removed for that reason. The root llms.txt is now GENERATED
+    // dynamically by apps/www from live content; the two fields below are its
+    // only editorial knobs.
     defineField({
-      name: 'robotsTxt',
-      title: 'robots.txt',
+      name: 'llmsTxtWww',
+      title: 'llms.txt — manual override',
       type: 'text',
       rows: 8,
       group: 'crawlers',
-      description: 'Crawl access — one file, served at the root.',
+      description:
+        'Leave EMPTY for the normal, auto-generated llms.txt (live case studies + blog posts, refreshed hourly). Anything entered here is served verbatim at pakfactory.com/llms.txt instead — emergency/editorial override only.',
     }),
     defineField({
-      name: 'llmsTxt',
-      title: 'llms.txt',
+      name: 'llmsTxtStorefront',
+      title: 'llms.txt — storefront links (Magento)',
       type: 'text',
-      rows: 8,
+      rows: 6,
       group: 'crawlers',
-      description: 'LLM crawl guidance — one file, served at the root.',
+      description:
+        'Markdown bullet list of key storefront links (e.g. "- [Custom Boxes](https://pakfactory.com/custom-boxes.html)"). Rendered as the "Products & Packaging" section of the auto-generated llms.txt; section is omitted while empty.',
     }),
     defineField({
       name: 'aiTrainingDefault',

@@ -184,7 +184,7 @@ export default async function CaseStudyPage({ params }: Props) {
           {/* Metrics */}
           {study.highlights && study.highlights.length > 0 && (
             <div className="flex w-full flex-col gap-[42px]">
-              <p className="text-lg leading-7 text-muted-foreground">Metrics</p>
+              <p className="text-lg leading-7 capitalize text-muted-foreground">Metrics</p>
               {study.highlights.map((h) => (
                 <div key={h._key} className="flex w-full flex-col gap-3">
                   <p className="text-lg font-semibold leading-7 text-foreground">
@@ -201,7 +201,7 @@ export default async function CaseStudyPage({ params }: Props) {
           )}
 
           {/* Share + CTA — sticky desktop sidebar */}
-          <div className="sticky top-20 hidden flex-col gap-[42px] lg:flex">
+          <div className="sticky top-8 hidden flex-col gap-[42px] lg:flex">
             <div className="h-px w-[207px] border-t border-dashed border-border" />
             <CaseStudyShare
               url={pageUrl}
@@ -217,7 +217,7 @@ export default async function CaseStudyPage({ params }: Props) {
         </aside>
 
         {/* ── Right content ── */}
-        <div className="flex flex-col gap-24 px-4 pb-24 pt-24 md:px-8 lg:px-16">
+        <div className="flex flex-col gap-24 px-6 pb-24 pt-24 lg:px-32">
 
           {/* Challenges */}
           {Array.isArray(study.challenge) && study.challenge.length > 0 && (
