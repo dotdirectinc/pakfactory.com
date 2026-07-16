@@ -117,9 +117,27 @@ Custom cache policies weren't available in this account, and the console didn't 
 
 Everything under `/_next` is safe to route to Vercel because the Express test server has
 nothing there. External images come from `images.unsplash.com` directly (not via CloudFront).
-A lone `/favicon.ico` 404 is cosmetic — add a `/favicon.ico` behavior → Vercel to silence it.
 If the app later needs other root-level assets (`/fonts/*`, `/images/*`) or client API calls
 (`/api/*` the Express server doesn't own), route those to Vercel the same way.
+
+### 2c. Route the favicon (browser-tab icon)
+
+The pages emit `<link rel="icon" href="/favicon.ico">` — an **exact site-root path**. It
+doesn't match `/case-studies/*` or `/_next/*`, so it falls through to the Express/Magento
+default origin, which has no favicon → **404, blank tab icon**. `apps/www` serves the blue
+icon natively at `/favicon.ico` (`apps/www/src/app/favicon.ico`), so add an **exact-path**
+behavior → Vercel:
+
+| Field | Value |
+|-------|-------|
+| Path pattern | `/favicon.ico` |
+| Origin | `vercel-case-studies` |
+| Viewer protocol | Redirect HTTP → HTTPS |
+| Allowed methods | GET, HEAD |
+| Cache policy | `CachingOptimized` (static, immutable) |
+| **Origin request policy** | `AllViewerExceptHostHeader` (keep `Host = pakfactory-com-www.vercel.app`) |
+
+Verify: `curl -I https://pakfactory.com/favicon.ico` → `200`, `content-type: image/x-icon`.
 
 <details><summary>Reference only — if the app had served at root (<code>/slug</code>)</summary>
 
@@ -188,6 +206,16 @@ location /_next/ {
     proxy_set_header      Host pakfactory-com-www.vercel.app;
     proxy_ssl_server_name on;
     proxy_http_version    1.1;
+}
+# Favicon (browser-tab icon): apps/www serves it at /favicon.ico; the domain root is
+# otherwise Magento/Express (no favicon → 404). Exact match (=) so it only catches the
+# favicon and beats the catch-all that proxies to Express.
+location = /favicon.ico {
+    proxy_pass            https://pakfactory-com-www.vercel.app;
+    proxy_set_header      Host pakfactory-com-www.vercel.app;
+    proxy_ssl_server_name on;
+    proxy_http_version    1.1;
+    proxy_set_header      X-Forwarded-Proto https;
 }
 ```
 ```bash
