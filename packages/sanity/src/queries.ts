@@ -100,6 +100,12 @@ export {
     type CaseStudyReservedSlug,
 } from './case-study-reserved-slugs';
 
+export {
+    LLMS_INDEX_QUERY,
+    type LlmsIndexData,
+    type LlmsIndexLink,
+} from './queries/llms';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,
