@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Box } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import { cn } from "@pakfactory/ui/lib/utils";
 import { externalLinkAttributes } from "@pakfactory/components/commons/external-link";
 import { SiteNavCategories } from "./site-nav-categories";
 import {
@@ -18,14 +19,25 @@ type Props = {
   navItems: PrimaryNavItem[];
   header: PrimaryNavHeader;
   homeHref: string;
+  /** When false, the header scrolls with the page. Defaults to true. */
+  sticky?: boolean;
 };
 
-export function SiteNav({ navItems, header, homeHref }: Props) {
+export function SiteNav({
+  navItems,
+  header,
+  homeHref,
+  sticky = true,
+}: Props) {
   const { logo, cta } = header;
 
   return (
-    <header className="sticky -top-0 z-40 lg:-top-16">
-      <div className="bg-background">
+    <header
+      className={cn(
+        "z-40",
+        sticky ? "sticky -top-0 lg:-top-16" : "relative",
+      )}
+    >      <div className="bg-background">
         <SiteNavCompactProvider navItems={navItems} cta={cta}>
           <SiteNavTopRow>
             <Link

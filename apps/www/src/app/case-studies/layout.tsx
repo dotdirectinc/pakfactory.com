@@ -66,6 +66,7 @@ export default async function CaseStudiesLayout({
         navItems={primaryNav.navItems}
         header={primaryNav.header}
         homeHref={BLOG_URL}
+        sticky={false}
       />
       <main>{children}</main>
       <SiteFooter

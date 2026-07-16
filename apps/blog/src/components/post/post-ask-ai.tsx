@@ -1,8 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { Copy, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
+import {
+  ChatgptIcon,
+  ClaudeIcon,
+  GeminiIcon,
+} from "@pakfactory/ui/icons/ai-brand-icon";
 import { EXTERNAL_LINK_REL } from "@/lib/external-link";
 
 type PostAskAiProps = {
@@ -10,29 +14,41 @@ type PostAskAiProps = {
   title: string;
 };
 
-const PROVIDERS = [
+type IconComponent = ComponentType<{
+  size?: number | string;
+  className?: string;
+  "aria-hidden"?: boolean;
+}>;
+
+const PROVIDERS: {
+  id: string;
+  label: string;
+  Icon: IconComponent;
+  build: (q: string) => string;
+  prefill: boolean;
+}[] = [
   {
     id: "chatgpt",
     label: "ChatGPT",
-    icon: "/logos/ai/openai.svg",
+    Icon: ChatgptIcon,
     build: (q: string) => `https://chatgpt.com/?q=${q}`,
     prefill: true,
   },
   {
     id: "gemini",
     label: "Gemini",
-    icon: "/logos/ai/gemini.svg",
+    Icon: GeminiIcon,
     build: (q: string) => `https://gemini.google.com/app?q=${q}`,
     prefill: false,
   },
   {
     id: "claude",
     label: "Claude",
-    icon: "/logos/ai/claude.svg",
+    Icon: ClaudeIcon,
     build: (q: string) => `https://claude.ai/new?q=${q}`,
     prefill: true,
   },
-] as const;
+];
 
 const CHIP_CLASS =
   "inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-[var(--opacity-primary-10)] hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50";
@@ -69,6 +85,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
       <div className="flex flex-wrap gap-2">
         {PROVIDERS.map((provider) => {
           const href = provider.build(q);
+          const { Icon } = provider;
           if (!provider.prefill) {
             return (
               <button
@@ -78,14 +95,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
                 aria-label={`Copy the prompt and open ${provider.label}`}
                 className={CHIP_CLASS}
               >
-                <Image
-                  src={provider.icon}
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="size-4"
-                  aria-hidden
-                />
+                <Icon size={16} className="size-4" aria-hidden />
                 {provider.label}
               </button>
             );
@@ -99,14 +109,7 @@ export function PostAskAi({ url, title }: PostAskAiProps) {
               aria-label={`Ask ${provider.label} about this article`}
               className={CHIP_CLASS}
             >
-              <Image
-                src={provider.icon}
-                alt=""
-                width={16}
-                height={16}
-                className="size-4"
-                aria-hidden
-              />
+              <Icon size={16} className="size-4" aria-hidden />
               {provider.label}
             </a>
           );
