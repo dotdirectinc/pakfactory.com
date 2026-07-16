@@ -24,7 +24,7 @@ export type SiteFooterAiLink = {
   label: string;
   /** Deep-link URL to an AI query about PakFactory. */
   url: string;
-  /** Path to icon image in the consumer's public folder, e.g. "/logos/ai/openai.svg". */
+  /** Optional image URL for the engine glyph. Prefer `@pakfactory/ui/icons/ai-brand-icon` in new code. */
   iconSrc: string;
 };
 

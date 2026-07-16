@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type {CSSProperties} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
 // import {FooterWordmark} from '@/components/layout/footer-wordmark';
@@ -8,6 +7,7 @@ import {
     SocialPlatformIcon,
     socialPlatformAriaLabel,
 } from '@/components/modules/social-platform-icon';
+import {AI_ENGINE_ICONS} from '@pakfactory/ui/icons/ai-brand-icon';
 import {
     type BlogAiEngine,
     type BlogAiLink,
@@ -23,14 +23,6 @@ import {
     resolveDielineBorders,
 } from '@/lib/dieline-borders';
 import {externalLinkAttributes, EXTERNAL_LINK_REL} from '@/lib/external-link';
-
-const AI_ICON_SRC: Record<BlogAiEngine, string> = {
-    chatgpt: '/logos/ai/openai.svg',
-    gemini: '/logos/ai/gemini.svg',
-    perplexity: '/logos/ai/perplexity.svg',
-    claude: '/logos/ai/claude.svg',
-    grok: '/logos/ai/grok.svg',
-};
 
 const AI_LABELS: Record<BlogAiEngine, string> = {
     chatgpt: 'ChatGPT',
@@ -178,8 +170,8 @@ function FooterSocialIcon({link}: {link: BlogSocialLink}) {
 }
 
 function FooterAiIcon({link}: {link: BlogAiLink}) {
-    const src = AI_ICON_SRC[link.engine];
-    if (!src) return null;
+    const Icon = AI_ENGINE_ICONS[link.engine];
+    if (!Icon) return null;
 
     return (
         <a
@@ -187,16 +179,9 @@ function FooterAiIcon({link}: {link: BlogAiLink}) {
             aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
             target="_blank"
             rel={EXTERNAL_LINK_REL}
-            className="hover:opacity-80"
+            className="text-foreground hover:opacity-80"
         >
-            <Image
-                src={src}
-                alt=""
-                width={16}
-                height={16}
-                className="size-4"
-                aria-hidden
-            />
+            <Icon size={16} className="size-4" aria-hidden />
         </a>
     );
 }
