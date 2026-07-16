@@ -59,6 +59,26 @@ export const sanityImageLoader: ImageLoader = ({ src, width, quality }) => {
   }
 };
 
+/**
+ * Square-crop loader for `aspect-square` thumbnails: asks Sanity for a `width` ×
+ * `width` centre crop (`fit=crop`) so the fetched image already fills the square.
+ * The default `fit=max` loader preserves the source aspect ratio, so a landscape
+ * image is too short for a square container and `object-cover` upscales it (blur).
+ */
+export const sanitySquareImageLoader: ImageLoader = ({ src, width, quality }) => {
+  try {
+    const url = new URL(src);
+    url.searchParams.set("w", String(width));
+    url.searchParams.set("h", String(width));
+    url.searchParams.set("q", String(quality ?? DEFAULT_LOADER_QUALITY));
+    url.searchParams.set("auto", "format");
+    url.searchParams.set("fit", "crop");
+    return url.toString();
+  } catch {
+    return src;
+  }
+};
+
 /** True when `src` is a Sanity CDN URL we can resize via {@link sanityImageLoader}. */
 export function isSanityCdnUrl(src: string): boolean {
   try {
