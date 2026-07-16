@@ -71,7 +71,7 @@ export default async function CaseStudiesLayout({
       <main>{children}</main>
       <SiteFooter
         columns={footer.columns}
-        contactHref={`${BLOG_URL}/contribute`}
+        contactHref="https://www.pakfactory.com/contact-us"
         contactLabel="Let's talk packaging"
         social={footer.social}
         aiLinks={footer.aiLinks}

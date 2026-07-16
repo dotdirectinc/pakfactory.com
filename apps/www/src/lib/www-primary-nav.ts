@@ -90,8 +90,8 @@ function getDefaultWwwPrimaryNavHeader(wwwUrl: string): PrimaryNavHeader {
   return {
     cta: {
       label: DEFAULT_WWW_HEADER_CTA_LABEL,
-      href: `${normalizeOrigin(wwwUrl)}/contact`,
-      external: false,
+      href: 'https://www.pakfactory.com/contact-us',
+      external: true,
     },
   };
 }
