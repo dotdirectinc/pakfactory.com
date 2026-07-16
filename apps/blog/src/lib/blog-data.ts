@@ -97,12 +97,13 @@ type BlogNavSettingsDoc = {
 } | null;
 
 /**
- * TEMP (pre-launch): custom nav rows hidden from the primary nav until their
- * destinations are ready. The rows stay untouched in Studio — delete a label
- * from this set to restore it. Currently hidden: "Case Studies" (www page not
- * launched yet; re-add when it ships).
+ * Custom nav rows to hide from the primary nav regardless of Studio config —
+ * a temporary launch-gate for destinations that aren't live yet. Add a
+ * lowercased label to hide it; remove it once the destination ships.
+ * Nothing hidden currently: "Case Studies" shipped (pakfactory.com/case-studies)
+ * and is now added/removed dynamically in Studio.
  */
-const HIDDEN_NAV_LABELS = new Set(["case studies"]);
+const HIDDEN_NAV_LABELS = new Set<string>();
 
 function resolvePrimaryNavItems(
   doc: BlogNavSettingsDoc,
