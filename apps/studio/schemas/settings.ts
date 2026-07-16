@@ -201,31 +201,29 @@ export const settings = defineType({
     }),
 
     // ── Crawlers & AI ─────────────────────────────────────────────────────────
-    defineField({
-      name: 'robotsTxt',
-      title: 'robots.txt',
-      type: 'text',
-      rows: 8,
-      group: 'crawlers',
-      description: 'Crawl access — one file, served at the root.',
-    }),
-    defineField({
-      name: 'llmsTxt',
-      title: 'llms.txt (Blog)',
-      type: 'text',
-      rows: 8,
-      group: 'crawlers',
-      description:
-        'LLM index for the blog — served at pakfactory.com/blog/llms.txt. Regenerate with `pnpm update:llms-txt`.',
-    }),
+    // RFC 9309: robots.txt is per-host, root-only — pakfactory.com/robots.txt is
+    // Magento's file and the ONLY one crawlers read (subdirectory copies are
+    // ignored). The former `robotsTxt`/`llmsTxt` fields fed per-app routes that
+    // were removed for that reason. The root llms.txt is now GENERATED
+    // dynamically by apps/www from live content; the two fields below are its
+    // only editorial knobs.
     defineField({
       name: 'llmsTxtWww',
-      title: 'llms.txt (Website / Case Studies)',
+      title: 'llms.txt — manual override',
       type: 'text',
       rows: 8,
       group: 'crawlers',
       description:
-        'Site-wide LLM index served by the www app — exposed at pakfactory.com/llms.txt (root) via nginx. Regenerate with `pnpm update:llms-txt:www`.',
+        'Leave EMPTY for the normal, auto-generated llms.txt (live case studies + blog posts, refreshed hourly). Anything entered here is served verbatim at pakfactory.com/llms.txt instead — emergency/editorial override only.',
+    }),
+    defineField({
+      name: 'llmsTxtStorefront',
+      title: 'llms.txt — storefront links (Magento)',
+      type: 'text',
+      rows: 6,
+      group: 'crawlers',
+      description:
+        'Markdown bullet list of key storefront links (e.g. "- [Custom Boxes](https://pakfactory.com/custom-boxes.html)"). Rendered as the "Products & Packaging" section of the auto-generated llms.txt; section is omitted while empty.',
     }),
     defineField({
       name: 'aiTrainingDefault',

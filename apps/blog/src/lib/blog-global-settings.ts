@@ -18,8 +18,6 @@ export type BlogGlobalSettings = {
   companyName?: string | null;
   companyAddress?: string | null;
   siteTitle?: string | null;
-  robotsTxt?: string | null;
-  llmsTxt?: string | null;
   /** Admin-managed extra hosts allowed for the bodyEmbed iframe widget. */
   additionalEmbedHosts?: string[] | null;
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
