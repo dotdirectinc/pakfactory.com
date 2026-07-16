@@ -211,11 +211,21 @@ export const settings = defineType({
     }),
     defineField({
       name: 'llmsTxt',
-      title: 'llms.txt',
+      title: 'llms.txt (Blog)',
       type: 'text',
       rows: 8,
       group: 'crawlers',
-      description: 'LLM crawl guidance — one file, served at the root.',
+      description:
+        'LLM index for the blog — served at pakfactory.com/blog/llms.txt. Regenerate with `pnpm update:llms-txt`.',
+    }),
+    defineField({
+      name: 'llmsTxtWww',
+      title: 'llms.txt (Website / Case Studies)',
+      type: 'text',
+      rows: 8,
+      group: 'crawlers',
+      description:
+        'Site-wide LLM index served by the www app — exposed at pakfactory.com/llms.txt (root) via nginx. Regenerate with `pnpm update:llms-txt:www`.',
     }),
     defineField({
       name: 'aiTrainingDefault',
