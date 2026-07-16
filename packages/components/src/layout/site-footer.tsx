@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import { AI_ENGINE_ICONS } from "@pakfactory/ui/icons/ai-brand-icon";
 import { EXTERNAL_LINK_REL, externalLinkAttributes } from "../commons/external-link";
 
 export type FooterLink = { label: string; href: string; external?: boolean };
@@ -29,14 +30,6 @@ const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   youtube: "YouTube",
   pinterest: "Pinterest",
   x: "X (Twitter)",
-};
-
-const AI_ICON_SRC: Record<AiEngine, string> = {
-  chatgpt: "/logos/ai/openai.svg",
-  gemini: "/logos/ai/gemini.svg",
-  perplexity: "/logos/ai/perplexity.svg",
-  claude: "/logos/ai/claude.svg",
-  grok: "/logos/ai/grok.svg",
 };
 
 const AI_LABELS: Record<AiEngine, string> = {
@@ -198,8 +191,8 @@ export function SiteFooter({
               {aiLinks.length > 0 && (
                 <div className="flex h-4 items-center gap-3">
                   {aiLinks.map((link) => {
-                    const src = AI_ICON_SRC[link.engine];
-                    if (!src) return null;
+                    const Icon = AI_ENGINE_ICONS[link.engine];
+                    if (!Icon) return null;
                     return (
                       <a
                         key={link.engine}
@@ -207,9 +200,9 @@ export function SiteFooter({
                         aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
                         target="_blank"
                         rel={EXTERNAL_LINK_REL}
-                        className="hover:opacity-80"
+                        className="text-foreground hover:opacity-80"
                       >
-                        <img src={src} alt="" width={16} height={16} className="size-4" aria-hidden />
+                        <Icon className="size-4" />
                       </a>
                     );
                   })}
