@@ -85,9 +85,9 @@ type SiteFooterProps = {
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
   const className = "block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground";
-  if (link.external) {
-    return <a href={link.href} className={className} target="_blank" rel={EXTERNAL_LINK_REL}>{link.label}</a>;
-  }
+  // Footer nav links stay in the same tab — categories/topics/company links are
+  // part of the site experience (incl. the blog served under the same domain).
+  // Social/AI icons keep their own new-tab rendering below.
   return <a href={link.href} className={className}>{link.label}</a>;
 }
 

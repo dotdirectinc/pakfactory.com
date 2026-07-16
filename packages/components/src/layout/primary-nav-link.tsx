@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@pakfactory/ui/lib/utils";
-import { externalLinkAttributes } from "@pakfactory/components/commons/external-link";
 import type { PrimaryNavItem } from "./primary-nav-types";
 
 type PrimaryNavLinkProps = {
@@ -46,13 +45,10 @@ export function PrimaryNavLink({
   );
 
   if (item.external) {
+    // Cross-app links (e.g. the blog under the same domain) render as a plain
+    // anchor for a full navigation, but stay in the same tab (no target=_blank).
     return (
-      <a
-        href={item.href}
-        onClick={onClick}
-        className={className}
-        {...externalLinkAttributes(item.href)}
-      >
+      <a href={item.href} onClick={onClick} className={className}>
         {content}
       </a>
     );
