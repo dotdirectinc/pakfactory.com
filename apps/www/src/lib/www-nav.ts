@@ -92,13 +92,12 @@ export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
       {
         title: "Browse by Topics",
         links: [
-          // These group labels have no individual blog page; all point to the
-          // released blog /topics index (the specific group-slug pages 404).
-          { label: "Packaging Type", href: `${BLOG_URL}/topics`, external: true },
-          { label: "Industry", href: `${BLOG_URL}/topics`, external: true },
-          { label: "Packaging Material", href: `${BLOG_URL}/topics`, external: true },
-          { label: "Packaging Finish", href: `${BLOG_URL}/topics`, external: true },
-          { label: "Printing", href: `${BLOG_URL}/topics`, external: true },
+          // Each group expands one axis on the blog /topics index via ?group=.
+          { label: "Packaging Type", href: `${BLOG_URL}/topics?group=packaging-type`, external: true },
+          { label: "Industry", href: `${BLOG_URL}/topics?group=industry`, external: true },
+          { label: "Packaging Material", href: `${BLOG_URL}/topics?group=packaging-material`, external: true },
+          { label: "Packaging Finish", href: `${BLOG_URL}/topics?group=packaging-finish`, external: true },
+          { label: "Printing", href: `${BLOG_URL}/topics?group=printing`, external: true },
         ],
       },
     ],
