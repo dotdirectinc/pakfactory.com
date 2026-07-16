@@ -4,6 +4,7 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { BLOG_REDIRECTS_QUERY } from "@pakfactory/sanity/queries";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import { BLOG_BASE_PATH } from "@/lib/site";
 import {
   BLOG_REDIRECTS_CACHE_TAG,
   BLOG_REVALIDATE_SECONDS,
@@ -24,6 +25,23 @@ function normalizePath(path: string): string {
   return trimmed === "" ? "/" : trimmed;
 }
 
+/**
+ * Editors author redirects as PUBLIC URLs — under subpath hosting that includes
+ * the `/blog` base path (e.g. `from: /blog/old-post/`). Routes, however, see
+ * basePath-less pathnames, and `redirect()`/`permanentRedirect()` re-prepend the
+ * base path to internal destinations. So both sides must be normalized to the
+ * app-internal (prefix-less) form, or every CMS redirect silently misses under
+ * basePath (launch bug: 39 old-post redirects 404'd). Prefix-less paths pass
+ * through untouched, so both authoring styles work.
+ */
+function stripBasePath(path: string): string {
+  if (!BLOG_BASE_PATH) return path;
+  if (path === BLOG_BASE_PATH || path === `${BLOG_BASE_PATH}/`) return "/";
+  return path.startsWith(`${BLOG_BASE_PATH}/`)
+    ? path.slice(BLOG_BASE_PATH.length)
+    : path;
+}
+
 async function fetchRedirectRows(): Promise<RedirectRow[]> {
   if (!isSanityConfigured()) return [];
   return getPublishedSanityClient()
@@ -41,8 +59,12 @@ const getRedirectMap = unstable_cache(
     const map: Record<string, ResolvedRedirect> = {};
     for (const row of rows) {
       if (!row?.from || !row?.to) continue;
-      map[normalizePath(row.from)] = {
-        destination: row.to,
+      // Internal destinations lose the base path too — redirect() re-prepends it.
+      const destination = row.to.startsWith("/")
+        ? stripBasePath(row.to)
+        : row.to;
+      map[normalizePath(stripBasePath(row.from))] = {
+        destination,
         permanent: row.type !== "302",
       };
     }
@@ -61,7 +83,7 @@ export async function resolveRedirect(
   pathname: string,
 ): Promise<ResolvedRedirect | null> {
   const map = await getRedirectMap();
-  let current = normalizePath(pathname);
+  let current = normalizePath(stripBasePath(pathname));
   const seen = new Set<string>();
   let result: ResolvedRedirect | null = null;
   let permanent = true;
