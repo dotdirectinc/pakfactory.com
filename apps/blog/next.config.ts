@@ -42,6 +42,11 @@ const basePath = process.env.NEXT_PUBLIC_BLOG_BASE_PATH?.trim() || undefined;
 
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
+  // Let `proxy.ts` own trailing-slash handling so a CMS redirect on a slashed
+  // legacy URL (`/blog/old-post/`) goes straight to its target in ONE hop,
+  // instead of Next stripping the slash first (308) and the proxy redirecting
+  // second (308). The proxy still normalizes `/x/` → `/x` for non-redirect pages.
+  skipTrailingSlashRedirect: true,
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components"],
   turbopack: {
     resolveAlias: {
