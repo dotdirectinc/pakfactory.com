@@ -8,18 +8,29 @@ import {
 } from "@pakfactory/seo";
 import { absoluteUrl, getWwwUrl, normalizeSiteUrl } from "@/lib/site";
 
+/**
+ * Canonical company origin for the Organization entity. The main site redirects
+ * `www → apex`, and every other node (Person, breadcrumb, blog canonicals) uses
+ * the apex host — so the Organization `url`/`@id` must too, or the graph mixes
+ * hosts (PROD-2120). Strips a leading `www.` so it's correct regardless of how
+ * `NEXT_PUBLIC_WWW_URL` is set.
+ */
+function canonicalOrgUrl(): string {
+  return normalizeSiteUrl(getWwwUrl()).replace(/^(https?:\/\/)www\./i, "$1");
+}
+
 /** Stable publisher Organization node for blog graphs. */
 export function pakfactoryOrganization(opts?: { logo?: string }): {
   org: Record<string, unknown>;
   orgId: string;
 } {
-  const wwwUrl = normalizeSiteUrl(getWwwUrl());
-  const orgId = `${wwwUrl}#organization`;
+  const url = canonicalOrgUrl();
+  const orgId = `${url}#organization`;
   return {
     orgId,
     org: organization({
       name: "PakFactory",
-      url: wwwUrl,
+      url,
       id: orgId,
       ...(opts?.logo ? { logo: opts.logo } : {}),
     }),
