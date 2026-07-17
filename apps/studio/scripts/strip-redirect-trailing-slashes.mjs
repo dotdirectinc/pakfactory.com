@@ -1,10 +1,13 @@
 /**
- * Strip trailing slashes from existing `redirect` docs' `from` / `to` paths.
+ * Strip trailing slashes from existing `redirect` docs' `to` destination.
  *
  * The site canonicalizes to NO trailing slash (blog `proxy.ts` 308-redirects
- * `/x/` → `/x`), so any stored trailing slash is redundant. The proxy already
+ * `/x/` → `/x`), so a trailing slash on `to` is redundant. The proxy already
  * normalizes at request time, so this is DATA HYGIENE ONLY — redirects resolve
- * correctly with or without it. Run it to make the records read canonical.
+ * correctly with or without it. Run it to make the destinations read canonical.
+ *
+ * `from` is left untouched — it's the old indexed URL and legitimately keeps its
+ * trailing slash (this matches the schema, which guards `to` only).
  *
  * From repo root (DRY-RUN is the default — it only prints; nothing is written):
  *   pnpm --filter @pakfactory/studio run migrate:redirect-slashes
@@ -21,9 +24,6 @@
  * - Processes published docs. If a redirect also has an open DRAFT, republish it
  *   in Studio afterward (or discard the draft) so the draft doesn't reintroduce
  *   the slash — drafts are reported, not written.
- * - Collision guard: if stripping a `from` would duplicate another redirect's
- *   `from` (e.g. `/x/` and `/x` both exist), BOTH are left untouched and flagged
- *   for manual resolution — `from` must stay unique.
  */
 
 import { createClient } from '@sanity/client'
@@ -95,43 +95,26 @@ async function main() {
     `*[_type == "redirect" && _id in path("drafts.**")]._id`,
   )
 
+  // Only the `to` destination is normalized. `from` is the old indexed URL and
+  // legitimately keeps its trailing slash (the proxy normalizes it when matching),
+  // matching the schema, which guards `to` only. `from` is left untouched — so
+  // there's no `from`-uniqueness collision to worry about.
   const changes = []
   for (const d of docs) {
-    const nextFrom = stripTrailingSlash(d.from)
     const nextTo = stripTrailingSlash(d.to)
-    if (nextFrom !== d.from || nextTo !== d.to) {
-      changes.push({ _id: d._id, from: d.from, to: d.to, nextFrom, nextTo })
+    if (nextTo !== d.to) {
+      changes.push({ _id: d._id, to: d.to, nextTo })
     }
   }
 
   if (changes.length === 0) {
-    console.log('✅  Nothing to change — all redirect paths are already slashless.\n')
+    console.log('✅  Nothing to change — every `to` is already slashless.\n')
     return
   }
 
-  // Uniqueness guard: a stripped `from` must not collide with any other redirect's
-  // final `from` (its stripped value if it's changing, else its current value).
-  const finalFromById = new Map(docs.map((d) => [d._id, stripTrailingSlash(d.from)]))
-  const collisions = new Set()
-  const seen = new Map()
-  for (const [id, from] of finalFromById) {
-    if (seen.has(from)) {
-      collisions.add(id)
-      collisions.add(seen.get(from))
-    } else {
-      seen.set(from, id)
-    }
-  }
-
-  let willWrite = 0
   for (const c of changes) {
-    const blocked = collisions.has(c._id)
-    const mark = blocked ? '⛔' : apply ? '✏️ ' : '•'
-    console.log(`${mark} ${c._id}`)
-    if (c.nextFrom !== c.from) console.log(`     from: ${c.from}  →  ${c.nextFrom}`)
-    if (c.nextTo !== c.to) console.log(`     to:   ${c.to}  →  ${c.nextTo}`)
-    if (blocked) console.log(`     ⛔ skipped — stripped "from" collides with another redirect; resolve by hand`)
-    else willWrite++
+    console.log(`${apply ? '✏️ ' : '•'} ${c._id}`)
+    console.log(`     to:   ${c.to}  →  ${c.nextTo}`)
   }
 
   if (draftIds.length) {
@@ -139,7 +122,7 @@ async function main() {
     draftIds.forEach((id) => console.log(`     ${id}`))
   }
 
-  console.log(`\n${changes.length} doc(s) with trailing slashes · ${willWrite} writable · ${collisions.size} blocked by collision`)
+  console.log(`\n${changes.length} doc(s) with a trailing-slash \`to\` to normalize`)
 
   if (!apply) {
     console.log(`\nDRY-RUN only — re-run with \`-- --apply\` to write.\n`)
@@ -147,21 +130,11 @@ async function main() {
   }
 
   const tx = client.transaction()
-  let n = 0
   for (const c of changes) {
-    if (collisions.has(c._id)) continue
-    const patch = {}
-    if (c.nextFrom !== c.from) patch.from = c.nextFrom
-    if (c.nextTo !== c.to) patch.to = c.nextTo
-    tx.patch(c._id, (p) => p.set(patch))
-    n++
-  }
-  if (n === 0) {
-    console.log(`\nNothing writable (all blocked by collisions). Resolve collisions and re-run.\n`)
-    return
+    tx.patch(c._id, (p) => p.set({ to: c.nextTo }))
   }
   await tx.commit()
-  console.log(`\n✅  Patched ${n} redirect(s) on ${DATASET}.\n`)
+  console.log(`\n✅  Patched ${changes.length} redirect(s) on ${DATASET}.\n`)
 }
 
 main().catch((err) => {
