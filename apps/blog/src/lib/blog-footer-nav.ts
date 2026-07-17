@@ -147,7 +147,7 @@ export function getFallbackFooterCta(): BlogFooterCta {
     return {
         message: "Let's collaborate and craft\nyour vision",
         buttonLabel: " Let's talk",
-        href: `${getWwwUrl()}/contact`,
+        href: 'https://www.pakfactory.com/contact-us',
         external: true,
     };
 }

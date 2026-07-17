@@ -10,12 +10,14 @@ import {
   resolveFooterColumns,
   resolveFooterSocial,
   resolveFooterAiLinks,
+  resolveFooterCta,
 } from "@/lib/footer-nav";
 import { fetchWwwPrimaryNav } from "@/lib/www-primary-nav";
 import {
   BLOG_URL,
   buildFooterColumns,
   FOOTER_AI_LINKS,
+  FOOTER_CTA,
   FOOTER_SOCIAL,
 } from "@/lib/www-nav";
 
@@ -31,6 +33,7 @@ async function fetchFooterData(navItems: Awaited<ReturnType<typeof fetchWwwPrima
       columns: buildFooterColumns(navItems),
       social: FOOTER_SOCIAL,
       aiLinks: FOOTER_AI_LINKS,
+      cta: FOOTER_CTA,
     };
   }
 
@@ -42,12 +45,14 @@ async function fetchFooterData(navItems: Awaited<ReturnType<typeof fetchWwwPrima
       columns: resolveFooterColumns(doc) ?? buildFooterColumns(navItems),
       social: resolveFooterSocial(doc) ?? FOOTER_SOCIAL,
       aiLinks: resolveFooterAiLinks(doc) ?? FOOTER_AI_LINKS,
+      cta: resolveFooterCta(doc) ?? FOOTER_CTA,
     };
   } catch {
     return {
       columns: buildFooterColumns(navItems),
       social: FOOTER_SOCIAL,
       aiLinks: FOOTER_AI_LINKS,
+      cta: FOOTER_CTA,
     };
   }
 }
@@ -71,8 +76,8 @@ export default async function CaseStudiesLayout({
       <main>{children}</main>
       <SiteFooter
         columns={footer.columns}
-        contactHref={`${BLOG_URL}/contribute`}
-        contactLabel="Let's talk packaging"
+        contactHref={footer.cta.href}
+        contactLabel={footer.cta.label}
         social={footer.social}
         aiLinks={footer.aiLinks}
       />

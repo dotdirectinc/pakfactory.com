@@ -76,6 +76,13 @@ export const FOOTER_AI_LINKS: AiLink[] = [
   { engine: "grok", url: `https://grok.com/?q=${AI_PROMPT}` },
 ];
 
+/** Footer "Let's talk" CTA button default — used when Studio's shared
+ *  footerNavigation.builder has no ctaTextAndButton block. */
+export const FOOTER_CTA: { label: string; href: string } = {
+  label: "Let's talk packaging",
+  href: "https://www.pakfactory.com/contact-us",
+};
+
 export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
   const browseByCategories: FooterLink[] = navItems.map((item) => ({
     label: item.label,
