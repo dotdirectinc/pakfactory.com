@@ -4,44 +4,29 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { BLOG_REDIRECTS_QUERY } from "@pakfactory/sanity/queries";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { BLOG_BASE_PATH } from "@/lib/site";
+import { BLOG_BASE_PATH, getSiteUrl } from "@/lib/site";
 import {
   BLOG_REDIRECTS_CACHE_TAG,
   BLOG_REVALIDATE_SECONDS,
 } from "@/lib/blog-cache";
+import {
+  buildRedirectMap,
+  resolveInMap,
+  toAbsolute,
+  type RedirectMap,
+  type RedirectRow,
+  type ResolvedRedirect,
+} from "@/lib/blog-redirects-core";
 
-type RedirectRow = { from?: string; to?: string; type?: string };
-
-/** A resolved redirect target. `permanent` → 308, otherwise → 307 (302 in CMS). */
-export type ResolvedRedirect = { destination: string; permanent: boolean };
-
-/** Max hops to follow when collapsing a redirect chain at read time (defense in depth). */
-const MAX_HOPS = 5;
-
-/** Leading slash, no trailing slash (except root). Mirrors how the publish action stores paths. */
-function normalizePath(path: string): string {
-  const withLead = path.startsWith("/") ? path : `/${path}`;
-  const trimmed = withLead.replace(/\/+$/, "");
-  return trimmed === "" ? "/" : trimmed;
-}
+export type { ResolvedRedirect };
 
 /**
- * Editors author redirects as PUBLIC URLs — under subpath hosting that includes
- * the `/blog` base path (e.g. `from: /blog/old-post/`). Routes, however, see
- * basePath-less pathnames, and `redirect()`/`permanentRedirect()` re-prepend the
- * base path to internal destinations. So both sides must be normalized to the
- * app-internal (prefix-less) form, or every CMS redirect silently misses under
- * basePath (launch bug: 39 old-post redirects 404'd). Prefix-less paths pass
- * through untouched, so both authoring styles work.
+ * RSC-side CMS redirect resolution. The edge `middleware.ts` resolves redirects
+ * before routes match and catches the interception cases (PROD-2154); this
+ * remains as a fallback for any would-be-404 that reaches a route, and shares
+ * the same core so both behave identically (base-path normalization,
+ * trailing-slash collapse, cross-app absolute targets, self-ref guard).
  */
-function stripBasePath(path: string): string {
-  if (!BLOG_BASE_PATH) return path;
-  if (path === BLOG_BASE_PATH || path === `${BLOG_BASE_PATH}/`) return "/";
-  return path.startsWith(`${BLOG_BASE_PATH}/`)
-    ? path.slice(BLOG_BASE_PATH.length)
-    : path;
-}
-
 async function fetchRedirectRows(): Promise<RedirectRow[]> {
   if (!isSanityConfigured()) return [];
   return getPublishedSanityClient()
@@ -49,71 +34,32 @@ async function fetchRedirectRows(): Promise<RedirectRow[]> {
     .catch(() => []);
 }
 
-/**
- * Cached `from → {destination, permanent}` map. One Sanity read per cache window;
- * invalidated immediately by `revalidateTag(BLOG_REDIRECTS_CACHE_TAG)` from the webhook.
- */
+/** Cached `from → target` map; invalidated by `revalidateTag(BLOG_REDIRECTS_CACHE_TAG)` from the webhook. */
 const getRedirectMap = unstable_cache(
-  async (): Promise<Record<string, ResolvedRedirect>> => {
-    const rows = await fetchRedirectRows();
-    const map: Record<string, ResolvedRedirect> = {};
-    for (const row of rows) {
-      if (!row?.from || !row?.to) continue;
-      // Internal destinations lose the base path too — redirect() re-prepends it.
-      const destination = row.to.startsWith("/")
-        ? stripBasePath(row.to)
-        : row.to;
-      map[normalizePath(stripBasePath(row.from))] = {
-        destination,
-        permanent: row.type !== "302",
-      };
-    }
-    return map;
-  },
+  async (): Promise<RedirectMap> =>
+    buildRedirectMap(await fetchRedirectRows(), BLOG_BASE_PATH),
   ["blog-redirects-map"],
   { tags: [BLOG_REDIRECTS_CACHE_TAG], revalidate: BLOG_REVALIDATE_SECONDS },
 );
 
-/**
- * Resolve a CMS redirect for `pathname`. Follows internal chains up to `MAX_HOPS`
- * (write-time collapse should keep these flat) and degrades to a temporary
- * redirect if any hop is temporary. Returns null when there's no match.
- */
 export async function resolveRedirect(
   pathname: string,
 ): Promise<ResolvedRedirect | null> {
-  const map = await getRedirectMap();
-  let current = normalizePath(stripBasePath(pathname));
-  const seen = new Set<string>();
-  let result: ResolvedRedirect | null = null;
-  let permanent = true;
-
-  for (let hop = 0; hop < MAX_HOPS; hop++) {
-    if (seen.has(current)) break; // loop guard
-    seen.add(current);
-    const hit = map[current];
-    if (!hit) break;
-    permanent = permanent && hit.permanent;
-    result = { destination: hit.destination, permanent };
-    if (!hit.destination.startsWith("/")) break; // absolute URL — stop following
-    const next = normalizePath(hit.destination);
-    if (!map[next]) break;
-    current = next;
-  }
-
-  return result;
+  return resolveInMap(await getRedirectMap(), pathname, BLOG_BASE_PATH);
 }
 
 /**
  * Apply a CMS redirect for `pathname` if one exists, otherwise `notFound()`.
  * Always throws (returns `never`); call as the last step of a would-be-404 path.
- * 301 → `permanentRedirect` (308), 302 → `redirect` (307).
+ * Destinations are emitted absolute so the base path is never double-prepended
+ * (correct for cross-app `/case-studies` targets). 301 → 308, 302 → 307.
  */
 export async function redirectOrNotFound(pathname: string): Promise<never> {
   const hit = await resolveRedirect(pathname);
   if (hit) {
-    if (hit.permanent) permanentRedirect(hit.destination);
-    redirect(hit.destination);
+    const dest = toAbsolute(hit.destination, getSiteUrl());
+    if (hit.permanent) permanentRedirect(dest);
+    redirect(dest);
   }
   notFound();
 }

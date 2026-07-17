@@ -86,16 +86,10 @@ const nextConfig: NextConfig = {
         destination: "/topics-sitemap-1.xml",
         permanent: true,
       },
-      {
-        source: "/tag/:slug/page/:n",
-        destination: "/topics/:slug/page/:n",
-        permanent: true,
-      },
-      {
-        source: "/tag/:slug",
-        destination: "/topics/:slug",
-        permanent: true,
-      },
+      // NOTE: legacy `/tag/:slug[/page/:n]` → `/topics/:slug` moved to
+      // `middleware.ts` (PROD-2154). next.config `redirects` run BEFORE
+      // middleware, so keeping them here would pre-empt CMS `redirect` docs for
+      // tag paths (e.g. tags that should go to the blog home, not a 404 topic).
       {
         source: "/category/:category/page/:n",
         destination: "/:category/page/:n",
