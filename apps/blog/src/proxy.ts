@@ -85,6 +85,18 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Trailing-slash normalization (Next's built-in is disabled via
+  // skipTrailingSlashRedirect so the redirects above stay single-hop). Any
+  // non-redirect page with a trailing slash canonicalizes to the slashless form,
+  // preserving the query string.
+  if (pathname !== "/" && pathname.endsWith("/")) {
+    const canonical = toAbsolute(
+      normalizePath(`${BASE_PATH}${pathname}`),
+      SITE_URL,
+    );
+    return NextResponse.redirect(`${canonical}${req.nextUrl.search}`, 308);
+  }
+
   return NextResponse.next();
 }
 
