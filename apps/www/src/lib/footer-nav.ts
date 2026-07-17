@@ -34,11 +34,22 @@ type RawColumn = {
   sections?: (RawSection | null)[] | null;
 };
 
+type RawCtaBlock = {
+  _type?: string | null;
+  buttonLabel?: string | null;
+  linkType?: string | null;
+  externalUrl?: string | null;
+  sitePath?: string | null;
+  internalLink?: SanityLinkDocument | null;
+};
+
 export type RawFooterDoc = {
   _id?: string;
   columns?: (RawColumn | null)[] | null;
   social?: ({ platform?: string | null; url?: string | null } | null)[] | null;
   aiLinks?: ({ engine?: string | null; url?: string | null } | null)[] | null;
+  /** Shared footerNavigation.builder — same source as the blog's footer CTA blocks. */
+  builder?: (RawCtaBlock | null)[] | null;
 } | null;
 
 // ─── Resolvers ────────────────────────────────────────────────────────────────
@@ -132,4 +143,32 @@ export function resolveFooterAiLinks(doc: RawFooterDoc): AiLink[] | null {
     .filter((a) => AI_ENGINES.has(a.engine))
     .map((a) => ({ engine: a.engine as AiEngine, url: a.url }));
   return links.length > 0 ? links : null;
+}
+
+export type FooterCta = { label: string; href: string };
+
+/**
+ * Footer "Let's talk" CTA button — resolved from the first `ctaTextAndButton`
+ * block in Studio's shared `footerNavigation.builder` (the same source the
+ * blog's footer reads via `resolveFooterBuilder`). Returns null when Studio
+ * has no doc or no valid CTA block; caller falls back to its own default.
+ */
+export function resolveFooterCta(doc: RawFooterDoc): FooterCta | null {
+  if (!doc?._id) return null;
+
+  const block = (doc.builder ?? []).find(
+    (b): b is RawCtaBlock => b != null && b._type === "ctaTextAndButton",
+  );
+  if (!block) return null;
+
+  const resolved = resolveLink({
+    label: block.buttonLabel,
+    linkType: block.linkType,
+    externalUrl: block.externalUrl,
+    sitePath: block.sitePath,
+    internalLink: block.internalLink,
+  });
+  if (!resolved) return null;
+
+  return { label: resolved.label, href: resolved.href };
 }

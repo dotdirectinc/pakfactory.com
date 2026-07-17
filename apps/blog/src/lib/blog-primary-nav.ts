@@ -7,7 +7,7 @@ import { getWwwUrl } from "@/lib/site";
 import type { BlogGlobalSettings } from "@/lib/blog-global-settings";
 
 export const DEFAULT_HEADER_CTA_LABEL = "Contact Us";
-export const DEFAULT_HEADER_CTA_HREF = "/contribute";
+export const DEFAULT_HEADER_CTA_HREF = "https://www.pakfactory.com/contact-us";
 
 export type BlogPrimaryNavLogo = {
   src: string;
@@ -52,7 +52,7 @@ export function getDefaultPrimaryNavHeader(): BlogPrimaryNavHeader {
     cta: {
       label: DEFAULT_HEADER_CTA_LABEL,
       href: DEFAULT_HEADER_CTA_HREF,
-      external: false,
+      external: true,
     },
   };
 }
