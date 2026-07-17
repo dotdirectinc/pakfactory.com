@@ -2,10 +2,11 @@ import { defineField, defineType } from 'sanity'
 
 /**
  * The site canonicalizes to NO trailing slash (proxy.ts 308-redirects `/x/` → `/x`),
- * so redirect paths must be stored slashless — otherwise the target picks up an
- * avoidable normalization hop. Returns true when `value` carries a strippable
- * trailing slash: any non-root path, or an absolute URL with a non-root pathname.
- * A bare origin (`https://host` / `https://host/`) is fine.
+ * so the `to` destination should be stored slashless — otherwise the target picks
+ * up an avoidable normalization hop. (Only `to` is guarded; `from` is the old
+ * indexed URL and may keep its slash.) Returns true when `value` carries a
+ * strippable trailing slash: any non-root path, or an absolute URL with a non-root
+ * pathname. A bare origin (`https://host` / `https://host/`) is fine.
  */
 function hasTrailingSlash(value: string): boolean {
   if (!value.endsWith('/')) return false
@@ -68,7 +69,9 @@ export const redirect = defineType({
             if (!value) return 'From URL is required'
             if (!value.startsWith('/')) return 'Must start with "/"'
             if (value === '/') return 'Cannot redirect the site root'
-            if (hasTrailingSlash(value)) return TRAILING_SLASH_MESSAGE
+            // No trailing-slash guard on `from` — it's the OLD indexed URL and
+            // legacy paths legitimately carry a slash; the proxy normalizes it
+            // when matching. Only `to` (the destination we control) is guarded.
             return true
           }),
         // Uniqueness — no other redirect may share this "from" path.
