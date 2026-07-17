@@ -1,6 +1,27 @@
 import { defineField, defineType } from 'sanity'
 
 /**
+ * The site canonicalizes to NO trailing slash (proxy.ts 308-redirects `/x/` → `/x`),
+ * so redirect paths must be stored slashless — otherwise the target picks up an
+ * avoidable normalization hop. Returns true when `value` carries a strippable
+ * trailing slash: any non-root path, or an absolute URL with a non-root pathname.
+ * A bare origin (`https://host` / `https://host/`) is fine.
+ */
+function hasTrailingSlash(value: string): boolean {
+  if (!value.endsWith('/')) return false
+  if (value.startsWith('/')) return value.length > 1
+  try {
+    return new URL(value).pathname !== '/'
+  } catch {
+    return false
+  }
+}
+
+const TRAILING_SLASH_MESSAGE =
+  'Remove the trailing slash — the site canonicalizes to no trailing slash ' +
+  '(e.g. /old-post, not /old-post/), so a slash here adds an extra redirect hop.'
+
+/**
  * redirect — CMS-managed URL redirect entry.
  *
  * Mostly auto-managed: a Studio publish action creates one of these when a post
@@ -8,8 +29,9 @@ import { defineField, defineType } from 'sanity'
  * The blog applies active redirects at request time on would-be-404s.
  *
  * Field names `from` / `to` are consumed directly by GROQ (BLOG_REDIRECTS_QUERY).
- * Status `type` is stored as 301/302 for editor familiarity; the blog maps
- * 301→308 and 302→307 at apply time (a Server Component can only emit 307/308).
+ * Status `type` is stored as 301/302. The blog's edge proxy serves that status
+ * verbatim (301 permanent / 302 temporary); only the rare RSC fallback maps
+ * 301→308 and 302→307, since a Server Component can only emit 307/308.
  */
 export const redirect = defineType({
   name: 'redirect',
@@ -46,6 +68,7 @@ export const redirect = defineType({
             if (!value) return 'From URL is required'
             if (!value.startsWith('/')) return 'Must start with "/"'
             if (value === '/') return 'Cannot redirect the site root'
+            if (hasTrailingSlash(value)) return TRAILING_SLASH_MESSAGE
             return true
           }),
         // Uniqueness — no other redirect may share this "from" path.
@@ -75,6 +98,7 @@ export const redirect = defineType({
           if (!isPath && !isAbsolute) return 'Use a "/path" or a full https:// URL'
           if (value === (context.document?.from as string | undefined))
             return 'From and To must be different'
+          if (hasTrailingSlash(value)) return TRAILING_SLASH_MESSAGE
           return true
         }),
     }),
