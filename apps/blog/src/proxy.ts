@@ -67,9 +67,13 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
 
   const hit = resolveInMap(await getRedirectMap(), pathname, BASE_PATH);
   if (hit) {
+    // Emit the redirect doc's actual status: 301 (permanent) / 302 (temporary).
+    // The RSC fallback (blog-redirects.ts) can only emit 308/307 — a Server
+    // Component restriction — but the proxy runs at the edge and honors the
+    // `type` field exactly (PROD-2154 Issue 6).
     return NextResponse.redirect(
       toAbsolute(hit.destination, SITE_URL),
-      hit.permanent ? 308 : 307,
+      hit.permanent ? 301 : 302,
     );
   }
 
@@ -79,10 +83,26 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   // that it's removed from next.config so CMS can win.
   const tag = pathname.match(/^\/tag\/([^/]+)((?:\/page\/\d+)?)\/?$/);
   if (tag) {
+    // Permanent content move (legacy tag → topic) — 301, consistent with the
+    // CMS permanent redirects above.
     return NextResponse.redirect(
       toAbsolute(normalizePath(`${BASE_PATH}/topics/${tag[1]}${tag[2]}`), SITE_URL),
-      308,
+      301,
     );
+  }
+
+  // Trailing-slash normalization (Next's built-in is disabled via
+  // skipTrailingSlashRedirect so the redirects above stay single-hop). Any
+  // non-redirect page with a trailing slash canonicalizes to the slashless form,
+  // preserving the query string. This is a same-resource canonicalization (not a
+  // content move), so it stays 308 — method-preserving, matching the Next
+  // built-in it replaces — rather than the 301 used for moved content.
+  if (pathname !== "/" && pathname.endsWith("/")) {
+    const canonical = toAbsolute(
+      normalizePath(`${BASE_PATH}${pathname}`),
+      SITE_URL,
+    );
+    return NextResponse.redirect(`${canonical}${req.nextUrl.search}`, 308);
   }
 
   return NextResponse.next();
