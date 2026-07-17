@@ -29,8 +29,9 @@ const TRAILING_SLASH_MESSAGE =
  * The blog applies active redirects at request time on would-be-404s.
  *
  * Field names `from` / `to` are consumed directly by GROQ (BLOG_REDIRECTS_QUERY).
- * Status `type` is stored as 301/302 for editor familiarity; the blog maps
- * 301→308 and 302→307 at apply time (a Server Component can only emit 307/308).
+ * Status `type` is stored as 301/302. The blog's edge proxy serves that status
+ * verbatim (301 permanent / 302 temporary); only the rare RSC fallback maps
+ * 301→308 and 302→307, since a Server Component can only emit 307/308.
  */
 export const redirect = defineType({
   name: 'redirect',
