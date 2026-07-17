@@ -15,8 +15,12 @@ import {
 import { PAGE_SIZE_OPTIONS } from "@/lib/blog-archive";
 import { sanityImageUrl } from "@/lib/sanity-image";
 
-export function AuthorArchiveView({ data }: { data: AuthorArchivePageData }) {
-  const jsonLd = buildAuthorJsonLd(
+export async function AuthorArchiveView({
+  data,
+}: {
+  data: AuthorArchivePageData;
+}) {
+  const jsonLd = await buildAuthorJsonLd(
     data.author,
     sanityImageUrl(data.author.photo, 400),
   );

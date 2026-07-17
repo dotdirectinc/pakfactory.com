@@ -1,4 +1,4 @@
-import { person } from "@pakfactory/seo";
+import { person, profilePage } from "@pakfactory/seo";
 import type { AuthorDoc } from "@/lib/blog-author";
 import {
   blogBreadcrumbList,
@@ -6,6 +6,7 @@ import {
   serializeBlogJsonLd,
 } from "@/lib/blog-jsonld";
 import { authorHref } from "@/lib/blog-post-url";
+import { fetchSeoContext } from "@/lib/seo-context";
 import { absoluteUrl } from "@/lib/site";
 
 /** Stable `@id` for an author's Person node — shared by the author page and every post's Article.author. */
@@ -13,12 +14,19 @@ export function authorPersonId(authorSlug: string): string {
   return `${absoluteUrl(authorHref(authorSlug))}#person`;
 }
 
-export function buildAuthorJsonLd(author: AuthorDoc, photoUrl?: string): string {
+export async function buildAuthorJsonLd(
+  author: AuthorDoc,
+  photoUrl?: string,
+): Promise<string> {
   const pageUrl = absoluteUrl(authorHref(author.slug));
-  const { org, orgId } = pakfactoryOrganization();
+  const personId = authorPersonId(author.slug);
+  const ctx = await fetchSeoContext();
+  const { org, orgId } = pakfactoryOrganization({
+    logo: ctx.organizationLogoUrl ?? undefined,
+  });
 
   const personNode = person({
-    id: authorPersonId(author.slug),
+    id: personId,
     name: author.name,
     url: pageUrl,
     image: photoUrl,
@@ -36,5 +44,14 @@ export function buildAuthorJsonLd(author: AuthorDoc, photoUrl?: string): string 
 
   const crumbs = blogBreadcrumbList([{ name: author.name, url: pageUrl }]);
 
-  return serializeBlogJsonLd([org, personNode, crumbs]);
+  // Wrap the page as a ProfilePage whose subject is the Person (PROD-2120).
+  const profile = profilePage({
+    name: author.name,
+    url: pageUrl,
+    id: `${pageUrl}#profilepage`,
+    mainEntity: { "@id": personId },
+    description: author.bioText?.trim() || undefined,
+  });
+
+  return serializeBlogJsonLd([profile, org, personNode, crumbs]);
 }
