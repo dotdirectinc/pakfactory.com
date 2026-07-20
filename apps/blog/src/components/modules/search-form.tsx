@@ -18,6 +18,7 @@ import {
     SearchSuggestionPanel,
     searchSuggestionOptionId,
 } from '@/components/ui/search-suggestion-panel';
+import {sitePath} from '@/lib/site';
 import {
     fetchSearchSuggestBundle,
     isAlgoliaSuggestEnabled,
@@ -36,7 +37,7 @@ type SearchFormProps = {
 /** Inline GET search — targets `/search` (PROD-1503). Reuse on 404 and zero-results. */
 export function SearchForm({defaultQuery = '', className}: SearchFormProps) {
     return (
-        <form action="/search" method="get" className={className}>
+        <form action={sitePath('/search')} method="get" className={className}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <label htmlFor="blog-search-q" className="sr-only">
                     Search the blog
@@ -107,7 +108,7 @@ function NavSearchFormPlain({
     );
 
     return (
-        <form action="/search" method="get" className={className}>
+        <form action={sitePath('/search')} method="get" className={className}>
             <label htmlFor={id} className="sr-only">
                 {placeholder}
             </label>
@@ -377,7 +378,7 @@ function NavSearchFormTypeahead({
     );
 
     return (
-        <form action="/search" method="get" className={className} onSubmit={handleSubmit}>
+        <form action={sitePath('/search')} method="get" className={className} onSubmit={handleSubmit}>
             <label htmlFor={id} className="sr-only">
                 {placeholder}
             </label>

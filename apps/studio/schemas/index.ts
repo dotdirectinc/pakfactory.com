@@ -26,7 +26,13 @@ import { caseStudy } from './caseStudy'
 import { caseStudiesPage } from './caseStudiesPage'
 import { glossaryTerm, guide, helpArticle } from './resources'
 import { blogNavigation } from './blogNavigation'
-import { blogSettings } from './blogSettings'
+import {
+  postSettings,
+  categorySettings,
+  topicSettings,
+  authorSettings,
+  pageSettings,
+} from './blogTypeSettings'
 import { blogPage } from './blogPage'
 import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
@@ -103,7 +109,11 @@ export const schemaTypes = [
   // Singletons
   settings,
   blogNavigation,
-  blogSettings,
+  postSettings,
+  categorySettings,
+  topicSettings,
+  authorSettings,
+  pageSettings,
   blogPage,
   aboutPage,
   contactPage,

@@ -65,6 +65,20 @@ async function getRedirectMap(): Promise<RedirectMap> {
 export async function proxy(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl; // base-path-less (Next strips it)
 
+  // Legacy WordPress search (`?s=…`, e.g. the archived WP blog / old indexed
+  // search URLs) → the new search page (`/search?q=…`). Only the `s` value is
+  // carried over; Elementor's `?e_search_props=…` junk is dropped. `s` is not a
+  // param the new blog uses, so matching on its presence is safe. 301 — the old
+  // search scheme is permanently replaced.
+  const legacyQuery = req.nextUrl.searchParams.get("s");
+  if (legacyQuery) {
+    const search = toAbsolute(normalizePath(`${BASE_PATH}/search`), SITE_URL);
+    return NextResponse.redirect(
+      `${search}?q=${encodeURIComponent(legacyQuery)}`,
+      301,
+    );
+  }
+
   const hit = resolveInMap(await getRedirectMap(), pathname, BASE_PATH);
   if (hit) {
     // Emit the redirect doc's actual status: 301 (permanent) / 302 (temporary).
@@ -109,6 +123,9 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  // Everything except Next internals, API routes, and static files (paths with a dot).
-  matcher: ["/((?!_next/|api/|.*\\.[^/]+$).*)"],
+  // Everything except Next internals, API routes, and static files (paths with a
+  // dot). The explicit "/" entry is required so the proxy also runs on the blog
+  // root (`/blog` / `/blog/`) — the second pattern doesn't match it — which the
+  // legacy `?s=` search catch above needs (old WP search was `/blog?s=…`).
+  matcher: ["/", "/((?!_next/|api/|.*\\.[^/]+$).*)"],
 };

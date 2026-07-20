@@ -59,6 +59,13 @@ export const BLOG_REDIRECTS_QUERY = /* groq */ `*[
   "type": type
 }`;
 
+/**
+ * A post's author reference, falling back to the global default author
+ * (`authorSettings.defaultAuthor`) when the post has none assigned. `coalesce`
+ * short-circuits, so the fallback lookup only runs for authorless posts.
+ */
+const AUTHOR_REF = /* groq */ `coalesce(author, *[_id == "authorSettings"][0].defaultAuthor)`;
+
 const POST_CARD_FIELDS = /* groq */ `{
   _id,
   title,
@@ -71,9 +78,9 @@ const POST_CARD_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name,
-  "authorSlug": author->slug.current,
-  "authorImageUrl": author->photo.asset->url,
+  "authorName": ${AUTHOR_REF}->name,
+  "authorSlug": ${AUTHOR_REF}->slug.current,
+  "authorImageUrl": ${AUTHOR_REF}->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
 
@@ -127,7 +134,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     "slug": slug.current,
     "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
   },
-  "author": author->{
+  "author": ${AUTHOR_REF}->{
     name,
     "slug": slug.current,
     photo,
@@ -856,7 +863,7 @@ export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   publishedAt,
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name
+  "authorName": ${AUTHOR_REF}->name
 }`;
 
 /** Published posts ranked by Views when the month window returns fewer than three. */
@@ -918,59 +925,33 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   gtmId
 }`;
 
-/** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */
-export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
-  postDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
+/**
+ * Per-type SEO format strings + sitemap defaults, each from its co-located
+ * `*Settings` singleton (PROD-2116). The legacy `blogSettings.*Defaults` fallback
+ * was removed after the singletons were seeded + verified in prod. Return shape is
+ * unchanged (`topicSettings` maps to the `tagDefaults` key — the type is `blogTag`);
+ * an unseeded dataset yields null objects, which the resolve layer already handles.
+ */
+export const BLOG_SETTINGS_QUERY = /* groq */ `{
+  "postDefaults": *[_id == "postSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
   },
-  categoryDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
+  "categoryDefaults": *[_id == "categorySettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
   },
-  tagDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq,
-    autoNoindexThreshold
+  "tagDefaults": *[_id == "topicSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq, autoNoindexThreshold
   },
-  authorDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
+  "authorDefaults": *[_id == "authorSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
   },
-  pageDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
+  "pageDefaults": *[_id == "pageSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
   }
 }`;
 
 /** Primary nav items (categories + custom links) + header CTA from Blog Navigation `primaryNavigation`. */
-export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
-  *[_id == "blogNavigation"][0]{
+export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
     _id,
     "categories": primaryNavigation.categories[]{
       _type,
@@ -1021,23 +1002,8 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
         }
       }
     }
-  },
-  *[_id == "blogSettings"][0]{
-    _id,
-    "categories": categoryOrder[]{
-      _type,
-      _key,
-      "category": select(defined(_ref) => @->{
-        _id,
-        title,
-        navLabel,
-        "slug": slug.current,
-        language
-      })
-    },
-    "header": null
   }
-)`;
+`;
 
 /** Footer blocks, link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
@@ -1143,9 +1109,9 @@ const LISTING_POST_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name,
-  "authorSlug": author->slug.current,
-  "authorImageUrl": author->photo.asset->url,
+  "authorName": ${AUTHOR_REF}->name,
+  "authorSlug": ${AUTHOR_REF}->slug.current,
+  "authorImageUrl": ${AUTHOR_REF}->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
 
