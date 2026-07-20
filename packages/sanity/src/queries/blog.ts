@@ -59,6 +59,13 @@ export const BLOG_REDIRECTS_QUERY = /* groq */ `*[
   "type": type
 }`;
 
+/**
+ * A post's author reference, falling back to the global default author
+ * (`authorSettings.defaultAuthor`) when the post has none assigned. `coalesce`
+ * short-circuits, so the fallback lookup only runs for authorless posts.
+ */
+const AUTHOR_REF = /* groq */ `coalesce(author, *[_id == "authorSettings"][0].defaultAuthor)`;
+
 const POST_CARD_FIELDS = /* groq */ `{
   _id,
   title,
@@ -71,9 +78,9 @@ const POST_CARD_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name,
-  "authorSlug": author->slug.current,
-  "authorImageUrl": author->photo.asset->url,
+  "authorName": ${AUTHOR_REF}->name,
+  "authorSlug": ${AUTHOR_REF}->slug.current,
+  "authorImageUrl": ${AUTHOR_REF}->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
 
@@ -127,7 +134,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     "slug": slug.current,
     "topicGroup": topicGroup->${TOPIC_GROUP_PROJECTION}
   },
-  "author": author->{
+  "author": ${AUTHOR_REF}->{
     name,
     "slug": slug.current,
     photo,
@@ -856,7 +863,7 @@ export const BLOG_RSS_POSTS_QUERY = /* groq */ `*[
   publishedAt,
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name
+  "authorName": ${AUTHOR_REF}->name
 }`;
 
 /** Published posts ranked by Views when the month window returns fewer than three. */
@@ -944,8 +951,7 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `{
 }`;
 
 /** Primary nav items (categories + custom links) + header CTA from Blog Navigation `primaryNavigation`. */
-export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
-  *[_id == "blogNavigation"][0]{
+export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
     _id,
     "categories": primaryNavigation.categories[]{
       _type,
@@ -996,23 +1002,8 @@ export const BLOG_NAV_CATEGORIES_QUERY = /* groq */ `coalesce(
         }
       }
     }
-  },
-  *[_id == "blogSettings"][0]{
-    _id,
-    "categories": categoryOrder[]{
-      _type,
-      _key,
-      "category": select(defined(_ref) => @->{
-        _id,
-        title,
-        navLabel,
-        "slug": slug.current,
-        language
-      })
-    },
-    "header": null
   }
-)`;
+`;
 
 /** Footer blocks, link columns, social links, and AI answer links from Blog Navigation `footerNavigation`. */
 export const BLOG_FOOTER_NAV_QUERY = /* groq */ `*[_id == "blogNavigation"][0]{
@@ -1118,9 +1109,9 @@ const LISTING_POST_FIELDS = /* groq */ `{
   },
   "categorySlug": category->slug.current,
   "categoryTitle": category->title,
-  "authorName": author->name,
-  "authorSlug": author->slug.current,
-  "authorImageUrl": author->photo.asset->url,
+  "authorName": ${AUTHOR_REF}->name,
+  "authorSlug": ${AUTHOR_REF}->slug.current,
+  "authorImageUrl": ${AUTHOR_REF}->photo.asset->url,
   ${READING_TIME_MINUTES_PROJECTION}
 }`;
 
