@@ -1395,7 +1395,6 @@ export function settingsItems(
     S: StructureBuilder,
     options: SettingsOptions = {},
 ): (ListItemBuilder | DividerBuilder)[] {
-    const showBlog = WORKSPACE_SETTINGS && options.blog;
     const showSolutions = WORKSPACE_SETTINGS && options.solutions;
     const redirectScope = options.redirectScope;
 
@@ -1522,20 +1521,6 @@ export function settingsItems(
                             ),
                     ]),
             ),
-
-        ...(showBlog
-            ? [
-                  S.listItem()
-                      .title('Blog Settings')
-                      .icon(CogIcon)
-                      .child(
-                          S.editor()
-                              .id('blogSettings')
-                              .schemaType('blogSettings')
-                              .documentId('blogSettings'),
-                      ),
-              ]
-            : []),
 
         ...(showSolutions
             ? [

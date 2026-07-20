@@ -11,6 +11,7 @@
     "seed:blog-dev": "node scripts/seed-blog-dev.mjs",
     "seed:blog-singleton-pages": "node scripts/seed-blog-singleton-pages.mjs",
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
+    "cleanup:blogsettings-defaults": "node scripts/unset-legacy-blogsettings-defaults.mjs",
     "migrate:blog-i18n-en": "node scripts/migrate-blog-i18n-en.mjs",
     "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs",
     "migrate:case-study-gallery": "node scripts/migrate-case-study-gallery.mjs",
