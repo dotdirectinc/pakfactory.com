@@ -918,54 +918,46 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   gtmId
 }`;
 
-/** Blog Settings singleton — per-type SEO format strings and sitemap defaults. */
-export const BLOG_SETTINGS_QUERY = /* groq */ `*[_type == "blogSettings"][0]{
-  postDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
-  },
-  categoryDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
-  },
-  tagDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq,
-    autoNoindexThreshold
-  },
-  authorDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
-  },
-  pageDefaults{
-    metaTitleFormat,
-    metaDescriptionFormat,
-    allowIndex,
-    allowFollow,
-    noImageIndex,
-    sitemapPriority,
-    sitemapChangefreq
-  }
+/**
+ * Per-type SEO format strings + sitemap defaults.
+ *
+ * PROD-2116: each type's defaults now live in a co-located `*Settings` singleton;
+ * this query resolves each as `new singleton -> legacy blogSettings.<type>Defaults`
+ * via coalesce, so the return shape is unchanged and prod is untouched until the
+ * singletons are seeded (absent singleton -> null -> legacy object). `topicSettings`
+ * maps to the `tagDefaults` key (the type is still `blogTag`).
+ */
+export const BLOG_SETTINGS_QUERY = /* groq */ `{
+  "postDefaults": coalesce(
+    *[_id == "postSettings"][0]{
+      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    },
+    *[_type == "blogSettings"][0].postDefaults
+  ),
+  "categoryDefaults": coalesce(
+    *[_id == "categorySettings"][0]{
+      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    },
+    *[_type == "blogSettings"][0].categoryDefaults
+  ),
+  "tagDefaults": coalesce(
+    *[_id == "topicSettings"][0]{
+      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq, autoNoindexThreshold
+    },
+    *[_type == "blogSettings"][0].tagDefaults
+  ),
+  "authorDefaults": coalesce(
+    *[_id == "authorSettings"][0]{
+      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    },
+    *[_type == "blogSettings"][0].authorDefaults
+  ),
+  "pageDefaults": coalesce(
+    *[_id == "pageSettings"][0]{
+      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    },
+    *[_type == "blogSettings"][0].pageDefaults
+  )
 }`;
 
 /** Primary nav items (categories + custom links) + header CTA from Blog Navigation `primaryNavigation`. */

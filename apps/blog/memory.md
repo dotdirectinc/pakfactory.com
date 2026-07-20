@@ -109,6 +109,34 @@ Fields removed from schemas that may still be referenced in seeds/queries/front-
 
 ---
 
+## PROD-2116 — Per-type settings singletons (co-location)
+
+The per-type SEO/sitemap defaults moved out of the six-tab `blogSettings` singleton into five co-located singletons — `postSettings`, `categorySettings`, `topicSettings`, `authorSettings`, `pageSettings` — each surfaced as a **Settings** child next to its list in the Blog desk (mirroring Case Studies). `General` (posts-per-page, default author) stays in Blog Settings.
+
+**Backward-compatible.** `BLOG_SETTINGS_QUERY` resolves each type as `coalesce(new singleton, blogSettings.<type>Defaults)`, so **prod is untouched until seeded**. `fetchBlogSettings()` return shape is unchanged (`{postDefaults, categoryDefaults, tagDefaults, authorDefaults, pageDefaults}`), so no route/sitemap changes. Note `topicSettings` → `tagDefaults` (the type is still `blogTag`). Legacy `blogSettings.*Defaults` fields + the fallback branch are removed in a **follow-up ticket** after prod is verified.
+
+### Seeding (human-run — agents do not write Sanity docs)
+
+Copies the current `blogSettings.*Defaults` values into the five singletons verbatim, so rendered meta/sitemap output is identical after cutover.
+
+1. **Confirm the dataset** — Studio must show the `[DEVELOPMENT]` workspace suffix before seeding dev. Write token in `.env.local` / `apps/studio/.env.local` (`SANITY_API_WRITE_TOKEN`).
+2. **Dev first** (dry-run prints, `--apply` writes):
+   ```bash
+   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings
+   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+   ```
+3. **Verify dev** — desk shows `Post ▸ Settings` etc.; diff a few author/category/post pages' `<head>` meta + the sitemaps before/after (should be identical — the query fell back to `blogSettings` pre-seed, reads the singleton post-seed, same values).
+4. **Promote to prod**:
+   ```bash
+   NEXT_PUBLIC_SANITY_DATASET=production pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+   ```
+5. **Update the Sanity revalidation webhook filter** (project `8293wrxp`) to also fire on the new `_type`s — add `postSettings`, `categorySettings`, `topicSettings`, `authorSettings`, `pageSettings` to the GROQ filter (the route handler already maps them → `blog-settings` cache tag). Otherwise editing a Settings singleton won't purge the cache.
+6. **Deploy Studio** (`pnpm --filter @pakfactory/studio run deploy`) so editors see the co-located Settings.
+
+> Prod's `pageDefaults` is only partially configured (just `metaTitleFormat` + robots toggles) — the seed copies that partial set faithfully, so behavior is unchanged. Shared field factory: `apps/studio/lib/type-default-fields.ts` (reused by `blogSettings` and the new singletons).
+
+---
+
 ## Blog frontend audit (2026-06-18)
 
 Documentation-only pass — preview, JSON-LD/AEO, and route architecture. Full JSON-LD tiers and per-route matrix: **[`docs/blog-jsonld-audit.md`](../../docs/blog-jsonld-audit.md)**.
