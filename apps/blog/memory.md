@@ -133,7 +133,14 @@ Copies the current `blogSettings.*Defaults` values into the five singletons verb
 5. **Update the Sanity revalidation webhook filter** (project `8293wrxp`) to also fire on the new `_type`s — add `postSettings`, `categorySettings`, `topicSettings`, `authorSettings`, `pageSettings` to the GROQ filter (the route handler already maps them → `blog-settings` cache tag). Otherwise editing a Settings singleton won't purge the cache.
 6. **Deploy Studio** (`pnpm --filter @pakfactory/studio run deploy`) so editors see the co-located Settings.
 
-> Prod's `pageDefaults` is only partially configured (just `metaTitleFormat` + robots toggles) — the seed copies that partial set faithfully, so behavior is unchanged. Shared field factory: `apps/studio/lib/type-default-fields.ts` (reused by `blogSettings` and the new singletons).
+> Prod's `pageDefaults` is only partially configured (just `metaTitleFormat` + robots toggles) — the seed copies that partial set faithfully, so behavior is unchanged. Shared field factory: `apps/studio/lib/type-default-fields.ts` (reused by the singletons).
+
+### Status: seeded + verified in prod, legacy removed
+
+Prod dataset seeded, Studio deployed, blog deployed — verified live (`pakfactory.com/blog`): output identical, blog reads the singletons. The **cleanup** then removed the legacy layer:
+- `blogSettings` schema stripped to **General only** (postsPerPage, defaultAuthor); the five `*Defaults` tabs are gone.
+- `BLOG_SETTINGS_QUERY` reads the singletons directly — the `coalesce(..., blogSettings.*Defaults)` fallback is removed. An unseeded dataset now yields null defaults (resolve layer handles it), so **any fresh/reset dataset must be seeded** (`seed:per-type-settings`). Dev is nightly-synced from prod, so it self-heals.
+- The old `blogSettings.*Defaults` **data** is now orphaned (inert). `cleanup:blogsettings-defaults` (dry-run default, `--apply`) unsets it — **run it last**, once the query cleanup is confirmed stable, since that data is the rollback buffer for reverting the fallback removal.
 
 ---
 
