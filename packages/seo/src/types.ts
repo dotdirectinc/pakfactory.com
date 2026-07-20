@@ -66,6 +66,21 @@ export type WebPageInput = {
   id?: string;
 };
 
+export type ProfilePageInput = {
+  name: string;
+  /** Canonical URL of the profile page */
+  url: string;
+  /** Stable node id (absolute URI, often with #profilepage) */
+  id?: string;
+  /** The profile's subject — an `@id` reference to the Person node, e.g. `{ "@id": personId }` */
+  mainEntity?: Record<string, unknown>;
+  description?: string;
+  /** ISO 8601 last-modified timestamp */
+  dateModified?: string;
+  /** BreadcrumbList node or an `@id` reference to one */
+  breadcrumb?: Record<string, unknown>;
+};
+
 export type ItemListEntry = {
   name: string;
   /** Absolute URL of the list item */

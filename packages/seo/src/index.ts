@@ -14,6 +14,7 @@ export type {
   VideoObjectInput,
   OrganizationInput,
   PersonInput,
+  ProfilePageInput,
   WebPageInput,
 } from "./types";
 export { SCHEMA_CONTEXT } from "./types";
@@ -28,6 +29,7 @@ export { itemList } from "./generators/itemList";
 export { newsArticle } from "./generators/newsArticle";
 export { organization } from "./generators/organization";
 export { person } from "./generators/person";
+export { profilePage } from "./generators/profilePage";
 export { webPage } from "./generators/webPage";
 
 export { videoObject } from "./generators/videoObject";

@@ -42,6 +42,11 @@ const basePath = process.env.NEXT_PUBLIC_BLOG_BASE_PATH?.trim() || undefined;
 
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
+  // Let `proxy.ts` own trailing-slash handling so a CMS redirect on a slashed
+  // legacy URL (`/blog/old-post/`) goes straight to its target in ONE hop,
+  // instead of Next stripping the slash first (308) and the proxy redirecting
+  // second (308). The proxy still normalizes `/x/` → `/x` for non-redirect pages.
+  skipTrailingSlashRedirect: true,
   transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components"],
   turbopack: {
     resolveAlias: {
@@ -86,16 +91,10 @@ const nextConfig: NextConfig = {
         destination: "/topics-sitemap-1.xml",
         permanent: true,
       },
-      {
-        source: "/tag/:slug/page/:n",
-        destination: "/topics/:slug/page/:n",
-        permanent: true,
-      },
-      {
-        source: "/tag/:slug",
-        destination: "/topics/:slug",
-        permanent: true,
-      },
+      // NOTE: legacy `/tag/:slug[/page/:n]` → `/topics/:slug` moved to
+      // `middleware.ts` (PROD-2154). next.config `redirects` run BEFORE
+      // middleware, so keeping them here would pre-empt CMS `redirect` docs for
+      // tag paths (e.g. tags that should go to the blog home, not a 404 topic).
       {
         source: "/category/:category/page/:n",
         destination: "/:category/page/:n",
