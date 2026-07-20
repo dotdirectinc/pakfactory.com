@@ -58,7 +58,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   },
   "products": products[]->${TAXONOMY_ITEM},
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
-  "capabilities": capabilities[]->${TAXONOMY_ITEM},
+  "customizations": capabilities[]->${TAXONOMY_ITEM},
   "highlights": highlights[]{ _key, title, description },
   challenge,
   solution,
@@ -179,7 +179,7 @@ export type CaseStudyDetail = CaseStudyCard & {
   client: CaseStudyClientDetail | null;
   heroIntro: unknown; // Portable Text (restricted: bold + clientLink + link)
   heroMedia: CaseStudyHeroMedia | null;
-  capabilities: CaseStudyTaxonomyItem[] | null;
+  customizations: CaseStudyTaxonomyItem[] | null;
   highlights: CaseStudyHighlight[] | null;
   challenge: unknown; // Portable Text
   solution: unknown; // Portable Text

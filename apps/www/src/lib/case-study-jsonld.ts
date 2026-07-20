@@ -20,7 +20,7 @@ function taxonomyKeywords(study: CaseStudyDetail): string[] {
   const titles = [
     ...(study.products ?? []),
     ...(study.expertiseAreas ?? []),
-    ...(study.capabilities ?? []),
+    ...(study.customizations ?? []),
   ]
     .map((item) => item.title?.trim())
     .filter((title): title is string => Boolean(title));
