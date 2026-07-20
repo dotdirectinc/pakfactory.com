@@ -90,14 +90,28 @@ export const authorSettings = defineType({
   type: 'document',
   icon: CogIcon,
   __experimental_actions: SINGLETON_ACTIONS,
-  groups: SEO_GROUP,
-  fields: typeDefaultFields({
-    group: 'seo',
-    metaTitleFormat: '%name%, %job_title% | PakFactory Blog',
-    metaDescriptionFormat: '%shortBio%',
-    indexDefault: true,
-    sitemap: { priority: 0.3, changefreq: 'monthly' },
-  }),
+  groups: [
+    { name: 'seo', title: 'SEO', default: true },
+    { name: 'general', title: 'General' },
+  ],
+  fields: [
+    ...typeDefaultFields({
+      group: 'seo',
+      metaTitleFormat: '%name%, %job_title% | PakFactory Blog',
+      metaDescriptionFormat: '%shortBio%',
+      indexDefault: true,
+      sitemap: { priority: 0.3, changefreq: 'monthly' },
+    }),
+    defineField({
+      name: 'defaultAuthor',
+      title: 'Default author',
+      type: 'reference',
+      to: [{ type: 'author' }],
+      group: 'general',
+      description:
+        'Fallback author applied to posts with no author assigned — used for the byline, author schema, cards, and RSS.',
+    }),
+  ],
   preview: { prepare: () => ({ title: 'Author Settings' }) },
 })
 
