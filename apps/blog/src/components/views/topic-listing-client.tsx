@@ -14,6 +14,7 @@ import { LISTING_TOP_ID } from "@/components/modules/pagination";
 import { PostList } from "@/components/modules/post-list";
 import { TopicLandingSection } from "@/components/views/topic-landing-layout";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/blog-archive";
+import { sitePath } from "@/lib/site";
 import {
   tagPageHref,
   type TagListFilters,
@@ -109,7 +110,10 @@ export function TopicListingClient({
   const pushListingUrl = useCallback(
     (nextPage: number, nextFilters: TagListFilters, nextPerPage: number) => {
       if (typeof window === "undefined") return;
-      const href = tagPageHref(tagSlug, nextPage, nextFilters, nextPerPage);
+      // `tagPageHref` is base-path-less (correct for next/link, which prefixes
+      // basePath); `pushState` is a raw browser API that does NOT, so add the
+      // basePath here or the URL would drop `/blog` on every filter/sort change.
+      const href = sitePath(tagPageHref(tagSlug, nextPage, nextFilters, nextPerPage));
       const current = `${window.location.pathname}${window.location.search}`;
       if (current !== href) {
         window.history.pushState(null, "", href);
