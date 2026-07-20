@@ -142,6 +142,11 @@ Prod dataset seeded, Studio deployed, blog deployed — verified live (`pakfacto
 - `BLOG_SETTINGS_QUERY` reads the singletons directly — the `coalesce(..., blogSettings.*Defaults)` fallback is removed. An unseeded dataset now yields null defaults (resolve layer handles it), so **any fresh/reset dataset must be seeded** (`seed:per-type-settings`). Dev is nightly-synced from prod, so it self-heals.
 - The old `blogSettings.*Defaults` **data** is now orphaned (inert). `cleanup:blogsettings-defaults` (dry-run default, `--apply`) unsets it — **run it last**, once the query cleanup is confirmed stable, since that data is the rollback buffer for reverting the fallback removal.
 
+### blogSettings fully retired (follow-up feedback)
+
+- **`blogSettings` type removed entirely.** `postsPerPage` was dead (blog uses a hardcoded `DEFAULT_PAGE_SIZE`) → deleted. The type, its schema file, the "Blog Settings" desk item, and the dead `categoryOrder` nav fallback (`blogNavigation` is the source) are all gone; `blogSettings` dropped from the revalidate handler. The `blogSettings` **document** may still exist as inert data — delete it whenever (nothing reads it now).
+- **`defaultAuthor` moved to `authorSettings`** (Author ▸ Settings ▸ General) **and wired up**: `AUTHOR_REF` in `packages/sanity/src/queries/blog.ts` = `coalesce(author, *[_id=="authorSettings"][0].defaultAuthor)`, applied to every post-author *display* projection (cards, detail, popular, feed). Author-archive **filters** keep the real `author` (an authorless post doesn't join the default author's archive). `coalesce` short-circuits, so the fallback lookup only runs for authorless posts. **Editorial:** set the default in Studio for it to take effect (empty → same as before).
+
 ---
 
 ## Blog frontend audit (2026-06-18)
