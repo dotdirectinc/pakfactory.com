@@ -919,45 +919,28 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
 }`;
 
 /**
- * Per-type SEO format strings + sitemap defaults.
- *
- * PROD-2116: each type's defaults now live in a co-located `*Settings` singleton;
- * this query resolves each as `new singleton -> legacy blogSettings.<type>Defaults`
- * via coalesce, so the return shape is unchanged and prod is untouched until the
- * singletons are seeded (absent singleton -> null -> legacy object). `topicSettings`
- * maps to the `tagDefaults` key (the type is still `blogTag`).
+ * Per-type SEO format strings + sitemap defaults, each from its co-located
+ * `*Settings` singleton (PROD-2116). The legacy `blogSettings.*Defaults` fallback
+ * was removed after the singletons were seeded + verified in prod. Return shape is
+ * unchanged (`topicSettings` maps to the `tagDefaults` key — the type is `blogTag`);
+ * an unseeded dataset yields null objects, which the resolve layer already handles.
  */
 export const BLOG_SETTINGS_QUERY = /* groq */ `{
-  "postDefaults": coalesce(
-    *[_id == "postSettings"][0]{
-      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
-    },
-    *[_type == "blogSettings"][0].postDefaults
-  ),
-  "categoryDefaults": coalesce(
-    *[_id == "categorySettings"][0]{
-      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
-    },
-    *[_type == "blogSettings"][0].categoryDefaults
-  ),
-  "tagDefaults": coalesce(
-    *[_id == "topicSettings"][0]{
-      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq, autoNoindexThreshold
-    },
-    *[_type == "blogSettings"][0].tagDefaults
-  ),
-  "authorDefaults": coalesce(
-    *[_id == "authorSettings"][0]{
-      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
-    },
-    *[_type == "blogSettings"][0].authorDefaults
-  ),
-  "pageDefaults": coalesce(
-    *[_id == "pageSettings"][0]{
-      metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
-    },
-    *[_type == "blogSettings"][0].pageDefaults
-  )
+  "postDefaults": *[_id == "postSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+  },
+  "categoryDefaults": *[_id == "categorySettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+  },
+  "tagDefaults": *[_id == "topicSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq, autoNoindexThreshold
+  },
+  "authorDefaults": *[_id == "authorSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+  },
+  "pageDefaults": *[_id == "pageSettings"][0]{
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+  }
 }`;
 
 /** Primary nav items (categories + custom links) + header CTA from Blog Navigation `primaryNavigation`. */
