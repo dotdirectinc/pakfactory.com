@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link2, Linkedin, Facebook } from "lucide-react";
+import { Check, Link2, Linkedin, Facebook } from "lucide-react";
 import { cn } from "@pakfactory/ui/lib/utils";
 
 // X keeps its brand mark; LinkedIn/Facebook use lucide (shadcn's icon library).
@@ -38,12 +38,38 @@ export function CaseStudyShare({
 }: Props) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopyLink() {
-    if (typeof window === "undefined" || !navigator.clipboard) return;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  function flagCopied() {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  /** Copy the URL to the clipboard, with a legacy fallback for non-secure
+   *  contexts / browsers where the async Clipboard API is unavailable or blocked. */
+  async function handleCopyLink() {
+    if (typeof window === "undefined") return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        flagCopied();
+        return;
+      }
+    } catch {
+      // fall through to the legacy execCommand path
+    }
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      flagCopied();
+    } catch {
+      // clipboard unavailable — nothing more we can do
+    }
   }
 
   const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
@@ -57,11 +83,21 @@ export function CaseStudyShare({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            aria-label={copied ? "Copied!" : "Copy link"}
+            aria-label={copied ? "Link copied" : "Copy link"}
+            title={copied ? "Link copied!" : "Copy link"}
             onClick={handleCopyLink}
-            className="flex aspect-square size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary"
+            className={cn(
+              "flex aspect-square size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary",
+              copied
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground",
+            )}
           >
-            <Link2 className="size-4" strokeWidth={1.75} />
+            {copied ? (
+              <Check className="size-4" strokeWidth={2} />
+            ) : (
+              <Link2 className="size-4" strokeWidth={1.75} />
+            )}
           </button>
           <a
             href={linkedInUrl}
