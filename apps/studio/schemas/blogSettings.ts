@@ -1,100 +1,19 @@
 import { defineField, defineType } from 'sanity'
 import { CogIcon } from '@sanity/icons'
+import { PAGE_TOKEN_HELP, typeDefaultFields } from '../lib/type-default-fields'
 
 /**
- * Blog Settings (singleton) — per-document-type SEO/indexing DEFAULTS and general
- * blog options. Overrides the Global Settings defaults where set; any individual
- * document overrides these on its own SEO tab.
+ * Blog Settings (singleton) — general blog options plus, for now, the per-type
+ * SEO/indexing DEFAULTS. The per-type defaults are being co-located into standalone
+ * `*Settings` singletons next to each list (PROD-2116); this doc keeps the legacy
+ * `*Defaults` objects as the fallback source until that migration is verified in
+ * prod. Any individual document overrides these on its own SEO tab.
  *
  * NOTE: the meta-title/description FORMATS use a token set. Resolving the tokens
  * (and the fallback chains that apply these defaults) is query-layer work — these
- * fields only declare the editable defaults. The richer token input (live
- * preview, admin-only) is a deferred enhancement.
+ * fields only declare the editable defaults. The shared field factory lives in
+ * `lib/type-default-fields.ts` so the new singletons reuse it verbatim.
  */
-
-const TOKEN_HELP =
-  'Tokens: %title%, %name%, %job_title%, %excerpt%, %description%, %shortBio%, %sitename%. One change affects every page of this type, so keep it generic.'
-
-const PAGE_TOKEN_HELP =
-  'For blog pages, %title% and %description% map to the page Overview title and description. Other tokens apply the same way across page roles (home, topics, search, contribute, 404, landing, static).'
-
-const CHANGEFREQ = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
-
-type TypeDefaults = {
-  metaTitleFormat: string
-  metaDescriptionFormat: string
-  indexDefault: boolean
-  sitemap?: { priority: number; changefreq: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extra?: any[]
-}
-
-/** Inner fields for one per-type defaults object (no group — the object carries it). */
-function typeDefaultFields({
-  metaTitleFormat,
-  metaDescriptionFormat,
-  indexDefault,
-  sitemap,
-  extra = [],
-}: TypeDefaults) {
-  return [
-    defineField({
-      name: 'metaTitleFormat',
-      title: 'Meta title format',
-      type: 'string',
-      initialValue: metaTitleFormat,
-      description: TOKEN_HELP,
-      validation: (Rule) => Rule.max(90).warning('Rendered titles read best under ~60 characters.'),
-    }),
-    defineField({
-      name: 'metaDescriptionFormat',
-      title: 'Meta description format',
-      type: 'string',
-      initialValue: metaDescriptionFormat,
-      description: TOKEN_HELP,
-      validation: (Rule) =>
-        Rule.max(220).warning('Rendered descriptions read best under ~160 characters.'),
-    }),
-    defineField({
-      name: 'allowIndex',
-      title: 'Index by default',
-      type: 'boolean',
-      initialValue: indexDefault,
-      description: 'Default for new documents of this type; each document can override.',
-    }),
-    defineField({
-      name: 'allowFollow',
-      title: 'Follow links by default',
-      type: 'boolean',
-      initialValue: true,
-    }),
-    defineField({
-      name: 'noImageIndex',
-      title: 'No image index by default',
-      type: 'boolean',
-      initialValue: false,
-    }),
-    ...(sitemap
-      ? [
-          defineField({
-            name: 'sitemapPriority',
-            title: 'Sitemap priority',
-            type: 'number',
-            initialValue: sitemap.priority,
-            validation: (Rule) => Rule.min(0).max(1),
-          }),
-          defineField({
-            name: 'sitemapChangefreq',
-            title: 'Sitemap change frequency',
-            type: 'string',
-            initialValue: sitemap.changefreq,
-            options: { list: CHANGEFREQ },
-          }),
-        ]
-      : []),
-    ...extra,
-  ]
-}
 
 export const blogSettings = defineType({
   name: 'blogSettings',
