@@ -41,7 +41,12 @@ function normalizeBasePath(raw: string): string {
  * `/blog/sitemap.xml` automatically.
  */
 export const BLOG_BASE_PATH = normalizeBasePath(
-  readEnv("NEXT_PUBLIC_BLOG_BASE_PATH"),
+  // STATIC `process.env.NEXT_PUBLIC_*` access (not the dynamic `readEnv`, whose
+  // computed key Next.js can't statically analyze) so the value is inlined into
+  // the CLIENT bundle too. With `readEnv` it was `""` on the client, so client-
+  // built URLs (e.g. `sitePath()` used in `pushState` filter/sort) silently
+  // dropped the `/blog` prefix.
+  process.env.NEXT_PUBLIC_BLOG_BASE_PATH ?? "",
 );
 
 /** Origin only (scheme + host), no path. Prefer `siteBaseUrl()` / `absoluteUrl()`. */
