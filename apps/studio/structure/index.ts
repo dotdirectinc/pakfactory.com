@@ -241,7 +241,15 @@ function blogPagesFolder(S: StructureBuilder): ListItemBuilder {
     return S.listItem()
         .title('Page')
         .icon(DocumentsIcon)
-        .child(S.list().title('Page').items(pageItems));
+        .child(
+            S.list()
+                .title('Page')
+                .items([
+                    ...pageItems,
+                    S.divider(),
+                    typeSettingsItem(S, 'pageSettings'),
+                ]),
+        );
 }
 
 /** Topics in a CMS group — panel 3 when a group row is selected. */
@@ -341,6 +349,8 @@ function topicsDeskItem(
                         .title('Ungrouped')
                         .icon(TagIcon)
                         .child(ungroupedTopicsList(S)),
+                    S.divider(),
+                    typeSettingsItem(S, 'topicSettings'),
                 ])
                 .menuItems([
                     S.menuItem()
@@ -360,6 +370,26 @@ function topicsDeskItem(
 // composed freely into any workspace structure.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * A "Settings" child pinned to a per-type settings singleton (PROD-2116),
+ * co-located next to its list — mirroring the Case Studies "Page Settings" item.
+ */
+function typeSettingsItem(
+    S: StructureBuilder,
+    singletonId: string,
+): ListItemBuilder {
+    return S.listItem()
+        .id(singletonId)
+        .title('Settings')
+        .icon(CogIcon)
+        .child(
+            S.editor()
+                .id(singletonId)
+                .schemaType(singletonId)
+                .documentId(singletonId),
+        );
+}
+
 export function blogItems(
     S: StructureBuilder,
     context: StructureResolverContext,
@@ -368,23 +398,45 @@ export function blogItems(
         S.listItem()
             .title('Post')
             .icon(DocumentTextIcon)
-            .schemaType('post')
             .child(
-                S.documentTypeList('post')
+                S.list()
                     .title('Post')
-                    .defaultOrdering([
-                        {field: 'publishedAt', direction: 'desc'},
+                    .items([
+                        S.listItem()
+                            .title('Posts')
+                            .icon(DocumentTextIcon)
+                            .schemaType('post')
+                            .child(
+                                S.documentTypeList('post')
+                                    .title('Posts')
+                                    .defaultOrdering([
+                                        {field: 'publishedAt', direction: 'desc'},
+                                    ]),
+                            ),
+                        typeSettingsItem(S, 'postSettings'),
                     ]),
             ),
 
         S.listItem()
             .title('Category')
             .icon(FolderIcon)
-            .schemaType('blogCategory')
             .child(
-                S.documentTypeList('blogCategory')
+                S.list()
                     .title('Category')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+                    .items([
+                        S.listItem()
+                            .title('Categories')
+                            .icon(FolderIcon)
+                            .schemaType('blogCategory')
+                            .child(
+                                S.documentTypeList('blogCategory')
+                                    .title('Categories')
+                                    .defaultOrdering([
+                                        {field: 'title', direction: 'asc'},
+                                    ]),
+                            ),
+                        typeSettingsItem(S, 'categorySettings'),
+                    ]),
             ),
 
         topicsDeskItem(S, context),
@@ -392,8 +444,20 @@ export function blogItems(
         S.listItem()
             .title('Author')
             .icon(UserIcon)
-            .schemaType('author')
-            .child(S.documentTypeList('author').title('Author')),
+            .child(
+                S.list()
+                    .title('Author')
+                    .items([
+                        S.listItem()
+                            .title('Authors')
+                            .icon(UserIcon)
+                            .schemaType('author')
+                            .child(
+                                S.documentTypeList('author').title('Authors'),
+                            ),
+                        typeSettingsItem(S, 'authorSettings'),
+                    ]),
+            ),
 
         S.listItem()
             .title('Video')
