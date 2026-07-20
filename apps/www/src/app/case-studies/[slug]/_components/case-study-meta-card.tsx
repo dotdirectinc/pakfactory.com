@@ -68,21 +68,21 @@ type Props = {
   client?: CaseStudyClientDetail | null;
   products?: CaseStudyTaxonomyItem[] | null;
   expertiseAreas?: CaseStudyTaxonomyItem[] | null;
-  capabilities?: CaseStudyTaxonomyItem[] | null;
+  customizations?: CaseStudyTaxonomyItem[] | null;
 };
 
 export function CaseStudyMetaCard({
   client,
   products,
   expertiseAreas,
-  capabilities,
+  customizations,
 }: Props) {
   const solutionItems = client?.industry ? [client.industry] : [];
   const sections = [
     { label: "Solution", items: solutionItems },
     { label: "Product", items: products ?? [] },
     { label: "Expertise", items: expertiseAreas ?? [] },
-    { label: "Capabilities", items: capabilities ?? [] },
+    { label: "Customization", items: customizations ?? [] },
   ].filter((s) => s.items.length > 0);
 
   const hasClient = Boolean(client?.logoUrl || client?.name);

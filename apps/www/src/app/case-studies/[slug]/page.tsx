@@ -172,7 +172,7 @@ export default async function CaseStudyPage({ params }: Props) {
           client={study.client}
           products={study.products}
           expertiseAreas={study.expertiseAreas}
-          capabilities={study.capabilities}
+          customizations={study.customizations}
         />
       </PageDielineSection>
 
