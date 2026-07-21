@@ -37,7 +37,7 @@ const SITE_URL = (
 
 const REDIRECTS_QUERY =
   `*[_type == "redirect" && isActive == true && defined(from) && (defined(to) || behaviour == "gone")]` +
-  `{"from": from, "to": to, "type": type, "matchType": matchType, "behaviour": behaviour, "priority": priority, "appendMatchedTail": appendMatchedTail}`;
+  `{"from": from, "to": to, "matchType": matchType, "behaviour": behaviour, "priority": priority, "appendMatchedTail": appendMatchedTail}`;
 
 const EMPTY_RULESET: RedirectRuleset = { exact: {}, prefix: [], phrase: [] };
 const CACHE_TTL_MS = 60_000;

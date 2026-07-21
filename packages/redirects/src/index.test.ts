@@ -39,9 +39,9 @@ test("exact match, permanent 301 (blog basePath stripped)", () => {
   assert.equal(resolveRedirect(rs, "/nope", "/blog"), null);
 });
 
-test("legacy `type` fallback when behaviour blank", () => {
-  const rs = blog([{ from: "/blog/a", to: "/blog/b", type: "302" }]);
-  assert.deepEqual(resolveRedirect(rs, "/a", "/blog"), { destination: "/blog/b", status: 302 });
+test("defaults to permanent 301 when behaviour is absent", () => {
+  const rs = blog([{ from: "/blog/a", to: "/blog/b" }]);
+  assert.deepEqual(resolveRedirect(rs, "/a", "/blog"), { destination: "/blog/b", status: 301 });
 });
 
 test("prefix with appendMatchedTail keeps the tail", () => {

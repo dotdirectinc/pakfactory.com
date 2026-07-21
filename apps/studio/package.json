@@ -17,7 +17,8 @@
     "migrate:case-study-gallery": "node scripts/migrate-case-study-gallery.mjs",
     "migrate:redirect-slashes": "node scripts/strip-redirect-trailing-slashes.mjs",
     "backfill:redirect-fields": "node scripts/backfill-redirect-match-behaviour.mjs",
-    "check:redirects-parity": "node scripts/check-redirects-parity.mjs"
+    "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
+    "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
   },
   "dependencies": {
     "@pakfactory/sanity": "workspace:*",
