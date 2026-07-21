@@ -14,6 +14,7 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@next/third-parties": "^16.2.10",
     "@pakfactory/components": "workspace:*",
+    "@pakfactory/redirects": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",
     "@pakfactory/ui": "workspace:*",

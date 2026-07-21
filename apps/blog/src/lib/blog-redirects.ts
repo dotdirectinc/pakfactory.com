@@ -16,7 +16,7 @@ import {
   type RedirectRuleset,
   type RedirectRow,
   type ResolvedRedirect,
-} from "@/lib/blog-redirects-core";
+} from "@pakfactory/redirects";
 
 export type { ResolvedRedirect };
 

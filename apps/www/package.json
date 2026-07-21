@@ -13,6 +13,7 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
     "@pakfactory/components": "workspace:*",
+    "@pakfactory/redirects": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",
     "@pakfactory/ui": "workspace:*",
