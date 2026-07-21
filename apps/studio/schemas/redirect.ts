@@ -31,13 +31,13 @@ const TRAILING_SLASH_MESSAGE =
  *
  * STATE: the pattern engine is LIVE. The shared resolver (`@pakfactory/redirects`)
  * honours `matchType` (exact/prefix/phrase) and `behaviour` (permanent 301 /
- * temporary 302 / gone 410, falling back to legacy `type`), and runs in BOTH edge
- * proxies: the blog (`apps/blog/src/proxy.ts`, `/blog` surface) and www
- * (`apps/www/src/proxy.ts`, `/case-studies` surface). A redirect's owning app is its
- * `from` PATH PREFIX, not `channel` (which is target-oriented — a blog→case-studies
- * redirect is `channel: "website"` but has a `/blog/...` from and fires on the blog).
- * Existing docs are unaffected (default `matchType: exact`; blank `behaviour` falls
- * back to `type`).
+ * temporary 302 / gone 410), and runs in BOTH edge proxies: the blog
+ * (`apps/blog/src/proxy.ts`, `/blog` surface) and www (`apps/www/src/proxy.ts`,
+ * `/case-studies` surface). A redirect's owning app is its `from` PATH PREFIX, not
+ * `channel` (which is target-oriented — a blog→case-studies redirect is
+ * `channel: "website"` but has a `/blog/...` from and fires on the blog). The legacy
+ * `type` (301/302) field was retired once every doc carried `behaviour` (PROD-2157);
+ * `behaviour` defaults to permanent 301.
  */
 export const redirect = defineType({
   name: 'redirect',
@@ -209,23 +209,6 @@ export const redirect = defineType({
       description: 'Inactive redirects are kept for reference but ignored by the engine.',
       initialValue: true,
     }),
-
-    // Legacy status field — superseded by `behaviour`. Kept hidden so the current
-    // resolver (which reads `type`) keeps working until the Phase-2 resolver switches
-    // to `behaviour` and a backfill copies it across. Do not remove yet.
-    defineField({
-      name: 'type',
-      title: 'Redirect type (legacy)',
-      type: 'string',
-      options: {
-        list: [
-          { value: '301', title: '301 — Permanent' },
-          { value: '302', title: '302 — Temporary' },
-        ],
-      },
-      hidden: true,
-      initialValue: '301',
-    }),
   ],
   preview: {
     select: {
@@ -233,11 +216,10 @@ export const redirect = defineType({
       to: 'to',
       matchType: 'matchType',
       behaviour: 'behaviour',
-      type: 'type',
       isActive: 'isActive',
       channel: 'channel',
     },
-    prepare({ from, to, matchType, behaviour, type, isActive, channel }) {
+    prepare({ from, to, matchType, behaviour, isActive, channel }) {
       const state = isActive === false ? ' · inactive' : ''
       const ch = channel ? ` [${channel}]` : ''
       const mt = matchType && matchType !== 'exact' ? `${matchType} · ` : ''
@@ -248,7 +230,7 @@ export const redirect = defineType({
             ? '302'
             : behaviour === 'permanent'
               ? '301'
-              : type || '301'
+              : '301'
       const dest = behaviour === 'gone' ? 'gone (410)' : `→ ${to || '—'}`
       return {
         title: `${from || '—'} ${dest}`,

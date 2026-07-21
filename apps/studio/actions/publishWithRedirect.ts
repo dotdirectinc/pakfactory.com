@@ -69,7 +69,9 @@ async function syncSlugChangeRedirect(
     tx.patch(existing._id, (p) =>
       p.set({
         to: toPathValue,
-        type: '301',
+        matchType: 'exact',
+        behaviour: 'permanent',
+        channel: 'blog',
         isActive: true,
         notes: 'Auto-updated from slug change',
       }),
@@ -79,7 +81,9 @@ async function syncSlugChangeRedirect(
       _type: 'redirect',
       from: fromPath,
       to: toPathValue,
-      type: '301',
+      matchType: 'exact',
+      behaviour: 'permanent',
+      channel: 'blog',
       isActive: true,
       notes: 'Auto-created from slug change',
     })

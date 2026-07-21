@@ -13,9 +13,8 @@
  *   prefix  — starts-with; optionally keep the tail (`appendMatchedTail`)
  *   phrase  — the path CONTAINS a substring
  * Precedence: exact → longest prefix → phrase (by priority, then longest).
- * `behaviour`: permanent 301 / temporary 302 / gone 410 (falls back to legacy
- * `type` 301/302). Regex is intentionally NOT handled here — capture-group rules
- * stay dev-owned in next.config.
+ * `behaviour`: permanent 301 / temporary 302 / gone 410. Regex is intentionally
+ * NOT handled here — capture-group rules stay dev-owned in next.config.
  *
  * Per-surface scoping: a redirect's owning surface is its `from` **path prefix**
  * (not its `channel`, which is target-oriented — a blog→case-studies redirect is
@@ -30,7 +29,6 @@ export type RedirectStatus = 301 | 302 | 410;
 export type RedirectRow = {
   from?: string;
   to?: string;
-  type?: string; // legacy 301/302
   matchType?: string; // exact | prefix | phrase
   behaviour?: string; // permanent | temporary | gone
   priority?: number;
@@ -88,12 +86,11 @@ export function toAbsolute(destination: string, siteUrl: string): string {
   return `${siteUrl.replace(/\/$/, "")}${destination.startsWith("/") ? "" : "/"}${destination}`;
 }
 
-/** Map a row's `behaviour` (falling back to legacy `type`) to the HTTP status. */
+/** Map a row's `behaviour` to the HTTP status (permanent 301 is the default). */
 function rowStatus(row: RedirectRow): RedirectStatus {
   if (row.behaviour === "gone") return 410;
   if (row.behaviour === "temporary") return 302;
-  if (row.behaviour === "permanent") return 301;
-  return row.type === "302" ? 302 : 301;
+  return 301; // permanent — the required default
 }
 
 /**
