@@ -87,7 +87,7 @@ export function CaseStudyShare({
             title={copied ? "Link copied!" : "Copy link"}
             onClick={handleCopyLink}
             className={cn(
-              "flex aspect-square size-9 shrink-0 items-center justify-center rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary",
+              "flex aspect-square size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary",
               copied
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-border text-muted-foreground",
