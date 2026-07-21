@@ -9,6 +9,7 @@
     "./blog-reserved-slugs": "./src/blog-reserved-slugs.ts",
     "./blog-site-paths": "./src/blog-site-paths.ts",
     "./embed-allowlist": "./src/embed-allowlist.ts",
+    "./indexnow": "./src/indexnow.ts",
     "./languages": "./src/languages.ts",
     "./resolve-document-href": "./src/resolve-document-href.ts",
     "./social-platforms": "./src/social-platforms.ts",

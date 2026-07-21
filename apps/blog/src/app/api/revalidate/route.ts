@@ -1,11 +1,17 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { submitIndexNowUrls } from "@pakfactory/sanity/indexnow";
 import {
   BLOG_GLOBAL_SETTINGS_CACHE_TAG,
   BLOG_POSTS_CACHE_TAG,
   BLOG_REDIRECTS_CACHE_TAG,
   BLOG_SETTINGS_CACHE_TAG,
 } from "@/lib/blog-cache";
+import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
+import { postDetailHref } from "@/lib/blog-post-url";
+import { absoluteUrl } from "@/lib/site";
+
+const INDEXNOW_HOST = "pakfactory.com";
 
 /**
  * Sanity webhook → on-demand revalidation.
@@ -17,6 +23,9 @@ import {
  * - redirect CRUD or post publish → refresh the cached redirect map.
  * - post/tag/category/author publish → also refresh sitemap.
  * - post publish → also refresh post-derived surfaces (home/RSS/listings).
+ * - post publish/update/unpublish (PROD-2172) → also ping IndexNow with the post's
+ *   canonical URL. Requires the webhook's Projection to include `slug { current }`
+ *   — without it, `slug` below is undefined and the ping is skipped.
  */
 export async function POST(request: Request) {
   const secret = process.env.SANITY_REVALIDATE_SECRET?.trim();
@@ -35,9 +44,14 @@ export async function POST(request: Request) {
   }
 
   let type: string | undefined;
+  let slug: string | undefined;
   try {
-    const body = (await request.json()) as { _type?: string };
+    const body = (await request.json()) as {
+      _type?: string;
+      slug?: { current?: string };
+    };
     type = typeof body?._type === "string" ? body._type : undefined;
+    slug = body?.slug?.current;
   } catch {
     // No/!JSON body — fall back to revalidating everything below.
   }
@@ -85,9 +99,32 @@ export async function POST(request: Request) {
     revalidatePath("/topics");
   }
 
+  // PROD-2172 — ping IndexNow on post publish/update/unpublish. Covers unpublish
+  // too: Sanity's delete webhook payload still carries the doc's last `slug`.
+  let indexNowSubmitted: string[] = [];
+  if (type === "post" && slug) {
+    try {
+      const settings = await fetchBlogGlobalSettings();
+      const key = settings?.indexNowKey?.trim();
+      if (key) {
+        const result = await submitIndexNowUrls({
+          host: INDEXNOW_HOST,
+          key,
+          keyLocation: `https://${INDEXNOW_HOST}/${key}.txt`,
+          urls: [absoluteUrl(postDetailHref(slug))],
+        });
+        indexNowSubmitted = result.submitted;
+      }
+    } catch (err) {
+      // Never let an IndexNow failure affect the revalidation response.
+      console.error("[revalidate] indexnow submit error", err);
+    }
+  }
+
   return NextResponse.json({
     revalidated: true,
     type: type ?? "all",
     tags: [...tags],
+    indexNowSubmitted,
   });
 }
