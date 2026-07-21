@@ -152,8 +152,23 @@ export const redirect = defineType({
           const isAbsolute = /^https?:\/\//.test(value)
           if (!isPath && !isAbsolute) return 'Use a "/path" or a full https:// URL'
           const matchType = (context.document?.matchType as string) ?? 'exact'
-          if (matchType === 'exact' && value === (context.document?.from as string | undefined))
-            return 'From and To are identical — this would loop.'
+          const from = context.document?.from as string | undefined
+          if (matchType === 'exact' && from) {
+            // Compare after trailing-slash normalization: the resolver canonicalizes
+            // trailing slashes, so `/x/` → `/x` (or an identical pair) is a no-op it
+            // silently drops as self-referential. Catch it here so editors don't
+            // author a redirect that never fires. Trailing-slash canonicalization
+            // (e.g. `/blog/` → `/blog`) belongs in the routing layer (next.config),
+            // not a CMS redirect — see PROD-2168.
+            const stripSlash = (s: string) => (s.length > 1 ? s.replace(/\/+$/, '') : s)
+            if (stripSlash(value) === stripSlash(from))
+              return (
+                'From and To resolve to the same URL (identical, or differing only by ' +
+                'a trailing slash), so this redirect is a no-op the engine skips. ' +
+                'Trailing-slash canonicalization belongs in the routing layer, not a ' +
+                'CMS redirect.'
+              )
+          }
           if (hasTrailingSlash(value)) return TRAILING_SLASH_MESSAGE
           return true
         }),
