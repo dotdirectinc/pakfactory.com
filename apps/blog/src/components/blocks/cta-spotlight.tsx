@@ -21,24 +21,13 @@ const DEFAULT_CTA_HREF = '/';
 
 const CARD_BUTTON = 'bg-background text-foreground hover:bg-background/90';
 
-/**
- * Pak dieline dash strut. The stroke is a 1px `background-image` that needs a
- * non-zero padding box — `h-px` alone does not paint. `h-1` provides paint room;
- * `-mb-1` / `-mt-1` cancel the layout gap so spacing around the card is unchanged.
- */
-function DielineRule({
-    full = false,
-    edge,
-}: {
-    full?: boolean;
-    edge: 'top' | 'bottom';
-}) {
+/** Full-width or max-column native dashed rule above/below the spotlight card. */
+function DielineRule({full = false}: {full?: boolean}) {
     return (
         <div
             aria-hidden
             className={cn(
-                'pointer-events-none h-1 w-full border-t border-dashed border-border',
-                edge === 'top' ? '-mb-1' : '-mt-1',
+                'pointer-events-none w-full border-t border-dashed border-border',
                 full ? undefined : 'mx-auto max-w-[var(--layout-max)]',
             )}
         />
@@ -97,10 +86,10 @@ export function CtaSpotlight({
             aria-labelledby="cta-spotlight-heading"
             className={pageFullBleedRowClass()}
         >
-            {fullTop ? <DielineRule full edge="top" /> : null}
+            {fullTop ? <DielineRule full /> : null}
 
             <div className={pageDielineOuterClass()}>
-                {maxTop ? <DielineRule edge="top" /> : null}
+                {maxTop ? <DielineRule /> : null}
 
                 <div
                     className={cn(
@@ -191,10 +180,10 @@ export function CtaSpotlight({
                     </div>
                 </div>
 
-                {maxBottom ? <DielineRule edge="bottom" /> : null}
+                {maxBottom ? <DielineRule /> : null}
             </div>
 
-            {fullBottom ? <DielineRule full edge="bottom" /> : null}
+            {fullBottom ? <DielineRule full /> : null}
         </section>
     );
 }
