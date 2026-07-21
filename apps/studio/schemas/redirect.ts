@@ -2,11 +2,9 @@ import { defineField, defineType } from 'sanity'
 
 /**
  * The site canonicalizes to NO trailing slash (proxy.ts 308-redirects `/x/` → `/x`),
- * so the `to` destination should be stored slashless — otherwise the target picks
- * up an avoidable normalization hop. (Only `to` is guarded; `from` is the old
- * indexed URL and may keep its slash.) Returns true when `value` carries a
- * strippable trailing slash: any non-root path, or an absolute URL with a non-root
- * pathname. A bare origin (`https://host` / `https://host/`) is fine.
+ * so the `to` destination should be stored slashless. Returns true when `value`
+ * carries a strippable trailing slash: any non-root path, or an absolute URL with a
+ * non-root pathname. A bare origin (`https://host` / `https://host/`) is fine.
  */
 function hasTrailingSlash(value: string): boolean {
   if (!value.endsWith('/')) return false
@@ -23,16 +21,21 @@ const TRAILING_SLASH_MESSAGE =
   '(e.g. /old-post, not /old-post/), so a slash here adds an extra redirect hop.'
 
 /**
- * redirect — CMS-managed URL redirect entry.
+ * redirect — CMS-managed URL redirect entry (PROD-2157 redirect engine).
  *
- * Mostly auto-managed: a Studio publish action creates one of these when a post
- * slug changes (old path → new path). Editors/admins can also add them by hand.
- * The blog applies active redirects at request time on would-be-404s.
+ * Match types (self-serve): `exact` (one URL), `prefix` (starts-with, optionally
+ * keeping the tail), `phrase` (contains a substring). Regex is intentionally NOT
+ * offered here — the few capture-group rules (e.g. /category/X/Y → /Y) stay
+ * dev-owned in next.config. Behaviour maps to a status the engine emits: permanent
+ * 301 / temporary 302 / gone 410.
  *
- * Field names `from` / `to` are consumed directly by GROQ (BLOG_REDIRECTS_QUERY).
- * Status `type` is stored as 301/302. The blog's edge proxy serves that status
- * verbatim (301 permanent / 302 temporary); only the rare RSC fallback maps
- * 301→308 and 302→307, since a Server Component can only emit 307/308.
+ * MIGRATION STATE: the edge resolver (`apps/blog/src/proxy.ts` +
+ * `blog-redirects-core.ts`) still resolves EXACT redirects only and reads the legacy
+ * `type` (301/302). `matchType` / `behaviour` / `priority` / `appendMatchedTail` are
+ * stored but NOT yet honoured — the Phase-2 resolver reads `behaviour` (falling back
+ * to `type`) and adds prefix/phrase + 410. Do not rely on the new fields until that
+ * ships; keep new redirects `exact` + Permanent until then. Existing docs are
+ * unaffected (default `matchType: exact`, resolver reads `type`).
  */
 export const redirect = defineType({
   name: 'redirect',
@@ -43,7 +46,8 @@ export const redirect = defineType({
       name: 'channel',
       title: 'Channel',
       type: 'string',
-      description: 'Which content channel this redirect belongs to. Choose this first — it filters redirects per workspace.',
+      description:
+        'Which content channel this redirect belongs to — also scopes which app applies it (blog vs www).',
       options: {
         list: [
           { title: 'Blog', value: 'blog' },
@@ -57,93 +61,181 @@ export const redirect = defineType({
       initialValue: 'blog',
       validation: (Rule) => Rule.required(),
     }),
+
+    defineField({
+      name: 'matchType',
+      title: 'Match type',
+      type: 'string',
+      description: 'How the From value is matched against incoming requests.',
+      options: {
+        list: [
+          { value: 'exact', title: 'Exact — this one URL' },
+          { value: 'prefix', title: 'Starts with — this path and everything under it' },
+          { value: 'phrase', title: 'Contains — any URL containing this phrase' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'exact',
+      validation: (Rule) => Rule.required(),
+    }),
+
+    defineField({
+      name: 'behaviour',
+      title: 'What should happen?',
+      type: 'string',
+      description:
+        'Pick the plain word — the status code is set for you. 301 permanent (passes SEO value) · 302 temporary · 410 gone (deleted, no replacement).',
+      options: {
+        list: [
+          { value: 'permanent', title: 'Permanent (301)' },
+          { value: 'temporary', title: 'Temporary (302)' },
+          { value: 'gone', title: 'Gone (410)' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'permanent',
+      validation: (Rule) => Rule.required(),
+    }),
+
     defineField({
       name: 'from',
       title: 'From URL',
       type: 'string',
       description:
-        'Source path to redirect away from. Must start with "/" (e.g. /old-post-slug). Must be unique.',
+        'What to match — see Match type. Exact/Starts-with must begin with "/". Contains is a substring (e.g. /feed/).',
       validation: (Rule) => [
-        Rule.required()
-          .custom((value) => {
-            if (!value) return 'From URL is required'
-            if (!value.startsWith('/')) return 'Must start with "/"'
-            if (value === '/') return 'Cannot redirect the site root'
-            // No trailing-slash guard on `from` — it's the OLD indexed URL and
-            // legacy paths legitimately carry a slash; the proxy normalizes it
-            // when matching. Only `to` (the destination we control) is guarded.
+        Rule.required().custom((value, context) => {
+          const matchType = (context.document?.matchType as string) ?? 'exact'
+          const v = (value ?? '').trim()
+          if (!v) return 'From is required'
+          if (matchType === 'phrase') {
+            // Contains — need not start with "/"; guard against over-broad phrases.
+            if (v.length < 3 || v === '/')
+              return 'Phrase is too broad — it would match almost every URL. Use something specific (e.g. /feed/).'
             return true
-          }),
-        // Uniqueness — no other redirect may share this "from" path.
+          }
+          // exact / prefix
+          if (!v.startsWith('/')) return 'Must start with "/"'
+          if (v === '/') return 'Cannot match the site root'
+          return true
+        }),
+        // Uniqueness — EXACT only (patterns can legitimately overlap; precedence
+        // handles ordering). Treat docs without matchType (pre-backfill) as exact.
         Rule.custom(async (value, context) => {
-          if (!value) return true
+          const matchType = (context.document?.matchType as string) ?? 'exact'
+          if (matchType !== 'exact' || !value) return true
           const id = (context.document?._id ?? '').replace(/^drafts\./, '')
           const client = context.getClient({ apiVersion: '2024-01-01' })
           const isTaken = await client.fetch(
-            `defined(*[_type == "redirect" && from == $from && !(_id in [$draft, $published])][0]._id)`,
+            `defined(*[_type == "redirect" && (matchType == "exact" || !defined(matchType)) && from == $from && !(_id in [$draft, $published])][0]._id)`,
             { from: value, draft: `drafts.${id}`, published: id },
           )
-          return isTaken ? 'Another redirect already uses this "From" path' : true
+          return isTaken ? 'Another exact redirect already uses this "From" path' : true
         }),
       ],
     }),
+
     defineField({
       name: 'to',
       title: 'To URL',
       type: 'string',
-      description:
-        'Destination — a relative path (e.g. /new-post-slug) or an absolute URL (https://…).',
+      description: 'Destination — a relative path (/…) or a full https:// URL. Hidden for "Gone".',
+      hidden: ({ document }) => document?.behaviour === 'gone',
       validation: (Rule) =>
-        Rule.required().custom((value, context) => {
+        Rule.custom((value, context) => {
+          const behaviour = (context.document?.behaviour as string) ?? 'permanent'
+          if (behaviour === 'gone') return true // 410 has no destination
           if (!value) return 'To URL is required'
           const isPath = value.startsWith('/')
           const isAbsolute = /^https?:\/\//.test(value)
           if (!isPath && !isAbsolute) return 'Use a "/path" or a full https:// URL'
-          if (value === (context.document?.from as string | undefined))
-            return 'From and To must be different'
+          const matchType = (context.document?.matchType as string) ?? 'exact'
+          if (matchType === 'exact' && value === (context.document?.from as string | undefined))
+            return 'From and To are identical — this would loop.'
           if (hasTrailingSlash(value)) return TRAILING_SLASH_MESSAGE
           return true
         }),
     }),
+
     defineField({
-      name: 'type',
-      title: 'Redirect type',
-      type: 'string',
+      name: 'appendMatchedTail',
+      title: 'Keep the rest of the path',
+      type: 'boolean',
       description:
-        'Permanent (301) for moved content; Temporary (302) for short-lived redirects.',
-      options: {
-        list: [
-          { value: '301', title: '301 — Permanent' },
-          { value: '302', title: '302 — Temporary' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: '301',
-      validation: (Rule) => Rule.required(),
+        'For "Starts with": sub-pages keep their slug (e.g. /blog/tag/coffee → /blog/topics/coffee). Off = everything lands on one page.',
+      hidden: ({ document }) => document?.matchType !== 'prefix',
+      initialValue: false,
     }),
+
+    defineField({
+      name: 'priority',
+      title: 'Priority',
+      type: 'number',
+      description: 'Lower runs first when multiple pattern rules could match. Pattern rules only.',
+      hidden: ({ document }) => !document?.matchType || document?.matchType === 'exact',
+      initialValue: 10,
+      validation: (Rule) => Rule.min(0).integer(),
+    }),
+
     defineField({
       name: 'notes',
       title: 'Notes',
       type: 'text',
       rows: 2,
-      description: 'Why this redirect exists (e.g. "Auto-created from slug change").',
+      description: 'Why this redirect exists (audit / rationale).',
     }),
+
     defineField({
       name: 'isActive',
       title: 'Active',
       type: 'boolean',
-      description: 'Inactive redirects are kept for reference but ignored by the site.',
+      description: 'Inactive redirects are kept for reference but ignored by the engine.',
       initialValue: true,
+    }),
+
+    // Legacy status field — superseded by `behaviour`. Kept hidden so the current
+    // resolver (which reads `type`) keeps working until the Phase-2 resolver switches
+    // to `behaviour` and a backfill copies it across. Do not remove yet.
+    defineField({
+      name: 'type',
+      title: 'Redirect type (legacy)',
+      type: 'string',
+      options: {
+        list: [
+          { value: '301', title: '301 — Permanent' },
+          { value: '302', title: '302 — Temporary' },
+        ],
+      },
+      hidden: true,
+      initialValue: '301',
     }),
   ],
   preview: {
-    select: { from: 'from', to: 'to', type: 'type', isActive: 'isActive', channel: 'channel' },
-    prepare({ from, to, type, isActive, channel }) {
+    select: {
+      from: 'from',
+      to: 'to',
+      matchType: 'matchType',
+      behaviour: 'behaviour',
+      type: 'type',
+      isActive: 'isActive',
+      channel: 'channel',
+    },
+    prepare({ from, to, matchType, behaviour, type, isActive, channel }) {
       const state = isActive === false ? ' · inactive' : ''
       const ch = channel ? ` [${channel}]` : ''
+      const mt = matchType && matchType !== 'exact' ? `${matchType} · ` : ''
+      const status =
+        behaviour === 'gone'
+          ? '410'
+          : behaviour === 'temporary'
+            ? '302'
+            : behaviour === 'permanent'
+              ? '301'
+              : type || '301'
+      const dest = behaviour === 'gone' ? 'gone (410)' : `→ ${to || '—'}`
       return {
-        title: `${from || '—'} → ${to || '—'}`,
-        subtitle: `${type || '301'}${ch}${state}`,
+        title: `${from || '—'} ${dest}`,
+        subtitle: `${mt}${status}${ch}${state}`,
       }
     },
   },
