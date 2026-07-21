@@ -15,7 +15,8 @@
     "migrate:blog-i18n-en": "node scripts/migrate-blog-i18n-en.mjs",
     "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs",
     "migrate:case-study-gallery": "node scripts/migrate-case-study-gallery.mjs",
-    "migrate:redirect-slashes": "node scripts/strip-redirect-trailing-slashes.mjs"
+    "migrate:redirect-slashes": "node scripts/strip-redirect-trailing-slashes.mjs",
+    "backfill:redirect-fields": "node scripts/backfill-redirect-match-behaviour.mjs"
   },
   "dependencies": {
     "@pakfactory/sanity": "workspace:*",
