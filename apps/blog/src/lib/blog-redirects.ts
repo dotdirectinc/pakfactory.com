@@ -10,10 +10,10 @@ import {
   BLOG_REVALIDATE_SECONDS,
 } from "@/lib/blog-cache";
 import {
-  buildRedirectMap,
-  resolveInMap,
+  buildRuleset,
+  resolveRedirect as resolveInRuleset,
   toAbsolute,
-  type RedirectMap,
+  type RedirectRuleset,
   type RedirectRow,
   type ResolvedRedirect,
 } from "@/lib/blog-redirects-core";
@@ -34,31 +34,34 @@ async function fetchRedirectRows(): Promise<RedirectRow[]> {
     .catch(() => []);
 }
 
-/** Cached `from → target` map; invalidated by `revalidateTag(BLOG_REDIRECTS_CACHE_TAG)` from the webhook. */
-const getRedirectMap = unstable_cache(
-  async (): Promise<RedirectMap> =>
-    buildRedirectMap(await fetchRedirectRows(), BLOG_BASE_PATH),
-  ["blog-redirects-map"],
+/** Cached redirect ruleset; invalidated by `revalidateTag(BLOG_REDIRECTS_CACHE_TAG)` from the webhook. */
+const getRuleset = unstable_cache(
+  async (): Promise<RedirectRuleset> =>
+    buildRuleset(await fetchRedirectRows(), BLOG_BASE_PATH),
+  ["blog-redirects-ruleset"],
   { tags: [BLOG_REDIRECTS_CACHE_TAG], revalidate: BLOG_REVALIDATE_SECONDS },
 );
 
 export async function resolveRedirect(
   pathname: string,
 ): Promise<ResolvedRedirect | null> {
-  return resolveInMap(await getRedirectMap(), pathname, BLOG_BASE_PATH);
+  return resolveInRuleset(await getRuleset(), pathname, BLOG_BASE_PATH);
 }
 
 /**
  * Apply a CMS redirect for `pathname` if one exists, otherwise `notFound()`.
  * Always throws (returns `never`); call as the last step of a would-be-404 path.
  * Destinations are emitted absolute so the base path is never double-prepended
- * (correct for cross-app `/case-studies` targets). 301 → 308, 302 → 307.
+ * (correct for cross-app `/case-studies` targets). A Server Component can only
+ * emit 307/308, so: 301 → 308, 302 → 307, and 410 (gone) → notFound (404) — the
+ * edge proxy serves the true 410.
  */
 export async function redirectOrNotFound(pathname: string): Promise<never> {
   const hit = await resolveRedirect(pathname);
   if (hit) {
+    if (hit.status === 410 || hit.destination == null) notFound();
     const dest = toAbsolute(hit.destination, getSiteUrl());
-    if (hit.permanent) permanentRedirect(dest);
+    if (hit.status === 301) permanentRedirect(dest);
     redirect(dest);
   }
   notFound();

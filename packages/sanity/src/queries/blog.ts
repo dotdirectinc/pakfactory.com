@@ -52,11 +52,15 @@ export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
  * on would-be-404s. `type` is "301" | "302"; the blog maps 301→308 / 302→307.
  */
 export const BLOG_REDIRECTS_QUERY = /* groq */ `*[
-  _type == "redirect" && isActive == true && defined(from) && defined(to)
+  _type == "redirect" && isActive == true && defined(from) && (defined(to) || behaviour == "gone")
 ]{
   "from": from,
   "to": to,
-  "type": type
+  "type": type,
+  "matchType": matchType,
+  "behaviour": behaviour,
+  "priority": priority,
+  "appendMatchedTail": appendMatchedTail
 }`;
 
 /**
