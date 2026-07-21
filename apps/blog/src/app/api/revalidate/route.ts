@@ -101,23 +101,37 @@ export async function POST(request: Request) {
 
   // PROD-2172 — ping IndexNow on post publish/update/unpublish. Covers unpublish
   // too: Sanity's delete webhook payload still carries the doc's last `slug`.
+  // indexNowSkipped surfaces *why* nothing was submitted directly in the webhook
+  // Attempts log response, so debugging never needs Vercel function log access.
   let indexNowSubmitted: string[] = [];
-  if (type === "post" && slug) {
-    try {
-      const settings = await fetchBlogGlobalSettings();
-      const key = settings?.indexNowKey?.trim();
-      if (key) {
-        const result = await submitIndexNowUrls({
-          host: INDEXNOW_HOST,
-          key,
-          keyLocation: `https://${INDEXNOW_HOST}/${key}.txt`,
-          urls: [absoluteUrl(postDetailHref(slug))],
-        });
-        indexNowSubmitted = result.submitted;
+  let indexNowSkipped: string | undefined;
+  if (type === "post") {
+    if (!slug) {
+      indexNowSkipped = "no-slug: webhook payload had no slug.current";
+    } else {
+      try {
+        const settings = await fetchBlogGlobalSettings();
+        const key = settings?.indexNowKey?.trim();
+        if (!key) {
+          indexNowSkipped = "no-key: Global Settings indexNowKey is empty";
+        } else {
+          const result = await submitIndexNowUrls({
+            host: INDEXNOW_HOST,
+            key,
+            keyLocation: `https://${INDEXNOW_HOST}/${key}.txt`,
+            urls: [absoluteUrl(postDetailHref(slug))],
+          });
+          indexNowSubmitted = result.submitted;
+          if (result.submitted.length === 0) {
+            indexNowSkipped =
+              "submit-filtered: normalized URL didn't match host, or the request failed";
+          }
+        }
+      } catch (err) {
+        // Never let an IndexNow failure affect the revalidation response.
+        indexNowSkipped = `error: ${err instanceof Error ? err.message : String(err)}`;
+        console.error("[revalidate] indexnow submit error", err);
       }
-    } catch (err) {
-      // Never let an IndexNow failure affect the revalidation response.
-      console.error("[revalidate] indexnow submit error", err);
     }
   }
 
@@ -126,5 +140,6 @@ export async function POST(request: Request) {
     type: type ?? "all",
     tags: [...tags],
     indexNowSubmitted,
+    ...(indexNowSkipped ? { indexNowSkipped } : {}),
   });
 }
