@@ -6,7 +6,7 @@ import {
   toAbsolute,
   type RedirectRuleset,
   type RedirectRow,
-} from "@/lib/blog-redirects-core";
+} from "@pakfactory/redirects";
 
 /**
  * CMS-redirect proxy (Next 16's renamed middleware — PROD-2154). Resolves Sanity

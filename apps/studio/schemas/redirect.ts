@@ -29,13 +29,15 @@ const TRAILING_SLASH_MESSAGE =
  * dev-owned in next.config. Behaviour maps to a status the engine emits: permanent
  * 301 / temporary 302 / gone 410.
  *
- * MIGRATION STATE: the edge resolver (`apps/blog/src/proxy.ts` +
- * `blog-redirects-core.ts`) still resolves EXACT redirects only and reads the legacy
- * `type` (301/302). `matchType` / `behaviour` / `priority` / `appendMatchedTail` are
- * stored but NOT yet honoured — the Phase-2 resolver reads `behaviour` (falling back
- * to `type`) and adds prefix/phrase + 410. Do not rely on the new fields until that
- * ships; keep new redirects `exact` + Permanent until then. Existing docs are
- * unaffected (default `matchType: exact`, resolver reads `type`).
+ * STATE: the pattern engine is LIVE. The shared resolver (`@pakfactory/redirects`)
+ * honours `matchType` (exact/prefix/phrase) and `behaviour` (permanent 301 /
+ * temporary 302 / gone 410, falling back to legacy `type`), and runs in BOTH edge
+ * proxies: the blog (`apps/blog/src/proxy.ts`, `/blog` surface) and www
+ * (`apps/www/src/proxy.ts`, `/case-studies` surface). A redirect's owning app is its
+ * `from` PATH PREFIX, not `channel` (which is target-oriented — a blog→case-studies
+ * redirect is `channel: "website"` but has a `/blog/...` from and fires on the blog).
+ * Existing docs are unaffected (default `matchType: exact`; blank `behaviour` falls
+ * back to `type`).
  */
 export const redirect = defineType({
   name: 'redirect',

@@ -1,8 +1,11 @@
 /**
- * Runtime-agnostic core for CMS redirect resolution — no `server-only`,
- * `next/cache`, or `@sanity/client` imports, so it runs in **both** the edge
- * proxy (which resolves redirects before any route matches) and the RSC
- * fallback in `blog-redirects.ts`.
+ * `@pakfactory/redirects` — runtime-agnostic core for CMS redirect resolution.
+ *
+ * No `server-only`, `next/cache`, `next/server`, or `@sanity/client` imports, so it
+ * runs in **every** consumer: the blog edge proxy (`apps/blog/src/proxy.ts`), the
+ * www edge proxy (`apps/www/src/proxy.ts`, scoped to `/case-studies`), and the blog
+ * RSC fallback (`apps/blog/src/lib/blog-redirects.ts`). Both apps share this one
+ * implementation so exact/prefix/phrase semantics never drift between surfaces.
  *
  * PROD-2157 — pattern-capable engine. A row's `matchType` selects how `from` is
  * matched; `behaviour` maps to the status the engine emits:
@@ -13,6 +16,13 @@
  * `behaviour`: permanent 301 / temporary 302 / gone 410 (falls back to legacy
  * `type` 301/302). Regex is intentionally NOT handled here — capture-group rules
  * stay dev-owned in next.config.
+ *
+ * Per-surface scoping: a redirect's owning surface is its `from` **path prefix**
+ * (not its `channel`, which is target-oriented — a blog→case-studies redirect is
+ * `channel: "website"` but has a `/blog/...` from). `buildRuleset`'s optional
+ * `surfacePrefix` keeps each proxy to its own surface so pattern rules never leak
+ * across apps (www passes `/case-studies`; the blog omits it — it only ever
+ * receives `/blog` paths).
  */
 
 export type RedirectStatus = 301 | 302 | 410;
@@ -86,14 +96,30 @@ function rowStatus(row: RedirectRow): RedirectStatus {
   return row.type === "302" ? 302 : 301;
 }
 
-/** Compile the active rows into an exact map + sorted prefix/phrase lists. */
-export function buildRuleset(rows: RedirectRow[], basePath: string): RedirectRuleset {
+/**
+ * Compile the active rows into an exact map + sorted prefix/phrase lists.
+ *
+ * `surfacePrefix` (optional): when set, only rows whose **public** `from` begins
+ * with that prefix are compiled — the per-surface scope that keeps one app's
+ * pattern rules from matching another's paths (e.g. www passes `/case-studies`).
+ * Omit it to compile every row (the blog's behaviour — it only receives `/blog`
+ * paths, so foreign rules can never match anyway).
+ */
+export function buildRuleset(
+  rows: RedirectRow[],
+  basePath: string,
+  surfacePrefix?: string,
+): RedirectRuleset {
   const exact: Record<string, ExactRule> = {};
   const prefix: PrefixRule[] = [];
   const phrase: PhraseRule[] = [];
 
   for (const row of rows) {
     if (!row?.from) continue;
+    // Surface scope: a redirect belongs to the app whose public path prefix its
+    // `from` starts with. Phrase rows (substring, may not start with "/") are
+    // matched against the raw `from`.
+    if (surfacePrefix && !row.from.startsWith(surfacePrefix)) continue;
     const status = rowStatus(row);
     const gone = status === 410;
     if (!gone && !row.to) continue; // non-gone needs a destination
