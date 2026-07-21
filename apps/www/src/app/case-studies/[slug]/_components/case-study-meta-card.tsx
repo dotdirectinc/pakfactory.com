@@ -11,14 +11,7 @@ function MetaDivider() {
   return (
     <div
       aria-hidden="true"
-      className="mx-6 h-px"
-      style={{
-        width: "calc(100% - 3rem)",
-        backgroundImage:
-          "linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px)",
-        backgroundSize: "12px 1px",
-        backgroundRepeat: "repeat-x",
-      }}
+      className="mx-6 h-px w-[calc(100%-3rem)] bg-border"
     />
   );
 }
@@ -101,7 +94,7 @@ export function CaseStudyMetaCard({
 
   return (
     <aside className="relative flex w-full shrink-0 flex-col items-center gap-6 rounded-[14px] py-6 text-border lg:w-[304px]">
-      {/* Dashed SVG border that follows the corner curve */}
+      {/* Solid SVG border that follows the corner curve */}
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
@@ -114,7 +107,6 @@ export function CaseStudyMetaCard({
           ry="14"
           stroke="currentColor"
           strokeWidth="1"
-          strokeDasharray="6 6"
         />
       </svg>
 
