@@ -82,17 +82,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function DashedDivider() {
+function SectionDivider() {
   return (
     <div
       aria-hidden="true"
-      className="h-px w-full"
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, var(--border) 0 6px, transparent 6px 12px)",
-        backgroundSize: "12px 1px",
-        backgroundRepeat: "repeat-x",
-      }}
+      className="w-full border-t border-dashed border-border"
     />
   );
 }
@@ -225,7 +219,7 @@ export default async function CaseStudyPage({ params }: Props) {
               <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
                 Challenges
               </h2>
-              <DashedDivider />
+              <SectionDivider />
               <div>
                 <PortableText
                   value={study.challenge as PortableTextBlock[]}
@@ -241,7 +235,7 @@ export default async function CaseStudyPage({ params }: Props) {
               <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
                 Solutions
               </h2>
-              <DashedDivider />
+              <SectionDivider />
               <div>
                 <PortableText
                   value={study.solution as PortableTextBlock[]}
@@ -257,7 +251,7 @@ export default async function CaseStudyPage({ params }: Props) {
               <h2 className="text-4xl font-semibold leading-10 tracking-tight text-foreground">
                 Result
               </h2>
-              <DashedDivider />
+              <SectionDivider />
               <div>
                 <PortableText
                   value={study.result as PortableTextBlock[]}
