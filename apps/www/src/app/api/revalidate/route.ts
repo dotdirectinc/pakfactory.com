@@ -88,25 +88,41 @@ export async function POST(request: Request) {
   // PROD-2172 — ping IndexNow on case-study publish/update/unpublish. Covers
   // unpublish too: Sanity's delete webhook payload still carries the doc's last
   // `slug`, which this route already parses above.
+  // indexNowSkipped surfaces *why* nothing was submitted directly in the webhook
+  // Attempts log response, so debugging never needs Vercel function log access.
   let indexNowSubmitted: string[] = [];
-  if (type === "caseStudy" && slug && isSanityConfigured()) {
-    try {
-      const settings = await getPublishedSanityClient().fetch<{
-        indexNowKey?: string | null;
-      } | null>(BLOG_GLOBAL_SETTINGS_QUERY);
-      const key = settings?.indexNowKey?.trim();
-      if (key) {
-        const result = await submitIndexNowUrls({
-          host: INDEXNOW_HOST,
-          key,
-          keyLocation: `https://${INDEXNOW_HOST}/${key}.txt`,
-          urls: [absoluteUrl(`/case-studies/${slug}`)],
-        });
-        indexNowSubmitted = result.submitted;
+  let indexNowSkipped: string | undefined;
+  if (type === "caseStudy") {
+    if (!slug) {
+      indexNowSkipped = "no-slug: webhook payload had no slug.current";
+    } else if (!isSanityConfigured()) {
+      indexNowSkipped = "sanity-not-configured";
+    } else {
+      try {
+        const settings = await getPublishedSanityClient().fetch<{
+          indexNowKey?: string | null;
+        } | null>(BLOG_GLOBAL_SETTINGS_QUERY);
+        const key = settings?.indexNowKey?.trim();
+        if (!key) {
+          indexNowSkipped = "no-key: Global Settings indexNowKey is empty";
+        } else {
+          const result = await submitIndexNowUrls({
+            host: INDEXNOW_HOST,
+            key,
+            keyLocation: `https://${INDEXNOW_HOST}/${key}.txt`,
+            urls: [absoluteUrl(`/case-studies/${slug}`)],
+          });
+          indexNowSubmitted = result.submitted;
+          if (result.submitted.length === 0) {
+            indexNowSkipped =
+              "submit-filtered: normalized URL didn't match host, or the request failed";
+          }
+        }
+      } catch (err) {
+        // Never let an IndexNow failure affect the revalidation response.
+        indexNowSkipped = `error: ${err instanceof Error ? err.message : String(err)}`;
+        console.error("[revalidate] indexnow submit error", err);
       }
-    } catch (err) {
-      // Never let an IndexNow failure affect the revalidation response.
-      console.error("[revalidate] indexnow submit error", err);
     }
   }
 
@@ -117,5 +133,6 @@ export async function POST(request: Request) {
     tracked: CASE_STUDY_TYPES.has(type ?? "") || !type,
     paths: revalidated,
     indexNowSubmitted,
+    ...(indexNowSkipped ? { indexNowSkipped } : {}),
   });
 }
