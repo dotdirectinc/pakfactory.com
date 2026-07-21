@@ -922,7 +922,8 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "companyName": organization.legalName,
   "companyAddress": organization.contact.address,
   additionalEmbedHosts,
-  gtmId
+  gtmId,
+  indexNowKey
 }`;
 
 /**
