@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
-  buildRedirectMap,
+  buildRuleset,
   normalizePath,
-  resolveInMap,
+  resolveRedirect,
   toAbsolute,
-  type RedirectMap,
+  type RedirectRuleset,
   type RedirectRow,
-} from "@/lib/blog-redirects-core";
+} from "@pakfactory/redirects";
 
 /**
  * CMS-redirect proxy (Next 16's renamed middleware — PROD-2154). Resolves Sanity
@@ -36,15 +36,16 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 
 const REDIRECTS_QUERY =
-  `*[_type == "redirect" && isActive == true && defined(from) && defined(to)]` +
-  `{"from": from, "to": to, "type": type}`;
+  `*[_type == "redirect" && isActive == true && defined(from) && (defined(to) || behaviour == "gone")]` +
+  `{"from": from, "to": to, "matchType": matchType, "behaviour": behaviour, "priority": priority, "appendMatchedTail": appendMatchedTail}`;
 
+const EMPTY_RULESET: RedirectRuleset = { exact: {}, prefix: [], phrase: [] };
 const CACHE_TTL_MS = 60_000;
-let cache: { map: RedirectMap; at: number } | null = null;
+let cache: { ruleset: RedirectRuleset; at: number } | null = null;
 
-async function getRedirectMap(): Promise<RedirectMap> {
-  if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.map;
-  if (!PROJECT) return {};
+async function getRuleset(): Promise<RedirectRuleset> {
+  if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.ruleset;
+  if (!PROJECT) return EMPTY_RULESET;
   try {
     const url =
       `https://${PROJECT}.apicdn.sanity.io/v${API_VERSION}/data/query/${DATASET}` +
@@ -54,11 +55,11 @@ async function getRedirectMap(): Promise<RedirectMap> {
       READ_TOKEN ? { headers: { Authorization: `Bearer ${READ_TOKEN}` } } : {},
     );
     const rows = ((await res.json())?.result ?? []) as RedirectRow[];
-    const map = buildRedirectMap(rows, BASE_PATH);
-    cache = { map, at: Date.now() };
-    return map;
+    const ruleset = buildRuleset(rows, BASE_PATH);
+    cache = { ruleset, at: Date.now() };
+    return ruleset;
   } catch {
-    return cache?.map ?? {}; // serve stale on transient fetch failure
+    return cache?.ruleset ?? EMPTY_RULESET; // serve stale on transient fetch failure
   }
 }
 
@@ -79,15 +80,17 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const hit = resolveInMap(await getRedirectMap(), pathname, BASE_PATH);
+  const hit = resolveRedirect(await getRuleset(), pathname, BASE_PATH);
   if (hit) {
-    // Emit the redirect doc's actual status: 301 (permanent) / 302 (temporary).
-    // The RSC fallback (blog-redirects.ts) can only emit 308/307 — a Server
-    // Component restriction — but the proxy runs at the edge and honors the
-    // `type` field exactly (PROD-2154 Issue 6).
+    if (hit.status === 410) {
+      // Gone — no destination; tell crawlers the page is permanently removed.
+      return new NextResponse("410 Gone", { status: 410 });
+    }
+    // Edge emits the doc's real status: 301 permanent / 302 temporary (the RSC
+    // fallback is limited to 308/307). `destination` is non-null for 301/302.
     return NextResponse.redirect(
-      toAbsolute(hit.destination, SITE_URL),
-      hit.permanent ? 301 : 302,
+      toAbsolute(hit.destination as string, SITE_URL),
+      hit.status,
     );
   }
 

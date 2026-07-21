@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
   // instead of Next stripping the slash first (308) and the proxy redirecting
   // second (308). The proxy still normalizes `/x/` → `/x` for non-redirect pages.
   skipTrailingSlashRedirect: true,
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components", "@pakfactory/redirects"],
   turbopack: {
     resolveAlias: {
       "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
@@ -81,6 +81,26 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // PROD-2168: canonicalize the blog index trailing slash (`/blog/` → `/blog`).
+      // Blog posts already normalize (proxy 308), but the index slips through: under
+      // basePath the app CANNOT distinguish `/blog` from `/blog/` — Next strips the
+      // base path and both become `/`, so a proxy rule would loop `/blog` → `/blog`.
+      // It must be a routing-layer rule on the RAW path: `basePath: false` opts this
+      // rule out of the automatic `/blog` prefix, so `source` matches the literal
+      // `/blog/` and redirects to `/blog` without matching (and looping on) `/blog`.
+      // Prod-only — gated on basePath, since staging/preview serve at origin root and
+      // have no `/blog` path. next.config redirects run before the proxy (see note
+      // below), so this fires ahead of edge redirect resolution.
+      ...(basePath
+        ? [
+            {
+              source: `${basePath}/`,
+              destination: basePath,
+              permanent: true,
+              basePath: false as const,
+            },
+          ]
+        : []),
       {
         source: "/tags-sitemap-:page(\\d{1,}).xml",
         destination: "/topics-sitemap-:page.xml",

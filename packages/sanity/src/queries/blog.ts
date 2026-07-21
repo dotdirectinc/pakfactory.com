@@ -49,14 +49,18 @@ export const BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY = /* groq */ `*[
 
 /**
  * Active CMS redirects (`apps/studio/schemas/redirect`). Applied at request time
- * on would-be-404s. `type` is "301" | "302"; the blog maps 301→308 / 302→307.
+ * on would-be-404s. Status comes from `behaviour` (permanent 301 / temporary 302 /
+ * gone 410); the RSC fallback maps 301→308 / 302→307.
  */
 export const BLOG_REDIRECTS_QUERY = /* groq */ `*[
-  _type == "redirect" && isActive == true && defined(from) && defined(to)
+  _type == "redirect" && isActive == true && defined(from) && (defined(to) || behaviour == "gone")
 ]{
   "from": from,
   "to": to,
-  "type": type
+  "matchType": matchType,
+  "behaviour": behaviour,
+  "priority": priority,
+  "appendMatchedTail": appendMatchedTail
 }`;
 
 /**
