@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { RedirectSampleTester } from '../components/RedirectSampleTester'
 
 /**
  * The site canonicalizes to NO trailing slash (proxy.ts 308-redirects `/x/` → `/x`),
@@ -175,6 +176,16 @@ export const redirect = defineType({
       hidden: ({ document }) => !document?.matchType || document?.matchType === 'exact',
       initialValue: 10,
       validation: (Rule) => Rule.min(0).integer(),
+    }),
+
+    defineField({
+      name: 'patternTester',
+      title: 'Test a sample URL',
+      type: 'string',
+      description:
+        'Paste a real URL to confirm the pattern matches and where it lands, before publishing. Not saved.',
+      hidden: ({ document }) => !document?.matchType || document?.matchType === 'exact',
+      components: { input: RedirectSampleTester },
     }),
 
     defineField({
