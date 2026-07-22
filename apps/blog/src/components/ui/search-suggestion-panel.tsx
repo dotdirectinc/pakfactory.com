@@ -40,7 +40,7 @@ function SuggestionLeading({item}: {item: SearchSuggestion}) {
                 {isSanityCdnUrl(imageUrl) ? (
                     <SanityImage
                         src={imageUrl}
-                        alt={imageAlt ?? ''}
+                        alt={imageAlt || item.title}
                         fill
                         sizes="40px"
                         className="object-cover"
@@ -48,7 +48,7 @@ function SuggestionLeading({item}: {item: SearchSuggestion}) {
                 ) : (
                     <Image
                         src={imageUrl}
-                        alt={imageAlt ?? ''}
+                        alt={imageAlt || item.title}
                         fill
                         sizes="40px"
                         className="object-cover"
