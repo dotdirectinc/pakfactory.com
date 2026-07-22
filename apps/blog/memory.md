@@ -25,6 +25,44 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ---
 
+## PROD-2175 — Open Graph / Twitter meta on blog + case-study templates
+
+**Jira:** [PROD-2175](https://dotdirect.atlassian.net/browse/PROD-2175) — Missing `og:image` / `og:type` (weak social share previews). Branch: `fix/PROD-2175-og-meta-templates`.
+
+### What shipped
+
+| Surface | App | Change |
+| --- | --- | --- |
+| Blog home / category / all `buildDocMetadata` consumers | `apps/blog` | `og:site_name=PakFactory`; `og:image` width/height **1200×630** when an image URL resolves |
+| Case study post `/case-studies/{slug}` | `apps/www` | `og:type=article`; Twitter `summary_large_image`; image chain `ogImage → cardImage → hero/video thumb → settings.defaultOgImage` |
+| Case studies listing `/case-studies` | `apps/www` | `og:type=website`; Twitter + image: page `ogImage` → `settings.defaultOgImage` |
+| Case study JSON-LD | `apps/www` | Same image chain as metadata |
+
+### Key files
+
+- [`apps/blog/src/lib/resolve-seo.ts`](./src/lib/resolve-seo.ts) — site-wide OG/Twitter builder
+- [`apps/www/src/lib/case-study-metadata.ts`](../www/src/lib/case-study-metadata.ts) — shared www social helpers
+- [`apps/www/src/app/case-studies/[slug]/page.tsx`](../www/src/app/case-studies/[slug]/page.tsx)
+- [`apps/www/src/app/case-studies/_components/case-studies-listing-page.tsx`](../www/src/app/case-studies/_components/case-studies-listing-page.tsx)
+- [`apps/www/src/lib/case-study-jsonld.ts`](../www/src/lib/case-study-jsonld.ts)
+
+### Human ops (agents must not write Sanity documents)
+
+1. **Studio → Global Settings → `defaultOgImage`** — set a branded ~1200×630 Sanity asset. Blog home / category / case-study listing fall back to this when per-doc Social `ogImage` (and case-study card/hero) are empty. Without it, those templates can still ship without `og:image`.
+2. After deploy, re-check one URL per template with LinkedIn Post Inspector / Facebook Sharing Debugger / X Card Validator (or opengraph.xyz) to refresh crawler caches.
+
+### Verify
+
+```bash
+pnpm --filter @pakfactory/blog typecheck
+pnpm --filter @pakfactory/www typecheck
+pnpm build:blog
+```
+
+Local SSR: search page source for `og:image`, `og:type`, `og:site_name`, `twitter:card` on `/`, a category, `/case-studies`, and `/case-studies/{slug}`.
+
+---
+
 ## Primary navigation (blog header)
 
 The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCategories()` (returns `{ navItems, header }`):
