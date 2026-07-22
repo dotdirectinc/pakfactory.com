@@ -159,7 +159,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
     ...,
     _type == "bodyImage" => {
       ...,
-      alt,
+      "alt": coalesce(alt, asset.asset->altText),
       caption,
       link,
       linkNofollow,
@@ -178,7 +178,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       aspectRatio,
       images[]{
         _key,
-        alt,
+        "alt": coalesce(alt, asset.asset->altText),
         asset
       }
     },

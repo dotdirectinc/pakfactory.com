@@ -413,6 +413,7 @@ export function CaseStudyListingGrid({
       >
         <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
           <div className="flex flex-col gap-10 py-12">
+            <h2 className="sr-only">Customer stories</h2>
             {visible.length === 0 ? (
               <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/50 text-center">
                 <p className="text-base font-medium text-foreground">

@@ -72,7 +72,7 @@ export function CtaSpotlight({
     const isFloating = imageEffect === 'floating';
 
     const imageUrl = sanityImageBaseUrl(image);
-    const imageAlt = sanityImageAlt(image) ?? '';
+    const imageAlt = sanityImageAlt(image) ?? heading?.trim() ?? '';
     const resolved = resolveFooterLinkHref({
         linkType,
         externalUrl,

@@ -1,6 +1,6 @@
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import { SanityImage } from "@/components/ui/sanity-image";
-import { sanityImageBaseUrl } from "@/lib/sanity/image";
+import { resolveImageAlt, sanityImageBaseUrl } from "@/lib/sanity/image";
 import { GallerySlider } from "@pakfactory/components/modules/gallery-slider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -47,171 +47,178 @@ export function makeHeroIntroPtComponents(clientWebsite?: string | null): Portab
   };
 }
 
-// Components for the three story sections (challenge / solution / result).
-export const caseStudyPtComponents: PortableTextComponents = {
-  types: {
-    bodyImage: ({ value }) => {
-      if (!value?.asset) return null;
-      const src = sanityImageBaseUrl(value.asset);
-      if (!src) return null;
-      return (
-        <figure className="not-prose my-10 w-full">
-          <div className="relative aspect-video overflow-hidden rounded-xl">
-            <SanityImage
-              src={src}
-              alt={value.alt ?? ""}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 800px"
-            />
-          </div>
-          {value.caption && (
-            <figcaption className="mt-2 text-center text-sm text-muted-foreground">
-              {value.caption}
-            </figcaption>
-          )}
-        </figure>
-      );
+/** Story sections (challenge / solution / result) — alt cascade uses study title. */
+export function makeCaseStudyPtComponents(titleFallback: string): PortableTextComponents {
+  return {
+    types: {
+      bodyImage: ({ value }) => {
+        if (!value?.asset) return null;
+        const src = sanityImageBaseUrl(value.asset);
+        if (!src) return null;
+        return (
+          <figure className="not-prose my-10 w-full">
+            <div className="relative aspect-video overflow-hidden rounded-xl">
+              <SanityImage
+                src={src}
+                alt={resolveImageAlt(value, titleFallback)}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 800px"
+              />
+            </div>
+            {value.caption && (
+              <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+                {value.caption}
+              </figcaption>
+            )}
+          </figure>
+        );
+      },
+
+      testimonialBlock: ({ value }) => {
+        const bgSrc = value.backgroundImage
+          ? sanityImageBaseUrl(value.backgroundImage)
+          : undefined;
+        return (
+          <figure className="not-prose relative my-10 overflow-hidden rounded-[14px] bg-foreground px-10 py-[30px]">
+            {bgSrc && (
+              <SanityImage
+                src={bgSrc}
+                alt={resolveImageAlt(
+                  { alt: value.backgroundImageAlt },
+                  titleFallback,
+                )}
+                fill
+                className="object-cover"
+                sizes="800px"
+              />
+            )}
+            <div aria-hidden="true" className="absolute inset-0 bg-black/70" />
+
+            <div className="relative flex flex-col items-center gap-3">
+              <blockquote className="flex items-start gap-2.5">
+                <span
+                  aria-hidden="true"
+                  className="select-none text-2xl font-bold leading-none text-[#f4f1eb]/90"
+                >
+                  &ldquo;
+                </span>
+                <p className="max-w-[559px] text-2xl leading-8 text-[#f4f1eb]">{value.quote}</p>
+                <span
+                  aria-hidden="true"
+                  className="select-none self-end text-2xl font-bold leading-none text-[#f4f1eb]/90"
+                >
+                  &rdquo;
+                </span>
+              </blockquote>
+
+              {value.attributionName && (
+                <p className="w-full max-w-[620px] text-right text-base font-bold leading-6 text-[#f4f1eb]">
+                  {value.attributionName}
+                </p>
+              )}
+              {value.attributionRole && (
+                <p className="w-full max-w-[620px] text-right text-sm leading-5 text-[#f4f1eb]">
+                  {value.attributionRole}
+                </p>
+              )}
+            </div>
+          </figure>
+        );
+      },
+
+      caseStudyGalleryBlock: ({ value }) => {
+        const rawImages: any[] = value.images ?? [];
+        const isSquare = value.aspectRatio === "1:1";
+
+        const resolved = rawImages
+          .map((item: any, i: number) => {
+            const imageValue = item.asset ? item : item.image;
+            if (!imageValue) return null;
+            const src = sanityImageBaseUrl(imageValue);
+            if (!src) return null;
+            return {
+              key: item._key ?? String(i),
+              src,
+              alt: resolveImageAlt(item, titleFallback),
+              caption: item.caption ?? null,
+              isSquare,
+            };
+          })
+          .filter(Boolean) as {
+          key: string;
+          src: string;
+          alt: string;
+          caption: string | null;
+          isSquare: boolean;
+        }[];
+
+        if (resolved.length === 0) return null;
+
+        const galleryCaption: string | undefined = value.caption?.trim();
+
+        return (
+          <figure className="not-prose my-10">
+            <GallerySlider images={resolved} />
+            {galleryCaption && (
+              <figcaption className="mt-3 text-center text-sm text-muted-foreground">
+                {galleryCaption}
+              </figcaption>
+            )}
+          </figure>
+        );
+      },
     },
 
-    testimonialBlock: ({ value }) => {
-      const bgSrc = value.backgroundImage
-        ? sanityImageBaseUrl(value.backgroundImage)
-        : undefined;
-      // Structure mirrors the POC: section → image fill → overlay → centered content → blockquote
-      return (
-      <figure className="not-prose relative my-10 overflow-hidden rounded-[14px] bg-foreground px-10 py-[30px]">
-        {/* Fill 1 — background image at 100% */}
-        {bgSrc && (
-          <SanityImage
-            src={bgSrc}
-            alt={value.backgroundImageAlt ?? ""}
-            fill
-            className="object-cover"
-            sizes="800px"
-          />
-        )}
-        {/* Fill 2 — #000 at 70% on top of the image */}
-        <div aria-hidden="true" className="absolute inset-0 bg-black/70" />
-
-        <div className="relative flex flex-col items-center gap-3">
-          <blockquote className="flex items-start gap-2.5">
-            <span
-              aria-hidden="true"
-              className="select-none text-2xl font-bold leading-none text-[#f4f1eb]/90"
-            >
-              &ldquo;
-            </span>
-            <p className="max-w-[559px] text-2xl leading-8 text-[#f4f1eb]">{value.quote}</p>
-            <span
-              aria-hidden="true"
-              className="select-none self-end text-2xl font-bold leading-none text-[#f4f1eb]/90"
-            >
-              &rdquo;
-            </span>
-          </blockquote>
-
-          {value.attributionName && (
-            <p className="w-full max-w-[620px] text-right text-base font-bold leading-6 text-[#f4f1eb]">
-              {value.attributionName}
-            </p>
-          )}
-          {value.attributionRole && (
-            <p className="w-full max-w-[620px] text-right text-sm leading-5 text-[#f4f1eb]">
-              {value.attributionRole}
-            </p>
-          )}
-        </div>
-      </figure>
-      );
+    block: {
+      normal: ({ children }) => (
+        <p className="mb-5 text-base leading-7 text-foreground md:text-lg">{children}</p>
+      ),
+      h2: ({ children }) => (
+        <h2 className="mb-4 mt-10 text-2xl font-semibold tracking-tight text-foreground">
+          {children}
+        </h2>
+      ),
+      h3: ({ children }) => (
+        <h3 className="mb-3 mt-8 text-xl font-semibold tracking-tight text-foreground">
+          {children}
+        </h3>
+      ),
     },
 
-    caseStudyGalleryBlock: ({ value }) => {
-      const rawImages: any[] = value.images ?? [];
-      const isSquare = value.aspectRatio === "1:1";
-
-      const resolved = rawImages
-        .map((item: any, i: number) => {
-          // Native image member has asset on the item; legacy galleryImage nests under image.
-          const imageValue = item.asset ? item : item.image;
-          if (!imageValue) return null;
-          const src = sanityImageBaseUrl(imageValue);
-          if (!src) return null;
-          return {
-            key: item._key ?? String(i),
-            src,
-            alt: item.alt ?? "",
-            caption: item.caption ?? null,
-            isSquare,
-          };
-        })
-        .filter(Boolean) as { key: string; src: string; alt: string; caption: string | null; isSquare: boolean }[];
-
-      if (resolved.length === 0) return null;
-
-      const galleryCaption: string | undefined = value.caption?.trim();
-
-      return (
-        <figure className="not-prose my-10">
-          <GallerySlider images={resolved} />
-          {galleryCaption && (
-            <figcaption className="mt-3 text-center text-sm text-muted-foreground">
-              {galleryCaption}
-            </figcaption>
-          )}
-        </figure>
-      );
+    list: {
+      bullet: ({ children }) => (
+        <ul className="mb-5 ml-6 list-disc space-y-1.5 text-base text-foreground md:text-lg">
+          {children}
+        </ul>
+      ),
+      number: ({ children }) => (
+        <ol className="mb-5 ml-6 list-decimal space-y-1.5 text-base text-foreground md:text-lg">
+          {children}
+        </ol>
+      ),
     },
-  },
 
-  block: {
-    normal: ({ children }) => (
-      <p className="mb-5 text-base leading-7 text-foreground md:text-lg">{children}</p>
-    ),
-    h2: ({ children }) => (
-      <h2 className="mb-4 mt-10 text-2xl font-semibold tracking-tight text-foreground">
-        {children}
-      </h2>
-    ),
-    h3: ({ children }) => (
-      <h3 className="mb-3 mt-8 text-xl font-semibold tracking-tight text-foreground">
-        {children}
-      </h3>
-    ),
-  },
+    listItem: {
+      bullet: ({ children }) => <li className="leading-7">{children}</li>,
+      number: ({ children }) => <li className="leading-7">{children}</li>,
+    },
 
-  list: {
-    bullet: ({ children }) => (
-      <ul className="mb-5 ml-6 list-disc space-y-1.5 text-base text-foreground md:text-lg">
-        {children}
-      </ul>
-    ),
-    number: ({ children }) => (
-      <ol className="mb-5 ml-6 list-decimal space-y-1.5 text-base text-foreground md:text-lg">
-        {children}
-      </ol>
-    ),
-  },
-
-  listItem: {
-    bullet: ({ children }) => <li className="leading-7">{children}</li>,
-    number: ({ children }) => <li className="leading-7">{children}</li>,
-  },
-
-  marks: {
-    strong: ({ children }) => (
-      <strong className="font-semibold text-foreground">{children}</strong>
-    ),
-    em: ({ children }) => <em className="italic">{children}</em>,
-    link: ({ value, children }) => (
-      <a
-        href={value?.href}
-        className="text-primary underline underline-offset-4 hover:no-underline"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {children}
-      </a>
-    ),
-  },
-};
+    marks: {
+      strong: ({ children }) => (
+        <strong className="font-semibold text-foreground">{children}</strong>
+      ),
+      em: ({ children }) => <em className="italic">{children}</em>,
+      link: ({ value, children }) => (
+        <a
+          href={value?.href}
+          className="text-primary underline underline-offset-4 hover:no-underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {children}
+        </a>
+      ),
+    },
+  };
+}

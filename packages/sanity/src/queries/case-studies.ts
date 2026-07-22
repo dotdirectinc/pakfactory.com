@@ -18,6 +18,28 @@ const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
 
 const CLIENT_INDUSTRY_ITEM = /* groq */ `industry->${SOLUTION_TAXONOMY_ITEM}`;
 
+/** PT body expansion: per-use alt → Media Library asset altText. */
+const CASE_STUDY_STORY_BODY = /* groq */ `[]{
+  ...,
+  _type == "bodyImage" => {
+    ...,
+    "alt": coalesce(alt, asset.asset->altText),
+    asset
+  },
+  _type == "caseStudyGalleryBlock" => {
+    ...,
+    images[]{
+      ...,
+      "alt": coalesce(alt, asset->altText, image.asset->altText)
+    }
+  },
+  _type == "testimonialBlock" => {
+    ...,
+    "backgroundImageAlt": coalesce(backgroundImageAlt, backgroundImage.asset->altText),
+    backgroundImage
+  }
+}`;
+
 // ─── Field projections ────────────────────────────────────────────────────────
 
 const CASE_STUDY_CARD_FIELDS = /* groq */ `{
@@ -28,7 +50,7 @@ const CASE_STUDY_CARD_FIELDS = /* groq */ `{
   "dateModified": coalesce(lastModified, publishedAt),
   cardSummary,
   "cardImageUrl": cardImage.asset->url,
-  cardImageAlt,
+  "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText),
   "client": client->{ name, "logoUrl": logo.asset->url, ${CLIENT_INDUSTRY_ITEM} },
   "products": products[]->${TAXONOMY_ITEM},
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
@@ -43,7 +65,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   "dateModified": coalesce(lastModified, publishedAt),
   cardSummary,
   "cardImageUrl": cardImage.asset->url,
-  cardImageAlt,
+  "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText),
   "client": client->{ name, "slug": slug.current, "logoUrl": logo.asset->url, website, ${CLIENT_INDUSTRY_ITEM} },
   heroIntro,
   heroMedia {
@@ -51,7 +73,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
     "imageUrl": image.asset->url,
     "imageHotspot": image.hotspot,
     "imageCrop": image.crop,
-    alt,
+    "alt": coalesce(alt, image.asset->altText),
     videoUrl,
     "videoThumbnailUrl": videoThumbnail.asset->url,
     "videoThumbnailHotspot": videoThumbnail.hotspot
@@ -60,9 +82,9 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
   "customizations": capabilities[]->${TAXONOMY_ITEM},
   "highlights": highlights[]{ _key, title, description },
-  challenge,
-  solution,
-  result,
+  "challenge": challenge${CASE_STUDY_STORY_BODY},
+  "solution": solution${CASE_STUDY_STORY_BODY},
+  "result": result${CASE_STUDY_STORY_BODY},
   "relatedStudies": select(
     count(relatedStudies) > 0 => relatedStudies[0...6]->${CASE_STUDY_CARD_FIELDS},
     *[_type == "caseStudy" && _id != ^._id] | order(publishedAt desc)[0...6]${CASE_STUDY_CARD_FIELDS}

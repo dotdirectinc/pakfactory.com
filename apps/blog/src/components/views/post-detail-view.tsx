@@ -10,23 +10,11 @@ import type {BlogPostDetail} from '@/lib/blog-post';
 import {postCanonicalUrl} from '@/lib/blog-post';
 import {categoryHref} from '@/lib/blog-post-url';
 import {buildPostToc} from '@/lib/post-toc';
-import {sanityImageUrl} from '@/lib/sanity-image';
+import {resolveImageAlt} from '@/lib/sanity-image';
 
 type PostDetailViewProps = {
     post: BlogPostDetail;
 };
-
-function mainImageAlt(post: BlogPostDetail): string | undefined {
-    if (
-        typeof post.mainImage === 'object' &&
-        post.mainImage !== null &&
-        'alt' in post.mainImage &&
-        typeof (post.mainImage as {alt?: string}).alt === 'string'
-    ) {
-        return (post.mainImage as {alt?: string}).alt;
-    }
-    return post.title;
-}
 
 export function PostDetailView({post}: PostDetailViewProps) {
     const {entries: toc, headingIdByKey} = buildPostToc(post.body);
@@ -69,7 +57,7 @@ export function PostDetailView({post}: PostDetailViewProps) {
                     lastModified={post.lastModified}
                     readingTimeMinutes={post.readingTimeMinutes}
                     mainImage={post.mainImage}
-                    mainImageAlt={mainImageAlt(post)}
+                    mainImageAlt={resolveImageAlt(post.mainImage, post.title)}
                 />
             }
             sidebar={

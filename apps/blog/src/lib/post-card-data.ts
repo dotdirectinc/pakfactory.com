@@ -4,7 +4,7 @@ import type { PostCardData } from "@/components/modules/post-card";
 import type { PopularPostCard } from "@/lib/blog-data";
 import type { HomePostCard } from "@/lib/blog-home";
 import { postDetailHref } from "@/lib/blog-post-url";
-import { sanityImageAlt, sanityImageBaseUrl } from "@/lib/sanity-image";
+import { resolveImageAlt, sanityImageBaseUrl } from "@/lib/sanity-image";
 
 export type { PostCardData };
 
@@ -46,7 +46,7 @@ export function toPostCardData(
     title: post.title,
     excerpt: post.excerpt,
     imageUrl: sanityImageBaseUrl(post.mainImage),
-    imageAlt: sanityImageAlt(post.mainImage),
+    imageAlt: resolveImageAlt(post.mainImage, post.title),
     categoryTitle: post.categoryTitle,
     categorySlug: post.categorySlug,
     authorName: post.authorName,
