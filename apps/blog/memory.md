@@ -25,6 +25,44 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ---
 
+## PROD-2175 — Open Graph / Twitter meta on blog + case-study templates
+
+**Jira:** [PROD-2175](https://dotdirect.atlassian.net/browse/PROD-2175) — Missing `og:image` / `og:type` (weak social share previews). Branch: `fix/PROD-2175-og-meta-templates`.
+
+### What shipped
+
+| Surface | App | Change |
+| --- | --- | --- |
+| Blog home / category / all `buildDocMetadata` consumers | `apps/blog` | `og:site_name=PakFactory`; `og:image` width/height **1200×630** when an image URL resolves |
+| Case study post `/case-studies/{slug}` | `apps/www` | `og:type=article`; Twitter `summary_large_image`; image chain `ogImage → cardImage → hero/video thumb → settings.defaultOgImage` |
+| Case studies listing `/case-studies` | `apps/www` | `og:type=website`; Twitter + image: page `ogImage` → `settings.defaultOgImage` |
+| Case study JSON-LD | `apps/www` | Same image chain as metadata |
+
+### Key files
+
+- [`apps/blog/src/lib/resolve-seo.ts`](./src/lib/resolve-seo.ts) — site-wide OG/Twitter builder
+- [`apps/www/src/lib/case-study-metadata.ts`](../www/src/lib/case-study-metadata.ts) — shared www social helpers
+- [`apps/www/src/app/case-studies/[slug]/page.tsx`](../www/src/app/case-studies/[slug]/page.tsx)
+- [`apps/www/src/app/case-studies/_components/case-studies-listing-page.tsx`](../www/src/app/case-studies/_components/case-studies-listing-page.tsx)
+- [`apps/www/src/lib/case-study-jsonld.ts`](../www/src/lib/case-study-jsonld.ts)
+
+### Human ops (agents must not write Sanity documents)
+
+1. **Studio → Global Settings → `defaultOgImage`** — set a branded ~1200×630 Sanity asset. Blog home / category / case-study listing fall back to this when per-doc Social `ogImage` (and case-study card/hero) are empty. Without it, those templates can still ship without `og:image`.
+2. After deploy, re-check one URL per template with LinkedIn Post Inspector / Facebook Sharing Debugger / X Card Validator (or opengraph.xyz) to refresh crawler caches.
+
+### Verify
+
+```bash
+pnpm --filter @pakfactory/blog typecheck
+pnpm --filter @pakfactory/www typecheck
+pnpm build:blog
+```
+
+Local SSR: search page source for `og:image`, `og:type`, `og:site_name`, `twitter:card` on `/`, a category, `/case-studies`, and `/case-studies/{slug}`.
+
+---
+
 ## Primary navigation (blog header)
 
 The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCategories()` (returns `{ navItems, header }`):
@@ -1145,3 +1183,33 @@ Still on the published client → not editable in Presentation: `blog-page`, `bl
 Studio (`pakfactory.sanity.studio` → **302 → `www.sanity.io/@or35qxDdx/studio/<appId>`**) is **cross-site** with `pakfactory-blog.vercel.app`. Visual editing needs Next's `__prerender_bypass` draft cookie (Next correctly sets it `SameSite=None; Secure` in prod), but browsers block third-party cookies — so preview dies whenever the manual "allow third-party cookies" exception resets (recurred overnight 2026-06-17). The `*.sanity.studio` → `www.sanity.io` redirect is **intrinsic to CLI v6 hosting** and not avoidable; renaming the host does not change it.
 
 **Permanent fix (recommended, ADR candidate):** make Studio + blog **same-site** — self-host Studio at `studio.pakfactory.com` + serve blog at `blog.pakfactory.com` (both under `pakfactory.com`) → draft cookie first-party → preview works in every browser. Alternative: embed Studio in the Next app at `/studio` (same-origin).
+
+## Webhook route handlers must not read `unstable_cache`d data (PROD-2172 follow-up)
+
+**Rule:** a route handler reacting to a Sanity webhook must **not** read data through
+an `unstable_cache` wrapper that the *same* webhook does not invalidate. Use an
+uncached accessor instead — one extra query per webhook is server-to-server and off
+the user path.
+
+**Why (the bug this came from):** `fetchBlogGlobalSettings()`
+(`src/lib/blog-global-settings.ts`) wraps the Global Settings read in
+`unstable_cache` with a 300s TTL and tag `BLOG_GLOBAL_SETTINGS_CACHE_TAG`. In
+`api/revalidate/route.ts` that tag is added **only** when `type === "settings"`. So a
+`post` publish webhook — which is what fires the IndexNow ping — read settings that
+could be up to 5 minutes stale.
+
+Live symptom (2026-07-21): the editor filled in `indexNowKey`, case studies started
+submitting immediately (`apps/www` reads the singleton uncached), but blog kept
+reporting `indexNowSkipped: "no-key"`. Re-publishing the Global Settings document
+fired a `settings` webhook, invalidated the tag, and unblocked it — a workaround, not
+a fix.
+
+**Fix:** `fetchBlogGlobalSettingsUncached()` is exported alongside the cached
+accessor and used by the revalidate route. Keep `fetchBlogGlobalSettings()` for page
+rendering — the cache is correct there.
+
+**Generalizes to:** any future Global-Settings-driven field read from a webhook
+triggered by a different doc type (GTM id, embed hosts, default OG image…). Adding
+the tag to every webhook type is *not* the fix — it forces needless refetches and
+still races, since `revalidateTag` does not affect a read already in flight in the
+same request.
