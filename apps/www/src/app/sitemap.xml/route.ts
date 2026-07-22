@@ -27,16 +27,12 @@ export async function GET() {
   const urls: SitemapUrlEntry[] = [
     {
       loc: absoluteUrl("/case-studies"),
-      changefreq: "weekly",
-      priority: 1,
     },
     ...slugEntries.map((entry) => ({
       loc: absoluteUrl(`/case-studies/${entry.slug}`),
       ...(entry.lastmod
         ? { lastmod: new Date(entry.lastmod).toISOString().split("T")[0] }
         : {}),
-      changefreq: "monthly",
-      priority: 0.8,
     })),
   ];
 
