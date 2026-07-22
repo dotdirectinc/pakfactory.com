@@ -35,6 +35,8 @@ export type BuildDocMetadataInput = {
   /** Listing/post robots baseline before per-doc overrides. */
   robots?: BlogRobotsDirective;
   openGraphType?: "website" | "article" | "profile";
+  /** Emitted as og:site_name (PROD-2175). Defaults to brand "PakFactory". */
+  siteName?: string;
   titleSuffix?: string;
   /** Full document title when paginated or other overrides are needed. */
   titleOverride?: string | null;
@@ -46,6 +48,10 @@ export type BuildDocMetadataInput = {
 };
 
 const DEFAULT_TITLE_SUFFIX = " | PakFactory Blog";
+const DEFAULT_OG_SITE_NAME = "PakFactory";
+/** Recommended Open Graph image size (Studio Social fields target 1200×630). */
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
 
 /** Resolve canonical: blank → self; relative path → absoluteUrl; full URL passthrough. */
 export function resolveCanonicalUrl(
@@ -125,6 +131,7 @@ export function buildDocMetadata(input: BuildDocMetadataInput): Metadata {
   const robots = robotsDirectiveToMetadata(
     resolveDocRobots(seo, input.robots),
   );
+  const siteName = input.siteName?.trim() || DEFAULT_OG_SITE_NAME;
 
   return {
     title,
@@ -135,8 +142,19 @@ export function buildDocMetadata(input: BuildDocMetadataInput): Metadata {
       title: ogTitle,
       ...(ogDescription ? { description: ogDescription } : {}),
       url: canonical,
+      siteName,
       type: input.openGraphType ?? "website",
-      ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
+      ...(ogImageUrl
+        ? {
+            images: [
+              {
+                url: ogImageUrl,
+                width: OG_IMAGE_WIDTH,
+                height: OG_IMAGE_HEIGHT,
+              },
+            ],
+          }
+        : {}),
     },
     twitter: {
       card: ogImageUrl ? "summary_large_image" : "summary",

@@ -19,6 +19,11 @@ import {
 import { pathPaginationHref } from "@pakfactory/components/commons/path-pagination";
 import { absoluteUrl } from "@/lib/site";
 import { pakfactoryOrganization } from "@/lib/case-study-jsonld";
+import {
+  buildSocialMetadata,
+  fetchDefaultOgImageUrl,
+  resolveCaseStudiesListingOgImageUrl,
+} from "@/lib/case-study-metadata";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { CaseStudyListingGrid } from "./case-study-listing-grid";
 import {
@@ -60,15 +65,21 @@ export async function fetchCaseStudiesListing(): Promise<ListingData> {
 export async function buildCaseStudiesListingMetadata(
   pageNumber = 1,
 ): Promise<Metadata> {
-  const pageData = isSanityConfigured()
-    ? await getPublishedSanityClient()
-        .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
-        .catch(() => null)
-    : null;
+  const [pageData, defaultOgImageUrl] = await Promise.all([
+    isSanityConfigured()
+      ? getPublishedSanityClient()
+          .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
+          .catch(() => null)
+      : Promise.resolve(null),
+    fetchDefaultOgImageUrl(),
+  ]);
 
   const title = pageData?.metaTitle?.trim() || FALLBACK_TITLE;
   const description = pageData?.metaDescription?.trim() || FALLBACK_DESCRIPTION;
-  const ogImageUrl = pageData?.ogImageUrl;
+  const ogImageUrl = resolveCaseStudiesListingOgImageUrl(
+    pageData?.ogImageUrl,
+    defaultOgImageUrl,
+  );
   const canonicalPath = pathPaginationHref(CASE_STUDIES_BASE_PATH, pageNumber);
   const canonical = absoluteUrl(canonicalPath);
   const pageTitle =
@@ -80,12 +91,13 @@ export async function buildCaseStudiesListingMetadata(
     title: pageTitle,
     description,
     alternates: { canonical },
-    openGraph: {
+    ...buildSocialMetadata({
       title: pageTitle,
       description,
-      url: canonical,
-      ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
-    },
+      canonical,
+      openGraphType: "website",
+      ogImageUrl,
+    }),
   };
 }
 
