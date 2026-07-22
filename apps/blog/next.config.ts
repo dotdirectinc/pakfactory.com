@@ -101,6 +101,33 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
+      // PROD-2140: legacy WordPress RSS feeds → the new feed at `/rss.xml`
+      // (→ `/blog/rss.xml` under basePath). Every WP feed URL ends in a `/feed`
+      // segment — main `/feed/`, `/comments/feed/`, and per-category/tag/author/
+      // post `.../feed/` — so these two rules 301 the whole family in one place.
+      // MUST stay ABOVE the `/category/*` rules below: next.config redirects run
+      // in array order (first match wins) AND before `proxy.ts`, so without this
+      // `/category/{c}/feed/` would be caught by `/category/:category/:postSlug`
+      // → `/{feed}` → 404 before any feed rule could fire. `skipTrailingSlashRedirect`
+      // + the proxy's trailing-slash canonicalization keep `/feed/` a single hop.
+      // `statusCode: 301` (NOT `permanent: true`) — Next emits 308 for `permanent`,
+      // but PROD-2140's AC requires a literal **301** for the legacy feed moves, and
+      // 301 is the conventional WordPress-migration signal feed readers/crawlers expect.
+      {
+        // Root feed (and its `?feed=` cousins land on `/feed` after WP rewriting).
+        source: "/feed",
+        destination: "/rss.xml",
+        statusCode: 301,
+      },
+      {
+        // Any nested feed: `/category/{c}/feed`, `/tag/{t}/feed`, `/author/{a}/feed`,
+        // `/comments/feed`, per-post `/{post}/feed`. `:path*` = one-or-more segments.
+        // Placed first, so it wins over the `/category/*` 308 rules below for
+        // `/category/{c}/feed` — single hop, correct 301.
+        source: "/:path*/feed",
+        destination: "/rss.xml",
+        statusCode: 301,
+      },
       {
         source: "/tags-sitemap-:page(\\d{1,}).xml",
         destination: "/topics-sitemap-:page.xml",
