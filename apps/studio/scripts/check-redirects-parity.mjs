@@ -33,7 +33,7 @@ const API = process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2025-01-01'
 const ORIGIN = (process.env.REDIRECT_CHECK_ORIGIN || 'https://pakfactory.com').replace(/\/$/, '')
 const CONCURRENCY = 10
 
-const query = `*[_type=="redirect" && isActive==true]{from,to,behaviour,matchType,channel}`
+const query = `*[_type=="redirect" && isActive==true]{from,to,behaviour,matchType,"group": group->title}`
 const qUrl = `https://${PROJECT}.apicdn.sanity.io/v${API}/data/query/${DATASET}?query=${encodeURIComponent(query)}`
 
 const pathOf = (u) => {
@@ -95,7 +95,7 @@ const bad = results.filter((r) => !['OK', 'OK-GONE'].includes(r.verdict))
 if (bad.length) {
   console.log(`\n${bad.length} not OK:\n`)
   for (const r of bad) {
-    console.log(`  [${r.verdict}] ${r.from}  [${r.channel ?? '—'}]`)
+    console.log(`  [${r.verdict}] ${r.from}  [${r.group ?? 'ungrouped'}]`)
     console.log(`      want ${r.wantPath ?? r.to ?? '(gone)'}  |  got ${r.gotPath ?? r.loc ?? '—'} (status ${r.status})`)
   }
 }
