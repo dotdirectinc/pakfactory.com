@@ -40,6 +40,7 @@ export function PostArticleColumn({
         <PostPortableText
           value={post.body}
           headingIdByKey={headingIdByKey}
+          titleFallback={post.title}
           className="text-base leading-7 text-foreground"
         />
       ) : null}
