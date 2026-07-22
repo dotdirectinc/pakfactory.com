@@ -7,7 +7,7 @@ import {
   BLOG_REDIRECTS_CACHE_TAG,
   BLOG_SETTINGS_CACHE_TAG,
 } from "@/lib/blog-cache";
-import { fetchBlogGlobalSettings } from "@/lib/blog-global-settings";
+import { fetchBlogGlobalSettingsUncached } from "@/lib/blog-global-settings";
 import { postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl } from "@/lib/site";
 
@@ -110,7 +110,10 @@ export async function POST(request: Request) {
       indexNowSkipped = "no-slug: webhook payload had no slug.current";
     } else {
       try {
-        const settings = await fetchBlogGlobalSettings();
+        // Uncached: this is a `post` webhook, which does not invalidate
+        // BLOG_GLOBAL_SETTINGS_CACHE_TAG — the cached accessor would serve a key
+        // up to 5 minutes stale (or empty, right after an editor sets it).
+        const settings = await fetchBlogGlobalSettingsUncached();
         const key = settings?.indexNowKey?.trim();
         if (!key) {
           indexNowSkipped = "no-key: Global Settings indexNowKey is empty";
