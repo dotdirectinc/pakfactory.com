@@ -189,12 +189,14 @@ export default async function CaseStudyPage({ params }: Props) {
           {/* Metrics */}
           {study.highlights && study.highlights.length > 0 && (
             <div className="flex w-full flex-col gap-[42px]">
-              <p className="text-lg leading-7 capitalize text-muted-foreground">Metrics</p>
+              <h2 className="text-lg leading-7 capitalize text-muted-foreground">
+                Metrics
+              </h2>
               {study.highlights.map((h) => (
                 <div key={h._key} className="flex w-full flex-col gap-3">
-                  <p className="text-lg font-semibold leading-7 text-foreground">
+                  <h3 className="text-lg font-semibold leading-7 text-foreground">
                     {h.title}
-                  </p>
+                  </h3>
                   {h.description && (
                     <p className="text-sm leading-5 text-muted-foreground">
                       {h.description}
