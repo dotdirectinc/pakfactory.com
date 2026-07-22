@@ -51,9 +51,9 @@ export function CaseStudyCard({
                 {clientName}
               </p>
             )}
-            <p className="text-base font-semibold leading-6 text-foreground transition-colors group-hover:text-primary">
+            <h3 className="text-base font-semibold leading-6 text-foreground transition-colors group-hover:text-primary">
               {title}
-            </p>
+            </h3>
           </div>
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors group-hover:text-primary/80">
             Read Story
