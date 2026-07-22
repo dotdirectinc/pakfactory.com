@@ -47,3 +47,21 @@ const getCachedBlogGlobalSettings = unstable_cache(
 export async function fetchBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {
   return getCachedBlogGlobalSettings();
 }
+
+/**
+ * Uncached read of the same singleton — for **webhook route handlers only**.
+ *
+ * `BLOG_GLOBAL_SETTINGS_CACHE_TAG` is invalidated only by a `settings` webhook
+ * (see `api/revalidate/route.ts`), so a webhook fired by a *different* doc type
+ * — a `post` publish, say — would read up to `revalidate` seconds of stale
+ * settings. That bit PROD-2172: the IndexNow key was read from the cached
+ * accessor during a `post` publish and came back empty for 5 minutes after the
+ * editor filled it in.
+ *
+ * Rule: a route handler reacting to a webhook must not read `unstable_cache`d
+ * data that the same webhook does not invalidate. One extra query per webhook
+ * is server-to-server and off the user path. `apps/www` already does this.
+ */
+export async function fetchBlogGlobalSettingsUncached(): Promise<BlogGlobalSettings | null> {
+  return loadBlogGlobalSettings();
+}
