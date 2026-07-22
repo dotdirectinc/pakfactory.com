@@ -1,6 +1,5 @@
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { PageDielineBlockRail } from "@/components/layout/page-dieline-section";
 import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
 import { PerPageSelect } from "@/components/modules/per-page-select";
 import { PostList } from "@/components/modules/post-list";
@@ -71,9 +70,7 @@ export async function AuthorArchiveView({
           emptyMessage="No posts yet from this author."
         />
       </AuthorListingSection>
-      <PageDielineBlockRail>
-        <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
-      </PageDielineBlockRail>
+      <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
     </AuthorLandingLayout>
   );
 }

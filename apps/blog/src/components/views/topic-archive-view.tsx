@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/modules/page-header";
 import { TopicRelatedPills } from "@/components/modules/topic-related-pills";
 import type { FilterOption } from "@/components/ui/listing-filter-bar";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
-import { PageDielineBlockRail } from "@/components/layout/page-dieline-section";
 import { TopicLandingLayout } from "@/components/views/topic-landing-layout";
 import { TopicListingClient } from "@/components/views/topic-listing-client";
 import { pagedHeading } from "@/lib/archive-format";
@@ -53,9 +52,7 @@ export function TopicArchiveView({
         initialPage={data.pageNumber}
         initialPerPage={data.perPage}
       />
-      <PageDielineBlockRail>
-        <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
-      </PageDielineBlockRail>
+      <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
     </TopicLandingLayout>
   );
 }
