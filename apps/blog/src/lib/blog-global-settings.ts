@@ -22,6 +22,8 @@ export type BlogGlobalSettings = {
   additionalEmbedHosts?: string[] | null;
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
   gtmId?: string | null;
+  /** IndexNow API key (PROD-2172) from Global Settings → Integrations. */
+  indexNowKey?: string | null;
 };
 
 async function loadBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {

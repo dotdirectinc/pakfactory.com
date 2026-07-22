@@ -1,0 +1,16 @@
+---
+description: Jira branch/PR handoff; canonical details in AGENTS.md
+alwaysApply: true
+---
+
+# Jira branch & handoff (Cursor)
+
+Follow **[`AGENTS.md`](../../AGENTS.md) § JIRA defaults** for the full tables and workflow. Do not contradict or restate that section here. Branch prefixes must pass CI [`.github/workflows/branch-name-lint.yml`](../../.github/workflows/branch-name-lint.yml).
+
+**Summary (always defer to AGENTS.md):**
+
+- Cut new ticket work from **`origin/staging`** (fetch first).
+- Branch name: CI allowlist only — `feat/` `feature/` `features/` `fix/` `bugfix/` `hotfix/` `chore/` + slug (recommend `PROD-###-short-slug`).
+- Issue type → prefix: Bug → `fix` (or `bugfix`); Story/Task/Feature → `feat`; Technical Debt → `chore`; urgent prod → `hotfix`. Never `bug/` or `clean-up/`.
+- When the story is satisfied: **Jira comment** that acceptance is met (branch, what shipped, how to verify).
+- When the user asks to wrap up / ship: push and open a **PR targeting `staging`** (`[PROD-###] …`). Do not push or open a PR unless asked.
