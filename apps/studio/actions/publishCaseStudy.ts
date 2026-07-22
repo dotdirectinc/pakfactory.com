@@ -57,14 +57,15 @@ async function syncSlugChangeRedirect(
     channel: 'website',
     matchType: 'exact',
     behaviour: 'permanent',
-    type: '301', // legacy anchor — the resolver reads `behaviour` first, this second
     to: toPathValue,
     isActive: true,
   }
   if (existing?._id) {
-    // Idempotent: refresh the existing rule rather than duplicating it.
+    // Idempotent: refresh the existing rule rather than duplicating it. `type` was
+    // retired from the schema (PROD-2157, PR #183) — drop any stale stored value
+    // so refreshed rows don't keep an unknown field.
     tx.patch(existing._id, (p) =>
-      p.set({ ...rule, notes: 'Auto-updated from slug change' }),
+      p.set({ ...rule, notes: 'Auto-updated from slug change' }).unset(['type']),
     )
   } else {
     tx.create({

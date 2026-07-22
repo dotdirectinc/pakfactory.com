@@ -117,7 +117,7 @@ export function CtaNewsletter({
                             aria-hidden="true"
                             value={company}
                             onChange={(e) => setCompany(e.target.value)}
-                            className="absolute left-[-9999px] h-0 w-0 opacity-0"
+                            className="sr-only"
                         />
                         <div className="flex h-14 items-center rounded-full border border-border bg-white/40 p-1">
                             <label
