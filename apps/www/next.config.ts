@@ -10,7 +10,7 @@ const repoRoot = join(appDir, "../..");
 loadEnvConfig(repoRoot);
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "next-sanity"],
   turbopack: {
     resolveAlias: {
       "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),

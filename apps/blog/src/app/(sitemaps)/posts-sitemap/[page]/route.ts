@@ -5,7 +5,7 @@ import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { buildUrlset, SITEMAP_GROUP_SIZE, xmlResponse, type SitemapUrlEntry } from "@/lib/sitemap/xml";
+import { buildUrlset, SITEMAP_GROUP_SIZE, xmlResponse, type SitemapUrlEntry } from "@pakfactory/sitemap";
 
 export const revalidate = 60;
 

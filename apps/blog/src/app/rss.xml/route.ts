@@ -1,13 +1,13 @@
 import { BLOG_RSS_POSTS_QUERY } from "@pakfactory/sanity/queries";
-import { BLOG_REVALIDATE_SECONDS } from "@/lib/blog-cache";
+import { BLOG_RSS_REVALIDATE_SECONDS } from "@/lib/blog-cache";
 import { buildRssFeedXml, type RssPostItem } from "@/lib/rss";
 import { siteBaseUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
 
-/** Must be a literal — see `BLOG_REVALIDATE_SECONDS` in `@/lib/blog-cache`. */
-export const revalidate = 60;
+/** Hourly. Must be a literal — keep in sync with `BLOG_RSS_REVALIDATE_SECONDS` in `@/lib/blog-cache`. */
+export const revalidate = 3600;
 
 async function fetchRssPosts(): Promise<RssPostItem[]> {
   if (!isSanityConfigured()) return [];
@@ -24,7 +24,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": `public, s-maxage=${BLOG_REVALIDATE_SECONDS}, stale-while-revalidate`,
+      "Cache-Control": `public, s-maxage=${BLOG_RSS_REVALIDATE_SECONDS}, stale-while-revalidate`,
     },
   });
 }
