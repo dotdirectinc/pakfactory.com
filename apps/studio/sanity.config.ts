@@ -264,6 +264,11 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
+    // Case studies are edited here, so this workspace needs `documentActions` too —
+    // without it `caseStudy` falls back to Sanity's stock publish and
+    // `publishCaseStudy` never runs (no slug-change redirect, no `publishedAt`
+    // backfill). Only `newDocumentOptions` stays workspace-specific.
+    document: { actions: documentActions },
     plugins: [
       structureTool({ structure: websiteStructure, defaultDocumentNode }),
       presentationTool({
