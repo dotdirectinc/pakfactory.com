@@ -102,6 +102,17 @@ export function sanityImageAlt(source: unknown): string | undefined {
   return typeof alt === "string" && alt.trim() !== "" ? alt.trim() : undefined;
 }
 
+/**
+ * Post content image alt cascade: GROQ-coalesced per-use/asset alt (tiers 1–2),
+ * then optional article title (tier 3). Never invents generic labels.
+ */
+export function resolveImageAlt(
+  source: unknown,
+  titleFallback?: string,
+): string {
+  return sanityImageAlt(source) ?? titleFallback?.trim() ?? "";
+}
+
 /** Drop baked-in size params so the loader can set `w`/`q` per candidate. */
 function stripSizeParams(url: string): string {
   try {

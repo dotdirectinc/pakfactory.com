@@ -26,7 +26,7 @@ import type {
     PostBodyVideo,
     PostBodyWidget,
 } from '@/lib/blog-post';
-import {sanityImageBaseUrl} from '@/lib/sanity-image';
+import {resolveImageAlt, sanityImageBaseUrl} from '@/lib/sanity-image';
 import {EXTERNAL_LINK_REL, externalLinkAttributes} from '@/lib/external-link';
 
 type BodyImageValue = {
@@ -41,14 +41,20 @@ type WidgetEmbedValue = {
     widget?: PostBodyWidget | null;
 };
 
-function PostBodyImage({value}: {value: BodyImageValue}) {
+function PostBodyImage({
+    value,
+    titleFallback,
+}: {
+    value: BodyImageValue;
+    titleFallback?: string;
+}) {
     const imageUrl = sanityImageBaseUrl(value.asset);
     if (!imageUrl) return null;
 
     const img = (
         <SanityImage
             src={imageUrl}
-            alt={value.alt ?? ''}
+            alt={resolveImageAlt(value, titleFallback)}
             width={1200}
             height={675}
             sizes="(max-width: 768px) 100vw, 720px"
@@ -74,7 +80,10 @@ function PostBodyImage({value}: {value: BodyImageValue}) {
     );
 }
 
-function createComponents(headingIdByKey: Record<string, string>): PortableTextComponents {
+function createComponents(
+    headingIdByKey: Record<string, string>,
+    titleFallback?: string,
+): PortableTextComponents {
   return {
     block: {
       normal: ({ children }) => <p className="mb-8 leading-7 text-muted-foreground">{children}</p>,
@@ -129,9 +138,19 @@ function createComponents(headingIdByKey: Record<string, string>): PortableTextC
       },
     },
     types: {
-      bodyImage: ({ value }) => <PostBodyImage value={value as BodyImageValue} />,
+      bodyImage: ({ value }) => (
+        <PostBodyImage
+          value={value as BodyImageValue}
+          titleFallback={titleFallback}
+        />
+      ),
       bodyQuote: ({ value }) => <BodyQuote value={value as PostBodyQuote} />,
-      bodyGallery: ({ value }) => <BodyGallery value={value as PostBodyGallery} />,
+      bodyGallery: ({ value }) => (
+        <BodyGallery
+          value={value as PostBodyGallery}
+          titleFallback={titleFallback}
+        />
+      ),
       bodyVideo: ({ value }) => <BodyVideo value={value as PostBodyVideo} />,
       bodyStatStack: ({ value }) => (
         <BodyStatStack value={value as PostBodyStatStack} />
@@ -179,6 +198,8 @@ type PostPortableTextProps = {
     headingIdByKey?: Record<string, string>;
     className?: string;
     variant?: 'default' | 'tldr';
+    /** Article title used as tier-3 alt when CMS alts are blank. */
+    titleFallback?: string;
 };
 
 /** Post body renderer with heading anchors, body images, and embedded widgets. */
@@ -187,11 +208,14 @@ export function PostPortableText({
     headingIdByKey = {},
     className,
     variant = 'default',
+    titleFallback,
 }: PostPortableTextProps) {
     if (!value?.length) return null;
 
     const components =
-        variant === 'tldr' ? TLDR_COMPONENTS : createComponents(headingIdByKey);
+        variant === 'tldr'
+            ? TLDR_COMPONENTS
+            : createComponents(headingIdByKey, titleFallback);
 
     return (
         <div className={className}>
