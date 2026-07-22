@@ -18,6 +18,11 @@ import {
 import { absoluteUrl } from "@/lib/site";
 import { plainTextFromBlocks } from "@/lib/portable-text";
 import { buildCaseStudyJsonLd } from "@/lib/case-study-jsonld";
+import {
+  buildSocialMetadata,
+  fetchDefaultOgImageUrl,
+  resolveCaseStudyOgImageUrl,
+} from "@/lib/case-study-metadata";
 import { CaseStudyShare } from "./_components/case-study-share";
 import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
 import { CaseStudyMetaCard } from "./_components/case-study-meta-card";
@@ -41,11 +46,14 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
 
-  const study = isSanityConfigured()
-    ? await getPublishedSanityClient()
-        .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-        .catch(() => null)
-    : null;
+  const [study, defaultOgImageUrl] = await Promise.all([
+    isSanityConfigured()
+      ? getPublishedSanityClient()
+          .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
+          .catch(() => null)
+      : Promise.resolve(null),
+    fetchDefaultOgImageUrl(),
+  ]);
   if (!study) return {};
 
   const title =
@@ -59,6 +67,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     plainTextFromBlocks(study.heroIntro as PortableTextBlock[] | undefined) ||
     undefined;
   const canonical = study.canonicalUrl || absoluteUrl(`/case-studies/${slug}`);
+  const ogImageUrl = resolveCaseStudyOgImageUrl(study, defaultOgImageUrl);
   const globalNoIndex = process.env.WWW_DISABLE_INDEXING === "true";
   const robots = [
     globalNoIndex || study.allowIndex === false ? "noindex" : "index",
@@ -73,12 +82,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     robots,
     alternates: { canonical },
-    openGraph: {
+    ...buildSocialMetadata({
       title,
       description,
-      url: canonical,
-      ...(study.ogImageUrl ? { images: [{ url: study.ogImageUrl }] } : {}),
-    },
+      canonical,
+      openGraphType: "article",
+      ogImageUrl,
+    }),
   };
 }
 
@@ -96,7 +106,7 @@ export default async function CaseStudyPage({ params }: Props) {
 
   const client = isSanityConfigured() ? await getSanityClient() : null;
 
-  const [study, pageData] = await Promise.all([
+  const [study, pageData, defaultOgImageUrl] = await Promise.all([
     client
       ? client
           .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
@@ -107,12 +117,13 @@ export default async function CaseStudyPage({ params }: Props) {
           .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
           .catch(() => null)
       : Promise.resolve(null),
+    fetchDefaultOgImageUrl(),
   ]);
 
   if (!study) notFound();
 
   const pageUrl = absoluteUrl(`/case-studies/${slug}`);
-  const jsonLd = buildCaseStudyJsonLd(study);
+  const jsonLd = buildCaseStudyJsonLd(study, defaultOgImageUrl);
 
   const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
   const contactHref = absoluteUrl("/contact");

@@ -9,6 +9,7 @@ import {
 } from "@pakfactory/seo";
 import type { CaseStudyDetail } from "@pakfactory/sanity/queries";
 import { absoluteUrl, getSiteUrl } from "@/lib/site";
+import { resolveCaseStudyOgImageUrl } from "@/lib/case-study-metadata";
 
 function toIsoDate(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
@@ -46,10 +47,13 @@ export function pakfactoryOrganization(): {
 }
 
 /** Full @graph for a case study detail page. */
-export function buildCaseStudyJsonLd(study: CaseStudyDetail): string {
+export function buildCaseStudyJsonLd(
+  study: CaseStudyDetail,
+  defaultOgImageUrl?: string | null,
+): string {
   const pageUrl = absoluteUrl(`/case-studies/${study.slug}`);
   const { org, orgId } = pakfactoryOrganization();
-  const image = study.ogImageUrl ?? study.cardImageUrl ?? undefined;
+  const image = resolveCaseStudyOgImageUrl(study, defaultOgImageUrl);
   const keywords = taxonomyKeywords(study);
   const articleSection = study.client?.industry?.title?.trim() || undefined;
 
