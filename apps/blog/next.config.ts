@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
   // instead of Next stripping the slash first (308) and the proxy redirecting
   // second (308). The proxy still normalizes `/x/` → `/x` for non-redirect pages.
   skipTrailingSlashRedirect: true,
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components", "@pakfactory/redirects"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/seo", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap"],
   turbopack: {
     resolveAlias: {
       "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),

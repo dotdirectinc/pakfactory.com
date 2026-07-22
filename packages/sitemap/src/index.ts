@@ -1,5 +1,24 @@
-/** Shared XML builders for the grouped sitemap implementation (PROD-1865). */
+/**
+ * `@pakfactory/sitemap` — shared sitemap XML builders (PROD-1865, extracted in
+ * PROD-2179).
+ *
+ * Pure string building: no I/O, no framework imports, no runtime dependencies.
+ * Apps fetch their own data and hand entries in.
+ *
+ * Lives here rather than in `@pakfactory/seo` because that package is
+ * chartered as "the **only** place for schema.org JSON-LD object builders"
+ * (PROD-1487) — sitemap XML is a different output format, so it gets its own
+ * package rather than widening that charter. Same reasoning that put the
+ * IndexNow helper in `@pakfactory/sanity` (PROD-2172).
+ *
+ * Consumers: `apps/blog` (index + 5 child sitemaps), `apps/www` (case studies).
+ */
 
+/**
+ * URLs per sitemap group. The sitemaps.org cap is 50,000 URLs / 50 MB per file;
+ * 200 keeps each group small enough to regenerate cheaply on revalidation.
+ * Only `apps/blog` paginates today — `apps/www` emits a single urlset.
+ */
 export const SITEMAP_GROUP_SIZE = 200;
 
 export type SitemapIndexEntry = {

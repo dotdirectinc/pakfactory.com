@@ -6,7 +6,7 @@ import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { blogLanguageParams } from "@/lib/blog-language";
 import { isSanityConfigured } from "@/lib/sanity/env";
-import { buildSitemapIndex, SITEMAP_GROUP_SIZE, xmlResponse } from "@/lib/sitemap/xml";
+import { buildSitemapIndex, SITEMAP_GROUP_SIZE, xmlResponse } from "@pakfactory/sitemap";
 
 // Lowered from 3600 so new sub-sitemap pages surface promptly (PROD-1865).
 export const revalidate = 300;
