@@ -13,6 +13,7 @@ export const caseStudiesPage = defineType({
     { name: 'detailCta', title: 'Detail CTA' },
     { name: 'related', title: 'Related' },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
     defineField({
@@ -167,11 +168,14 @@ export const caseStudiesPage = defineType({
       description: 'For the /case-studies listing page. Aim for 155–165 characters.',
       validation: (Rule) => Rule.max(160).warning('Over 160 characters may be truncated.'),
     }),
+
+    // ─── Social ───────────────────────────────────────────────────────────────
+
     defineField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
-      group: 'seo',
+      group: 'social',
       options: { hotspot: true },
       description: 'Open Graph image for the listing page.',
     }),

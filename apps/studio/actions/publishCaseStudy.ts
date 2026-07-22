@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { PublishIcon } from '@sanity/icons'
 import { useClient, useDocumentOperation } from 'sanity'
+import {
+  AUTO_REDIRECT_GROUP,
+  resolveRedirectGroupRef,
+} from '../lib/redirect-groups'
 import type {
   DocumentActionComponent,
   DocumentActionDescription,
@@ -19,7 +23,8 @@ import type {
  *     provides (see `publishWithRedirect`), resolved at runtime by the www proxy.
  *
  * Case studies live at `/case-studies/{slug}` on www, so the redirect is scoped
- * to that path with `channel: "website"`. Bookkeeping never blocks publishing —
+ * to that path and filed under the Case Studies redirect group when one exists
+ * (grouping is organizational only). Bookkeeping never blocks publishing —
  * a redirect failure is logged, not thrown. Visibility on www stays controlled by
  * Sanity publish state.
  */
@@ -52,9 +57,16 @@ async function syncSlugChangeRedirect(
     { from: fromPath },
   )
 
+  // File the rule under the Case Studies redirect group when it exists; a
+  // missing group just means Ungrouped — never block publishing.
+  const groupRef = await resolveRedirectGroupRef(
+    client,
+    AUTO_REDIRECT_GROUP.caseStudies,
+  )
+
   const tx = client.transaction()
   const rule = {
-    channel: 'website',
+    ...(groupRef ? { group: groupRef } : {}),
     matchType: 'exact',
     behaviour: 'permanent',
     to: toPathValue,

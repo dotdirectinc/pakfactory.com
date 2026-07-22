@@ -39,6 +39,7 @@ import { page } from './page'
 import { post } from './post'
 import { videoPost } from './videoPost'
 import { redirect } from './redirect'
+import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
 import {
   pageBuilderBlocks,
@@ -98,6 +99,7 @@ export const schemaTypes = [
   post,
   videoPost,
   redirect,
+  redirectGroup,
 
   // Page builder
   ...pageBuilderBlocks,

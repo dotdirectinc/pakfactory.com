@@ -55,35 +55,150 @@ function mediaLibraryItem(S: StructureBuilder): ListItemBuilder {
         .child(S.component(MediaToolRedirect).title('Media Library'));
 }
 
-/**
- * A single, flattened Redirects item scoped to one channel — used inside a
- * workspace lens so editors land straight on their own redirects (no
- * All/Blog/Website drill-down). Global keeps the full multi-channel folder.
- * The `blog` scope also includes legacy untagged redirects (no channel yet).
- */
-function scopedRedirectsItem(
+const REDIRECT_ORDERING = [
+    {field: 'isActive', direction: 'desc' as const},
+    {field: '_updatedAt', direction: 'desc' as const},
+];
+
+/** Redirects filed under one group — panel 3 when a group folder is selected. */
+function redirectEntriesForGroup(
     S: StructureBuilder,
-    channel: string,
+    groupId: string,
+    title: string,
+) {
+    return S.documentList()
+        .title(`${title} Redirects`)
+        .schemaType('redirect')
+        .filter('_type == "redirect" && group._ref == $groupId')
+        .params({groupId})
+        .defaultOrdering(REDIRECT_ORDERING)
+        .initialValueTemplates([
+            S.initialValueTemplateItem('redirect-in-group', {groupId}),
+        ]);
+}
+
+function ungroupedRedirectsList(S: StructureBuilder) {
+    return S.documentList()
+        .title('Ungrouped Redirects')
+        .schemaType('redirect')
+        .filter('_type == "redirect" && !defined(group)')
+        .defaultOrdering(REDIRECT_ORDERING);
+}
+
+/**
+ * Redirects desk item — editor-managed group folders (mirrors the Topic Groups
+ * pattern in `topicsDeskItem`).
+ *
+ * Panel 2 = one folder per `redirectGroup` + Edit Groups + Ungrouped + All;
+ * panel 3 = that group's redirects, or group CRUD.
+ *
+ * Grouping is organizational only. It deliberately does NOT filter by workspace:
+ * the old per-channel scoping implied a redirect "belonged" to an app, which was
+ * never true — a redirect's owning app is its `from` path prefix. Every workspace
+ * now sees the same folders so a blog→case-studies rule is findable from either
+ * lens.
+ */
+function redirectsDeskItem(
+    S: StructureBuilder,
+    context: StructureResolverContext,
 ): ListItemBuilder {
-    const filter =
-        channel === 'blog'
-            ? '_type == "redirect" && (channel == "blog" || !defined(channel))'
-            : `_type == "redirect" && channel == "${channel}"`;
-    const label = channel.charAt(0).toUpperCase() + channel.slice(1);
     return S.listItem()
         .id('redirects')
         .title('Redirects')
         .icon(ArrowRightIcon)
-        .schemaType('redirect')
-        .child(
-            S.documentTypeList('redirect')
-                .title(`${label} Redirects`)
-                .filter(filter)
+        .child(async () => {
+            const client = context.getClient({apiVersion: '2024-01-01'});
+            const groups = await client.fetch<
+                {_id: string; title: string; order?: number}[]
+            >(
+                `*[_type == "redirectGroup"] | order(order asc, title asc){ _id, title, order }`,
+            );
+
+            // Drafts and published rows both come back; collapse to one entry per
+            // published id, preferring the draft's title so a rename shows up
+            // immediately in the desk (same approach as topicsDeskItem).
+            const byPublishedId = new Map<
+                string,
+                {_id: string; title: string; order?: number}
+            >();
+            for (const group of groups) {
+                const publishedId = group._id.replace(/^drafts\./, '');
+                if (
+                    !byPublishedId.has(publishedId) ||
+                    group._id.startsWith('drafts.')
+                ) {
+                    byPublishedId.set(publishedId, {
+                        _id: publishedId,
+                        title: group.title,
+                        order: group.order,
+                    });
+                }
+            }
+
+            const uniqueGroups = [...byPublishedId.values()].sort((a, b) => {
+                const orderA = a.order ?? 0;
+                const orderB = b.order ?? 0;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.title.localeCompare(b.title);
+            });
+
+            const editGroupsList = S.documentTypeList('redirectGroup')
+                .title('Edit Groups')
                 .defaultOrdering([
-                    {field: 'isActive', direction: 'desc'},
-                    {field: '_updatedAt', direction: 'desc'},
-                ]),
-        );
+                    {field: 'order', direction: 'asc'},
+                    {field: 'title', direction: 'asc'},
+                ]);
+
+            return S.list()
+                .title('Redirect Groups')
+                .items([
+                    ...uniqueGroups.map((group) =>
+                        S.listItem()
+                            .id(`redirect-folder-${group._id}`)
+                            .title(group.title)
+                            .icon(FolderIcon)
+                            .child(
+                                redirectEntriesForGroup(
+                                    S,
+                                    group._id,
+                                    group.title,
+                                ),
+                            ),
+                    ),
+                    S.divider(),
+                    S.listItem()
+                        .id('redirects-edit-groups')
+                        .title('Edit Groups')
+                        .icon(CogIcon)
+                        .schemaType('redirectGroup')
+                        .child(editGroupsList),
+                    S.listItem()
+                        .id('redirects-ungrouped')
+                        .title('Ungrouped')
+                        .icon(ArrowRightIcon)
+                        .child(ungroupedRedirectsList(S)),
+                    S.divider(),
+                    S.listItem()
+                        .id('redirects-all')
+                        .title('All Redirects')
+                        .icon(ArrowRightIcon)
+                        .schemaType('redirect')
+                        .child(
+                            S.documentTypeList('redirect')
+                                .title('All Redirects')
+                                .defaultOrdering(REDIRECT_ORDERING),
+                        ),
+                ])
+                .menuItems([
+                    S.menuItem()
+                        .title('Create redirect group')
+                        .icon(AddIcon)
+                        .intent({
+                            type: 'create',
+                            params: {type: 'redirectGroup'},
+                        }),
+                ]);
+        });
 }
 
 function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
@@ -1384,143 +1499,21 @@ interface SettingsOptions {
     solutions?: boolean;
     /** Show the Media Library inside the Settings section (under the divider). */
     media?: boolean;
-    /**
-     * When set, show only this channel's redirects, flattened (no drill-down).
-     * Omit (Global/Admin) to keep the full multi-channel Redirects folder.
-     */
-    redirectScope?: string;
 }
 
 export function settingsItems(
     S: StructureBuilder,
+    context: StructureResolverContext,
     options: SettingsOptions = {},
 ): (ListItemBuilder | DividerBuilder)[] {
     const showSolutions = WORKSPACE_SETTINGS && options.solutions;
-    const redirectScope = options.redirectScope;
 
     return [
         S.divider().title('Settings'),
 
         ...(options.media ? [mediaLibraryItem(S)] : []),
 
-        redirectScope
-            ? scopedRedirectsItem(S, redirectScope)
-            : S.listItem()
-            .title('Redirects')
-            .icon(ArrowRightIcon)
-            .child(
-                S.list()
-                    .title('Redirects')
-                    .items([
-                        S.listItem()
-                            .title('All')
-                            .schemaType('redirect')
-                            .child(
-                                S.documentTypeList('redirect')
-                                    .title('All Redirects')
-                                    .defaultOrdering([
-                                        {field: 'channel', direction: 'asc'},
-                                        {field: 'isActive', direction: 'desc'},
-                                        {
-                                            field: '_updatedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-
-                        S.divider(),
-
-                        S.listItem()
-                            .title('Blog')
-                            .schemaType('redirect')
-                            .child(
-                                S.documentTypeList('redirect')
-                                    .title('Blog Redirects')
-                                    .filter(
-                                        '_type == "redirect" && (channel == "blog" || !defined(channel))',
-                                    )
-                                    .defaultOrdering([
-                                        {field: 'isActive', direction: 'desc'},
-                                        {
-                                            field: '_updatedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-
-                        S.listItem()
-                            .title('Website')
-                            .schemaType('redirect')
-                            .child(
-                                S.documentTypeList('redirect')
-                                    .title('Website Redirects')
-                                    .filter(
-                                        '_type == "redirect" && channel == "website"',
-                                    )
-                                    .defaultOrdering([
-                                        {field: 'isActive', direction: 'desc'},
-                                        {
-                                            field: '_updatedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-
-                        S.listItem()
-                            .title('Products')
-                            .schemaType('redirect')
-                            .child(
-                                S.documentTypeList('redirect')
-                                    .title('Product Redirects')
-                                    .filter(
-                                        '_type == "redirect" && channel == "products"',
-                                    )
-                                    .defaultOrdering([
-                                        {field: 'isActive', direction: 'desc'},
-                                        {
-                                            field: '_updatedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-
-                        S.listItem()
-                            .title('Solutions')
-                            .schemaType('redirect')
-                            .child(
-                                S.documentTypeList('redirect')
-                                    .title('Solution Redirects')
-                                    .filter(
-                                        '_type == "redirect" && channel == "solutions"',
-                                    )
-                                    .defaultOrdering([
-                                        {field: 'isActive', direction: 'desc'},
-                                        {
-                                            field: '_updatedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-
-                        S.listItem()
-                            .title('Expertise')
-                            .schemaType('redirect')
-                            .child(
-                                S.documentTypeList('redirect')
-                                    .title('Expertise Redirects')
-                                    .filter(
-                                        '_type == "redirect" && channel == "expertise"',
-                                    )
-                                    .defaultOrdering([
-                                        {field: 'isActive', direction: 'desc'},
-                                        {
-                                            field: '_updatedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-                    ]),
-            ),
+        redirectsDeskItem(S, context),
 
         ...(showSolutions
             ? [
@@ -1554,14 +1547,17 @@ export function settingsItems(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Admin — sees everything, organized by platform architecture */
-export const adminStructure = (S: StructureBuilder) =>
+export const adminStructure = (
+    S: StructureBuilder,
+    context: StructureResolverContext,
+) =>
     S.list()
         .title('PakFactory')
         .items([
             ...coreEntitiesItems(S),
             ...resourcesItems(S),
             globalNavigationItem(S),
-            ...settingsItems(S, {blog: true, solutions: true}),
+            ...settingsItems(S, context, {blog: true, solutions: true}),
         ]);
 
 /** Blog — editorial team */
@@ -1573,11 +1569,14 @@ export const blogStructure = (
         .title('Blog')
         .items([
             ...blogItems(S, context),
-            ...settingsItems(S, {blog: true, redirectScope: 'blog'}),
+            ...settingsItems(S, context, {blog: true}),
         ]);
 
 /** Website — all content that makes up the website */
-export const websiteStructure = (S: StructureBuilder) =>
+export const websiteStructure = (
+    S: StructureBuilder,
+    context: StructureResolverContext,
+) =>
     S.list()
         .title('Website')
         .items([
@@ -1588,24 +1587,30 @@ export const websiteStructure = (S: StructureBuilder) =>
             }),
             ...staticPagesItems(S),
             mediaLibraryItem(S),
-            ...settingsItems(S, {redirectScope: 'website'}),
+            ...settingsItems(S, context),
         ]);
 
 /** Solutions — industry and use-case solution pages */
-export const solutionsStructure = (S: StructureBuilder) =>
+export const solutionsStructure = (
+    S: StructureBuilder,
+    context: StructureResolverContext,
+) =>
     S.list()
         .title('Solutions')
         .items([
             ...solutionItems(S),
             ...knowledgeLibraryItems(S),
-            ...settingsItems(S, {solutions: true}),
+            ...settingsItems(S, context, {solutions: true}),
         ]);
 
 /** Academy — placeholder until Academy schema is built */
-export const academyStructure = (S: StructureBuilder) =>
+export const academyStructure = (
+    S: StructureBuilder,
+    context: StructureResolverContext,
+) =>
     S.list()
         .title('Academy')
-        .items([...settingsItems(S)]);
+        .items([...settingsItems(S, context)]);
 
 // Default export — Admin (backwards-compatible fallback)
 export const structure = adminStructure;

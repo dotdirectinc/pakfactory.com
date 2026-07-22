@@ -33,9 +33,10 @@ const TRAILING_SLASH_MESSAGE =
  * honours `matchType` (exact/prefix/phrase) and `behaviour` (permanent 301 /
  * temporary 302 / gone 410), and runs in BOTH edge proxies: the blog
  * (`apps/blog/src/proxy.ts`, `/blog` surface) and www (`apps/www/src/proxy.ts`,
- * `/case-studies` surface). A redirect's owning app is its `from` PATH PREFIX, not
- * `channel` (which is target-oriented — a blog→case-studies redirect is
- * `channel: "website"` but has a `/blog/...` from and fires on the blog). The legacy
+ * `/case-studies` surface). A redirect's owning app is its `from` PATH PREFIX — never
+ * its `group` (nor the deprecated `channel` that group replaced), which is purely
+ * organizational: a blog→case-studies redirect has a `/blog/...` from and fires on the
+ * blog no matter which folder an editor files it under. The legacy
  * `type` (301/302) field was retired once every doc carried `behaviour` (PROD-2157);
  * `behaviour` defaults to permanent 301.
  */
@@ -45,23 +46,28 @@ export const redirect = defineType({
   type: 'document',
   fields: [
     defineField({
-      name: 'channel',
-      title: 'Channel',
-      type: 'string',
+      name: 'group',
+      title: 'Group',
+      type: 'reference',
+      to: [{ type: 'redirectGroup' }],
       description:
-        'Which content channel this redirect belongs to — also scopes which app applies it (blog vs www).',
-      options: {
-        list: [
-          { title: 'Blog', value: 'blog' },
-          { title: 'Website', value: 'website' },
-          { title: 'Products', value: 'products' },
-          { title: 'Solutions', value: 'solutions' },
-          { title: 'Expertise', value: 'expertise' },
-        ],
-        layout: 'dropdown',
-      },
-      initialValue: 'blog',
-      validation: (Rule) => Rule.required(),
+        'Editor-managed folder for organizing redirects. Purely organizational — it does NOT decide which app applies this redirect (that is the From path prefix). Leave empty for Ungrouped.',
+    }),
+
+    /**
+     * DEPRECATED — superseded by `group`. Kept (hidden + read-only) only so the
+     * ~150 pre-migration documents don't render as an unknown field. Removed in a
+     * follow-up once `migrate:redirect-groups` has run on prod and been verified,
+     * matching the PROD-2116 / legacy-`type` retirement sequence.
+     */
+    defineField({
+      name: 'channel',
+      title: 'Channel (deprecated)',
+      type: 'string',
+      readOnly: true,
+      hidden: ({ value }) => !value,
+      description:
+        'Replaced by Group. This value is migrated to a Redirect Group and then removed — do not rely on it.',
     }),
 
     defineField({
@@ -217,11 +223,11 @@ export const redirect = defineType({
       matchType: 'matchType',
       behaviour: 'behaviour',
       isActive: 'isActive',
-      channel: 'channel',
+      groupTitle: 'group.title',
     },
-    prepare({ from, to, matchType, behaviour, isActive, channel }) {
+    prepare({ from, to, matchType, behaviour, isActive, groupTitle }) {
       const state = isActive === false ? ' · inactive' : ''
-      const ch = channel ? ` [${channel}]` : ''
+      const ch = groupTitle ? ` [${groupTitle}]` : ''
       const mt = matchType && matchType !== 'exact' ? `${matchType} · ` : ''
       const status =
         behaviour === 'gone'

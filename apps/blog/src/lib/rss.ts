@@ -67,11 +67,14 @@ export function buildRssFeedXml(siteUrl: string, posts: RssPostItem[]): string {
       : new Date().toUTCString();
   const items = posts.map((post) => buildItemXml(origin, post)).join("\n");
 
+  const selfUrl = `${origin}/rss.xml`;
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(RSS_CHANNEL_TITLE)}</title>
     <link>${escapeXml(origin)}</link>
+    <atom:link href="${escapeXml(selfUrl)}" rel="self" type="application/rss+xml" />
     <description>${escapeXml(RSS_CHANNEL_DESCRIPTION)}</description>
     <language>en-us</language>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>

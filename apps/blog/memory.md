@@ -704,11 +704,12 @@ Product analytics is owned by **marketing through GTM**, not an in-app PostHog S
 | Piece | Where |
 | ----- | ----- |
 | Container ID | Sanity **Global Settings → Integrations → `gtmId`** (e.g. `GTM-XXXXXXX`) |
-| Inject | `@next/third-parties` `<GoogleTagManager />` in [`src/app/layout.tsx`](./src/app/layout.tsx) |
+| Inject (blog) | `@next/third-parties` `<GoogleTagManager />` in [`src/app/layout.tsx`](./src/app/layout.tsx) |
+| Inject (www / case-studies) | Same helper in [`apps/www/src/app/layout.tsx`](../www/src/app/layout.tsx); ID from [`fetchWwwGlobalSettings()`](../www/src/lib/www-global-settings.ts) (PROD-2176) |
 | Gate | Inject only when `gtmId` is set **and** `VERCEL_ENV === 'production'` (unset locally → no GTM; preview → no GTM even if dataset has an ID) |
-| Custom events | [`src/lib/analytics.ts`](./src/lib/analytics.ts) `captureEvent` → `sendGTMEvent` / `dataLayer` |
+| Custom events | Blog: [`src/lib/analytics.ts`](./src/lib/analytics.ts) `captureEvent` → `sendGTMEvent` / `dataLayer`. Www has no custom funnel events yet — container tags only. |
 
-Funnel events marketing can trigger on in GTM: `post_read`, `search_performed` (incl. `zero_results`), `newsletter_signup_submitted` / `_succeeded` / `_failed`. Trackers: `components/modules/analytics/`.
+Funnel events marketing can trigger on in GTM (blog): `post_read`, `search_performed` (incl. `zero_results`), `newsletter_signup_submitted` / `_succeeded` / `_failed`. Trackers: `components/modules/analytics/`.
 
 **Humans:** set `gtmId` in Studio on the settings singleton. Agents do not patch Sanity documents.
 

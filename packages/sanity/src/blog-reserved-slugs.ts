@@ -10,6 +10,7 @@ export const BLOG_RESERVED_SLUGS = [
   "authors-sitemap.xml",
   "categories-sitemap.xml",
   "contribute",
+  "feed",
   "pages-sitemap.xml",
   "posts-sitemap",
   "rss.xml",

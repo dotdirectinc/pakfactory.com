@@ -120,6 +120,16 @@ const blogTemplates: Template[] = [
       topicGroup: { _type: 'reference', _ref: groupId },
     }),
   },
+  // Creating a redirect from inside a group folder presets that group.
+  {
+    id: 'redirect-in-group',
+    title: 'Redirect',
+    schemaType: 'redirect',
+    parameters: [{ name: 'groupId', type: 'string' }],
+    value: ({ groupId }: { groupId: string }) => ({
+      group: { _type: 'reference', _ref: groupId },
+    }),
+  },
 ]
 
 // One create-template per channel so "New Video" can be preset to a surface.

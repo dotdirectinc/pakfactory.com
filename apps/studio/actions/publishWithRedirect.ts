@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { PublishIcon } from '@sanity/icons'
 import { useClient, useDocumentOperation } from 'sanity'
+import {
+  AUTO_REDIRECT_GROUP,
+  resolveRedirectGroupRef,
+} from '../lib/redirect-groups'
 import type {
   DocumentActionComponent,
   DocumentActionDescription,
@@ -63,6 +67,13 @@ async function syncSlugChangeRedirect(
     { from: fromPath },
   )
 
+  // File the rule under the Blog redirect group when it exists; a missing group
+  // just means Ungrouped — never block publishing on bookkeeping.
+  const groupRef = await resolveRedirectGroupRef(
+    client,
+    AUTO_REDIRECT_GROUP.blogPosts,
+  )
+
   const tx = client.transaction()
   if (existing?._id) {
     // Idempotent: refresh the existing rule rather than duplicating it.
@@ -71,7 +82,7 @@ async function syncSlugChangeRedirect(
         to: toPathValue,
         matchType: 'exact',
         behaviour: 'permanent',
-        channel: 'blog',
+        ...(groupRef ? { group: groupRef } : {}),
         isActive: true,
         notes: 'Auto-updated from slug change',
       }),
@@ -83,7 +94,7 @@ async function syncSlugChangeRedirect(
       to: toPathValue,
       matchType: 'exact',
       behaviour: 'permanent',
-      channel: 'blog',
+      ...(groupRef ? { group: groupRef } : {}),
       isActive: true,
       notes: 'Auto-created from slug change',
     })
