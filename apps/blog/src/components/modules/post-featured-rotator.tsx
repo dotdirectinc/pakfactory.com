@@ -123,7 +123,7 @@ export function PostFeaturedRotator({
                 <SanityImage
                   key={post._id}
                   src={post.imageUrl}
-                  alt={i === active ? (post.imageAlt ?? post.title) : ""}
+                  alt={post.imageAlt || post.title}
                   aria-hidden={i !== active}
                   fill
                   sizes="(min-width: 1024px) 56vw, 100vw"
@@ -178,7 +178,7 @@ export function PostFeaturedRotator({
                     <span className="relative w-20 shrink-0 self-stretch overflow-hidden rounded-md bg-secondary lg:hidden">
                       <SanityImage
                         src={post.imageUrl}
-                        alt=""
+                        alt={post.imageAlt || post.title}
                         fill
                         className="object-cover"
                         sizes="80px"

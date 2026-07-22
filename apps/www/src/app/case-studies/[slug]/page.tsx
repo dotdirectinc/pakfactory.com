@@ -28,7 +28,7 @@ import { CaseStudyHeroMedia } from "./_components/case-study-hero-media";
 import { CaseStudyMetaCard } from "./_components/case-study-meta-card";
 import { RelatedStudiesCarousel } from "./_components/related-studies-carousel";
 import {
-  caseStudyPtComponents,
+  makeCaseStudyPtComponents,
   makeHeroIntroPtComponents,
 } from "./_components/pt-components";
 
@@ -126,6 +126,7 @@ export default async function CaseStudyPage({ params }: Props) {
   const jsonLd = buildCaseStudyJsonLd(study, defaultOgImageUrl);
 
   const heroIntroPtComponents = makeHeroIntroPtComponents(study.client?.website);
+  const storyPtComponents = makeCaseStudyPtComponents(study.title);
   const contactHref = absoluteUrl("/contact");
   const wwwHomeHref = absoluteUrl("/");
 
@@ -236,7 +237,7 @@ export default async function CaseStudyPage({ params }: Props) {
               <div>
                 <PortableText
                   value={study.challenge as PortableTextBlock[]}
-                  components={caseStudyPtComponents}
+                  components={storyPtComponents}
                 />
               </div>
             </section>
@@ -252,7 +253,7 @@ export default async function CaseStudyPage({ params }: Props) {
               <div>
                 <PortableText
                   value={study.solution as PortableTextBlock[]}
-                  components={caseStudyPtComponents}
+                  components={storyPtComponents}
                 />
               </div>
             </section>
@@ -268,7 +269,7 @@ export default async function CaseStudyPage({ params }: Props) {
               <div>
                 <PortableText
                   value={study.result as PortableTextBlock[]}
-                  components={caseStudyPtComponents}
+                  components={storyPtComponents}
                 />
               </div>
             </section>
