@@ -4,7 +4,6 @@ import {
   type SitemapUrlEntry,
 } from "@pakfactory/sitemap";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { fetchBlogSettings, type BlogSettings } from "@/lib/blog-settings";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
@@ -14,7 +13,7 @@ import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
  * "fetch a list of slugs, emit one `<url>` each" (PROD-2179 Part B).
  *
  * Covers `authors-sitemap.xml`, `categories-sitemap.xml` and
- * `pages-sitemap.xml`, which were ~90% identical.
+ * `pages-sitemap.xml`.
  *
  * Deliberately does **not** cover:
  *
@@ -22,89 +21,83 @@ import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
  *   segment (tolerating an optional `.xml` suffix), paginate via
  *   `SITEMAP_GROUP_SIZE`, and have **two distinct 404 policies** (malformed page
  *   vs. an empty page past the end). Those are deliberate SEO decisions, not
- *   boilerplate; folding them in would mean option knobs that let the two
- *   silently share or silently diverge.
+ *   boilerplate.
  * - `sitemap.xml` — a sitemap *index*, a different builder entirely.
  * - `sitemap.xsl` — a static stylesheet.
  * - the two 6-line 301 stubs.
  *
  * This lives in the app rather than `@pakfactory/sitemap` because it performs
- * I/O and depends on blog config (`fetchBlogSettings`, the Sanity client,
- * `absoluteUrl`). The package stays pure string building.
+ * I/O and depends on blog config (the Sanity client, `absoluteUrl`). The package
+ * stays pure string building.
  *
  * Note: `export const revalidate` cannot come from here — Next requires it to be
  * a statically analyzable literal in the route file itself, so each route keeps
  * its own.
+ *
+ * ## On `lastmod` (PROD-2194)
+ *
+ * Google consumes `<lastmod>` only "if it's consistently and verifiably
+ * accurate", and discounts the field site-wide when it isn't. Taxonomy archives
+ * (categories, authors, topics) carry **no document-level content date** — the
+ * previous implementation used Sanity's `_updatedAt`, which bumps on any write,
+ * so every entry ended up stamped with the content-migration date (36 of 36
+ * topics shared one value). Those routes now omit `lastmod` entirely: a `<url>`
+ * needs only `<loc>`, and no date beats a false one.
+ *
+ * Routes that do have a real content date pass `lastmodFrom` — see
+ * `pages-sitemap.xml`.
+ *
+ * `changefreq` and `priority` are gone repo-wide: Google ignores both, and the
+ * blog emitted one constant value for each. See `@pakfactory/sitemap`.
  */
 
 /** Minimum shape every taxonomy sitemap query must project. */
-type SitemapSlugEntry = {
+export type SitemapRow = {
   slug: string;
-  _updatedAt?: string;
   publishedAt?: string;
 };
 
-export type TaxonomySitemapConfig = {
-  /** GROQ returning `{ slug, _updatedAt?, publishedAt? }[]`. */
+export type TaxonomySitemapConfig<Row extends SitemapRow = SitemapRow> = {
+  /** GROQ returning `{ slug, … }[]`. */
   query: string;
   /** Slug → site-relative path (`authorHref`, `categoryHref`, …). */
   href: (slug: string) => string;
-  /**
-   * Which per-type defaults supply `sitemapChangefreq` / `sitemapPriority`.
-   * Passed explicitly rather than inferred so an unexpected pairing is visible
-   * at the call site — see the note on `pages-sitemap.xml`.
-   */
-  defaultsKey: keyof BlogSettings;
-  /** Used when the Studio singleton leaves the field empty. */
-  fallbackChangefreq: string;
-  fallbackPriority: number;
   /** Emitted before the fetched entries (e.g. `/`, `/all`, `/contribute`). */
   staticEntries?: SitemapUrlEntry[];
-  /** Multiplier on the resolved priority for fetched entries. Default 1. */
-  priorityFactor?: number;
+  /**
+   * Real content date for a row. Omit the option entirely for taxonomy
+   * archives, which have none. Return `undefined` to skip `lastmod` for one row.
+   */
+  lastmodFrom?: (row: Row) => string | undefined;
 };
 
 const HTTP_CACHE_SECONDS = 60;
 
-/** `YYYY-MM-DD`, or nothing when the document carries no usable date. */
-function lastmodOf(entry: SitemapSlugEntry): { lastmod?: string } {
-  const raw = entry._updatedAt ?? entry.publishedAt;
+/** `YYYY-MM-DD`, or nothing when there is no usable date. */
+function toLastmod(raw: string | undefined): { lastmod?: string } {
   return raw ? { lastmod: new Date(raw).toISOString().slice(0, 10) } : {};
 }
 
 /** Build the `GET` handler for one taxonomy sitemap route. */
-export function makeTaxonomySitemap(config: TaxonomySitemapConfig) {
-  const {
-    query,
-    href,
-    defaultsKey,
-    fallbackChangefreq,
-    fallbackPriority,
-    staticEntries = [],
-    priorityFactor = 1,
-  } = config;
+export function makeTaxonomySitemap<Row extends SitemapRow = SitemapRow>(
+  config: TaxonomySitemapConfig<Row>,
+) {
+  const { query, href, staticEntries = [], lastmodFrom } = config;
 
   return async function GET(): Promise<Response> {
     const entries: SitemapUrlEntry[] = [...staticEntries];
 
     // Sanity being unconfigured is not an error: the route still serves a valid
-    // urlset containing whatever static entries it has (matches prior behaviour).
+    // urlset containing whatever static entries it has.
     if (isSanityConfigured()) {
-      const settings = await fetchBlogSettings();
-      const defaults = settings?.[defaultsKey];
-      const changefreq = defaults?.sitemapChangefreq ?? fallbackChangefreq;
-      const priority = (defaults?.sitemapPriority ?? fallbackPriority) * priorityFactor;
-
       const rows = await getPublishedSanityClient()
-        .fetch<SitemapSlugEntry[]>(query, blogLanguageParams())
-        .catch(() => [] as SitemapSlugEntry[]);
+        .fetch<Row[]>(query, blogLanguageParams())
+        .catch(() => [] as Row[]);
 
       for (const row of rows) {
         entries.push({
           loc: absoluteUrl(href(row.slug)),
-          ...lastmodOf(row),
-          changefreq,
-          priority,
+          ...toLastmod(lastmodFrom?.(row)),
         });
       }
     }

@@ -1,5 +1,4 @@
 import { BLOG_SITEMAP_TAGS_PAGE_QUERY } from "@pakfactory/sanity/queries";
-import { fetchBlogSettings } from "@/lib/blog-settings";
 import { tagHref } from "@/lib/blog-post-url";
 import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
@@ -9,7 +8,7 @@ import { buildUrlset, SITEMAP_GROUP_SIZE, xmlResponse, type SitemapUrlEntry } fr
 
 export const revalidate = 60;
 
-type SitemapTopic = { slug: string; _updatedAt?: string };
+type SitemapTopic = { slug: string };
 
 export async function GET(
   _request: Request,
@@ -23,11 +22,6 @@ export async function GET(
   if (isNaN(page) || page < 1) {
     return new Response("Not found", { status: 404 });
   }
-
-  const blogSettings = await fetchBlogSettings();
-  const tagSitemap = blogSettings?.tagDefaults;
-  const changefreq = tagSitemap?.sitemapChangefreq ?? "weekly";
-  const priority = tagSitemap?.sitemapPriority ?? 0.5;
 
   const entries: SitemapUrlEntry[] = [];
 
@@ -50,9 +44,6 @@ export async function GET(
     for (const topic of topics) {
       entries.push({
         loc: absoluteUrl(tagHref(topic.slug)),
-        ...(topic._updatedAt ? { lastmod: new Date(topic._updatedAt).toISOString().slice(0, 10) } : {}),
-        changefreq,
-        priority,
       });
     }
   }

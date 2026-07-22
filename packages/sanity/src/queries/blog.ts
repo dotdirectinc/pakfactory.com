@@ -1341,7 +1341,7 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
   "categorySlug": category->slug.current,
   "mainImageUrl": mainImage.asset->url,
   publishedAt,
-  _updatedAt
+  lastModified
 }`;
 
 /** Paginated populated tags for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
