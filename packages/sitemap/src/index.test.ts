@@ -43,29 +43,28 @@ test("escapes sitemap index locs", () => {
 
 // ── urlset shape ────────────────────────────────────────────────────────────
 
-test("emits only the fields provided", () => {
+test("emits only <loc> when nothing else is provided", () => {
   const xml = buildUrlset([{ loc: "https://x.test/a" }]);
   assert.match(xml, /<url>\s*<loc>https:\/\/x\.test\/a<\/loc>\s*<\/url>/);
   assert.ok(!xml.includes("<lastmod>"));
+});
+
+test("emits lastmod when present", () => {
+  const entry: SitemapUrlEntry = { loc: "https://x.test/a", lastmod: "2026-07-22" };
+  assert.match(buildUrlset([entry]), /<lastmod>2026-07-22<\/lastmod>/);
+});
+
+// PROD-2194 — Google ignores <changefreq> and <priority>, and before removal
+// every blog post emitted the identical pair, so they carried no information.
+// They are gone from the entry type; this pins the output contract so nobody
+// reintroduces them via a loosely-typed caller.
+test("never emits changefreq or priority", () => {
+  const xml = buildUrlset([
+    { loc: "https://x.test/a", lastmod: "2026-07-22" },
+    { loc: "https://x.test/b", images: ["https://cdn.test/i.jpg"] },
+  ]);
   assert.ok(!xml.includes("<changefreq>"));
   assert.ok(!xml.includes("<priority>"));
-});
-
-test("emits lastmod / changefreq / priority when present", () => {
-  const entry: SitemapUrlEntry = {
-    loc: "https://x.test/a",
-    lastmod: "2026-07-22",
-    changefreq: "weekly",
-    priority: 0.7,
-  };
-  const xml = buildUrlset([entry]);
-  assert.match(xml, /<lastmod>2026-07-22<\/lastmod>/);
-  assert.match(xml, /<changefreq>weekly<\/changefreq>/);
-  assert.match(xml, /<priority>0\.7<\/priority>/);
-});
-
-test("priority 0 is emitted, not dropped as falsy", () => {
-  assert.match(buildUrlset([{ loc: "https://x.test/a", priority: 0 }]), /<priority>0<\/priority>/);
 });
 
 // ── image namespace ─────────────────────────────────────────────────────────
