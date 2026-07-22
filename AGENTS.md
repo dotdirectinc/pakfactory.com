@@ -158,10 +158,31 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | ----------------- | ---------------------------------------------------------------------------------- |
 | **Project key**   | `PROD`                                                                             |
 | **Issue prefix**  | `PROD-123`                                                                         |
-| **Branches**      | `feat/PROD-123-short-slug` or `feature/PROD-123-short-slug`, `fix/PROD-123-short-slug`, `chore/PROD-123-short-slug` (Jira key recommended) |
+| **Base branch**   | `origin/staging` — fetch first; do **not** branch from `main` or an unrelated feature branch |
+| **Branches**      | CI-enforced prefix + slug (see map below). Allowlist: `feat/` `feature/` `features/` `fix/` `bugfix/` `hotfix/` `chore/` — see [`.github/workflows/branch-name-lint.yml`](.github/workflows/branch-name-lint.yml). Prefer `feat/` / `fix/` / `chore/`. |
+| **PR base**       | `staging`                                                                          |
 | **Commits**       | `PROD-123: summary` or trailer `Refs: PROD-123`                                    |
 | **PR titles**     | `[PROD-123] Short description`                                                     |
 | **Blog 3.0 epic** | [PROD-1480](https://dotdirect.atlassian.net/browse/PROD-1480) — tech prerequisites |
+
+### Issue type → branch prefix (binding)
+
+Must match the CI allowlist in [`.github/workflows/branch-name-lint.yml`](.github/workflows/branch-name-lint.yml). Do **not** use `bug/` or `clean-up/` — those fail validation.
+
+| Jira issue type | Branch prefix | Example |
+| --------------- | ------------- | ------- |
+| Bug | `fix` (or `bugfix`) | `fix/PROD-2007-blog-page-shift` |
+| Story, Task, Feature | `feat` (or `feature` / `features`) | `feat/PROD-1957-algolia-search` |
+| Technical Debt / ops cleanup | `chore` | `chore/PROD-123-retire-legacy` |
+| Urgent production fix | `hotfix` | `hotfix/PROD-123-short-slug` |
+| Anything else | `feat` (state the assumption in the handoff comment) | |
+
+### Branch & handoff workflow (binding for agents)
+
+1. Read the Jira issue type → choose a **CI-allowed** prefix → `git fetch origin staging` → `git checkout -b {prefix}/PROD-###-short-slug origin/staging`.
+2. Implement on that branch.
+3. When the story is satisfied: add a **Jira comment** summarizing what shipped and that acceptance criteria are met (branch name, key files/behavior, how to verify).
+4. When the user asks to wrap up / ship: push and open a PR with **`gh pr create` targeting `staging`** (title `[PROD-###] …`). Do **not** push or open a PR unless the user asked to finish or ship.
 
 Full ticket-to-code mapping: [`docs/blog-3-jira-conventions.md`](docs/blog-3-jira-conventions.md).
 
