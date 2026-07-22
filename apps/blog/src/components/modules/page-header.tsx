@@ -60,7 +60,7 @@ export function PageHeader({
               {isSanityCdnUrl(bannerSrc) ? (
                 <SanityImage
                   src={bannerSrc}
-                  alt=""
+                  alt={title}
                   fill
                   className="object-cover"
                   sizes="(max-width: 880px) 100vw, 880px"
@@ -69,7 +69,7 @@ export function PageHeader({
               ) : (
                 <Image
                   src={bannerSrc}
-                  alt=""
+                  alt={title}
                   fill
                   className="object-cover"
                   sizes="(max-width: 880px) 100vw, 880px"
