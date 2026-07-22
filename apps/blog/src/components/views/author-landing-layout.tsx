@@ -21,7 +21,7 @@ export function AuthorLandingLayout({
   return (
     <>
       <JsonLdScript jsonLd={jsonLd} />
-      <main>
+      <main className="overflow-x-clip">
         <PageDielineSection innerClassName="py-4">{breadcrumb}</PageDielineSection>
         {header}
         {children}
