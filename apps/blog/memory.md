@@ -1183,3 +1183,33 @@ Still on the published client → not editable in Presentation: `blog-page`, `bl
 Studio (`pakfactory.sanity.studio` → **302 → `www.sanity.io/@or35qxDdx/studio/<appId>`**) is **cross-site** with `pakfactory-blog.vercel.app`. Visual editing needs Next's `__prerender_bypass` draft cookie (Next correctly sets it `SameSite=None; Secure` in prod), but browsers block third-party cookies — so preview dies whenever the manual "allow third-party cookies" exception resets (recurred overnight 2026-06-17). The `*.sanity.studio` → `www.sanity.io` redirect is **intrinsic to CLI v6 hosting** and not avoidable; renaming the host does not change it.
 
 **Permanent fix (recommended, ADR candidate):** make Studio + blog **same-site** — self-host Studio at `studio.pakfactory.com` + serve blog at `blog.pakfactory.com` (both under `pakfactory.com`) → draft cookie first-party → preview works in every browser. Alternative: embed Studio in the Next app at `/studio` (same-origin).
+
+## Webhook route handlers must not read `unstable_cache`d data (PROD-2172 follow-up)
+
+**Rule:** a route handler reacting to a Sanity webhook must **not** read data through
+an `unstable_cache` wrapper that the *same* webhook does not invalidate. Use an
+uncached accessor instead — one extra query per webhook is server-to-server and off
+the user path.
+
+**Why (the bug this came from):** `fetchBlogGlobalSettings()`
+(`src/lib/blog-global-settings.ts`) wraps the Global Settings read in
+`unstable_cache` with a 300s TTL and tag `BLOG_GLOBAL_SETTINGS_CACHE_TAG`. In
+`api/revalidate/route.ts` that tag is added **only** when `type === "settings"`. So a
+`post` publish webhook — which is what fires the IndexNow ping — read settings that
+could be up to 5 minutes stale.
+
+Live symptom (2026-07-21): the editor filled in `indexNowKey`, case studies started
+submitting immediately (`apps/www` reads the singleton uncached), but blog kept
+reporting `indexNowSkipped: "no-key"`. Re-publishing the Global Settings document
+fired a `settings` webhook, invalidated the tag, and unblocked it — a workaround, not
+a fix.
+
+**Fix:** `fetchBlogGlobalSettingsUncached()` is exported alongside the cached
+accessor and used by the revalidate route. Keep `fetchBlogGlobalSettings()` for page
+rendering — the cache is correct there.
+
+**Generalizes to:** any future Global-Settings-driven field read from a webhook
+triggered by a different doc type (GTM id, embed hosts, default OG image…). Adding
+the tag to every webhook type is *not* the fix — it forces needless refetches and
+still races, since `revalidateTag` does not affect a read already in flight in the
+same request.
