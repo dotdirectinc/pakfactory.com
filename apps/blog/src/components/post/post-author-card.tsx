@@ -47,7 +47,7 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
             className="group flex w-fit items-center gap-5 rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <Avatar className="size-16 shrink-0">
-              {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
+              {photoUrl ? <AvatarImage src={photoUrl} alt={name} /> : null}
               <AvatarFallback>{initials(name)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-1">
@@ -62,7 +62,7 @@ export function PostAuthorCard({ author }: PostAuthorCardProps) {
         ) : (
           <div className="flex items-center gap-5">
             <Avatar className="size-16 shrink-0">
-              {photoUrl ? <AvatarImage src={photoUrl} alt="" /> : null}
+              {photoUrl ? <AvatarImage src={photoUrl} alt={name} /> : null}
               <AvatarFallback>{initials(name)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-1">
