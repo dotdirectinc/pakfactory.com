@@ -34,7 +34,6 @@ export const postSettings = defineType({
     metaTitleFormat: '%title%',
     metaDescriptionFormat: '%excerpt%',
     indexDefault: true,
-    sitemap: { priority: 0.7, changefreq: 'weekly' },
   }),
   preview: { prepare: () => ({ title: 'Post Settings' }) },
 })
@@ -51,7 +50,6 @@ export const categorySettings = defineType({
     metaTitleFormat: '%name% | PakFactory Blog',
     metaDescriptionFormat: '%description%',
     indexDefault: true,
-    sitemap: { priority: 0.8, changefreq: 'weekly' },
   }),
   preview: { prepare: () => ({ title: 'Category Settings' }) },
 })
@@ -68,7 +66,6 @@ export const topicSettings = defineType({
     metaTitleFormat: '%name% | PakFactory Blog',
     metaDescriptionFormat: '%description%',
     indexDefault: false,
-    // topics are noindex by default → no sitemap entry
     extra: [
       defineField({
         name: 'autoNoindexThreshold',
@@ -100,7 +97,6 @@ export const authorSettings = defineType({
       metaTitleFormat: '%name%, %job_title% | PakFactory Blog',
       metaDescriptionFormat: '%shortBio%',
       indexDefault: true,
-      sitemap: { priority: 0.3, changefreq: 'monthly' },
     }),
     defineField({
       name: 'defaultAuthor',
@@ -128,7 +124,6 @@ export const pageSettings = defineType({
     metaTitleFormat: '%title% | PakFactory Blog',
     metaDescriptionFormat: '%description%',
     indexDefault: true,
-    sitemap: { priority: 0.5, changefreq: 'weekly' },
   }),
   preview: { prepare: () => ({ title: 'Page Settings' }) },
 })

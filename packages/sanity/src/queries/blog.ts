@@ -939,19 +939,19 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
  */
 export const BLOG_SETTINGS_QUERY = /* groq */ `{
   "postDefaults": *[_id == "postSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "categoryDefaults": *[_id == "categorySettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "tagDefaults": *[_id == "topicSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq, autoNoindexThreshold
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, autoNoindexThreshold
   },
   "authorDefaults": *[_id == "authorSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "pageDefaults": *[_id == "pageSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   }
 }`;
 
