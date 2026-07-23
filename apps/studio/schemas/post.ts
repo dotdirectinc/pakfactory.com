@@ -271,22 +271,6 @@ export const post = defineType({
                 },
             ],
         }),
-        defineField({
-            name: 'aiTraining',
-            title: 'Allow AI training',
-            type: 'boolean',
-            group: 'schemaAi',
-            initialValue: true,
-            description: 'Allow LLMs to use this post for training.',
-        }),
-        defineField({
-            name: 'aiAnswering',
-            title: 'Allow AI answering',
-            type: 'boolean',
-            group: 'schemaAi',
-            initialValue: true,
-            description: 'Allow LLMs to cite this post in answers. Separate from training.',
-        }),
     ],
     preview: {
         select: {
