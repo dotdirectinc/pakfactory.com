@@ -5,35 +5,17 @@ import {
   type CaseStudySitemapEntry,
 } from "@pakfactory/sanity/queries";
 import { absoluteUrl } from "@/lib/site";
+import { buildUrlset, type SitemapUrlEntry } from "@pakfactory/sitemap";
 
 export const revalidate = 300;
 
-function buildSitemapXml(
-  urls: { loc: string; lastmod?: string; changefreq?: string; priority?: string }[],
-): string {
-  const items = urls
-    .map(
-      ({ loc, lastmod, changefreq, priority }) =>
-        [
-          `  <url>`,
-          `    <loc>${loc}</loc>`,
-          lastmod ? `    <lastmod>${lastmod}</lastmod>` : "",
-          changefreq ? `    <changefreq>${changefreq}</changefreq>` : "",
-          priority ? `    <priority>${priority}</priority>` : "",
-          `  </url>`,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-    )
-    .join("\n");
-
-  return [
-    `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`,
-    items,
-    `</urlset>`,
-  ].join("\n");
-}
+// The local `buildSitemapXml` this replaced did **not** escape XML entities, so
+// any `&`, `<` or quote in a slug or absolute URL emitted invalid XML that
+// Search Console rejects (PROD-2179). `buildUrlset` escapes every value.
+//
+// Response headers are deliberately kept as-is rather than switching to the
+// package's `xmlResponse`: this route uses `stale-while-revalidate=600`, which
+// that helper does not emit. Escaping is the only intended behaviour change.
 
 export async function GET() {
   const slugEntries = isSanityConfigured()
@@ -42,23 +24,19 @@ export async function GET() {
         .catch(() => [] as CaseStudySitemapEntry[])
     : ([] as CaseStudySitemapEntry[]);
 
-  const urls = [
+  const urls: SitemapUrlEntry[] = [
     {
       loc: absoluteUrl("/case-studies"),
-      changefreq: "weekly",
-      priority: "1.0",
     },
     ...slugEntries.map((entry) => ({
       loc: absoluteUrl(`/case-studies/${entry.slug}`),
-      lastmod: entry.lastmod
-        ? new Date(entry.lastmod).toISOString().split("T")[0]
-        : undefined,
-      changefreq: "monthly",
-      priority: "0.8",
+      ...(entry.lastmod
+        ? { lastmod: new Date(entry.lastmod).toISOString().split("T")[0] }
+        : {}),
     })),
   ];
 
-  return new Response(buildSitemapXml(urls), {
+  return new Response(buildUrlset(urls), {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
       "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",

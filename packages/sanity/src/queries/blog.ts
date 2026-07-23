@@ -939,19 +939,19 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
  */
 export const BLOG_SETTINGS_QUERY = /* groq */ `{
   "postDefaults": *[_id == "postSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "categoryDefaults": *[_id == "categorySettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "tagDefaults": *[_id == "topicSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq, autoNoindexThreshold
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, autoNoindexThreshold
   },
   "authorDefaults": *[_id == "authorSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "pageDefaults": *[_id == "pageSettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, sitemapPriority, sitemapChangefreq
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   }
 }`;
 
@@ -1259,6 +1259,7 @@ export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
 export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "author"
   && defined(slug.current)
+  && allowIndex != false
   && (
     (defined(shortBio) && shortBio != "")
     || length(pt::text(bio)) > 0
@@ -1336,28 +1337,28 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
+  && allowIndex != false
 ] | order(publishedAt desc)[$start...$end]{
   "slug": slug.current,
   "categorySlug": category->slug.current,
   "mainImageUrl": mainImage.asset->url,
   publishedAt,
-  _updatedAt
+  lastModified
 }`;
 
 /** Paginated populated tags for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
-export const BLOG_SITEMAP_TAGS_PAGE_QUERY = /* groq */ `*[
+export const BLOG_SITEMAP_TAGS_CANDIDATES_QUERY = /* groq */ `*[
   _type == "blogTag"
   && defined(slug.current)
   && (!defined(language) || language == $language)
-  && allowIndex != false
-  && count(*[
+] | order(title asc){
+  "slug": slug.current,
+  allowIndex,
+  "postCount": count(*[
     _type == "post"
     && (!defined(language) || language == $language)
     && defined(publishedAt)
     && publishedAt <= now()
     && ^._id in tags[]._ref
-  ]) > 0
-] | order(title asc)[$start...$end]{
-  "slug": slug.current,
-  _updatedAt
+  ])
 }`;

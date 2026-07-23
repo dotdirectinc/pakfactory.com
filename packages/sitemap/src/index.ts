@@ -1,5 +1,31 @@
-/** Shared XML builders for the grouped sitemap implementation (PROD-1865). */
+/**
+ * `@pakfactory/sitemap` — shared sitemap XML builders (PROD-1865, extracted in
+ * PROD-2179).
+ *
+ * Pure string building: no I/O, no framework imports, no runtime dependencies.
+ * Apps fetch their own data and hand entries in.
+ *
+ * Lives here rather than in `@pakfactory/seo` because that package is
+ * chartered as "the **only** place for schema.org JSON-LD object builders"
+ * (PROD-1487) — sitemap XML is a different output format, so it gets its own
+ * package rather than widening that charter. Same reasoning that put the
+ * IndexNow helper in `@pakfactory/sanity` (PROD-2172).
+ *
+ * Consumers: `apps/blog` (index + 5 child sitemaps), `apps/www` (case studies).
+ *
+ * **`<changefreq>` and `<priority>` are deliberately not supported** (PROD-2194).
+ * Google's docs state plainly: "Google ignores `<priority>` and `<changefreq>`
+ * values." Before removal every blog post emitted the identical pair
+ * (`weekly` / `0.7`), so they carried no information for any crawler either.
+ * Leaving them off the entry type makes that a compile-time guarantee rather
+ * than a convention.
+ */
 
+/**
+ * URLs per sitemap group. The sitemaps.org cap is 50,000 URLs / 50 MB per file;
+ * 200 keeps each group small enough to regenerate cheaply on revalidation.
+ * Only `apps/blog` paginates today — `apps/www` emits a single urlset.
+ */
 export const SITEMAP_GROUP_SIZE = 200;
 
 export type SitemapIndexEntry = {
@@ -9,9 +35,13 @@ export type SitemapIndexEntry = {
 
 export type SitemapUrlEntry = {
   loc: string;
+  /**
+   * `YYYY-MM-DD` or a full ISO timestamp. The ONLY hint Google consumes — and
+   * only "if it's consistently and verifiably accurate". Omit it rather than
+   * emit a value that doesn't reflect a real content change: an unreliable
+   * `lastmod` makes Google discount the field site-wide.
+   */
   lastmod?: string;
-  changefreq?: string;
-  priority?: number;
   /**
    * Absolute image URLs for the Google image sitemap extension. When any entry
    * carries images, `buildUrlset` declares the image namespace and emits an
@@ -58,8 +88,6 @@ export function buildUrlset(entries: SitemapUrlEntry[], xslHref?: string): strin
     .map((e) => {
       const lines = [`    <loc>${escapeXml(e.loc)}</loc>`];
       if (e.lastmod) lines.push(`    <lastmod>${e.lastmod}</lastmod>`);
-      if (e.changefreq) lines.push(`    <changefreq>${e.changefreq}</changefreq>`);
-      if (e.priority != null) lines.push(`    <priority>${e.priority}</priority>`);
       for (const image of e.images ?? []) {
         lines.push(
           `    <image:image>\n      <image:loc>${escapeXml(image)}</image:loc>\n    </image:image>`,

@@ -76,8 +76,6 @@ const BASE_KEYS = [
   'allowIndex',
   'allowFollow',
   'noImageIndex',
-  'sitemapPriority',
-  'sitemapChangefreq',
 ]
 
 // singleton id  <-  blogSettings field  (+ any extra keys)

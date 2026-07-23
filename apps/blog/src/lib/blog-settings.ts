@@ -13,8 +13,6 @@ export type BlogTypeDefaults = {
   allowIndex?: boolean | null;
   allowFollow?: boolean | null;
   noImageIndex?: boolean | null;
-  sitemapPriority?: number | null;
-  sitemapChangefreq?: string | null;
   /** Topic defaults only — force noindex when post count is below this. */
   autoNoindexThreshold?: number | null;
 };
