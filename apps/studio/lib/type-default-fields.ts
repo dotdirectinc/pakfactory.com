@@ -1,8 +1,14 @@
 import { defineField } from 'sanity'
 
 /**
- * Shared factory for a document type's SEO/sitemap DEFAULTS (meta title/description
- * format strings, robots toggles, sitemap priority/frequency).
+ * Shared factory for a document type's SEO DEFAULTS (meta title/description
+ * format strings, robots toggles).
+ *
+ * `sitemapPriority` / `sitemapChangefreq` were removed in PROD-2194: Google's
+ * docs state "Google ignores <priority> and <changefreq> values", and every blog
+ * post had been emitting the same constant pair, so they conveyed nothing to any
+ * crawler. The sitemaps stopped emitting them first; this drops the editor
+ * fields that fed them.
  *
  * Used by both the legacy `blogSettings` singleton (where the fields nest inside a
  * per-type `object` that supplies the group) and the five per-type settings
@@ -18,13 +24,10 @@ export const TOKEN_HELP =
 export const PAGE_TOKEN_HELP =
   'For blog pages, %title% and %description% map to the page Overview title and description. Other tokens apply the same way across page roles (home, topics, search, contribute, 404, landing, static).'
 
-const CHANGEFREQ = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
-
 export type TypeDefaults = {
   metaTitleFormat: string
   metaDescriptionFormat: string
   indexDefault: boolean
-  sitemap?: { priority: number; changefreq: string }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extra?: any[]
   /** Group id to assign to every field (flat singleton use). Omit for nested-object use. */
@@ -37,7 +40,6 @@ export function typeDefaultFields({
   metaTitleFormat,
   metaDescriptionFormat,
   indexDefault,
-  sitemap,
   extra = [],
   group,
   tokenHelp = TOKEN_HELP,
@@ -85,26 +87,6 @@ export function typeDefaultFields({
       initialValue: false,
       ...g,
     }),
-    ...(sitemap
-      ? [
-          defineField({
-            name: 'sitemapPriority',
-            title: 'Sitemap priority',
-            type: 'number',
-            initialValue: sitemap.priority,
-            validation: (Rule) => Rule.min(0).max(1),
-            ...g,
-          }),
-          defineField({
-            name: 'sitemapChangefreq',
-            title: 'Sitemap change frequency',
-            type: 'string',
-            initialValue: sitemap.changefreq,
-            options: { list: CHANGEFREQ },
-            ...g,
-          }),
-        ]
-      : []),
     ...extra.map((field) => (group ? { ...field, group } : field)),
   ]
 }
