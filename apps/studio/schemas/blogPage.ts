@@ -209,7 +209,7 @@ export const blogPage = defineType({
       hidden: ({ document }) => isBlogPageSingleton(document),
     }),
     // ── SEO ───────────────────────────────────────────────────────────────────
-    ...seoFields({ group: 'seo' }),
+    ...seoFields({ group: 'seo', typeSettingsId: 'pageSettings' }),
 
     // ── Social ────────────────────────────────────────────────────────────────
     ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),

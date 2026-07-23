@@ -1,6 +1,10 @@
 import { CogIcon } from '@sanity/icons'
 import { defineField, defineType } from 'sanity'
-import { PAGE_TOKEN_HELP, typeDefaultFields } from '../lib/type-default-fields'
+import {
+  PAGE_TOKEN_HELP,
+  TYPE_SETTINGS_FIELDSETS,
+  typeDefaultFields,
+} from '../lib/type-default-fields'
 
 /**
  * Per-type SEO/sitemap default singletons (PROD-2116) — one per blog document type,
@@ -29,6 +33,7 @@ export const postSettings = defineType({
   icon: CogIcon,
   __experimental_actions: SINGLETON_ACTIONS,
   groups: SEO_GROUP,
+  fieldsets: [...TYPE_SETTINGS_FIELDSETS],
   fields: typeDefaultFields({
     group: 'seo',
     metaTitleFormat: '%title%',
@@ -45,6 +50,7 @@ export const categorySettings = defineType({
   icon: CogIcon,
   __experimental_actions: SINGLETON_ACTIONS,
   groups: SEO_GROUP,
+  fieldsets: [...TYPE_SETTINGS_FIELDSETS],
   fields: typeDefaultFields({
     group: 'seo',
     metaTitleFormat: '%name% | PakFactory Blog',
@@ -61,6 +67,7 @@ export const topicSettings = defineType({
   icon: CogIcon,
   __experimental_actions: SINGLETON_ACTIONS,
   groups: SEO_GROUP,
+  fieldsets: [...TYPE_SETTINGS_FIELDSETS],
   fields: typeDefaultFields({
     group: 'seo',
     metaTitleFormat: '%name% | PakFactory Blog',
@@ -73,7 +80,7 @@ export const topicSettings = defineType({
         type: 'number',
         initialValue: 5,
         description:
-          'Topic pages with fewer than this many posts are forced noindex, even if an editor enables indexing.',
+          'Live rule, not a new-document default: every topic page with fewer than this many published posts is forced noindex — continuously, and even when the topic has Allow indexing switched on. Changing this re-evaluates all existing topics.',
         validation: (Rule) => Rule.min(0).integer(),
       }),
     ],
@@ -91,6 +98,7 @@ export const authorSettings = defineType({
     { name: 'seo', title: 'SEO', default: true },
     { name: 'general', title: 'General' },
   ],
+  fieldsets: [...TYPE_SETTINGS_FIELDSETS],
   fields: [
     ...typeDefaultFields({
       group: 'seo',
@@ -118,6 +126,7 @@ export const pageSettings = defineType({
   icon: CogIcon,
   __experimental_actions: SINGLETON_ACTIONS,
   groups: SEO_GROUP,
+  fieldsets: [...TYPE_SETTINGS_FIELDSETS],
   fields: typeDefaultFields({
     group: 'seo',
     tokenHelp: PAGE_TOKEN_HELP,

@@ -72,7 +72,7 @@ export const blogCategory = defineType({
     })),
 
     // ── SEO ───────────────────────────────────────────────────────────────────
-    ...seoFields({ group: 'seo' }),
+    ...seoFields({ group: 'seo', typeSettingsId: 'categorySettings' }),
 
     // ── Social ────────────────────────────────────────────────────────────────
     ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),

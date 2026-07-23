@@ -162,7 +162,7 @@ export const post = defineType({
         }),
 
         // ── SEO ─────────────────────────────────────────────────────────────────
-        ...seoFields({group: 'seo', canonical: true}),
+        ...seoFields({group: 'seo', canonical: true, typeSettingsId: 'postSettings'}),
 
         // ── Social ──────────────────────────────────────────────────────────────
         ...socialFields({group: 'social', channel: MEDIA_TAG.blog}),

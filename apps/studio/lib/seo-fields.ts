@@ -1,4 +1,5 @@
 import { defineField } from 'sanity'
+import type { InitialValueResolverContext } from 'sanity'
 import { MEDIA_TAG, type MediaTag, ogMediaTags, taggedImageField } from './media-tags'
 
 /**
@@ -11,17 +12,66 @@ import { MEDIA_TAG, type MediaTag, ogMediaTags, taggedImageField } from './media
  * layer, not here; these factories only declare the editor fields + defaults.
  */
 
+type RobotsToggle = 'allowIndex' | 'allowFollow' | 'noImageIndex'
+
 type SeoOptions = {
   /** Group/tab id these fields belong to (e.g. 'seo'). */
   group: string
   /** Add a Canonical URL field (Post / Generic Page only — not Category/Tag). */
   canonical?: boolean
-  /** Default for the Index toggle. ON everywhere except Tag (BA: tags noindex). */
+  /** Hard-coded fallback for the Index toggle, used when the settings singleton has no value. */
   indexDefault?: boolean
+  /**
+   * Per-type settings singleton whose "Defaults for new documents" supply the
+   * starting value of the three robots toggles — `postSettings`,
+   * `categorySettings`, `topicSettings`, `authorSettings`, `pageSettings`.
+   * Omit to fall back to the hard-coded literals.
+   */
+  typeSettingsId?: string
+}
+
+/**
+ * Starting value for a robots toggle on a NEW document.
+ *
+ * Read from the type's settings singleton at creation time only. Sanity runs
+ * `initialValue` once, when the document is created, so the value is copied in
+ * and then owned by that document forever: later edits to the singleton never
+ * touch existing documents, and the document's own toggle always wins. That is
+ * the whole contract — see the `newDocumentDefaults` fieldset in
+ * `type-default-fields.ts`.
+ *
+ * Falls back to the hard-coded literal when the singleton is missing, has no
+ * value, or the fetch fails — so creating a document never breaks on this.
+ *
+ * Note: `initialValue` only runs in the Studio create flow. Documents created by
+ * seed scripts, migrations or the API set their fields explicitly and are
+ * unaffected.
+ */
+function newDocDefault(
+  typeSettingsId: string | undefined,
+  field: RobotsToggle,
+  fallback: boolean,
+) {
+  if (!typeSettingsId) return fallback
+  return async (_value: unknown, context: InitialValueResolverContext) => {
+    try {
+      const stored = await context
+        .getClient({ apiVersion: '2024-01-01' })
+        .fetch<boolean | null>(`*[_id == $id][0].${field}`, { id: typeSettingsId })
+      return typeof stored === 'boolean' ? stored : fallback
+    } catch {
+      return fallback
+    }
+  }
 }
 
 /** Meta title/description + robots toggles (allowIndex / allowFollow / noImageIndex). */
-export function seoFields({ group, canonical = false, indexDefault = true }: SeoOptions) {
+export function seoFields({
+  group,
+  canonical = false,
+  indexDefault = true,
+  typeSettingsId,
+}: SeoOptions) {
   return [
     defineField({
       name: 'metaTitle',
@@ -59,7 +109,7 @@ export function seoFields({ group, canonical = false, indexDefault = true }: Seo
       title: 'Allow indexing',
       type: 'boolean',
       group,
-      initialValue: indexDefault,
+      initialValue: newDocDefault(typeSettingsId, 'allowIndex', indexDefault),
       description:
         'On = eligible to index. Off = noindex, and the page is also dropped from on-site Related / Featured / listings — not just from search engines.',
     }),
@@ -68,7 +118,7 @@ export function seoFields({ group, canonical = false, indexDefault = true }: Seo
       title: 'Allow following links',
       type: 'boolean',
       group,
-      initialValue: true,
+      initialValue: newDocDefault(typeSettingsId, 'allowFollow', true),
       description:
         'Advanced — leave ON for essentially all pages. Page-level nofollow tells engines to ignore every link on the page, including your own internal links.',
     }),
@@ -77,7 +127,7 @@ export function seoFields({ group, canonical = false, indexDefault = true }: Seo
       title: 'No image index',
       type: 'boolean',
       group,
-      initialValue: false,
+      initialValue: newDocDefault(typeSettingsId, 'noImageIndex', false),
       description: 'Prevents images on this page from appearing in Google Images.',
     }),
   ]
