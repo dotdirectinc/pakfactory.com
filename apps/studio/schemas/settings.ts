@@ -225,20 +225,6 @@ export const settings = defineType({
       description:
         'Markdown bullet list of key storefront links (e.g. "- [Custom Boxes](https://pakfactory.com/custom-boxes.html)"). Rendered as the "Products & Packaging" section of the auto-generated llms.txt; section is omitted while empty.',
     }),
-    defineField({
-      name: 'aiTrainingDefault',
-      title: 'Allow AI training (default)',
-      type: 'boolean',
-      group: 'crawlers',
-      initialValue: true,
-    }),
-    defineField({
-      name: 'aiAnsweringDefault',
-      title: 'Allow AI answering (default)',
-      type: 'boolean',
-      group: 'crawlers',
-      initialValue: true,
-    }),
 
     // ── Integrations ──────────────────────────────────────────────────────────
     defineField({

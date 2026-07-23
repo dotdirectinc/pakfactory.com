@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-07-07.
+Last updated: 2026-07-23.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -22,6 +22,35 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/contribute`                        | ✅ PROD-1504                                                                                                                                                                                                    |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
+
+---
+
+## PROD-2199 — Remove AI crawler Studio toggles
+
+**Jira:** [PROD-2199](https://dotdirect.atlassian.net/browse/PROD-2199). Branch: `feat/PROD-2199-remove-ai-crawler-toggles`.
+
+Removed unused Studio booleans that were never wired to robots.txt or frontends:
+
+| Schema | Fields removed |
+| --- | --- |
+| Global Settings (`settings`) | `aiTrainingDefault`, `aiAnsweringDefault` |
+| Post (`post`) | `aiTraining`, `aiAnswering` |
+
+Kept: `llmsTxtWww` / `llmsTxtStorefront`, post `tldr` / `faqItems`, and hard-coded robots.txt (central / PROD-2198). No migration or seed — fields had no GROQ consumers.
+
+### Orphaned document values (Studio “Unknown fields”)
+
+After the schema drop, existing posts/settings may still store the booleans. Studio shows **Unknown fields found** until they are unset. **Humans only** — agents must not patch datasets ([`AGENTS.md`](../../AGENTS.md)).
+
+Run **after** the schema change is deployed and stable (values are the rollback buffer until then):
+
+```bash
+NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields
+NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --apply
+NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --apply
+```
+
+Script: [`apps/studio/scripts/unset-ai-crawler-fields.mjs`](../../apps/studio/scripts/unset-ai-crawler-fields.mjs). Dry-run is the default.
 
 ---
 
