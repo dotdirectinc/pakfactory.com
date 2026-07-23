@@ -99,7 +99,7 @@ export const author = defineType({
     }),
 
     // ── SEO ───────────────────────────────────────────────────────────────────
-    ...seoFields({ group: 'seo' }),
+    ...seoFields({ group: 'seo', typeSettingsId: 'authorSettings' }),
 
     // ── Social ────────────────────────────────────────────────────────────────
     ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),

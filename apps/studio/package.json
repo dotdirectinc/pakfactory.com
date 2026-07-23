@@ -13,6 +13,7 @@
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
     "cleanup:blogsettings-defaults": "node scripts/unset-legacy-blogsettings-defaults.mjs",
     "cleanup:sitemap-hints": "node scripts/unset-sitemap-hint-fields.mjs",
+    "cleanup:ai-crawler-fields": "node scripts/unset-ai-crawler-fields.mjs",
     "migrate:redirect-groups": "node scripts/migrate-redirect-groups.mjs",
     "migrate:blog-i18n-en": "node scripts/migrate-blog-i18n-en.mjs",
     "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs",
