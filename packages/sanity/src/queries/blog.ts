@@ -1259,6 +1259,7 @@ export const AUTHOR_POSTS_PAGE_QUERY = /* groq */ `*[
 export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "author"
   && defined(slug.current)
+  && allowIndex != false
   && (
     (defined(shortBio) && shortBio != "")
     || length(pt::text(bio)) > 0
@@ -1336,6 +1337,7 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
   && defined(slug.current)
   && defined(publishedAt)
   && publishedAt <= now()
+  && allowIndex != false
 ] | order(publishedAt desc)[$start...$end]{
   "slug": slug.current,
   "categorySlug": category->slug.current,
@@ -1345,19 +1347,18 @@ export const BLOG_SITEMAP_POSTS_PAGE_QUERY = /* groq */ `*[
 }`;
 
 /** Paginated populated tags for a sub-sitemap page. $start/$end are GROQ slice indices (end exclusive). */
-export const BLOG_SITEMAP_TAGS_PAGE_QUERY = /* groq */ `*[
+export const BLOG_SITEMAP_TAGS_CANDIDATES_QUERY = /* groq */ `*[
   _type == "blogTag"
   && defined(slug.current)
   && (!defined(language) || language == $language)
-  && allowIndex != false
-  && count(*[
+] | order(title asc){
+  "slug": slug.current,
+  allowIndex,
+  "postCount": count(*[
     _type == "post"
     && (!defined(language) || language == $language)
     && defined(publishedAt)
     && publishedAt <= now()
     && ^._id in tags[]._ref
-  ]) > 0
-] | order(title asc)[$start...$end]{
-  "slug": slug.current,
-  _updatedAt
+  ])
 }`;
