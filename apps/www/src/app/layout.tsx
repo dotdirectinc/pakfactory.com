@@ -1,9 +1,11 @@
 import type {Metadata, Viewport} from 'next';
+import {Suspense} from 'react';
 // Loads the actual 'Geist Variable' font family referenced by --font-geist-sans
 // in @pakfactory/ui globals (same package the POC uses).
 import '@fontsource-variable/geist';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
+import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
 import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
 import './globals.css';
 
@@ -36,6 +38,9 @@ export default async function RootLayout({
         <html lang="en" className="scroll-smooth">
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
+                <Suspense fallback={null}>
+                    <VirtualPageviewTracker />
+                </Suspense>
                 <TooltipProvider>
                     {children}
                 </TooltipProvider>

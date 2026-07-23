@@ -1,5 +1,4 @@
 import { BLOG_SITEMAP_POSTS_PAGE_QUERY } from "@pakfactory/sanity/queries";
-import { fetchBlogSettings } from "@/lib/blog-settings";
 import { postDetailHref } from "@/lib/blog-post-url";
 import { absoluteUrl, sitemapXslUrl } from "@/lib/site";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
@@ -14,7 +13,8 @@ type SitemapPost = {
   categorySlug?: string;
   mainImageUrl?: string;
   publishedAt?: string;
-  _updatedAt?: string;
+  /** Editorial "Last modified date" — same source as the page's JSON-LD. */
+  lastModified?: string;
 };
 
 export async function GET(
@@ -29,11 +29,6 @@ export async function GET(
   if (isNaN(page) || page < 1) {
     return new Response("Not found", { status: 404 });
   }
-
-  const blogSettings = await fetchBlogSettings();
-  const postSitemap = blogSettings?.postDefaults;
-  const changefreq = postSitemap?.sitemapChangefreq ?? "weekly";
-  const priority = postSitemap?.sitemapPriority ?? 0.7;
 
   // Only individual post URLs live here; `/all` (the posts archive index) is a
   // listing page and belongs in pages-sitemap.xml with `/` and `/contribute`.
@@ -56,12 +51,16 @@ export async function GET(
     }
 
     for (const post of posts) {
-      const lastmod = post._updatedAt ?? post.publishedAt;
+      // PROD-2194: `lastModified ?? publishedAt` — the exact expression
+      // `blog-post.ts` uses for the page's JSON-LD `dateModified`, so the
+      // sitemap and the page now assert the same date. The previous source,
+      // Sanity's `_updatedAt`, stamped 154 of 171 posts with the content
+      // migration date, which is precisely the unreliability that makes Google
+      // discount `lastmod` altogether.
+      const lastmod = post.lastModified ?? post.publishedAt;
       entries.push({
         loc: absoluteUrl(postDetailHref(post.slug, post.categorySlug)),
         ...(lastmod ? { lastmod: new Date(lastmod).toISOString().slice(0, 10) } : {}),
-        changefreq,
-        priority,
         ...(post.mainImageUrl ? { images: [post.mainImageUrl] } : {}),
       });
     }

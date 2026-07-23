@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
 import {draftMode} from 'next/headers';
 // Self-host the 'Geist Variable' family that packages/ui globals.css references
 // via --font-geist-sans (same mechanism as apps/www). Do NOT use next/font's
@@ -14,6 +15,7 @@ import {AppToaster} from '@/components/common/app-toaster';
 import {EnvBadge} from '@/components/layout/env-badge';
 import {SiteFooter} from '@/components/layout/site-footer';
 import {SiteNav} from '@/components/layout/site-nav';
+import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
 import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data';
 import {fetchBlogGlobalSettings} from '@/lib/blog-global-settings';
 import {sitePath} from '@/lib/site';
@@ -71,6 +73,9 @@ export default async function RootLayout({
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
                 <AppToaster />
+                <Suspense fallback={null}>
+                    <VirtualPageviewTracker />
+                </Suspense>
                 <SiteNav
                     navItems={primaryNav.navItems}
                     header={primaryNav.header}

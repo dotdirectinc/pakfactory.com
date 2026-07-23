@@ -12,6 +12,13 @@
  * IndexNow helper in `@pakfactory/sanity` (PROD-2172).
  *
  * Consumers: `apps/blog` (index + 5 child sitemaps), `apps/www` (case studies).
+ *
+ * **`<changefreq>` and `<priority>` are deliberately not supported** (PROD-2194).
+ * Google's docs state plainly: "Google ignores `<priority>` and `<changefreq>`
+ * values." Before removal every blog post emitted the identical pair
+ * (`weekly` / `0.7`), so they carried no information for any crawler either.
+ * Leaving them off the entry type makes that a compile-time guarantee rather
+ * than a convention.
  */
 
 /**
@@ -28,9 +35,13 @@ export type SitemapIndexEntry = {
 
 export type SitemapUrlEntry = {
   loc: string;
+  /**
+   * `YYYY-MM-DD` or a full ISO timestamp. The ONLY hint Google consumes — and
+   * only "if it's consistently and verifiably accurate". Omit it rather than
+   * emit a value that doesn't reflect a real content change: an unreliable
+   * `lastmod` makes Google discount the field site-wide.
+   */
   lastmod?: string;
-  changefreq?: string;
-  priority?: number;
   /**
    * Absolute image URLs for the Google image sitemap extension. When any entry
    * carries images, `buildUrlset` declares the image namespace and emits an
@@ -77,8 +88,6 @@ export function buildUrlset(entries: SitemapUrlEntry[], xslHref?: string): strin
     .map((e) => {
       const lines = [`    <loc>${escapeXml(e.loc)}</loc>`];
       if (e.lastmod) lines.push(`    <lastmod>${e.lastmod}</lastmod>`);
-      if (e.changefreq) lines.push(`    <changefreq>${e.changefreq}</changefreq>`);
-      if (e.priority != null) lines.push(`    <priority>${e.priority}</priority>`);
       for (const image of e.images ?? []) {
         lines.push(
           `    <image:image>\n      <image:loc>${escapeXml(image)}</image:loc>\n    </image:image>`,

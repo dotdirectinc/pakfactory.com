@@ -104,12 +104,9 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
               </xsl:choose>
             </td>
             <td>
-              <xsl:if test="sm:changefreq">
-                <span class="badge"><xsl:value-of select="sm:changefreq"/></span>
-              </xsl:if>
             </td>
             <td>
-              <xsl:if test="sm:priority"><xsl:value-of select="sm:priority"/></xsl:if>
+              
             </td>
             <td>
               <xsl:choose>

@@ -707,9 +707,10 @@ Product analytics is owned by **marketing through GTM**, not an in-app PostHog S
 | Inject (blog) | `@next/third-parties` `<GoogleTagManager />` in [`src/app/layout.tsx`](./src/app/layout.tsx) |
 | Inject (www / case-studies) | Same helper in [`apps/www/src/app/layout.tsx`](../www/src/app/layout.tsx); ID from [`fetchWwwGlobalSettings()`](../www/src/lib/www-global-settings.ts) (PROD-2176) |
 | Gate | Inject only when `gtmId` is set **and** `VERCEL_ENV === 'production'` (unset locally → no GTM; preview → no GTM even if dataset has an ID) |
-| Custom events | Blog: [`src/lib/analytics.ts`](./src/lib/analytics.ts) `captureEvent` → `sendGTMEvent` / `dataLayer`. Www has no custom funnel events yet — container tags only. |
+| Custom events | Blog: [`src/lib/analytics.ts`](./src/lib/analytics.ts) `captureEvent` → `sendGTMEvent` / `dataLayer`. Www: [`apps/www/src/lib/analytics.ts`](../www/src/lib/analytics.ts) (same helper). |
+| SPA pageviews (PROD-2191) | Client `VirtualPageviewTracker` in blog + www root layouts pushes `virtual_pageview` on initial load and every App Router navigation with `page_path`, `page_title`, `page_location`. **GTM admin** wires a Custom Event trigger + pageview-scoped tags (Ads/Meta/…). GA4 dedupe (unified vs enhanced measurement) is marketing-owned. |
 
-Funnel events marketing can trigger on in GTM (blog): `post_read`, `search_performed` (incl. `zero_results`), `newsletter_signup_submitted` / `_succeeded` / `_failed`. Trackers: `components/modules/analytics/`.
+Funnel events marketing can trigger on in GTM (blog): `post_read`, `search_performed` (incl. `zero_results`), `newsletter_signup_submitted` / `_succeeded` / `_failed`, plus SPA `virtual_pageview` (blog + www). Trackers: `components/modules/analytics/`.
 
 **Humans:** set `gtmId` in Studio on the settings singleton. Agents do not patch Sanity documents.
 
