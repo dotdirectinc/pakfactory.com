@@ -62,7 +62,7 @@ export const blogTag = defineType({
     // ── SEO ───────────────────────────────────────────────────────────────────
     // Tags default to noindex (BA): archives are SEO-thin. Flip Allow indexing
     // ON only for tags with ≥5 posts and clear SEO value.
-    ...seoFields({ group: 'seo', indexDefault: false }),
+    ...seoFields({ group: 'seo', indexDefault: false, typeSettingsId: 'topicSettings' }),
 
     // ── Social ────────────────────────────────────────────────────────────────
     ...socialFields({ group: 'social', channel: MEDIA_TAG.blog }),
