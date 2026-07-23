@@ -34,11 +34,13 @@ const TRAILING_SLASH_MESSAGE =
  * temporary 302 / gone 410), and runs in BOTH edge proxies: the blog
  * (`apps/blog/src/proxy.ts`, `/blog` surface) and www (`apps/www/src/proxy.ts`,
  * `/case-studies` surface). A redirect's owning app is its `from` PATH PREFIX — never
- * its `group` (nor the deprecated `channel` that group replaced), which is purely
- * organizational: a blog→case-studies redirect has a `/blog/...` from and fires on the
- * blog no matter which folder an editor files it under. The legacy
- * `type` (301/302) field was retired once every doc carried `behaviour` (PROD-2157);
- * `behaviour` defaults to permanent 301.
+ * its `group`, which is purely organizational: a blog→case-studies redirect has a
+ * `/blog/...` from and fires on the blog no matter which folder an editor files it
+ * under.
+ *
+ * Two fields have been retired and are gone from both schema and data: `type`
+ * (301/302), superseded by `behaviour` (PROD-2157), and `channel`, superseded by the
+ * `group` reference (PROD-2190). `behaviour` defaults to permanent 301.
  */
 export const redirect = defineType({
   name: 'redirect',
@@ -52,22 +54,6 @@ export const redirect = defineType({
       to: [{ type: 'redirectGroup' }],
       description:
         'Editor-managed folder for organizing redirects. Purely organizational — it does NOT decide which app applies this redirect (that is the From path prefix). Leave empty for Ungrouped.',
-    }),
-
-    /**
-     * DEPRECATED — superseded by `group`. Kept (hidden + read-only) only so the
-     * ~150 pre-migration documents don't render as an unknown field. Removed in a
-     * follow-up once `migrate:redirect-groups` has run on prod and been verified,
-     * matching the PROD-2116 / legacy-`type` retirement sequence.
-     */
-    defineField({
-      name: 'channel',
-      title: 'Channel (deprecated)',
-      type: 'string',
-      readOnly: true,
-      hidden: ({ value }) => !value,
-      description:
-        'Replaced by Group. This value is migrated to a Redirect Group and then removed — do not rely on it.',
     }),
 
     defineField({
