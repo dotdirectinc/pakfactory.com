@@ -1,16 +1,13 @@
 "use client";
 
-import { sendGTMEvent } from "@next/third-parties/google";
+import {sendGTMEvent} from "@next/third-parties/google";
 
 /**
- * GTM analytics helpers (client-only). Canon: brain page
- * *blog-analytics-funnels*.
+ * GTM analytics helpers (client-only) for apps/www.
  *
  * GTM is Sanity-gated: when Global Settings `gtmId` is unset (or the layout
  * skips inject outside production), `sendGTMEvent` is a silent no-op with a
- * soft console warning. SPA pageviews: `virtual_pageview` via
- * `VirtualPageviewTracker` (PROD-2191). Other custom events exist only where
- * autocapture can't reach.
+ * soft console warning.
  */
 
 /** Fire a custom event into GTM's dataLayer; no-op when GTM is not mounted. */
@@ -19,5 +16,5 @@ export function captureEvent(
   properties?: Record<string, unknown>,
 ): void {
   if (typeof window === "undefined") return;
-  sendGTMEvent({ event: name, ...properties });
+  sendGTMEvent({event: name, ...properties});
 }
