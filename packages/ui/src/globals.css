@@ -32,8 +32,8 @@
     --input: #e5e4e0;
     --ring: #2b5f2d;
 
-    /* Brand cream — warm neutral surface/accent (reintroduced 2026-07-15) */
-    --brand-cream: #f4f1eb;
+    /* Brand cream — warm neutral surface/accent (PROD-2201: #F8F5F0) */
+    --brand-cream: #F8F5F0;
     --brand-cream-foreground: #1a1a1a;
 
     /* Primary opacity ramp — hover fills, tints (POC: bg-[var(--opacity-primary-10)]) */

@@ -24,7 +24,7 @@ export function PostArticleColumn({
     return (
         <article id={POST_ARTICLE_ID} className="flex flex-col gap-8">
             {post.tldr?.length ? (
-                <div className="flex flex-col gap-5 border-y border-dashed border-border py-6">
+                <div className="flex flex-col gap-5 border-b border-dashed border-border py-6 lg:border-t">
                     <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
                         Key takeaways
                     </h3>
