@@ -195,7 +195,7 @@ export default async function CaseStudyPage({ params }: Props) {
               </h2>
               {study.highlights.map((h) => (
                 <div key={h._key} className="flex w-full flex-col gap-3">
-                  <h3 className="text-lg font-semibold leading-7 text-foreground">
+                  <h3 className="text-lg font-semibold leading-7 capitalize text-foreground">
                     {h.title}
                   </h3>
                   {h.description && (
