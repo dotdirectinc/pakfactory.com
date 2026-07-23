@@ -128,6 +128,27 @@ const nextConfig: NextConfig = {
         destination: "/rss.xml",
         statusCode: 301,
       },
+      // PROD-2197: legacy WordPress AMP URLs. The old blog served an AMP copy of
+      // every post at `/blog/{slug}/amp/`; those 404 on the Sanity blog (worse —
+      // `/blog/{slug}/amp` is swallowed by the `/category/:category/:postSlug`
+      // collapse below into `/blog/amp` before 404ing). Strip the `/amp` suffix
+      // and 301 to the canonical post, reusing the captured head.
+      //
+      // `:slug+` = one-or-more segments, so a category-scoped AMP URL
+      // (`/{category}/{slug}/amp`) strips to `/{category}/{slug}` and then chains
+      // through the existing category redirects — the one allowed extra hop.
+      // MUST stay ABOVE the `/category/*` rules: next.config redirects run in array
+      // order AND before `proxy.ts`, so this wins the race that otherwise produces
+      // `/blog/amp`. This is a capture-and-transform, which the CMS engine cannot
+      // express (exact/prefix/phrase only, fixed destinations) — it belongs here,
+      // like the `/feed` and `/category/*` capture rules. `statusCode: 301` (not
+      // `permanent: true`, which emits 308) — AC requires a literal 301 to pass
+      // link equity from old AMP inbound links.
+      {
+        source: "/:slug+/amp",
+        destination: "/:slug+",
+        statusCode: 301,
+      },
       {
         source: "/tags-sitemap-:page(\\d{1,}).xml",
         destination: "/topics-sitemap-:page.xml",
