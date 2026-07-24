@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pagination } from "@pakfactory/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@pakfactory/components/modules/pagination";
 import {
   parsePathPage,
   scrollToPaginationTarget,
@@ -10,7 +10,6 @@ import {
   ListingFilterBar,
   type FilterOption,
 } from "@/components/ui/listing-filter-bar";
-import { LISTING_TOP_ID } from "@/components/modules/pagination";
 import { PostList } from "@/components/modules/post-list";
 import { TopicLandingSection } from "@/components/views/topic-landing-layout";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from "@/lib/blog-archive";
