@@ -16,9 +16,9 @@ import { authorHref, categoryHref, postDetailHref } from "@/lib/blog-post-url";
 import { authorPersonId } from "@/lib/author-jsonld";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import { absoluteUrl } from "@/lib/site";
-import { getSanityClient } from "@/lib/sanity/client";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import { BLOG_POSTS_CACHE_TAG, blogPostTag } from "@/lib/blog-cache";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { isSanityConfigured } from "@/lib/sanity/env";
 import { sanityImageUrl } from "@/lib/sanity-image";
 import { getBlogRobotsDirective } from "@/lib/seo";
 import { buildDocMetadata, type DocSeoFields } from "@/lib/resolve-seo";
@@ -152,25 +152,28 @@ export function postCanonicalUrl(post: BlogPostDetail): string {
 }
 
 export async function fetchPostBySlug(slug: string): Promise<BlogPostDetail | null> {
-  if (!isSanityConfigured()) return null;
-  const client = await getSanityClient();
-  return client
-    .fetch<BlogPostDetail | null>(POST_BY_SLUG_QUERY, blogLanguageParams({ slug }))
-    .catch(() => null);
+  return blogCachedFetch<BlogPostDetail | null>({
+    cacheKey: "post-by-slug",
+    query: POST_BY_SLUG_QUERY,
+    params: blogLanguageParams({ slug }),
+    tags: [BLOG_POSTS_CACHE_TAG, blogPostTag(slug)],
+    fallback: null,
+    label: `post:${slug}`,
+  });
 }
 
 export async function fetchPostByCategoryAndSlug(
   categorySlug: string,
   postSlug: string,
 ): Promise<BlogPostDetail | null> {
-  if (!isSanityConfigured()) return null;
-  const client = await getSanityClient();
-  return client
-    .fetch<BlogPostDetail | null>(
-      POST_BY_CATEGORY_AND_SLUG_QUERY,
-      blogLanguageParams({ categorySlug, postSlug }),
-    )
-    .catch(() => null);
+  return blogCachedFetch<BlogPostDetail | null>({
+    cacheKey: "post-by-category-and-slug",
+    query: POST_BY_CATEGORY_AND_SLUG_QUERY,
+    params: blogLanguageParams({ categorySlug, postSlug }),
+    tags: [BLOG_POSTS_CACHE_TAG, blogPostTag(postSlug)],
+    fallback: null,
+    label: `post:${categorySlug}/${postSlug}`,
+  });
 }
 
 export async function buildPostMetadata(post: BlogPostDetail): Promise<Metadata> {

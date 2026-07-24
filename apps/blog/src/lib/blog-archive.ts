@@ -1,7 +1,7 @@
 import type { HomePostCard } from "@/lib/blog-home";
-import { getSanityClient } from "@/lib/sanity/client";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import { BLOG_POSTS_CACHE_TAG } from "@/lib/blog-cache";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { isSanityConfigured } from "@/lib/sanity/env";
 import { BLOG_ALL_POSTS_ARCHIVE_QUERY } from "@pakfactory/sanity/queries";
 
 /** Shared listing page size (all archive + category + topic archives). */
@@ -77,19 +77,19 @@ export async function fetchAllArchivePage(
   pageNumber: number,
   perPage: number = DEFAULT_PAGE_SIZE,
 ): Promise<AllArchivePageData> {
-  if (!isSanityConfigured()) {
-    return { posts: [], totalCount: 0, pageNumber, totalPages: 1, perPage };
-  }
-
   // Single round-trip: total count + this page's slice in one query.
   const { start, end } = archivePageSlice(pageNumber, perPage);
-  const client = await getSanityClient();
-  const { totalCount, posts } = await client
-    .fetch<{ totalCount: number; posts: HomePostCard[] }>(
-      BLOG_ALL_POSTS_ARCHIVE_QUERY,
-      blogLanguageParams({ start, end }),
-    )
-    .catch(() => ({ totalCount: 0, posts: [] }));
+  const { totalCount, posts } = await blogCachedFetch<{
+    totalCount: number;
+    posts: HomePostCard[];
+  }>({
+    cacheKey: "all-archive-page",
+    query: BLOG_ALL_POSTS_ARCHIVE_QUERY,
+    params: blogLanguageParams({ start, end }),
+    tags: [BLOG_POSTS_CACHE_TAG],
+    fallback: { totalCount: 0, posts: [] },
+    label: `all-archive:${pageNumber}`,
+  });
 
   const totalPages = getTotalArchivePages(totalCount, perPage);
 

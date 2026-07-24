@@ -17,9 +17,13 @@ import {
   parseListingPage,
   type BlogRobotsDirective,
 } from "@/lib/seo";
-import { getSanityClient } from "@/lib/sanity/client";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import {
+  BLOG_POSTS_CACHE_TAG,
+  BLOG_TOPIC_CACHE_TAG,
+  blogTopicTag,
+} from "@/lib/blog-cache";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { isSanityConfigured } from "@/lib/sanity/env";
 import { toPostCardData } from "@/lib/post-card-data";
 import {
   resolveListingPage,
@@ -120,14 +124,14 @@ export async function buildTagArchiveMetadata(
 }
 
 export async function fetchTagBySlug(slug: string): Promise<TagDocument | null> {
-  if (!isSanityConfigured()) return null;
-  const client = await getSanityClient();
-  const doc = await client
-    .fetch<TagDocument | null>(
-      BLOG_TAG_BY_SLUG_QUERY,
-      blogLanguageParams({ slug }),
-    )
-    .catch(() => null);
+  const doc = await blogCachedFetch<TagDocument | null>({
+    cacheKey: "tag-by-slug",
+    query: BLOG_TAG_BY_SLUG_QUERY,
+    params: blogLanguageParams({ slug }),
+    tags: [BLOG_TOPIC_CACHE_TAG, blogTopicTag(slug)],
+    fallback: null,
+    label: `topic:${slug}`,
+  });
   return doc?.slug ? doc : null;
 }
 
@@ -147,32 +151,33 @@ export async function fetchTagArchivePage(
   let cooccurringTags: TagFacet[] = [];
   let authors: TagFacetAuthor[] = [];
 
-  if (isSanityConfigured()) {
-    const client = await getSanityClient();
-    [tag, rows, cooccurringTags, authors] = await Promise.all([
-      fetchTagBySlug(tagSlug),
-      client
-        .fetch<TagAllPostRow[]>(
-          BLOG_TAG_ALL_POSTS_QUERY,
-          blogLanguageParams({ tagSlug }),
-        )
-        .catch(() => []),
-      client
-        .fetch<TagFacet[]>(
-          BLOG_TAG_COOCCURRING_TAGS_QUERY,
-          blogLanguageParams({ tagSlug }),
-        )
-        .catch(() => []),
-      client
-        .fetch<TagFacetAuthor[]>(
-          BLOG_TAG_AUTHORS_FACET_QUERY,
-          blogLanguageParams({ tagSlug }),
-        )
-        .catch(() => []),
-    ]);
-  } else {
-    tag = await fetchTagBySlug(tagSlug);
-  }
+  [tag, rows, cooccurringTags, authors] = await Promise.all([
+    fetchTagBySlug(tagSlug),
+    blogCachedFetch<TagAllPostRow[]>({
+      cacheKey: "tag-all-posts",
+      query: BLOG_TAG_ALL_POSTS_QUERY,
+      params: blogLanguageParams({ tagSlug }),
+      tags: [BLOG_POSTS_CACHE_TAG, blogTopicTag(tagSlug)],
+      fallback: [],
+      label: `topic-posts:${tagSlug}`,
+    }),
+    blogCachedFetch<TagFacet[]>({
+      cacheKey: "tag-cooccurring",
+      query: BLOG_TAG_COOCCURRING_TAGS_QUERY,
+      params: blogLanguageParams({ tagSlug }),
+      tags: [BLOG_TOPIC_CACHE_TAG, BLOG_POSTS_CACHE_TAG],
+      fallback: [],
+      label: `topic-cooccurring:${tagSlug}`,
+    }),
+    blogCachedFetch<TagFacetAuthor[]>({
+      cacheKey: "tag-authors-facet",
+      query: BLOG_TAG_AUTHORS_FACET_QUERY,
+      params: blogLanguageParams({ tagSlug }),
+      tags: [BLOG_POSTS_CACHE_TAG, blogTopicTag(tagSlug)],
+      fallback: [],
+      label: `topic-authors:${tagSlug}`,
+    }),
+  ]);
 
   if (!tag) return null;
 
