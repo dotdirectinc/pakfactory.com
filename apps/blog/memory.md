@@ -910,8 +910,8 @@ Full-bleed blocks (`postFeaturedRow`, `postCategoryRow`, `postPopularRow`, `post
 ## Archive listing pagination
 
 - **Page size:** `LISTING_PAGE_SIZE = 15` in `src/lib/blog-archive.ts` (topic, category, `/all` archives).
-- **UI:** shared `src/components/modules/pagination.tsx` — Figma Topic Detail layout (status left, Previous + numbered window + Next right). Window helper: `src/lib/pagination-window.ts`.
-- **Routes:** page 1 at list root; page 2+ at `/page/{n}` (e.g. `/topics/{slug}/page/2`). Pager hidden when `totalPages <= 1`.
+- **UI:** shared `@pakfactory/components/modules/pagination` (`Pagination` + `LISTING_TOP_ID`) — one props-only presentation core used by blog archives **and** case studies (PROD-1998). Figma Topic Detail layout (status left, Previous + numbered window + Next right). Per-page control is feature-owned, passed via `rightSlot` (blog: `per-page-select.tsx`). Scroll-to-listing is opt-in via `scrollTargetId` (href mode) — the scroll wrappers (`PaginationLink`/`PaginationScroll`) also live in `@pakfactory/components`.
+- **Routes:** page 1 at list root; page 2+ at `/page/{n}` (e.g. `/topics/{slug}/page/2`). Single-page rule (PROD-1994/1998): with results and `totalPages === 1`, the bar shows page info + per-page combobox and **hides the center nav**; empty listings hide the bar (caller-guarded).
 
 ## Topic groups — `blogTopicGroup` + `topicGroup` ref (CMS taxonomy)
 

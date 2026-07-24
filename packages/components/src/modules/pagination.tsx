@@ -3,6 +3,11 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { getPaginationWindow } from "../commons/pagination-window";
+import { PaginationLink } from "./pagination-link";
+import { PaginationScroll } from "./pagination-scroll";
+
+/** Shared id for the top of a paginated listing — one listing per route. */
+export const LISTING_TOP_ID = "listing-top";
 
 type PaginationProps = {
   pageNumber: number;
@@ -13,9 +18,29 @@ type PaginationProps = {
   onPageChange?: (page: number) => void;
   ariaLabel?: string;
   maxVisiblePages?: number;
+  /** Content rendered in the right column (e.g. a per-page selector). Feature-owned. */
   rightSlot?: ReactNode;
+  /**
+   * href mode only: after a pagination click, smooth-scroll to this element id,
+   * persisting the intent across the full navigation. Ignored in callback mode —
+   * there the caller scrolls imperatively (see `usePathPagination`).
+   */
+  scrollTargetId?: string;
 };
 
+/**
+ * Shared archive pager (props-only presentation core, ADR-013). Callers own
+ * URL/state wiring: pass `hrefForPage` for link-based archives or `onPageChange`
+ * for client-filtered listings, and a `rightSlot` for the feature's per-page
+ * control.
+ *
+ * Single-page rule (PROD-1994 / PROD-1998): render this component only when the
+ * listing has results (caller-guarded); with `totalPages === 1` it shows page
+ * info + `rightSlot` and hides the center page nav.
+ *
+ * Scroll-to-listing (href mode) is opt-in via `scrollTargetId` — a generic id,
+ * not baked to any feature.
+ */
 export function Pagination({
   pageNumber,
   totalPages,
@@ -24,32 +49,35 @@ export function Pagination({
   ariaLabel = "Pagination",
   maxVisiblePages = 5,
   rightSlot,
+  scrollTargetId,
 }: PaginationProps) {
   const prevPage = pageNumber > 1 ? pageNumber - 1 : null;
   const nextPage = pageNumber < totalPages ? pageNumber + 1 : null;
   const window = getPaginationWindow(pageNumber, totalPages, maxVisiblePages);
+  const useScrollLink = Boolean(hrefForPage && scrollTargetId);
+  // href mode uses a real anchor; the scroll variant persists intent across the
+  // navigation. Callback mode falls through to onClick.
+  const LinkComponent = useScrollLink ? PaginationLink : Link;
 
-  function PageButton({ page, label }: { page: number; label?: string }) {
+  function PageButton({ page }: { page: number }) {
     const isActive = page === pageNumber;
-    const content = label ?? page;
-
     if (isActive) {
       return (
         <Button variant="outline" size="icon" className="size-9 shrink-0" aria-current="page" aria-label={`Page ${page}, current page`} disabled>
-          {content}
+          {page}
         </Button>
       );
     }
     if (hrefForPage) {
       return (
         <Button asChild variant="ghost" size="icon" className="size-9 shrink-0">
-          <Link href={hrefForPage(page)} aria-label={`Page ${page}`}>{content}</Link>
+          <LinkComponent href={hrefForPage(page)} aria-label={`Page ${page}`}>{page}</LinkComponent>
         </Button>
       );
     }
     return (
       <Button variant="ghost" size="icon" className="size-9 shrink-0" onClick={() => onPageChange?.(page)} aria-label={`Page ${page}`}>
-        {content}
+        {page}
       </Button>
     );
   }
@@ -69,7 +97,7 @@ export function Pagination({
     if (hrefForPage) {
       return (
         <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 px-2">
-          <Link href={hrefForPage(page)}>{content}</Link>
+          <LinkComponent href={hrefForPage(page)}>{content}</LinkComponent>
         </Button>
       );
     }
@@ -87,26 +115,32 @@ export function Pagination({
     </p>
   );
 
-  const nav = (
+  // Single page → hide the center nav; only page info + right slot remain.
+  const nav = totalPages > 1 ? (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <NavButton page={prevPage} dir="prev" />
       {window.map((n) => <PageButton key={n} page={n} />)}
       <NavButton page={nextPage} dir="next" />
     </div>
-  );
+  ) : null;
 
   return (
     <nav aria-label={ariaLabel} className="py-3 text-sm">
+      {useScrollLink ? (
+        <PaginationScroll targetId={scrollTargetId as string} pageNumber={pageNumber} />
+      ) : null}
+      {/* Desktop: 3-col grid — page info left · nav centred · right slot */}
       <div className="hidden sm:grid sm:grid-cols-3 sm:items-center">
         <div className="justify-self-start">{pageInfo}</div>
         <div className="justify-self-center">{nav}</div>
         <div className="justify-self-end">{rightSlot ?? null}</div>
       </div>
+      {/* Mobile: nav centred on top, page info + right slot below */}
       <div className="flex flex-col items-center gap-3 sm:hidden">
         {nav}
         <div className="flex items-center gap-3">
           {pageInfo}
-          {rightSlot}
+          {rightSlot ?? null}
         </div>
       </div>
     </nav>
