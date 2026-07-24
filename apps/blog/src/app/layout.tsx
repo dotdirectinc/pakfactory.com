@@ -18,7 +18,7 @@ import {SiteNav} from '@/components/layout/site-nav';
 import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
 import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data';
 import {fetchBlogGlobalSettings} from '@/lib/blog-global-settings';
-import {sitePath} from '@/lib/site';
+import {absoluteUrl} from '@/lib/site';
 import './globals.css';
 
 export const revalidate = 60;
@@ -29,16 +29,6 @@ const inter = Inter({subsets: ['latin'], variable: '--font-inter'});
 export const metadata: Metadata = {
     title: 'PakFactory Blog',
     description: 'Packaging insights, guides, and stories.',
-    alternates: {
-        types: {
-            'application/rss+xml': [
-                {
-                    url: sitePath('/rss.xml'),
-                    title: 'PakFactory Blog',
-                },
-            ],
-        },
-    },
 };
 
 /** Inject GTM only in production when Global Settings has a container ID. */
@@ -70,6 +60,23 @@ export default async function RootLayout({
     const envLabel = resolveEnvBadgeLabel();
     return (
         <html lang="en" className={inter.variable}>
+            {/*
+             * RSS autodiscovery (PROD-2193). Rendered as a real <link> — which
+             * React hoists into <head> on every route — rather than via the
+             * Metadata API `alternates.types`. Per-page metadata sets
+             * `alternates: { canonical }` (resolve-seo.ts → buildDocMetadata),
+             * and Next.js overrides the whole `alternates` object per segment
+             * (shallow, not deep-merged), so a layout-level `alternates.types`
+             * was silently dropped on post / category / author / home pages.
+             * `absoluteUrl('/rss.xml')` emits a full URL (metadataBase is unset)
+             * → https://pakfactory.com/blog/rss.xml in production.
+             */}
+            <link
+                rel="alternate"
+                type="application/rss+xml"
+                title="PakFactory Blog"
+                href={absoluteUrl('/rss.xml')}
+            />
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
                 <AppToaster />
