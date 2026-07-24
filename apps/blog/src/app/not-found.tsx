@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { NotFoundHero } from "@/components/modules/not-found-hero";
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
+import { PageDielineBlockRail } from "@/components/layout/page-dieline-section";
 import { fetchBlogNotFoundPage } from "@/lib/blog-data";
 import { buildBlogNotFoundMetadata } from "@/lib/blog-not-found-page";
 
@@ -21,7 +22,9 @@ export default async function NotFound() {
   return (
     <>
       <NotFoundHero topics={notFoundPage.topics} />
-      <BlockRenderer blocks={notFoundPage.blocks} />
+      <PageDielineBlockRail>
+        <BlockRenderer blocks={notFoundPage.blocks} />
+      </PageDielineBlockRail>
       <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
     </>
   );

@@ -10,7 +10,7 @@ export function RichTextBand({ heading, body }: RichTextBandProps) {
   if (!heading && !body) return null;
 
   return (
-    <section className="mx-auto max-w-3xl px-6 py-12">
+    <section className="mx-auto max-w-3xl px-4 py-12 md:px-8">
       {heading ? (
         <h2 className="text-3xl font-bold tracking-tight">{heading}</h2>
       ) : null}

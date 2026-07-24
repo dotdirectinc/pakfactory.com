@@ -1,14 +1,15 @@
 "use client";
 
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import {usePathname, useSearchParams} from "next/navigation";
 
 import {captureEvent} from "@/lib/analytics";
 
 /**
- * PROD-2191 — push `virtual_pageview` into GTM's dataLayer on first load and
- * every App Router client navigation so pageview-scoped tags (Ads, Meta, …)
- * can fire on SPA transitions. Marketing owns the GTM Custom Event trigger.
+ * PROD-2191 — push `virtual_pageview` into GTM's dataLayer on App Router
+ * client navigations only (not the initial page load). GTM already records
+ * the landing pageview on container load; firing here too would double-count.
+ * Marketing owns the GTM Custom Event trigger for pageview-scoped tags.
  *
  * Reads path/title/URL from the DOM after the new route's `<title>` settles
  * (or a short timeout), so we do not send the previous page's values.
@@ -61,8 +62,13 @@ export function VirtualPageviewTracker() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const search = searchParams.toString();
+    const isFirstLoad = useRef(true);
 
     useEffect(() => {
+        if (isFirstLoad.current) {
+            isFirstLoad.current = false;
+            return;
+        }
         return afterTitleSettled(pushVirtualPageview);
     }, [pathname, search]);
 

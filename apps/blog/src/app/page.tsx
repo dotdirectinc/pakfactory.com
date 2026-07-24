@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { blog } from "@pakfactory/seo";
+import { cn } from "@pakfactory/ui/lib/utils";
 import { pageDielineOuterClass } from "@/components/layout/page-dieline-section";
 import { JsonLdScript } from "@/components/ui/json-ld-script";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
@@ -66,7 +67,7 @@ export default async function BlogHomePage() {
     return (
         <>
             <JsonLdScript jsonLd={jsonLd} />
-            <main className={pageDielineOuterClass()}>
+            <main className={cn("overflow-x-clip", pageDielineOuterClass())}>
                 <h1 className="sr-only">{pageH1}</h1>
                 {showDevEmptyHint && (
                     <div

@@ -27,7 +27,7 @@ export function AuthorListingSection({
                     {heading}
                 </h2>
                 <div className="flex flex-col gap-10">{children}</div>
-                {pagination && <div className="py-16">{pagination}</div>}
+                {pagination && <div className="py-8 md:py-16">{pagination}</div>}
             </section>
         </AuthorLandingSection>
     );

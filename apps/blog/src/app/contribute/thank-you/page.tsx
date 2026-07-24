@@ -54,7 +54,7 @@ export default function ContributeThankYouPage() {
 
         <PageHeader title={PAGE_TITLE} descriptionText={PAGE_DESCRIPTION} />
 
-        <PageDielineSection innerClassName="py-16">
+        <PageDielineSection innerClassName="py-8 md:py-16">
           <div className="mx-auto flex max-w-[560px] flex-col items-center gap-4 rounded-2xl border border-border bg-background px-8 py-16 text-center">
             <CircleCheckBig
               className="size-10 text-foreground"
