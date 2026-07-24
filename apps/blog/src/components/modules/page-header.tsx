@@ -34,7 +34,7 @@ export function PageHeader({
   const bannerSrc = bannerImageUrl?.trim();
 
   return (
-    <PageDielineSection className="bg-brand-cream" innerClassName="py-16">
+    <PageDielineSection className="bg-brand-cream" innerClassName="py-8 md:py-16">
       <div className="flex flex-col gap-8">
         <div className="flex max-w-[55rem] flex-col gap-8">
           <div className="flex flex-col gap-3">

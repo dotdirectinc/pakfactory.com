@@ -22,15 +22,18 @@ export function pageFullBleedSectionContentClass(className?: string) {
   return pageDielineOuterClass(className);
 }
 
-/** Centered content column without dashed vertical guides. */
+/** Centered content column without dashed vertical guides; mobile `px-4` + outer `px-4` = 32px total. */
 export function pageDielineContentClass(className?: string) {
-  return cn("mx-auto w-full max-w-[var(--layout-max)] px-8", className);
+  return cn("mx-auto w-full max-w-[var(--layout-max)] px-4 md:px-8", className);
 }
 
-/** Centered column with dashed vertical guides; default inner horizontal padding `px-8`. */
+/**
+ * Centered column with dashed vertical guides; mobile `px-4` + outer `px-4` = 32px total including border.
+ * Flush to the dieline: pass `px-0 md:px-0` — bare `px-0` does not clear `md:px-8`.
+ */
 export function pageDielineInnerClass(className?: string) {
   return cn(
-    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8",
+    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-4 md:px-8",
     className,
   );
 }

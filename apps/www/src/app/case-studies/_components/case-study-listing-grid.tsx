@@ -26,6 +26,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@pakfactory/ui/components/sheet";
+import {
+  pageDielineInnerClass,
+  pageDielineOuterClass,
+} from "@pakfactory/ui/components/page-dieline-section";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CaseStudyCard } from "@pakfactory/sanity/queries";
 import { CaseStudyCard as CaseStudyCardComponent } from "@/components/modules/case-study-card";
@@ -274,8 +278,13 @@ export function CaseStudyListingGrid({
   return (
     <>
       {/* Filter bar */}
-      <section className="sticky top-0 z-30 border-b border-dashed border-border bg-background">
-        <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
+      <section
+        className={cn(
+          pageDielineOuterClass(),
+          "sticky top-0 z-30 border-b border-dashed border-border bg-background",
+        )}
+      >
+        <div className={pageDielineInnerClass()}>
           <div className="flex flex-wrap items-center justify-between gap-4 py-8">
             {/* Desktop filters */}
             {(solutionOptions.length > 0 || productOptions.length > 0 || expertiseOptions.length > 0) && (
@@ -409,10 +418,12 @@ export function CaseStudyListingGrid({
       {/* Results grid */}
       <section
         id={CASE_STUDIES_LISTING_TOP_ID}
-        className="scroll-mt-[calc(6rem+10px)] bg-background"
+        className={cn(
+          pageDielineOuterClass(),
+          "scroll-mt-[calc(6rem+10px)] bg-background",
+        )}
       >
-        <div className="mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8">
-          <div className="flex flex-col gap-10 py-12">
+        <div className={pageDielineInnerClass("flex flex-col gap-10 py-12")}>
             <h2 className="sr-only">Customer stories</h2>
             {visible.length === 0 ? (
               <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/50 text-center">
@@ -452,7 +463,7 @@ export function CaseStudyListingGrid({
 
             {/* Pagination */}
             {filtered.length > 0 && (
-              <div className="border-t border-dashed border-border px-4 md:px-8">
+              <div className="border-t border-dashed border-border">
                 <Pagination
                   pageNumber={safePage}
                   totalPages={totalPages}
@@ -480,7 +491,6 @@ export function CaseStudyListingGrid({
                 />
               </div>
             )}
-          </div>
         </div>
       </section>
     </>

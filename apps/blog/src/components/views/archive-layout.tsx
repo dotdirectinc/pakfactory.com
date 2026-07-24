@@ -60,7 +60,7 @@ export function ArchiveLayout({
         {children}
       </div>
       {pagination.show !== false && (
-        <div className="py-16">
+        <div className="py-8 md:py-16">
           <Pagination
             pageNumber={pagination.pageNumber}
             totalPages={pagination.totalPages}
@@ -77,7 +77,7 @@ export function ArchiveLayout({
   return (
     <>
       <JsonLdScript jsonLd={jsonLd} />
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
         <div className="mb-8">
           <Breadcrumb items={crumbs} />
           {kicker && (

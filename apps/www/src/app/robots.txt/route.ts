@@ -20,12 +20,10 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-# AI training crawlers — blocked
-User-agent: GPTBot
-Disallow: /
-
-User-agent: ClaudeBot
-Disallow: /
+# PROD-2198: AI training crawlers (formerly GPTBot / ClaudeBot with Disallow: /)
+# are no longer blocked here — they fall under the User-agent: * group above
+# (Allow: /case-studies, Disallow: everything else), matching the domain-wide
+# apex robots.txt served by Magento.
 
 Sitemap: ${absoluteUrl("/sitemap.xml")}
 `;

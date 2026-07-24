@@ -42,7 +42,7 @@ export function RelatedStudiesCarousel({ studies, heading, intro }: Props) {
 
   return (
     <Carousel
-      className="flex flex-col gap-8 py-16"
+      className="flex flex-col gap-8 py-8 md:py-16"
       setApi={setApi}
       opts={{ align: "start", slidesToScroll: 1 }}
     >

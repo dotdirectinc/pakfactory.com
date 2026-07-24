@@ -17,11 +17,11 @@ export function CategoryListingSection({
   pagination,
 }: CategoryListingSectionProps) {
   return (
-    <CategoryLandingSection innerClassName="py-16">
+    <CategoryLandingSection innerClassName="py-8 md:py-16">
       <div id={LISTING_TOP_ID} className="scroll-mt-24 flex flex-col gap-10">
         {children}
       </div>
-      {pagination && <div className="py-16">{pagination}</div>}
+      {pagination && <div className="py-8 md:py-16">{pagination}</div>}
     </CategoryLandingSection>
   );
 }

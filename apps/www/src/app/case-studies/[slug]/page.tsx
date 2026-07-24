@@ -151,16 +151,16 @@ export default async function CaseStudyPage({ params }: Props) {
       {/* Hero — title + intro left, meta card right */}
       <PageDielineSection
         className="border-b border-dashed border-border"
-        innerClassName="flex flex-col items-start gap-12 py-24 lg:flex-row lg:gap-[98px]"
+        innerClassName="flex flex-col items-start gap-8 py-10 md:gap-12 md:py-12 lg:flex-row lg:gap-[98px]"
       >
         {/* Left column */}
-        <div className="flex flex-1 flex-col gap-[42px]">
+        <div className="flex flex-1 flex-col gap-6 md:gap-[42px]">
           <div className="flex flex-col gap-4">
             <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-[48px]">
               {study.title}
             </h1>
             {Array.isArray(study.heroIntro) && study.heroIntro.length > 0 && (
-              <div className="max-w-2xl text-lg leading-7 text-foreground">
+              <div className="text-lg leading-7 text-foreground">
                 <PortableText
                   value={study.heroIntro as PortableTextBlock[]}
                   components={heroIntroPtComponents}
@@ -183,49 +183,51 @@ export default async function CaseStudyPage({ params }: Props) {
       </PageDielineSection>
 
       {/* Body — left sidebar + right content */}
-      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 lg:grid-cols-[300px_1fr]">
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 md:px-0 lg:grid-cols-[360px_1fr]">
 
-        {/* ── Left sidebar ── */}
-        <aside className="flex flex-col gap-[42px] border-r border-dashed border-border px-4 pb-16 pt-24 md:px-8 lg:px-12">
-          {/* Metrics */}
-          {study.highlights && study.highlights.length > 0 && (
-            <div className="flex w-full flex-col gap-[42px]">
-              <h2 className="text-lg leading-7 capitalize text-muted-foreground">
-                Metrics
-              </h2>
-              {study.highlights.map((h) => (
-                <div key={h._key} className="flex w-full flex-col gap-3">
-                  <h3 className="text-lg font-semibold leading-7 capitalize text-foreground">
-                    {h.title}
-                  </h3>
-                  {h.description && (
-                    <p className="text-sm leading-5 text-muted-foreground">
-                      {h.description}
-                    </p>
-                  )}
-                </div>
-              ))}
+        {/* ── Left sidebar — metrics + share/CTA stick together on lg+ ── */}
+        <aside className="flex flex-col border-r border-dashed border-border px-4 pb-8 pt-8 md:px-8 lg:pb-16 lg:pt-24">
+          <div className="flex flex-col gap-[42px] lg:sticky lg:top-8">
+            {/* Highlights — no section title (PROD-2201) */}
+            {study.highlights && study.highlights.length > 0 && (
+              <div className="flex w-full flex-col gap-[42px]">
+                {study.highlights.map((h) => (
+                  <div key={h._key} className="flex w-full flex-col gap-3">
+                    <h3 className="border-l-[3px] border-[#307b34] pl-3 text-lg font-semibold leading-7 capitalize text-foreground">
+                      {h.title}
+                    </h3>
+                    {h.description && (
+                      <p className="text-sm leading-5 text-muted-foreground">
+                        {h.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Share + CTA — desktop only (mobile uses in-content version) */}
+            <div className="hidden flex-col gap-[42px] lg:flex">
+              <div
+                aria-hidden="true"
+                className="-mx-4 border-t border-dashed border-border md:-mx-8"
+              />
+              <CaseStudyShare
+                url={pageUrl}
+                title={study.title}
+                showCta
+                ctaHeading={pageData?.detailCta?.heading}
+                primaryLabel={pageData?.detailCta?.primaryLabel}
+                primaryHref={pageData?.detailCta?.primaryHref ?? contactHref}
+                secondaryLabel={pageData?.detailCta?.secondaryLabel}
+                secondaryHref={pageData?.detailCta?.secondaryHref ?? wwwHomeHref}
+              />
             </div>
-          )}
-
-          {/* Share + CTA — sticky desktop sidebar */}
-          <div className="sticky top-8 hidden flex-col gap-[42px] lg:flex">
-            <div className="h-px w-[207px] border-t border-dashed border-border" />
-            <CaseStudyShare
-              url={pageUrl}
-              title={study.title}
-              showCta
-              ctaHeading={pageData?.detailCta?.heading}
-              primaryLabel={pageData?.detailCta?.primaryLabel}
-              primaryHref={pageData?.detailCta?.primaryHref ?? contactHref}
-              secondaryLabel={pageData?.detailCta?.secondaryLabel}
-              secondaryHref={pageData?.detailCta?.secondaryHref ?? wwwHomeHref}
-            />
           </div>
         </aside>
 
         {/* ── Right content ── */}
-        <div className="flex flex-col gap-24 px-6 pb-24 pt-24 lg:px-32">
+        <div className="flex flex-col gap-12 px-4 pb-12 pt-8 md:gap-16 md:px-8 md:pb-16 md:pt-12 lg:gap-24 lg:px-32 lg:pb-24 lg:pt-24">
 
           {/* Challenges */}
           {Array.isArray(study.challenge) && study.challenge.length > 0 && (

@@ -1,5 +1,8 @@
 import Link from 'next/link';
-import {PageDielineFullBleedSection} from '@/components/layout/page-dieline-section';
+import {
+    PageDielineFullBleedSection,
+    pageDielineOuterClass,
+} from '@/components/layout/page-dieline-section';
 import {PostList} from '@/components/modules/post-list';
 import type {HomePostCard} from '@/lib/blog-home';
 import {categoryHref} from '@/lib/blog-post-url';
@@ -38,33 +41,35 @@ export function PostRelatedRow({
     const sectionId = 'post-related-row-heading';
 
     return (
-        <PageDielineFullBleedSection
-            innerClassName="py-16"
-            borderTop={showTopBorder}
-            borderBottom={showBottomBorder}
-        >
-            <div aria-labelledby={sectionId} className="border-none">
-                <div className="mb-6 flex items-end justify-between gap-4">
-                    <h2
-                        id={sectionId}
-                        className="text-3xl font-semibold tracking-tight"
-                    >
-                        {sectionHeading}
-                    </h2>
-                    {categorySlug ? (
-                        <Link
-                            href={categoryHref(categorySlug)}
-                            className="shrink-0 text-sm font-medium text-primary hover:underline"
+        <div className={pageDielineOuterClass()}>
+            <PageDielineFullBleedSection
+                innerClassName="py-8 md:py-16"
+                borderTop={showTopBorder}
+                borderBottom={showBottomBorder}
+            >
+                <div aria-labelledby={sectionId} className="border-none">
+                    <div className="mb-6 flex items-end justify-between gap-4">
+                        <h2
+                            id={sectionId}
+                            className="text-3xl font-semibold tracking-tight"
                         >
-                            View all →
-                        </Link>
-                    ) : null}
+                            {sectionHeading}
+                        </h2>
+                        {categorySlug ? (
+                            <Link
+                                href={categoryHref(categorySlug)}
+                                className="shrink-0 text-sm font-medium text-primary hover:underline"
+                            >
+                                View all →
+                            </Link>
+                        ) : null}
+                    </div>
+                    <PostList
+                        posts={cards}
+                        emptyMessage="No related articles yet."
+                    />
                 </div>
-                <PostList
-                    posts={cards}
-                    emptyMessage="No related articles yet."
-                />
-            </div>
-        </PageDielineFullBleedSection>
+            </PageDielineFullBleedSection>
+        </div>
     );
 }

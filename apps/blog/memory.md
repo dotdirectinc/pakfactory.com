@@ -737,7 +737,7 @@ Product analytics is owned by **marketing through GTM**, not an in-app PostHog S
 | Inject (www / case-studies) | Same helper in [`apps/www/src/app/layout.tsx`](../www/src/app/layout.tsx); ID from [`fetchWwwGlobalSettings()`](../www/src/lib/www-global-settings.ts) (PROD-2176) |
 | Gate | Inject only when `gtmId` is set **and** `VERCEL_ENV === 'production'` (unset locally → no GTM; preview → no GTM even if dataset has an ID) |
 | Custom events | Blog: [`src/lib/analytics.ts`](./src/lib/analytics.ts) `captureEvent` → `sendGTMEvent` / `dataLayer`. Www: [`apps/www/src/lib/analytics.ts`](../www/src/lib/analytics.ts) (same helper). |
-| SPA pageviews (PROD-2191) | Client `VirtualPageviewTracker` in blog + www root layouts pushes `virtual_pageview` on initial load and every App Router navigation with `page_path`, `page_title`, `page_location`. **GTM admin** wires a Custom Event trigger + pageview-scoped tags (Ads/Meta/…). GA4 dedupe (unified vs enhanced measurement) is marketing-owned. |
+| SPA pageviews (PROD-2191) | Client `VirtualPageviewTracker` in blog + www root layouts pushes `virtual_pageview` on **App Router client navigations only** (skips initial load to avoid double-counting with GTM’s landing pageview), with `page_path`, `page_title`, `page_location`. **GTM admin** wires a Custom Event trigger + pageview-scoped tags (Ads/Meta/…). GA4 dedupe (unified vs enhanced measurement) is marketing-owned. |
 
 Funnel events marketing can trigger on in GTM (blog): `post_read`, `search_performed` (incl. `zero_results`), `newsletter_signup_submitted` / `_succeeded` / `_failed`, plus SPA `virtual_pageview` (blog + www). Trackers: `components/modules/analytics/`.
 

@@ -188,7 +188,7 @@ export function TopicListingClient({
         />
       </div>
       {totalCount > 0 ? (
-        <div className="py-16">
+        <div className="py-8 md:py-16">
           <Pagination
             pageNumber={safePage}
             totalPages={totalPages}

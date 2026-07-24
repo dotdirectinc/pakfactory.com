@@ -120,8 +120,8 @@ export function SiteFooter({
 
   return (
     <footer className="bg-background">
-      <PageDielineSection innerClassName="px-0">
-        <div className="border-t border-dashed border-foreground/10 px-8 py-16 text-center">
+      <PageDielineSection innerClassName="px-0 md:px-0">
+        <div className="border-t border-dashed border-foreground/10 px-4 py-16 text-center md:px-8">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Let&apos;s collaborate and craft <br /> your vision
           </h2>
@@ -136,7 +136,7 @@ export function SiteFooter({
         </div>
 
         <div
-          className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-8 py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
+          className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-4 py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
           style={
             {
               "--footer-section-rows": sectionRows,
@@ -157,7 +157,7 @@ export function SiteFooter({
 
         {/* Bottom row 1 — copyright + social icons */}
         <div className="border-t border-dashed border-foreground/10">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
+          <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-8 md:px-8">
             <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
               © 2026 PakFactory
             </p>
@@ -185,7 +185,7 @@ export function SiteFooter({
 
         {/* Bottom row 2 — AI answer links + full rights */}
         <div className="border-t border-dashed border-foreground/10">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
+          <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-8 md:px-8">
             <div className="flex flex-wrap items-center gap-6">
               <p className="text-sm text-muted-foreground">See what AI says about PakFactory</p>
               {aiLinks.length > 0 && (

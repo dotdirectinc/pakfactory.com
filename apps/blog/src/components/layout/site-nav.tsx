@@ -85,7 +85,7 @@ export function SiteNav({navItems, header}: SiteNavProps) {
                         <SiteNavCategories navItems={navItems} />
                     </PageDielineSection>
                 </div>
-                <PageDielineSection innerClassName="px-0">
+                <PageDielineSection innerClassName="px-0 md:px-0">
                     <div
                         id={READING_PROGRESS_SLOT_ID}
                         className="pointer-events-none w-full"

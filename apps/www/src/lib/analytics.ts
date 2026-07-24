@@ -7,7 +7,8 @@ import {sendGTMEvent} from "@next/third-parties/google";
  *
  * GTM is Sanity-gated: when Global Settings `gtmId` is unset (or the layout
  * skips inject outside production), `sendGTMEvent` is a silent no-op with a
- * soft console warning.
+ * soft console warning. SPA pageviews: `virtual_pageview` via
+ * `VirtualPageviewTracker` on client navigations only (not initial load).
  */
 
 /** Fire a custom event into GTM's dataLayer; no-op when GTM is not mounted. */

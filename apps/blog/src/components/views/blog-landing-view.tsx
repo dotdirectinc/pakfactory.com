@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@pakfactory/ui/lib/utils";
 import { pageDielineOuterClass } from "@/components/layout/page-dieline-section";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { JsonLdScript } from "@/components/ui/json-ld-script";
@@ -23,8 +24,8 @@ export function BlogLandingView({ page }: BlogLandingViewProps) {
   return (
     <>
       <JsonLdScript jsonLd={jsonLd} />
-      <main className={pageDielineOuterClass()}>
-        <div className="mx-auto max-w-6xl px-6 pt-8">
+      <main className={cn("overflow-x-clip", pageDielineOuterClass())}>
+        <div className="mx-auto max-w-6xl px-4 pt-8 md:px-8">
           <nav className="text-sm text-muted-foreground">
             <Link href="/" className="hover:text-foreground">
               Blog

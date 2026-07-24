@@ -42,7 +42,7 @@ export function CategoryLandingSection({
 }) {
   return (
     <section className={className ?? ""}>
-      <PageDielineSection innerClassName={innerClassName ?? "py-16 sm:py-24"}>
+      <PageDielineSection innerClassName={innerClassName ?? "py-8 sm:py-24"}>
         {children}
       </PageDielineSection>
     </section>
