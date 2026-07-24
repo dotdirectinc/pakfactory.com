@@ -2,10 +2,18 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { submitIndexNowUrls } from "@pakfactory/sanity/indexnow";
 import {
+  BLOG_AUTHOR_CACHE_TAG,
+  BLOG_CATEGORY_CACHE_TAG,
   BLOG_GLOBAL_SETTINGS_CACHE_TAG,
+  BLOG_PAGE_CACHE_TAG,
   BLOG_POSTS_CACHE_TAG,
   BLOG_REDIRECTS_CACHE_TAG,
   BLOG_SETTINGS_CACHE_TAG,
+  BLOG_TOPIC_CACHE_TAG,
+  blogAuthorTag,
+  blogCategoryTag,
+  blogPostTag,
+  blogTopicTag,
 } from "@/lib/blog-cache";
 import { fetchBlogGlobalSettingsUncached } from "@/lib/blog-global-settings";
 import { postDetailHref } from "@/lib/blog-post-url";
@@ -23,9 +31,15 @@ const INDEXNOW_HOST = "pakfactory.com";
  * - redirect CRUD or post publish → refresh the cached redirect map.
  * - post/tag/category/author publish → also refresh sitemap.
  * - post publish → also refresh post-derived surfaces (home/RSS/listings).
+ * - category/topic/author publish (PROD-2183) → bust the matching content cache tag
+ *   so the cached archive rebuilds on the next request (instant editor freshness).
  * - post publish/update/unpublish (PROD-2172) → also ping IndexNow with the post's
- *   canonical URL. Requires the webhook's Projection to include `slug { current }`
- *   — without it, `slug` below is undefined and the ping is skipped.
+ *   canonical URL.
+ *
+ * Requires the webhook's Projection to include `slug { current }` — used for the
+ * per-slug cache tags (post/category/topic/author) and the IndexNow ping. Without it
+ * the coarse type tag still busts (so freshness holds), only the precise per-slug
+ * tag and the IndexNow ping are skipped.
  */
 export async function POST(request: Request) {
   const secret = process.env.SANITY_REVALIDATE_SECRET?.trim();
@@ -62,6 +76,32 @@ export async function POST(request: Request) {
   }
   if (type === "post" || !type) {
     tags.add(BLOG_POSTS_CACHE_TAG);
+    // A post changes its own detail page plus every listing/home/archive that
+    // could include it — BLOG_POSTS_CACHE_TAG covers the shared surfaces; the
+    // per-slug tag lets the detail page bust precisely.
+    if (slug) tags.add(blogPostTag(slug));
+  }
+  // Content-taxonomy tags (PROD-2183) — a category / topic / author edit busts the
+  // matching cached archive so it rebuilds on the next request (instant for editors),
+  // instead of waiting for the TTL. Coarse tag + per-slug tag: coarse covers cross
+  // links (e.g. a renamed category shown on post cards), per-slug the archive itself.
+  if (type === "blogCategory" || !type) {
+    tags.add(BLOG_CATEGORY_CACHE_TAG);
+    if (slug) tags.add(blogCategoryTag(slug));
+  }
+  if (type === "blogTag" || type === "blogTopicGroup" || !type) {
+    tags.add(BLOG_TOPIC_CACHE_TAG);
+    if (slug) tags.add(blogTopicTag(slug));
+  }
+  if (type === "author" || !type) {
+    tags.add(BLOG_AUTHOR_CACHE_TAG);
+    if (slug) tags.add(blogAuthorTag(slug));
+  }
+  // blogPage / blogTopicGroup edits bust the cached page-builder reads (home, topics,
+  // landing, …). The matching revalidatePath calls below also refresh the static route
+  // caches (Phase 2); this tag is what invalidates the unstable_cache'd reads.
+  if (type === "blogPage" || type === "blogTopicGroup" || !type) {
+    tags.add(BLOG_PAGE_CACHE_TAG);
   }
   // Per-type default singletons (PROD-2116) feed the same BLOG_SETTINGS_QUERY cache.
   const settingsTypes = new Set([
@@ -95,8 +135,16 @@ export async function POST(request: Request) {
   }
 
   if (type === "blogPage" || type === "blogTopicGroup" || !type) {
+    // Path revalidation refreshes the static route caches (Phase 2); the
+    // BLOG_PAGE_CACHE_TAG bust above invalidates the cached page-builder reads.
     revalidatePath("/");
     revalidatePath("/topics");
+  }
+
+  // Post publish → also refresh the post's own route (belt-and-suspenders once post
+  // pages are statically rendered in Phase 2; harmless while they are dynamic).
+  if (type === "post" && slug) {
+    revalidatePath(postDetailHref(slug));
   }
 
   // PROD-2172 — ping IndexNow on post publish/update/unpublish. Covers unpublish

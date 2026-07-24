@@ -9,9 +9,13 @@ import {
   buildDocMetadata,
   type DocSeoFields,
 } from "@/lib/resolve-seo";
-import { getSanityClient } from "@/lib/sanity/client";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import {
+  BLOG_AUTHOR_CACHE_TAG,
+  BLOG_POSTS_CACHE_TAG,
+  blogAuthorTag,
+} from "@/lib/blog-cache";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { isSanityConfigured } from "@/lib/sanity/env";
 import {
   archivePageSlice,
   DEFAULT_PAGE_SIZE,
@@ -137,20 +141,27 @@ export function getAuthorListingRobots(
 }
 
 export async function fetchAuthorBySlug(slug: string): Promise<AuthorDoc | null> {
-  if (!isSanityConfigured()) return null;
-  const client = await getSanityClient();
-  const doc = await client
-    .fetch<AuthorDoc | null>(AUTHOR_BY_SLUG_QUERY, { slug })
-    .catch(() => null);
+  const doc = await blogCachedFetch<AuthorDoc | null>({
+    cacheKey: "author-by-slug",
+    query: AUTHOR_BY_SLUG_QUERY,
+    params: { slug },
+    tags: [BLOG_AUTHOR_CACHE_TAG, blogAuthorTag(slug)],
+    fallback: null,
+    label: `author:${slug}`,
+  });
   return doc?.slug ? doc : null;
 }
 
 export async function fetchAuthorPostsCount(authorSlug: string): Promise<number> {
-  if (!isSanityConfigured()) return 0;
-  const client = await getSanityClient();
-  return client
-    .fetch<number>(AUTHOR_POSTS_COUNT_QUERY, blogLanguageParams({ authorSlug }))
-    .catch(() => 0);
+  return blogCachedFetch<number>({
+    cacheKey: "author-posts-count",
+    query: AUTHOR_POSTS_COUNT_QUERY,
+    params: blogLanguageParams({ authorSlug }),
+    // Count changes on any post publish and on author edits.
+    tags: [BLOG_POSTS_CACHE_TAG, BLOG_AUTHOR_CACHE_TAG, blogAuthorTag(authorSlug)],
+    fallback: 0,
+    label: `author-count:${authorSlug}`,
+  });
 }
 
 /** Author posts slice, newest first — `start` inclusive, `end` exclusive. */
@@ -159,14 +170,14 @@ export async function fetchAuthorPosts(
   start: number,
   end: number,
 ): Promise<HomePostCard[]> {
-  if (!isSanityConfigured()) return [];
-  const client = await getSanityClient();
-  return client
-    .fetch<HomePostCard[]>(
-      AUTHOR_POSTS_PAGE_QUERY,
-      blogLanguageParams({ authorSlug, start, end }),
-    )
-    .catch(() => []);
+  return blogCachedFetch<HomePostCard[]>({
+    cacheKey: "author-posts-page",
+    query: AUTHOR_POSTS_PAGE_QUERY,
+    params: blogLanguageParams({ authorSlug, start, end }),
+    tags: [BLOG_POSTS_CACHE_TAG, blogAuthorTag(authorSlug)],
+    fallback: [],
+    label: `author-posts:${authorSlug}`,
+  });
 }
 
 /**

@@ -23,8 +23,13 @@ import {
   type BlogRobotsDirective,
 } from "@/lib/seo";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { getSanityClient } from "@/lib/sanity/client";
-import { isSanityConfigured } from "@/lib/sanity/env";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import {
+  BLOG_CATEGORY_CACHE_TAG,
+  BLOG_POSTS_CACHE_TAG,
+  BLOG_TOPIC_CACHE_TAG,
+  blogCategoryTag,
+} from "@/lib/blog-cache";
 import {
   BLOG_CATEGORY_AUTHORS_FACET_QUERY,
   BLOG_CATEGORY_BY_SLUG_QUERY,
@@ -288,23 +293,14 @@ export const fetchCategoryBySlug = cache(async function fetchCategoryBySlug(
   slug: string,
 ): Promise<CategoryDocument | null> {
   const fallback = getCategoryFallback(slug);
-  if (!isSanityConfigured()) {
-    return fallback
-      ? {
-          title: fallback.title,
-          slug: fallback.slug,
-          descriptionText: "",
-        }
-      : null;
-  }
-
-  const client = await getSanityClient();
-  const doc = await client
-    .fetch<CategoryDocument | null>(
-      BLOG_CATEGORY_BY_SLUG_QUERY,
-      blogLanguageParams({ slug }),
-    )
-    .catch(() => null);
+  const doc = await blogCachedFetch<CategoryDocument | null>({
+    cacheKey: "category-by-slug",
+    query: BLOG_CATEGORY_BY_SLUG_QUERY,
+    params: blogLanguageParams({ slug }),
+    tags: [BLOG_CATEGORY_CACHE_TAG, blogCategoryTag(slug)],
+    fallback: null,
+    label: `category:${slug}`,
+  });
 
   if (doc?.slug) return doc;
   if (fallback) {
@@ -339,52 +335,61 @@ export async function fetchCategoryArchivePage(
   // The category doc, count, featured band, topics, page slice, and both facet
   // sets are all independent (keyed by slug/filters, not by each other) — issue
   // them in one parallel round-trip instead of the former three sequential waves.
-  if (isSanityConfigured()) {
-    const client = await getSanityClient();
-    [category, totalCount, featuredPosts, recommendedTopics, posts, tags, authors] =
-      await Promise.all([
-        fetchCategoryBySlug(categorySlug),
-        client
-          .fetch<number>(BLOG_CATEGORY_POSTS_COUNT_QUERY, groqParams)
-          .catch(() => 0),
-        !hasFilters
-          ? client
-              .fetch<HomePostCard[]>(
-                BLOG_CATEGORY_FEATURED_POSTS_QUERY,
-                blogLanguageParams({ categorySlug }),
-              )
-              .catch(() => [])
-          : Promise.resolve([] as HomePostCard[]),
-        client
-          .fetch<CategoryTopic[] | null>(
-            BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
-            blogLanguageParams({ categorySlug }),
-          )
-          .then((topics) => topics ?? [])
-          .catch(() => []),
-        client
-          .fetch<HomePostCard[]>(postsPageQuery(filters.sort), {
-            ...groqParams,
-            start,
-            end,
+  const categoryTags = [BLOG_POSTS_CACHE_TAG, blogCategoryTag(categorySlug)];
+  [category, totalCount, featuredPosts, recommendedTopics, posts, tags, authors] =
+    await Promise.all([
+      fetchCategoryBySlug(categorySlug),
+      blogCachedFetch<number>({
+        cacheKey: "category-posts-count",
+        query: BLOG_CATEGORY_POSTS_COUNT_QUERY,
+        params: groqParams,
+        tags: categoryTags,
+        fallback: 0,
+        label: `category-count:${categorySlug}`,
+      }),
+      !hasFilters
+        ? blogCachedFetch<HomePostCard[]>({
+            cacheKey: "category-featured",
+            query: BLOG_CATEGORY_FEATURED_POSTS_QUERY,
+            params: blogLanguageParams({ categorySlug }),
+            tags: categoryTags,
+            fallback: [],
+            label: `category-featured:${categorySlug}`,
           })
-          .catch(() => []),
-        client
-          .fetch<CategoryFacetTag[]>(
-            BLOG_CATEGORY_TAGS_FACET_QUERY,
-            blogLanguageParams({ categorySlug }),
-          )
-          .catch(() => []),
-        client
-          .fetch<CategoryFacetAuthor[]>(
-            BLOG_CATEGORY_AUTHORS_FACET_QUERY,
-            blogLanguageParams({ categorySlug }),
-          )
-          .catch(() => []),
-      ]);
-  } else {
-    category = await fetchCategoryBySlug(categorySlug);
-  }
+        : Promise.resolve([] as HomePostCard[]),
+      blogCachedFetch<CategoryTopic[] | null>({
+        cacheKey: "category-recommended-topics",
+        query: BLOG_CATEGORY_RECOMMENDED_TOPICS_QUERY,
+        params: blogLanguageParams({ categorySlug }),
+        tags: [BLOG_TOPIC_CACHE_TAG, blogCategoryTag(categorySlug)],
+        fallback: [],
+        label: `category-topics:${categorySlug}`,
+      }).then((topics) => topics ?? []),
+      blogCachedFetch<HomePostCard[]>({
+        cacheKey: "category-posts-page",
+        query: postsPageQuery(filters.sort),
+        params: { ...groqParams, start, end },
+        tags: categoryTags,
+        fallback: [],
+        label: `category-posts:${categorySlug}`,
+      }),
+      blogCachedFetch<CategoryFacetTag[]>({
+        cacheKey: "category-tags-facet",
+        query: BLOG_CATEGORY_TAGS_FACET_QUERY,
+        params: blogLanguageParams({ categorySlug }),
+        tags: categoryTags,
+        fallback: [],
+        label: `category-tags-facet:${categorySlug}`,
+      }),
+      blogCachedFetch<CategoryFacetAuthor[]>({
+        cacheKey: "category-authors-facet",
+        query: BLOG_CATEGORY_AUTHORS_FACET_QUERY,
+        params: blogLanguageParams({ categorySlug }),
+        tags: categoryTags,
+        fallback: [],
+        label: `category-authors-facet:${categorySlug}`,
+      }),
+    ]);
 
   if (!category) return null;
 

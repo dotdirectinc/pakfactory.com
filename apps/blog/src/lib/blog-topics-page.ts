@@ -1,8 +1,9 @@
-import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import type { TopicsPageGroupRow } from "@/lib/blog-topics-index";
 import { enrichPopularRowBlocks } from "@/lib/page-builder";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import { BLOG_PAGE_CACHE_TAG, BLOG_TOPIC_CACHE_TAG } from "@/lib/blog-cache";
 import { blogTopicsPageParams } from "@/lib/blog-language";
 import {
   buildDocMetadata,
@@ -10,8 +11,6 @@ import {
 } from "@/lib/resolve-seo";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import type { BlogRobotsDirective } from "@/lib/seo";
-import { getPreviewableSanityClient } from "@/lib/sanity/client";
-import { isSanityConfigured } from "@/lib/sanity/env";
 import { BLOG_TOPICS_PAGE_BUILDER_QUERY } from "@pakfactory/sanity/queries";
 
 const TOPICS_TITLE_FALLBACK = "Browse Packaging Topics";
@@ -26,37 +25,16 @@ export type BlogTopicsPageDoc = DocSeoFields & {
   pageBuilder?: PageBuilderBlock[] | null;
 };
 
-async function fetchSafe<T>(
-  label: string,
-  run: () => Promise<T>,
-  fallback: T,
-): Promise<T> {
-  try {
-    return await run();
-  } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.error(`[blog-topics-page] ${label} failed:`, err);
-    }
-    return fallback;
-  }
-}
-
 export async function fetchBlogTopicsPage(): Promise<BlogTopicsPageDoc | null> {
-  if (process.env.NODE_ENV === "development") {
-    noStore();
-  }
-  if (!isSanityConfigured()) return null;
-
-  const client = await getPreviewableSanityClient();
-  const doc = await fetchSafe(
-    "topicsPage",
-    () =>
-      client.fetch<BlogTopicsPageDoc | null>(
-        BLOG_TOPICS_PAGE_BUILDER_QUERY,
-        blogTopicsPageParams(),
-      ),
-    null,
-  );
+  const doc = await blogCachedFetch<BlogTopicsPageDoc | null>({
+    cacheKey: "topics-page-builder",
+    query: BLOG_TOPICS_PAGE_BUILDER_QUERY,
+    params: blogTopicsPageParams(),
+    // A blogPage (pageRole topics) that renders topic groups → bust on either.
+    tags: [BLOG_PAGE_CACHE_TAG, BLOG_TOPIC_CACHE_TAG],
+    fallback: null,
+    label: "topicsPage",
+  });
 
   if (!doc) return null;
 
