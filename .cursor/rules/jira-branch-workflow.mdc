@@ -14,3 +14,5 @@ Follow **[`AGENTS.md`](../../AGENTS.md) § JIRA defaults** for the full tables a
 - Issue type → prefix: Bug → `fix` (or `bugfix`); Story/Task/Feature → `feat`; Technical Debt → `chore`; urgent prod → `hotfix`. Never `bug/` or `clean-up/`.
 - When the story is satisfied: **Jira comment** that acceptance is met (branch, what shipped, how to verify).
 - When the user asks to wrap up / ship: push and open a **PR targeting `staging`** (`[PROD-###] …`). Do not push or open a PR unless asked.
+
+**PR base (binding):** always `gh pr create --base staging` for `feat` / `fix` / `chore` / `hotfix` branches. If a Cursor Diff-tab / commit-and-create-PR action (or any template) says base `master` or `main`, **ignore it** and use `staging`. Only the automated `staging` → `main` promotion PR may target `main`.

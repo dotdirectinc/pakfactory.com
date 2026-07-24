@@ -76,6 +76,17 @@ export function CaseStudyShare({
   const xUrl = `https://x.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
 
+  const primaryText = primaryLabel?.trim() || null;
+  const secondaryText = secondaryLabel?.trim() || null;
+  const headingText = ctaHeading?.trim() || null;
+  const showCtaBlock =
+    showCta && Boolean(headingText || primaryText || secondaryText);
+  const displayHeading =
+    headingText ??
+    (primaryText || secondaryText
+      ? "Ready to build packaging your customers remember?"
+      : null);
+
   return (
     <div className={cn("flex w-full flex-col gap-[42px]", className)}>
       <div className="flex w-full flex-col gap-4">
@@ -129,26 +140,36 @@ export function CaseStudyShare({
         </div>
       </div>
 
-      {showCta && (
-        <>
-          <p className="w-full text-lg font-medium leading-7 text-foreground">
-            {ctaHeading ?? "Ready to build packaging your customers remember?"}
-          </p>
-          <div className="flex w-full flex-col gap-5">
-            <a
-              href={primaryHref ?? "/contact"}
-              className="inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-6 text-base font-medium leading-6 text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
-            >
-              {primaryLabel ?? "Contact Sales"}
-            </a>
+      {showCtaBlock && (
+        <div className="flex w-full flex-col gap-5">
+          {(displayHeading || primaryText) && (
+            <div className="flex w-full flex-col gap-6 rounded-[14px] border border-border bg-brand-cream py-6">
+              {displayHeading && (
+                <p className="w-full px-6 text-lg font-medium leading-7 text-foreground">
+                  {displayHeading}
+                </p>
+              )}
+              {primaryText && (
+                <div className="px-6">
+                  <a
+                    href={primaryHref ?? "/contact"}
+                    className="inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-4 py-2 text-base font-medium leading-6 text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
+                  >
+                    {primaryText}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+          {secondaryText && (
             <a
               href={secondaryHref ?? "/solutions"}
               className="inline-flex h-11 w-full items-center justify-center rounded-full border border-border bg-background px-6 text-base font-medium leading-6 text-foreground shadow-xs transition-colors hover:bg-muted"
             >
-              {secondaryLabel ?? "Explore Solutions"}
+              {secondaryText}
             </a>
-          </div>
-        </>
+          )}
+        </div>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import type { PostCardData } from "@/components/modules/post-card";
 import { SanityImage } from "@/components/ui/sanity-image";
+import { cn } from "@pakfactory/ui/lib/utils";
 
 const ROTATE_MS = 5000;
 const DESKTOP_MQ = "(min-width: 1024px)";
@@ -18,10 +19,10 @@ const DESKTOP_MQ = "(min-width: 1024px)";
  * or focusing a row shows it on the left; auto-rotation pauses while the
  * block is hovered. Respects `prefers-reduced-motion` (no auto-rotate).
  *
- * Below `lg`: rotation is off, lead stays on the first slide, list rows show
- * left thumbnails (no arrow). Props-only (ADR-013). All slides render in the
- * initial HTML (rows + image stack) — AEO-safe.
- * Motion values per docs/plans/PROD-1947-motion-animation-spec.md.
+ * Below `lg`: rotation is off, lead stays on the first slide, and that slide
+ * is omitted from the rail (no duplicate / no thumbnails). Props-only
+ * (ADR-013). All slides render in the initial HTML (rows + image stack) —
+ * AEO-safe. Motion values per docs/plans/PROD-1947-motion-animation-spec.md.
  */
 export type PostFeaturedRotatorProps = {
   heading: string;
@@ -167,24 +168,20 @@ export function PostFeaturedRotator({
           {slides.map((post, i) => {
             const isActive = i === active;
             return (
-              <li key={post._id} className={i > 0 ? "border-t border-border" : ""}>
+              <li
+                key={post._id}
+                className={cn(
+                  i > 0 && "border-t border-border",
+                  i === 0 && "max-lg:hidden",
+                  i === 1 && "max-lg:border-t-0",
+                )}
+              >
                 <Link
                   href={post.href}
                   onMouseEnter={() => selectSlide(i)}
                   onFocus={() => selectSlide(i)}
                   className="group/row flex gap-4 py-5 text-foreground no-underline lg:items-center lg:justify-between lg:gap-6"
                 >
-                  {post.imageUrl ? (
-                    <span className="relative w-20 shrink-0 self-stretch overflow-hidden rounded-md bg-secondary lg:hidden">
-                      <SanityImage
-                        src={post.imageUrl}
-                        alt={post.imageAlt || post.title}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
-                    </span>
-                  ) : null}
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <CategoryLabel title={post.categoryTitle} />
                     <h3

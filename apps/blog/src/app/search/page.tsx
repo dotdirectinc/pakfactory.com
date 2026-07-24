@@ -42,21 +42,17 @@ function SearchBelowFold({ blocks }: { blocks: PageBuilderBlock[] }) {
   if (blocks.length > 0) {
     return (
       <>
-        <BlockRenderer blocks={blocks} />
+        <PageDielineBlockRail>
+          <BlockRenderer blocks={blocks} />
+        </PageDielineBlockRail>
         {!hasNewsletterBlock(blocks) && (
-          <PageDielineBlockRail>
-            <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
-          </PageDielineBlockRail>
+          <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
         )}
       </>
     );
   }
 
-  return (
-    <PageDielineBlockRail>
-      <CtaNewsletter showTopBorder={false} showBottomBorder={false} />
-    </PageDielineBlockRail>
-  );
+  return <CtaNewsletter showTopBorder={false} showBottomBorder={false} />;
 }
 
 export async function generateMetadata({
@@ -107,7 +103,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
     return (
       <main>
         {header}
-        <PageDielineSection innerClassName="py-16 sm:py-24">
+        <PageDielineSection innerClassName="py-8 sm:py-24">
           <SearchListingClient
             query={query}
             allPosts={allPosts}
@@ -134,7 +130,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   return (
     <main>
       {header}
-      <PageDielineSection innerClassName="py-16 sm:py-24">
+      <PageDielineSection innerClassName="py-8 sm:py-24">
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">

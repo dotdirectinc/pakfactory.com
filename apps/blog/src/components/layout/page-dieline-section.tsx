@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@pakfactory/ui/lib/utils";
 
-/** Horizontal gutter outside the dashed dieline column (viewport to dieline). */
+/**
+ * Horizontal gutter outside the dashed dieline column.
+ * Mobile: 16px (`px-4`); with inner `px-4` = 32px total viewport → content (including border).
+ */
 export function pageDielineOuterClass(className?: string) {
   return cn("w-full px-4 sm:px-6 md:px-8", className);
 }
@@ -24,13 +27,16 @@ export function pageFullBleedSectionContentClass(className?: string) {
 
 /** Centered content column without dashed vertical guides (e.g. category header band). */
 export function pageDielineContentClass(className?: string) {
-  return cn("mx-auto w-full max-w-[var(--layout-max)] px-8", className);
+  return cn("mx-auto w-full max-w-[var(--layout-max)] px-4 md:px-8", className);
 }
 
-/** Centered column with dashed vertical guides; default inner horizontal padding `px-8`. */
+/**
+ * Centered column with dashed vertical guides; mobile `px-4` + outer `px-4` = 32px total including border.
+ * Flush to the dieline (e.g. full-width borders): pass `px-0 md:px-0` — bare `px-0` does not clear `md:px-8`.
+ */
 export function pageDielineInnerClass(className?: string) {
   return cn(
-    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-8",
+    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-4 md:px-8",
     className,
   );
 }
