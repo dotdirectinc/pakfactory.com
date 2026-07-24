@@ -18,6 +18,7 @@ import {
   getBlogRobotsDirective,
   hasListingFilters,
   hasNonDefaultPerPage,
+  isCategoryHiddenAsEmpty,
   parseListingPage,
   type BlogRobotsDirective,
 } from "@/lib/seo";
@@ -190,7 +191,23 @@ export function categoryPageHref(
 export function getCategoryListingRobots(
   pageNumber: number,
   searchParams: SearchParams,
+  options?: {
+    /** Total published posts in the category (featured included). */
+    postCount?: number;
+    /** From Blog Settings `categoryDefaults.hideEmptyCategory` (default on). */
+    hideEmptyCategory?: boolean | null;
+  },
 ): BlogRobotsDirective {
+  // PROD-2133: a 0-post category is forced noindex (overrides the category's own
+  // allowIndex, since `resolveDocRobots` only ANDs — base false wins). Paginated
+  // /page/N routes never reach here empty (they need > perPage posts), so callers
+  // that omit `postCount` skip the rule entirely.
+  if (
+    options?.postCount !== undefined &&
+    isCategoryHiddenAsEmpty(options.postCount, options.hideEmptyCategory)
+  ) {
+    return { index: false, follow: true };
+  }
   return getBlogRobotsDirective({
     kind: "category",
     pageNumber,

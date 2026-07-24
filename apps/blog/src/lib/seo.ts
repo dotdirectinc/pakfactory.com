@@ -201,6 +201,25 @@ export function getTagListingRobots(
   };
 }
 
+/**
+ * Empty-category auto-noindex (PROD-2133). A category archive with **zero**
+ * published posts is forced `noindex` when the "Hide empty categories" toggle is
+ * on (default on), overriding the category's own `allowIndex`. Unlike the topic
+ * rule (`getTagListingRobots`, keyed on an N-post threshold), categories key on
+ * emptiness only — a category with 1+ posts follows the normal listing rules.
+ *
+ * This single predicate backs both the category page meta-robots
+ * (`getCategoryListingRobots`) and the categories sitemap filter, so the two can
+ * never disagree.
+ */
+export function isCategoryHiddenAsEmpty(
+  postCount: number,
+  hideEmptyCategory?: boolean | null,
+): boolean {
+  const hideEmpty = hideEmptyCategory ?? true; // default ON
+  return hideEmpty && postCount === 0;
+}
+
 /** Build listing robots from Next.js `searchParams` on archive routes. */
 export function getListingRobotsFromSearchParams(
   kind: BlogListingKind,
