@@ -1,6 +1,6 @@
 import { CtaNewsletter } from "@/components/blocks/cta-newsletter";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
-import { Pagination, LISTING_TOP_ID } from "@/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@pakfactory/components/modules/pagination";
 import { PerPageSelect } from "@/components/modules/per-page-select";
 import { PostList } from "@/components/modules/post-list";
 import { AuthorHeader } from "@/components/views/author-header";
