@@ -1,6 +1,11 @@
-import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
-import { getPreviewableSanityClient } from "@/lib/sanity/client";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
+import {
+  BLOG_CATEGORY_CACHE_TAG,
+  BLOG_PAGE_CACHE_TAG,
+  BLOG_POSTS_CACHE_TAG,
+  BLOG_TOPIC_CACHE_TAG,
+} from "@/lib/blog-cache";
 import { blogHomePageParams, blogLanguageParams } from "@/lib/blog-language";
 import {
   buildDocMetadata,
@@ -77,86 +82,63 @@ export type BlogHomeData = {
   categoryRows: HomeCategoryRow[];
 };
 
-async function fetchSafe<T>(
-  label: string,
-  run: () => Promise<T>,
-  fallback: T,
-): Promise<T> {
-  try {
-    return await run();
-  } catch (err) {
-    if (process.env.NODE_ENV === "development") {
-      console.error(`[blog-home] ${label} failed:`, err);
-    }
-    return fallback;
-  }
-}
-
 async function fetchFeatured(): Promise<HomePostCard | null> {
-  const client = await getPreviewableSanityClient();
-  const pinned = await fetchSafe(
-    "featured",
-    () =>
-      client.fetch<HomePostCard | null>(
-        FEATURED_HOME_POST_QUERY,
-        blogHomePageParams(),
-      ),
-    null,
-  );
+  const pinned = await blogCachedFetch<HomePostCard | null>({
+    cacheKey: "home-featured",
+    query: FEATURED_HOME_POST_QUERY,
+    params: blogHomePageParams(),
+    tags: [BLOG_POSTS_CACHE_TAG],
+    fallback: null,
+    label: "featured",
+  });
   if (pinned) return pinned;
 
-  const latestOne = await fetchSafe(
-    "latest (featured fallback)",
-    () =>
-      client.fetch<HomePostCard[]>(
-        LATEST_HOME_POSTS_QUERY,
-        blogLanguageParams({ excludeId: null }),
-      ),
-    [],
-  );
+  const latestOne = await blogCachedFetch<HomePostCard[]>({
+    cacheKey: "home-latest",
+    query: LATEST_HOME_POSTS_QUERY,
+    params: blogLanguageParams({ excludeId: null }),
+    tags: [BLOG_POSTS_CACHE_TAG],
+    fallback: [],
+    label: "latest (featured fallback)",
+  });
   return latestOne[0] ?? null;
 }
 
 async function fetchLatest(excludeId: string | null): Promise<HomePostCard[]> {
-  const client = await getPreviewableSanityClient();
-  return fetchSafe(
-    "latest sidebar",
-    () =>
-      client.fetch<HomePostCard[]>(
-        LATEST_HOME_POSTS_QUERY,
-        blogLanguageParams({ excludeId }),
-      ),
-    [],
-  );
+  return blogCachedFetch<HomePostCard[]>({
+    cacheKey: "home-latest",
+    query: LATEST_HOME_POSTS_QUERY,
+    params: blogLanguageParams({ excludeId }),
+    tags: [BLOG_POSTS_CACHE_TAG],
+    fallback: [],
+    label: "latest sidebar",
+  });
 }
 
 /** Industry-group `blogTag` pills (topicGroup slug `industry`), ordered by title. */
 async function fetchIndustries(): Promise<HomeIndustryPill[]> {
-  const client = await getPreviewableSanityClient();
-  return fetchSafe(
-    "industries",
-    () =>
-      client.fetch<HomeIndustryPill[]>(
-        BLOG_INDUSTRY_TAGS_QUERY,
-        blogLanguageParams(),
-      ),
-    [],
-  );
+  return blogCachedFetch<HomeIndustryPill[]>({
+    cacheKey: "home-industries",
+    query: BLOG_INDUSTRY_TAGS_QUERY,
+    params: blogLanguageParams(),
+    tags: [BLOG_TOPIC_CACHE_TAG],
+    fallback: [],
+    label: "industries",
+  });
 }
 
 async function fetchCategoryRows(): Promise<HomeCategoryRow[]> {
-  const client = await getPreviewableSanityClient();
   return Promise.all(
     HOME_CATEGORY_SLUGS.map(async (slug) => {
-      const posts = await fetchSafe(
-        `category:${slug}`,
-        () =>
-          client.fetch<HomePostCard[]>(
-            POSTS_BY_CATEGORY_SLUG_QUERY,
-            blogLanguageParams({ categorySlug: slug }),
-          ),
-        [],
-      );
+      const posts = await blogCachedFetch<HomePostCard[]>({
+        cacheKey: "home-category-row",
+        query: POSTS_BY_CATEGORY_SLUG_QUERY,
+        params: blogLanguageParams({ categorySlug: slug }),
+        // Post changes + a category rename both affect this row.
+        tags: [BLOG_POSTS_CACHE_TAG, BLOG_CATEGORY_CACHE_TAG],
+        fallback: [],
+        label: `category:${slug}`,
+      });
       return {
         slug,
         title: CATEGORY_TITLES[slug],
@@ -214,21 +196,14 @@ export function resolveHomePageH1(
 }
 
 export async function fetchBlogHomePage(): Promise<BlogHomePageDoc | null> {
-  if (process.env.NODE_ENV === "development") {
-    noStore();
-  }
-  if (!isSanityConfigured()) return null;
-
-  const client = await getPreviewableSanityClient();
-  return fetchSafe(
-    "homePage",
-    () =>
-      client.fetch<BlogHomePageDoc | null>(
-        BLOG_HOME_PAGE_BUILDER_QUERY,
-        blogHomePageParams(),
-      ),
-    null,
-  );
+  return blogCachedFetch<BlogHomePageDoc | null>({
+    cacheKey: "home-page-builder",
+    query: BLOG_HOME_PAGE_BUILDER_QUERY,
+    params: blogHomePageParams(),
+    tags: [BLOG_PAGE_CACHE_TAG],
+    fallback: null,
+    label: "homePage",
+  });
 }
 
 export async function buildBlogHomeMetadata(
@@ -268,10 +243,6 @@ export async function fetchBlogHomePageBuilder(): Promise<PageBuilderBlock[]> {
 }
 
 export async function fetchBlogHomeData(): Promise<BlogHomeData> {
-  if (process.env.NODE_ENV === "development") {
-    noStore();
-  }
-
   if (!isSanityConfigured()) {
     return {
       featured: null,
