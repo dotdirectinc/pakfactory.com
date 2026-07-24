@@ -1,6 +1,6 @@
 import {defineField, defineType} from 'sanity';
 import {languageField, uniqueSlugPerLanguage} from '../lib/i18n-fields';
-import {MEDIA_TAG, taggedImageField} from '../lib/media-tags';
+import {MEDIA_TAG, taggedImageField} from '../lib/media-tags'
 import {seoFields, socialFields} from '../lib/seo-fields';
 import {inlineBlocks} from './inline';
 

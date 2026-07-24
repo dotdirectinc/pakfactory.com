@@ -6,7 +6,8 @@
   "exports": {
     "./layout/*": "./src/layout/*.tsx",
     "./modules/*": "./src/modules/*.tsx",
-    "./commons/*": "./src/commons/*.ts"
+    "./commons/*": "./src/commons/*.ts",
+    "./ui/*": "./src/ui/*.tsx"
   },
   "dependencies": {
     "@pakfactory/ui": "workspace:*",

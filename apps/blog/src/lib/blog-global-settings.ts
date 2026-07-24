@@ -24,6 +24,12 @@ export type BlogGlobalSettings = {
   gtmId?: string | null;
   /** IndexNow API key (PROD-2172) from Global Settings → Integrations. */
   indexNowKey?: string | null;
+  /** Render-time image watermark (PROD-2206). */
+  watermark?: {
+    enabled?: boolean | null;
+    imageUrl?: string | null;
+    opacity?: number | null;
+  } | null;
 };
 
 async function loadBlogGlobalSettings(): Promise<BlogGlobalSettings | null> {

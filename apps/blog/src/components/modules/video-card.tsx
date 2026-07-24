@@ -72,6 +72,7 @@ export function VideoCardThumbnail({
           <SanityImage
             src={video.thumbnailUrl}
             alt=""
+            applyWatermark={false}
             fill
             className="object-cover"
             sizes={isLead ? "(min-width: 1024px) 717px, 100vw" : "(min-width: 1024px) 25vw, 50vw"}

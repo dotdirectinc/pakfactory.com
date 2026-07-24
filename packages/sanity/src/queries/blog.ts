@@ -163,6 +163,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       caption,
       link,
       linkNofollow,
+      "applyWatermark": coalesce(applyWatermark, true),
       asset
     },
     _type == "bodyQuote" => {
@@ -179,6 +180,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       images[]{
         _key,
         "alt": coalesce(alt, asset.asset->altText),
+        "applyWatermark": coalesce(applyWatermark, true),
         asset
       }
     },
@@ -925,6 +927,11 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   },
   "companyName": organization.legalName,
   "companyAddress": organization.contact.address,
+  "watermark": watermark{
+    "enabled": coalesce(enabled, true),
+    "imageUrl": image.asset->url,
+    "opacity": coalesce(opacity, 0.85)
+  },
   additionalEmbedHosts,
   gtmId,
   indexNowKey

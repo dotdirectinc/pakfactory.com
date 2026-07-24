@@ -123,6 +123,7 @@ export function CtaSpotlight({
                                             <SanityImage
                                                 src={imageUrl}
                                                 alt={imageAlt}
+                                                applyWatermark={false}
                                                 fill
                                                 className="object-contain object-center md:scale-110"
                                                 sizes="(min-width: 768px) 45vw, 100vw"
@@ -134,6 +135,7 @@ export function CtaSpotlight({
                                         <SanityImage
                                             src={imageUrl}
                                             alt={imageAlt}
+                                            applyWatermark={false}
                                             fill
                                             className="object-cover"
                                             sizes="(min-width: 768px) 45vw, 100vw"

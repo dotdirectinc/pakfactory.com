@@ -30,6 +30,7 @@ export function CaseStudyHeroMedia({ heroMedia, title }: Props) {
         <SanityImage
           src={heroMedia.imageUrl}
           alt={heroMedia.alt ?? title}
+          applyWatermark={false}
           fill
           className="object-cover"
           sizes="(max-width: 1024px) 100vw, 1280px"
@@ -71,6 +72,7 @@ export function CaseStudyHeroMedia({ heroMedia, title }: Props) {
             <SanityImage
               src={thumbnailUrl}
               alt={heroMedia.alt ?? title}
+              applyWatermark={false}
               fill
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
               sizes="(max-width: 1024px) 100vw, 1280px"

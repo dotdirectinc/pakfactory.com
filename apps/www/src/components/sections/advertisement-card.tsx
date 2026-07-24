@@ -119,6 +119,7 @@ const AdvertisementCard = ({
               <SanityImage
                 src={bannerUrl}
                 alt={bannerAlt?.trim() || cardTitle}
+                applyWatermark={false}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 480px"

@@ -1,5 +1,6 @@
 import { ImagesIcon } from '@sanity/icons'
 import { defineArrayMember, defineField, defineType } from 'sanity'
+import { applyWatermarkField } from '../../lib/watermark-fields'
 
 /** Shared alt + caption fields for both the native image member and the legacy object. */
 const imageMetaFields = [
@@ -16,6 +17,7 @@ const imageMetaFields = [
     type: 'string',
     description: 'Optional label shown below the image, e.g. "Insert" or "Tab opening".',
   }),
+  applyWatermarkField(),
 ]
 
 /**

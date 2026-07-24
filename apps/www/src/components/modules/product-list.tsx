@@ -47,6 +47,7 @@ function ProductListCard({
                     <SanityImage
                         src={product.thumbUrl}
                         alt={product.thumbAlt ?? displayName}
+                        applyWatermark={false}
                         width={480}
                         height={480}
                         sizes="(max-width: 640px) 50vw, 240px"

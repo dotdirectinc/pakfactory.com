@@ -311,6 +311,7 @@ export function PostCard({
               <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt || post.title}
+                applyWatermark={false}
                 fill
                 className="object-cover transition-transform group-hover:scale-[1.02]"
                 sizes="(max-width: 1024px) 100vw, 776px"
@@ -364,6 +365,7 @@ export function PostCard({
               <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt || post.title}
+                applyWatermark={false}
                 fill
                 className="object-cover transition-transform group-hover:scale-[1.02]"
                 sizes="(max-width: 1024px) 100vw, 640px"
@@ -398,6 +400,7 @@ export function PostCard({
               <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt || post.title}
+                applyWatermark={false}
                 fill
                 className="object-cover transition-transform group-hover:scale-[1.02]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -433,6 +436,7 @@ export function PostCard({
               <SanityImage
                 src={post.imageUrl}
                 alt={post.imageAlt || post.title}
+                applyWatermark={false}
                 fill
                 className="object-cover transition-transform group-hover:scale-[1.02]"
                 sizes="200px"
@@ -478,6 +482,7 @@ export function PostCard({
             <SanityImage
               src={post.imageUrl}
               alt={post.imageAlt || post.title}
+              applyWatermark={false}
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 50vw, 320px"
