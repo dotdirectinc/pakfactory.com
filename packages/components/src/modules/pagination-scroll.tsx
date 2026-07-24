@@ -5,7 +5,7 @@ import {
   consumePaginationScrollIntent,
   scrollToPaginationTarget,
   setPaginationScrollIntent,
-} from "@pakfactory/components/commons/path-pagination";
+} from "../commons/path-pagination";
 
 export { setPaginationScrollIntent };
 
@@ -15,10 +15,7 @@ type PaginationScrollProps = {
 };
 
 /** Scrolls the listing anchor into view only after a pagination control click. */
-export function PaginationScroll({
-  targetId,
-  pageNumber,
-}: PaginationScrollProps) {
+export function PaginationScroll({ targetId, pageNumber }: PaginationScrollProps) {
   useEffect(() => {
     if (!consumePaginationScrollIntent()) return;
     scrollToPaginationTarget(targetId);

@@ -4,7 +4,7 @@ import { JsonLdScript } from "@/components/ui/json-ld-script";
 import {
   LISTING_TOP_ID,
   Pagination,
-} from "@/components/modules/pagination";
+} from "@pakfactory/components/modules/pagination";
 
 type ArchiveLayoutProps = {
   /** Pre-serialized JSON-LD string for this archive. */
