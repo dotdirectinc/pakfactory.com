@@ -63,7 +63,7 @@ export const categorySettings = defineType({
         type: 'boolean',
         initialValue: true,
         description:
-          'Live rule, not a new-document default: every category archive with zero published posts is forced noindex and dropped from the sitemap — continuously, and even when the category has Allow indexing switched on. Turn off to let empty categories be indexed. (PROD-2133)',
+          'When on, categories with no published posts are set to noindex and excluded from the sitemap — even if Allow indexing is enabled. Turn off to let empty categories be indexed.',
       }),
     ],
   }),
