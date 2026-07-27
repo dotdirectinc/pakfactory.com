@@ -67,6 +67,11 @@ export function buildCaseStudyJsonLd(
       datePublished: toIsoDate(study.publishedAt),
       dateModified: toIsoDate(study.dateModified ?? study.publishedAt),
       ...(image ? { image } : {}),
+      // Case studies are authored by PakFactory itself, not a person — attribute
+      // the Organization as author (clears the Rich Results "missing author"
+      // recommended-field warning). Same @id as publisher so both resolve to the
+      // Organization node already in this @graph (PROD-2162).
+      author: { "@id": orgId },
       publisher: { "@id": orgId },
       ...(articleSection ? { articleSection } : {}),
       ...(keywords.length > 0 ? { keywords } : {}),
