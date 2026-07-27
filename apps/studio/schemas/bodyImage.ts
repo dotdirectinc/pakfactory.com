@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
+import { applyWatermarkField } from '../lib/watermark-fields'
 
 /**
  * bodyImage — enriched image block for use inside Portable Text body fields.
@@ -39,6 +40,7 @@ export const bodyImage = defineType({
       type: 'string',
       description: 'Optional short caption shown below the image in the frontend.',
     }),
+    applyWatermarkField(),
     defineField({
       name: 'legacyImageUrl',
       title: 'Legacy image URL (S3)',

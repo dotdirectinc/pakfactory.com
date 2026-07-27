@@ -8,6 +8,12 @@ const WWW_GLOBAL_SETTINGS_CACHE_TAG = "www-global-settings";
 export type WwwGlobalSettings = {
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
   gtmId?: string | null;
+  /** Render-time image watermark (PROD-2206). */
+  watermark?: {
+    enabled?: boolean | null;
+    imageUrl?: string | null;
+    opacity?: number | null;
+  } | null;
 };
 
 async function loadWwwGlobalSettings(): Promise<WwwGlobalSettings | null> {

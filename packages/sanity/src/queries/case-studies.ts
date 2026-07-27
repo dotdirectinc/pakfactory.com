@@ -24,13 +24,15 @@ const CASE_STUDY_STORY_BODY = /* groq */ `[]{
   _type == "bodyImage" => {
     ...,
     "alt": coalesce(alt, asset.asset->altText),
+    "applyWatermark": coalesce(applyWatermark, true),
     asset
   },
   _type == "caseStudyGalleryBlock" => {
     ...,
     images[]{
       ...,
-      "alt": coalesce(alt, asset->altText, image.asset->altText)
+      "alt": coalesce(alt, asset->altText, image.asset->altText),
+      "applyWatermark": coalesce(applyWatermark, true)
     }
   },
   _type == "testimonialBlock" => {

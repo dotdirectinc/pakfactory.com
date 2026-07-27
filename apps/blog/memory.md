@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-07-23.
+Last updated: 2026-07-24.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -22,6 +22,47 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/contribute`                        | ✅ PROD-1504                                                                                                                                                                                                    |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
+
+---
+
+## PROD-2206 — Image watermark (render-time + bake-on-serve trial)
+
+**Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `feat/PROD-2206-image-watermark`.
+
+Public blog/www imagery can show a PakFactory logo watermark. Studio Media downloads stay unmarked.
+
+**Scope:** watermarks apply to **detail body/gallery images only** (Studio default on; editors can disable). Front-end is **opt-in**: only call sites that pass `applyWatermark={true}` (body/gallery) show a mark. Blocks, cards, heroes, banners, and other surfaces omit or pass `false`.
+
+| Phase | Deliverable |
+| --- | --- |
+| Studio | `settings.watermark` (enabled / image / opacity); `applyWatermark` on `bodyImage` + gallery images only (default on) |
+| Shared UI | `@pakfactory/components` `ImageWatermarkOverlay` + `WatermarkProvider` (12% width, bottom-right, 5% pad) |
+| Blog / www | Layouts provide watermark config; body/gallery pass `true`; blocks/cards/heroes omit or force `false` |
+| Bake trial | `GET /api/wm` Sharp composite when `NEXT_PUBLIC_WATERMARK_MODE=serve` |
+
+### Mode switch (reversible)
+
+| Env | Behavior |
+| --- | --- |
+| unset or `NEXT_PUBLIC_WATERMARK_MODE=overlay` | CSS overlay only — **Save as is clean** (default) |
+| `NEXT_PUBLIC_WATERMARK_MODE=serve` | Image bytes baked via `/api/wm` — **Save as includes watermark** |
+
+Set in root `.env.local` and/or `apps/blog/.env.local` / `apps/www/.env.local`, then **restart** the Next dev server (public env is inlined at boot).
+
+```bash
+# Trial bake-on-serve
+NEXT_PUBLIC_WATERMARK_MODE=serve
+
+# Instant revert to overlay
+NEXT_PUBLIC_WATERMARK_MODE=overlay
+# or delete the variable
+```
+
+**Human ops (do not agent-write):** Studio → Global Settings → Identity → upload `pakfactory_white-logo_watermark.svg` as Watermark image; leave Enable on. Without this asset, neither mode draws a mark.
+
+**Verify overlay:** mark visible on post **body** image (not hero/card); right-click Save as → clean file.
+**Verify serve:** set mode=serve, reload body image; Save as → watermarked WebP; response header `X-Watermark-Mode: serve`; Studio Media still clean.  
+**Typecheck:** `pnpm --filter @pakfactory/blog typecheck`
 
 ---
 

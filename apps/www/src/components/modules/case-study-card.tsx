@@ -32,6 +32,7 @@ export function CaseStudyCard({
             <SanityImage
               src={cardImageUrl}
               alt={cardImageAlt ?? title}
+              applyWatermark={false}
               fill
               square
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"

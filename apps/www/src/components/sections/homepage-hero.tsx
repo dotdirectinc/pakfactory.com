@@ -132,6 +132,7 @@ const HomepageHero = ({
                     <SanityImage
                       src={bannerSrc}
                       alt={bannerAlt}
+                      applyWatermark={false}
                       fill
                       className="object-contain object-center"
                       sizes="(max-width: 1024px) 90vw, 50vw"
