@@ -143,7 +143,7 @@ export function CaseStudyShare({
       {showCtaBlock && (
         <div className="flex w-full flex-col gap-5">
           {(displayHeading || primaryText) && (
-            <div className="flex w-full flex-col gap-6 rounded-[14px] border border-border bg-brand-cream py-6">
+            <div className="flex w-full flex-col gap-6 rounded-[14px] border border-border bg-brand-highlight py-6">
               {displayHeading && (
                 <p className="w-full px-6 text-lg font-medium leading-7 text-foreground">
                   {displayHeading}
