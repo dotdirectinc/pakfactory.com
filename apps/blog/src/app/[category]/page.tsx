@@ -19,6 +19,7 @@ import {
 import { buildBlogPageMetadata } from "@/lib/blog-page";
 import { redirectOrNotFound } from "@/lib/blog-redirects";
 import { resolveBlogSegment } from "@/lib/blog-segment-resolver";
+import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 
 export const revalidate = 60;
 
@@ -51,10 +52,20 @@ export async function generateMetadata({
   switch (resolution.kind) {
     case "category": {
       const filters = parseCategoryFilters(sp);
+      const seoCtx = await fetchSeoContext();
+      const categoryDefaults = typeDefaults(seoCtx, "categoryDefaults");
+      // `totalCount` on page 1 excludes featured posts (the count query runs with
+      // excludeFeatured), so add the featured band back for a true 0-vs-more test
+      // — a category with only featured posts is not empty (PROD-2133).
+      const publishedPostCount =
+        resolution.data.totalCount + resolution.data.featuredPosts.length;
       return buildCategoryArchiveMetadata(
         resolution.data.category,
         categoryPageHref(category, 1, filters),
-        getCategoryListingRobots(1, sp),
+        getCategoryListingRobots(1, sp, {
+          postCount: publishedPostCount,
+          hideEmptyCategory: categoryDefaults?.hideEmptyCategory,
+        }),
       );
     }
     case "blogPage":

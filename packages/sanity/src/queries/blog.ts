@@ -949,7 +949,7 @@ export const BLOG_SETTINGS_QUERY = /* groq */ `{
     metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
   },
   "categoryDefaults": *[_id == "categorySettings"][0]{
-    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex
+    metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, hideEmptyCategory
   },
   "tagDefaults": *[_id == "topicSettings"][0]{
     metaTitleFormat, metaDescriptionFormat, allowIndex, allowFollow, noImageIndex, autoNoindexThreshold
@@ -1283,13 +1283,29 @@ export const AUTHORS_FOR_SITEMAP_QUERY = /* groq */ `*[
   _updatedAt
 }`;
 
-/** Categories for sitemap — slug + lastmod. Separate from BLOG_CATEGORIES_QUERY to avoid changing its shape. */
+/**
+ * Categories for sitemap — slug + the signals needed to gate indexability
+ * (PROD-2133). `allowIndex` (manual noindex) and `postCount` (published posts in
+ * the category) let the route drop non-indexable categories using the SAME rule
+ * as the page meta-robots, so sitemap and `<meta robots>` never drift.
+ * `postCount` counts ALL published posts in the category (featured included) via
+ * the reference, so it is a true 0-vs-more test for the "empty category" rule.
+ */
 export const CATEGORIES_FOR_SITEMAP_QUERY = /* groq */ `*[
   _type == "blogCategory"
   && defined(slug.current)
   && (!defined(language) || language == $language)
 ] | order(title asc){
   "slug": slug.current,
+  allowIndex,
+  "postCount": count(*[
+    _type == "post"
+    && (!defined(language) || language == $language)
+    && category._ref == ^._id
+    && defined(slug.current)
+    && defined(publishedAt)
+    && publishedAt <= now()
+  ]),
   _updatedAt
 }`;
 

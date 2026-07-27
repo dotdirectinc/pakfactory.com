@@ -1,7 +1,6 @@
-import { unstable_cache, unstable_noStore as noStore } from "next/cache";
+import { unstable_cache } from "next/cache";
 import { draftMode } from "next/headers";
 import {
-  getPreviewableSanityClient,
   getPublishedSanityClient,
   getSanityClient,
 } from "@/lib/sanity/client";
@@ -33,9 +32,14 @@ import {
   type BlogFooterNavDoc,
 } from "@/lib/blog-footer-nav";
 import {
+  BLOG_CATEGORY_CACHE_TAG,
+  BLOG_PAGE_CACHE_TAG,
+  BLOG_POSTS_CACHE_TAG,
   BLOG_REVALIDATE_SECONDS,
   BLOG_SETTINGS_CACHE_TAG,
+  BLOG_TOPIC_CACHE_TAG,
 } from "@/lib/blog-cache";
+import { blogCachedFetch } from "@/lib/blog-cached-fetch";
 import {
   BLOG_CATEGORY_FALLBACK,
   type BlogCategoryChip,
@@ -207,12 +211,14 @@ const getCachedBlogPrimaryNav = unstable_cache(
 );
 
 export async function fetchBlogCategories(): Promise<BlogCategoryChip[]> {
-  if (!isSanityConfigured()) {
-    return [...BLOG_CATEGORY_FALLBACK];
-  }
-  const rows = await (await getSanityClient())
-    .fetch<BlogCategoryChip[]>(BLOG_CATEGORIES_QUERY, blogLanguageParams())
-    .catch(() => []);
+  const rows = await blogCachedFetch<BlogCategoryChip[]>({
+    cacheKey: "blog-categories",
+    query: BLOG_CATEGORIES_QUERY,
+    params: blogLanguageParams(),
+    tags: [BLOG_CATEGORY_CACHE_TAG],
+    fallback: [],
+    label: "categories",
+  });
   if (rows.length > 0) return rows;
   return [...BLOG_CATEGORY_FALLBACK];
 }
@@ -238,28 +244,33 @@ export type BlogSearchContent = DocSeoFields & {
  * (falling back to the newest topics when none are curated) and page-builder blocks.
  */
 export async function fetchBlogNotFoundPage(): Promise<BlogNotFoundContent> {
-  if (process.env.NODE_ENV === "development") {
-    noStore();
-  }
-  if (!isSanityConfigured()) return { topics: [], blocks: [] };
-  const client = await getPreviewableSanityClient();
-  const page = await client
-    .fetch<
-      | (DocSeoFields & {
-          title?: string | null;
-          description?: string | null;
-          topics?: TopicChip[];
-          pageBuilder?: PageBuilderBlock[] | null;
-        })
-      | null
-    >(BLOG_NOT_FOUND_PAGE_BUILDER_QUERY, blogNotFoundPageParams())
-    .catch(() => null);
+  const page = await blogCachedFetch<
+    | (DocSeoFields & {
+        title?: string | null;
+        description?: string | null;
+        topics?: TopicChip[];
+        pageBuilder?: PageBuilderBlock[] | null;
+      })
+    | null
+  >({
+    cacheKey: "not-found-page-builder",
+    query: BLOG_NOT_FOUND_PAGE_BUILDER_QUERY,
+    params: blogNotFoundPageParams(),
+    tags: [BLOG_PAGE_CACHE_TAG, BLOG_TOPIC_CACHE_TAG],
+    fallback: null,
+    label: "notFoundPage",
+  });
 
   let topics = (page?.topics ?? []).filter((t) => t?.slug);
   if (topics.length === 0) {
-    const fallback = await client
-      .fetch<TopicChip[]>(BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY, blogLanguageParams())
-      .catch(() => []);
+    const fallback = await blogCachedFetch<TopicChip[]>({
+      cacheKey: "not-found-topics-fallback",
+      query: BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY,
+      params: blogLanguageParams(),
+      tags: [BLOG_TOPIC_CACHE_TAG],
+      fallback: [],
+      label: "notFoundTopicsFallback",
+    });
     topics = (fallback ?? []).filter((t) => t?.slug);
   }
 
@@ -284,28 +295,33 @@ export async function fetchBlogNotFoundPage(): Promise<BlogNotFoundContent> {
  * for the reserved `/search` route; not slug-routable.
  */
 export async function fetchBlogSearchPage(): Promise<BlogSearchContent> {
-  if (process.env.NODE_ENV === "development") {
-    noStore();
-  }
-  if (!isSanityConfigured()) return { topics: [], blocks: [] };
-  const client = await getPreviewableSanityClient();
-  const page = await client
-    .fetch<
-      | (DocSeoFields & {
-          title?: string | null;
-          description?: string | null;
-          topics?: TopicChip[];
-          pageBuilder?: PageBuilderBlock[] | null;
-        })
-      | null
-    >(BLOG_SEARCH_PAGE_BUILDER_QUERY, blogSearchPageParams())
-    .catch(() => null);
+  const page = await blogCachedFetch<
+    | (DocSeoFields & {
+        title?: string | null;
+        description?: string | null;
+        topics?: TopicChip[];
+        pageBuilder?: PageBuilderBlock[] | null;
+      })
+    | null
+  >({
+    cacheKey: "search-page-builder",
+    query: BLOG_SEARCH_PAGE_BUILDER_QUERY,
+    params: blogSearchPageParams(),
+    tags: [BLOG_PAGE_CACHE_TAG, BLOG_TOPIC_CACHE_TAG],
+    fallback: null,
+    label: "searchPage",
+  });
 
   let topics = (page?.topics ?? []).filter((t) => t?.slug);
   if (topics.length === 0) {
-    const fallback = await client
-      .fetch<TopicChip[]>(BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY, blogLanguageParams())
-      .catch(() => []);
+    const fallback = await blogCachedFetch<TopicChip[]>({
+      cacheKey: "not-found-topics-fallback",
+      query: BLOG_NOT_FOUND_TOPICS_FALLBACK_QUERY,
+      params: blogLanguageParams(),
+      tags: [BLOG_TOPIC_CACHE_TAG],
+      fallback: [],
+      label: "searchTopicsFallback",
+    });
     topics = (fallback ?? []).filter((t) => t?.slug);
   }
 
@@ -402,26 +418,27 @@ export async function fetchBlogFooterNavigation(): Promise<BlogFooterData> {
 }
 
 export async function fetchPopularPostsThisMonth(): Promise<PopularPostCard[]> {
-  if (!isSanityConfigured()) return [];
-
-  const client = await getSanityClient();
   const monthStart = monthStartIso();
 
-  const thisMonth = await client
-    .fetch<PopularPostCard[]>(
-      POPULAR_POSTS_THIS_MONTH_QUERY,
-      blogLanguageParams({ monthStart }),
-    )
-    .catch(() => []);
+  const thisMonth = await blogCachedFetch<PopularPostCard[]>({
+    cacheKey: "popular-posts-this-month",
+    query: POPULAR_POSTS_THIS_MONTH_QUERY,
+    params: blogLanguageParams({ monthStart }),
+    tags: [BLOG_POSTS_CACHE_TAG],
+    fallback: [],
+    label: "popularThisMonth",
+  });
 
   if (thisMonth.length >= 3) return thisMonth.slice(0, 3);
 
-  const latest = await client
-    .fetch<PopularPostCard[]>(
-      POPULAR_POSTS_LATEST_QUERY,
-      blogLanguageParams(),
-    )
-    .catch(() => []);
+  const latest = await blogCachedFetch<PopularPostCard[]>({
+    cacheKey: "popular-posts-latest",
+    query: POPULAR_POSTS_LATEST_QUERY,
+    params: blogLanguageParams(),
+    tags: [BLOG_POSTS_CACHE_TAG],
+    fallback: [],
+    label: "popularLatest",
+  });
 
   const seen = new Set(thisMonth.map((p) => p._id));
   const merged = [...thisMonth];

@@ -56,6 +56,16 @@ export const categorySettings = defineType({
     metaTitleFormat: '%name% | PakFactory Blog',
     metaDescriptionFormat: '%description%',
     indexDefault: true,
+    extra: [
+      defineField({
+        name: 'hideEmptyCategory',
+        title: 'Hide empty categories from search engines',
+        type: 'boolean',
+        initialValue: true,
+        description:
+          'When on, categories with no published posts are set to noindex and excluded from the sitemap — even if Allow indexing is enabled. Turn off to let empty categories be indexed.',
+      }),
+    ],
   }),
   preview: { prepare: () => ({ title: 'Category Settings' }) },
 })

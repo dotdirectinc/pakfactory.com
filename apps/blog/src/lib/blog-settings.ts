@@ -15,6 +15,8 @@ export type BlogTypeDefaults = {
   noImageIndex?: boolean | null;
   /** Topic defaults only — force noindex when post count is below this. */
   autoNoindexThreshold?: number | null;
+  /** Category defaults only — force noindex on 0-post categories (default on). */
+  hideEmptyCategory?: boolean | null;
 };
 
 export type BlogSettings = {
