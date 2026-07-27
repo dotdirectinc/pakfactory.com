@@ -23,75 +23,89 @@ import {
 
 // ── Blog surface (apps/blog) ─────────────────────────────────────────────────
 // Blog posts route flat at /{slug}; landing pages at /{slug}; home at /.
-export const blogLocations: DocumentLocationResolvers = {
-  post: defineLocations({
-    select: { title: 'title', slug: 'slug.current' },
-    resolve: (doc) =>
-      doc?.slug
-        ? { locations: [{ title: doc.title || 'Untitled post', href: `/${doc.slug}` }] }
-        : { locations: [] },
-  }),
-  blogPage: defineLocations({
-    select: {
-      _id: '_id',
-      title: 'title',
-      slug: 'slug.current',
-      pageRole: 'pageRole',
-    },
-    resolve: (doc) => {
-      if (isBlogHomeSingleton(doc ?? undefined)) {
-        return { locations: [{ title: doc?.title || 'Homepage', href: '/' }] }
-      }
-      if (isBlogTopicsSingleton(doc ?? undefined)) {
-        return {
-          locations: [
-            { title: doc?.title || 'Explore topics', href: '/topics' },
-          ],
+//
+// Presentation resolves these hrefs against the preview ORIGIN only (it drops the
+// `/blog` base path from `initial` when building location URLs), so in production
+// every href must be prefixed with the basePath the blog is mounted under, or the
+// iframe navigates to `origin/{slug}` (404) and "Documents on this page" never
+// matches the app's real `/blog/...` pathname (PROD-2223). `basePath` is '' locally
+// (no basePath) and '/blog' in prod — derived from the preview URL in sanity.config.
+export const makeBlogLocations = (
+  basePath: string,
+): DocumentLocationResolvers => {
+  // href('/') → basePath root ('/blog' or '/'); href('/x') → '/blog/x' or '/x'.
+  const href = (path: string): string =>
+    path === '/' ? basePath || '/' : `${basePath}${path}`
+  return {
+    post: defineLocations({
+      select: { title: 'title', slug: 'slug.current' },
+      resolve: (doc) =>
+        doc?.slug
+          ? { locations: [{ title: doc.title || 'Untitled post', href: href(`/${doc.slug}`) }] }
+          : { locations: [] },
+    }),
+    blogPage: defineLocations({
+      select: {
+        _id: '_id',
+        title: 'title',
+        slug: 'slug.current',
+        pageRole: 'pageRole',
+      },
+      resolve: (doc) => {
+        if (isBlogHomeSingleton(doc ?? undefined)) {
+          return { locations: [{ title: doc?.title || 'Homepage', href: href('/') }] }
         }
-      }
-      if (isBlogNotFoundSingleton(doc ?? undefined)) {
-        return {
-          locations: [{ title: '404 page', href: '/404-preview' }],
+        if (isBlogTopicsSingleton(doc ?? undefined)) {
+          return {
+            locations: [
+              { title: doc?.title || 'Explore topics', href: href('/topics') },
+            ],
+          }
         }
-      }
-      if (isBlogSearchSingleton(doc ?? undefined)) {
-        return {
-          locations: [{ title: doc?.title || 'Search page', href: '/search' }],
+        if (isBlogNotFoundSingleton(doc ?? undefined)) {
+          return {
+            locations: [{ title: '404 page', href: href('/404-preview') }],
+          }
         }
-      }
-      if (isBlogContributeSingleton(doc ?? undefined)) {
-        return {
-          locations: [
-            { title: doc?.title || 'Contribute page', href: '/contribute' },
-          ],
+        if (isBlogSearchSingleton(doc ?? undefined)) {
+          return {
+            locations: [{ title: doc?.title || 'Search page', href: href('/search') }],
+          }
         }
-      }
-      return doc?.slug
-        ? { locations: [{ title: doc.title || 'Page', href: `/${doc.slug}` }] }
-        : { locations: [] }
-    },
-  }),
-  blogCategory: defineLocations({
-    select: { title: 'title', slug: 'slug.current' },
-    resolve: (doc) =>
-      doc?.slug
-        ? { locations: [{ title: doc.title || 'Category', href: `/${doc.slug}` }] }
-        : { locations: [] },
-  }),
-  blogTag: defineLocations({
-    select: { title: 'title', slug: 'slug.current' },
-    resolve: (doc) =>
-      doc?.slug
-        ? { locations: [{ title: doc.title || 'Topic', href: `/topics/${doc.slug}` }] }
-        : { locations: [] },
-  }),
-  author: defineLocations({
-    select: { title: 'name', slug: 'slug.current' },
-    resolve: (doc) =>
-      doc?.slug
-        ? { locations: [{ title: doc.title || 'Author', href: `/author/${doc.slug}` }] }
-        : { locations: [] },
-  }),
+        if (isBlogContributeSingleton(doc ?? undefined)) {
+          return {
+            locations: [
+              { title: doc?.title || 'Contribute page', href: href('/contribute') },
+            ],
+          }
+        }
+        return doc?.slug
+          ? { locations: [{ title: doc.title || 'Page', href: href(`/${doc.slug}`) }] }
+          : { locations: [] }
+      },
+    }),
+    blogCategory: defineLocations({
+      select: { title: 'title', slug: 'slug.current' },
+      resolve: (doc) =>
+        doc?.slug
+          ? { locations: [{ title: doc.title || 'Category', href: href(`/${doc.slug}`) }] }
+          : { locations: [] },
+    }),
+    blogTag: defineLocations({
+      select: { title: 'title', slug: 'slug.current' },
+      resolve: (doc) =>
+        doc?.slug
+          ? { locations: [{ title: doc.title || 'Topic', href: href(`/topics/${doc.slug}`) }] }
+          : { locations: [] },
+    }),
+    author: defineLocations({
+      select: { title: 'name', slug: 'slug.current' },
+      resolve: (doc) =>
+        doc?.slug
+          ? { locations: [{ title: doc.title || 'Author', href: href(`/author/${doc.slug}`) }] }
+          : { locations: [] },
+    }),
+  }
 }
 
 // ── Website surface (apps/www) ───────────────────────────────────────────────
