@@ -51,7 +51,7 @@ function MetaBlock({
         {visible.map((item) => (
           <span
             key={item._id}
-            className="inline-flex h-[23px] items-center justify-center rounded-full border-[0.5px] border-[#cecece] px-4 text-xs font-normal leading-4 text-muted-foreground"
+            className="inline-flex h-[23px] items-center justify-center rounded-full border-[0.5px] border-[#cecece] bg-card px-4 text-xs font-normal leading-4 text-muted-foreground"
           >
             {item.title}
           </span>
@@ -123,7 +123,7 @@ export function CaseStudyMetaCard({
   );
 
   return (
-    <aside className="relative flex w-full shrink-0 flex-col items-center gap-6 rounded-[14px] border border-border bg-brand-cream py-6 text-border lg:w-[304px]">
+    <aside className="relative flex w-full shrink-0 flex-col items-center gap-6 rounded-[14px] border border-border bg-brand-highlight py-6 text-border lg:w-[304px]">
       {hasClient && (
         <div className="flex w-full items-center justify-center px-6 text-foreground">
           {client?.website ? (
