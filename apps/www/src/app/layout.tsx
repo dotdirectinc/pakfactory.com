@@ -6,7 +6,9 @@ import '@fontsource-variable/geist';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
+import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
 import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
+import {toWatermarkConfig} from '@/lib/watermark';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -34,16 +36,19 @@ export default async function RootLayout({
 }) {
     const globalSettings = await fetchWwwGlobalSettings();
     const gtmId = resolveGtmId(globalSettings?.gtmId);
+    const watermark = toWatermarkConfig(globalSettings?.watermark, '/api/wm');
     return (
         <html lang="en" className="scroll-smooth">
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
+                <WatermarkProvider value={watermark}>
                 <Suspense fallback={null}>
                     <VirtualPageviewTracker />
                 </Suspense>
                 <TooltipProvider>
                     {children}
                 </TooltipProvider>
+                </WatermarkProvider>
             </body>
         </html>
     );

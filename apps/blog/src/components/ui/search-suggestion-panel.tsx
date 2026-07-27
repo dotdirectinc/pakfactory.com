@@ -41,6 +41,7 @@ function SuggestionLeading({item}: {item: SearchSuggestion}) {
                     <SanityImage
                         src={imageUrl}
                         alt={imageAlt || item.title}
+                        applyWatermark={false}
                         fill
                         sizes="40px"
                         className="object-cover"

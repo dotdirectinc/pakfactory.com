@@ -33,6 +33,7 @@ export function CapabilityCard({ item }: Props) {
                             <SanityImage
                                 src={item.imageUrl}
                                 alt={item.imageAlt ?? item.title}
+                                applyWatermark={false}
                                 fill
                                 sizes="(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 20vw"
                                 className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"

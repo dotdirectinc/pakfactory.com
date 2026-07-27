@@ -1,6 +1,7 @@
 import { ImagesIcon } from '@sanity/icons'
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { MEDIA_TAG, taggedImageType } from '../../lib/media-tags'
+import { applyWatermarkField } from '../../lib/watermark-fields'
 
 /**
  * bodyGallery — horizontally scrollable image gallery for the post body.
@@ -43,6 +44,7 @@ export const bodyGallery = defineType({
                   .max(125)
                   .warning('Alt text should be between 5 and 125 characters.'),
             }),
+            applyWatermarkField(),
           ],
           preview: {
             select: { media: 'asset', alt: 'alt' },

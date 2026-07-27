@@ -125,6 +125,7 @@ export function PostFeaturedRotator({
                   key={post._id}
                   src={post.imageUrl}
                   alt={post.imageAlt || post.title}
+                  applyWatermark={false}
                   aria-hidden={i !== active}
                   fill
                   sizes="(min-width: 1024px) 56vw, 100vw"
