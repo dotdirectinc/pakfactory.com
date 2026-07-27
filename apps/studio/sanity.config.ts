@@ -10,7 +10,7 @@ import {
   useDeleteTranslationAction,
   useDuplicateWithTranslationsAction,
 } from '@sanity/document-internationalization'
-import { websiteLocations, blogLocations } from './presentation/locations'
+import { websiteLocations, makeBlogLocations } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import { publishCaseStudy } from './actions/publishCaseStudy'
@@ -42,8 +42,28 @@ const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` :
 // overlays to work; apps/www already does, apps/blog wiring lands on the blog branch.
 const WWW_PREVIEW_ORIGIN =
   process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'https://pakfactory-com-www.vercel.app'
-const BLOG_PREVIEW_ORIGIN =
-  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003'
+
+// Blog preview BASE — a full URL that may carry a path (the `/blog` basePath in
+// prod). Presentation resolves the draft-mode enable path and location hrefs
+// against this, so it MUST end in a trailing slash: a relative `enable`
+// ('api/draft-mode/enable') only appends under the base path when the base ends
+// in '/' (PROD-2223). Prod → 'https://origin.blog.pakfactory.com/blog/',
+// local → 'http://localhost:3003/'.
+const BLOG_PREVIEW_RAW =
+  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003/'
+const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
+  ? BLOG_PREVIEW_RAW
+  : `${BLOG_PREVIEW_RAW}/`
+// basePath the blog app is mounted under on this origin ('/blog' in prod, '' local).
+// Location hrefs are resolved against the ORIGIN only (Presentation drops the base
+// path when building them), so they must be prefixed with this — see locations.ts.
+const BLOG_BASE_PATH = (() => {
+  try {
+    return new URL(BLOG_PREVIEW_BASE).pathname.replace(/\/+$/, '')
+  } catch {
+    return ''
+  }
+})()
 
 const productTemplates: Template[] = [
   {
@@ -251,14 +271,18 @@ export default defineConfig([
         name: 'presentation',
         title: 'Presentation',
         previewUrl: {
-          origin: BLOG_PREVIEW_ORIGIN,
-          previewMode: { enable: '/api/draft-mode/enable' },
+          // `initial` (not the deprecated `origin`) so the base path survives:
+          // origin is host-only. `enable` is RELATIVE (no leading slash) so it
+          // resolves under the base's path → `${base}api/draft-mode/enable`
+          // (a leading slash would drop `/blog`). PROD-2223.
+          initial: BLOG_PREVIEW_BASE,
+          previewMode: { enable: 'api/draft-mode/enable' },
         },
         allowOrigins: [
           'http://localhost:3003',
-          'https://pakfactory-blog.vercel.app',
+          'https://origin.blog.pakfactory.com',
         ],
-        resolve: { locations: blogLocations },
+        resolve: { locations: makeBlogLocations(BLOG_BASE_PATH) },
       }),
       colorInput(),
       media(),
