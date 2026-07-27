@@ -70,6 +70,7 @@ export default function PackagingHero({
                     <SanityImage
                       src={src}
                       alt={image.alt}
+                      applyWatermark={false}
                       fill
                       className="object-contain object-center lg:object-right"
                       sizes="(max-width: 1024px) 90vw, 42vw"

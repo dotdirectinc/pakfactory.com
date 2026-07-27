@@ -133,6 +133,42 @@ export const settings = defineType({
         { name: 'url', type: 'string', title: 'URL or path' },
       ],
     }),
+    defineField({
+      name: 'watermark',
+      title: 'Image watermark',
+      type: 'object',
+      group: 'identity',
+      description:
+        'Render-time logo overlay on public website and blog imagery (PROD-2206). Originals in Media stay clean for team download. Product catalog images are never watermarked.',
+      options: { collapsible: true, collapsed: false },
+      fields: [
+        defineField({
+          name: 'enabled',
+          title: 'Enable watermark',
+          type: 'boolean',
+          initialValue: true,
+          description: 'Master switch. When off, no public images show the overlay.',
+        }),
+        defineField(
+          taggedImageField({
+            name: 'image',
+            title: 'Watermark image',
+            type: 'image',
+            mediaTags: [MEDIA_TAG.website],
+            description:
+              'Transparent SVG or high-resolution PNG (e.g. white PakFactory logo). Swap anytime to change the mark site-wide.',
+          }),
+        ),
+        defineField({
+          name: 'opacity',
+          title: 'Opacity',
+          type: 'number',
+          initialValue: 0.85,
+          description: '0–1. Default 0.85.',
+          validation: (Rule) => Rule.min(0).max(1).precision(2),
+        }),
+      ],
+    }),
 
     // ── SEO defaults ──────────────────────────────────────────────────────────
     defineField({

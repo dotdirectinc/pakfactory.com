@@ -3,6 +3,14 @@
 import { useRef, useState, useEffect } from "react";
 import Image, { type ImageLoader } from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ImageWatermarkOverlay } from "../ui/image-watermark-overlay";
+import {
+  isServeWatermarkMode,
+  shouldApplyWatermark,
+  useWatermarkConfig,
+  type WatermarkConfig,
+} from "../ui/watermark-context";
+import { buildWatermarkApiUrl } from "../commons/watermark-api-url";
 
 export type SliderImage = {
   key: string;
@@ -10,6 +18,8 @@ export type SliderImage = {
   alt: string;
   caption?: string | null;
   isSquare: boolean;
+  /** Opt-in per-image Studio toggle; pass true when Global Settings watermark is set. */
+  applyWatermark?: boolean;
 };
 
 const DEFAULT_QUALITY = 80;
@@ -29,12 +39,66 @@ const sanityCdnLoader: ImageLoader = ({ src, width, quality }) => {
   }
 };
 
-function loaderFor(src: string): ImageLoader | undefined {
+function loaderFor(
+  src: string,
+  config: WatermarkConfig | null,
+  applyWatermark?: boolean,
+): ImageLoader | undefined {
+  const showWm = shouldApplyWatermark(config, applyWatermark);
+  if (showWm && isServeWatermarkMode(config)) {
+    return ({ src: imageSrc, width, quality }) =>
+      buildWatermarkApiUrl({
+        apiPath: config.apiPath,
+        src: imageSrc,
+        width,
+        quality: quality ?? DEFAULT_QUALITY,
+        watermarkSrc: config.src,
+        opacity: config.opacity,
+      });
+  }
   try {
     return new URL(src).hostname === "cdn.sanity.io" ? sanityCdnLoader : undefined;
   } catch {
     return undefined;
   }
+}
+
+function GalleryImage({
+  img,
+  width,
+  height,
+  className,
+  config,
+}: {
+  img: SliderImage;
+  width: number;
+  height: number;
+  className: string;
+  config: WatermarkConfig | null;
+}) {
+  const showWm = shouldApplyWatermark(config, img.applyWatermark);
+  const serveMode = showWm && isServeWatermarkMode(config);
+  const image = (
+    <Image
+      src={img.src}
+      alt={img.alt}
+      width={width}
+      height={height}
+      draggable={false}
+      loader={loaderFor(img.src, config, img.applyWatermark)}
+      className={className}
+    />
+  );
+  if (!showWm || serveMode) return image;
+  return (
+    <ImageWatermarkOverlay
+      watermarkSrc={config.src}
+      opacity={config.opacity}
+      className="relative max-h-full max-w-full"
+    >
+      {image}
+    </ImageWatermarkOverlay>
+  );
 }
 
 /**
@@ -49,6 +113,7 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const [modalIndex, setModalIndex] = useState<number | null>(null);
+  const watermarkConfig = useWatermarkConfig();
 
   // Mouse-drag state
   const isDragging = useRef(false);
@@ -144,14 +209,12 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
               className="w-[75%] flex-shrink-0"
               onClick={() => setModalIndex(idx)}
             >
-              <Image
-                src={img.src}
-                alt={img.alt}
+              <GalleryImage
+                img={img}
                 width={800}
                 height={imgHeight}
-                draggable={false}
-                loader={loaderFor(img.src)}
                 className={`${aspectClass} h-auto w-full cursor-pointer rounded-lg object-cover transition-opacity hover:opacity-90`}
+                config={watermarkConfig}
               />
               {(img.caption || img.alt) ? (
                 <p className="mt-2 select-none text-sm text-muted-foreground">
@@ -200,13 +263,12 @@ export function GallerySlider({ images }: { images: SliderImage[] }) {
             className="flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src={modalImg.src}
-              alt={modalImg.alt}
+            <GalleryImage
+              img={modalImg}
               width={1400}
               height={900}
-              loader={loaderFor(modalImg.src)}
               className="max-h-[82vh] w-auto max-w-full rounded-lg object-contain"
+              config={watermarkConfig}
             />
             {(modalImg.caption || modalImg.alt) ? (
               <p className="text-center text-sm text-white/70">

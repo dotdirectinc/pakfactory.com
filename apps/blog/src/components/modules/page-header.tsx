@@ -61,6 +61,7 @@ export function PageHeader({
                 <SanityImage
                   src={bannerSrc}
                   alt={title}
+                  applyWatermark={false}
                   fill
                   className="object-cover"
                   sizes="(max-width: 880px) 100vw, 880px"

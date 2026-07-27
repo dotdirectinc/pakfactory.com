@@ -33,6 +33,7 @@ export function AuthorHeader({ author }: AuthorHeaderProps) {
           <SanityImage
             src={photoUrl}
             alt={author.name}
+            applyWatermark={false}
             width={298}
             height={298}
             sizes="(min-width: 1024px) 298px, 240px"

@@ -34,6 +34,7 @@ type BodyImageValue = {
     caption?: string;
     link?: string;
     linkNofollow?: boolean;
+    applyWatermark?: boolean | null;
     asset?: unknown;
 };
 
@@ -55,6 +56,7 @@ function PostBodyImage({
         <SanityImage
             src={imageUrl}
             alt={resolveImageAlt(value, titleFallback)}
+            applyWatermark={value.applyWatermark !== false}
             width={1200}
             height={675}
             sizes="(max-width: 768px) 100vw, 720px"

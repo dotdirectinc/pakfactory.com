@@ -18,7 +18,9 @@ import {SiteNav} from '@/components/layout/site-nav';
 import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
 import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data';
 import {fetchBlogGlobalSettings} from '@/lib/blog-global-settings';
-import {absoluteUrl} from '@/lib/site';
+import {toWatermarkConfig} from '@/lib/watermark';
+import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
+import {absoluteUrl, sitePath} from '@/lib/site';
 import './globals.css';
 
 export const revalidate = 60;
@@ -58,6 +60,10 @@ export default async function RootLayout({
     ]);
     const gtmId = resolveGtmId(globalSettings?.gtmId);
     const envLabel = resolveEnvBadgeLabel();
+    const watermark = toWatermarkConfig(
+        globalSettings?.watermark,
+        sitePath('/api/wm'),
+    );
     return (
         <html lang="en" className={inter.variable}>
             {/*
@@ -79,6 +85,7 @@ export default async function RootLayout({
             />
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
+                <WatermarkProvider value={watermark}>
                 <AppToaster />
                 <Suspense fallback={null}>
                     <VirtualPageviewTracker />
@@ -96,6 +103,7 @@ export default async function RootLayout({
                 />
                 {isDraft && <VisualEditing />}
                 {envLabel ? <EnvBadge label={envLabel} /> : null}
+                </WatermarkProvider>
             </body>
         </html>
     );

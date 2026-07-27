@@ -61,6 +61,7 @@ export function makeCaseStudyPtComponents(titleFallback: string): PortableTextCo
               <SanityImage
                 src={src}
                 alt={resolveImageAlt(value, titleFallback)}
+                applyWatermark={value.applyWatermark !== false}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 800px"
@@ -88,6 +89,7 @@ export function makeCaseStudyPtComponents(titleFallback: string): PortableTextCo
                   { alt: value.backgroundImageAlt },
                   titleFallback,
                 )}
+                applyWatermark={false}
                 fill
                 className="object-cover"
                 sizes="800px"
@@ -143,6 +145,7 @@ export function makeCaseStudyPtComponents(titleFallback: string): PortableTextCo
               alt: resolveImageAlt(item, titleFallback),
               caption: item.caption ?? null,
               isSquare,
+              applyWatermark: item.applyWatermark !== false,
             };
           })
           .filter(Boolean) as {
@@ -151,6 +154,7 @@ export function makeCaseStudyPtComponents(titleFallback: string): PortableTextCo
           alt: string;
           caption: string | null;
           isSquare: boolean;
+          applyWatermark?: boolean;
         }[];
 
         if (resolved.length === 0) return null;

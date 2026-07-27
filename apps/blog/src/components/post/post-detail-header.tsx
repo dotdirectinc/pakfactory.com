@@ -89,6 +89,7 @@ export function PostDetailHeader({
           <SanityImage
             src={heroUrl}
             alt={mainImageAlt ?? title}
+            applyWatermark={false}
             fill
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 620px"
