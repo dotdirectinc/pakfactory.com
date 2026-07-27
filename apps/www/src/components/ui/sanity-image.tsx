@@ -82,7 +82,7 @@ export function SanityImage({
     <ImageWatermarkOverlay
       watermarkSrc={config.src}
       opacity={config.opacity}
-      className={fill ? "absolute inset-0" : "relative inline-block max-w-full"}
+      className={fill ? "absolute inset-0" : "relative block w-full"}
     >
       {image}
     </ImageWatermarkOverlay>
