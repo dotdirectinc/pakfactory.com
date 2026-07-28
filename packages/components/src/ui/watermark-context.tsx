@@ -5,14 +5,17 @@ import {
   useContext,
   type ReactNode,
 } from "react";
+import { hasWatermarkSrc } from "../commons/watermark-variant";
 
 export type WatermarkMode = "overlay" | "serve";
 
 export type WatermarkConfig = {
   /** Master switch from Global Settings. */
   enabled: boolean;
-  /** CDN URL of the watermark logo (transparent SVG/PNG). */
-  src: string | null;
+  /** White / light logo — for dark photo regions. */
+  lightSrc: string | null;
+  /** Dark logo — for light photo regions. */
+  darkSrc: string | null;
   /** 0–1 opacity from settings. */
   opacity: number;
   /**
@@ -50,9 +53,13 @@ export function useWatermarkConfig(): WatermarkConfig | null {
 export function shouldApplyWatermark(
   config: WatermarkConfig | null | undefined,
   applyWatermark?: boolean,
-): config is WatermarkConfig & { src: string } {
+): config is WatermarkConfig & {
+  lightSrc: string | null;
+  darkSrc: string | null;
+} {
   if (applyWatermark !== true) return false;
-  if (!config?.enabled || !config.src) return false;
+  if (!config?.enabled) return false;
+  if (!hasWatermarkSrc(config)) return false;
   return true;
 }
 

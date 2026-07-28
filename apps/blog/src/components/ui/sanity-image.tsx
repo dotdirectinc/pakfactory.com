@@ -20,7 +20,7 @@ export type SanityImageProps = Omit<ImageProps, "loader"> & {
 };
 
 function makeServeLoader(
-  config: WatermarkConfig & { src: string },
+  config: WatermarkConfig,
   opts: { cover?: boolean },
 ): ImageLoader {
   return ({ src, width, quality }) =>
@@ -29,7 +29,8 @@ function makeServeLoader(
       src,
       width,
       quality: quality ?? 80,
-      watermarkSrc: config.src,
+      watermarkLightSrc: config.lightSrc,
+      watermarkDarkSrc: config.darkSrc,
       opacity: config.opacity,
       cover: opts.cover,
     });
@@ -41,11 +42,13 @@ function makeServeLoader(
  * Watermark modes (PROD-2206):
  * - `overlay` (default): CSS logo layer; Save as stays clean.
  * - `serve` (`NEXT_PUBLIC_WATERMARK_MODE=serve`): pixels baked via `/api/wm`.
+ * Light vs dark mark is chosen from the photo corner luminance when both are set.
  */
 export function SanityImage({
   applyWatermark,
   fill,
   className,
+  src,
   ...props
 }: SanityImageProps) {
   const config = useWatermarkConfig();
@@ -54,10 +57,12 @@ export function SanityImage({
   // `fill` + object-cover heroes: bake into a 16:9 crop so the mark isn't
   // clipped by the container crop / rounded corners.
   const cover = Boolean(fill);
+  const photoSrc = typeof src === "string" ? src : null;
 
   const image = (
     <Image
       {...props}
+      src={src}
       fill={fill}
       className={className}
       loader={serveMode ? makeServeLoader(config, { cover }) : sanityImageLoader}
@@ -68,7 +73,9 @@ export function SanityImage({
 
   return (
     <ImageWatermarkOverlay
-      watermarkSrc={config.src}
+      photoSrc={photoSrc}
+      lightSrc={config.lightSrc}
+      darkSrc={config.darkSrc}
       opacity={config.opacity}
       className={fill ? "absolute inset-0" : "relative block w-full"}
     >

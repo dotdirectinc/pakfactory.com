@@ -27,7 +27,7 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ## PROD-2206 — Image watermark (render-time + bake-on-serve trial)
 
-**Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `feat/PROD-2206-image-watermark`.
+**Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `feat/PROD-2206-watermark-light-dark` (prior: `feat/PROD-2206-image-watermark` merged to staging).
 
 Public blog/www imagery can show a PakFactory logo watermark. Studio Media downloads stay unmarked.
 
@@ -35,10 +35,19 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 
 | Phase | Deliverable |
 | --- | --- |
-| Studio | `settings.watermark` (enabled / image / opacity); `applyWatermark` on `bodyImage` + gallery images only (default on) |
-| Shared UI | `@pakfactory/components` `ImageWatermarkOverlay` + `WatermarkProvider` (12% width, bottom-right, 5% pad) |
-| Blog / www | Layouts provide watermark config; body/gallery pass `true`; blocks/cards/heroes omit or force `false` |
-| Bake trial | `GET /api/wm` Sharp composite when `NEXT_PUBLIC_WATERMARK_MODE=serve` |
+| Studio | `settings.watermark` (`enabled` / `lightImage` / `darkImage` / `opacity`); `applyWatermark` on body/gallery with `DefaultOnBooleanInput` (unset shows ON) |
+| Shared UI | `@pakfactory/components` adaptive `ImageWatermarkOverlay` + luminance sample (≤64px proxy) + `WatermarkProvider` |
+| Blog / www | Layouts provide light+dark URLs; body/gallery pass `true`; auto-pick by corner luminance when both marks exist |
+| Bake trial | `GET /api/wm` Sharp composite (`wmLight` / `wmDark`) when `NEXT_PUBLIC_WATERMARK_MODE=serve` |
+
+### Light vs dark (auto)
+
+| Asset | Used when |
+| --- | --- |
+| `lightImage` (white logo) | Bottom-right corner average luminance **&lt; 0.45** (dark photo region) |
+| `darkImage` | Luminance **≥ 0.45** (light photo region) |
+| Only one uploaded | That mark always |
+| Sample / CORS fail | Prefer light, then dark |
 
 ### Mode switch (reversible)
 
@@ -58,9 +67,11 @@ NEXT_PUBLIC_WATERMARK_MODE=overlay
 # or delete the variable
 ```
 
-**Human ops (do not agent-write):** Studio → Global Settings → Identity → upload `pakfactory_white-logo_watermark.svg` as Watermark image; leave Enable on. Without this asset, neither mode draws a mark.
+**Human ops (do not agent-write):** Studio → Global Settings → Identity → upload **light** (e.g. `pakfactory_white-logo_watermark.svg`) and **dark** watermark images; leave Enable on. Without either asset, neither mode draws a mark. If Studio shows **Unknown fields** for old `watermark.image`, unset it manually (agents do not patch datasets).
 
-**Verify overlay:** mark visible on post **body** image (not hero/card); right-click Save as → clean file.
+**Studio UX:** existing body images without a stored `applyWatermark` key show the toggle **on** (`DefaultOnBooleanInput`); front-end still uses `coalesce(applyWatermark, true)`.
+
+**Verify overlay:** mark visible on post **body** image (not hero/card); dark photo → light logo; light photo → dark logo; right-click Save as → clean file.
 **Verify serve:** set mode=serve, reload body image; Save as → watermarked WebP; response header `X-Watermark-Mode: serve`; Studio Media still clean.  
 **Typecheck:** `pnpm --filter @pakfactory/blog typecheck`
 

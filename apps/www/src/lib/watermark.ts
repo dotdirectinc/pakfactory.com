@@ -5,7 +5,8 @@ import type {
 
 type WatermarkRow = {
   enabled?: boolean | null;
-  imageUrl?: string | null;
+  lightImageUrl?: string | null;
+  darkImageUrl?: string | null;
   opacity?: number | null;
 } | null | undefined;
 
@@ -17,7 +18,7 @@ function resolveWatermarkMode(): WatermarkMode {
 /** Map Global Settings watermark projection → client provider value. */
 export function toWatermarkConfig(
   watermark: WatermarkRow,
-  apiPath = "/api/wm",
+  apiPath: string,
 ): WatermarkConfig {
   const opacity =
     typeof watermark?.opacity === "number" && Number.isFinite(watermark.opacity)
@@ -25,7 +26,8 @@ export function toWatermarkConfig(
       : 0.85;
   return {
     enabled: watermark?.enabled !== false,
-    src: watermark?.imageUrl?.trim() || null,
+    lightSrc: watermark?.lightImageUrl?.trim() || null,
+    darkSrc: watermark?.darkImageUrl?.trim() || null,
     opacity,
     mode: resolveWatermarkMode(),
     apiPath,

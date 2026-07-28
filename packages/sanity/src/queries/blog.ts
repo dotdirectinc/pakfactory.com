@@ -929,7 +929,8 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "companyAddress": organization.contact.address,
   "watermark": watermark{
     "enabled": coalesce(enabled, true),
-    "imageUrl": image.asset->url,
+    "lightImageUrl": lightImage.asset->url,
+    "darkImageUrl": darkImage.asset->url,
     "opacity": coalesce(opacity, 0.85)
   },
   additionalEmbedHosts,
