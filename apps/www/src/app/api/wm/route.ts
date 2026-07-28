@@ -11,6 +11,7 @@ function isAllowedSanityImageUrl(raw: string, projectId: string): boolean {
   try {
     const url = new URL(raw);
     if (url.hostname !== "cdn.sanity.io") return false;
+    // /images/{projectId}/{dataset}/...
     const parts = url.pathname.split("/").filter(Boolean);
     return parts[0] === "images" && parts[1] === projectId;
   } catch {
@@ -38,7 +39,7 @@ async function fetchBuffer(url: string): Promise<Buffer> {
 
 /**
  * Bake-on-serve watermark (PROD-2206 trial).
- * Query: src, wm (Sanity CDN URLs), w, q, o, square=1
+ * Query: src, wmLight + wmDark (or legacy wm), w, q, o, square=1, cover=1
  */
 export async function GET(request: Request) {
   const projectId = getSanityProjectId();
@@ -51,24 +52,35 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const src = searchParams.get("src")?.trim();
-  const wm = searchParams.get("wm")?.trim();
+  const wmLegacy = searchParams.get("wm")?.trim();
+  const wmLight =
+    searchParams.get("wmLight")?.trim() || wmLegacy || undefined;
+  const wmDark = searchParams.get("wmDark")?.trim() || undefined;
   const wRaw = Number(searchParams.get("w") ?? "1200");
   const qRaw = Number(searchParams.get("q") ?? "80");
   const oRaw = Number(searchParams.get("o") ?? "0.85");
   const square = searchParams.get("square") === "1";
   const cover16x9 = !square && searchParams.get("cover") === "1";
 
-  if (!src || !wm) {
+  if (!src || (!wmLight && !wmDark)) {
     return NextResponse.json(
-      { error: "Missing src or wm" },
+      { error: "Missing src or watermark URL(s)" },
       { status: 400 },
     );
   }
-  if (!isAllowedSanityImageUrl(src, projectId) || !isAllowedSanityImageUrl(wm, projectId)) {
+  if (!isAllowedSanityImageUrl(src, projectId)) {
     return NextResponse.json(
       { error: "URL not allowlisted" },
       { status: 400 },
     );
+  }
+  for (const wm of [wmLight, wmDark]) {
+    if (wm && !isAllowedSanityImageUrl(wm, projectId)) {
+      return NextResponse.json(
+        { error: "URL not allowlisted" },
+        { status: 400 },
+      );
+    }
   }
 
   const width = Number.isFinite(wRaw)
@@ -80,6 +92,7 @@ export async function GET(request: Request) {
   const opacity = Number.isFinite(oRaw) ? Math.min(1, Math.max(0, oRaw)) : 0.85;
 
   try {
+    // Ask Sanity for a pre-sized source to limit Sharp input size.
     const sizedSrc = new URL(src);
     sizedSrc.searchParams.set("w", String(width));
     sizedSrc.searchParams.set("q", String(quality));
@@ -95,14 +108,22 @@ export async function GET(request: Request) {
       sizedSrc.searchParams.set("fit", "max");
     }
 
-    const [imageBuffer, watermarkBuffer] = await Promise.all([
-      fetchBuffer(sizedSrc.toString()),
-      fetchBuffer(wm),
-    ]);
+    const fetches: Promise<Buffer>[] = [fetchBuffer(sizedSrc.toString())];
+    if (wmLight) fetches.push(fetchBuffer(wmLight));
+    if (wmDark) fetches.push(fetchBuffer(wmDark));
+
+    const buffers = await Promise.all(fetches);
+    const imageBuffer = buffers[0]!;
+    let watermarkLightBuffer: Buffer | undefined;
+    let watermarkDarkBuffer: Buffer | undefined;
+    let i = 1;
+    if (wmLight) watermarkLightBuffer = buffers[i++]!;
+    if (wmDark) watermarkDarkBuffer = buffers[i++]!;
 
     const { buffer, contentType } = await compositeWatermark({
       imageBuffer,
-      watermarkBuffer,
+      watermarkLightBuffer,
+      watermarkDarkBuffer,
       width,
       quality,
       opacity,

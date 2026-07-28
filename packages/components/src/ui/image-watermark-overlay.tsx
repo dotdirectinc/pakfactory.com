@@ -1,8 +1,13 @@
+"use client";
+
 import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { sampleCornerLuminance } from "../commons/watermark-luminance";
 import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
 } from "../commons/watermark-geometry";
+import { pickWatermarkSrc } from "../commons/watermark-variant";
 
 export {
   WATERMARK_PADDING_PERCENT,
@@ -11,8 +16,19 @@ export {
 
 export type ImageWatermarkOverlayProps = {
   children: ReactNode;
-  /** Absolute or CDN URL for the transparent watermark logo. */
-  watermarkSrc: string;
+  /**
+   * Photo CDN URL — used to sample bottom-right luminance when both light and
+   * dark marks are configured. Tiny proxy only (see watermark-luminance).
+   */
+  photoSrc?: string | null;
+  /** White / light logo (dark photo corners). */
+  lightSrc?: string | null;
+  /** Dark logo (light photo corners). */
+  darkSrc?: string | null;
+  /**
+   * @deprecated Prefer lightSrc/darkSrc. Single-mark fallback (treated as light).
+   */
+  watermarkSrc?: string;
   /** 0–1. Default 0.85. */
   opacity?: number;
   /**
@@ -26,22 +42,79 @@ export type ImageWatermarkOverlayProps = {
 /**
  * Props-only render-time watermark (PROD-2206). Does not mutate image bytes —
  * Studio / Media downloads stay clean. Decorative only (`aria-hidden`).
+ * When both light and dark assets exist, picks by photo corner luminance.
  */
 export function ImageWatermarkOverlay({
   children,
+  photoSrc,
+  lightSrc,
+  darkSrc,
   watermarkSrc,
   opacity = 0.85,
   className,
   style,
 }: ImageWatermarkOverlayProps) {
+  const resolvedLight = lightSrc?.trim() || watermarkSrc?.trim() || null;
+  const resolvedDark = darkSrc?.trim() || null;
+
+  const [markSrc, setMarkSrc] = useState(() =>
+    pickWatermarkSrc({
+      lightSrc: resolvedLight,
+      darkSrc: resolvedDark,
+      luminance: null,
+    }),
+  );
+
+  useEffect(() => {
+    const light = lightSrc?.trim() || watermarkSrc?.trim() || null;
+    const dark = darkSrc?.trim() || null;
+    setMarkSrc(
+      pickWatermarkSrc({ lightSrc: light, darkSrc: dark, luminance: null }),
+    );
+
+    if (!photoSrc?.trim() || !light || !dark) return;
+
+    let cancelled = false;
+    const run = () => {
+      void sampleCornerLuminance(photoSrc.trim()).then((luminance) => {
+        if (cancelled) return;
+        setMarkSrc(
+          pickWatermarkSrc({ lightSrc: light, darkSrc: dark, luminance }),
+        );
+      });
+    };
+
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(run, { timeout: 1200 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(id);
+      };
+    }
+
+    const t = window.setTimeout(run, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [photoSrc, lightSrc, darkSrc, watermarkSrc]);
+
   const clampedOpacity = Math.min(1, Math.max(0, opacity));
+
+  if (!markSrc) {
+    return (
+      <div className={className ?? "relative"} style={style}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className={className ?? "relative"} style={style}>
       {children}
       {/* eslint-disable-next-line @next/next/no-img-element -- decorative overlay; not content LCP */}
       <img
-        src={watermarkSrc}
+        src={markSrc}
         alt=""
         aria-hidden
         draggable={false}

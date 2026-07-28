@@ -52,7 +52,8 @@ function loaderFor(
         src: imageSrc,
         width,
         quality: quality ?? DEFAULT_QUALITY,
-        watermarkSrc: config.src,
+        watermarkLightSrc: config.lightSrc,
+        watermarkDarkSrc: config.darkSrc,
         opacity: config.opacity,
       });
   }
@@ -92,7 +93,9 @@ function GalleryImage({
   if (!showWm || serveMode) return image;
   return (
     <ImageWatermarkOverlay
-      watermarkSrc={config.src}
+      photoSrc={img.src}
+      lightSrc={config.lightSrc}
+      darkSrc={config.darkSrc}
       opacity={config.opacity}
       className="relative max-h-full max-w-full"
     >
