@@ -58,3 +58,26 @@ export function buildWatermarkApiUrl({
   const path = apiPath.startsWith("/") ? apiPath : `/${apiPath}`;
   return `${path}?${params.toString()}`;
 }
+
+/**
+ * Derive the same-origin luminance probe path from the bake route
+ * (`/api/wm` → `/api/wm-luma`, `/blog/api/wm` → `/blog/api/wm-luma`).
+ */
+export function watermarkLumaApiPath(apiPath: string): string {
+  const path = apiPath.startsWith("/") ? apiPath : `/${apiPath}`;
+  if (path.endsWith("/wm")) return `${path}-luma`;
+  return `${path.replace(/\/$/, "")}/wm-luma`;
+}
+
+/** Build `/api/wm-luma?src=` for client-side adaptive mark selection. */
+export function buildWatermarkLumaApiUrl({
+  apiPath,
+  src,
+}: {
+  apiPath: string;
+  src: string;
+}): string {
+  const params = new URLSearchParams();
+  params.set("src", src);
+  return `${watermarkLumaApiPath(apiPath)}?${params.toString()}`;
+}
