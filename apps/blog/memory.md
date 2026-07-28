@@ -38,7 +38,7 @@ Bullet/numbered list items in the post body were inheriting `text-foreground` fr
 
 **Verify:** post with mixed paragraphs + lists — same computed color on `<p>` and `<li>`; nested lists and bold-in-list inherit muted; headings stay `text-foreground`.
 
-**Also in this branch:** adaptive watermark fix — `/api/wm-luma` same-origin sample + null fallback prefers dark (see § PROD-2206).
+**Also in this branch:** adaptive watermark fix — `/api/wm-luma` same-origin sample + null fallback prefers light/white (see § PROD-2206).
 
 ---
 
@@ -64,11 +64,11 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 | `lightImage` (white logo) | Footprint average luminance **&lt; 0.85** (most photos, including beige/tan mid-tones) |
 | `darkImage` | Luminance **≥ 0.85** (near-white diagrams / paper) |
 | Only one uploaded | That mark always |
-| Sample / CORS fail | Prefer **dark** when both uploaded; overlay probes via same-origin `GET /api/wm-luma?src=` (Sharp), canvas CDN sample is fallback |
+| Sample / CORS fail | Prefer **light** (white logo) when both uploaded; overlay probes via same-origin `GET /api/wm-luma?src=` (Sharp), canvas CDN sample is fallback |
 
 **Sample region:** average pixels under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner.
 
-**Adaptive reliability (PROD-2229 follow-on):** client canvas sampling against Sanity CDN often returned `null` (CORS), which previously fell back to the **light** mark and left white logos on white diagrams. Overlay now samples via `/api/wm-luma` and null fallback prefers **dark**. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark.
+**Adaptive reliability (PROD-2229 follow-on):** client canvas sampling against Sanity CDN often returned `null` (CORS). Overlay probes via `/api/wm-luma`; null fallback prefers **light** (white logo). Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams still get the dark mark when sampling succeeds.
 
 ### Mode switch (reversible)
 

@@ -21,8 +21,7 @@ export type WatermarkSrcPair = {
 /**
  * Pick which logo URL to draw.
  * - Only one uploaded → that one.
- * - Both + unknown luminance → prefer **dark** (editorial diagrams/CTAs are
- *   often light; CORS/sample failures must not stick on the white logo).
+ * - Both + unknown luminance → prefer **light** (white logo) when sample/API fails.
  * - Both + luminance → light unless footprint is near-white (≥ threshold).
  */
 export function pickWatermarkSrc({
@@ -38,7 +37,7 @@ export function pickWatermarkSrc({
   if (light && !dark) return light;
   if (dark && !light) return dark;
   if (!light && !dark) return null;
-  if (luminance == null) return dark;
+  if (luminance == null) return light;
   return luminance < WATERMARK_LUMINANCE_THRESHOLD ? light : dark;
 }
 
