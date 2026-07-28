@@ -1,6 +1,7 @@
 import { cn } from "@pakfactory/ui/lib/utils";
 import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type { PostBodyTable } from "@/lib/blog-post";
+import { normalizeBodyTable } from "@/lib/normalize-body-table";
 
 type BodyTableProps = {
   value: PostBodyTable;
@@ -12,12 +13,12 @@ const FIRST_COL_WIDTH = "w-[150px] sm:w-[35%]";
 
 /** Inline data / comparison table authored in the post body portable text. */
 export function BodyTable({ value }: BodyTableProps) {
-  const columns = (value.columns ?? []).map((c) => c?.trim() ?? "");
-  const rows = value.rows ?? [];
-  if (columns.length === 0 || rows.length === 0) return null;
+  const normalized = normalizeBodyTable(value);
+  if (!normalized) return null;
 
-  const caption = value.caption?.trim();
-  const isComparison = value.variant === "comparison";
+  const { columns, rows, caption: rawCaption, variant } = normalized;
+  const caption = rawCaption?.trim();
+  const isComparison = variant === "comparison";
 
   return (
     <figure className="my-8">
