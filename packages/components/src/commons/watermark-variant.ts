@@ -3,8 +3,12 @@
  * Pure helpers — safe for client and Node (no DOM / Sharp).
  */
 
-/** Below this average corner luminance → use light (white) watermark. */
-export const WATERMARK_LUMINANCE_THRESHOLD = 0.45;
+/**
+ * Below this average footprint luminance → use light (white) watermark.
+ * Dark mark only on near-white corners (soft watermarks; mid-tones like beige
+ * prefer the light mark). Raised from 0.45 so product photography stays light.
+ */
+export const WATERMARK_LUMINANCE_THRESHOLD = 0.85;
 
 /** Max edge for client/server sample canvases (never full-res). */
 export const WATERMARK_SAMPLE_MAX_PX = 64;
@@ -17,8 +21,9 @@ export type WatermarkSrcPair = {
 /**
  * Pick which logo URL to draw.
  * - Only one uploaded → that one.
- * - Both + unknown luminance → prefer light (fallback / first paint).
- * - Both + luminance → light on dark corners, dark on light corners.
+ * - Both + unknown luminance → prefer **dark** (editorial diagrams/CTAs are
+ *   often light; CORS/sample failures must not stick on the white logo).
+ * - Both + luminance → light unless footprint is near-white (≥ threshold).
  */
 export function pickWatermarkSrc({
   lightSrc,
@@ -33,7 +38,7 @@ export function pickWatermarkSrc({
   if (light && !dark) return light;
   if (dark && !light) return dark;
   if (!light && !dark) return null;
-  if (luminance == null) return light;
+  if (luminance == null) return dark;
   return luminance < WATERMARK_LUMINANCE_THRESHOLD ? light : dark;
 }
 

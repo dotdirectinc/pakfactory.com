@@ -2,6 +2,7 @@ import sharp from "sharp";
 import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
+  watermarkFootprintRect,
 } from "@pakfactory/components/commons/watermark-geometry";
 import {
   WATERMARK_SAMPLE_MAX_PX,
@@ -30,32 +31,31 @@ export type CompositeWatermarkResult = {
   contentType: "image/webp";
 };
 
-async function sampleCornerLuminanceFromBuffer(
+/**
+ * Average luminance (0–1) under the watermark footprint (not the extreme corner).
+ * Shared by bake-on-serve compose and `/api/wm-luma`.
+ */
+export async function sampleCornerLuminanceFromBuffer(
   imageBuffer: Buffer,
 ): Promise<number | null> {
   try {
     const meta = await sharp(imageBuffer, { failOn: "none" }).metadata();
     const w = meta.width ?? 1;
     const h = meta.height ?? 1;
-    const regionW = Math.max(
-      1,
-      Math.round((w * WATERMARK_WIDTH_PERCENT) / 100),
+    const { left, top, width: extractW, height: extractH } =
+      watermarkFootprintRect(w, h);
+
+    const outW = Math.min(WATERMARK_SAMPLE_MAX_PX, Math.max(extractW, 1));
+    const outH = Math.min(
+      WATERMARK_SAMPLE_MAX_PX,
+      Math.max(1, Math.round((outW * extractH) / extractW)),
     );
-    const pad = Math.max(
-      0,
-      Math.round((w * WATERMARK_PADDING_PERCENT) / 100),
-    );
-    const box = Math.max(regionW + pad, 1);
-    const left = Math.max(0, w - box);
-    const top = Math.max(0, h - box);
-    const extractW = Math.min(box, w - left);
-    const extractH = Math.min(box, h - top);
 
     const { data } = await sharp(imageBuffer, { failOn: "none" })
       .extract({ left, top, width: extractW, height: extractH })
       .resize({
-        width: WATERMARK_SAMPLE_MAX_PX,
-        height: WATERMARK_SAMPLE_MAX_PX,
+        width: outW,
+        height: outH,
         fit: "fill",
       })
       .ensureAlpha()

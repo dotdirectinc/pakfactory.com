@@ -119,10 +119,10 @@ function createComponents(
     },
     list: {
       bullet: ({ children }) => (
-        <ul className="mb-4 list-disc space-y-2 pl-5 leading-7">{children}</ul>
+        <ul className="mb-4 list-disc space-y-2 pl-5 leading-7 text-muted-foreground">{children}</ul>
       ),
       number: ({ children }) => (
-        <ol className="mb-4 list-decimal space-y-2 pl-5 leading-7">{children}</ol>
+        <ol className="mb-4 list-decimal space-y-2 pl-5 leading-7 text-muted-foreground">{children}</ol>
       ),
     },
     marks: {

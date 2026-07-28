@@ -29,6 +29,11 @@ export type ImageWatermarkOverlayProps = {
    * @deprecated Prefer lightSrc/darkSrc. Single-mark fallback (treated as light).
    */
   watermarkSrc?: string;
+  /**
+   * Bake/luma API base path from WatermarkProvider (e.g. `/api/wm`).
+   * When set, luminance is sampled via same-origin `/api/wm-luma` (no CDN CORS).
+   */
+  apiPath?: string | null;
   /** 0–1. Default 0.85. */
   opacity?: number;
   /**
@@ -50,6 +55,7 @@ export function ImageWatermarkOverlay({
   lightSrc,
   darkSrc,
   watermarkSrc,
+  apiPath,
   opacity = 0.85,
   className,
   style,
@@ -76,12 +82,14 @@ export function ImageWatermarkOverlay({
 
     let cancelled = false;
     const run = () => {
-      void sampleCornerLuminance(photoSrc.trim()).then((luminance) => {
-        if (cancelled) return;
-        setMarkSrc(
-          pickWatermarkSrc({ lightSrc: light, darkSrc: dark, luminance }),
-        );
-      });
+      void sampleCornerLuminance(photoSrc.trim(), { apiPath }).then(
+        (luminance) => {
+          if (cancelled) return;
+          setMarkSrc(
+            pickWatermarkSrc({ lightSrc: light, darkSrc: dark, luminance }),
+          );
+        },
+      );
     };
 
     if (typeof requestIdleCallback === "function") {
@@ -97,7 +105,7 @@ export function ImageWatermarkOverlay({
       cancelled = true;
       window.clearTimeout(t);
     };
-  }, [photoSrc, lightSrc, darkSrc, watermarkSrc]);
+  }, [photoSrc, lightSrc, darkSrc, watermarkSrc, apiPath]);
 
   const clampedOpacity = Math.min(1, Math.max(0, opacity));
 
