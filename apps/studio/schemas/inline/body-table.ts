@@ -37,7 +37,7 @@ const tableColumnMember = defineArrayMember({
       name: 'header',
       title: 'Column header',
       type: 'string',
-      validation: (Rule) => Rule.required().error('A column header is required.'),
+      description: 'Optional. Leave blank for a headerless column.',
     }),
     defineField({
       name: 'cells',

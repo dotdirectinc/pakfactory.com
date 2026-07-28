@@ -56,7 +56,7 @@ export function normalizeBodyTable(
     const headers = cols.map((c) =>
       typeof c.header === "string" ? c.header.trim() : "",
     );
-    if (headers.length === 0 || headers.every((h) => !h)) return null;
+    if (cols.length === 0) return null;
 
     const rowCount = Math.max(
       0,
