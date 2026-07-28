@@ -38,6 +38,51 @@ export function sanityImageUrl(source: unknown, width = 1200): string | undefine
 }
 
 /**
+ * Open Graph image URL — a **hotspot-aware 1200×630 crop** so the delivered image
+ * matches the declared `og:image:width`/`height` (`OG_IMAGE_WIDTH`/`HEIGHT` = 1200×630
+ * in resolve-seo). Social platforms trust the declared dimensions, so a mismatch
+ * (letterbox/crop) results. `sanityImageUrl` uses `fit=max` (aspect-preserving), which
+ * delivers e.g. 1200×675 for a 16:9 source — hence this dedicated OG variant that
+ * `fit=crop`s to exactly 1200×630, using the image's crop/hotspot to keep the subject
+ * centered (PROD-2231 item 7). Keep 1200×630 in sync with resolve-seo's OG constants.
+ */
+export function ogImageUrl(source: unknown): string | undefined {
+  if (source != null && typeof source === "object") {
+    const directUrl = (source as { url?: unknown }).url;
+    if (typeof directUrl === "string" && directUrl.trim() !== "") {
+      // Pre-resolved asset URL (no source object to hotspot-crop) — force 1200×630.
+      try {
+        const u = new URL(stripSizeParams(directUrl.trim()));
+        u.searchParams.set("w", "1200");
+        u.searchParams.set("h", "630");
+        u.searchParams.set("fit", "crop");
+        u.searchParams.set("auto", "format");
+        return u.toString();
+      } catch {
+        return directUrl.trim();
+      }
+    }
+  }
+  if (source == null || typeof source !== "object") return undefined;
+  const projectId = getSanityProjectId();
+  if (!projectId) return undefined;
+  try {
+    return createImageUrlBuilder({
+      projectId,
+      dataset: getSanityDataset(),
+    })
+      .image(source as SanityImageSource)
+      .width(1200)
+      .height(630)
+      .fit("crop")
+      .auto("format")
+      .url();
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Full-resolution Sanity CDN URL (no fixed width). Pass to `next/image` with
  * {@link sanityImageLoader} so each srcset candidate requests the right size.
  */
