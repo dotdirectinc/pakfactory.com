@@ -18,6 +18,7 @@
     "migrate:blog-i18n-en": "node scripts/migrate-blog-i18n-en.mjs",
     "migrate:blog-navigation": "node scripts/migrate-blog-navigation.mjs",
     "migrate:case-study-gallery": "node scripts/migrate-case-study-gallery.mjs",
+    "migrate:body-table": "node scripts/migrate-body-table.mjs",
     "migrate:redirect-slashes": "node scripts/strip-redirect-trailing-slashes.mjs",
     "backfill:redirect-fields": "node scripts/backfill-redirect-match-behaviour.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",

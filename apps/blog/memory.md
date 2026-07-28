@@ -1,6 +1,6 @@
 # Blog app — working memory
 
-Last updated: 2026-07-24.
+Last updated: 2026-07-28.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
 
@@ -22,6 +22,26 @@ Snapshot 2026-05-27. Compare the table below against the BA screenshot on every 
 | `/contribute`                        | ✅ PROD-1504                                                                                                                                                                                                    |
 
 URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); URL base subpath-ready (PROD-1596). Blog favicon committed at `apps/blog/src/app/favicon.ico`. Branch `feature/blog`; tickets above in Request For Approval, not yet merged.
+
+---
+
+## PROD-2224 — Data table column-first Studio UX
+
+**Jira:** [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224). Branch: `feat/PROD-2224-body-table-column-ux`.
+
+Editors add a **Data table** in the post body, then author **columns** (left → right); each column has a header and **cells** (top → bottom) — same nested-array pattern as footer link columns.
+
+| Phase | Deliverable |
+| --- | --- |
+| Studio schema | [`apps/studio/schemas/inline/body-table.ts`](../../apps/studio/schemas/inline/body-table.ts) — `columns[]` → `tableColumn` (`header` + `cells[]` → `tableCell.value`); remove row-major `rows` |
+| Normalize | [`apps/blog/src/lib/normalize-body-table.ts`](./src/lib/normalize-body-table.ts) — transpose column-major → HTML rows; dual-read legacy `columns: string[]` + `rows` |
+| Renderer | [`body-table.tsx`](./src/components/modules/inline/body-table.tsx) — calls `normalizeBodyTable`; HTML unchanged |
+| Migration (humans) | `pnpm --filter @pakfactory/studio run migrate:body-table -- --dry-run` then without `--dry-run` — [`migrate-body-table.mjs`](../../apps/studio/scripts/migrate-body-table.mjs) |
+| Out of scope | Spreadsheet custom input; blog table visual redesign; `@sanity/table` plugin |
+
+**Verify (Studio):** Post → Body → insert Data table → Add column → set header → add 2+ cells → repeat for 2–3 columns → preview on post page.
+
+**Ops:** After schema deploy, humans run `migrate:body-table` on `development` then `production` so existing tables edit in the new shape. Front-end keeps dual-read until then.
 
 ---
 
