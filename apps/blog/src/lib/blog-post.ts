@@ -66,10 +66,26 @@ export type PostBodyGallery = {
   images?: Array<{ _key?: string; alt?: string; asset?: unknown }>;
 };
 
+/** Column-major cell (PROD-2224) or legacy plain string in a row. */
+export type PostBodyTableCell =
+  | string
+  | { _key?: string; value?: string };
+
+/** New column object, or legacy header string. */
+export type PostBodyTableColumn =
+  | string
+  | {
+      _key?: string;
+      header?: string;
+      cells?: PostBodyTableCell[];
+    };
+
 export type PostBodyTable = {
   variant?: "data" | "comparison";
-  columns?: string[];
+  /** Column-major objects (PROD-2224) or legacy header strings. */
+  columns?: PostBodyTableColumn[];
   caption?: string;
+  /** Legacy row-major shape — still read by `normalizeBodyTable`. */
   rows?: Array<{ _key?: string; cells?: string[] }>;
 };
 
