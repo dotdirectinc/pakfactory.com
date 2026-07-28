@@ -1,12 +1,10 @@
 /**
- * Client-only corner luminance sample for adaptive watermarks (PROD-2206).
- * Uses a tiny Sanity CDN proxy — never a full-resolution bitmap.
+ * Client-side corner luminance sample for adaptive watermarks (PROD-2206).
+ * Prefers same-origin `/api/wm-luma` (no CORS). Canvas CDN sample is fallback.
  */
 
-import {
-  WATERMARK_PADDING_PERCENT,
-  WATERMARK_WIDTH_PERCENT,
-} from "./watermark-geometry";
+import { buildWatermarkLumaApiUrl } from "./watermark-api-url";
+import { watermarkFootprintRect } from "./watermark-geometry";
 import {
   WATERMARK_SAMPLE_MAX_PX,
   averageLuminanceFromRgba,
@@ -17,7 +15,8 @@ export function watermarkSampleUrl(photoSrc: string): string {
   try {
     const url = new URL(photoSrc);
     if (url.hostname === "cdn.sanity.io") {
-      url.searchParams.set("w", String(WATERMARK_SAMPLE_MAX_PX));
+      // Fetch enough pixels that the logo footprint still has detail after extract.
+      url.searchParams.set("w", String(Math.max(256, WATERMARK_SAMPLE_MAX_PX * 4)));
       url.searchParams.set("auto", "format");
       url.searchParams.set("fit", "max");
       return url.toString();
@@ -28,11 +27,26 @@ export function watermarkSampleUrl(photoSrc: string): string {
   return photoSrc;
 }
 
-/**
- * Average luminance (0–1) of the bottom-right watermark footprint.
- * Returns `null` on CORS / decode failure (caller should fall back).
- */
-export function sampleCornerLuminance(
+async function sampleCornerLuminanceViaApi(
+  photoSrc: string,
+  apiPath: string,
+): Promise<number | null> {
+  try {
+    const res = await fetch(
+      buildWatermarkLumaApiUrl({ apiPath, src: photoSrc }),
+      { credentials: "same-origin" },
+    );
+    if (!res.ok) return null;
+    const body = (await res.json()) as { luminance?: unknown };
+    return typeof body.luminance === "number" && Number.isFinite(body.luminance)
+      ? Math.min(1, Math.max(0, body.luminance))
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function sampleCornerLuminanceViaCanvas(
   photoSrc: string,
 ): Promise<number | null> {
   if (typeof window === "undefined" || typeof Image === "undefined") {
@@ -48,31 +62,24 @@ export function sampleCornerLuminance(
       try {
         const w = img.naturalWidth || 1;
         const h = img.naturalHeight || 1;
-        const regionW = Math.max(
-          1,
-          Math.round((w * WATERMARK_WIDTH_PERCENT) / 100),
-        );
-        const pad = Math.max(
-          0,
-          Math.round((w * WATERMARK_PADDING_PERCENT) / 100),
-        );
-        const box = Math.max(regionW + pad, 1);
-        const sx = Math.max(0, w - box);
-        const sy = Math.max(0, h - box);
-        const sw = Math.min(box, w - sx);
-        const sh = Math.min(box, h - sy);
+        const { left: sx, top: sy, width: sw, height: sh } =
+          watermarkFootprintRect(w, h);
 
-        const out = Math.min(WATERMARK_SAMPLE_MAX_PX, Math.max(sw, sh, 1));
+        const outW = Math.min(WATERMARK_SAMPLE_MAX_PX, Math.max(sw, 1));
+        const outH = Math.min(
+          WATERMARK_SAMPLE_MAX_PX,
+          Math.max(1, Math.round((outW * sh) / sw)),
+        );
         const canvas = document.createElement("canvas");
-        canvas.width = out;
-        canvas.height = out;
+        canvas.width = outW;
+        canvas.height = outH;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) {
           resolve(null);
           return;
         }
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, out, out);
-        const { data } = ctx.getImageData(0, 0, out, out);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+        const { data } = ctx.getImageData(0, 0, outW, outH);
         resolve(averageLuminanceFromRgba(data));
       } catch {
         resolve(null);
@@ -81,4 +88,20 @@ export function sampleCornerLuminance(
     img.onerror = () => resolve(null);
     img.src = sampleUrl;
   });
+}
+
+/**
+ * Average luminance (0–1) of the pixels under the watermark footprint.
+ * Returns `null` on failure (caller falls back — prefer dark when both marks).
+ */
+export async function sampleCornerLuminance(
+  photoSrc: string,
+  options?: { apiPath?: string | null },
+): Promise<number | null> {
+  const apiPath = options?.apiPath?.trim();
+  if (apiPath) {
+    const viaApi = await sampleCornerLuminanceViaApi(photoSrc, apiPath);
+    if (viaApi != null) return viaApi;
+  }
+  return sampleCornerLuminanceViaCanvas(photoSrc);
 }

@@ -25,6 +25,23 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ---
 
+## PROD-2229 — Post body list text color matches paragraphs
+
+**Jira:** [PROD-2229](https://dotdirect.atlassian.net/browse/PROD-2229). Branch: `fix/PROD-2229-body-list-text-color`.
+
+Bullet/numbered list items in the post body were inheriting `text-foreground` from the article wrapper while paragraphs used `text-muted-foreground`, so lists looked darker.
+
+| Phase | Deliverable |
+| --- | --- |
+| Fix | Add `text-muted-foreground` to `list.bullet` / `list.number` in [`post-portable-text.tsx`](./src/components/post/post-portable-text.tsx) `createComponents()` |
+| Out of scope | TOC, breadcrumbs, meta, author bio, headings, TLDR variant, generic `ui/portable-text` |
+
+**Verify:** post with mixed paragraphs + lists — same computed color on `<p>` and `<li>`; nested lists and bold-in-list inherit muted; headings stay `text-foreground`.
+
+**Also in this branch:** adaptive watermark fix — `/api/wm-luma` same-origin sample + null fallback prefers dark (see § PROD-2206).
+
+---
+
 ## PROD-2206 — Image watermark (render-time + bake-on-serve trial)
 
 **Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `feat/PROD-2206-watermark-light-dark` (prior: `feat/PROD-2206-image-watermark` merged to staging).
@@ -44,10 +61,14 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 
 | Asset | Used when |
 | --- | --- |
-| `lightImage` (white logo) | Bottom-right corner average luminance **&lt; 0.45** (dark photo region) |
-| `darkImage` | Luminance **≥ 0.45** (light photo region) |
+| `lightImage` (white logo) | Footprint average luminance **&lt; 0.85** (most photos, including beige/tan mid-tones) |
+| `darkImage` | Luminance **≥ 0.85** (near-white diagrams / paper) |
 | Only one uploaded | That mark always |
-| Sample / CORS fail | Prefer light, then dark |
+| Sample / CORS fail | Prefer **dark** when both uploaded; overlay probes via same-origin `GET /api/wm-luma?src=` (Sharp), canvas CDN sample is fallback |
+
+**Sample region:** average pixels under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner.
+
+**Adaptive reliability (PROD-2229 follow-on):** client canvas sampling against Sanity CDN often returned `null` (CORS), which previously fell back to the **light** mark and left white logos on white diagrams. Overlay now samples via `/api/wm-luma` and null fallback prefers **dark**. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark.
 
 ### Mode switch (reversible)
 
@@ -71,7 +92,7 @@ NEXT_PUBLIC_WATERMARK_MODE=overlay
 
 **Studio UX:** existing body images without a stored `applyWatermark` key show the toggle **on** (`DefaultOnBooleanInput`); front-end still uses `coalesce(applyWatermark, true)`.
 
-**Verify overlay:** mark visible on post **body** image (not hero/card); dark photo → light logo; light photo → dark logo; right-click Save as → clean file.
+**Verify overlay:** mark visible on post **body** image (not hero/card); mid-tone/beige → light logo; near-white diagram → dark logo; dark photo → light logo; right-click Save as → clean file.
 **Verify serve:** set mode=serve, reload body image; Save as → watermarked WebP; response header `X-Watermark-Mode: serve`; Studio Media still clean.  
 **Typecheck:** `pnpm --filter @pakfactory/blog typecheck`
 

@@ -96,6 +96,7 @@ function GalleryImage({
       photoSrc={img.src}
       lightSrc={config.lightSrc}
       darkSrc={config.darkSrc}
+      apiPath={config.apiPath}
       opacity={config.opacity}
       className="relative max-h-full max-w-full"
     >

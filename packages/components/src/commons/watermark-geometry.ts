@@ -5,3 +5,41 @@
  */
 export const WATERMARK_WIDTH_PERCENT = 12;
 export const WATERMARK_PADDING_PERCENT = 5;
+
+/**
+ * Studio light/dark watermark SVGs are ~244×64.
+ * Used to size the luminance sample to the drawn logo footprint (not a corner square).
+ */
+export const WATERMARK_LOGO_ASPECT = 64 / 244;
+
+export type WatermarkFootprintRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * Pixel rect of the bottom-right logo overlay on an image of size `imageW`×`imageH`.
+ * Matches CSS: width 12%, right/bottom padding 5%, height from logo aspect.
+ */
+export function watermarkFootprintRect(
+  imageW: number,
+  imageH: number,
+): WatermarkFootprintRect {
+  const w = Math.max(1, Math.round(imageW));
+  const h = Math.max(1, Math.round(imageH));
+  const wmW = Math.max(1, Math.round((w * WATERMARK_WIDTH_PERCENT) / 100));
+  const pad = Math.max(0, Math.round((w * WATERMARK_PADDING_PERCENT) / 100));
+  const wmH = Math.max(1, Math.round(wmW * WATERMARK_LOGO_ASPECT));
+  const width = Math.min(wmW, w);
+  const height = Math.min(wmH, h);
+  const left = Math.max(0, w - pad - width);
+  const top = Math.max(0, h - pad - height);
+  return {
+    left,
+    top,
+    width: Math.min(width, w - left),
+    height: Math.min(height, h - top),
+  };
+}

@@ -88,6 +88,7 @@ export function SanityImage({
       photoSrc={photoSrc}
       lightSrc={config.lightSrc}
       darkSrc={config.darkSrc}
+      apiPath={config.apiPath}
       opacity={config.opacity}
       className={fill ? "absolute inset-0" : "relative block w-full"}
     >
