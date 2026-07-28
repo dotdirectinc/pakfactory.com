@@ -92,7 +92,7 @@ function sampleCornerLuminanceViaCanvas(
 
 /**
  * Average luminance (0–1) of the pixels under the watermark footprint.
- * Returns `null` on failure (caller falls back — prefer dark when both marks).
+ * Returns `null` on failure (caller falls back — prefer light when both marks).
  */
 export async function sampleCornerLuminance(
   photoSrc: string,
