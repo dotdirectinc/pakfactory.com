@@ -11,7 +11,8 @@ export type WwwGlobalSettings = {
   /** Render-time image watermark (PROD-2206). */
   watermark?: {
     enabled?: boolean | null;
-    imageUrl?: string | null;
+    lightImageUrl?: string | null;
+    darkImageUrl?: string | null;
     opacity?: number | null;
   } | null;
 };

@@ -139,7 +139,7 @@ export const settings = defineType({
       type: 'object',
       group: 'identity',
       description:
-        'Render-time logo overlay on public website and blog imagery (PROD-2206). Originals in Media stay clean for team download. Product catalog images are never watermarked.',
+        'Render-time logo overlay on public website and blog imagery (PROD-2206). Upload light and dark marks — the site picks by photo corner brightness. Originals in Media stay clean for team download. Product catalog images are never watermarked.',
       options: { collapsible: true, collapsed: false },
       fields: [
         defineField({
@@ -151,12 +151,22 @@ export const settings = defineType({
         }),
         defineField(
           taggedImageField({
-            name: 'image',
-            title: 'Watermark image',
+            name: 'lightImage',
+            title: 'Light watermark (for dark photos)',
             type: 'image',
             mediaTags: [MEDIA_TAG.website],
             description:
-              'Transparent SVG or high-resolution PNG (e.g. white PakFactory logo). Swap anytime to change the mark site-wide.',
+              'White / light transparent SVG or PNG (e.g. pakfactory_white-logo_watermark.svg). Used when the image corner behind the mark is dark.',
+          }),
+        ),
+        defineField(
+          taggedImageField({
+            name: 'darkImage',
+            title: 'Dark watermark (for light photos)',
+            type: 'image',
+            mediaTags: [MEDIA_TAG.website],
+            description:
+              'Dark transparent SVG or PNG. Used when the image corner behind the mark is light. Upload both light and dark for best contrast.',
           }),
         ),
         defineField({

@@ -10,7 +10,12 @@ export type BuildWatermarkApiUrlParams = {
   src: string;
   width: number;
   quality?: number;
-  watermarkSrc: string;
+  /** @deprecated Prefer watermarkLightSrc / watermarkDarkSrc. */
+  watermarkSrc?: string;
+  /** Light mark CDN URL (dark photo corners). */
+  watermarkLightSrc?: string | null;
+  /** Dark mark CDN URL (light photo corners). */
+  watermarkDarkSrc?: string | null;
   opacity?: number;
   /** When true, ask the API to centre-crop square (`fit=crop`). */
   square?: boolean;
@@ -29,13 +34,22 @@ export function buildWatermarkApiUrl({
   width,
   quality = 80,
   watermarkSrc,
+  watermarkLightSrc,
+  watermarkDarkSrc,
   opacity = 0.85,
   square = false,
   cover = false,
 }: BuildWatermarkApiUrlParams): string {
   const params = new URLSearchParams();
   params.set("src", src);
-  params.set("wm", watermarkSrc);
+  const light =
+    watermarkLightSrc?.trim() || watermarkSrc?.trim() || "";
+  const dark = watermarkDarkSrc?.trim() || "";
+  if (light) params.set("wmLight", light);
+  if (dark) params.set("wmDark", dark);
+  // Legacy single-mark param for older callers / caches.
+  if (light && !dark) params.set("wm", light);
+  else if (dark && !light) params.set("wm", dark);
   params.set("w", String(Math.max(1, Math.round(width))));
   params.set("q", String(Math.min(100, Math.max(1, Math.round(quality)))));
   params.set("o", String(Math.min(1, Math.max(0, opacity))));

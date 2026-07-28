@@ -3,10 +3,18 @@ import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
 } from "@pakfactory/components/commons/watermark-geometry";
+import {
+  WATERMARK_SAMPLE_MAX_PX,
+  averageLuminanceFromRgba,
+  pickWatermarkSrc,
+} from "@pakfactory/components/commons/watermark-variant";
 
 export type CompositeWatermarkInput = {
   imageBuffer: Buffer;
-  watermarkBuffer: Buffer;
+  /** Single mark (legacy) or light mark when both provided. */
+  watermarkBuffer?: Buffer;
+  watermarkLightBuffer?: Buffer;
+  watermarkDarkBuffer?: Buffer;
   /** Target max width (fit inside / cover width). */
   width: number;
   quality: number;
@@ -22,13 +30,77 @@ export type CompositeWatermarkResult = {
   contentType: "image/webp";
 };
 
+async function sampleCornerLuminanceFromBuffer(
+  imageBuffer: Buffer,
+): Promise<number | null> {
+  try {
+    const meta = await sharp(imageBuffer, { failOn: "none" }).metadata();
+    const w = meta.width ?? 1;
+    const h = meta.height ?? 1;
+    const regionW = Math.max(
+      1,
+      Math.round((w * WATERMARK_WIDTH_PERCENT) / 100),
+    );
+    const pad = Math.max(
+      0,
+      Math.round((w * WATERMARK_PADDING_PERCENT) / 100),
+    );
+    const box = Math.max(regionW + pad, 1);
+    const left = Math.max(0, w - box);
+    const top = Math.max(0, h - box);
+    const extractW = Math.min(box, w - left);
+    const extractH = Math.min(box, h - top);
+
+    const { data } = await sharp(imageBuffer, { failOn: "none" })
+      .extract({ left, top, width: extractW, height: extractH })
+      .resize({
+        width: WATERMARK_SAMPLE_MAX_PX,
+        height: WATERMARK_SAMPLE_MAX_PX,
+        fit: "fill",
+      })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    return averageLuminanceFromRgba(data);
+  } catch {
+    return null;
+  }
+}
+
+async function resolveWatermarkBuffer(input: {
+  resizedImageBuffer: Buffer;
+  watermarkBuffer?: Buffer;
+  watermarkLightBuffer?: Buffer;
+  watermarkDarkBuffer?: Buffer;
+}): Promise<Buffer | null> {
+  const light =
+    input.watermarkLightBuffer ?? input.watermarkBuffer ?? null;
+  const dark = input.watermarkDarkBuffer ?? null;
+  if (light && !dark) return light;
+  if (dark && !light) return dark;
+  if (!light && !dark) return null;
+  const luminance = await sampleCornerLuminanceFromBuffer(
+    input.resizedImageBuffer,
+  );
+  const choice = pickWatermarkSrc({
+    lightSrc: "light",
+    darkSrc: "dark",
+    luminance,
+  });
+  return choice === "dark" ? dark : light;
+}
+
 /**
  * Resize source, composite logo bottom-right (ticket geometry), emit WebP.
  * Server-only — do not import from client components.
+ * When light + dark marks are provided, picks by corner luminance on the resized frame.
  */
 export async function compositeWatermark({
   imageBuffer,
   watermarkBuffer,
+  watermarkLightBuffer,
+  watermarkDarkBuffer,
   width,
   quality,
   opacity,
@@ -74,13 +146,23 @@ export async function compositeWatermark({
     .resize(resizeOpts)
     .toBuffer();
 
+  const chosen = await resolveWatermarkBuffer({
+    resizedImageBuffer: resizedBuf,
+    watermarkBuffer,
+    watermarkLightBuffer,
+    watermarkDarkBuffer,
+  });
+  if (!chosen) {
+    throw new Error("No watermark buffer provided");
+  }
+
   const { width: imgW = targetW, height: imgH = targetW } =
     await sharp(resizedBuf).metadata();
 
   const wmWidth = Math.max(1, Math.round((imgW * WATERMARK_WIDTH_PERCENT) / 100));
   const pad = Math.max(0, Math.round((imgW * WATERMARK_PADDING_PERCENT) / 100));
 
-  const wmResized = await sharp(watermarkBuffer, { failOn: "none" })
+  const wmResized = await sharp(chosen, { failOn: "none" })
     .resize({ width: wmWidth })
     .ensureAlpha()
     .raw()
