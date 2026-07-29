@@ -88,8 +88,6 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
         <tr>
           <th>URL</th>
           <th>Last Modified</th>
-          <th>Change Freq</th>
-          <th>Priority</th>
           <th>Images</th>
         </tr>
       </thead>
@@ -102,11 +100,6 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
                 <xsl:when test="sm:lastmod"><xsl:value-of select="sm:lastmod"/></xsl:when>
                 <xsl:otherwise><span class="dim">—</span></xsl:otherwise>
               </xsl:choose>
-            </td>
-            <td>
-            </td>
-            <td>
-              
             </td>
             <td>
               <xsl:choose>

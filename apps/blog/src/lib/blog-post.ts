@@ -19,7 +19,7 @@ import { absoluteUrl } from "@/lib/site";
 import { blogCachedFetch } from "@/lib/blog-cached-fetch";
 import { BLOG_POSTS_CACHE_TAG, blogPostTag } from "@/lib/blog-cache";
 import { blogLanguageParams } from "@/lib/blog-language";
-import { sanityImageUrl } from "@/lib/sanity-image";
+import { ogImageUrl, sanityImageUrl } from "@/lib/sanity-image";
 import { getBlogRobotsDirective } from "@/lib/seo";
 import { buildDocMetadata, type DocSeoFields } from "@/lib/resolve-seo";
 import {
@@ -66,10 +66,26 @@ export type PostBodyGallery = {
   images?: Array<{ _key?: string; alt?: string; asset?: unknown }>;
 };
 
+/** Column-major cell (PROD-2224) or legacy plain string in a row. */
+export type PostBodyTableCell =
+  | string
+  | { _key?: string; value?: string };
+
+/** New column object, or legacy header string. */
+export type PostBodyTableColumn =
+  | string
+  | {
+      _key?: string;
+      header?: string;
+      cells?: PostBodyTableCell[];
+    };
+
 export type PostBodyTable = {
   variant?: "data" | "comparison";
-  columns?: string[];
+  /** Column-major objects (PROD-2224) or legacy header strings. */
+  columns?: PostBodyTableColumn[];
   caption?: string;
+  /** Legacy row-major shape — still read by `normalizeBodyTable`. */
   rows?: Array<{ _key?: string; cells?: string[] }>;
 };
 
@@ -179,7 +195,10 @@ export async function fetchPostByCategoryAndSlug(
 export async function buildPostMetadata(post: BlogPostDetail): Promise<Metadata> {
   const ctx = await fetchSeoContext();
   const defaults = typeDefaults(ctx, "postDefaults");
-  const featuredImageUrl = sanityImageUrl(post.mainImage);
+  // OG card image: hotspot-aware 1200×630 crop so the delivered image matches the
+  // declared og:image dimensions (PROD-2231 item 7). The post body / JSON-LD keep
+  // the aspect-preserving `sanityImageUrl` below.
+  const featuredImageUrl = ogImageUrl(post.mainImage);
 
   return buildDocMetadata({
     title: post.title,
