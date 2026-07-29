@@ -79,7 +79,23 @@ async function getRuleset(): Promise<RedirectRuleset> {
 }
 
 export async function proxy(req: NextRequest): Promise<NextResponse> {
-  const { pathname } = req.nextUrl; // no basePath — path is as served
+  const { pathname, search } = req.nextUrl; // no basePath — path is as served
+
+  // Origin lockdown (PROD-2207 QA follow-up). This app is reachable two ways:
+  // via the apex proxy (Magento nginx forwards ONLY /case-studies, /_next,
+  // /sitemap.xml, /llms.txt, /favicon.ico) and DIRECTLY at
+  // origin.case-studies.pakfactory.com. A direct hit on any non-/case-studies
+  // path is the not-yet-released main site — bounce it to the live apex and mark
+  // it noindex/nofollow so crawlers don't index the origin. The matcher below
+  // excludes the proxied asset/SEO paths (dotted files, _next, api) so this
+  // never fires on legitimate apex-proxied traffic. Temporary (307) on purpose —
+  // remove when the main www site launches; a permanent redirect would be cached
+  // by crawlers/browsers and painful to reverse.
+  if (!pathname.startsWith("/case-studies")) {
+    const res = NextResponse.redirect(`${SITE_URL}${pathname}${search}`, 307);
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return res;
+  }
 
   const hit = resolveRedirect(await getRuleset(), pathname, "");
   if (hit) {
@@ -99,12 +115,10 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  // Only the case-study surface reaches this app (CloudFront routes just
-  // `/case-studies/*` here). Scope the proxy to it, excluding Next internals,
-  // API routes, and static files (paths with a dot). The bare `/case-studies`
-  // entry covers the index, which the second pattern's `/` prefix skips.
-  matcher: [
-    "/case-studies",
-    "/case-studies/((?!_next/|api/|.*\\.[^/]+$).*)",
-  ],
+  // Runs on `/case-studies*` (CMS-redirect resolution) AND on the origin root +
+  // any other clean path (the lockdown redirect above). Excludes Next internals,
+  // API routes, and static files (paths with a dot) — those cover the SEO/asset
+  // paths nginx legitimately proxies to the apex (/sitemap.xml, /llms.txt,
+  // /favicon.ico, /_next/*), which must pass through untouched.
+  matcher: ["/((?!_next/|api/|.*\\.[^/]+$).*)"],
 };
