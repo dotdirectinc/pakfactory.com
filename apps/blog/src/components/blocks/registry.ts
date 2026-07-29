@@ -56,8 +56,10 @@ export type PostCategoryRowBlock = {
   postsCount?: number;
   categorySlug?: string;
   categoryTitle?: string;
-  /** Plain-text category intro (pt::text of blogCategory.description). */
+  /** Plain-text category intro (pt::text of blogCategory.description — the Long description). */
   categoryDescription?: string;
+  /** Short teaser (blogCategory.shortDescription); preferred over the long intro on the homepage. */
+  categoryShortDescription?: string;
   posts: HomePostCard[];
 } & DielineBorderFields;
 
