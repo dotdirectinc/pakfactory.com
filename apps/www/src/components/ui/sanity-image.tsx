@@ -23,11 +23,6 @@ export type SanityImageProps = Omit<ImageProps, "loader"> & {
    * watermark is enabled. Omit or pass `false` elsewhere (blocks, cards, products).
    */
   applyWatermark?: boolean;
-  /**
-   * Server-resolved light/dark mark from Sanity LQIP (PROD-2206).
-   * Client only forwards — never samples luminance here.
-   */
-  watermarkVariant?: "light" | "dark" | null;
 };
 
 function makeServeLoader(
@@ -54,12 +49,11 @@ function makeServeLoader(
  * Watermark modes (PROD-2206):
  * - `overlay` (default): CSS logo layer; Save as stays clean.
  * - `serve` (`NEXT_PUBLIC_WATERMARK_MODE=serve`): pixels baked via `/api/wm`.
- * Overlay light/dark is resolved server-side from LQIP and passed as `watermarkVariant`.
+ * Light vs dark mark is chosen from the photo corner luminance when both are set.
  */
 export function SanityImage({
   square,
   applyWatermark,
-  watermarkVariant = null,
   fill,
   className,
   src,
@@ -69,6 +63,7 @@ export function SanityImage({
   const showWatermark = shouldApplyWatermark(config, applyWatermark);
   const serveMode = showWatermark && isServeWatermarkMode(config);
   const cover = Boolean(fill) && !square;
+  const photoSrc = typeof src === "string" ? src : null;
 
   const defaultLoader = square ? sanitySquareImageLoader : sanityImageLoader;
 
@@ -90,9 +85,10 @@ export function SanityImage({
 
   return (
     <ImageWatermarkOverlay
+      photoSrc={photoSrc}
       lightSrc={config.lightSrc}
       darkSrc={config.darkSrc}
-      variant={watermarkVariant}
+      apiPath={config.apiPath}
       opacity={config.opacity}
       className={fill ? "absolute inset-0" : "relative block w-full"}
     >
