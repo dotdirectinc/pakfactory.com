@@ -18,7 +18,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
     title: 'PakFactory',
     description: 'Custom packaging, simplified.',
-    robots: { index: false, follow: true },
+    robots: { index: false, follow: false },
 };
 
 /** Inject GTM only in production when Global Settings has a container ID. */
