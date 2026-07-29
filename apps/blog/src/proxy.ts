@@ -35,6 +35,19 @@ const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL || "https://pakfactory.com"
 ).replace(/\/$/, "");
 
+/** Public Vercel origin host (custom domain). Direct hits here must not be indexed. */
+const CUSTOM_ORIGIN_HOST = "origin.blog.pakfactory.com";
+
+/**
+ * Shared secret nginx sends when proxying apex `/blog*` into this app
+ * (`proxy_set_header X-Origin-Proxy <secret>`). Without it, Host alone cannot
+ * distinguish apex traffic (nginx sets Host to the custom origin) from a
+ * browser hitting the origin directly — bouncing `/blog*` would 307-loop.
+ *
+ * Set the same value in Vercel env `BLOG_ORIGIN_PROXY_SECRET`.
+ */
+const ORIGIN_PROXY_SECRET = process.env.BLOG_ORIGIN_PROXY_SECRET || "";
+
 const REDIRECTS_QUERY =
   `*[_type == "redirect" && isActive == true && defined(from) && (defined(to) || behaviour == "gone")]` +
   `{"from": from, "to": to, "matchType": matchType, "behaviour": behaviour, "priority": priority, "appendMatchedTail": appendMatchedTail}`;
@@ -63,7 +76,75 @@ async function getRuleset(): Promise<RedirectRuleset> {
   }
 }
 
+function requestHost(req: NextRequest): string {
+  return (req.headers.get("host") || "").split(":")[0]!.toLowerCase();
+}
+
+function isGeneratedVercelHost(host: string): boolean {
+  return host.endsWith(".vercel.app") && host.startsWith("pakfactory-blog");
+}
+
+function isPublicOriginHost(host: string): boolean {
+  return host === CUSTOM_ORIGIN_HOST || isGeneratedVercelHost(host);
+}
+
+/** Apex nginx traffic that must keep serving `/blog*` (no lockdown redirect). */
+function isTrustedApexProxy(req: NextRequest): boolean {
+  if (!ORIGIN_PROXY_SECRET) return false;
+  return req.headers.get("x-origin-proxy") === ORIGIN_PROXY_SECRET;
+}
+
+function redirectToApex(pathname: string, search: string): NextResponse {
+  // pathname is base-path-less; rebuild the public `/blog…` URL on the apex.
+  const dest = toAbsolute(normalizePath(`${BASE_PATH}${pathname}`), SITE_URL);
+  const res = NextResponse.redirect(`${dest}${search}`, 307);
+  res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return res;
+}
+
+/**
+ * Origin lockdown (mirror of www PROD-2207).
+ *
+ * Reachable two ways:
+ * 1. Apex proxy — Magento nginx forwards `/blog*` with Host rewritten to
+ *    `origin.blog.pakfactory.com`.
+ * 2. Direct — browser hits `origin.blog.pakfactory.com` (or `.vercel.app`).
+ *
+ * Direct hits must 307 → `pakfactory.com/blog…` with `X-Robots-Tag: noindex,
+ * nofollow`. Apex must NOT redirect, or we loop. Distinguisher: nginx sends
+ * `X-Origin-Proxy: $BLOG_ORIGIN_PROXY_SECRET`.
+ *
+ * PRODUCTION ONLY — local/preview stay usable (preview is SSO-gated).
+ * Temporary (307) — permanent redirects are painful to reverse.
+ *
+ * Until `BLOG_ORIGIN_PROXY_SECRET` is set (and nginx sends the header), this
+ * is a no-op on the custom origin so live apex `/blog` stays safe.
+ */
+function originLockdownRedirect(req: NextRequest): NextResponse | null {
+  if (process.env.VERCEL_ENV !== "production") return null;
+  if (isTrustedApexProxy(req)) return null;
+
+  const { pathname, search } = req.nextUrl;
+  const host = requestHost(req);
+  const secretConfigured = ORIGIN_PROXY_SECRET.length > 0;
+
+  // Generated `.vercel.app` is SSO-gated and not nginx's upstream — bounce.
+  if (isGeneratedVercelHost(host)) {
+    return redirectToApex(pathname, search);
+  }
+
+  // Full UX requires the secret: any direct hit on the custom origin → apex.
+  if (secretConfigured && isPublicOriginHost(host)) {
+    return redirectToApex(pathname, search);
+  }
+
+  return null;
+}
+
 export async function proxy(req: NextRequest): Promise<NextResponse> {
+  const lockdown = originLockdownRedirect(req);
+  if (lockdown) return lockdown;
+
   const { pathname } = req.nextUrl; // base-path-less (Next strips it)
 
   // Legacy WordPress search (`?s=…`, e.g. the archived WP blog / old indexed
