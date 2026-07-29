@@ -25,6 +25,7 @@ const CASE_STUDY_STORY_BODY = /* groq */ `[]{
     ...,
     "alt": coalesce(alt, asset.asset->altText),
     "applyWatermark": coalesce(applyWatermark, true),
+    "lqip": asset.asset->metadata.lqip,
     asset
   },
   _type == "caseStudyGalleryBlock" => {
@@ -32,7 +33,8 @@ const CASE_STUDY_STORY_BODY = /* groq */ `[]{
     images[]{
       ...,
       "alt": coalesce(alt, asset->altText, image.asset->altText),
-      "applyWatermark": coalesce(applyWatermark, true)
+      "applyWatermark": coalesce(applyWatermark, true),
+      "lqip": coalesce(asset->metadata.lqip, image.asset->metadata.lqip)
     }
   },
   _type == "testimonialBlock" => {
