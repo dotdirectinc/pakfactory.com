@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import type { PageBuilderBlock } from "@/components/blocks/registry";
 import { blogCachedFetch } from "@/lib/blog-cached-fetch";
-import { BLOG_PAGE_CACHE_TAG } from "@/lib/blog-cache";
+import {
+  BLOG_CATEGORY_CACHE_TAG,
+  BLOG_PAGE_CACHE_TAG,
+  BLOG_POSTS_CACHE_TAG,
+} from "@/lib/blog-cache";
 import { blogLandingPageParams } from "@/lib/blog-language";
 import { fetchSeoContext, typeDefaults } from "@/lib/seo-context";
 import {
@@ -29,7 +33,8 @@ export async function fetchBlogPageBySlug(
     cacheKey: "blog-page-by-slug",
     query: BLOG_PAGE_BY_SLUG_QUERY,
     params: blogLandingPageParams(slug),
-    tags: [BLOG_PAGE_CACHE_TAG],
+    // Landing/static pageBuilder can include postCategoryRow (category + posts).
+    tags: [BLOG_PAGE_CACHE_TAG, BLOG_CATEGORY_CACHE_TAG, BLOG_POSTS_CACHE_TAG],
     fallback: null,
     label: `blog-page:${slug}`,
   });

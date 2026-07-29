@@ -3,7 +3,12 @@ import type { PageBuilderBlock } from "@/components/blocks/registry";
 import type { TopicsPageGroupRow } from "@/lib/blog-topics-index";
 import { enrichPopularRowBlocks } from "@/lib/page-builder";
 import { blogCachedFetch } from "@/lib/blog-cached-fetch";
-import { BLOG_PAGE_CACHE_TAG, BLOG_TOPIC_CACHE_TAG } from "@/lib/blog-cache";
+import {
+  BLOG_CATEGORY_CACHE_TAG,
+  BLOG_PAGE_CACHE_TAG,
+  BLOG_POSTS_CACHE_TAG,
+  BLOG_TOPIC_CACHE_TAG,
+} from "@/lib/blog-cache";
 import { blogTopicsPageParams } from "@/lib/blog-language";
 import {
   buildDocMetadata,
@@ -30,8 +35,13 @@ export async function fetchBlogTopicsPage(): Promise<BlogTopicsPageDoc | null> {
     cacheKey: "topics-page-builder",
     query: BLOG_TOPICS_PAGE_BUILDER_QUERY,
     params: blogTopicsPageParams(),
-    // A blogPage (pageRole topics) that renders topic groups → bust on either.
-    tags: [BLOG_PAGE_CACHE_TAG, BLOG_TOPIC_CACHE_TAG],
+    // Topics pageBuilder can also embed postCategoryRow / popular rows.
+    tags: [
+      BLOG_PAGE_CACHE_TAG,
+      BLOG_TOPIC_CACHE_TAG,
+      BLOG_CATEGORY_CACHE_TAG,
+      BLOG_POSTS_CACHE_TAG,
+    ],
     fallback: null,
     label: "topicsPage",
   });
