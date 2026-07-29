@@ -45,6 +45,19 @@ const SITE_URL = (
   "https://pakfactory.com"
 ).replace(/\/$/, "");
 
+/** Public Vercel origin host (custom domain). Direct hits here must not be indexed. */
+const CUSTOM_ORIGIN_HOST = "origin.case-studies.pakfactory.com";
+
+/**
+ * Shared secret nginx sends when proxying apex `/case-studies*` into this app
+ * (`proxy_set_header X-Origin-Proxy <secret>`). Without it, Host alone cannot
+ * distinguish apex traffic (nginx sets Host to the custom origin) from a
+ * browser hitting the origin directly — bouncing `/case-studies` would 307-loop.
+ *
+ * Set the same value in Vercel env `WWW_ORIGIN_PROXY_SECRET`.
+ */
+const ORIGIN_PROXY_SECRET = process.env.WWW_ORIGIN_PROXY_SECRET || "";
+
 // The case-study surface owned by this app. Only redirects whose `from` starts
 // with this prefix are compiled (see `surfacePrefix` in @pakfactory/redirects).
 const SURFACE_PREFIX = "/case-studies";
@@ -78,24 +91,89 @@ async function getRuleset(): Promise<RedirectRuleset> {
   }
 }
 
-export async function proxy(req: NextRequest): Promise<NextResponse> {
-  const { pathname, search } = req.nextUrl; // no basePath — path is as served
+function requestHost(req: NextRequest): string {
+  return (req.headers.get("host") || "").split(":")[0]!.toLowerCase();
+}
 
-  // Origin lockdown (PROD-2207 QA follow-up). This app is reachable two ways:
-  // via the apex proxy (Magento nginx forwards ONLY /case-studies, /_next,
-  // /sitemap.xml, /llms.txt, /favicon.ico) and DIRECTLY at
-  // origin.case-studies.pakfactory.com. A direct hit on any non-/case-studies
-  // path is the not-yet-released main site — bounce it to the live apex and mark
-  // it noindex/nofollow so crawlers don't index the origin. The matcher below
-  // excludes the proxied asset/SEO paths (dotted files, _next, api) so this
-  // never fires on legitimate apex-proxied traffic. Temporary (307) on purpose —
-  // remove when the main www site launches; a permanent redirect would be cached
-  // by crawlers/browsers and painful to reverse.
-  if (!pathname.startsWith("/case-studies")) {
-    const res = NextResponse.redirect(`${SITE_URL}${pathname}${search}`, 307);
-    res.headers.set("X-Robots-Tag", "noindex, nofollow");
-    return res;
+function isGeneratedVercelHost(host: string): boolean {
+  return (
+    host.endsWith(".vercel.app") && host.startsWith("pakfactory-com-www")
+  );
+}
+
+function isPublicOriginHost(host: string): boolean {
+  return host === CUSTOM_ORIGIN_HOST || isGeneratedVercelHost(host);
+}
+
+/** Apex nginx traffic that must keep serving `/case-studies*` (no lockdown redirect). */
+function isTrustedApexProxy(req: NextRequest): boolean {
+  if (!ORIGIN_PROXY_SECRET) return false;
+  return req.headers.get("x-origin-proxy") === ORIGIN_PROXY_SECRET;
+}
+
+function redirectToApex(pathname: string, search: string): NextResponse {
+  const res = NextResponse.redirect(`${SITE_URL}${pathname}${search}`, 307);
+  res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return res;
+}
+
+/**
+ * Origin lockdown (PROD-2207).
+ *
+ * This app is reachable two ways:
+ * 1. Apex proxy — Magento nginx forwards `/case-studies`, `/_next`, SEO assets
+ *    with `Host` rewritten to the custom origin.
+ * 2. Direct — browser hits `origin.case-studies.pakfactory.com` (or the
+ *    generated `.vercel.app`).
+ *
+ * Direct hits must 307 → `pakfactory.com` (including `/case-studies*`). Apex
+ * traffic must NOT, or we loop. Distinguisher: nginx sends
+ * `X-Origin-Proxy: $WWW_ORIGIN_PROXY_SECRET`.
+ *
+ * PRODUCTION ONLY — local/preview must serve the unreleased main site
+ * (previews are already SSO-gated + noindex via `WWW_DISABLE_INDEXING`).
+ *
+ * Temporary (307) on purpose — remove when the main www site launches; a
+ * permanent redirect would be cached and painful to reverse.
+ */
+function originLockdownRedirect(req: NextRequest): NextResponse | null {
+  if (process.env.VERCEL_ENV !== "production") return null;
+  if (isTrustedApexProxy(req)) return null;
+
+  const { pathname, search } = req.nextUrl;
+  const host = requestHost(req);
+  const secretConfigured = ORIGIN_PROXY_SECRET.length > 0;
+
+  // Generated `.vercel.app` is no longer nginx's upstream — always bounce.
+  if (isGeneratedVercelHost(host)) {
+    return redirectToApex(pathname, search);
   }
+
+  if (secretConfigured) {
+    // Full UX: any direct hit on the custom origin → apex (incl. /case-studies*).
+    if (isPublicOriginHost(host)) {
+      return redirectToApex(pathname, search);
+    }
+    // Unknown prod host: still bounce unreleased main-site paths.
+    if (!pathname.startsWith("/case-studies")) {
+      return redirectToApex(pathname, search);
+    }
+    return null;
+  }
+
+  // Secret not configured yet — legacy safe mode: bounce non-/case-studies only
+  // so apex keeps working before nginx sends X-Origin-Proxy.
+  if (!pathname.startsWith("/case-studies")) {
+    return redirectToApex(pathname, search);
+  }
+  return null;
+}
+
+export async function proxy(req: NextRequest): Promise<NextResponse> {
+  const lockdown = originLockdownRedirect(req);
+  if (lockdown) return lockdown;
+
+  const { pathname } = req.nextUrl; // no basePath — path is as served
 
   const hit = resolveRedirect(await getRuleset(), pathname, "");
   if (hit) {
