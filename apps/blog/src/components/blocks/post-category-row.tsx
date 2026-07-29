@@ -27,12 +27,17 @@ export function PostCategoryRow({
     categorySlug,
     categoryTitle,
     categoryDescription,
+    categoryShortDescription,
     posts,
     postsCount,
     showTopBorder,
     showBottomBorder,
 }: BlockProps<PostCategoryRowBlock>) {
     if (!categorySlug || posts.length === 0) return null;
+
+    // Homepage teaser: prefer the concise Short description; fall back to the
+    // Long description's plain text so categories without one don't regress (PROD-2226).
+    const intro = categoryShortDescription?.trim() || categoryDescription;
 
     const count = postsCount ?? 3;
     const cards = toPostCardDataList(posts, {categorySlug}).slice(0, count);
@@ -69,9 +74,9 @@ export function PostCategoryRow({
                         >
                             {categoryTitle ?? categorySlug}
                         </h2>
-                        {categoryDescription ? (
+                        {intro ? (
                             <p className="text-base leading-6 text-muted-foreground">
-                                {categoryDescription}
+                                {intro}
                             </p>
                         ) : null}
                     </div>
