@@ -37,9 +37,10 @@ function isColumnMajor(columns: PostBodyTable["columns"]): boolean {
 /**
  * Normalize bodyTable for HTML rendering.
  *
- * - New (PROD-2224): column-major `{ header, cells[] }` → transpose to rows.
- * - Legacy: `columns: string[]` + `rows[].cells` pass through.
- * Short columns/rows are padded so the grid stays rectangular.
+ * - Primary (PROD-2224 reverted): `columns: string[]` + `rows[].cells`.
+ * - Dual-read: column-major `{ header, cells[] }` (brief column-first experiment)
+ *   still transposes until reverse-migrated.
+ * Blank headers are allowed. Short rows are padded by the renderer.
  */
 export function normalizeBodyTable(
   value: PostBodyTable,
