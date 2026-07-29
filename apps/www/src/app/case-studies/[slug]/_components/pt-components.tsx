@@ -1,7 +1,7 @@
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import { SanityImage } from "@/components/ui/sanity-image";
 import { resolveImageAlt, sanityImageBaseUrl } from "@/lib/sanity/image";
-import { resolveWatermarkVariantFromLqip } from "@/lib/watermark-compose";
+import { resolveWatermarkVariantFromLqip } from "@/lib/watermark-lqip-variant";
 import { GallerySlider, type SliderImage } from "@pakfactory/components/modules/gallery-slider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
