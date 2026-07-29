@@ -25,23 +25,23 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ---
 
-## PROD-2224 — Data table column-first Studio UX
+## PROD-2224 — Data table headers → rows + Excel import
 
 **Jira:** [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224). Branch: `feat/PROD-2224-body-table-column-ux`.
 
-Editors add a **Data table** in the post body, then author **columns** (left → right); each column has a header and **cells** (top → bottom) — same nested-array pattern as footer link columns.
+Editors set **column headers** first, then add **rows**. Column-first nesting was tried and **reverted**. **No max** on columns/rows. Studio **Import from Excel or CSV** (paste TSV or upload `.xlsx`/`.csv`) via [`TableDataInput`](../../apps/studio/components/TableDataInput.tsx).
 
 | Phase | Deliverable |
 | --- | --- |
-| Studio schema | [`apps/studio/schemas/inline/body-table.ts`](../../apps/studio/schemas/inline/body-table.ts) — `columns[]` → `tableColumn` (`header` + `cells[]` → `tableCell.value`); remove row-major `rows` |
-| Normalize | [`apps/blog/src/lib/normalize-body-table.ts`](./src/lib/normalize-body-table.ts) — transpose column-major → HTML rows; dual-read legacy `columns: string[]` + `rows` |
-| Renderer | [`body-table.tsx`](./src/components/modules/inline/body-table.tsx) — calls `normalizeBodyTable`; HTML unchanged |
-| Migration (humans) | `pnpm --filter @pakfactory/studio run migrate:body-table -- --dry-run` then without `--dry-run` — [`migrate-body-table.mjs`](../../apps/studio/scripts/migrate-body-table.mjs) |
-| Out of scope | Spreadsheet custom input; blog table visual redesign; `@sanity/table` plugin |
+| Studio schema | [`body-table.ts`](../../apps/studio/schemas/inline/body-table.ts) — `columns: string[]` + `rows[] → cells`; mins only; `TableDataInput` |
+| Normalize | [`normalize-body-table.ts`](./src/lib/normalize-body-table.ts) — row-major primary; dual-reads leftover column-major |
+| Renderer | [`body-table.tsx`](./src/components/modules/inline/body-table.tsx) — via `normalizeBodyTable`; wide tables scroll |
+| Reverse migrate (humans) | Only if a doc was converted to column-major: `migrate:body-table` |
+| Out of scope | Live spreadsheet grid; multi-sheet picker |
 
-**Verify (Studio):** Post → Body → insert Data table → Add column → set header → add 2+ cells → repeat for 2–3 columns → preview on post page.
+**Ops:** Do **not** click Studio “Remove non-object values” on broken tables — redeploy headers→rows schema. Most production tables already match.
 
-**Ops:** After schema deploy, humans run `migrate:body-table` on `development` then `production` so existing tables edit in the new shape. Front-end keeps dual-read until then.
+**Verify (Studio):** Import paste/upload (including &gt;4 cols / &gt;10 rows) → headers+rows populate; blank header OK; post preview scrolls wide tables.
 
 ---
 

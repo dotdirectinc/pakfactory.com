@@ -189,9 +189,8 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       _type,
       variant,
       caption,
-      // Bare columns dual-reads PROD-2224 column objects and legacy string headers.
+      // Bare columns: string[] headers (canonical) or leftover column-major objects.
       columns,
-      // Legacy row-major — still projected until migrate:body-table runs.
       rows[]{
         _key,
         cells

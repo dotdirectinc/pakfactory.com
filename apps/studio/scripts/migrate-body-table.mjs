@@ -1,6 +1,8 @@
 /**
- * Migrate legacy bodyTable blocks (row-major: string[] columns + rows[].cells)
- * to column-major shape (PROD-2224): columns[]{ header, cells[]{ value } }.
+ * Reverse-migrate bodyTable blocks from the brief column-major experiment
+ * (columns[]{ header, cells[]{ value } }) back to headers → rows:
+ *   columns: string[]
+ *   rows: [{ cells: string[] }]
  *
  * From repo root (humans only — agents must not run content writes):
  *   pnpm --filter @pakfactory/studio run migrate:body-table -- --dry-run
@@ -9,8 +11,9 @@
  * Requires a write token in repo root `.env.local` or `apps/studio/.env.local`
  * (`SANITY_API_WRITE_TOKEN` / `SANITY_API_READ_TOKEN` / `SANITY_TOKEN`).
  *
- * The blog front-end dual-reads both shapes via `normalizeBodyTable` until this
- * migration has been applied on each dataset.
+ * Most production tables already use row-major and need no migrate. The blog
+ * dual-reads both shapes via `normalizeBodyTable` until any converted docs
+ * are reversed.
  */
 
 import { createClient } from '@sanity/client'
@@ -58,9 +61,17 @@ function key() {
   return randomUUID().replace(/-/g, '').slice(0, 12)
 }
 
+function cellValue(cell) {
+  if (typeof cell === 'string') return cell
+  if (cell && typeof cell === 'object' && typeof cell.value === 'string') {
+    return cell.value
+  }
+  return ''
+}
+
 /**
  * @param {unknown} block
- * @returns {unknown | null} Migrated block, or null if unchanged / not legacy
+ * @returns {unknown | null} Migrated block, or null if unchanged / not column-major
  */
 function migrateBodyTable(block) {
   if (!block || typeof block !== 'object' || block._type !== 'bodyTable') {
@@ -70,40 +81,35 @@ function migrateBodyTable(block) {
   const columns = block.columns
   if (!Array.isArray(columns) || columns.length === 0) return null
 
-  // Already column-major (objects with header/cells).
-  const alreadyNew = columns.some(
+  const isColumnMajor = columns.some(
     (c) => c != null && typeof c === 'object' && ('header' in c || 'cells' in c),
   )
-  if (alreadyNew) return null
+  if (!isColumnMajor) return null
 
-  // Legacy: columns are strings (or non-objects).
-  const headers = columns.map((c) => (typeof c === 'string' ? c : String(c ?? '')))
-  const rows = Array.isArray(block.rows) ? block.rows : []
-  const rowCount = Math.max(rows.length, 2)
+  const colObjs = columns.filter(
+    (c) => c != null && typeof c === 'object',
+  )
+  const headers = colObjs.map((c) =>
+    typeof c.header === 'string' ? c.header : '',
+  )
+  const rowCount = Math.max(
+    0,
+    ...colObjs.map((c) => (Array.isArray(c.cells) ? c.cells.length : 0)),
+  )
 
-  const nextColumns = headers.map((header, colIdx) => {
-    const cells = []
-    for (let r = 0; r < rowCount; r += 1) {
-      const row = rows[r]
-      const raw = Array.isArray(row?.cells) ? row.cells[colIdx] : ''
-      cells.push({
-        _key: key(),
-        _type: 'tableCell',
-        value: typeof raw === 'string' ? raw : String(raw ?? ''),
-      })
-    }
-    return {
+  const rows = []
+  for (let r = 0; r < rowCount; r += 1) {
+    rows.push({
       _key: key(),
-      _type: 'tableColumn',
-      header,
-      cells,
-    }
-  })
+      _type: 'tableRow',
+      cells: colObjs.map((c) => cellValue(c.cells?.[r])),
+    })
+  }
 
-  const { rows: _drop, ...rest } = block
   return {
-    ...rest,
-    columns: nextColumns,
+    ...block,
+    columns: headers,
+    rows,
   }
 }
 
@@ -127,7 +133,10 @@ function migratePortableText(blocks) {
 
 const QUERY = /* groq */ `*[
   _type == "post" &&
-  count(body[_type == "bodyTable" && defined(rows)]) > 0
+  count(body[
+    _type == "bodyTable" &&
+    count(columns[_type == "tableColumn" || defined(header) || defined(cells)]) > 0
+  ]) > 0
 ]{ _id, _rev, title, body }`
 
 async function main() {
@@ -136,15 +145,15 @@ async function main() {
 
   const docs = await client.fetch(QUERY)
   if (!docs.length) {
-    console.log('✅  No posts with legacy bodyTable rows found.')
+    console.log('✅  No posts with column-major bodyTable found.')
     return
   }
 
-  console.log(`Found ${docs.length} post(s) with legacy bodyTable data.\n`)
+  console.log(`Found ${docs.length} post(s) with column-major bodyTable data.\n`)
 
   for (const doc of docs) {
     const { blocks, changed } = migratePortableText(doc.body)
-    console.log(`• ${doc.title || doc._id} — ${changed} table(s) to convert`)
+    console.log(`• ${doc.title || doc._id} — ${changed} table(s) to reverse`)
 
     if (dryRun || changed === 0) continue
 
@@ -158,7 +167,7 @@ async function main() {
   console.log(
     dryRun
       ? '\nDry run complete — re-run without --dry-run to apply.\n'
-      : '\n✅  Migration complete. Reload Studio to confirm Data table columns edit column-first.\n',
+      : '\n✅  Migration complete. Reload Studio — Data tables edit as headers → rows.\n',
   )
 }
 
