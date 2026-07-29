@@ -1,0 +1,47 @@
+import {
+  watermarkFootprintRect,
+} from "@pakfactory/components/commons/watermark-geometry";
+import {
+  WATERMARK_SAMPLE_MAX_PX,
+  averageLuminanceFromRgba,
+} from "@pakfactory/components/commons/watermark-variant";
+
+/**
+ * Average luminance (0–1) under the watermark footprint.
+ * Lazy-loads Sharp so a native-binding failure becomes a caught null / 502
+ * instead of crashing the route module on import (PROD-2206 Vercel 500s).
+ */
+export async function sampleCornerLuminanceFromBuffer(
+  imageBuffer: Buffer,
+): Promise<number | null> {
+  try {
+    const { default: sharp } = await import("sharp");
+    const meta = await sharp(imageBuffer, { failOn: "none" }).metadata();
+    const w = meta.width ?? 1;
+    const h = meta.height ?? 1;
+    const { left, top, width: extractW, height: extractH } =
+      watermarkFootprintRect(w, h);
+
+    const outW = Math.min(WATERMARK_SAMPLE_MAX_PX, Math.max(extractW, 1));
+    const outH = Math.min(
+      WATERMARK_SAMPLE_MAX_PX,
+      Math.max(1, Math.round((outW * extractH) / extractW)),
+    );
+
+    const { data } = await sharp(imageBuffer, { failOn: "none" })
+      .extract({ left, top, width: extractW, height: extractH })
+      .resize({
+        width: outW,
+        height: outH,
+        fit: "fill",
+      })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    return averageLuminanceFromRgba(data);
+  } catch (err) {
+    console.error("[watermark-luma-sample] Sharp sample failed", err);
+    return null;
+  }
+}

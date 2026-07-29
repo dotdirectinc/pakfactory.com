@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-compose";
+import { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-luma-sample";
 import { getSanityProjectId } from "@/lib/sanity/env";
 import { WATERMARK_SAMPLE_MAX_PX } from "@pakfactory/components/commons/watermark-variant";
 
