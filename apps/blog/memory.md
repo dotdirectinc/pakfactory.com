@@ -25,23 +25,23 @@ URL scheme: posts canonical at `/{slug}`, no `/category/` prefix (PROD-1597); UR
 
 ---
 
-## PROD-2224 — Data table headers → rows (reverted column-first)
+## PROD-2224 — Data table headers → rows + Excel import
 
 **Jira:** [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224). Branch: `feat/PROD-2224-body-table-column-ux`.
 
-Editors set **column headers** first, then add **rows** (cells left → right). Column-first nesting was tried and **reverted** — it mismatched how tables work and broke Studio on legacy production docs (`Invalid list values` / non-object columns).
+Editors set **column headers** first, then add **rows**. Column-first nesting was tried and **reverted**. **No max** on columns/rows. Studio **Import from Excel or CSV** (paste TSV or upload `.xlsx`/`.csv`) via [`TableDataInput`](../../apps/studio/components/TableDataInput.tsx).
 
 | Phase | Deliverable |
 | --- | --- |
-| Studio schema | [`body-table.ts`](../../apps/studio/schemas/inline/body-table.ts) — `columns: string[]` (blank headers OK) + `rows[] → cells: string[]` |
-| Normalize | [`normalize-body-table.ts`](./src/lib/normalize-body-table.ts) — row-major primary; dual-reads any leftover column-major blocks |
-| Renderer | [`body-table.tsx`](./src/components/modules/inline/body-table.tsx) — via `normalizeBodyTable` |
-| Reverse migrate (humans) | Only if a doc was converted to column-major: `pnpm --filter @pakfactory/studio run migrate:body-table -- --dry-run` then apply |
-| Out of scope | Spreadsheet custom input; blog table visual redesign |
+| Studio schema | [`body-table.ts`](../../apps/studio/schemas/inline/body-table.ts) — `columns: string[]` + `rows[] → cells`; mins only; `TableDataInput` |
+| Normalize | [`normalize-body-table.ts`](./src/lib/normalize-body-table.ts) — row-major primary; dual-reads leftover column-major |
+| Renderer | [`body-table.tsx`](./src/components/modules/inline/body-table.tsx) — via `normalizeBodyTable`; wide tables scroll |
+| Reverse migrate (humans) | Only if a doc was converted to column-major: `migrate:body-table` |
+| Out of scope | Live spreadsheet grid; multi-sheet picker |
 
-**Ops:** Do **not** click Studio “Remove non-object values” on broken tables — redeploy this schema instead. Most production tables already match headers → rows and need no migrate.
+**Ops:** Do **not** click Studio “Remove non-object values” on broken tables — redeploy headers→rows schema. Most production tables already match.
 
-**Verify (Studio):** Post → Body → Data table → set headers → add rows → blank header allowed → no “Invalid list values” on existing posts.
+**Verify (Studio):** Import paste/upload (including &gt;4 cols / &gt;10 rows) → headers+rows populate; blank header OK; post preview scrolls wide tables.
 
 ---
 

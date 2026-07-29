@@ -27,7 +27,8 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-2175](https://dotdirect.atlassian.net/browse/PROD-2175) | Missing og:image / og:type on blog & case-study templates   | In Progress                                                                                                                  | Blog: [`apps/blog/src/lib/resolve-seo.ts`](../apps/blog/src/lib/resolve-seo.ts); www: [`apps/www/src/lib/case-study-metadata.ts`](../apps/www/src/lib/case-study-metadata.ts), case-studies routes; ops: Studio Global Settings `defaultOgImage`                                                                                                          |
 | [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206) | Image watermark (website & blog)                            | In Development                                                                                                               | Adaptive light/dark overlay: [`packages/components`](../packages/components/); Studio `settings.watermark.lightImage`/`darkImage` + `DefaultOnBooleanInput` for `applyWatermark`; blog/www `SanityImage` + `/api/wm`                                                                                                                                    |
 | [PROD-2229](https://dotdirect.atlassian.net/browse/PROD-2229) | Post body list text color matches paragraphs                | In Development                                                                                                               | [`apps/blog/src/components/post/post-portable-text.tsx`](../apps/blog/src/components/post/post-portable-text.tsx) — `text-muted-foreground` on body `ul`/`ol`                                                                                                                                                                                          |
-| [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224) | Sanity Blog Post Data Table Widget Enhancement              | In Development                                                                                                               | Headers → rows (column-first reverted): [`apps/studio/schemas/inline/body-table.ts`](../apps/studio/schemas/inline/body-table.ts); dual-read: [`normalize-body-table.ts`](../apps/blog/src/lib/normalize-body-table.ts); reverse migrate if needed: `migrate:body-table`                                                                                                                                 |
+| [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224) | Sanity Blog Post Data Table Widget Enhancement              | In Development                                                                                                               | Headers→rows + Excel/CSV import (no max cols/rows): [`body-table.ts`](../apps/studio/schemas/inline/body-table.ts), [`TableDataInput`](../apps/studio/components/TableDataInput.tsx); dual-read: [`normalize-body-table.ts`](../apps/blog/src/lib/normalize-body-table.ts)                                                                                                                                 |
+
 
 
 ## PROD-1486 — pnpm only
@@ -269,11 +270,11 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 - **Also:** adaptive watermark reliability — same-origin [`/api/wm-luma`](../apps/blog/src/app/api/wm-luma/route.ts); null luminance prefers **dark** when both marks exist (see PROD-2206).
 - **Verify:** `pnpm --filter @pakfactory/blog typecheck`; spot-check a post with mixed paragraphs + lists; light-bg body images use dark watermark SVG.
 
-## PROD-2224 — Data table headers → rows (column-first reverted)
+## PROD-2224 — Data table headers → rows + Excel import
 
 - **Jira:** [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224). Branch: `feat/PROD-2224-body-table-column-ux`.
-- **Studio:** [`body-table.ts`](../apps/studio/schemas/inline/body-table.ts) — **column headers** (`string[]`, blanks OK) then **rows** (`cells: string[]`). Column-first nesting was reverted after Studio broke on legacy production data.
-- **Blog:** [`normalizeBodyTable`](../apps/blog/src/lib/normalize-body-table.ts) prefers row-major; still transposes leftover column-major blocks for [`BodyTable`](../apps/blog/src/components/modules/inline/body-table.tsx).
-- **Ops:** Do **not** click “Remove non-object values”. Redeploy schema. Reverse migrate only docs converted to column-major: `migrate:body-table` (humans only).
-- **Out of scope:** spreadsheet custom input; table visual redesign; `@sanity/table` plugin.
-- **Verify:** existing production tables editable; blank header OK; `pnpm --filter @pakfactory/blog typecheck`.
+- **Studio:** [`body-table.ts`](../apps/studio/schemas/inline/body-table.ts) — headers then rows; **no max** on columns/rows. [`TableDataInput`](../apps/studio/components/TableDataInput.tsx) — paste TSV / upload `.xlsx`/`.csv` (SheetJS `xlsx`).
+- **Blog:** [`normalizeBodyTable`](../apps/blog/src/lib/normalize-body-table.ts) prefers row-major; dual-reads leftover column-major for [`BodyTable`](../apps/blog/src/components/modules/inline/body-table.tsx).
+- **Ops:** Do **not** click “Remove non-object values”. Reverse migrate only converted docs: `migrate:body-table` (humans only).
+- **Out of scope:** live grid editor; multi-sheet picker.
+- **Verify:** import wide/tall sheets; blank header OK; `pnpm --filter @pakfactory/blog typecheck`.

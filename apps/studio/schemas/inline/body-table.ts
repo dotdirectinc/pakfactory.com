@@ -1,19 +1,20 @@
 import { ThListIcon } from '@sanity/icons'
 import { defineArrayMember, defineField, defineType } from 'sanity'
+import { TableDataInput } from '../../components/TableDataInput'
 
 /**
  * bodyTable — inline data table for the post Portable Text body.
  *
- * Headers first, then rows (PROD-2224 reverted from column-first nesting).
- * Up to 4 column headers and 2–10 rows; cells are plain text aligned to
- * header order. Individual headers may be blank. The renderer pads short
- * rows / ignores extras. Register in `schemas/inline/index.ts`.
+ * Headers first, then rows. Paste from Excel or upload .xlsx/.csv via
+ * TableDataInput (PROD-2224). No max on columns or rows; blank headers OK.
+ * Register in `schemas/inline/index.ts`.
  */
 export const bodyTable = defineType({
   name: 'bodyTable',
   title: 'Data table',
   type: 'object',
   icon: ThListIcon,
+  components: { input: TableDataInput },
   fields: [
     defineField({
       name: 'columns',
@@ -21,15 +22,15 @@ export const bodyTable = defineType({
       type: 'array',
       of: [{ type: 'string' }],
       description:
-        'Up to 4 column headers, left to right. Leave an entry blank for a headerless column.',
+        'Column headers, left to right. Leave an entry blank for a headerless column. Or use Import below.',
       validation: (Rule) =>
-        Rule.required().min(1).max(4).error('Use between 1 and 4 columns.'),
+        Rule.required().min(1).error('Add at least one column header.'),
     }),
     defineField({
       name: 'rows',
       title: 'Rows',
       type: 'array',
-      description: 'Between 2 and 10 rows. Each row’s cells follow the header order.',
+      description: 'Data rows. Each row’s cells follow the header order.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -41,7 +42,7 @@ export const bodyTable = defineType({
               type: 'array',
               of: [{ type: 'string' }],
               description: 'One value per column, in the same order as the headers.',
-              validation: (Rule) => Rule.required().min(1).max(4),
+              validation: (Rule) => Rule.required().min(1),
             }),
           ],
           preview: {
@@ -54,7 +55,7 @@ export const bodyTable = defineType({
         }),
       ],
       validation: (Rule) =>
-        Rule.required().min(2).max(10).error('Add between 2 and 10 rows.'),
+        Rule.required().min(1).error('Add at least one row.'),
     }),
     defineField({
       name: 'variant',
