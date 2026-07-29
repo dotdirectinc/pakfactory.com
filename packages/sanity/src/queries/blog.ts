@@ -336,6 +336,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     "categorySlug": category->slug.current,
     "categoryTitle": category->title,
     "categoryDescription": pt::text(category->description),
+    "categoryShortDescription": category->shortDescription,
     "posts": *[
       _type == "post"
   && (!defined(language) || language == $language)

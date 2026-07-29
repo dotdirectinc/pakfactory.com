@@ -43,8 +43,21 @@ export const blogCategory = defineType({
           .custom(uniqueSlugPerLanguage('blogCategory')),
     }),
     defineField({
+      name: 'shortDescription',
+      title: 'Short description',
+      type: 'text',
+      rows: 2,
+      group: 'details',
+      description:
+        'Short teaser shown in the blog homepage category section. Aim for ≤100 characters (spaces included); the homepage falls back to the Long description when this is blank.',
+      validation: (Rule) =>
+        Rule.max(100).warning(
+          'Keep it under ~100 characters (spaces included) so it fits the homepage category card.',
+        ),
+    }),
+    defineField({
       name: 'description',
-      title: 'Category description',
+      title: 'Long description',
       type: 'array',
       group: 'details',
       of: [{ type: 'block' }],
