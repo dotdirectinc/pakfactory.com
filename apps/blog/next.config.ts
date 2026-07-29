@@ -43,10 +43,17 @@ const basePath = process.env.NEXT_PUBLIC_BLOG_BASE_PATH?.trim() || undefined;
 const nextConfig: NextConfig = {
   ...(basePath ? { basePath } : {}),
   // Monorepo: trace from repo root so hoisted `sharp` / `@img/*` native bins
-  // are included in Vercel serverless functions (PROD-2206 `/api/wm` serve mode).
+  // are included in Vercel serverless functions (PROD-2206 wm-luma 500s).
   outputFileTracingRoot: repoRoot,
   serverExternalPackages: ["sharp"],
   outputFileTracingIncludes: {
+    "/api/wm-luma": [
+      "node_modules/sharp/**/*",
+      "node_modules/@img/sharp-libvips-linuxmusl-x64/**/*",
+      "node_modules/@img/sharp-libvips-linux-x64/**/*",
+      "node_modules/@img/sharp-linuxmusl-x64/**/*",
+      "node_modules/@img/sharp-linux-x64/**/*",
+    ],
     "/api/wm": [
       "node_modules/sharp/**/*",
       "node_modules/@img/sharp-libvips-linuxmusl-x64/**/*",

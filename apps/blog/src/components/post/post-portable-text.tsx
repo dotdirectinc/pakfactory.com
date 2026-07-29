@@ -28,7 +28,6 @@ import type {
 } from '@/lib/blog-post';
 import {resolveImageAlt, sanityImageBaseUrl} from '@/lib/sanity-image';
 import {EXTERNAL_LINK_REL, externalLinkAttributes} from '@/lib/external-link';
-import {resolveWatermarkVariantFromLqip} from '@/lib/watermark-compose';
 
 type BodyImageValue = {
     alt?: string;
@@ -36,8 +35,6 @@ type BodyImageValue = {
     link?: string;
     linkNofollow?: boolean;
     applyWatermark?: boolean | null;
-    /** Sanity LQIP data-URI for server-side watermark variant (PROD-2206). */
-    lqip?: string | null;
     asset?: unknown;
 };
 
@@ -45,7 +42,7 @@ type WidgetEmbedValue = {
     widget?: PostBodyWidget | null;
 };
 
-async function PostBodyImage({
+function PostBodyImage({
     value,
     titleFallback,
 }: {
@@ -55,14 +52,11 @@ async function PostBodyImage({
     const imageUrl = sanityImageBaseUrl(value.asset);
     if (!imageUrl) return null;
 
-    const watermarkVariant = await resolveWatermarkVariantFromLqip(value.lqip);
-
     const img = (
         <SanityImage
             src={imageUrl}
             alt={resolveImageAlt(value, titleFallback)}
             applyWatermark={value.applyWatermark !== false}
-            watermarkVariant={watermarkVariant}
             width={1200}
             height={675}
             sizes="(max-width: 768px) 100vw, 720px"

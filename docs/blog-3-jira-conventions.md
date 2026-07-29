@@ -252,10 +252,10 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 
 ## PROD-2206 — Image watermark (render-time)
 
-- **Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `fix/PROD-2206-lqip-watermark-variant`.
+- **Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `feat/PROD-2206-watermark-light-dark`.
 - **Approach:** CSS overlay on public pages — Sanity Media originals stay clean for team download. Not bake-on-upload. “Save as” on the public site still gets the clean CDN file **unless** bake-on-serve trial is on.
 - **Studio:** Global Settings → Identity → `watermark` (`enabled`, `lightImage`, `darkImage`, `opacity`). Per-image `Show watermark` (`applyWatermark`) uses `DefaultOnBooleanInput` so unset values appear **on**. Body/gallery only — **not** heroes, cards, products, or `ogImage`.
-- **Front-end:** Presentational [`ImageWatermarkOverlay`](../packages/components/src/ui/image-watermark-overlay.tsx) receives a server-resolved `variant` from Sanity `metadata.lqip` (`resolveWatermarkVariantFromLqip` in each app’s `watermark-compose.ts`). Luminance &lt; **0.85** → light mark; near-white (≥ 0.85) → dark. Missing LQIP → **light**. Geometry: 12% width, bottom-right, 5% padding ([`watermarkFootprintRect`](../packages/components/src/commons/watermark-geometry.ts)). No `/api/wm-luma`.
+- **Front-end:** Adaptive [`ImageWatermarkOverlay`](../packages/components/src/ui/image-watermark-overlay.tsx) samples luminance under the **logo footprint** via same-origin [`/api/wm-luma`](../apps/blog/src/app/api/wm-luma/route.ts) (Sharp); canvas CDN sample is fallback. Luminance &lt; **0.85** → light mark; near-white (≥ 0.85) → dark. Unknown luminance with both assets → **dark**. Geometry: 12% width, bottom-right, 5% padding ([`watermarkFootprintRect`](../packages/components/src/commons/watermark-geometry.ts)).
 - **Bake-on-serve trial:** `NEXT_PUBLIC_WATERMARK_MODE=serve` → `GET /api/wm?wmLight=&wmDark=` (Sharp picks by luminance). Revert with `overlay` or unset. Details: [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-2206.
 - **Human ops:** upload light + dark SVGs/PNGs in Global Settings (agents do not write documents). Re-upload any former legacy `watermark.image` into **Light watermark**.
 - **Out of scope:** video frame watermarking, OG URL watermarks, bake-on-upload, per-image light/dark force override.
@@ -267,7 +267,7 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 - **Bug:** body paragraphs used `text-muted-foreground`; lists inherited wrapper `text-foreground` → darker bullets/numbers.
 - **Fix:** add `text-muted-foreground` to default-body `list.bullet` / `list.number` in [`post-portable-text.tsx`](../apps/blog/src/components/post/post-portable-text.tsx). Nested lists and bold-in-list inherit the same color.
 - **Do not change:** TOC, breadcrumbs, meta line, author bio, headings, TLDR variant, or generic [`portable-text.tsx`](../apps/blog/src/components/ui/portable-text.tsx).
-- **Also:** adaptive watermark — LQIP-at-render (see PROD-2206); null / missing LQIP prefers **light** when both marks exist.
+- **Also:** adaptive watermark reliability — same-origin [`/api/wm-luma`](../apps/blog/src/app/api/wm-luma/route.ts); null luminance prefers **dark** when both marks exist (see PROD-2206).
 - **Verify:** `pnpm --filter @pakfactory/blog typecheck`; spot-check a post with mixed paragraphs + lists; light-bg body images use dark watermark SVG.
 
 ## PROD-2224 — Data table headers → rows + Excel import
