@@ -164,6 +164,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       link,
       linkNofollow,
       "applyWatermark": coalesce(applyWatermark, true),
+      "lqip": asset.asset->metadata.lqip,
       asset
     },
     _type == "bodyQuote" => {
@@ -181,6 +182,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
         _key,
         "alt": coalesce(alt, asset.asset->altText),
         "applyWatermark": coalesce(applyWatermark, true),
+        "lqip": asset.asset->metadata.lqip,
         asset
       }
     },
@@ -336,6 +338,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     "categorySlug": category->slug.current,
     "categoryTitle": category->title,
     "categoryDescription": pt::text(category->description),
+    "categoryShortDescription": category->shortDescription,
     "posts": *[
       _type == "post"
   && (!defined(language) || language == $language)
