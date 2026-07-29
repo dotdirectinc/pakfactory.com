@@ -1,7 +1,8 @@
 import type { PortableTextComponents, PortableTextMarkComponentProps } from "@portabletext/react";
 import { SanityImage } from "@/components/ui/sanity-image";
 import { resolveImageAlt, sanityImageBaseUrl } from "@/lib/sanity/image";
-import { GallerySlider } from "@pakfactory/components/modules/gallery-slider";
+import { resolveWatermarkVariantFromLqip } from "@/lib/watermark-lqip-variant";
+import { GallerySlider, type SliderImage } from "@pakfactory/components/modules/gallery-slider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -47,34 +48,91 @@ export function makeHeroIntroPtComponents(clientWebsite?: string | null): Portab
   };
 }
 
+async function CaseStudyBodyImage({
+  value,
+  titleFallback,
+}: {
+  value: any;
+  titleFallback: string;
+}) {
+  if (!value?.asset) return null;
+  const src = sanityImageBaseUrl(value.asset);
+  if (!src) return null;
+  const watermarkVariant = await resolveWatermarkVariantFromLqip(value.lqip);
+
+  return (
+    <figure className="not-prose my-10 w-full">
+      <div className="relative aspect-video overflow-hidden rounded-xl">
+        <SanityImage
+          src={src}
+          alt={resolveImageAlt(value, titleFallback)}
+          applyWatermark={value.applyWatermark !== false}
+          watermarkVariant={watermarkVariant}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 800px"
+        />
+      </div>
+      {value.caption && (
+        <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+          {value.caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+async function CaseStudyGalleryBlock({
+  value,
+  titleFallback,
+}: {
+  value: any;
+  titleFallback: string;
+}) {
+  const rawImages: any[] = value.images ?? [];
+  const isSquare = value.aspectRatio === "1:1";
+
+  const resolved: SliderImage[] = [];
+  for (const [i, item] of rawImages.entries()) {
+    const imageValue = item.asset ? item : item.image;
+    if (!imageValue) continue;
+    const src = sanityImageBaseUrl(imageValue);
+    if (!src) continue;
+    const watermarkVariant = await resolveWatermarkVariantFromLqip(item.lqip);
+    resolved.push({
+      key: item._key ?? String(i),
+      src,
+      alt: resolveImageAlt(item, titleFallback),
+      caption: item.caption ?? null,
+      isSquare,
+      applyWatermark: item.applyWatermark !== false,
+      watermarkVariant,
+    });
+  }
+
+  if (resolved.length === 0) return null;
+
+  const galleryCaption: string | undefined = value.caption?.trim();
+
+  return (
+    <figure className="not-prose my-10">
+      <GallerySlider images={resolved} />
+      {galleryCaption && (
+        <figcaption className="mt-3 text-center text-sm text-muted-foreground">
+          {galleryCaption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
 /** Story sections (challenge / solution / result) — alt cascade uses study title. */
 export function makeCaseStudyPtComponents(titleFallback: string): PortableTextComponents {
   return {
     types: {
-      bodyImage: ({ value }) => {
-        if (!value?.asset) return null;
-        const src = sanityImageBaseUrl(value.asset);
-        if (!src) return null;
-        return (
-          <figure className="not-prose my-10 w-full">
-            <div className="relative aspect-video overflow-hidden rounded-xl">
-              <SanityImage
-                src={src}
-                alt={resolveImageAlt(value, titleFallback)}
-                applyWatermark={value.applyWatermark !== false}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 800px"
-              />
-            </div>
-            {value.caption && (
-              <figcaption className="mt-2 text-center text-sm text-muted-foreground">
-                {value.caption}
-              </figcaption>
-            )}
-          </figure>
-        );
-      },
+      bodyImage: ({ value }) => (
+        <CaseStudyBodyImage value={value} titleFallback={titleFallback} />
+      ),
 
       testimonialBlock: ({ value }) => {
         const bgSrc = value.backgroundImage
@@ -129,49 +187,9 @@ export function makeCaseStudyPtComponents(titleFallback: string): PortableTextCo
         );
       },
 
-      caseStudyGalleryBlock: ({ value }) => {
-        const rawImages: any[] = value.images ?? [];
-        const isSquare = value.aspectRatio === "1:1";
-
-        const resolved = rawImages
-          .map((item: any, i: number) => {
-            const imageValue = item.asset ? item : item.image;
-            if (!imageValue) return null;
-            const src = sanityImageBaseUrl(imageValue);
-            if (!src) return null;
-            return {
-              key: item._key ?? String(i),
-              src,
-              alt: resolveImageAlt(item, titleFallback),
-              caption: item.caption ?? null,
-              isSquare,
-              applyWatermark: item.applyWatermark !== false,
-            };
-          })
-          .filter(Boolean) as {
-          key: string;
-          src: string;
-          alt: string;
-          caption: string | null;
-          isSquare: boolean;
-          applyWatermark?: boolean;
-        }[];
-
-        if (resolved.length === 0) return null;
-
-        const galleryCaption: string | undefined = value.caption?.trim();
-
-        return (
-          <figure className="not-prose my-10">
-            <GallerySlider images={resolved} />
-            {galleryCaption && (
-              <figcaption className="mt-3 text-center text-sm text-muted-foreground">
-                {galleryCaption}
-              </figcaption>
-            )}
-          </figure>
-        );
-      },
+      caseStudyGalleryBlock: ({ value }) => (
+        <CaseStudyGalleryBlock value={value} titleFallback={titleFallback} />
+      ),
     },
 
     block: {

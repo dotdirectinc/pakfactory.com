@@ -6,8 +6,6 @@ import {
 import { pickWatermarkSrc } from "@pakfactory/components/commons/watermark-variant";
 import { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-luma-sample";
 
-export { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-luma-sample";
-
 export type CompositeWatermarkInput = {
   imageBuffer: Buffer;
   /** Single mark (legacy) or light mark when both provided. */

@@ -58,13 +58,13 @@ Bullet/numbered list items in the post body were inheriting `text-foreground` fr
 
 **Verify:** post with mixed paragraphs + lists — same computed color on `<p>` and `<li>`; nested lists and bold-in-list inherit muted; headings stay `text-foreground`.
 
-**Also in this branch:** adaptive watermark fix — `/api/wm-luma` same-origin sample + null fallback prefers light/white (see § PROD-2206).
+**Also in this branch:** adaptive watermark — light/dark resolved server-side from Sanity LQIP at render (see § PROD-2206).
 
 ---
 
 ## PROD-2206 — Image watermark (render-time + bake-on-serve trial)
 
-**Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `feat/PROD-2206-watermark-light-dark` (prior: `feat/PROD-2206-image-watermark` merged to staging).
+**Jira:** [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206). Branch: `fix/PROD-2206-lqip-watermark-variant` (prior: `feat/PROD-2206-watermark-light-dark`, `feat/PROD-2206-image-watermark`).
 
 Public blog/www imagery can show a PakFactory logo watermark. Studio Media downloads stay unmarked.
 
@@ -73,8 +73,8 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 | Phase | Deliverable |
 | --- | --- |
 | Studio | `settings.watermark` (`enabled` / `lightImage` / `darkImage` / `opacity`); `applyWatermark` on body/gallery with `DefaultOnBooleanInput` (unset shows ON) |
-| Shared UI | `@pakfactory/components` adaptive `ImageWatermarkOverlay` + luminance sample (≤64px proxy) + `WatermarkProvider` |
-| Blog / www | Layouts provide light+dark URLs; body/gallery pass `true`; auto-pick by corner luminance when both marks exist |
+| Shared UI | `@pakfactory/components` presentational `ImageWatermarkOverlay` + `WatermarkProvider`; light/dark via server `variant` prop |
+| Blog / www | Layouts provide light+dark URLs; body/gallery pass `true`; GROQ `lqip` → `resolveWatermarkVariantFromLqip` at render |
 | Bake trial | `GET /api/wm` Sharp composite (`wmLight` / `wmDark`) when `NEXT_PUBLIC_WATERMARK_MODE=serve` |
 
 ### Light vs dark (auto)
@@ -84,13 +84,13 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 | `lightImage` (white logo) | Footprint average luminance **&lt; 0.85** (most photos, including beige/tan mid-tones) |
 | `darkImage` | Luminance **≥ 0.85** (near-white diagrams / paper) |
 | Only one uploaded | That mark always |
-| Sample / CORS fail | Prefer **light** (white logo) when both uploaded; overlay probes via same-origin `GET /api/wm-luma?src=` (Sharp), canvas CDN sample is fallback |
+| Missing / invalid LQIP | Prefer **light** (white logo) when both uploaded |
 
-**Sample region:** average pixels under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner.
+**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) with **jpeg-js** (no Sharp) and samples the **logo footprint** (`resolveWatermarkVariantFromLqip`). No client fetch, no `/api/wm-luma`. Missing LQIP → light mark. Variant is recomputed live each render (no backfill when logos / threshold change). Sharp stays only on `/api/wm` for optional bake-on-serve.
 
-**Adaptive reliability (PROD-2229 follow-on):** client canvas sampling against Sanity CDN often returned `null` (CORS). Overlay probes via `/api/wm-luma`; null fallback prefers **light** (white logo). Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams still get the dark mark when sampling succeeds.
+**Sample region:** average pixels under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams get the dark mark.
 
-**Prod Vercel 500s (wm-luma):** Sharp `libvips` was missing from the serverless trace. Fixed via `serverExternalPackages` + `outputFileTracingIncludes` for `@img/sharp-libvips-*`, and lazy Sharp import in `watermark-luma-sample.ts` so load failures return 502 JSON instead of crashing the route.
+**History:** earlier overlay probed via client `/api/wm-luma` (CORS / 502 under load). That route and client `watermark-luminance` were removed; serve-mode `/api/wm` tracing for Sharp remains.
 
 ### Mode switch (reversible)
 

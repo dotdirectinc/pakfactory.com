@@ -10,8 +10,9 @@
     "./ui/*": "./src/ui/*.tsx"
   },
   "dependencies": {
-    "@pakfactory/ui": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
+    "@pakfactory/ui": "workspace:*",
+    "jpeg-js": "^0.4.4",
     "lucide-react": "^0.468.0"
   },
   "peerDependencies": {
@@ -20,6 +21,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/jpeg-js": "^0.3.7",
     "@types/react": "^19.0.0",
     "typescript": "^5.7.3"
   }
