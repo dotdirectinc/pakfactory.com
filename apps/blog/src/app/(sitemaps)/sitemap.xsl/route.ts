@@ -44,7 +44,7 @@ const XSL = `<?xml version="1.0" encoding="UTF-8"?>
         <header>
           <div>
             <h1>PakFactory Blog — XML Sitemap</h1>
-            <p>This sitemap is for search engines. <a href="/">Visit the blog</a> instead.</p>
+            <p>This sitemap is for search engines. <a href="${process.env.NEXT_PUBLIC_BLOG_BASE_PATH}">Visit the blog</a> instead.</p>
           </div>
         </header>
         <main>
