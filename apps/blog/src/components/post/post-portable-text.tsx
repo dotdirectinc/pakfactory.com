@@ -28,7 +28,7 @@ import type {
 } from '@/lib/blog-post';
 import {resolveImageAlt, sanityImageBaseUrl} from '@/lib/sanity-image';
 import {EXTERNAL_LINK_REL, externalLinkAttributes} from '@/lib/external-link';
-import {resolveWatermarkVariantFromLqip} from '@/lib/watermark-compose';
+import {resolveWatermarkVariantFromLqip} from '@/lib/watermark-lqip-variant';
 
 type BodyImageValue = {
     alt?: string;

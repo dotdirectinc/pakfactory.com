@@ -86,7 +86,7 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 | Only one uploaded | That mark always |
 | Missing / invalid LQIP | Prefer **light** (white logo) when both uploaded |
 
-**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) and samples the **logo footprint** via Sharp (`resolveWatermarkVariantFromLqip` → `sampleCornerLuminanceFromBuffer`). No client fetch, no `/api/wm-luma`. Variant is recomputed live each render (no backfill when logos / threshold change).
+**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) with **jpeg-js** (no Sharp) and samples the **logo footprint** (`resolveWatermarkVariantFromLqip`). No client fetch, no `/api/wm-luma`. Missing LQIP → light mark. Variant is recomputed live each render (no backfill when logos / threshold change). Sharp stays only on `/api/wm` for optional bake-on-serve.
 
 **Sample region:** average pixels under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams get the dark mark.
 
