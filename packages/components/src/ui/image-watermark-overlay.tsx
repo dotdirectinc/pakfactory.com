@@ -1,8 +1,4 @@
-"use client";
-
 import type { CSSProperties, ReactNode } from "react";
-import { useEffect, useState } from "react";
-import { sampleCornerLuminance } from "../commons/watermark-luminance";
 import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
@@ -16,11 +12,6 @@ export {
 
 export type ImageWatermarkOverlayProps = {
   children: ReactNode;
-  /**
-   * Photo CDN URL — used to sample bottom-right luminance when both light and
-   * dark marks are configured. Tiny proxy only (see watermark-luminance).
-   */
-  photoSrc?: string | null;
   /** White / light logo (dark photo corners). */
   lightSrc?: string | null;
   /** Dark logo (light photo corners). */
@@ -30,10 +21,10 @@ export type ImageWatermarkOverlayProps = {
    */
   watermarkSrc?: string;
   /**
-   * Bake/luma API base path from WatermarkProvider (e.g. `/api/wm`).
-   * When set, luminance is sampled via same-origin `/api/wm-luma` (no CDN CORS).
+   * Server-resolved adaptive mark (from Sanity LQIP at render).
+   * Missing → null luminance → white (light) fallback.
    */
-  apiPath?: string | null;
+  variant?: "light" | "dark" | null;
   /** 0–1. Default 0.85. */
   opacity?: number;
   /**
@@ -47,15 +38,14 @@ export type ImageWatermarkOverlayProps = {
 /**
  * Props-only render-time watermark (PROD-2206). Does not mutate image bytes —
  * Studio / Media downloads stay clean. Decorative only (`aria-hidden`).
- * When both light and dark assets exist, picks by photo corner luminance.
+ * Light vs dark is chosen by the server via `variant` (LQIP luminance).
  */
 export function ImageWatermarkOverlay({
   children,
-  photoSrc,
   lightSrc,
   darkSrc,
   watermarkSrc,
-  apiPath,
+  variant = null,
   opacity = 0.85,
   className,
   style,
@@ -63,49 +53,11 @@ export function ImageWatermarkOverlay({
   const resolvedLight = lightSrc?.trim() || watermarkSrc?.trim() || null;
   const resolvedDark = darkSrc?.trim() || null;
 
-  const [markSrc, setMarkSrc] = useState(() =>
-    pickWatermarkSrc({
-      lightSrc: resolvedLight,
-      darkSrc: resolvedDark,
-      luminance: null,
-    }),
-  );
-
-  useEffect(() => {
-    const light = lightSrc?.trim() || watermarkSrc?.trim() || null;
-    const dark = darkSrc?.trim() || null;
-    setMarkSrc(
-      pickWatermarkSrc({ lightSrc: light, darkSrc: dark, luminance: null }),
-    );
-
-    if (!photoSrc?.trim() || !light || !dark) return;
-
-    let cancelled = false;
-    const run = () => {
-      void sampleCornerLuminance(photoSrc.trim(), { apiPath }).then(
-        (luminance) => {
-          if (cancelled) return;
-          setMarkSrc(
-            pickWatermarkSrc({ lightSrc: light, darkSrc: dark, luminance }),
-          );
-        },
-      );
-    };
-
-    if (typeof requestIdleCallback === "function") {
-      const id = requestIdleCallback(run, { timeout: 1200 });
-      return () => {
-        cancelled = true;
-        cancelIdleCallback(id);
-      };
-    }
-
-    const t = window.setTimeout(run, 0);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [photoSrc, lightSrc, darkSrc, watermarkSrc, apiPath]);
+  const markSrc = pickWatermarkSrc({
+    lightSrc: resolvedLight,
+    darkSrc: resolvedDark,
+    luminance: variant === "dark" ? 1 : variant === "light" ? 0 : null,
+  });
 
   const clampedOpacity = Math.min(1, Math.max(0, opacity));
 

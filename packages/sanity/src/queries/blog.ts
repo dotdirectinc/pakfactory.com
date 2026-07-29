@@ -164,6 +164,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       link,
       linkNofollow,
       "applyWatermark": coalesce(applyWatermark, true),
+      "lqip": asset.asset->metadata.lqip,
       asset
     },
     _type == "bodyQuote" => {
@@ -181,6 +182,7 @@ const POST_DETAIL_FIELDS = /* groq */ `{
         _key,
         "alt": coalesce(alt, asset.asset->altText),
         "applyWatermark": coalesce(applyWatermark, true),
+        "lqip": asset.asset->metadata.lqip,
         asset
       }
     },

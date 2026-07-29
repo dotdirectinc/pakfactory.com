@@ -63,7 +63,14 @@ export type PostBodyQuote = {
 export type PostBodyGallery = {
   caption?: string;
   aspectRatio?: "16:9" | "1:1";
-  images?: Array<{ _key?: string; alt?: string; asset?: unknown }>;
+  images?: Array<{
+    _key?: string;
+    alt?: string;
+    asset?: unknown;
+    /** Sanity LQIP data-URI for server-side watermark variant (PROD-2206). */
+    lqip?: string | null;
+    applyWatermark?: boolean | null;
+  }>;
 };
 
 /** Column-major cell (PROD-2224) or legacy plain string in a row. */
