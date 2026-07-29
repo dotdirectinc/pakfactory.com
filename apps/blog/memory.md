@@ -70,6 +70,8 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 
 **Adaptive reliability (PROD-2229 follow-on):** client canvas sampling against Sanity CDN often returned `null` (CORS). Overlay probes via `/api/wm-luma`; null fallback prefers **light** (white logo). Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams still get the dark mark when sampling succeeds.
 
+**Prod Vercel 500s (wm-luma):** Sharp `libvips` was missing from the serverless trace. Fixed via `serverExternalPackages` + `outputFileTracingIncludes` for `@img/sharp-libvips-*`, and lazy Sharp import in `watermark-luma-sample.ts` so load failures return 502 JSON instead of crashing the route.
+
 ### Mode switch (reversible)
 
 | Env | Behavior |
