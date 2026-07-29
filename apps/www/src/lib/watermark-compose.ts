@@ -3,10 +3,29 @@ import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
 } from "@pakfactory/components/commons/watermark-geometry";
-import { pickWatermarkSrc } from "@pakfactory/components/commons/watermark-variant";
+import {
+  WATERMARK_LUMINANCE_THRESHOLD,
+  pickWatermarkSrc,
+} from "@pakfactory/components/commons/watermark-variant";
 import { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-luma-sample";
 
 export { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-luma-sample";
+
+/**
+ * Pick light vs dark watermark from Sanity's LQIP data-URI (PROD-2206).
+ * Missing / invalid LQIP → null → overlay falls back to the light mark.
+ */
+export async function resolveWatermarkVariantFromLqip(
+  lqip: string | null | undefined,
+): Promise<"light" | "dark" | null> {
+  if (!lqip || !lqip.startsWith("data:")) return null;
+  const comma = lqip.indexOf(",");
+  if (comma < 0) return null;
+  const buf = Buffer.from(lqip.slice(comma + 1), "base64");
+  const lum = await sampleCornerLuminanceFromBuffer(buf);
+  if (lum == null) return null;
+  return lum < WATERMARK_LUMINANCE_THRESHOLD ? "light" : "dark";
+}
 
 export type CompositeWatermarkInput = {
   imageBuffer: Buffer;

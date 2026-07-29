@@ -20,6 +20,8 @@ export type SliderImage = {
   isSquare: boolean;
   /** Opt-in per-image Studio toggle; pass true when Global Settings watermark is set. */
   applyWatermark?: boolean;
+  /** Server-resolved light/dark mark from LQIP (PROD-2206). */
+  watermarkVariant?: "light" | "dark" | null;
 };
 
 const DEFAULT_QUALITY = 80;
@@ -93,10 +95,9 @@ function GalleryImage({
   if (!showWm || serveMode) return image;
   return (
     <ImageWatermarkOverlay
-      photoSrc={img.src}
       lightSrc={config.lightSrc}
       darkSrc={config.darkSrc}
-      apiPath={config.apiPath}
+      variant={img.watermarkVariant}
       opacity={config.opacity}
       className="relative max-h-full max-w-full"
     >
