@@ -39,15 +39,28 @@ const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` :
 // Per-workspace: the Website workspace previews apps/www, Blog previews apps/blog.
 // Origins are env-overridable (set in the Studio env, exposed via SANITY_STUDIO_*).
 // Each surface must run @sanity/visual-editing + a draft-mode enable route for the
-// overlays to work; apps/www already does, apps/blog wiring lands on the blog branch.
-const WWW_PREVIEW_ORIGIN =
-  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'https://pakfactory-com-www.vercel.app'
+// overlays to work.
+//
+// WWW preview BASE — full URL carrying the `/case-studies/` path with a trailing
+// slash. Previews go through the APEX (pakfactory.com), NOT the Vercel origin: the
+// origin now 307-redirects direct hits to the apex (PROD-2207), which would bounce
+// the Presentation iframe off `allowOrigins`. The apex is served by nginx (trusted
+// proxy — no redirect). nginx only forwards `/case-studies*` to the www app, so BOTH
+// the case-study content AND the draft-mode enable route must live under
+// `/case-studies` — the route was moved to `case-studies/api/draft-mode/enable` and
+// the relative `enable` below resolves under this base. PROD-2223.
+const WWW_PREVIEW_RAW =
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000/case-studies/'
+const WWW_PREVIEW_BASE = WWW_PREVIEW_RAW.endsWith('/')
+  ? WWW_PREVIEW_RAW
+  : `${WWW_PREVIEW_RAW}/`
 
 // Blog preview BASE — a full URL that may carry a path (the `/blog` basePath in
 // prod). Presentation resolves the draft-mode enable path and location hrefs
 // against this, so it MUST end in a trailing slash: a relative `enable`
 // ('api/draft-mode/enable') only appends under the base path when the base ends
-// in '/' (PROD-2223). Prod → 'https://origin.blog.pakfactory.com/blog/',
+// in '/' (PROD-2223). Prod → 'https://pakfactory.com/blog/' (the apex, served by
+// nginx — the origin.blog host now 307-redirects direct hits to the apex),
 // local → 'http://localhost:3003/'.
 const BLOG_PREVIEW_RAW =
   process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003/'
@@ -281,6 +294,7 @@ export default defineConfig([
         allowOrigins: [
           'http://localhost:3003',
           'https://origin.blog.pakfactory.com',
+          'https://pakfactory.com',
         ],
         resolve: { locations: makeBlogLocations(BLOG_BASE_PATH) },
       }),
@@ -309,12 +323,17 @@ export default defineConfig([
         name: 'presentation',
         title: 'Presentation',
         previewUrl: {
-          origin: WWW_PREVIEW_ORIGIN,
-          previewMode: { enable: '/api/draft-mode/enable' },
+          // `initial` (not `origin`) so the `/case-studies/` path survives; a
+          // relative `enable` (no leading slash) resolves under it →
+          // `…/case-studies/api/draft-mode/enable` (a leading slash would drop the
+          // path and hit Magento at the apex root). PROD-2223.
+          initial: WWW_PREVIEW_BASE,
+          previewMode: { enable: 'api/draft-mode/enable' },
         },
         allowOrigins: [
           'http://localhost:3000',
           'https://pakfactory-com-www.vercel.app',
+          'https://pakfactory.com',
         ],
         resolve: { locations: websiteLocations },
       }),
