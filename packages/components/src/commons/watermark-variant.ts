@@ -4,9 +4,11 @@
  */
 
 /**
- * Below this average footprint luminance → use light (white) watermark.
- * Dark mark only on near-white corners (soft watermarks; mid-tones like beige
- * prefer the light mark). Raised from 0.45 so product photography stays light.
+ * Below this **max** footprint luminance → use light (white) watermark.
+ * Dark mark only when any footprint pixel is near-white (≥ threshold). Soft
+ * watermarks; uniform mid-tones like beige stay on the light mark. Raised from
+ * 0.45 so product photography stays light. Max (not average) avoids mixed
+ * light-gray + chrome diagrams classifying as light.
  */
 export const WATERMARK_LUMINANCE_THRESHOLD = 0.85;
 
@@ -22,14 +24,15 @@ export type WatermarkSrcPair = {
  * Pick which logo URL to draw.
  * - Only one uploaded → that one.
  * - Both + unknown luminance → prefer **light** (white logo) when sample/API fails.
- * - Both + luminance → light unless footprint is near-white (≥ threshold).
+ * - Both + luminance → light unless footprint max is near-white (≥ threshold).
+ * @param luminance Max (preferred) or average footprint luminance 0–1.
  */
 export function pickWatermarkSrc({
   lightSrc,
   darkSrc,
   luminance,
 }: WatermarkSrcPair & {
-  /** `null` = not sampled yet / failed. */
+  /** `null` = not sampled yet / failed. Prefer max footprint luminance. */
   luminance: number | null;
 }): string | null {
   const light = lightSrc?.trim() || null;
@@ -60,4 +63,19 @@ export function averageLuminanceFromRgba(
     count += 1;
   }
   return count > 0 ? sum / count : null;
+}
+
+/** Max perceived luminance from raw RGBA bytes (0–1). */
+export function maxLuminanceFromRgba(data: ArrayLike<number>): number | null {
+  let max = 0;
+  let count = 0;
+  for (let i = 0; i + 3 < data.length; i += 4) {
+    const a = data[i + 3]!;
+    if (a < 16) continue;
+    const lum =
+      (0.299 * data[i]! + 0.587 * data[i + 1]! + 0.114 * data[i + 2]!) / 255;
+    if (lum > max) max = lum;
+    count += 1;
+  }
+  return count > 0 ? max : null;
 }

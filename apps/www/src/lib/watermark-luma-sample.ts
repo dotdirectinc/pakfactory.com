@@ -3,11 +3,11 @@ import {
 } from "@pakfactory/components/commons/watermark-geometry";
 import {
   WATERMARK_SAMPLE_MAX_PX,
-  averageLuminanceFromRgba,
+  maxLuminanceFromRgba,
 } from "@pakfactory/components/commons/watermark-variant";
 
 /**
- * Average luminance (0–1) under the watermark footprint.
+ * Max luminance (0–1) under the watermark footprint.
  * Lazy-loads Sharp so a native-binding failure becomes a caught null / 502
  * instead of crashing the route module on import (PROD-2206 Vercel 500s).
  */
@@ -39,7 +39,7 @@ export async function sampleCornerLuminanceFromBuffer(
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    return averageLuminanceFromRgba(data);
+    return maxLuminanceFromRgba(data);
   } catch (err) {
     console.error("[watermark-luma-sample] Sharp sample failed", err);
     return null;

@@ -21,7 +21,7 @@ export function PostDetailSidebar({
   shareTitle,
 }: PostDetailSidebarProps) {
   return (
-    <div className="flex flex-col gap-2 lg:h-full lg:border-r lg:border-dashed lg:border-border lg:pb-16 lg:pl-6 lg:pr-6">
+    <div className="flex flex-col gap-2 lg:h-full lg:border-r lg:border-dashed lg:border-border lg:pb-16 lg:px-4 xl:px-6">
       {author?.name ? (
         <div className="border-b border-dashed border-border pb-8">
           <PostAuthorCard author={author} />
