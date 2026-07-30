@@ -200,7 +200,10 @@ export async function fetchBlogHomePage(): Promise<BlogHomePageDoc | null> {
     cacheKey: "home-page-builder",
     query: BLOG_HOME_PAGE_BUILDER_QUERY,
     params: blogHomePageParams(),
-    tags: [BLOG_PAGE_CACHE_TAG],
+    // pageBuilder embeds postCategoryRow → category->shortDescription + posts.
+    // Without category/posts tags, a category publish left the homepage stale for
+    // up to BLOG_CONTENT_REVALIDATE_SECONDS (PROD-2226 short-description miss).
+    tags: [BLOG_PAGE_CACHE_TAG, BLOG_CATEGORY_CACHE_TAG, BLOG_POSTS_CACHE_TAG],
     fallback: null,
     label: "homePage",
   });

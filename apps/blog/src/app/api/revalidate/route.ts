@@ -88,6 +88,10 @@ export async function POST(request: Request) {
   if (type === "blogCategory" || !type) {
     tags.add(BLOG_CATEGORY_CACHE_TAG);
     if (slug) tags.add(blogCategoryTag(slug));
+    // Homepage (and other pageBuilders) embed category->shortDescription via
+    // postCategoryRow — bust page cache + home path so PROD-2226 edits show
+    // without waiting for the 1h safety-net TTL.
+    tags.add(BLOG_PAGE_CACHE_TAG);
   }
   if (type === "blogTag" || type === "blogTopicGroup" || !type) {
     tags.add(BLOG_TOPIC_CACHE_TAG);
@@ -134,9 +138,15 @@ export async function POST(request: Request) {
     revalidatePath("/topics-sitemap/1");
   }
 
-  if (type === "blogPage" || type === "blogTopicGroup" || !type) {
+  if (
+    type === "blogPage" ||
+    type === "blogTopicGroup" ||
+    type === "blogCategory" ||
+    !type
+  ) {
     // Path revalidation refreshes the static route caches (Phase 2); the
     // BLOG_PAGE_CACHE_TAG bust above invalidates the cached page-builder reads.
+    // blogCategory included: home category rows dereference category fields.
     revalidatePath("/");
     revalidatePath("/topics");
   }
