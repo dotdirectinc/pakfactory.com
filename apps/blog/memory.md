@@ -81,14 +81,14 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 
 | Asset | Used when |
 | --- | --- |
-| `lightImage` (white logo) | Footprint average luminance **&lt; 0.85** (most photos, including beige/tan mid-tones) |
-| `darkImage` | Luminance **≥ 0.85** (near-white diagrams / paper) |
+| `lightImage` (white logo) | Footprint **max** luminance **&lt; 0.85** (most photos, including beige/tan mid-tones) |
+| `darkImage` | Max luminance **≥ 0.85** (near-white diagrams / paper; mixed light-gray + chrome) |
 | Only one uploaded | That mark always |
 | Missing / invalid LQIP | Prefer **light** (white logo) when both uploaded |
 
-**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) with **jpeg-js** (no Sharp) and samples the **logo footprint** (`resolveWatermarkVariantFromLqip`). No client fetch, no `/api/wm-luma`. Missing LQIP → light mark. Variant is recomputed live each render (no backfill when logos / threshold change). Sharp stays only on `/api/wm` for optional bake-on-serve.
+**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) with **jpeg-js** (no Sharp) and samples the **logo footprint** (`resolveWatermarkVariantFromLqip`). Decision uses **max** footprint luminance (not average) so darker chrome next to a light-gray corner does not force the white mark. On very small LQIPs (~20px) the geometric footprint is expanded to the bottom-right corner before taking max. No client fetch, no `/api/wm-luma`. Missing LQIP → light mark. Variant is recomputed live each render (no backfill when logos / threshold change). Sharp stays only on `/api/wm` for optional bake-on-serve.
 
-**Sample region:** average pixels under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams get the dark mark.
+**Sample region:** max luminance under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams get the dark mark.
 
 **History:** earlier overlay probed via client `/api/wm-luma` (CORS / 502 under load). That route and client `watermark-luminance` were removed; serve-mode `/api/wm` tracing for Sharp remains.
 

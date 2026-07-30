@@ -36,7 +36,7 @@ function createSanityClient(perspective: "drafts" | "published"): SanityClient {
 
 /**
  * Server client for www. Switches to the `drafts` perspective when Next.js
- * draft mode is enabled (set by Sanity Presentation via /api/draft-mode/enable).
+ * draft mode is enabled (set by Sanity Presentation via /case-studies/api/draft-mode/enable).
  *
  * @see https://www.sanity.io/docs/nextjs/configure-sanity-client-nextjs
  */
