@@ -334,6 +334,9 @@ export default defineConfig([
           'http://localhost:3000',
           'https://pakfactory-com-www.vercel.app',
           'https://pakfactory.com',
+          // Magento may serve (or 301 to) the www host; keep both so Presentation
+          // does not bounce the iframe off allowOrigins after a host redirect.
+          'https://www.pakfactory.com',
         ],
         resolve: { locations: websiteLocations },
       }),
