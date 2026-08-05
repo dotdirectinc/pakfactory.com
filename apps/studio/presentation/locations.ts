@@ -128,6 +128,17 @@ export const websiteLocations: DocumentLocationResolvers = {
         ? { locations: [{ title: doc.title || 'Case Study', href: `/case-studies/${doc.slug}` }] }
         : { locations: [] },
   }),
+  caseStudiesPage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        {
+          title: doc?.title || 'Case Studies',
+          href: '/case-studies',
+        },
+      ],
+    }),
+  }),
   product: defineLocations({
     select: {
       title: 'title',
