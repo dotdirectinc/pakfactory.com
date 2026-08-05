@@ -1,10 +1,12 @@
 import type {Metadata, Viewport} from 'next';
 import {Suspense} from 'react';
+import {draftMode} from 'next/headers';
 // Loads the actual 'Geist Variable' font family referenced by --font-geist-sans
 // in @pakfactory/ui globals (same package the POC uses).
 import '@fontsource-variable/geist';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
+import {SanityVisualEditing} from '@/components/layout/sanity-visual-editing';
 import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
 import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
 import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
@@ -34,6 +36,7 @@ export default async function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const isDraft = (await draftMode()).isEnabled;
     const globalSettings = await fetchWwwGlobalSettings();
     const gtmId = resolveGtmId(globalSettings?.gtmId);
     const watermark = toWatermarkConfig(globalSettings?.watermark, '/api/wm');
@@ -48,6 +51,7 @@ export default async function RootLayout({
                 <TooltipProvider>
                     {children}
                 </TooltipProvider>
+                {isDraft ? <SanityVisualEditing /> : null}
                 </WatermarkProvider>
             </body>
         </html>
