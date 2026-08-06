@@ -91,7 +91,7 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
   "result": result${CASE_STUDY_STORY_BODY},
   "relatedStudies": select(
     count(relatedStudies) > 0 => relatedStudies[0...6]->${CASE_STUDY_CARD_FIELDS},
-    *[_type == "caseStudy" && _id != ^._id] | order(publishedAt desc)[0...6]${CASE_STUDY_CARD_FIELDS}
+    *[_type == "caseStudy" && _id != ^._id && defined(publishedAt) && publishedAt <= now()] | order(publishedAt desc)[0...6]${CASE_STUDY_CARD_FIELDS}
   ),
   metaTitle,
   metaDescription,
@@ -104,24 +104,28 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
+/** Go-live gate (PROD-2228) — matches blog posts: published + publishedAt <= now(). */
+const CASE_STUDY_LIVE =
+  '_type == "caseStudy" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()';
+
 /** All published case studies for the listing page — ordered newest first. */
 export const CASE_STUDIES_LISTING_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current)
+  ${CASE_STUDY_LIVE}
 ] | order(publishedAt desc) ${CASE_STUDY_CARD_FIELDS}`;
 
 /** Single case study by slug for the detail page. */
 export const CASE_STUDY_BY_SLUG_QUERY = /* groq */ `*[
-  _type == "caseStudy" && slug.current == $slug
+  ${CASE_STUDY_LIVE} && slug.current == $slug
 ][0] ${CASE_STUDY_DETAIL_FIELDS}`;
 
 /** All slugs for generateStaticParams. */
 export const CASE_STUDY_PATHS_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current)
+  ${CASE_STUDY_LIVE}
 ]{ "slug": slug.current }`;
 
-/** Slugs + last-modified for sitemap generation — published only. */
+/** Slugs + last-modified for sitemap generation — published + go-live only. */
 export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
-  _type == "caseStudy" && defined(slug.current)
+  ${CASE_STUDY_LIVE}
 ] | order(publishedAt desc) {
   "slug": slug.current,
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)

@@ -1339,3 +1339,64 @@ triggered by a different doc type (GTM id, embed hosts, default OG image…). Ad
 the tag to every webhook type is *not* the fix — it forces needless refetches and
 still races, since `revalidateTag` does not affect a read already in flight in the
 same request.
+
+## PROD-2228 — Scheduled Publishing + Publishing-Date Cleanup
+
+### Studio Releases UI (disabled) vs Schedule (kept)
+
+Studio config sets `releases.enabled: false` on all workspaces so editors do **not** see the **Releases** tab or **Add to release** chrome (paywalled on the current plan). **Scheduled drafts stay enabled** (Sanity default) so **Schedule** remains on `post` / `caseStudy`. Re-enable the Releases tool in [`apps/studio/sanity.config.ts`](../../apps/studio/sanity.config.ts) only after Growth+ if you want the full Releases overview.
+
+### How to schedule a post or case study (editors)
+
+**Preferred (Schedule):** leave **Publish date** blank → use **Schedule** → pick date/time. The Function stamps `publishedAt` on the **scheduled version** to the release’s intended time *before* go-live; at T the published doc already has the date.
+
+**Fallback (soft-schedule):** if Schedule is unavailable on the plan, set a future **Publish date**, then **Publish** now. Listings/detail stay hidden until `publishedAt <= now()`.
+
+**Important:** Editing **Publish date** does **not** publish the document. Use **Publish** or **Schedule** for that.
+
+### Symptom: live in Studio, empty Publish date, site hidden
+
+Native Schedule / Releases **bypass** Studio publish actions, so Publish date can stay blank. Blog/www GROQ requires `defined(publishedAt)` → post/study stays invisible.
+
+**Fix paths (both are in repo):**
+
+1. Sanity Function `stamp-published-at` — deploy: `pnpm dlx sanity blueprints deploy`; logs: `pnpm dlx sanity functions logs stamp-published-at`.
+2. Webhook fallback in blog/www `/api/revalidate` — stamps via `SANITY_API_WRITE_TOKEN` before cache bust. Requires webhook Projection to include `_id`, `_type`, `slug { current }` (optional `publishedAt`). Skip-if-set when payload already has `publishedAt`.
+
+Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the fallback to run.
+
+### Symptom: Schedule → Published (green) then a new yellow Draft (no edit)
+
+**Cause:** Post-publish stamp of blank `publishedAt` (Function or webhook) while Studio stayed open — Studio treated the second mutation as a new draft.
+
+**Fix:** Stamp on `versions.{releaseId}.{docId}` from release `publishAt` / `metadata.intendedPublishAt` before go-live. Published-id + webhook paths remain last-resort fallbacks and no-op when the date is already set → no second write → no leftover draft.
+
+**Ops:** After pulling this change, redeploy the Function: `pnpm dlx sanity blueprints deploy` (from repo root with env loaded). Without redeploy, the old post-publish-only behavior still runs.
+
+### Implementation map
+
+| Piece | Path |
+| --- | --- |
+| Releases UI off; Schedule kept | `apps/studio/sanity.config.ts` (`releases` disabled; `scheduledDrafts` default on) |
+| Schedule action scope | `apps/studio/sanity.config.ts` (`post` + `caseStudy` only; safety net if Releases re-enabled) |
+| Manual publish stamp | `apps/studio/lib/ensure-published-at.ts` → `publishWithRedirect` / `publishCaseStudy` |
+| Pre-publish version stamp + published fallback (Function) | `functions/stamp-published-at/` + `sanity.blueprint.ts` (filter: blank `publishedAt`, exclude drafts, include versions + published) |
+| Webhook stamp fallback | `@pakfactory/sanity/stamp-published-at` → blog + www `api/revalidate` (skip if set) |
+| Field labels | `apps/studio/schemas/post.ts`, `caseStudy.ts` |
+| Case-study go-live GROQ | `packages/sanity/src/queries/case-studies.ts`, `llms.ts` |
+| Blog RSS revalidate | `apps/blog/src/app/api/revalidate/route.ts` |
+
+### Query / leak notes
+
+- **Posts:** listings, detail, sitemap, and RSS already require `defined(publishedAt) && publishedAt <= now()`. Soft residual: curated home/related refs and Algolia can still surface a card if someone publishes with a future `publishedAt` by hand — detail still 404s until the date.
+- **Case studies:** same go-live gate as posts (PROD-2228). Sanity publish state alone is no longer enough.
+
+### Human ops checklist
+
+1. Prefer **Schedule** on post/caseStudy; soft-schedule via future Publish date + Publish if Schedule is plan-gated.
+2. Deploy blueprint after merge: `pnpm dlx sanity blueprints deploy` (from repo root with env loaded).
+3. Set `SANITY_API_WRITE_TOKEN` on blog + www (webhook stamp fallback).
+4. Ensure revalidate webhook projections include `_id` (+ `_type`, `slug`).
+5. **Before** relying on the case-study GROQ gate in production: backfill any published case studies missing `publishedAt` (Studio or a one-off human script — agents must not write documents).
+6. Verify webhooks still fire on `post` / `caseStudy` publish → blog `/api/revalidate` and www `/api/revalidate`.
+7. E2E: Schedule a throwaway post/study with blank Publish date; stay on the document. At T: Published/green, Publish date = schedule time, **no new yellow draft**. Soft-schedule / manual Publish still stamp correctly.

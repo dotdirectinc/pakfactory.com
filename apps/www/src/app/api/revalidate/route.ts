@@ -2,8 +2,14 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { BLOG_GLOBAL_SETTINGS_QUERY } from "@pakfactory/sanity/queries";
 import { submitIndexNowUrls } from "@pakfactory/sanity/indexnow";
+import { stampPublishedAtIfMissing } from "@pakfactory/sanity/stamp-published-at";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
-import { isSanityConfigured } from "@/lib/sanity/env";
+import {
+  getSanityApiVersion,
+  getSanityDataset,
+  getSanityProjectId,
+  isSanityConfigured,
+} from "@/lib/sanity/env";
 import { absoluteUrl } from "@/lib/site";
 
 const INDEXNOW_HOST = "pakfactory.com";
@@ -11,7 +17,7 @@ const INDEXNOW_HOST = "pakfactory.com";
 /**
  * Sanity webhook → on-demand revalidation for apps/www (case studies).
  *
- * Configure a Sanity webhook targeting this route (`/api/revalidate` on the www
+ * Configure a webhook targeting this route (`/api/revalidate` on the www
  * origin, e.g. `https://pakfactory-com-www.vercel.app/api/revalidate?secret=<secret>`)
  * with the shared secret sent as `Authorization: Bearer <secret>` or `?secret=<secret>`,
  * filtered to every type a case-studies page renders:
@@ -31,8 +37,11 @@ const INDEXNOW_HOST = "pakfactory.com";
  * changed doc, and we can't know which without a query.
  *
  * A slugged `caseStudy` publish/update/unpublish (PROD-2172) also pings IndexNow
- * with that study's canonical URL. Same webhook Projection requirement as the
- * existing `slug { current }` field this route already parses.
+ * with that study's canonical URL.
+ *
+ * PROD-2228: caseStudy publish without publishedAt stamps Publish date before
+ * path revalidation. Projection must include `_id`, `_type`, `slug { current }`
+ * (and optionally `publishedAt`).
  */
 const CASE_STUDY_TYPES = new Set([
   "caseStudy",
@@ -60,12 +69,36 @@ export async function POST(request: Request) {
 
   let type: string | undefined;
   let slug: string | undefined;
+  let documentId: string | undefined;
+  let publishedAtFromPayload: string | null | undefined;
   try {
-    const body = (await request.json()) as { _type?: string; slug?: { current?: string } };
+    const body = (await request.json()) as {
+      _id?: string;
+      _type?: string;
+      publishedAt?: string | null;
+      slug?: { current?: string };
+    };
     type = typeof body?._type === "string" ? body._type : undefined;
     slug = body?.slug?.current;
+    documentId = typeof body?._id === "string" ? body._id : undefined;
+    publishedAtFromPayload = body?.publishedAt;
   } catch {
     // no body — sweep everything below
+  }
+
+  // PROD-2228 — stamp before path bust so the first rebuild can see publishedAt.
+  let publishedAtStamp: Awaited<
+    ReturnType<typeof stampPublishedAtIfMissing>
+  > | null = null;
+  if (type === "caseStudy" && documentId) {
+    publishedAtStamp = await stampPublishedAtIfMissing({
+      documentId,
+      documentType: type,
+      publishedAtFromPayload,
+      projectId: getSanityProjectId(),
+      dataset: getSanityDataset(),
+      apiVersion: getSanityApiVersion(),
+    });
   }
 
   const revalidated: string[] = [];
@@ -134,5 +167,6 @@ export async function POST(request: Request) {
     paths: revalidated,
     indexNowSubmitted,
     ...(indexNowSkipped ? { indexNowSkipped } : {}),
+    ...(publishedAtStamp ? { publishedAtStamp } : {}),
   });
 }
