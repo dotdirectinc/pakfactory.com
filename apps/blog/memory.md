@@ -535,6 +535,7 @@ Document internationalization (`@sanity/document-internationalization`, EN + FR)
 - `apps/studio/lib/languages.ts` — `SUPPORTED_LANGUAGES` reduced to `en` only (FR entry commented out) → the i18n plugin is single-language / dormant (no French translation affordance).
 - `apps/studio/structure/index.ts` — `blogHomepageItem` / `blogTopicsPageItem` **flattened**: each opens the single EN singleton directly, no `SUPPORTED_LANGUAGES.map()` per-language sub-list. Result: one **Homepage**, one **Topic page** in the desk.
 - The `language` field was **already** `hidden: true` + `readOnly: true` (`initialValue: 'en'`) in `lib/i18n-fields.ts` — untouched.
+- `apps/studio/sanity.config.ts` — `schema.templates` filters out default + parameterized create templates for `BLOG_I18N_SCHEMA_TYPES`, so while EN-only the Posts (etc.) `+` is one-click (no **Post** / **English Post** chooser). Re-enabling FR restores English/French templates only (still no bare default).
 
 **Kept in place (so re-enabling is trivial):** the plugin config + `blogI18nPlugin`, the hidden `language` field on all 5 `BLOG_I18N_SCHEMA_TYPES`, `uniqueSlugPerLanguage` (per-type + language slug scoping), and the `-fr` keys in `BLOG_HOME_PAGE_IDS` / `BLOG_TOPICS_PAGE_IDS`.
 

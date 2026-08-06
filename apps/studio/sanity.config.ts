@@ -175,12 +175,24 @@ const videoTemplates: Template[] = CHANNELS.map((c) => ({
 
 const schema = {
   types: schemaTypes,
-  templates: (prev: Template[]) => [
-    ...prev,
-    ...productTemplates,
-    ...blogTemplates,
-    ...videoTemplates,
-  ],
+  // Drop default + parameterized create templates for blog i18n types so Studio
+  // only offers language templates (e.g. post-en → "English Post"). With EN-only
+  // dormant i18n that leaves a single option → + creates immediately (no Post /
+  // English Post chooser). Plugin docs: remove default new document template.
+  templates: (prev: Template[]) => {
+    const i18nIds = new Set<string>(BLOG_I18N_SCHEMA_TYPES)
+    const withoutDefaults = prev.filter(
+      (t) =>
+        !i18nIds.has(t.id) &&
+        !BLOG_I18N_SCHEMA_TYPES.some((type) => t.id === `${type}-parameterized`),
+    )
+    return [
+      ...withoutDefaults,
+      ...productTemplates,
+      ...blogTemplates,
+      ...videoTemplates,
+    ]
+  },
 }
 
 const blogI18nPlugin = documentInternationalization({
