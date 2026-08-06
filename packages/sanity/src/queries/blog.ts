@@ -572,14 +572,20 @@ export const BLOG_TOPICS_PAGE_BUILDER_QUERY = /* groq */ `*[
   ${BLOG_TOPICS_PAGE_TOPICS_PROJECTION}
 }`;
 
+/**
+ * Go-live gate (PROD-2228) with Presentation bypass (PROD-2252).
+ * When `$preview == true` (Next draft mode), skip so never-published / soft-scheduled
+ * docs can render in Studio Presentation. Public traffic keeps the gate.
+ */
+const GO_LIVE_OR_PREVIEW = /* groq */ `($preview == true || (defined(publishedAt) && publishedAt <= now()))`;
+
 /** Published landing/static page by slug (ADR-009). */
 export const BLOG_PAGE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "blogPage"
   && (language == $language || !defined(language))
   && pageRole in ["landing", "static"]
   && slug.current == $slug
-  && defined(publishedAt)
-  && publishedAt <= now()
+  && ${GO_LIVE_OR_PREVIEW}
 ][0]{
   _id,
   title,
@@ -625,23 +631,21 @@ export const POSTS_BY_CATEGORY_SLUG_QUERY = /* groq */ `*[
   && publishedAt <= now()
 ] | order(publishedAt desc)[0...3]${POST_CARD_FIELDS}`;
 
-/** Canonical post detail by slug (PROD-1502). */
+/** Canonical post detail by slug (PROD-1502). Preview bypass: PROD-2252. */
 export const POST_BY_SLUG_QUERY = /* groq */ `*[
   _type == "post"
   && slug.current == $slug
   && (!defined(language) || language == $language)
-  && defined(publishedAt)
-  && publishedAt <= now()
+  && ${GO_LIVE_OR_PREVIEW}
 ][0]${POST_DETAIL_FIELDS}`;
 
-/** Post detail under a category URL (legacy redirect route). */
+/** Post detail under a category URL (legacy redirect route). Preview bypass: PROD-2252. */
 export const POST_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
   _type == "post"
   && (!defined(language) || language == $language)
   && slug.current == $postSlug
   && category->slug.current == $categorySlug
-  && defined(publishedAt)
-  && publishedAt <= now()
+  && ${GO_LIVE_OR_PREVIEW}
 ][0]${POST_DETAIL_FIELDS}`;
 
 /** Category landing document (PROD-1499). */
