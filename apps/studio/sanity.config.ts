@@ -206,11 +206,8 @@ function isBlogI18nSchemaType(schemaType: string): boolean {
   return (BLOG_I18N_SCHEMA_TYPES as readonly string[]).includes(schemaType)
 }
 
-/** Types that may use native Scheduled drafts (PROD-2228). */
-const SCHEDULE_PUBLISH_TYPES = new Set(['post', 'caseStudy'])
-
+/** Remove native Schedule (Scheduled drafts) from the document action menu. */
 function isSchedulePublishAction(action: DocumentActionComponent): boolean {
-  // Scheduled drafts action name (Sanity docs); also match `action` when present.
   return (
     action.displayName === 'SchedulePublishAction' ||
     action.action === 'schedule'
@@ -218,17 +215,14 @@ function isSchedulePublishAction(action: DocumentActionComponent): boolean {
 }
 
 // Replace the default publish action on posts so slug changes auto-create redirects.
-// PROD-2228: keep Schedule only on post + caseStudy; Scheduled drafts stay enabled
-// (Studio default) — do not enable deprecated `scheduledPublishing`.
+// PROD-2228: Schedule / Scheduled drafts are off until Content Releases is on the
+// plan — editors soft-schedule via future Publish date + Publish (stamped by
+// ensure-published-at). Do not enable deprecated `scheduledPublishing`.
 const documentActions = (
   prev: DocumentActionComponent[],
   context: DocumentActionsContext,
 ): DocumentActionComponent[] => {
-  let actions = prev
-
-  if (!SCHEDULE_PUBLISH_TYPES.has(context.schemaType)) {
-    actions = actions.filter((action) => !isSchedulePublishAction(action))
-  }
+  let actions = prev.filter((action) => !isSchedulePublishAction(action))
 
   if (context.schemaType === 'post') {
     actions = actions.map((action) =>
@@ -279,11 +273,13 @@ const makeNewDocumentOptions =
     return opts
   }
 
-// PROD-2228: hide the Content Releases tool / "Add to release" chrome (paywalled
-// on the current plan). Keep Scheduled drafts at Sanity's default (on) so
-// editors still get Schedule publish on post / caseStudy.
-const releasesUiDisabled = {
+// PROD-2228: Content Releases is paywalled; Scheduled drafts (Schedule) depends
+// on the same release machinery and left broken UX without Growth+. Hide both
+// until Releases is unlocked. Editors use soft-schedule (future Publish date +
+// Publish) instead.
+const releasesAndScheduleDisabled = {
   releases: { enabled: false as const },
+  scheduledDrafts: { enabled: false as const },
 }
 
 export default defineConfig([
@@ -295,7 +291,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    ...releasesUiDisabled,
+    ...releasesAndScheduleDisabled,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: adminStructure, defaultDocumentNode }),
@@ -314,7 +310,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    ...releasesUiDisabled,
+    ...releasesAndScheduleDisabled,
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions('blog') },
     plugins: [
       structureTool({ structure: blogStructure, defaultDocumentNode }),
@@ -351,7 +347,7 @@ export default defineConfig([
     projectId,
     dataset,
     schema,
-    ...releasesUiDisabled,
+    ...releasesAndScheduleDisabled,
     // Case studies are edited here, so this workspace needs `documentActions` too —
     // without it `caseStudy` falls back to Sanity's stock publish and
     // `publishCaseStudy` never runs (no slug-change redirect, no `publishedAt`
