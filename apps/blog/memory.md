@@ -1400,3 +1400,24 @@ Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the fallback
 5. **Before** relying on the case-study GROQ gate in production: backfill any published case studies missing `publishedAt` (Studio or a one-off human script — agents must not write documents).
 6. Verify webhooks still fire on `post` / `caseStudy` publish → blog `/api/revalidate` and www `/api/revalidate`.
 7. E2E: Schedule a throwaway post/study with blank Publish date; stay on the document. At T: Published/green, Publish date = schedule time, **no new yellow draft**. Soft-schedule / manual Publish still stamp correctly.
+
+## PROD-2252 — Presentation preview for draft posts
+
+**Jira:** [PROD-2252](https://dotdirect.atlassian.net/browse/PROD-2252). Branch: `fix/PROD-2252-presentation-draft-preview`.
+
+**Symptom:** Studio Presentation opened a draft (never-published) post and the iframe 404’d — editors could not review layout before Publish.
+
+**Cause:** PROD-2228 go-live GROQ (`defined(publishedAt) && publishedAt <= now()`) still applied under the `drafts` perspective. Draft docs have no `publishedAt` until Publish/Schedule stamp → `fetchPostBySlug` returned null.
+
+**Fix:** Detail-by-slug queries accept `$preview`. When Next draft mode is on, [`blogCachedFetch`](./src/lib/blog-cached-fetch.ts) passes `preview: true`, which skips the go-live gate. Public / cached reads keep `preview: false`.
+
+| Piece | Path |
+| --- | --- |
+| `GO_LIVE_OR_PREVIEW` + post/page by-slug queries | [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts) |
+| Inject `$preview` from draft mode | [`apps/blog/src/lib/blog-cached-fetch.ts`](./src/lib/blog-cached-fetch.ts) |
+
+**Scope:** `POST_BY_SLUG_QUERY`, `POST_BY_CATEGORY_AND_SLUG_QUERY`, `BLOG_PAGE_BY_SLUG_QUERY` only — listings/sitemap/RSS stay gated. Soft-scheduled (future `publishedAt`) also previewable in Presentation; still hidden on the public site.
+
+**Verify:** Presentation on a draft with slug + blank Publish date → `/{slug}` loads (not 404); published post with unpublished edits still works; anonymous tab on draft slug still 404s.
+
+**Out of scope:** hosted-Studio third-party cookie fragility (PROD-1775); case-study preview bypass; listing rows showing unpublished drafts.

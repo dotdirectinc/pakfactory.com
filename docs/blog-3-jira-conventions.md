@@ -29,6 +29,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-2229](https://dotdirect.atlassian.net/browse/PROD-2229) | Post body list text color matches paragraphs                | In Development                                                                                                               | [`apps/blog/src/components/post/post-portable-text.tsx`](../apps/blog/src/components/post/post-portable-text.tsx) — `text-muted-foreground` on body `ul`/`ol`                                                                                                                                                                                          |
 | [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224) | Sanity Blog Post Data Table Widget Enhancement              | In Development                                                                                                               | Headers→rows + Excel/CSV import (no max cols/rows): [`body-table.ts`](../apps/studio/schemas/inline/body-table.ts), [`TableDataInput`](../apps/studio/components/TableDataInput.tsx); dual-read: [`normalize-body-table.ts`](../apps/blog/src/lib/normalize-body-table.ts)                                                                                                                                 |
 | [PROD-2228](https://dotdirect.atlassian.net/browse/PROD-2228) | Scheduled Publishing + Publishing-Date Cleanup              | In Development                                                                                                               | Schedule kept; Releases UI off; `publishedAt` stamp (Function/webhook); case-study `publishedAt <= now()` gate                                                                                                                                                                                                                                        |
+| [PROD-2252](https://dotdirect.atlassian.net/browse/PROD-2252) | Presentation preview for draft posts                        | In Development                                                                                                               | `$preview` bypasses go-live gate on detail-by-slug GROQ when draft mode on: [`blog.ts`](../packages/sanity/src/queries/blog.ts), [`blog-cached-fetch.ts`](../apps/blog/src/lib/blog-cached-fetch.ts)                                                                                                                                                  |
 
 
 
@@ -295,3 +296,11 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
   4. Backfill any **live** case studies with blank `publishedAt` (agents must not patch) — otherwise the new GROQ gate hides them.
   5. E2E: blank or future Publish date → Publish → confirm date/visibility behavior.
 - **Editor how-to:** see [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-2228.
+
+## PROD-2252 — Presentation preview for draft posts
+
+- **Jira:** [PROD-2252](https://dotdirect.atlassian.net/browse/PROD-2252). Branch: `fix/PROD-2252-presentation-draft-preview`.
+- **Bug:** After PROD-2228, never-published posts 404’d in Studio Presentation because detail GROQ still required `publishedAt <= now()`.
+- **Fix:** `$preview` on `POST_BY_SLUG_QUERY`, `POST_BY_CATEGORY_AND_SLUG_QUERY`, `BLOG_PAGE_BY_SLUG_QUERY` — [`blog.ts`](../packages/sanity/src/queries/blog.ts). [`blogCachedFetch`](../apps/blog/src/lib/blog-cached-fetch.ts) sets `preview: true` when draft mode is on.
+- **Unchanged:** Listings, sitemap, RSS, home rows stay go-live gated for anonymous traffic.
+- **Verify:** Presentation on draft (blank Publish date) → iframe loads; anonymous draft URL still 404. See [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-2252.
