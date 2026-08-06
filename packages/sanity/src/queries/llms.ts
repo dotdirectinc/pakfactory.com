@@ -5,16 +5,17 @@
  *
  * Selection rules (successor to the retired `update-llms-txt*` scripts' --auto
  * mode — now applied live instead of via a curated snapshot field):
- *   • case studies — the 20 most recently modified (all, when ≤ 20 exist)
+ *   • case studies — the 20 most recently modified live studies
+ *     (`defined(publishedAt) && publishedAt <= now()`, PROD-2228)
  *   • blog posts   — the 10 most recently modified published posts
  *   • categories   — all, A→Z
  *   • settings     — the two editorial knobs (manual override + storefront links)
  */
 
 export const LLMS_INDEX_QUERY = /* groq */ `{
-  "caseStudies": *[_type == "caseStudy" && defined(slug.current)]
+  "caseStudies": *[_type == "caseStudy" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()]
     | order(_updatedAt desc)[0...20]{ title, "slug": slug.current },
-  "caseStudyCount": count(*[_type == "caseStudy" && defined(slug.current)]),
+  "caseStudyCount": count(*[_type == "caseStudy" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()]),
   "posts": *[_type == "post" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()]
     | order(_updatedAt desc)[0...10]{ title, "slug": slug.current },
   "categories": *[_type == "blogCategory" && defined(slug.current)]

@@ -13,7 +13,8 @@
     "./languages": "./src/languages.ts",
     "./resolve-document-href": "./src/resolve-document-href.ts",
     "./social-platforms": "./src/social-platforms.ts",
-    "./algolia/post-record": "./src/algolia/post-record.ts"
+    "./algolia/post-record": "./src/algolia/post-record.ts",
+    "./stamp-published-at": "./src/stamp-published-at.ts"
   },
   "scripts": {
     "lint": "eslint src",
