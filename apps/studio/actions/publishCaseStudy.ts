@@ -5,6 +5,7 @@ import {
   AUTO_REDIRECT_GROUP,
   resolveRedirectGroupRef,
 } from '../lib/redirect-groups'
+import { ensurePublishedAt } from '../lib/ensure-published-at'
 import type {
   DocumentActionComponent,
   DocumentActionDescription,
@@ -16,7 +17,7 @@ import type {
  * publishCaseStudy — custom publish action for `caseStudy`.
  *
  * Two side effects wrap the default publish:
- *  1. Sets `publishedAt` on first publish when empty.
+ *  1. Sets `publishedAt` on first publish when empty (PROD-2228 shared helper).
  *  2. When an editor changes a published case study's slug and republishes, it
  *     auto-creates (or refreshes) a `redirect` from the old `/case-studies/{slug}`
  *     to the new one — the same slug-change safety net the blog's post action
@@ -26,7 +27,7 @@ import type {
  * to that path and filed under the Case Studies redirect group when one exists
  * (grouping is organizational only). Bookkeeping never blocks publishing —
  * a redirect failure is logged, not thrown. Visibility on www stays controlled by
- * Sanity publish state.
+ * Sanity publish state (+ publishedAt go-live gate after PROD-2228).
  */
 
 type CaseStudyDoc = SanityDocument & {
@@ -127,20 +128,7 @@ export const publishCaseStudy: DocumentActionComponent = (props) => {
     onHandle: async () => {
       setIsPublishing(true)
       const doc = (draft ?? published) as CaseStudyDoc | null
-      const publishedAt = doc?.publishedAt?.trim()
-
-      if (!publishedAt) {
-        const baseId = id.replace(/^drafts\./, '')
-        const draftId = id.startsWith('drafts.') ? id : `drafts.${baseId}`
-        try {
-          await client
-            .patch(draftId)
-            .set({ publishedAt: new Date().toISOString() })
-            .commit()
-        } catch (err) {
-          console.error('[publishCaseStudy] failed to set publishedAt:', err)
-        }
-      }
+      await ensurePublishedAt(client, id, doc?.publishedAt, 'publishCaseStudy')
 
       // Slug-change redirect: compare the published slug (old) to the draft slug
       // being published (new). Never block publishing on redirect bookkeeping.

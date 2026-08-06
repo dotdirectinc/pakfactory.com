@@ -1,6 +1,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { submitIndexNowUrls } from "@pakfactory/sanity/indexnow";
+import { stampPublishedAtIfMissing } from "@pakfactory/sanity/stamp-published-at";
 import {
   BLOG_AUTHOR_CACHE_TAG,
   BLOG_CATEGORY_CACHE_TAG,
@@ -17,6 +18,11 @@ import {
 } from "@/lib/blog-cache";
 import { fetchBlogGlobalSettingsUncached } from "@/lib/blog-global-settings";
 import { postDetailHref } from "@/lib/blog-post-url";
+import {
+  getSanityApiVersion,
+  getSanityDataset,
+  getSanityProjectId,
+} from "@/lib/sanity/env";
 import { absoluteUrl } from "@/lib/site";
 
 const INDEXNOW_HOST = "pakfactory.com";
@@ -35,11 +41,13 @@ const INDEXNOW_HOST = "pakfactory.com";
  *   so the cached archive rebuilds on the next request (instant editor freshness).
  * - post publish/update/unpublish (PROD-2172) → also ping IndexNow with the post's
  *   canonical URL.
+ * - post publish without publishedAt (PROD-2228) → stamp Publish date before
+ *   cache bust so the first rebuild can pass `defined(publishedAt)`.
  *
- * Requires the webhook's Projection to include `slug { current }` — used for the
- * per-slug cache tags (post/category/topic/author) and the IndexNow ping. Without it
- * the coarse type tag still busts (so freshness holds), only the precise per-slug
- * tag and the IndexNow ping are skipped.
+ * Requires the webhook's Projection to include `_id`, `_type`, and
+ * `slug { current }` — `_id` for the publishedAt stamp; slug for per-slug cache
+ * tags and IndexNow. Without slug the coarse type tag still busts; without `_id`
+ * the stamp is skipped (Function path may still fill the date).
  */
 export async function POST(request: Request) {
   const secret = process.env.SANITY_REVALIDATE_SECRET?.trim();
@@ -59,15 +67,36 @@ export async function POST(request: Request) {
 
   let type: string | undefined;
   let slug: string | undefined;
+  let documentId: string | undefined;
+  let publishedAtFromPayload: string | null | undefined;
   try {
     const body = (await request.json()) as {
+      _id?: string;
       _type?: string;
+      publishedAt?: string | null;
       slug?: { current?: string };
     };
     type = typeof body?._type === "string" ? body._type : undefined;
     slug = body?.slug?.current;
+    documentId = typeof body?._id === "string" ? body._id : undefined;
+    publishedAtFromPayload = body?.publishedAt;
   } catch {
     // No/!JSON body — fall back to revalidating everything below.
+  }
+
+  // PROD-2228 — stamp before cache bust so the first rebuild can see publishedAt.
+  let publishedAtStamp: Awaited<
+    ReturnType<typeof stampPublishedAtIfMissing>
+  > | null = null;
+  if (type === "post" && documentId) {
+    publishedAtStamp = await stampPublishedAtIfMissing({
+      documentId,
+      documentType: type,
+      publishedAtFromPayload,
+      projectId: getSanityProjectId(),
+      dataset: getSanityDataset(),
+      apiVersion: getSanityApiVersion(),
+    });
   }
 
   const tags = new Set<string>();
@@ -153,8 +182,13 @@ export async function POST(request: Request) {
 
   // Post publish → also refresh the post's own route (belt-and-suspenders once post
   // pages are statically rendered in Phase 2; harmless while they are dynamic).
+  // PROD-2228: RSS was TTL-only (1h); revalidate on post so scheduled publishes
+  // appear in the feed within the webhook window.
   if (type === "post" && slug) {
     revalidatePath(postDetailHref(slug));
+  }
+  if (type === "post" || !type) {
+    revalidatePath("/rss.xml");
   }
 
   // PROD-2172 — ping IndexNow on post publish/update/unpublish. Covers unpublish
@@ -202,5 +236,6 @@ export async function POST(request: Request) {
     tags: [...tags],
     indexNowSubmitted,
     ...(indexNowSkipped ? { indexNowSkipped } : {}),
+    ...(publishedAtStamp ? { publishedAtStamp } : {}),
   });
 }

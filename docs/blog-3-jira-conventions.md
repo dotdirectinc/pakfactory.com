@@ -28,6 +28,7 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 | [PROD-2206](https://dotdirect.atlassian.net/browse/PROD-2206) | Image watermark (website & blog)                            | In Development                                                                                                               | Adaptive light/dark overlay: [`packages/components`](../packages/components/); Studio `settings.watermark.lightImage`/`darkImage` + `DefaultOnBooleanInput` for `applyWatermark`; blog/www `SanityImage` + `/api/wm`                                                                                                                                    |
 | [PROD-2229](https://dotdirect.atlassian.net/browse/PROD-2229) | Post body list text color matches paragraphs                | In Development                                                                                                               | [`apps/blog/src/components/post/post-portable-text.tsx`](../apps/blog/src/components/post/post-portable-text.tsx) — `text-muted-foreground` on body `ul`/`ol`                                                                                                                                                                                          |
 | [PROD-2224](https://dotdirect.atlassian.net/browse/PROD-2224) | Sanity Blog Post Data Table Widget Enhancement              | In Development                                                                                                               | Headers→rows + Excel/CSV import (no max cols/rows): [`body-table.ts`](../apps/studio/schemas/inline/body-table.ts), [`TableDataInput`](../apps/studio/components/TableDataInput.tsx); dual-read: [`normalize-body-table.ts`](../apps/blog/src/lib/normalize-body-table.ts)                                                                                                                                 |
+| [PROD-2228](https://dotdirect.atlassian.net/browse/PROD-2228) | Scheduled Publishing + Publishing-Date Cleanup              | In Development                                                                                                               | Schedule kept; Releases UI off; `publishedAt` stamp (Function/webhook); case-study `publishedAt <= now()` gate                                                                                                                                                                                                                                        |
 
 
 
@@ -278,3 +279,19 @@ Chunk T1 of the content-team Tag Document plan (spec § 4). Split across two bra
 - **Ops:** Do **not** click “Remove non-object values”. Reverse migrate only converted docs: `migrate:body-table` (humans only).
 - **Out of scope:** live grid editor; multi-sheet picker.
 - **Verify:** import wide/tall sheets; blank header OK; `pnpm --filter @pakfactory/blog typecheck`.
+
+## PROD-2228 — Scheduled Publishing + Publishing-Date Cleanup
+
+- **Jira:** [PROD-2228](https://dotdirect.atlassian.net/browse/PROD-2228). Branch: `feat/PROD-2228-scheduled-publishing`.
+- **Releases UI:** `releases.enabled: false` in [`sanity.config.ts`](../apps/studio/sanity.config.ts) so editors do not see paywalled **Releases** / **Add to release**. **Scheduled drafts stay on** (Schedule publish on post/caseStudy). Soft-schedule remains the fallback if Schedule is plan-gated.
+- **`publishedAt` auto-stamp:** shared [`ensure-published-at.ts`](../apps/studio/lib/ensure-published-at.ts) on manual Publish; Sanity Function [`functions/stamp-published-at`](../functions/stamp-published-at/) stamps **scheduled versions** to release intended time before go-live (avoids leftover Studio drafts from a post-publish patch), with published-id + **webhook fallback** [`stamp-published-at.ts`](../packages/sanity/src/stamp-published-at.ts) from blog/www `/api/revalidate` when still blank (`SANITY_API_WRITE_TOKEN`).
+- **Field labels:** Publish date + Last updated (editorial) on `post` / `caseStudy` — display/SEO only; does **not** publish.
+- **Queries:** Blog already gates `publishedAt <= now()`. Case studies + `llms.txt` now match ([`case-studies.ts`](../packages/sanity/src/queries/case-studies.ts), [`llms.ts`](../packages/sanity/src/queries/llms.ts)).
+- **Revalidation:** existing post/caseStudy webhooks; blog also revalidates `/rss.xml` on post publish. Projection must include `_id` for the stamp fallback.
+- **Human ops (before/after merge):**
+  1. Prefer Schedule; soft-schedule if Schedule is plan-gated.
+  2. Deploy Function: `pnpm dlx sanity blueprints deploy` (logs: `pnpm dlx sanity functions logs stamp-published-at`).
+  3. Set `SANITY_API_WRITE_TOKEN` on Vercel blog + www.
+  4. Backfill any **live** case studies with blank `publishedAt` (agents must not patch) — otherwise the new GROQ gate hides them.
+  5. E2E: blank or future Publish date → Publish → confirm date/visibility behavior.
+- **Editor how-to:** see [`apps/blog/memory.md`](../apps/blog/memory.md) § PROD-2228.

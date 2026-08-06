@@ -140,15 +140,15 @@ export const post = defineType({
             type: 'datetime',
             group: 'publishing',
             description:
-                'Go-live date. Auto-set to now on first publish; back-datable for migrated content, forward-datable for embargoes.',
+                "The publish date shown on the post and used for Article datePublished + blog sorting. Auto-set when the document goes live (Publish, or when a scheduled publish fires); edit only to back-date migrated content or set a future date for a soft launch/embargo. Editing this does NOT publish the post — use Publish (or Schedule when your Sanity plan includes it).",
         }),
         defineField({
             name: 'lastModified',
-            title: 'Last modified date',
+            title: 'Last updated (editorial)',
             type: 'datetime',
             group: 'publishing',
             description:
-                'Editorial date — defaults to the publish date; bump only on a substantive revision (not typos or metadata). Feeds sitemap lastmod, Article dateModified, and the visible "Updated" label.',
+                "The 'Updated' date shown on the post and used for Google's Article dateModified + sitemap lastmod. Set it only for substantive content updates — not typos or metadata. Editor-controlled; separate from Sanity's automatic last-edited timestamp.",
         }),
         defineField({
             name: 'viewCount',

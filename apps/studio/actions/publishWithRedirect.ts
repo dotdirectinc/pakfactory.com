@@ -5,6 +5,7 @@ import {
   AUTO_REDIRECT_GROUP,
   resolveRedirectGroupRef,
 } from '../lib/redirect-groups'
+import { ensurePublishedAt } from '../lib/ensure-published-at'
 import type {
   DocumentActionComponent,
   DocumentActionDescription,
@@ -15,15 +16,20 @@ import type {
 /**
  * publishWithRedirect — custom publish action for `post`.
  *
- * Wraps the default publish: when an editor changes a published post's slug and
- * republishes, it auto-creates (or refreshes) a `redirect` from the old path to
- * the new one — the WordPress "Redirection plugin" behavior, no deploy needed.
+ * Wraps the default publish:
+ *  1. Sets `publishedAt` on first publish when empty (PROD-2228).
+ *  2. When an editor changes a published post's slug and republishes, it
+ *     auto-creates (or refreshes) a `redirect` from the old path to the new one —
+ *     the WordPress "Redirection plugin" behavior, no deploy needed.
  *
  * Posts live at `/{slug}` (PROD-1597), so the redirect path is `/{slug}`.
  * Bookkeeping never blocks publishing — a redirect failure is logged, not thrown.
  */
 
-type SluggedDoc = SanityDocument & { slug?: { current?: string } }
+type SluggedDoc = SanityDocument & {
+  publishedAt?: string
+  slug?: { current?: string }
+}
 
 // Root-level segments a post slug must never collide with (PROD-1597).
 const RESERVED_SEGMENTS = new Set([
@@ -138,6 +144,14 @@ export const publishWithRedirect: DocumentActionComponent = (props) => {
     shortcut: 'Ctrl+Alt+P',
     onHandle: async () => {
       setIsPublishing(true)
+      const doc = (draft ?? published) as SluggedDoc | null
+      await ensurePublishedAt(
+        client,
+        id,
+        doc?.publishedAt,
+        'publishWithRedirect',
+      )
+
       const oldSlug = (published as SluggedDoc | null)?.slug?.current
       const newSlug = ((draft ?? published) as SluggedDoc | null)?.slug?.current
       try {
