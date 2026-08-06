@@ -3,11 +3,13 @@ import { documentEventHandler } from "@sanity/functions";
 
 /**
  * PROD-2228 — stamp editorial `publishedAt` when blank on:
- *  1. Scheduled **version** docs (`versions.{releaseId}.{docId}`) — set to the
- *     release's intended/publish time *before* go-live so Schedule→publish does
- *     not need a post-publish patch (avoids leftover Studio drafts).
- *  2. **Published** docs — fallback `now` when still blank after go-live
- *     (webhook / edge cases). Manual Publish is handled in Studio actions.
+ *  1. **system.release** with `publishAt` — stamp all blank post/caseStudy
+ *     versions in that release to the intended schedule time (Schedule path;
+ *     version create/update events alone were unreliable).
+ *  2. Scheduled **version** docs (`versions.{releaseId}.{docId}`) — same stamp
+ *     if a version event does fire.
+ *  3. **Published** docs — fallback `now` after go-live / edge cases.
+ *     Manual Publish is handled in Studio actions (`ensure-published-at`).
  *
  * Deploy: `pnpm dlx sanity blueprints deploy`
  * Logs: `pnpm dlx sanity functions logs stamp-published-at`
@@ -15,8 +17,14 @@ import { documentEventHandler } from "@sanity/functions";
 
 type EventDoc = {
   _id?: string;
+  _type?: string;
+  name?: string | null;
   publishedAt?: string | null;
+  publishAt?: string | null;
+  metadata?: { intendedPublishAt?: string | null } | null;
 };
+
+const CONTENT_TYPES = ["post", "caseStudy"] as const;
 
 function parseVersionId(
   id: string,
@@ -32,6 +40,31 @@ function parseVersionId(
   };
 }
 
+function parseReleaseId(id: string): string | null {
+  // _.releases.{releaseId}
+  if (!id.startsWith("_.releases.")) return null;
+  const releaseId = id.slice("_.releases.".length);
+  return releaseId || null;
+}
+
+function toIsoOrNull(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function resolvePublishAtFromFields(fields: {
+  publishAt?: string | null;
+  metadata?: { intendedPublishAt?: string | null } | null;
+}): string | null {
+  return (
+    toIsoOrNull(fields.publishAt) ??
+    toIsoOrNull(fields.metadata?.intendedPublishAt)
+  );
+}
+
 async function resolveReleasePublishAt(
   client: SanityClient,
   releaseId: string,
@@ -43,20 +76,66 @@ async function resolveReleasePublishAt(
     `*[_id == $id][0]{ publishAt, metadata { intendedPublishAt } }`,
     { id: `_.releases.${releaseId}` },
   );
+  if (!release) return null;
+  return resolvePublishAtFromFields(release);
+}
 
-  const fromPublishAt = release?.publishAt?.trim();
-  if (fromPublishAt) {
-    const d = new Date(fromPublishAt);
-    if (!Number.isNaN(d.getTime())) return d.toISOString();
+async function stampIfBlank(
+  client: SanityClient,
+  id: string,
+  publishedAt: string,
+  label: string,
+): Promise<boolean> {
+  const current = await client.fetch<string | null>(
+    `*[_id == $id][0].publishedAt`,
+    { id },
+  );
+  if (current?.trim()) {
+    console.log(`[stamp-published-at] skip ${id}: already set`);
+    return false;
   }
 
-  const intended = release?.metadata?.intendedPublishAt?.trim();
-  if (intended) {
-    const d = new Date(intended);
-    if (!Number.isNaN(d.getTime())) return d.toISOString();
-  }
+  await client.patch(id).set({ publishedAt }).commit({
+    autoGenerateArrayKeys: false,
+  });
+  console.log(`[stamp-published-at] set publishedAt on ${id} → ${publishedAt} (${label})`);
+  return true;
+}
 
-  return null;
+async function stampVersionsForRelease(
+  client: SanityClient,
+  releaseId: string,
+  publishedAt: string,
+): Promise<number> {
+  const versions = await client.fetch<{ _id: string }[]>(
+    `*[
+      _id in path("versions." + $releaseId + ".**")
+      && _type in $types
+      && (!defined(publishedAt) || publishedAt == "")
+    ]{_id}`,
+    { releaseId, types: [...CONTENT_TYPES] },
+  );
+
+  let stamped = 0;
+  for (const { _id } of versions ?? []) {
+    const did = await stampIfBlank(
+      client,
+      _id,
+      publishedAt,
+      "version/pre-publish via release",
+    );
+    if (did) stamped += 1;
+  }
+  return stamped;
+}
+
+function makeClient(context: { clientOptions: Record<string, unknown> }) {
+  return createClient({
+    ...context.clientOptions,
+    apiVersion: "2025-02-19",
+    useCdn: false,
+    perspective: "raw",
+  });
 }
 
 export const handler = documentEventHandler(async ({ context, event }) => {
@@ -64,50 +143,60 @@ export const handler = documentEventHandler(async ({ context, event }) => {
   const id = data?._id;
   if (!id || id.startsWith("drafts.")) return;
 
-  // Fast path when the projection already shows a real date.
-  if (data?.publishedAt?.trim()) return;
-
-  const client = createClient({
-    ...context.clientOptions,
-    apiVersion: "2025-02-19",
-  });
+  const client = makeClient(context);
 
   try {
-    const current = await client.fetch<string | null>(
-      `*[_id == $id][0].publishedAt`,
-      { id },
-    );
-    if (current?.trim()) {
-      console.log(`[stamp-published-at] skip ${id}: already set`);
+    // ── Path A: release scheduled → stamp all blank post/caseStudy versions ──
+    const releaseIdFromDoc =
+      data?._type === "system.release"
+        ? (data.name?.trim() || parseReleaseId(id))
+        : parseReleaseId(id);
+
+    if (releaseIdFromDoc && (data?._type === "system.release" || id.startsWith("_.releases."))) {
+      const publishedAt =
+        resolvePublishAtFromFields(data ?? {}) ??
+        (await resolveReleasePublishAt(client, releaseIdFromDoc));
+
+      if (!publishedAt) {
+        console.warn(
+          `[stamp-published-at] release ${releaseIdFromDoc}: no publishAt/intendedPublishAt yet`,
+        );
+        return;
+      }
+
+      const stamped = await stampVersionsForRelease(
+        client,
+        releaseIdFromDoc,
+        publishedAt,
+      );
+      console.log(
+        `[stamp-published-at] release ${releaseIdFromDoc}: stamped ${stamped} version(s) → ${publishedAt}`,
+      );
       return;
     }
 
-    const version = parseVersionId(id);
-    let publishedAt: string;
+    // Fast path when the projection already shows a real date (content docs).
+    if (data?.publishedAt?.trim()) return;
 
+    // ── Path B: version doc event ────────────────────────────────────────────
+    const version = parseVersionId(id);
     if (version) {
       const fromRelease = await resolveReleasePublishAt(
         client,
         version.releaseId,
       );
-      publishedAt = fromRelease ?? new Date().toISOString();
+      const publishedAt = fromRelease ?? new Date().toISOString();
       if (!fromRelease) {
         console.warn(
           `[stamp-published-at] no release time for ${version.releaseId}; using now`,
         );
       }
-    } else {
-      // Published document fallback (post-publish); prefer avoided via version stamp.
-      publishedAt = new Date().toISOString();
+      await stampIfBlank(client, id, publishedAt, "version/pre-publish");
+      return;
     }
 
-    await client.patch(id).set({ publishedAt }).commit({
-      autoGenerateArrayKeys: false,
-    });
-    console.log(
-      `[stamp-published-at] set publishedAt on ${id} → ${publishedAt}` +
-        (version ? " (version/pre-publish)" : " (published/fallback)"),
-    );
+    // ── Path C: published-id fallback ────────────────────────────────────────
+    await stampIfBlank(client, id, new Date().toISOString(), "published/fallback");
   } catch (error) {
     console.error(`[stamp-published-at] failed for ${id}:`, error);
     throw error;

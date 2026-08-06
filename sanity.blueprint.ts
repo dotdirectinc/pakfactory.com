@@ -58,8 +58,8 @@ export default defineBlueprint({
         SANITY_DATASET,
       },
     }),
-    // PROD-2228 — stamp publishedAt on scheduled versions (pre-publish, intended
-    // time) and on published docs still missing a date (fallback). Exclude drafts.
+    // PROD-2228 — stamp publishedAt on scheduled versions (when release gets
+    // publishAt, and on version/published docs still missing a date). Exclude drafts.
     defineDocumentFunction({
       name: "stamp-published-at",
       memory: 1,
@@ -67,9 +67,16 @@ export default defineBlueprint({
       src: "./functions/stamp-published-at",
       event: {
         on: ["create", "update"],
-        filter:
-          '_type in ["post", "caseStudy"] && (!defined(publishedAt) || publishedAt == "") && !(_id in path("drafts.**"))',
-        projection: "{_id, _type, publishedAt}",
+        filter: `(
+  _type in ["post", "caseStudy"]
+  && (!defined(publishedAt) || publishedAt == "")
+  && !(_id in path("drafts.**"))
+) || (
+  _type == "system.release"
+  && defined(publishAt)
+)`,
+        projection:
+          "{_id, _type, publishedAt, name, publishAt, metadata}",
         resource: {
           type: "dataset",
           id: `${SANITY_PROJECT_ID}.${SANITY_DATASET}`,

@@ -51,7 +51,10 @@ export async function blogCachedFetch<T>(opts: BlogCachedFetch<T>): Promise<T> {
 
   const { draftMode } = await import("next/headers");
   const isDraft = (await draftMode()).isEnabled;
-  const params = opts.params ?? {};
+  // PROD-2252: `$preview` skips the publishedAt go-live gate on detail-by-slug
+  // queries so Presentation can render never-published / soft-scheduled docs.
+  // Queries that do not reference `$preview` ignore the extra param.
+  const params = { ...(opts.params ?? {}), preview: isDraft };
 
   // Draft mode (Studio Presentation) OR local dev → read live, never cached, so
   // editors and developers see changes immediately. Production published reads below
