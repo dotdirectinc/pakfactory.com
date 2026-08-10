@@ -86,9 +86,9 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 | Only one uploaded | That mark always |
 | Missing / invalid LQIP | Prefer **light** (white logo) when both uploaded |
 
-**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) with **jpeg-js** (no Sharp) and samples the **logo footprint** (`resolveWatermarkVariantFromLqip`). Decision uses **max** footprint luminance (not average) so darker chrome next to a light-gray corner does not force the white mark. On very small LQIPs (~20px) the geometric footprint is expanded to the bottom-right corner before taking max. No client fetch, no `/api/wm-luma`. Missing LQIP → light mark. Variant is recomputed live each render (no backfill when logos / threshold change). Sharp stays only on `/api/wm` for optional bake-on-serve.
+**How luminance is chosen:** at render, the server decodes Sanity `metadata.lqip` (tiny base64 blur already in the GROQ payload) with **jpeg-js** (no Sharp) and samples the **hexagonal logo mark** (`resolveWatermarkVariantFromLqip` → `watermarkHexagonSampleRect`, PROD-2244). Decision uses **max** hexagon luminance (not average) so darker chrome next to a light-gray corner does not force the white mark. On very small LQIPs (~20px) the bottom-right corner is expanded, then the **left hexagon fraction** of that corner is sampled. No client fetch, no `/api/wm-luma`. Missing LQIP → light mark. Variant is recomputed live each render (no backfill when logos / threshold change). Sharp stays only on `/api/wm` for optional bake-on-serve.
 
-**Sample region:** max luminance under the **logo footprint** (12% width, 5% inset, SVG aspect ~64/244) — not a square of the extreme image corner. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams get the dark mark.
+**Sample region:** max luminance under the **hexagon** (left ~54/244 of the 12%-width logo footprint, 5% inset) — not the full wordmark box and not a square of the extreme image corner. Soft-watermark threshold **0.85** keeps mid-tone product shots on the light mark; near-white diagrams get the dark mark.
 
 **History:** earlier overlay probed via client `/api/wm-luma` (CORS / 502 under load). That route and client `watermark-luminance` were removed; serve-mode `/api/wm` tracing for Sharp remains.
 
@@ -117,6 +117,20 @@ NEXT_PUBLIC_WATERMARK_MODE=overlay
 **Verify overlay:** mark visible on post **body** image (not hero/card); mid-tone/beige → light logo; near-white diagram → dark logo; dark photo → light logo; right-click Save as → clean file.
 **Verify serve:** set mode=serve, reload body image; Save as → watermarked WebP; response header `X-Watermark-Mode: serve`; Studio Media still clean.  
 **Typecheck:** `pnpm --filter @pakfactory/blog typecheck`
+
+---
+
+## PROD-2244 — Watermark appearance (hexagon sample)
+
+**Jira:** [PROD-2244](https://dotdirect.atlassian.net/browse/PROD-2244). Branch: `fix/PROD-2244-watermark-appearance`.
+
+Light/dark selection samples the **hexagon mark** only (`WATERMARK_HEXAGON_WIDTH_FRACTION` ≈ 54/244 on the logo footprint). Overlay draw size/position unchanged. Blog + www `/api/wm` Sharp extract uses the same hexagon rect.
+
+**Default ON:** body/gallery `applyWatermark` stays default on (`initialValue: true`, `DefaultOnBooleanInput`, GROQ `coalesce(..., true)`). Humans toggle **off** per image when they do not want a mark. Heroes/cards remain opt-out in code. Agents do not patch documents to flip toggles.
+
+**Human ops — opacity:** production Global Settings opacity may be **0.3**, which makes soft marks look “missing” even when the overlay is mounted. Schema default is **0.85**. Raise opacity in Studio → Global Settings → Identity → Image watermark if visibility is too low (agents do not write settings documents).
+
+**Verify:** body images on `/epr-for-packaging`, `/protect-business-from-packaging-tariff`, `/artificial-intelligence-packaging-design` — mark when toggle on; light diagrams → dark mark; dark photos → light mark; cards/hero unmarked.
 
 ---
 

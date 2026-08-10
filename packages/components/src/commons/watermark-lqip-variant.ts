@@ -1,9 +1,12 @@
 /**
- * Sharp-free light/dark watermark pick from Sanity LQIP (PROD-2206).
+ * Sharp-free light/dark watermark pick from Sanity LQIP (PROD-2206 / PROD-2244).
  * Safe for page SSR — no native Sharp / libvips.
  */
 import { decode as decodeJpeg } from "jpeg-js";
-import { watermarkFootprintRect } from "./watermark-geometry";
+import {
+  WATERMARK_HEXAGON_WIDTH_FRACTION,
+  watermarkHexagonSampleRect,
+} from "./watermark-geometry";
 import {
   WATERMARK_LUMINANCE_THRESHOLD,
   maxLuminanceFromRgba,
@@ -11,18 +14,41 @@ import {
 
 export type WatermarkVariant = "light" | "dark";
 
-/** Footprint pixel count below this → expand sample (LQIP is often ~20px wide). */
-const MIN_FOOTPRINT_PIXELS = 24;
-/** Expand to this fraction of each axis when the logo footprint is too small to sample. */
+/** Hexagon sample pixel count below this → expand sample (LQIP is often ~20px wide). */
+const MIN_SAMPLE_PIXELS = 24;
+/** Expand to this fraction of each axis when the hexagon sample is too small. */
 const TINY_LQIP_CORNER_FRACTION = 0.35;
+
+function extractRectRgba(
+  data: Uint8Array | Uint8ClampedArray,
+  imageW: number,
+  left: number,
+  top: number,
+  fw: number,
+  fh: number,
+): Uint8ClampedArray {
+  const sample = new Uint8ClampedArray(fw * fh * 4);
+  for (let y = 0; y < fh; y++) {
+    for (let x = 0; x < fw; x++) {
+      const src = ((top + y) * imageW + (left + x)) * 4;
+      const dst = (y * fw + x) * 4;
+      sample[dst] = data[src] ?? 0;
+      sample[dst + 1] = data[src + 1] ?? 0;
+      sample[dst + 2] = data[src + 2] ?? 0;
+      sample[dst + 3] = data[src + 3] ?? 255;
+    }
+  }
+  return sample;
+}
 
 /**
  * Pick light vs dark watermark from Sanity's LQIP data-URI.
  * Missing / invalid LQIP → null → overlay falls back to the light mark.
  *
- * Uses **max** footprint luminance vs `WATERMARK_LUMINANCE_THRESHOLD`. On tiny
- * LQIPs the geometric logo footprint can be 2×1 px — expand to the bottom-right
- * corner so max luma still reflects light-gray diagrams.
+ * Uses **max** luminance under the **hexagon mark** (left fraction of the logo
+ * footprint) vs `WATERMARK_LUMINANCE_THRESHOLD`. On tiny LQIPs the geometric
+ * hexagon can be too few pixels — expand the bottom-right corner, then sample
+ * the left hexagon fraction of that expanded region (PROD-2244).
  */
 export function resolveWatermarkVariantFromLqip(
   lqip: string | null | undefined,
@@ -36,35 +62,34 @@ export function resolveWatermarkVariantFromLqip(
     const { data, width, height } = decodeJpeg(buf, { useTArray: true });
     if (!width || !height || !data?.length) return null;
 
-    let { left, top, width: fw, height: fh } = watermarkFootprintRect(
+    let { left, top, width: fw, height: fh } = watermarkHexagonSampleRect(
       width,
       height,
     );
 
-    // Tiny LQIP: geometric footprint is too few pixels for a meaningful max.
-    if (fw * fh < MIN_FOOTPRINT_PIXELS || width < 48) {
-      const cornerW = Math.max(fw, Math.ceil(width * TINY_LQIP_CORNER_FRACTION));
-      const cornerH = Math.max(fh, Math.ceil(height * TINY_LQIP_CORNER_FRACTION));
-      left = Math.max(0, width - cornerW);
-      top = Math.max(0, height - cornerH);
-      fw = width - left;
-      fh = height - top;
+    // Tiny LQIP: geometric hexagon is too few pixels for a meaningful max.
+    // Expand the bottom-right corner, then keep the left hexagon fraction.
+    if (fw * fh < MIN_SAMPLE_PIXELS || width < 48) {
+      const cornerW = Math.max(
+        fw,
+        Math.ceil(width * TINY_LQIP_CORNER_FRACTION),
+      );
+      const cornerH = Math.max(
+        fh,
+        Math.ceil(height * TINY_LQIP_CORNER_FRACTION),
+      );
+      const cornerLeft = Math.max(0, width - cornerW);
+      const cornerTop = Math.max(0, height - cornerH);
+      const cornerFw = width - cornerLeft;
+      const cornerFh = height - cornerTop;
+      fw = Math.max(1, Math.round(cornerFw * WATERMARK_HEXAGON_WIDTH_FRACTION));
+      fh = cornerFh;
+      left = cornerLeft;
+      top = cornerTop;
     }
 
-    // Extract sample RGBA into a dense buffer for maxLuminanceFromRgba.
-    const footprint = new Uint8ClampedArray(fw * fh * 4);
-    for (let y = 0; y < fh; y++) {
-      for (let x = 0; x < fw; x++) {
-        const src = ((top + y) * width + (left + x)) * 4;
-        const dst = (y * fw + x) * 4;
-        footprint[dst] = data[src] ?? 0;
-        footprint[dst + 1] = data[src + 1] ?? 0;
-        footprint[dst + 2] = data[src + 2] ?? 0;
-        footprint[dst + 3] = data[src + 3] ?? 255;
-      }
-    }
-
-    const lum = maxLuminanceFromRgba(footprint);
+    const sample = extractRectRgba(data, width, left, top, fw, fh);
+    const lum = maxLuminanceFromRgba(sample);
     if (lum == null) return null;
     return lum < WATERMARK_LUMINANCE_THRESHOLD ? "light" : "dark";
   } catch {
