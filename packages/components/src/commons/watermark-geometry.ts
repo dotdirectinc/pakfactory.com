@@ -12,6 +12,12 @@ export const WATERMARK_PADDING_PERCENT = 5;
  */
 export const WATERMARK_LOGO_ASPECT = 64 / 244;
 
+/**
+ * Hexagon mark is the left portion of the 244×64 Studio SVG (~x 0–54).
+ * Luminance sampling uses this fraction of the overlay footprint (PROD-2244).
+ */
+export const WATERMARK_HEXAGON_WIDTH_FRACTION = 54 / 244;
+
 export type WatermarkFootprintRect = {
   left: number;
   top: number;
@@ -41,5 +47,26 @@ export function watermarkFootprintRect(
     top,
     width: Math.min(width, w - left),
     height: Math.min(height, h - top),
+  };
+}
+
+/**
+ * Pixel rect under the hexagonal logo mark (left fraction of the overlay footprint).
+ * Overlay draw size/position is unchanged — only light/dark sampling uses this.
+ */
+export function watermarkHexagonSampleRect(
+  imageW: number,
+  imageH: number,
+): WatermarkFootprintRect {
+  const footprint = watermarkFootprintRect(imageW, imageH);
+  const width = Math.max(
+    1,
+    Math.round(footprint.width * WATERMARK_HEXAGON_WIDTH_FRACTION),
+  );
+  return {
+    left: footprint.left,
+    top: footprint.top,
+    width: Math.min(width, footprint.width),
+    height: footprint.height,
   };
 }
