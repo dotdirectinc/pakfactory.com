@@ -2,6 +2,29 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 /**
+ * Favicon upload guards (PROD-2200).
+ *
+ * This is a **file** field, not an image one, because `.ico` is not a supported
+ * Sanity image upload format (png/jpg/jpeg/bmp/gif/tiff/svg/psd/webp/heif only)
+ * — an `image` field would reject exactly the format most brand kits ship. The
+ * cost is that file assets carry no dimensions and are not served through the
+ * image-transform pipeline, so the browser gets the uploaded file as-is and
+ * validation can only police the extension, read off the asset ref
+ * (`file-<hash>-<ext>`) rather than by dereferencing the asset, which
+ * validation cannot do synchronously.
+ */
+const FAVICON_ACCEPT = '.ico,.png,.svg,image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml'
+const FAVICON_FORMATS = ['ico', 'png', 'svg']
+
+type FileValue = { asset?: { _ref?: string } }
+
+function parseFileExtension(value: unknown) {
+  const ref = (value as FileValue | undefined)?.asset?._ref
+  const match = ref ? /^file-[^-]+-(\w+)$/.exec(ref) : null
+  return match ? match[1].toLowerCase() : null
+}
+
+/**
  * Global Settings (singleton) — site-wide config shared by every surface
  * (www, blog, …). Per-surface settings (e.g. Blog Settings) override these
  * defaults where set. BA "Global Settings": Identity & brand · SEO defaults ·
@@ -48,6 +71,24 @@ export const settings = defineType({
       description:
         'Canonical production domain (e.g. https://www.pakfactory.com). Powers absolute OG-image URLs, canonical tags, and the sitemap base.',
       validation: (Rule) => Rule.required().uri({ scheme: ['https', 'http'] }),
+    }),
+    defineField({
+      name: 'favicon',
+      title: 'Favicon',
+      type: 'file',
+      group: 'identity',
+      options: { accept: FAVICON_ACCEPT },
+      description:
+        'Browser tab / bookmark icon for the website and blog (PROD-2200). Accepts .ico, .png or .svg. Upload a SQUARE icon — 512×512 for PNG (also used as the iOS touch icon), any size for SVG. The file is served exactly as uploaded, so keep it small (< 50 KB). Leave empty to keep the built-in PakFactory favicon.',
+      validation: (Rule) =>
+        Rule.custom((value) => {
+          const extension = parseFileExtension(value)
+          if (!extension) return true
+          if (!FAVICON_FORMATS.includes(extension)) {
+            return `Favicon must be an .ico, .png or .svg file — this is .${extension}.`
+          }
+          return true
+        }),
     }),
     defineField({
       name: 'organization',
