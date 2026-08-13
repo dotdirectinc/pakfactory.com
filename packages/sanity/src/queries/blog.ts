@@ -926,6 +926,13 @@ export const BLOG_TAG_BY_SLUG_QUERY = /* groq */ `*[_type == "blogTag" && slug.c
 export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   siteTitle,
   "defaultOgImageUrl": defaultOgImage.asset->url,
+  "favicon": favicon{
+    "url": asset->url,
+    "extension": asset->extension,
+    "mimeType": asset->mimeType,
+    "width": asset->metadata.dimensions.width,
+    "height": asset->metadata.dimensions.height
+  },
   "organizationLogoUrl": organization.logo.asset->url,
   "companyLogo": organization.logo{
     "url": asset->url,

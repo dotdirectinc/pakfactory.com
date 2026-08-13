@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import type { FaviconAsset } from "@pakfactory/sanity/favicon";
 import { BLOG_GLOBAL_SETTINGS_QUERY } from "@pakfactory/sanity/queries";
 import { BLOG_GLOBAL_SETTINGS_CACHE_TAG } from "@/lib/blog-cache";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
@@ -13,6 +14,8 @@ type CompanyLogoRow = {
 
 export type BlogGlobalSettings = {
   defaultOgImageUrl?: string | null;
+  /** Editor-managed favicon (PROD-2200) — falls back to `public/favicon.ico`. */
+  favicon?: FaviconAsset;
   organizationLogoUrl?: string | null;
   companyLogo?: CompanyLogoRow;
   companyName?: string | null;
