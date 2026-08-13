@@ -929,9 +929,7 @@ export const BLOG_GLOBAL_SETTINGS_QUERY = /* groq */ `*[_type == "settings"][0]{
   "favicon": favicon{
     "url": asset->url,
     "extension": asset->extension,
-    "mimeType": asset->mimeType,
-    "width": asset->metadata.dimensions.width,
-    "height": asset->metadata.dimensions.height
+    "mimeType": asset->mimeType
   },
   "organizationLogoUrl": organization.logo.asset->url,
   "companyLogo": organization.logo{

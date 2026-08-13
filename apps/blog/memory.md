@@ -1440,13 +1440,13 @@ Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the webhook 
 
 ## PROD-2200 — Favicon from Studio Global Settings
 
-**Jira:** [PROD-2200](https://dotdirect.atlassian.net/browse/PROD-2200). Branch: `feat/ziming-sanity`.
+**Jira:** [PROD-2200](https://dotdirect.atlassian.net/browse/PROD-2200). Branches: `feat/ziming-sanity` (PR #305), then `fix/PROD-2200-favicon-accept-ico` (image field → file field so `.ico` uploads are accepted).
 
 **What:** editors set the browser-tab icon once in **Global Settings → Identity & brand → Favicon**; blog and www (case studies) both render it. Blank → each app's bundled `public/favicon.ico`.
 
 | Piece | Path |
 | --- | --- |
-| Field (image, PNG/SVG/WebP) | [`apps/studio/schemas/settings.ts`](../../apps/studio/schemas/settings.ts) `favicon` |
+| Field (file: .ico / .png / .svg) | [`apps/studio/schemas/settings.ts`](../../apps/studio/schemas/settings.ts) `favicon` |
 | Projection | `BLOG_GLOBAL_SETTINGS_QUERY` → [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts) |
 | Link builder | [`buildFaviconIcons`](../../packages/sanity/src/favicon.ts) → Next `metadata.icons` |
 | Blog head | [`generateMetadata`](./src/app/layout.tsx) + [`fetchBlogGlobalSettings`](./src/lib/blog-global-settings.ts) |
@@ -1455,7 +1455,11 @@ Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the webhook 
 
 **Why the `.ico` moved out of `app/`:** file-based metadata **outranks** `generateMetadata` in Next.js, so an `app/favicon.ico` would silently beat the editor's upload. Serving it from `public/` makes it a plain fallback href. The blog references it via `absoluteUrl('/favicon.ico')` — `basePath` is **not** applied to metadata icon hrefs, so a bare `/favicon.ico` would 404 under `/blog`.
 
-**Formats:** Sanity stores no `.ico` — editors upload PNG (or SVG/WebP). Raster uploads are resized on the Sanity CDN (`w/h + fit=fill + fm=png`) to 32, 192 and an 180 `apple-touch-icon`; **SVG is served untouched** (the CDN transforms JPEG/PNG/WebP/PJPG/TIFF/AVIF/GIF only), so an SVG favicon emits one `image/svg+xml` link plus the `.ico` and **no** iOS touch icon. Schema validation errors on other formats and warns on non-square / <48px uploads.
+**Why a `file` field, not an `image` one:** Sanity's supported **image** upload formats are `png, jpg, jpeg, bmp, gif, tiff, svg, psd, webp, heif` — **`.ico` is not among them**, and it is the format most brand kits ship. A `file` field takes all three (`.ico` / `.png` / `.svg`); schema validation rejects anything else.
+
+**Trade-offs of `file`:** file assets sit outside the image-transform pipeline and carry no dimensions metadata, so (a) the uploaded file is served **as-is** at every size — keep it under ~50 KB, (b) there is no CDN resize to 32/192/180, (c) Studio shows a filename rather than a thumbnail and the asset is not media-library tagged, and (d) validation can check the extension but not squareness or pixel size.
+
+**Per format:** `.ico` → one `sizes="any"` link, no iOS touch icon. `.png` → one link plus a 180 `apple-touch-icon` pointing at the same file. `.svg` → the `.ico` fallback plus an `image/svg+xml` link, no iOS touch icon (Apple ignores SVG there).
 
 **Propagation:** the `settings` webhook busts `BLOG_GLOBAL_SETTINGS_CACHE_TAG` (blog); www rides its 300s `unstable_cache` TTL + route revalidate. Head changes appear within the route's own revalidate window (blog layout `revalidate = 60`).
 
