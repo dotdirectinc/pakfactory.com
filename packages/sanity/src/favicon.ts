@@ -6,16 +6,11 @@
  * `metadata.icons`. The return shape is structurally compatible with Next's
  * `Metadata['icons']` without this package depending on `next`.
  *
- * Two rules drive the output:
- *
- * 1. **SVG is served as-is.** The Sanity image pipeline only transforms JPEG,
- *    PNG, WebP, PJPG, TIFF, AVIF and GIF — an SVG asset cannot be resized or
- *    rasterised via URL params. So an SVG favicon emits one `type="image/svg+xml"`
- *    link (every modern browser scales it) plus the static `.ico` for legacy
- *    ones, and no `apple-touch-icon` (Apple does not render SVG there).
- * 2. **Raster sources are resized on the CDN** to the sizes browsers actually
- *    ask for, with `fit=fill` so a non-square upload is padded rather than
- *    cropped (transparent background on PNG output).
+ * `favicon` is a Sanity **file** asset, not an image one: `.ico` is not a
+ * supported image upload format, and it is the format most brand kits ship. File
+ * assets are outside the image-transform pipeline, so the uploaded file is
+ * emitted as-is at every size — the `type` hint is all that varies, and iOS gets
+ * the same file as its touch icon when the upload is a PNG.
  */
 
 /** `favicon` projection returned by `BLOG_GLOBAL_SETTINGS_QUERY`. */
@@ -24,8 +19,6 @@ export type FaviconAsset =
       url?: string | null;
       extension?: string | null;
       mimeType?: string | null;
-      width?: number | null;
-      height?: number | null;
     }
   | null
   | undefined;
@@ -41,22 +34,25 @@ export type FaviconIcons = {
   apple?: IconDescriptor[];
 };
 
-/** Tab / bookmark sizes. 192 is the Android home-screen icon. */
-const RASTER_ICON_SIZES = [32, 192] as const;
-/** iOS home-screen icon — Apple's documented size. */
+/** iOS home-screen icon — Apple ignores SVG and `.ico` here, so PNG only. */
 const APPLE_TOUCH_SIZE = 180;
 
-function isSvg(favicon: NonNullable<FaviconAsset>): boolean {
-  return (
-    favicon.extension?.trim().toLowerCase() === "svg" ||
-    favicon.mimeType?.trim().toLowerCase() === "image/svg+xml"
-  );
-}
+const MIME_BY_EXTENSION: Record<string, string> = {
+  ico: "image/x-icon",
+  png: "image/png",
+  svg: "image/svg+xml",
+};
 
-/** Square Sanity CDN variant: padded (never cropped), PNG so every browser can read it. */
-function sanityIconUrl(url: string, size: number): string {
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}w=${size}&h=${size}&fit=fill&fm=png`;
+function resolveExtension(favicon: NonNullable<FaviconAsset>): string {
+  const extension = favicon.extension?.trim().toLowerCase();
+  if (extension) return extension;
+  const mimeType = favicon.mimeType?.trim().toLowerCase();
+  const matched = Object.entries(MIME_BY_EXTENSION).find(
+    ([, mime]) => mime === mimeType,
+  );
+  // `image/vnd.microsoft.icon` is the other registered .ico type.
+  if (!matched && mimeType?.includes("icon")) return "ico";
+  return matched?.[0] ?? "";
 }
 
 /**
@@ -76,29 +72,30 @@ export function buildFaviconIcons(
     return { icon: [{ url: fallbackHref, sizes: "any" }] };
   }
 
-  if (isSvg(favicon)) {
+  const extension = resolveExtension(favicon);
+  const type = MIME_BY_EXTENSION[extension];
+
+  if (extension === "svg") {
     // Legacy `.ico` first, SVG second: browsers that understand both prefer the
-    // later, more specific declaration.
+    // later, more specific declaration. No apple-touch-icon — iOS ignores SVG.
     return {
       icon: [
         { url: fallbackHref, sizes: "32x32" },
-        { url, type: "image/svg+xml" },
+        { url, type },
       ],
     };
   }
 
-  return {
-    icon: RASTER_ICON_SIZES.map((size) => ({
-      url: sanityIconUrl(url, size),
-      sizes: `${size}x${size}`,
-      type: "image/png",
-    })),
-    apple: [
-      {
-        url: sanityIconUrl(url, APPLE_TOUCH_SIZE),
-        sizes: `${APPLE_TOUCH_SIZE}x${APPLE_TOUCH_SIZE}`,
-        type: "image/png",
-      },
-    ],
-  };
+  if (extension === "png") {
+    return {
+      icon: [{ url, type }],
+      apple: [
+        { url, type, sizes: `${APPLE_TOUCH_SIZE}x${APPLE_TOUCH_SIZE}` },
+      ],
+    };
+  }
+
+  // `.ico` (and anything else that slipped past schema validation): a multi-size
+  // .ico is `sizes="any"`, and iOS will not take it as a touch icon.
+  return { icon: [{ url, sizes: "any", ...(type ? { type } : {}) }] };
 }
