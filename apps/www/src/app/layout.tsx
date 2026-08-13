@@ -8,6 +8,7 @@ import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import {SanityVisualEditing} from '@/components/layout/sanity-visual-editing';
 import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
+import {buildFaviconIcons} from '@pakfactory/sanity/favicon';
 import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
 import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
 import {toWatermarkConfig} from '@/lib/watermark';
@@ -17,11 +18,22 @@ export const viewport: Viewport = {
     themeColor: '#1d2058',
 };
 
-export const metadata: Metadata = {
-    title: 'PakFactory',
-    description: 'Custom packaging, simplified.',
-    robots: { index: false, follow: false },
-};
+/**
+ * Icons come from Global Settings (PROD-2200), so the head is built here rather
+ * than exported as a static `metadata` object. There is deliberately NO
+ * `app/favicon.ico`: file-based metadata outranks `generateMetadata`, so the
+ * bundled file would win over the editor's upload — it lives in `public/`
+ * instead and is the fallback when no favicon is configured.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+    const globalSettings = await fetchWwwGlobalSettings();
+    return {
+        title: 'PakFactory',
+        description: 'Custom packaging, simplified.',
+        robots: { index: false, follow: false },
+        icons: buildFaviconIcons(globalSettings?.favicon, '/favicon.ico'),
+    };
+}
 
 /** Inject GTM only in production when Global Settings has a container ID. */
 function resolveGtmId(gtmId: string | null | undefined): string | null {

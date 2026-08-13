@@ -2,6 +2,30 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 
 /**
+ * Favicon upload guards (PROD-2200). Sanity stores no `.ico` — the frontend
+ * resizes a PNG on the CDN (32/180/192) and serves an SVG untouched, so the two
+ * things worth policing are the format and "is it actually square and big
+ * enough". Both read the asset ref (`image-<id>-<w>x<h>-<ext>`) rather than
+ * dereferencing the asset, which validation cannot do synchronously.
+ */
+const FAVICON_ACCEPT = 'image/png,image/svg+xml,image/webp'
+const FAVICON_FORMATS = ['png', 'svg', 'webp']
+const FAVICON_MIN_SIZE = 48
+
+type ImageValue = { asset?: { _ref?: string } }
+
+function parseImageRef(value: unknown) {
+  const ref = (value as ImageValue | undefined)?.asset?._ref
+  const match = ref ? /^image-[^-]+-(\d+)x(\d+)-(\w+)$/.exec(ref) : null
+  if (!match) return null
+  return {
+    width: Number(match[1]),
+    height: Number(match[2]),
+    extension: match[3].toLowerCase(),
+  }
+}
+
+/**
  * Global Settings (singleton) — site-wide config shared by every surface
  * (www, blog, …). Per-surface settings (e.g. Blog Settings) override these
  * defaults where set. BA "Global Settings": Identity & brand · SEO defaults ·
@@ -49,6 +73,39 @@ export const settings = defineType({
         'Canonical production domain (e.g. https://www.pakfactory.com). Powers absolute OG-image URLs, canonical tags, and the sitemap base.',
       validation: (Rule) => Rule.required().uri({ scheme: ['https', 'http'] }),
     }),
+    defineField(
+      taggedImageField({
+        name: 'favicon',
+        title: 'Favicon',
+        type: 'image',
+        group: 'identity',
+        mediaTags: [MEDIA_TAG.website],
+        options: { accept: FAVICON_ACCEPT, hotspot: false },
+        description:
+          'Browser tab / bookmark icon for the website and blog (PROD-2200). Upload a SQUARE 512×512 PNG (resized on the fly for tab, Android and iOS icons) or an SVG (scales itself; no iOS touch icon). Sanity cannot store .ico — export a PNG instead. Leave empty to keep the built-in PakFactory favicon.',
+        validation: (Rule) => [
+          Rule.custom((value) => {
+            const image = parseImageRef(value)
+            if (!image) return true
+            if (!FAVICON_FORMATS.includes(image.extension)) {
+              return `Favicon must be a PNG, SVG or WebP — this is .${image.extension}.`
+            }
+            return true
+          }),
+          Rule.custom((value) => {
+            const image = parseImageRef(value)
+            if (!image || image.extension === 'svg') return true
+            if (image.width !== image.height) {
+              return `Favicon should be square — this is ${image.width}×${image.height} and will be padded to fit.`
+            }
+            if (image.width < FAVICON_MIN_SIZE) {
+              return `Favicon is only ${image.width}×${image.height} — upload at least ${FAVICON_MIN_SIZE}×${FAVICON_MIN_SIZE} (512×512 recommended) so touch icons stay sharp.`
+            }
+            return true
+          }).warning(),
+        ],
+      }),
+    ),
     defineField({
       name: 'organization',
       title: 'Organization',

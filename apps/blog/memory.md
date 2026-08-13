@@ -1437,3 +1437,28 @@ Set `SANITY_API_WRITE_TOKEN` on Vercel (blog + www) and locally for the webhook 
 **Verify:** Presentation on a draft with slug + blank Publish date → `/{slug}` loads (not 404); published post with unpublished edits still works; anonymous tab on draft slug still 404s.
 
 **Out of scope:** hosted-Studio third-party cookie fragility (PROD-1775); case-study preview bypass; listing rows showing unpublished drafts.
+
+## PROD-2200 — Favicon from Studio Global Settings
+
+**Jira:** [PROD-2200](https://dotdirect.atlassian.net/browse/PROD-2200). Branch: `feat/ziming-sanity`.
+
+**What:** editors set the browser-tab icon once in **Global Settings → Identity & brand → Favicon**; blog and www (case studies) both render it. Blank → each app's bundled `public/favicon.ico`.
+
+| Piece | Path |
+| --- | --- |
+| Field (image, PNG/SVG/WebP) | [`apps/studio/schemas/settings.ts`](../../apps/studio/schemas/settings.ts) `favicon` |
+| Projection | `BLOG_GLOBAL_SETTINGS_QUERY` → [`packages/sanity/src/queries/blog.ts`](../../packages/sanity/src/queries/blog.ts) |
+| Link builder | [`buildFaviconIcons`](../../packages/sanity/src/favicon.ts) → Next `metadata.icons` |
+| Blog head | [`generateMetadata`](./src/app/layout.tsx) + [`fetchBlogGlobalSettings`](./src/lib/blog-global-settings.ts) |
+| Www head | [`apps/www/src/app/layout.tsx`](../www/src/app/layout.tsx) + [`fetchWwwGlobalSettings`](../www/src/lib/www-global-settings.ts) |
+| Fallback file | `apps/{blog,www}/public/favicon.ico` |
+
+**Why the `.ico` moved out of `app/`:** file-based metadata **outranks** `generateMetadata` in Next.js, so an `app/favicon.ico` would silently beat the editor's upload. Serving it from `public/` makes it a plain fallback href. The blog references it via `absoluteUrl('/favicon.ico')` — `basePath` is **not** applied to metadata icon hrefs, so a bare `/favicon.ico` would 404 under `/blog`.
+
+**Formats:** Sanity stores no `.ico` — editors upload PNG (or SVG/WebP). Raster uploads are resized on the Sanity CDN (`w/h + fit=fill + fm=png`) to 32, 192 and an 180 `apple-touch-icon`; **SVG is served untouched** (the CDN transforms JPEG/PNG/WebP/PJPG/TIFF/AVIF/GIF only), so an SVG favicon emits one `image/svg+xml` link plus the `.ico` and **no** iOS touch icon. Schema validation errors on other formats and warns on non-square / <48px uploads.
+
+**Propagation:** the `settings` webhook busts `BLOG_GLOBAL_SETTINGS_CACHE_TAG` (blog); www rides its 300s `unstable_cache` TTL + route revalidate. Head changes appear within the route's own revalidate window (blog layout `revalidate = 60`).
+
+**Humans:** upload the favicon in Studio. Agents do not patch Sanity documents.
+
+**Out of scope:** the Studio UI's own favicon (`apps/studio/static/`), `site.webmanifest` / PWA icons, per-app favicon overrides, and Magento's root `/favicon.ico` (owned by the storefront, not this repo).

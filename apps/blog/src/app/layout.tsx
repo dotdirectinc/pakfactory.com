@@ -19,6 +19,7 @@ import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pag
 import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data';
 import {fetchBlogGlobalSettings} from '@/lib/blog-global-settings';
 import {toWatermarkConfig} from '@/lib/watermark';
+import {buildFaviconIcons} from '@pakfactory/sanity/favicon';
 import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
 import {absoluteUrl, sitePath} from '@/lib/site';
 import './globals.css';
@@ -28,10 +29,25 @@ export const revalidate = 60;
 // Inter — used for widget captions (Figma spec).
 const inter = Inter({subsets: ['latin'], variable: '--font-inter'});
 
-export const metadata: Metadata = {
-    title: 'PakFactory Blog',
-    description: 'Packaging insights, guides, and stories.',
-};
+/**
+ * Icons come from Global Settings (PROD-2200), so the head is built here rather
+ * than exported as a static `metadata` object. There is deliberately NO
+ * `app/favicon.ico`: file-based metadata outranks `generateMetadata`, so the
+ * bundled file would win over the editor's upload. It lives in `public/`
+ * instead and is referenced through `absoluteUrl()` — `basePath` is not applied
+ * to metadata icon hrefs, so a bare `/favicon.ico` would 404 under `/blog`.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+    const globalSettings = await fetchBlogGlobalSettings();
+    return {
+        title: 'PakFactory Blog',
+        description: 'Packaging insights, guides, and stories.',
+        icons: buildFaviconIcons(
+            globalSettings?.favicon,
+            absoluteUrl('/favicon.ico'),
+        ),
+    };
+}
 
 /** Inject GTM only in production when Global Settings has a container ID. */
 function resolveGtmId(gtmId: string | null | undefined): string | null {
