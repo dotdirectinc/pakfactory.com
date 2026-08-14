@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 export const capabilityType = defineType({
   name: 'capabilityType',
@@ -17,7 +18,7 @@ export const capabilityType = defineType({
       title: 'Title',
       type: 'string',
       group: 'basic',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
       name: 'slug',
@@ -33,6 +34,7 @@ export const capabilityType = defineType({
       type: 'reference',
       group: 'basic',
       to: [{ type: 'capabilityCategory' }],
+      options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
     defineField({

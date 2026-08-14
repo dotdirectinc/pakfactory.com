@@ -19,6 +19,12 @@ type SeoOptions = {
   group: string
   /** Add a Canonical URL field (Post / Generic Page only — not Category/Tag). */
   canonical?: boolean
+  /**
+   * Include `metaTitle` / `metaDescription`. Set false to take only the three
+   * robots toggles — used by commercial types that already declare their own
+   * meta fields and whose fallback copy is not the blog's.
+   */
+  meta?: boolean
   /** Hard-coded fallback for the Index toggle, used when the settings singleton has no value. */
   indexDefault?: boolean
   /**
@@ -71,27 +77,30 @@ export function seoFields({
   canonical = false,
   indexDefault = true,
   typeSettingsId,
+  meta = true,
 }: SeoOptions) {
   return [
-    defineField({
-      name: 'metaTitle',
-      title: 'Meta title',
-      type: 'string',
-      group,
-      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
-      description:
-        'Shown in search results and the browser tab. When blank, Blog Settings type format applies (e.g. Category defaults), then the content title. A filled value always wins over formats.',
-    }),
-    defineField({
-      name: 'metaDescription',
-      title: 'Meta description',
-      type: 'text',
-      rows: 3,
-      group,
-      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
-      description:
-        'The SERP snippet. When blank, Blog Settings type format applies, then excerpt/description. A filled value always wins over formats.',
-    }),
+    ...(!meta ? [] : [
+      defineField({
+        name: 'metaTitle',
+        title: 'Meta title',
+        type: 'string',
+        group,
+        validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
+        description:
+          'Shown in search results and the browser tab. When blank, Blog Settings type format applies (e.g. Category defaults), then the content title. A filled value always wins over formats.',
+      }),
+      defineField({
+        name: 'metaDescription',
+        title: 'Meta description',
+        type: 'text',
+        rows: 3,
+        group,
+        validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
+        description:
+          'The SERP snippet. When blank, Blog Settings type format applies, then excerpt/description. A filled value always wins over formats.',
+      }),
+    ]),
     ...(canonical
       ? [
           defineField({

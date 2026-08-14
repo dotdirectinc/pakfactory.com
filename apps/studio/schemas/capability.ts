@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
 
 export const capability = defineType({
   name: 'capability',
@@ -47,6 +48,7 @@ export const capability = defineType({
       type: 'reference',
       group: 'basic',
       to: [{ type: 'capabilityCategory' }],
+      options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -57,6 +59,7 @@ export const capability = defineType({
       to: [{ type: 'capabilityType' }],
       description: 'Filtered by the selected category. Select a category first.',
       options: {
+        disableNew: true,
         filter: ({ document }: { document: { category?: { _ref?: string } } }) => {
           const categoryRef = document?.category?._ref
           if (!categoryRef) return { filter: 'false' }
@@ -396,6 +399,10 @@ export const capability = defineType({
       mediaTags: ogMediaTags(MEDIA_TAG.capability),
       options: { hotspot: true },
     })),
+
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
   ],
 
   preview: {

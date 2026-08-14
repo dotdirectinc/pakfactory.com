@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
 
 export const productStyleCategory = defineType({
   name: 'productStyleCategory',
@@ -134,6 +135,10 @@ export const productStyleCategory = defineType({
       mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
     })),
+
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
   ],
   preview: {
     select: {
