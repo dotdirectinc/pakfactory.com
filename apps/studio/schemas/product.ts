@@ -1,5 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
+import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 
 export const product = defineType({
   name: 'product',
@@ -45,19 +47,8 @@ export const product = defineType({
       type: 'slug',
       group: 'basic',
       options: { source: 'title' },
-      validation: (Rule) =>
-        Rule.required().custom(async (slug, context) => {
-          if (!slug?.current) return 'Slug is required'
-          const client = context.getClient({ apiVersion: '2024-01-01' })
-          const doc = context.document as { _id?: string }
-          const id = doc?._id?.replace('drafts.', '')
-          const draftId = `drafts.${id}`
-          const existing = await client.fetch(
-            `*[_type == "product" && slug.current == $slug && !(_id in [$id, $draftId])][0]._id`,
-            { slug: slug.current, id, draftId }
-          )
-          return existing ? 'Slug must be unique across all products' : true
-        }),
+      description: 'The /products/ URL segment. Must be unique across products and product lines.',
+      validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
     defineField({
       name: 'status',
@@ -318,6 +309,12 @@ export const product = defineType({
       mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
     })),
+
+    // The three robots toggles, from the one shared definition every blog type
+    // already uses. Product had none at all — no way to keep a page out of the
+    // index on what will be the site's highest-volume type. Meta fields are not
+    // taken from the shared set: its copy describes the blog's fallback chain.
+    ...seoFields({ group: 'seo', meta: false }),
   ],
 
   preview: {

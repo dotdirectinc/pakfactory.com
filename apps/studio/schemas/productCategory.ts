@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 
 export const productCategory = defineType({
   name: 'productCategory',
@@ -25,7 +26,8 @@ export const productCategory = defineType({
       type: 'slug',
       group: 'basic',
       options: { source: 'title' },
-      validation: (Rule) => Rule.required(),
+      description: 'The /products/ URL segment. Must be unique across products and product lines.',
+      validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
     defineField({
       name: 'description',
