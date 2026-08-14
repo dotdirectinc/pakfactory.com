@@ -2,6 +2,7 @@ import { capabilityCategory } from './capabilityCategory'
 import { socialLink } from '../lib/social-link-schema'
 import { capabilityType } from './capabilityType'
 import { capability } from './capability'
+import { optionGroup } from './optionGroup'
 import { attributeGroup } from './attributeGroup'
 import { attribute } from './attribute'
 import { productCategory } from './productCategory'
@@ -57,6 +58,7 @@ export const schemaTypes = [
   capabilityCategory,
   capabilityType,
   capability,
+  optionGroup,
 
   // Attribute layer
   attributeGroup,

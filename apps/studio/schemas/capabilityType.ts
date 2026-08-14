@@ -125,61 +125,46 @@ export const capabilityType = defineType({
       },
     }),
     defineField({
-      name: 'colorRange',
-      title: 'Color range',
+      name: 'optionGroups',
+      title: 'Spec tables',
       type: 'array',
       group: 'sharedSpecs',
       description:
-        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'name', type: 'string', title: 'Color name' },
-            { name: 'hex', type: 'string', title: 'Hex code' },
-          ],
-          preview: { select: { title: 'name', subtitle: 'hex' } },
+        'Which spec tables the options under this type fill in, and whether each option picks one row or several. The type declares the columns; it holds no rows of its own.',
+      of: [{
+        type: 'object',
+        name: 'declaredOptionGroup',
+        fields: [
+          defineField({
+            name: 'group',
+            title: 'Table',
+            type: 'reference',
+            to: [{ type: 'optionGroup' }],
+            options: { disableNew: true },
+            description: 'The table definition — its columns come from there.',
+            validation: (Rule) => Rule.required(),
+          }),
+          defineField({
+            name: 'cardinality',
+            title: 'How many rows an option states',
+            type: 'string',
+            description:
+              'Pick one — the options of this type are mutually exclusive on this table. Pick many — an option can state several rows.',
+            options: {
+              layout: 'radio',
+              list: [
+                { title: 'Pick one', value: 'one' },
+                { title: 'Pick many', value: 'many' },
+              ],
+            },
+            initialValue: 'one',
+            validation: (Rule) => Rule.required(),
+          }),
+        ],
+        preview: {
+          select: { title: 'group.title', subtitle: 'cardinality' },
         },
-      ],
-    }),
-    defineField({
-      name: 'thicknessTable',
-      title: 'Thickness table',
-      type: 'array',
-      group: 'sharedSpecs',
-      description:
-        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'gsm', type: 'number', title: 'GSM' },
-            { name: 'caliper', type: 'string', title: 'Caliper (mm)' },
-            { name: 'notes', type: 'string', title: 'Notes' },
-          ],
-          preview: { select: { title: 'gsm', subtitle: 'caliper' } },
-        },
-      ],
-    }),
-    defineField({
-      name: 'fluteTypeTable',
-      title: 'Flute type table',
-      type: 'array',
-      group: 'sharedSpecs',
-      description:
-        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'fluteType', type: 'string', title: 'Flute type (e.g. B, C, E)' },
-            { name: 'flute', type: 'string', title: 'Flute description' },
-            { name: 'liner', type: 'string', title: 'Liner' },
-            { name: 'notes', type: 'string', title: 'Notes' },
-          ],
-          preview: { select: { title: 'fluteType', subtitle: 'notes' } },
-        },
-      ],
+      }],
     }),
 
     // SEO tab
