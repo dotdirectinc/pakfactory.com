@@ -107,21 +107,28 @@ export const capabilityType = defineType({
     }),
 
     // Shared Specs tab
-    // Helper note at top of tab
+    // `sharedSpecsNote` was help text stored as content — the same sentence on
+    // 9 documents in two variants. It is now a schema description, written once
+    // on each table below. The field is deprecated rather than dropped because
+    // those 9 values still exist; it comes out once they are cleared.
     defineField({
       name: 'sharedSpecsNote',
       title: 'About Shared Specs',
       type: 'string',
       group: 'sharedSpecs',
       readOnly: true,
-      initialValue:
-        'Data authored here is inherited by every customization item of this type. Items can override individual sections using the Options panel on their Page tab.',
+      deprecated: {
+        reason:
+          'Help text belongs in the schema, not in a field. It also describes inheritance, which no longer exists — the option states its own rows. Do not write to this field.',
+      },
     }),
     defineField({
       name: 'colorRange',
       title: 'Color range',
       type: 'array',
       group: 'sharedSpecs',
+      description:
+        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
       of: [
         {
           type: 'object',
@@ -138,6 +145,8 @@ export const capabilityType = defineType({
       title: 'Thickness table',
       type: 'array',
       group: 'sharedSpecs',
+      description:
+        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
       of: [
         {
           type: 'object',
@@ -155,6 +164,8 @@ export const capabilityType = defineType({
       title: 'Flute type table',
       type: 'array',
       group: 'sharedSpecs',
+      description:
+        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
       of: [
         {
           type: 'object',
