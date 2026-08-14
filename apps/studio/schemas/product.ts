@@ -1,5 +1,4 @@
 import { defineField, defineType } from 'sanity'
-import { createInheritedSpecInput } from '../components/InheritedSpecInput'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 
 export const product = defineType({
@@ -9,7 +8,6 @@ export const product = defineType({
   groups: [
     { name: 'basic', title: 'Basic', default: true },
     { name: 'classification', title: 'Category' },
-    { name: 'capabilities', title: 'Customization' },
     { name: 'attributes', title: 'Attributes' },
     { name: 'specs', title: 'Specs' },
     { name: 'page', title: 'Page' },
@@ -201,35 +199,22 @@ export const product = defineType({
         'The one solution this product leads with — it names the parent in the breadcrumb. Required for inspiration presets once the Product type field lands; optional for standard products.',
     }),
 
-    // ─── CUSTOMIZATION ────────────────────────────────────────────────────────
-
-    defineField({
-      name: 'capabilitiesOverride',
-      title: 'Customization overwrite',
-      type: 'array',
-      group: 'capabilities',
-      description:
-        'Leave empty — customizations are inherited automatically from this product\'s category via GROQ. Add items here only to override completely (replaces the full inherited set, not a merge).',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
-    }),
-
     // ─── SPECS ────────────────────────────────────────────────────────────────
 
     defineField({
       name: 'moq',
-      title: 'MOQ override',
+      title: 'MOQ',
       type: 'number',
       group: 'specs',
-      description: 'Set only if this product differs from the style default.',
-      components: { input: createInheritedSpecInput('defaultMoq', ' units') },
+      description:
+        'This product\'s own minimum order quantity, in units. Not an override — there is no style default to override, and a style that needs a figure takes the lowest among its products.',
     }),
     defineField({
       name: 'leadTimeDays',
-      title: 'Lead time override (days)',
+      title: 'Lead time (days)',
       type: 'number',
       group: 'specs',
-      description: 'Set only if this product differs from the style default.',
-      components: { input: createInheritedSpecInput('defaultLeadTimeDays', ' days') },
+      description: 'This product\'s own production lead time, in days.',
     }),
     // ─── PAGE ─────────────────────────────────────────────────────────────────
 

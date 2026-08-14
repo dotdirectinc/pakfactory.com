@@ -8,7 +8,6 @@ export const productStyleCategory = defineType({
   groups: [
     { name: 'basic', title: 'Basic', default: true },
     { name: 'landing', title: 'Landing Page' },
-    { name: 'capabilities', title: 'Customization' },
     { name: 'seo', title: 'SEO' },
   ],
   fields: [
@@ -50,20 +49,9 @@ export const productStyleCategory = defineType({
       type: 'number',
       group: 'basic',
     }),
-    defineField({
-      name: 'defaultMoq',
-      title: 'Default MOQ',
-      type: 'number',
-      group: 'basic',
-      description: 'Default minimum order quantity for products in this style. Individual products inherit this value unless they set their own MOQ.',
-    }),
-    defineField({
-      name: 'defaultLeadTimeDays',
-      title: 'Default lead time (days)',
-      type: 'number',
-      group: 'basic',
-      description: 'Default production lead time in days for this style. Individual products inherit this unless they set their own lead time.',
-    }),
+    // Nothing inherits: each product states its own MOQ and lead time, and a
+    // style that needs a figure derives it from its products at read time.
+    // `defaultMoq` and `defaultLeadTimeDays` were removed here — never populated.
 
     // ─── LANDING PAGE ─────────────────────────────────────────────────────────
     // Ported from old productCollection hero + bannerImage pattern.
@@ -120,18 +108,6 @@ export const productStyleCategory = defineType({
         defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
       ],
     })),
-
-    // ─── CUSTOMIZATION ────────────────────────────────────────────────────────
-
-    defineField({
-      name: 'defaultCapabilities',
-      title: 'Default customizations',
-      type: 'array',
-      group: 'capabilities',
-      description:
-        'Customizations typical for products in this style category. Products inherit these automatically via GROQ; add to a product\'s capabilitiesOverride only to replace the full set.',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
-    }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 

@@ -146,8 +146,7 @@ export const PRODUCT_BY_PATH_QUERY = /* groq */ `*[
   "primaryCollection": primaryCollection->{
     _id,
     title,
-    "slug": slug.current,
-    "defaultCapabilities": defaultCapabilities[]->{ _id, title, "slug": slug.current }
+    "slug": slug.current
   },
   "landingPageId": primaryLandingPage._ref,
   "collectionId": primaryCollection._ref
