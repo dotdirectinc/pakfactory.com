@@ -171,6 +171,36 @@ export const product = defineType({
       of: [{ type: 'reference', to: [{ type: 'useCase' }] }],
     }),
 
+    // ─── SOLUTIONS ────────────────────────────────────────────────────────────
+    // One field replacing the three above. `industries`, `industryCategories`
+    // and `useCases` retire in PROD-2298 and PROD-2299 once every tag is
+    // repointed here; until then both sets are live and only these are filled in.
+
+    defineField({
+      name: 'solutions',
+      title: 'Solutions',
+      type: 'array',
+      group: 'related',
+      description:
+        'Every solution this product serves — industries, channels, focus areas and use cases in one list. Replaces the separate Industries, Industry segments and Use cases fields.',
+      of: [{
+        type: 'reference',
+        to: [{ type: 'solution' }],
+        options: { disableNew: true },
+      }],
+    }),
+
+    defineField({
+      name: 'primarySolution',
+      title: 'Primary solution',
+      type: 'reference',
+      group: 'related',
+      to: [{ type: 'solution' }],
+      options: { disableNew: true },
+      description:
+        'The one solution this product leads with — it names the parent in the breadcrumb. Required for inspiration presets once the Product type field lands; optional for standard products.',
+    }),
+
     // ─── CUSTOMIZATION ────────────────────────────────────────────────────────
 
     defineField({
