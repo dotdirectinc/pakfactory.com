@@ -42,6 +42,56 @@ export const capabilityType = defineType({
       group: 'basic',
       rows: 3,
     }),
+    // ─── PROPERTIES ───────────────────────────────────────────────────────────
+    // The Type declares which properties apply to the options beneath it, and
+    // how each one is used. This declaration is what scopes the Option's
+    // `properties` picker — the eight per-topic fields it replaces each carried
+    // their own hardcoded group filter, which is why Finish Type was unreachable
+    // from any deployed type.
+
+    defineField({
+      name: 'properties',
+      title: 'Properties',
+      type: 'array',
+      group: 'basic',
+      description:
+        'Which properties the options under this type describe themselves with. An option can only pick values from the properties listed here, so an empty list means its Properties field will have nothing to choose from.',
+      of: [{
+        type: 'object',
+        name: 'declaredProperty',
+        fields: [
+          defineField({
+            name: 'property',
+            title: 'Property',
+            type: 'reference',
+            to: [{ type: 'attributeGroup' }],
+            options: { disableNew: true },
+            description: 'The named dimension — Sustainability, Colour, Finish Type.',
+            validation: (Rule) => Rule.required(),
+          }),
+          defineField({
+            name: 'usage',
+            title: 'How it is used',
+            type: 'string',
+            description:
+              'Stated — the option asserts this as a fact about itself. Selectable — the customer chooses a value for it when configuring.',
+            options: {
+              layout: 'radio',
+              list: [
+                { title: 'Stated', value: 'stated' },
+                { title: 'Selectable', value: 'selectable' },
+              ],
+            },
+            initialValue: 'stated',
+            validation: (Rule) => Rule.required(),
+          }),
+        ],
+        preview: {
+          select: { title: 'property.title', subtitle: 'usage' },
+        },
+      }],
+    }),
+
     defineField({
       name: 'order',
       title: 'Display order',
@@ -57,21 +107,28 @@ export const capabilityType = defineType({
     }),
 
     // Shared Specs tab
-    // Helper note at top of tab
+    // `sharedSpecsNote` was help text stored as content — the same sentence on
+    // 9 documents in two variants. It is now a schema description, written once
+    // on each table below. The field is deprecated rather than dropped because
+    // those 9 values still exist; it comes out once they are cleared.
     defineField({
       name: 'sharedSpecsNote',
       title: 'About Shared Specs',
       type: 'string',
       group: 'sharedSpecs',
       readOnly: true,
-      initialValue:
-        'Data authored here is inherited by every customization item of this type. Items can override individual sections using the Options panel on their Page tab.',
+      deprecated: {
+        reason:
+          'Help text belongs in the schema, not in a field. It also describes inheritance, which no longer exists — the option states its own rows. Do not write to this field.',
+      },
     }),
     defineField({
       name: 'colorRange',
       title: 'Color range',
       type: 'array',
       group: 'sharedSpecs',
+      description:
+        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
       of: [
         {
           type: 'object',
@@ -88,6 +145,8 @@ export const capabilityType = defineType({
       title: 'Thickness table',
       type: 'array',
       group: 'sharedSpecs',
+      description:
+        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
       of: [
         {
           type: 'object',
@@ -105,6 +164,8 @@ export const capabilityType = defineType({
       title: 'Flute type table',
       type: 'array',
       group: 'sharedSpecs',
+      description:
+        'Rows the options of this type may draw on. Nothing is inherited — each option states its own complete rows, so a table left empty here is not a gap.',
       of: [
         {
           type: 'object',

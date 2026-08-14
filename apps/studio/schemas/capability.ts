@@ -134,12 +134,52 @@ export const capability = defineType({
       group: 'attributes',
       of: [{ type: 'reference', to: [{ type: 'industry' }] }],
     }),
+    // ─── PROPERTIES ───────────────────────────────────────────────────────────
+    // One field replacing eight. Each of the eight hardcoded its own property
+    // group in a picker filter, so a group with no matching field was
+    // unreachable — which is why none of the 33 options can state a Finish Type.
+    // Scope now comes from the Type's declaration instead of from the field name.
+
+    defineField({
+      name: 'properties',
+      title: 'Properties',
+      type: 'array',
+      group: 'attributes',
+      description:
+        'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first.',
+      of: [{
+        type: 'reference',
+        to: [{ type: 'attribute' }],
+        options: {
+          disableNew: true,
+          filter: ({ document }) => {
+            const typeRef = (document as { type?: { _ref?: string } } | undefined)?.type?._ref
+            // No type chosen yet, so there is no declaration to scope by.
+            if (!typeRef) return { filter: 'false' }
+            return {
+              filter:
+                'attributeGroup._ref in *[_id == $typeRef][0].properties[].property._ref',
+              params: { typeRef },
+            }
+          },
+        },
+      }],
+    }),
+
+    // ─── RETIRING ─────────────────────────────────────────────────────────────
+    // Superseded by `properties` above. Still populated, so they are marked
+    // deprecated rather than dropped (Conventions §4.3): Sanity renders them
+    // read-only with a visible message. They come out once the values are
+    // carried across. Counts are published documents on 2026-08-14.
+
     defineField({
       name: 'materialSource',
       title: 'Material source',
       type: 'reference',
       group: 'attributes',
       to: [{ type: 'attribute' }],
+      readOnly: true,
+      deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold a value.' },
       options: {
         filter: 'attributeGroup->slug.current == "source"',
       },
@@ -149,19 +189,11 @@ export const capability = defineType({
       title: 'Physical properties',
       type: 'array',
       group: 'attributes',
+      readOnly: true,
+      deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
       options: {
         filter: 'attributeGroup->slug.current == "physical-properties"',
-      } as never,
-    }),
-    defineField({
-      name: 'performance',
-      title: 'Performance',
-      type: 'array',
-      group: 'attributes',
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
-      options: {
-        filter: 'attributeGroup->slug.current == "performance"',
       } as never,
     }),
     defineField({
@@ -169,6 +201,8 @@ export const capability = defineType({
       title: 'Aesthetic',
       type: 'array',
       group: 'attributes',
+      readOnly: true,
+      deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
       options: {
         filter: 'attributeGroup->slug.current == "aesthetic"',
@@ -179,19 +213,11 @@ export const capability = defineType({
       title: 'Colors',
       type: 'array',
       group: 'attributes',
+      readOnly: true,
+      deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
       options: {
         filter: 'attributeGroup->slug.current == "color"',
-      } as never,
-    }),
-    defineField({
-      name: 'opacity',
-      title: 'Opacity',
-      type: 'array',
-      group: 'attributes',
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
-      options: {
-        filter: 'attributeGroup->slug.current == "opacity"',
       } as never,
     }),
     defineField({
@@ -199,24 +225,12 @@ export const capability = defineType({
       title: 'Sustainability',
       type: 'array',
       group: 'attributes',
+      readOnly: true,
+      deprecated: { reason: 'Replaced by Properties — do not write to this field. 5 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
       options: {
         filter: 'attributeGroup->slug.current == "sustainability"',
       } as never,
-    }),
-    // role field: only visible when type.slug === 'pouch-layer'
-    defineField({
-      name: 'role',
-      title: 'Role',
-      type: 'array',
-      group: 'attributes',
-      description: 'Pouch layer roles (e.g. outer, barrier, sealant).',
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
-      options: {
-        filter: 'attributeGroup->slug.current == "role"',
-      } as never,
-      hidden: ({ document }: { document: { type?: { slug?: { current?: string } } } }) =>
-        document?.type?.slug?.current !== 'pouch-layer',
     }),
 
     // ─── PAGE TAB ─────────────────────────────────────────────────────────────

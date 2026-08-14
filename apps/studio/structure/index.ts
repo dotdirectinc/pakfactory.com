@@ -1151,6 +1151,38 @@ export function coreEntitiesItems(
                                     ]),
                             ),
                         S.listItem()
+                            .title('Channels')
+                            .schemaType('solution')
+                            .child(
+                                S.documentTypeList('solution')
+                                    .title('Channel Solutions')
+                                    .filter(
+                                        '_type == "solution" && solutionType == "channel"',
+                                    )
+                                    .defaultOrdering([
+                                        {
+                                            field: 'internalTitle',
+                                            direction: 'asc',
+                                        },
+                                    ]),
+                            ),
+                        S.listItem()
+                            .title('Focus')
+                            .schemaType('solution')
+                            .child(
+                                S.documentTypeList('solution')
+                                    .title('Focus Solutions')
+                                    .filter(
+                                        '_type == "solution" && solutionType == "focus"',
+                                    )
+                                    .defaultOrdering([
+                                        {
+                                            field: 'internalTitle',
+                                            direction: 'asc',
+                                        },
+                                    ]),
+                            ),
+                        S.listItem()
                             .title('Use Cases')
                             .schemaType('solution')
                             .child(

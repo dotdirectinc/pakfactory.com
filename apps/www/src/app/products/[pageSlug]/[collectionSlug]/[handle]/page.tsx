@@ -20,12 +20,6 @@ type ProductMediaItem = {
   alt?: string | null;
 };
 
-type CapabilityRef = {
-  _id: string;
-  title: string;
-  slug: string;
-};
-
 type ProductByPath = {
   _id: string;
   title: string;
@@ -46,7 +40,6 @@ type ProductByPath = {
     _id: string;
     title: string;
     slug: string;
-    defaultCapabilities?: CapabilityRef[];
   };
   landingPageId?: string | null;
   collectionId?: string | null;
