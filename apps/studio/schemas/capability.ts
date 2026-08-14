@@ -48,6 +48,7 @@ export const capability = defineType({
       type: 'reference',
       group: 'basic',
       to: [{ type: 'capabilityCategory' }],
+      options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -58,6 +59,7 @@ export const capability = defineType({
       to: [{ type: 'capabilityType' }],
       description: 'Filtered by the selected category. Select a category first.',
       options: {
+        disableNew: true,
         filter: ({ document }: { document: { category?: { _ref?: string } } }) => {
           const categoryRef = document?.category?._ref
           if (!categoryRef) return { filter: 'false' }

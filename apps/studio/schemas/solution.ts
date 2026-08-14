@@ -2,6 +2,7 @@ import { defineField, defineType } from 'sanity'
 import { BulbOutlineIcon } from '@sanity/icons'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 const SOLUTION_TYPES = [
   { title: 'Industry', value: 'industry' },
@@ -34,7 +35,7 @@ export const solution = defineType({
       type: 'string',
       group: 'basic',
       description: 'Used in the Studio nav only. Not shown on the website.',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('internalTitle')),
     }),
 
     defineField({
@@ -144,6 +145,7 @@ export const solution = defineType({
         {
           type: 'reference',
           to: [{ type: 'capabilityCategory' }],
+          options: { disableNew: true },
         },
       ],
     }),

@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 export const attributeGroup = defineType({
   name: 'attributeGroup',
@@ -9,7 +10,7 @@ export const attributeGroup = defineType({
       name: 'title',
       title: 'Title',
       type: 'string',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
       name: 'slug',
