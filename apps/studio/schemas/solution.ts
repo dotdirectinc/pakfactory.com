@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { BulbOutlineIcon } from '@sanity/icons'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
 
 const SOLUTION_TYPES = [
   { title: 'Industry', value: 'industry' },
@@ -203,6 +204,10 @@ export const solution = defineType({
       description: 'Social share image. Recommended: 1200×630px.',
       options: { hotspot: true },
     })),
+
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
   ],
 
   preview: {

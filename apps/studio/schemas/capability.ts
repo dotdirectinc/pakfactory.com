@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
 
 export const capability = defineType({
   name: 'capability',
@@ -396,6 +397,10 @@ export const capability = defineType({
       mediaTags: ogMediaTags(MEDIA_TAG.capability),
       options: { hotspot: true },
     })),
+
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
   ],
 
   preview: {
