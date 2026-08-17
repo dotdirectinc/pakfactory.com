@@ -1,9 +1,9 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
-export const attributeGroup = defineType({
-  name: 'attributeGroup',
-  title: 'Attribute Group',
+export const property = defineType({
+  name: 'property',
+  title: 'Property',
   type: 'document',
   fields: [
     defineField({

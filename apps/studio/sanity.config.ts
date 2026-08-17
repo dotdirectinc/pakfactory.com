@@ -88,7 +88,7 @@ const productTemplates: Template[] = [
       { name: 'styleId', title: 'Style ID', type: 'string' },
     ],
     value: ({ categoryId, styleId }: { categoryId: string; styleId: string }) => ({
-      primaryClassification: 'standard',
+      kind: 'standard',
       productCategories: [{ _type: 'reference', _ref: categoryId }],
       productStyleCategories: [{ _type: 'reference', _ref: styleId }],
     }),
@@ -117,7 +117,7 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
       S.view.component(RelatedPostsByAuthorView).title('Related Posts'),
     ])
   }
-  if (schemaType === 'productStyleCategory') {
+  if (schemaType === 'productStyle') {
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(ProductStyleCategoryProductsView).title('Products'),

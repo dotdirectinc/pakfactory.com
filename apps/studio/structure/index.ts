@@ -724,17 +724,17 @@ export function knowledgeLibraryItems(
                         S.listItem()
                             .title('Browse by Category')
                             .child(
-                                S.documentTypeList('capabilityCategory')
+                                S.documentTypeList('customizationCategory')
                                     .title('Categories')
                                     .child((categoryId) =>
-                                        S.documentTypeList('capabilityType')
+                                        S.documentTypeList('customizationType')
                                             .title('Types')
                                             .filter(
                                                 'category._ref == $categoryId',
                                             )
                                             .params({categoryId})
                                             .child((typeId) =>
-                                                S.documentTypeList('capability')
+                                                S.documentTypeList('customizationOption')
                                                     .title('Customizations')
                                                     .filter(
                                                         'type._ref == $typeId',
@@ -746,9 +746,9 @@ export function knowledgeLibraryItems(
 
                         S.listItem()
                             .title('All Customizations')
-                            .schemaType('capability')
+                            .schemaType('customizationOption')
                             .child(
-                                S.documentTypeList('capability').title(
+                                S.documentTypeList('customizationOption').title(
                                     'All Customizations',
                                 ),
                             ),
@@ -763,20 +763,20 @@ export function knowledgeLibraryItems(
                                     .items([
                                         S.listItem()
                                             .title('Customization Categories')
-                                            .schemaType('capabilityCategory')
+                                            .schemaType('customizationCategory')
                                             .child(
                                                 S.documentTypeList(
-                                                    'capabilityCategory',
+                                                    'customizationCategory',
                                                 ).title(
                                                     'Customization Categories',
                                                 ),
                                             ),
                                         S.listItem()
                                             .title('Customization Types')
-                                            .schemaType('capabilityType')
+                                            .schemaType('customizationType')
                                             .child(
                                                 S.documentTypeList(
-                                                    'capabilityType',
+                                                    'customizationType',
                                                 ).title('Customization Types'),
                                             ),
                                         S.listItem()
@@ -794,21 +794,21 @@ export function knowledgeLibraryItems(
                                             ),
                                         S.listItem()
                                             .title('Attribute Groups')
-                                            .schemaType('attributeGroup')
+                                            .schemaType('property')
                                             .child(
                                                 S.documentTypeList(
-                                                    'attributeGroup',
+                                                    'property',
                                                 ).title('Attribute Groups'),
                                             ),
                                         S.listItem()
                                             .title('Attributes')
-                                            .schemaType('attribute')
+                                            .schemaType('propertyValue')
                                             .child(
-                                                S.documentTypeList('attribute')
+                                                S.documentTypeList('propertyValue')
                                                     .title('Attributes')
                                                     .defaultOrdering([
                                                         {
-                                                            field: 'attributeGroup.title',
+                                                            field: 'property.title',
                                                             direction: 'asc',
                                                         },
                                                         {
@@ -842,22 +842,22 @@ export function knowledgeLibraryItems(
                         S.listItem()
                             .title('Standard')
                             .child(
-                                S.documentTypeList('productCategory')
+                                S.documentTypeList('productLine')
                                     .title('Product Lines')
                                     .child((categoryId) =>
                                         S.documentTypeList(
-                                            'productStyleCategory',
+                                            'productStyle',
                                         )
                                             .title('Product Styles')
                                             .filter(
-                                                'productCategory._ref == $categoryId',
+                                                'productLine._ref == $categoryId',
                                             )
                                             .params({categoryId})
                                             .child((styleId) =>
                                                 S.documentTypeList('product')
                                                     .title('Products')
                                                     .filter(
-                                                        '$styleId in productStyleCategories[]._ref && (primaryClassification == "standard" || primaryClassification == "both")',
+                                                        '$styleId in productStyleCategories[]._ref && (kind == "standard" || kind == "both")',
                                                     )
                                                     .params({styleId}),
                                             ),
@@ -880,7 +880,7 @@ export function knowledgeLibraryItems(
                                                 S.documentTypeList('product')
                                                     .title('Products')
                                                     .filter(
-                                                        '$industryCategoryId in industryCategories[]._ref && (primaryClassification == "industry" || primaryClassification == "both")',
+                                                        '$industryCategoryId in industryCategories[]._ref && (kind == "industry" || kind == "both")',
                                                     )
                                                     .params({
                                                         industryCategoryId,
@@ -908,11 +908,11 @@ export function knowledgeLibraryItems(
                                                                 'Product Lines',
                                                             )
                                                             .schemaType(
-                                                                'productCategory',
+                                                                'productLine',
                                                             )
                                                             .child(
                                                                 S.documentTypeList(
-                                                                    'productCategory',
+                                                                    'productLine',
                                                                 ).title(
                                                                     'Product Lines',
                                                                 ),
@@ -922,11 +922,11 @@ export function knowledgeLibraryItems(
                                                                 'Product Styles',
                                                             )
                                                             .schemaType(
-                                                                'productStyleCategory',
+                                                                'productStyle',
                                                             )
                                                             .child(
                                                                 S.documentTypeList(
-                                                                    'productStyleCategory',
+                                                                    'productStyle',
                                                                 ).title(
                                                                     'Product Styles',
                                                                 ),
@@ -1043,22 +1043,22 @@ export function coreEntitiesItems(
                         S.listItem()
                             .title('Standard')
                             .child(
-                                S.documentTypeList('productCategory')
+                                S.documentTypeList('productLine')
                                     .title('Product Lines')
                                     .child((categoryId) =>
                                         S.documentTypeList(
-                                            'productStyleCategory',
+                                            'productStyle',
                                         )
                                             .title('Product Styles')
                                             .filter(
-                                                'productCategory._ref == $categoryId',
+                                                'productLine._ref == $categoryId',
                                             )
                                             .params({categoryId})
                                             .child((styleId) =>
                                                 S.documentTypeList('product')
                                                     .title('Products')
                                                     .filter(
-                                                        '$styleId in productStyleCategories[]._ref && (primaryClassification == "standard" || primaryClassification == "both")',
+                                                        '$styleId in productStyleCategories[]._ref && (kind == "standard" || kind == "both")',
                                                     )
                                                     .params({styleId}),
                                             ),
@@ -1080,7 +1080,7 @@ export function coreEntitiesItems(
                                                 S.documentTypeList('product')
                                                     .title('Products')
                                                     .filter(
-                                                        '$industryCategoryId in industryCategories[]._ref && (primaryClassification == "industry" || primaryClassification == "both")',
+                                                        '$industryCategoryId in industryCategories[]._ref && (kind == "industry" || kind == "both")',
                                                     )
                                                     .params({
                                                         industryCategoryId,
@@ -1097,18 +1097,18 @@ export function coreEntitiesItems(
                                     .items([
                                         S.listItem()
                                             .title('Product Lines')
-                                            .schemaType('productCategory')
+                                            .schemaType('productLine')
                                             .child(
                                                 S.documentTypeList(
-                                                    'productCategory',
+                                                    'productLine',
                                                 ).title('Product Lines'),
                                             ),
                                         S.listItem()
                                             .title('Product Styles')
-                                            .schemaType('productStyleCategory')
+                                            .schemaType('productStyle')
                                             .child(
                                                 S.documentTypeList(
-                                                    'productStyleCategory',
+                                                    'productStyle',
                                                 ).title('Product Styles'),
                                             ),
                                         S.listItem()
@@ -1236,17 +1236,17 @@ export function coreEntitiesItems(
                         S.listItem()
                             .title('Browse by Category')
                             .child(
-                                S.documentTypeList('capabilityCategory')
+                                S.documentTypeList('customizationCategory')
                                     .title('Categories')
                                     .child((categoryId) =>
-                                        S.documentTypeList('capabilityType')
+                                        S.documentTypeList('customizationType')
                                             .title('Types')
                                             .filter(
                                                 'category._ref == $categoryId',
                                             )
                                             .params({categoryId})
                                             .child((typeId) =>
-                                                S.documentTypeList('capability')
+                                                S.documentTypeList('customizationOption')
                                                     .title('Customizations')
                                                     .filter(
                                                         'type._ref == $typeId',
@@ -1257,9 +1257,9 @@ export function coreEntitiesItems(
                             ),
                         S.listItem()
                             .title('All Customizations')
-                            .schemaType('capability')
+                            .schemaType('customizationOption')
                             .child(
-                                S.documentTypeList('capability').title(
+                                S.documentTypeList('customizationOption').title(
                                     'All Customizations',
                                 ),
                             ),
@@ -1272,37 +1272,37 @@ export function coreEntitiesItems(
                                     .items([
                                         S.listItem()
                                             .title('Categories')
-                                            .schemaType('capabilityCategory')
+                                            .schemaType('customizationCategory')
                                             .child(
                                                 S.documentTypeList(
-                                                    'capabilityCategory',
+                                                    'customizationCategory',
                                                 ).title('Categories'),
                                             ),
                                         S.listItem()
                                             .title('Types')
-                                            .schemaType('capabilityType')
+                                            .schemaType('customizationType')
                                             .child(
                                                 S.documentTypeList(
-                                                    'capabilityType',
+                                                    'customizationType',
                                                 ).title('Types'),
                                             ),
                                         S.listItem()
                                             .title('Attribute Groups')
-                                            .schemaType('attributeGroup')
+                                            .schemaType('property')
                                             .child(
                                                 S.documentTypeList(
-                                                    'attributeGroup',
+                                                    'property',
                                                 ).title('Attribute Groups'),
                                             ),
                                         S.listItem()
                                             .title('Attributes')
-                                            .schemaType('attribute')
+                                            .schemaType('propertyValue')
                                             .child(
-                                                S.documentTypeList('attribute')
+                                                S.documentTypeList('propertyValue')
                                                     .title('Attributes')
                                                     .defaultOrdering([
                                                         {
-                                                            field: 'attributeGroup.title',
+                                                            field: 'property.title',
                                                             direction: 'asc',
                                                         },
                                                         {

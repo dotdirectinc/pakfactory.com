@@ -3,8 +3,8 @@ import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields } from '../lib/seo-fields'
 
-export const productCategory = defineType({
-  name: 'productCategory',
+export const productLine = defineType({
+  name: 'productLine',
   title: 'Product Line',
   type: 'document',
   groups: [

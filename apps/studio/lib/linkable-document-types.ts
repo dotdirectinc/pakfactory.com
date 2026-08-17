@@ -19,7 +19,7 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'product',
   'solution',
   'caseStudy',
-  'capabilityCategory',
+  'customizationCategory',
   // Resources
   'guide',
   'glossaryTerm',

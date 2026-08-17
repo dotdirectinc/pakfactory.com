@@ -1,12 +1,12 @@
-import { capabilityCategory } from './capabilityCategory'
+import { customizationCategory } from './customizationCategory'
 import { socialLink } from '../lib/social-link-schema'
-import { capabilityType } from './capabilityType'
-import { capability } from './capability'
+import { customizationType } from './customizationType'
+import { customizationOption } from './customizationOption'
 import { optionGroup } from './optionGroup'
-import { attributeGroup } from './attributeGroup'
-import { attribute } from './attribute'
-import { productCategory } from './productCategory'
-import { productStyleCategory } from './productStyleCategory'
+import { property } from './property'
+import { propertyValue } from './propertyValue'
+import { productLine } from './productLine'
+import { productStyle } from './productStyle'
 import { product } from './product'
 import { author } from './author'
 import { blogCategory } from './blogCategory'
@@ -52,18 +52,18 @@ export const schemaTypes = [
   socialLink,
 
   // Customization layer
-  capabilityCategory,
-  capabilityType,
-  capability,
+  customizationCategory,
+  customizationType,
+  customizationOption,
   optionGroup,
 
   // Attribute layer
-  attributeGroup,
-  attribute,
+  property,
+  propertyValue,
 
   // Product taxonomy
-  productCategory,
-  productStyleCategory,
+  productLine,
+  productStyle,
 
   // Product layer
   product,

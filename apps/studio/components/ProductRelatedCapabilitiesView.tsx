@@ -78,7 +78,7 @@ function CapabilityList({
         >
           <IntentLink
             intent="edit"
-            params={{ id: row._id, type: 'capability' }}
+            params={{ id: row._id, type: 'customizationOption' }}
             style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}
           >
             {row.title || 'Untitled'}

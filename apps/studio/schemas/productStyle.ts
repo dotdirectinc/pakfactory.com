@@ -2,8 +2,8 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
 
-export const productStyleCategory = defineType({
-  name: 'productStyleCategory',
+export const productStyle = defineType({
+  name: 'productStyle',
   title: 'Product Style',
   type: 'document',
   groups: [
@@ -30,11 +30,11 @@ export const productStyleCategory = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'productCategory',
+      name: 'productLine',
       title: 'Parent product line',
       type: 'reference',
       group: 'basic',
-      to: [{ type: 'productCategory' }],
+      to: [{ type: 'productLine' }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -143,7 +143,7 @@ export const productStyleCategory = defineType({
   preview: {
     select: {
       title: 'title',
-      category: 'productCategory.title',
+      category: 'productLine.title',
       heroImage: 'hero.image',
       bannerImage: 'bannerImage',
     },

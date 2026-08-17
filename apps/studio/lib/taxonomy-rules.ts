@@ -8,7 +8,7 @@ import type { ValidationContext } from 'sanity'
  * idea, each half-used, neither obviously wrong.
  *
  * The near-miss on record: `attribute` "Food Safe" (a Property Value) and
- * `capabilityType` "Food-Safe Treatment" (a Customization Type) describe the
+ * `customizationType` "Food-Safe Treatment" (a Customization Type) describe the
  * same idea in two types. Different lists, so not a duplicate — but nothing
  * stopped someone adding "Food-Safe" as a second Property Value.
  */

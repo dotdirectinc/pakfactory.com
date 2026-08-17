@@ -2,8 +2,8 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
-export const capabilityType = defineType({
-  name: 'capabilityType',
+export const customizationType = defineType({
+  name: 'customizationType',
   title: 'Customization Type',
   type: 'document',
   groups: [
@@ -33,7 +33,7 @@ export const capabilityType = defineType({
       title: 'Category',
       type: 'reference',
       group: 'basic',
-      to: [{ type: 'capabilityCategory' }],
+      to: [{ type: 'customizationCategory' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
@@ -66,7 +66,7 @@ export const capabilityType = defineType({
             name: 'property',
             title: 'Property',
             type: 'reference',
-            to: [{ type: 'attributeGroup' }],
+            to: [{ type: 'property' }],
             options: { disableNew: true },
             description: 'The named dimension — Sustainability, Colour, Finish Type.',
             validation: (Rule) => Rule.required(),

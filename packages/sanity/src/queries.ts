@@ -223,10 +223,10 @@ export const PRODUCT_COLLECTIONS_BY_IDS_QUERY = /* groq */ `*[_type == "productC
 
 /**
  * Capabilities (materials / finishes) applicable to a product, derived from
- * which capabilityCategory docs reference the product's landing page or collection.
+ * which customizationCategory docs reference the product's landing page or collection.
  */
 export const CAPABILITIES_FOR_PRODUCT_REFS_QUERY = /* groq */ `*[
-  _type == "capabilityCategory" &&
+  _type == "customizationCategory" &&
   (
     ($landingPageId != null && $landingPageId in landingPages[]._ref) ||
     ($collectionId != null && $collectionId in collections[]._ref)
@@ -238,9 +238,9 @@ export const CAPABILITIES_FOR_PRODUCT_REFS_QUERY = /* groq */ `*[
   category
 }`;
 
-/** Single `capabilityCategory` by category + slug (for capability detail page). */
+/** Single `customizationCategory` by category + slug (for capability detail page). */
 export const CAPABILITY_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
-  _type == "capabilityCategory" &&
+  _type == "customizationCategory" &&
   category == $category &&
   slug.current == $slug
 ][0]{
@@ -271,9 +271,9 @@ export const CAPABILITY_BY_CATEGORY_AND_SLUG_QUERY = /* groq */ `*[
   }
 }`;
 
-/** All `capabilityCategory` paths (for generateStaticParams). */
+/** All `customizationCategory` paths (for generateStaticParams). */
 export const CAPABILITY_PATHS_QUERY = /* groq */ `*[
-  _type == "capabilityCategory" &&
+  _type == "customizationCategory" &&
   defined(slug.current) &&
   defined(category)
 ]{
@@ -365,9 +365,9 @@ export const CAPABILITY_CATALOG_QUERY = /* groq */ `*[_type == "capabilityPage" 
   )
 }`;
 
-/** Capabilities landing: all `capabilityCategory` entries (materials / finishes) for index cards. */
+/** Capabilities landing: all `customizationCategory` entries (materials / finishes) for index cards. */
 export const CAPABILITY_CATEGORY_ENTRIES_QUERY = /* groq */ `*[
-  _type == "capabilityCategory" &&
+  _type == "customizationCategory" &&
   defined(slug.current) &&
   defined(category)
 ] | order(category asc, title asc) {

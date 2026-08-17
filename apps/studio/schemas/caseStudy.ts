@@ -268,7 +268,7 @@ export const caseStudy = defineType({
       title: 'Products',
       type: 'array',
       group: 'categorization',
-      of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
+      of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
       description: 'Product filter + chips. Reuses the deployed Product Lines taxonomy.',
     }),
     defineField({
@@ -284,7 +284,7 @@ export const caseStudy = defineType({
       title: 'Customizations',
       type: 'array',
       group: 'categorization',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       description: 'Detail chip group only (no launch filter). Materials, finishes, certifications.',
     }),
     defineField({

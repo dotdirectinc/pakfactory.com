@@ -1,9 +1,9 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
-export const attribute = defineType({
-  name: 'attribute',
-  title: 'Attribute',
+export const propertyValue = defineType({
+  name: 'propertyValue',
+  title: 'Property Value',
   type: 'document',
   fields: [
     defineField({
@@ -20,10 +20,10 @@ export const attribute = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'attributeGroup',
-      title: 'Attribute group',
+      name: 'property',
+      title: 'Property',
       type: 'reference',
-      to: [{ type: 'attributeGroup' }],
+      to: [{ type: 'property' }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -45,7 +45,7 @@ export const attribute = defineType({
     }),
   ],
   preview: {
-    select: { title: 'title', group: 'attributeGroup.title' },
+    select: { title: 'title', group: 'property.title' },
     prepare({ title, group }) {
       return { title, subtitle: group }
     },
@@ -55,7 +55,7 @@ export const attribute = defineType({
       title: 'Group → order',
       name: 'groupOrder',
       by: [
-        { field: 'attributeGroup.title', direction: 'asc' },
+        { field: 'property.title', direction: 'asc' },
         { field: 'order', direction: 'asc' },
       ],
     },
