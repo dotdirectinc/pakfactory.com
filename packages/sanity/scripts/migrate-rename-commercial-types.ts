@@ -244,10 +244,14 @@ async function main() {
   }
 
   // 3. CREATE new docs — new _id/_type, field-keys renamed, internal refs remapped.
-  console.log("\nStep 1/4 — create new documents…");
-  for (let i = 0; i < oldDocs.length; i += 50) {
+  //    Strong references are validated at END-OF-TRANSACTION, and the new docs
+  //    reference each other (e.g. customizationOption -> customizationCategory),
+  //    so ALL creates must land in ONE transaction or a forward ref points at a
+  //    not-yet-created target (documentReferenceDoesNotExistError).
+  console.log(`\nStep 1/4 — create ${oldDocs.length} new documents (single transaction)…`);
+  {
     const tx = client.transaction();
-    for (const doc of oldDocs.slice(i, i + 50)) {
+    for (const doc of oldDocs) {
       const remapped = remapRefs(doc, idMap) as Record<string, unknown>;
       const renamed = applyFieldRenames(remapped, FIELD_RENAMES[doc._type]);
       const next = stripSystem(renamed);
@@ -256,7 +260,7 @@ async function main() {
       tx.createOrReplace(next as Doc);
     }
     await tx.commit({ visibility: "async" });
-    console.log(`    created ${Math.min(i + 50, oldDocs.length)}/${oldDocs.length}`);
+    console.log(`    created ${oldDocs.length}`);
   }
 
   // 4. REPOINT external references (case studies, products, solutions, …).
@@ -271,13 +275,16 @@ async function main() {
     console.log(`    repointed ${Math.min(i + 50, externalRefs.length)}/${externalRefs.length}`);
   }
 
-  // 5. DELETE old docs (now unreferenced — external + internal refs point to new ids).
-  console.log("Step 3/4 — delete old documents…");
-  for (let i = 0; i < oldDocs.length; i += 50) {
+  // 5. DELETE old docs. The old docs still reference EACH OTHER (old->old), so a
+  //    piecemeal delete would dangle a surviving old doc's ref mid-way. Delete
+  //    them ALL in one transaction — at end-of-transaction none remain, so no
+  //    reference is left dangling. (External refs already repointed in step 2.)
+  console.log(`Step 3/4 — delete ${oldDocs.length} old documents (single transaction)…`);
+  {
     const tx = client.transaction();
-    for (const doc of oldDocs.slice(i, i + 50)) tx.delete(doc._id);
+    for (const doc of oldDocs) tx.delete(doc._id);
     await tx.commit({ visibility: "async" });
-    console.log(`    deleted ${Math.min(i + 50, oldDocs.length)}/${oldDocs.length}`);
+    console.log(`    deleted ${oldDocs.length}`);
   }
 
   // 6. product.primaryClassification → kind (product type unchanged).
