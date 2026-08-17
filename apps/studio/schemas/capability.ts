@@ -115,28 +115,10 @@ export const capability = defineType({
       description: 'Which structural styles specifically?',
       of: [{ type: 'reference', to: [{ type: 'productStyleCategory' }] }],
     }),
-    defineField({
-      name: 'applicableIndustryCategories',
-      title: 'Applicable industry categories',
-      type: 'array',
-      group: 'attributes',
-      description: 'Any industry-specific intersections?',
-      of: [{ type: 'reference', to: [{ type: 'industryCategory' }] }],
-    }),
-    defineField({
-      name: 'useCases',
-      title: 'Use cases',
-      type: 'array',
-      group: 'attributes',
-      of: [{ type: 'reference', to: [{ type: 'useCase' }] }],
-    }),
-    defineField({
-      name: 'industries',
-      title: 'Industries',
-      type: 'array',
-      group: 'attributes',
-      of: [{ type: 'reference', to: [{ type: 'industry' }] }],
-    }),
+    // Legacy industry / use-case reference arrays (applicableIndustryCategories,
+    // useCases, industries) were removed in PROD-2284 — unpopulated on every
+    // capability and pointing at the now-retired industry/industryCategory/useCase
+    // types. Capability applicability is expressed via `properties[]` below.
     // ─── PROPERTIES ───────────────────────────────────────────────────────────
     // One field replacing eight. Each of the eight hardcoded its own property
     // group in a picker filter, so a group with no matching field was

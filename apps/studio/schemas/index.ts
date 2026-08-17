@@ -7,9 +7,6 @@ import { attributeGroup } from './attributeGroup'
 import { attribute } from './attribute'
 import { productCategory } from './productCategory'
 import { productStyleCategory } from './productStyleCategory'
-import { industry } from './industry'
-import { industryCategory } from './industryCategory'
-import { useCase } from './useCase'
 import { product } from './product'
 import { author } from './author'
 import { blogCategory } from './blogCategory'
@@ -67,9 +64,6 @@ export const schemaTypes = [
   // Product taxonomy
   productCategory,
   productStyleCategory,
-  industry,
-  industryCategory,
-  useCase,
 
   // Product layer
   product,

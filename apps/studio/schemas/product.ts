@@ -135,35 +135,11 @@ export const product = defineType({
       }],
     }),
 
-    // Industry fields — visible when Product type is Industry or Both
-    defineField({
-      name: 'industries',
-      title: 'Industries',
-      type: 'array',
-      group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'standard',
-      of: [{ type: 'reference', to: [{ type: 'industry' }] }],
-    }),
-    defineField({
-      name: 'industryCategories',
-      title: 'Industry segments',
-      type: 'array',
-      group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'standard',
-      of: [{ type: 'reference', to: [{ type: 'industryCategory' }] }],
-    }),
-    defineField({
-      name: 'useCases',
-      title: 'Use cases',
-      type: 'array',
-      group: 'attributes',
-      of: [{ type: 'reference', to: [{ type: 'useCase' }] }],
-    }),
-
     // ─── SOLUTIONS ────────────────────────────────────────────────────────────
-    // One field replacing the three above. `industries`, `industryCategories`
-    // and `useCases` retire in PROD-2298 and PROD-2299 once every tag is
-    // repointed here; until then both sets are live and only these are filled in.
+    // The single Solutions field. It replaced the legacy `industries`,
+    // `industryCategories` and `useCases` reference arrays, which were retired in
+    // PROD-2298 / PROD-2299 (data repointed to Solutions on production) and removed
+    // from the schema here in PROD-2284 along with the industry/useCase types.
 
     defineField({
       name: 'solutions',
