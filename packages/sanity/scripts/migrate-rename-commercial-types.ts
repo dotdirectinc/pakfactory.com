@@ -119,7 +119,8 @@ function fail(msg: string): never {
 if (!dataset) fail("--dataset is required (never inherited from env).");
 if (!projectId) fail("No project id (NEXT_PUBLIC_SANITY_PROJECT_ID / SANITY_STUDIO_PROJECT_ID).");
 if (!token) fail("No SANITY_API_WRITE_TOKEN (Editor token) in env.");
-if (dataset === "production" && !verifyOnly && !yesProduction)
+// Block only actual WRITES to production (a dry-run or --verify writes nothing).
+if (dataset === "production" && confirm && !yesProduction)
   fail("Refusing to write to production without --yes-production.");
 
 const client: SanityClient = createClient({
