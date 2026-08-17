@@ -93,20 +93,9 @@ const productTemplates: Template[] = [
       productStyleCategories: [{ _type: 'reference', _ref: styleId }],
     }),
   },
-  {
-    id: 'product-industry',
-    title: 'Product (Industry)',
-    schemaType: 'product',
-    parameters: [
-      { name: 'industryId', title: 'Industry ID', type: 'string' },
-      { name: 'industryCategoryId', title: 'Industry Category ID', type: 'string' },
-    ],
-    value: ({ industryId, industryCategoryId }: { industryId: string; industryCategoryId: string }) => ({
-      primaryClassification: 'industry',
-      industries: [{ _type: 'reference', _ref: industryId }],
-      industryCategories: [{ _type: 'reference', _ref: industryCategoryId }],
-    }),
-  },
+  // The 'product-industry' template was removed in PROD-2284: it pre-filled the
+  // retired `industries` / `industryCategories` reference arrays. Industry-typed
+  // products now tag via Solutions.
 ]
 
 const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => {
