@@ -113,6 +113,11 @@ jobs:
       # Sanity env vars are provided as GitHub secrets.
       - name: Typecheck (${{ matrix.project.name }})
         run: pnpm exec turbo run typecheck --filter=${{ matrix.project.filter }}
+      # Desk structure resolves at runtime, so `sanity build` can't catch a pane
+      # that references a deleted/renamed type (PROD-2284). Static-check it here.
+      - name: Structure type check (studio)
+        if: matrix.project.name == 'studio'
+        run: pnpm --filter @pakfactory/studio check:structure-types
 
   ci-success:
     name: ci-success
