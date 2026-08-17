@@ -303,7 +303,19 @@ async function main() {
   }
   console.log(`    patched ${products.length} product docs`);
 
-  console.log("\n✓ Migration applied. Verifying…");
+  // Mutations commit with visibility:async — the query index lags a moment behind
+  // the write. Poll until the old types read 0 (or give up) so the verify below
+  // reflects the settled state instead of a false "incomplete".
+  console.log("\n✓ Migration applied. Waiting for the index to settle…");
+  for (let attempt = 1; attempt <= 10; attempt++) {
+    const remaining = await client.fetch<number>(`count(*[_type in $t])`, { t: OLD_TYPES });
+    if (remaining === 0) break;
+    if (attempt === 10) {
+      console.log(`  (still ${remaining} old docs indexed after ~20s — re-run --verify shortly)`);
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
   await verify();
 }
 
