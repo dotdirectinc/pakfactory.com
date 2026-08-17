@@ -465,8 +465,11 @@ async function main() {
   if (!phase || !PHASES[phase]) {
     refuse(`Missing or unknown --phase. One of: ${Object.keys(PHASES).join(", ")}.`);
   }
-  if (dataset === "production" && !yesProduction) {
-    refuse('Refusing to touch "production" without --yes-production. Export the dataset first.');
+  // Gate writes, not reads. `verify` mutates nothing, and a dry run mutates
+  // nothing — demanding the flag for either just trains people to pass it by
+  // reflex, which is the opposite of what the gate is for.
+  if (dataset === "production" && confirm && !yesProduction) {
+    refuse('Refusing to write to "production" without --yes-production. Export the dataset first.');
   }
   if (confirm && !token) {
     refuse("Missing SANITY_API_WRITE_TOKEN (Editor token with write access).");
