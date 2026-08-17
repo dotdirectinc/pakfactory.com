@@ -864,30 +864,6 @@ export function knowledgeLibraryItems(
                                     ),
                             ),
 
-                        S.listItem()
-                            .title('Industry')
-                            .child(
-                                S.documentTypeList('industry')
-                                    .title('Industries')
-                                    .child((industryId) =>
-                                        S.documentTypeList('industryCategory')
-                                            .title('Industry Segments')
-                                            .filter(
-                                                'industry._ref == $industryId',
-                                            )
-                                            .params({industryId})
-                                            .child((industryCategoryId) =>
-                                                S.documentTypeList('product')
-                                                    .title('Products')
-                                                    .filter(
-                                                        '$industryCategoryId in industryCategories[]._ref && (kind == "industry" || kind == "both")',
-                                                    )
-                                                    .params({
-                                                        industryCategoryId,
-                                                    }),
-                                            ),
-                                    ),
-                            ),
 
                         S.divider(),
 
@@ -931,55 +907,9 @@ export function knowledgeLibraryItems(
                                                                     'Product Styles',
                                                                 ),
                                                             ),
-                                                        S.listItem()
-                                                            .title('Industries')
-                                                            .schemaType(
-                                                                'industry',
-                                                            )
-                                                            .child(
-                                                                S.documentTypeList(
-                                                                    'industry',
-                                                                ).title(
-                                                                    'Industries',
-                                                                ),
-                                                            ),
-                                                        S.listItem()
-                                                            .title(
-                                                                'Industry Segments',
-                                                            )
-                                                            .schemaType(
-                                                                'industryCategory',
-                                                            )
-                                                            .child(
-                                                                S.documentTypeList(
-                                                                    'industryCategory',
-                                                                ).title(
-                                                                    'Industry Segments',
-                                                                ),
-                                                            ),
                                                     ]),
                                             ),
 
-                                        S.listItem()
-                                            .title('Terms')
-                                            .child(
-                                                S.list()
-                                                    .title('Terms')
-                                                    .items([
-                                                        S.listItem()
-                                                            .title('Use Cases')
-                                                            .schemaType(
-                                                                'useCase',
-                                                            )
-                                                            .child(
-                                                                S.documentTypeList(
-                                                                    'useCase',
-                                                                ).title(
-                                                                    'Use Cases',
-                                                                ),
-                                                            ),
-                                                    ]),
-                                            ),
                                     ]),
                             ),
                     ]),
@@ -1064,30 +994,6 @@ export function coreEntitiesItems(
                                             ),
                                     ),
                             ),
-                        S.listItem()
-                            .title('Industry')
-                            .child(
-                                S.documentTypeList('industry')
-                                    .title('Industries')
-                                    .child((industryId) =>
-                                        S.documentTypeList('industryCategory')
-                                            .title('Industry Segments')
-                                            .filter(
-                                                'industry._ref == $industryId',
-                                            )
-                                            .params({industryId})
-                                            .child((industryCategoryId) =>
-                                                S.documentTypeList('product')
-                                                    .title('Products')
-                                                    .filter(
-                                                        '$industryCategoryId in industryCategories[]._ref && (kind == "industry" || kind == "both")',
-                                                    )
-                                                    .params({
-                                                        industryCategoryId,
-                                                    }),
-                                            ),
-                                    ),
-                            ),
                         S.divider(),
                         S.listItem()
                             .title('Taxonomy')
@@ -1110,14 +1016,6 @@ export function coreEntitiesItems(
                                                 S.documentTypeList(
                                                     'productStyle',
                                                 ).title('Product Styles'),
-                                            ),
-                                        S.listItem()
-                                            .title('Use Cases')
-                                            .schemaType('useCase')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'useCase',
-                                                ).title('Use Cases'),
                                             ),
                                     ]),
                             ),
