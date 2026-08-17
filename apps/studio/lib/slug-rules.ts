@@ -13,11 +13,11 @@ import type { SlugValue, ValidationContext } from 'sanity'
  */
 
 /** Types sharing the `/products/…` segment. */
-export const PRODUCT_URL_TYPES = ['product', 'productCategory']
+export const PRODUCT_URL_TYPES = ['product', 'productLine']
 
 const TYPE_LABELS: Record<string, string> = {
   product: 'product',
-  productCategory: 'product line',
+  productLine: 'product line',
 }
 
 export function uniqueSlugAcross(types: string[]) {

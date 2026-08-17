@@ -1,8 +1,8 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
-export const capabilityCategory = defineType({
-  name: 'capabilityCategory',
+export const customizationCategory = defineType({
+  name: 'customizationCategory',
   title: 'Customization Category',
   type: 'document',
   fields: [

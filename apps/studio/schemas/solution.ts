@@ -130,7 +130,7 @@ export const solution = defineType({
       of: [
         {
           type: 'reference',
-          to: [{ type: 'productCategory' }],
+          to: [{ type: 'productLine' }],
         },
       ],
     }),
@@ -144,7 +144,7 @@ export const solution = defineType({
       of: [
         {
           type: 'reference',
-          to: [{ type: 'capabilityCategory' }],
+          to: [{ type: 'customizationCategory' }],
           options: { disableNew: true },
         },
       ],

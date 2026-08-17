@@ -67,7 +67,7 @@ export const product = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'primaryClassification',
+      name: 'kind',
       title: 'Product type',
       type: 'string',
       group: 'basic',
@@ -99,14 +99,14 @@ export const product = defineType({
       title: 'Product lines',
       type: 'array',
       group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'industry',
-      of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
+      hidden: ({ document }) => document?.kind === 'industry',
+      of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
       validation: (Rule) =>
         Rule.custom((val: unknown[] | undefined, context) => {
-          const doc = context.document as { primaryClassification?: string }
+          const doc = context.document as { kind?: string }
           if (
-            (doc?.primaryClassification === 'standard' ||
-              doc?.primaryClassification === 'both') &&
+            (doc?.kind === 'standard' ||
+              doc?.kind === 'both') &&
             (!val || val.length === 0)
           ) {
             return 'At least one product line is required for standard products'
@@ -119,17 +119,17 @@ export const product = defineType({
       title: 'Product styles',
       type: 'array',
       group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'industry',
+      hidden: ({ document }) => document?.kind === 'industry',
       of: [{
         type: 'reference',
-        to: [{ type: 'productStyleCategory' }],
+        to: [{ type: 'productStyle' }],
         options: {
           filter: ({ document }: { document: { productCategories?: Array<{ _ref?: string }> } }) => {
             const refs = (document?.productCategories ?? [])
               .map((r) => r._ref)
               .filter(Boolean)
             if (!refs.length) return {}
-            return { filter: 'productCategory._ref in $refs', params: { refs } }
+            return { filter: 'productLine._ref in $refs', params: { refs } }
           },
         },
       }],

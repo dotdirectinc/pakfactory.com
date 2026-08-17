@@ -2,9 +2,9 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
 
-export const capability = defineType({
-  name: 'capability',
-  title: 'Customization',
+export const customizationOption = defineType({
+  name: 'customizationOption',
+  title: 'Customization Option',
   type: 'document',
   groups: [
     { name: 'basic', title: 'Basic', default: true },
@@ -36,7 +36,7 @@ export const capability = defineType({
           const id = doc?._id?.replace('drafts.', '')
           const draftId = `drafts.${id}`
           const existing = await client.fetch(
-            `*[_type == "capability" && slug.current == $slug && !(_id in [$id, $draftId])][0]._id`,
+            `*[_type == "customizationOption" && slug.current == $slug && !(_id in [$id, $draftId])][0]._id`,
             { slug: slug.current, id, draftId }
           )
           return existing ? 'Slug must be unique across all customizations' : true
@@ -47,7 +47,7 @@ export const capability = defineType({
       title: 'Category',
       type: 'reference',
       group: 'basic',
-      to: [{ type: 'capabilityCategory' }],
+      to: [{ type: 'customizationCategory' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
@@ -56,7 +56,7 @@ export const capability = defineType({
       title: 'Type',
       type: 'reference',
       group: 'basic',
-      to: [{ type: 'capabilityType' }],
+      to: [{ type: 'customizationType' }],
       description: 'Filtered by the selected category. Select a category first.',
       options: {
         disableNew: true,
@@ -105,7 +105,7 @@ export const capability = defineType({
       type: 'array',
       group: 'attributes',
       description: 'Which product groupings use this customization?',
-      of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
+      of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
     }),
     defineField({
       name: 'applicableProductStyleCategories',
@@ -113,7 +113,7 @@ export const capability = defineType({
       type: 'array',
       group: 'attributes',
       description: 'Which structural styles specifically?',
-      of: [{ type: 'reference', to: [{ type: 'productStyleCategory' }] }],
+      of: [{ type: 'reference', to: [{ type: 'productStyle' }] }],
     }),
     // Legacy industry / use-case reference arrays (applicableIndustryCategories,
     // useCases, industries) were removed in PROD-2284 — unpopulated on every
@@ -134,7 +134,7 @@ export const capability = defineType({
         'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first.',
       of: [{
         type: 'reference',
-        to: [{ type: 'attribute' }],
+        to: [{ type: 'propertyValue' }],
         options: {
           disableNew: true,
           filter: ({ document }) => {
@@ -143,7 +143,7 @@ export const capability = defineType({
             if (!typeRef) return { filter: 'false' }
             return {
               filter:
-                'attributeGroup._ref in *[_id == $typeRef][0].properties[].property._ref',
+                'property._ref in *[_id == $typeRef][0].properties[].property._ref',
               params: { typeRef },
             }
           },
@@ -162,11 +162,11 @@ export const capability = defineType({
       title: 'Material source',
       type: 'reference',
       group: 'attributes',
-      to: [{ type: 'attribute' }],
+      to: [{ type: 'propertyValue' }],
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold a value.' },
       options: {
-        filter: 'attributeGroup->slug.current == "source"',
+        filter: 'property->slug.current == "source"',
       },
     }),
     defineField({
@@ -176,9 +176,9 @@ export const capability = defineType({
       group: 'attributes',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
+      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
       options: {
-        filter: 'attributeGroup->slug.current == "physical-properties"',
+        filter: 'property->slug.current == "physical-properties"',
       } as never,
     }),
     defineField({
@@ -188,9 +188,9 @@ export const capability = defineType({
       group: 'attributes',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
+      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
       options: {
-        filter: 'attributeGroup->slug.current == "aesthetic"',
+        filter: 'property->slug.current == "aesthetic"',
       } as never,
     }),
     defineField({
@@ -200,9 +200,9 @@ export const capability = defineType({
       group: 'attributes',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
+      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
       options: {
-        filter: 'attributeGroup->slug.current == "color"',
+        filter: 'property->slug.current == "color"',
       } as never,
     }),
     defineField({
@@ -212,9 +212,9 @@ export const capability = defineType({
       group: 'attributes',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 5 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'attribute' }] }],
+      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
       options: {
-        filter: 'attributeGroup->slug.current == "sustainability"',
+        filter: 'property->slug.current == "sustainability"',
       } as never,
     }),
 
@@ -403,7 +403,7 @@ export const capability = defineType({
       type: 'array',
       group: 'page',
       description: 'What can be applied TO or used WITH this?',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
     }),
     defineField({
       name: 'comparedAgainst',
@@ -411,7 +411,7 @@ export const capability = defineType({
       type: 'array',
       group: 'page',
       description: 'Sibling comparison — minimum 3 required.',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       validation: (Rule) =>
         Rule.custom((val: unknown[] | undefined) => {
           if (!val || val.length === 0) return true
@@ -424,7 +424,7 @@ export const capability = defineType({
       type: 'array',
       group: 'page',
       description: 'See also — cross-category links.',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
     }),
     defineField({
       name: 'faqs',
