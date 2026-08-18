@@ -25,7 +25,8 @@
     "migrate:product-page-related-collections": "tsx scripts/migrate-product-page-related-collections.ts",
     "migrate:cutover": "tsx scripts/migrate-content-model-cutover.ts",
     "migrate:rename-commercial": "tsx scripts/migrate-rename-commercial-types.ts",
-    "migrate:customization-applies-to": "tsx scripts/migrate-customization-applies-to.ts"
+    "migrate:customization-applies-to": "tsx scripts/migrate-customization-applies-to.ts",
+    "migrate:unset-legacy-applies": "tsx scripts/migrate-unset-legacy-applies.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0"
