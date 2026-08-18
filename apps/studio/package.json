@@ -22,6 +22,7 @@
     "migrate:redirect-slashes": "node scripts/strip-redirect-trailing-slashes.mjs",
     "backfill:redirect-fields": "node scripts/backfill-redirect-match-behaviour.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
+    "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
   },
   "dependencies": {
