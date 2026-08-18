@@ -34,6 +34,7 @@ export type Product = {
     productStyle: ProductStyleRef;
     availableCustomizations: CustomizationOption[];
     primarySolution?: string;
+    moq?: number;
 };
 
 export type ProductLine = {

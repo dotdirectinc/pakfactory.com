@@ -7,12 +7,20 @@ export type RequestCustomization = Pick<
     'id' | 'label' | 'category'
 >;
 
+export type RequestReferenceImage = {
+    id: string;
+    name: string;
+    url: string;
+};
+
 export type RequestLine = {
     id: string;
     productSlug: string;
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
+    notes?: string;
+    referenceImages?: RequestReferenceImage[];
     addedAt: string;
 };
 
@@ -21,6 +29,8 @@ export type AddLineInput = {
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
+    notes?: string;
+    referenceImages?: RequestReferenceImage[];
 };
 
 const EMPTY_LINES: RequestLine[] = [];
@@ -107,6 +117,10 @@ export function createRequestLine(input: AddLineInput): RequestLine {
         quantities: [...input.quantities].filter((n) => n > 0).sort((a, b) => a - b),
         contents: input.contents.trim(),
         customizations: input.customizations,
+        ...(input.notes?.trim() ? {notes: input.notes.trim()} : {}),
+        ...(input.referenceImages?.length
+            ? {referenceImages: input.referenceImages}
+            : {}),
         addedAt: new Date().toISOString(),
     };
 }
