@@ -8,24 +8,26 @@ export const productLine = defineType({
   title: 'Product Line',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
+    { name: 'content', title: 'Content', default: true },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // ─── BASIC ────────────────────────────────────────────────────────────────
+    // ─── CONTENT ──────────────────────────────────────────────────────────────
 
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'The product line name, shown on the /products landing and in navigation (e.g. "Mailer Boxes").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'basic',
+      group: 'content',
       options: { source: 'title' },
       description: 'The /products/ URL segment. Must be unique across products and product lines.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
@@ -34,26 +36,28 @@ export const productLine = defineType({
       name: 'description',
       title: 'Description',
       type: 'text',
-      group: 'basic',
+      group: 'content',
       rows: 3,
+      description: 'Short intro shown on the product-line landing page.',
     }),
     defineField(taggedImageField({
       name: 'heroImage',
       title: 'Hero image',
       type: 'image',
-      group: 'basic',
+      group: 'content',
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'Used as the hero visual on the category landing page.',
+      description: 'Used as the hero visual on the product-line landing page.',
       fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
     })),
     defineField({
       name: 'order',
       title: 'Display order',
       type: 'number',
-      group: 'basic',
+      group: 'content',
+      description: 'Lower numbers appear first where product lines are listed.',
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
@@ -63,6 +67,7 @@ export const productLine = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
+      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -71,25 +76,32 @@ export const productLine = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
+      description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
+
+    // ─── SOCIAL ───────────────────────────────────────────────────────────────
+
     defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
-      group: 'seo',
+      group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
+      description: 'Open Graph / social-share image. Falls back to the hero image when empty.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
+      ],
     })),
-
-    // Robots toggles from the one shared definition every other page type uses.
-    // This type had meta tags and no way to keep the page out of the index.
-    ...seoFields({ group: 'seo', meta: false }),
   ],
   preview: {
     select: { title: 'title', media: 'heroImage' },
     prepare({ title, media }) {
-      return { title, media }
+      return { title, subtitle: 'Product Line', media }
     },
   },
 })

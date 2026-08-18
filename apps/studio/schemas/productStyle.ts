@@ -7,62 +7,57 @@ export const productStyle = defineType({
   title: 'Product Style',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
-    { name: 'landing', title: 'Landing Page' },
+    { name: 'content', title: 'Content', default: true },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // ─── BASIC ────────────────────────────────────────────────────────────────
+    // ─── CONTENT ──────────────────────────────────────────────────────────────
 
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'The product style name (e.g. "Snap-Lock Mailer").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'basic',
+      group: 'content',
       options: { source: 'title' },
+      description: 'URL-safe identifier, generated from the title.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'productLine',
       title: 'Parent product line',
       type: 'reference',
-      group: 'basic',
+      group: 'content',
+      description: 'The product line this style belongs to (its parent) — required.',
       to: [{ type: 'productLine' }],
+      options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'description',
       title: 'Description',
       type: 'text',
-      group: 'basic',
+      group: 'content',
       rows: 3,
-    }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'basic',
+      description: 'Short intro shown on the style landing page.',
     }),
     // Nothing inherits: each product states its own MOQ and lead time, and a
     // style that needs a figure derives it from its products at read time.
     // `defaultMoq` and `defaultLeadTimeDays` were removed here — never populated.
-
-    // ─── LANDING PAGE ─────────────────────────────────────────────────────────
-    // Ported from old productCollection hero + bannerImage pattern.
-    // hero.image → primary visual; bannerImage → optional override for cards.
-
     defineField({
       name: 'hero',
       title: 'Hero',
       type: 'object',
-      group: 'landing',
+      group: 'content',
+      description: 'Landing-page hero: badge, headline, supporting copy and image. Ported from the old collection hero.',
       options: { collapsible: true, collapsed: false },
       fields: [
         defineField({
@@ -82,7 +77,7 @@ export const productStyle = defineType({
           title: 'Description',
           type: 'text',
           rows: 4,
-          description: 'Supporting copy below the headline on the style category landing page.',
+          description: 'Supporting copy below the headline on the style landing page.',
         }),
         defineField(taggedImageField({
           name: 'image',
@@ -92,7 +87,7 @@ export const productStyle = defineType({
           options: { hotspot: true },
           description: 'Primary hero visual. Also used as the collection card image when no banner image is set.',
           fields: [
-            defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
+            defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
           ],
         })),
       ],
@@ -101,14 +96,21 @@ export const productStyle = defineType({
       name: 'bannerImage',
       title: 'Banner image',
       type: 'image',
-      group: 'landing',
+      group: 'content',
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'Optional override for product-line cards and the collection page hero image. Falls back to hero image when empty.',
+      description: 'Optional override for product-line cards and the collection hero. Falls back to the hero image when empty.',
       fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
     })),
+    defineField({
+      name: 'order',
+      title: 'Display order',
+      type: 'number',
+      group: 'content',
+      description: 'Lower numbers appear first within the parent product line.',
+    }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 
@@ -117,6 +119,7 @@ export const productStyle = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
+      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -125,20 +128,27 @@ export const productStyle = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
+      description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
+
+    // ─── SOCIAL ───────────────────────────────────────────────────────────────
+
     defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
-      group: 'seo',
+      group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
+      description: 'Open Graph / social-share image. Falls back to the hero image when empty.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
+      ],
     })),
-
-    // Robots toggles from the one shared definition every other page type uses.
-    // This type had meta tags and no way to keep the page out of the index.
-    ...seoFields({ group: 'seo', meta: false }),
   ],
   preview: {
     select: {
@@ -150,7 +160,7 @@ export const productStyle = defineType({
     prepare({ title, category, heroImage, bannerImage }) {
       return {
         title,
-        subtitle: category,
+        subtitle: category ? `Style of ${category}` : 'Product Style',
         media: bannerImage ?? heroImage,
       }
     },
