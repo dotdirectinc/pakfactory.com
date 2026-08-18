@@ -26,7 +26,7 @@
     "migrate:cutover": "tsx scripts/migrate-content-model-cutover.ts",
     "migrate:rename-commercial": "tsx scripts/migrate-rename-commercial-types.ts",
     "migrate:customization-applies-to": "tsx scripts/migrate-customization-applies-to.ts",
-    "migrate:remove-404-promobanner": "tsx scripts/migrate-remove-404-promobanner.ts"
+    "migrate:remove-404-promobanner": "tsx scripts/migrate-remove-404-promobanner.ts",
     "migrate:unset-legacy-applies": "tsx scripts/migrate-unset-legacy-applies.ts"
   },
   "dependencies": {
