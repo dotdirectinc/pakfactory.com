@@ -41,7 +41,6 @@ import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
 import {
   pageBuilderBlocks,
-  pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
   pageBuilderFooter,
@@ -99,7 +98,6 @@ export const schemaTypes = [
 
   // Page builder
   ...pageBuilderBlocks,
-  pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
   pageBuilderFooter,
