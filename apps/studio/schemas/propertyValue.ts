@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { uniqueSlugAcross } from '../lib/slug-rules'
 
 export const propertyValue = defineType({
   name: 'propertyValue',
@@ -22,9 +23,10 @@ export const propertyValue = defineType({
       title: 'Slug',
       type: 'slug',
       group: 'content',
-      description: 'URL-safe identifier, generated from the title.',
+      description:
+        'URL-safe identifier, generated from the title. A stable key — rename the title freely, but change the slug deliberately (a slug in a URL needs a redirect).',
       options: { source: 'title' },
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['propertyValue'])),
     }),
     defineField({
       name: 'property',
@@ -33,6 +35,9 @@ export const propertyValue = defineType({
       group: 'content',
       description: 'The Property this is a value of (its parent) — required.',
       to: [{ type: 'property' }],
+      // §4.2 governance: pick an existing Property, never mint one inline from
+      // this picker — that is how a taxonomy drifts into two spellings.
+      options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -56,6 +61,11 @@ export const propertyValue = defineType({
       type: 'number',
       group: 'content',
       description: 'Lower numbers sort first within the parent property.',
+      // Retiring (§4.3), same as on Property: ordering moves to an ordered array
+      // on the listing/nav singleton (PROD-2292). Kept read-only until then.
+      deprecated: {
+        reason: 'Ordering moves to an ordered array on the listing/nav singleton (PROD-2292).',
+      },
     }),
   ],
   preview: {
@@ -66,11 +76,11 @@ export const propertyValue = defineType({
   },
   orderings: [
     {
-      title: 'Group → order',
-      name: 'groupOrder',
+      title: 'Property → title',
+      name: 'groupTitle',
       by: [
         { field: 'property.title', direction: 'asc' },
-        { field: 'order', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
       ],
     },
   ],
