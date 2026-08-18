@@ -7,6 +7,7 @@ import { property } from './property'
 import { propertyValue } from './propertyValue'
 import { productLine } from './productLine'
 import { productStyle } from './productStyle'
+import { bundle } from './bundle'
 import { product } from './product'
 import { author } from './author'
 import { blogCategory } from './blogCategory'
@@ -41,7 +42,6 @@ import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
 import {
   pageBuilderBlocks,
-  pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
   pageBuilderFooter,
@@ -67,6 +67,7 @@ export const schemaTypes = [
 
   // Product layer
   product,
+  bundle,
 
   // Solutions & Core Entities
   solution,
@@ -99,7 +100,6 @@ export const schemaTypes = [
 
   // Page builder
   ...pageBuilderBlocks,
-  pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
   pageBuilderFooter,

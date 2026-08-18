@@ -1590,7 +1590,10 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
             .title('Products')
             .schemaType('product')
             .child(S.documentTypeList('product').title('Products')),
-        // Bundle — no schema yet; add its folder when the type lands.
+        S.listItem()
+            .title('Bundles')
+            .schemaType('bundle')
+            .child(S.documentTypeList('bundle').title('Bundles')),
         S.divider().title('Global'),
         ...propertyGlobalItems(S),
     ];
