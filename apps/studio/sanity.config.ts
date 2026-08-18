@@ -23,6 +23,9 @@ import {
   productsStructure,
   customizationStructure,
   solutionsWorkspaceStructure,
+  expertiseStructure,
+  resourcesWorkspaceStructure,
+  mainWebsiteStructure,
   globalStructure,
   allContentStructure,
 } from './structure'
@@ -415,6 +418,61 @@ export default defineConfig([
     ],
   },
 
+  // ── Expertise — Expertise Stage (Expertise Service joins later) — D2 ───────
+  {
+    name: 'expertise',
+    title: `Expertise${datasetSuffix}`,
+    basePath: '/expertise',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: expertiseStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Resources — Glossary · Guide · Help Article (FAQ/Help Cat/Dieline later) ─
+  {
+    name: 'resources',
+    title: `Resources${datasetSuffix}`,
+    basePath: '/resources',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Main Website — the pages no content area owns. Static pages today; Home/
+  //    Content/Legal Page + Website Navigation pending Questions for Dev #1. ──
+  {
+    name: 'mainWebsite',
+    title: `Main Website${datasetSuffix}`,
+    basePath: '/main-website',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
   // ── Global — taxonomy (Property, Property Value) + technical SEO (redirects,
   //    Global Settings). What applies everywhere (§3.1). PROD-2329 / D1. ──────
   {
@@ -453,8 +511,9 @@ export default defineConfig([
     ],
   },
 
-  // ── D2 (PROD-2330) — Solutions added above (30 docs). Expertise · Resources ·
-  //    Main Website stay unbuilt: Expertise Service type missing, most Resources
-  //    types missing, Main Website blocked on Questions for Dev #1 (shared page
-  //    types vs type-per-page). Reachable via All Content meanwhile.
+  // All ten workspaces are now present (PROD-2329 D1 + PROD-2330 D2). The four D2
+  // areas ship with the types that exist today; their pending types join when
+  // built: Expertise Service (Expertise); FAQ/Help Category/Dieline (Resources);
+  // Home/Content/Legal Page + Website Navigation (Main Website — Questions for
+  // Dev #1: shared page types vs type-per-page).
 ])

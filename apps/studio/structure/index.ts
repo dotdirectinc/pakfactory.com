@@ -1742,6 +1742,72 @@ export const solutionsWorkspaceStructure = (
                 ),
         ]);
 
+/** Expertise workspace (PROD-2330 / D2) — Expertise Stage today; Expertise
+ *  Service joins when that type is built. */
+export const expertiseStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Expertise')
+        .items([
+            S.listItem()
+                .title('Expertise Stages')
+                .schemaType('expertiseStage')
+                .child(S.documentTypeList('expertiseStage').title('Expertise Stages')),
+        ]);
+
+/** Resources workspace (PROD-2330 / D2) — the built types today (Glossary Term ·
+ *  Guide · Help Article). FAQ · Help Category · Dieline join when they exist. */
+export const resourcesWorkspaceStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Resources')
+        .items([
+            S.listItem()
+                .title('Glossary Terms')
+                .schemaType('glossaryTerm')
+                .child(S.documentTypeList('glossaryTerm').title('Glossary Terms')),
+            S.listItem()
+                .title('Guides')
+                .schemaType('guide')
+                .child(S.documentTypeList('guide').title('Guides')),
+            S.listItem()
+                .title('Help Articles')
+                .schemaType('helpArticle')
+                .child(S.documentTypeList('helpArticle').title('Help Articles')),
+        ]);
+
+/** Main Website workspace (PROD-2330 / D2) — the pages no content area owns.
+ *  Today: the four static-page singletons. Home / Content / Legal Page and
+ *  Website Navigation wait on Questions for Dev #1 (shared types vs per-page). */
+export const mainWebsiteStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Main Website')
+        .items([
+            S.listItem()
+                .title('About Page')
+                .icon(CogIcon)
+                .child(S.editor().id('aboutPage').schemaType('aboutPage').documentId('aboutPage')),
+            S.listItem()
+                .title('Contact Page')
+                .icon(CogIcon)
+                .child(S.editor().id('contactPage').schemaType('contactPage').documentId('contactPage')),
+            S.listItem()
+                .title('Privacy Policy')
+                .icon(CogIcon)
+                .child(S.editor().id('privacyPolicy').schemaType('privacyPolicy').documentId('privacyPolicy')),
+            S.listItem()
+                .title('Terms of Service')
+                .icon(CogIcon)
+                .child(S.editor().id('termsOfService').schemaType('termsOfService').documentId('termsOfService')),
+        ]);
+
 /** All Content — flat, every registered document type; last in the switcher.
  *  The safety net so a type filed in no dedicated workspace is still browsable. */
 export const allContentStructure = (S: StructureBuilder) =>
