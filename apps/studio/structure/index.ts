@@ -1555,5 +1555,87 @@ export const academyStructure = (
         .title('Academy')
         .items([...settingsItems(S, context)]);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCTS & CUSTOMIZATION workspaces (PROD-2309 / D39)
+// Documents-only folders for now — the §3.1 per-type listing-page and Settings
+// children are deferred until those singleton types exist (none do today).
+// Bundle has no schema yet (no Track A ticket), so it has no folder.
+// Property + Property Value are homed in Global but listed in both sidebars (D39).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function propertyGlobalItems(S: StructureBuilder): ListItemBuilder[] {
+    return [
+        S.listItem()
+            .title('Properties')
+            .schemaType('property')
+            .child(S.documentTypeList('property').title('Properties')),
+        S.listItem()
+            .title('Property Values')
+            .schemaType('propertyValue')
+            .child(S.documentTypeList('propertyValue').title('Property Values')),
+    ];
+}
+
+export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+    return [
+        S.listItem()
+            .title('Product Lines')
+            .schemaType('productLine')
+            .child(S.documentTypeList('productLine').title('Product Lines')),
+        S.listItem()
+            .title('Product Styles')
+            .schemaType('productStyle')
+            .child(S.documentTypeList('productStyle').title('Product Styles')),
+        S.listItem()
+            .title('Products')
+            .schemaType('product')
+            .child(S.documentTypeList('product').title('Products')),
+        // Bundle — no schema yet; add its folder when the type lands.
+        S.divider().title('Global'),
+        ...propertyGlobalItems(S),
+    ];
+}
+
+export function customizationItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+    return [
+        S.listItem()
+            .title('Categories')
+            .schemaType('customizationCategory')
+            .child(S.documentTypeList('customizationCategory').title('Customization Categories')),
+        S.listItem()
+            .title('Types')
+            .schemaType('customizationType')
+            .child(S.documentTypeList('customizationType').title('Customization Types')),
+        S.listItem()
+            .title('Options')
+            .schemaType('customizationOption')
+            .child(S.documentTypeList('customizationOption').title('Customization Options')),
+        S.listItem()
+            .title('Option Groups')
+            .schemaType('optionGroup')
+            .child(S.documentTypeList('optionGroup').title('Option Groups')),
+        S.divider().title('Global'),
+        ...propertyGlobalItems(S),
+    ];
+}
+
+/** Products — Product Line · Product Style · Product (+ Global Property picks) */
+export const productsStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Products')
+        .items([...productsItems(S)]);
+
+/** Customization — Category · Type · Option · Option Group (+ Global Property picks) */
+export const customizationStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Customization')
+        .items([...customizationItems(S)]);
+
 // Default export — Admin (backwards-compatible fallback)
 export const structure = adminStructure;
