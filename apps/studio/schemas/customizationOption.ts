@@ -99,11 +99,87 @@ export const customizationOption = defineType({
 
     // ─── ATTRIBUTES TAB ───────────────────────────────────────────────────────
 
+    // ─── APPLICABILITY (PROD-2306) ────────────────────────────────────────────
+    // Applicability lives on the Option, not a standalone rule type (D8b, the rule
+    // type was withdrawn). `appliesTo` empty = applies to everything; scope it to
+    // narrow. `incompatibleWith` is a short manufacturing deny-list, not thousands.
+    defineField({
+      name: 'appliesTo',
+      title: 'Applies to',
+      type: 'array',
+      group: 'attributes',
+      description:
+        'What this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, Products, or — for a finish constrained by its material — Customization Options.',
+      of: [
+        {
+          type: 'reference',
+          to: [
+            { type: 'productLine' },
+            { type: 'productStyle' },
+            { type: 'product' },
+            { type: 'customizationOption' },
+          ],
+        },
+      ],
+    }),
+    defineField({
+      name: 'except',
+      title: 'Except',
+      type: 'array',
+      group: 'attributes',
+      description:
+        'Optional carve-outs from Applies to — the specific targets this option is NOT available on. Should be narrower than Applies to.',
+      of: [
+        {
+          type: 'reference',
+          to: [
+            { type: 'productLine' },
+            { type: 'productStyle' },
+            { type: 'product' },
+            { type: 'customizationOption' },
+          ],
+        },
+      ],
+      validation: (Rule) =>
+        Rule.custom((except, context) => {
+          const list = Array.isArray(except) ? except : []
+          if (list.length === 0) return true
+          const appliesTo = (context.document as { appliesTo?: unknown[] } | undefined)?.appliesTo
+          if (!appliesTo || appliesTo.length === 0) {
+            return 'Except is set while Applies to is empty (= everything). A carve-out from "everything" is usually clearer as a scoped Applies to.'
+          }
+          return true
+        }).warning(),
+    }),
+    defineField({
+      name: 'incompatibleWith',
+      title: 'Incompatible with',
+      type: 'array',
+      group: 'attributes',
+      description:
+        'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. Keep it symmetric: if A lists B, B should list A.',
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          if (refs.some((r) => r._ref?.replace(/^drafts\./, '') === selfId)) {
+            return 'An option cannot be incompatible with itself.'
+          }
+          return true
+        }).warning(),
+    }),
+
+    // Deprecated by PROD-2306 — replaced by "Applies to". Kept read-only until the
+    // 8 populated docs are migrated (migrate:customization-applies-to), then removed
+    // in a follow-up. Do not write to these.
     defineField({
       name: 'applicableProductCategories',
       title: 'Applicable product categories',
       type: 'array',
       group: 'attributes',
+      readOnly: true,
+      deprecated: { reason: 'Replaced by "Applies to" (PROD-2306). Being migrated, then removed. 8 options still hold values.' },
       description: 'Which product groupings use this customization?',
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
     }),
@@ -112,6 +188,8 @@ export const customizationOption = defineType({
       title: 'Applicable product style categories',
       type: 'array',
       group: 'attributes',
+      readOnly: true,
+      deprecated: { reason: 'Replaced by "Applies to" (PROD-2306). Unpopulated; will be removed.' },
       description: 'Which structural styles specifically?',
       of: [{ type: 'reference', to: [{ type: 'productStyle' }] }],
     }),
@@ -486,9 +564,17 @@ export const customizationOption = defineType({
       category: 'category.title',
       type: 'type.title',
       media: 'media.0',
+      appliesTo: 'appliesTo',
+      except: 'except',
     },
-    prepare({ title, status, category, type, media }) {
-      const subtitle = [category, type].filter(Boolean).join(' → ')
+    prepare({ title, status, category, type, media, appliesTo, except }) {
+      // Answer "what does this apply to?" in the list without opening every ref.
+      const n = Array.isArray(appliesTo) ? appliesTo.length : 0
+      const exceptN = Array.isArray(except) ? except.length : 0
+      const scope = n === 0 ? 'all' : `${n} target${n === 1 ? '' : 's'}`
+      const applies = `applies to ${scope}${exceptN ? ` · except ${exceptN}` : ''}`
+      const base = [category, type].filter(Boolean).join(' → ')
+      const subtitle = base ? `${base} — ${applies}` : applies
       return {
         title,
         subtitle: status === 'active' ? subtitle : `[${status?.toUpperCase()}] ${subtitle}`,
