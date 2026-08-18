@@ -7,26 +7,29 @@ export const customizationOption = defineType({
   title: 'Customization Option',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
-    { name: 'attributes', title: 'Attributes' },
-    { name: 'page', title: 'Page' },
+    { name: 'content', title: 'Content', default: true },
+    { name: 'categorization', title: 'Categorization' },
+    { name: 'specs', title: 'Specs' },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // ─── BASIC TAB ────────────────────────────────────────────────────────────
+    // ─── CONTENT ──────────────────────────────────────────────────────────────
 
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'The customization option name shown to customers (e.g. "Matte Lamination").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'basic',
+      group: 'content',
+      description: 'URL-safe identifier, generated from the title. Unique across all customizations.',
       options: { source: 'title' },
       validation: (Rule) =>
         Rule.required().custom(async (slug, context) => {
@@ -46,7 +49,8 @@ export const customizationOption = defineType({
       name: 'category',
       title: 'Category',
       type: 'reference',
-      group: 'basic',
+      group: 'content',
+      description: 'The customization category this option belongs to — required. Scopes the Type picker below.',
       to: [{ type: 'customizationCategory' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -55,7 +59,7 @@ export const customizationOption = defineType({
       name: 'type',
       title: 'Type',
       type: 'reference',
-      group: 'basic',
+      group: 'content',
       to: [{ type: 'customizationType' }],
       description: 'Filtered by the selected category. Select a category first.',
       options: {
@@ -76,7 +80,8 @@ export const customizationOption = defineType({
       name: 'status',
       title: 'Status',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'Lifecycle: Active (offered now), Future (coming soon), or Deprecated (retired).',
       options: {
         layout: 'radio',
         list: [
@@ -92,12 +97,12 @@ export const customizationOption = defineType({
       name: 'media',
       title: 'Media',
       type: 'array',
-      group: 'basic',
+      group: 'content',
       description: 'Add images in render order — first image = hero.',
       of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
     }),
 
-    // ─── ATTRIBUTES TAB ───────────────────────────────────────────────────────
+    // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
 
     // ─── APPLICABILITY (PROD-2306) ────────────────────────────────────────────
     // Applicability lives on the Option, not a standalone rule type (D8b, the rule
@@ -107,7 +112,7 @@ export const customizationOption = defineType({
       name: 'appliesTo',
       title: 'Applies to',
       type: 'array',
-      group: 'attributes',
+      group: 'categorization',
       description:
         'What this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, Products, or — for a finish constrained by its material — Customization Options.',
       of: [
@@ -126,7 +131,7 @@ export const customizationOption = defineType({
       name: 'except',
       title: 'Except',
       type: 'array',
-      group: 'attributes',
+      group: 'categorization',
       description:
         'Optional carve-outs from Applies to — the specific targets this option is NOT available on. Should be narrower than Applies to.',
       of: [
@@ -155,7 +160,7 @@ export const customizationOption = defineType({
       name: 'incompatibleWith',
       title: 'Incompatible with',
       type: 'array',
-      group: 'attributes',
+      group: 'categorization',
       description:
         'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. Keep it symmetric: if A lists B, B should list A.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
@@ -177,7 +182,7 @@ export const customizationOption = defineType({
       name: 'applicableProductCategories',
       title: 'Applicable product categories',
       type: 'array',
-      group: 'attributes',
+      group: 'categorization',
       readOnly: true,
       deprecated: { reason: 'Replaced by "Applies to" (PROD-2306). Being migrated, then removed. 8 options still hold values.' },
       description: 'Which product groupings use this customization?',
@@ -187,7 +192,7 @@ export const customizationOption = defineType({
       name: 'applicableProductStyleCategories',
       title: 'Applicable product style categories',
       type: 'array',
-      group: 'attributes',
+      group: 'categorization',
       readOnly: true,
       deprecated: { reason: 'Replaced by "Applies to" (PROD-2306). Unpopulated; will be removed.' },
       description: 'Which structural styles specifically?',
@@ -207,7 +212,7 @@ export const customizationOption = defineType({
       name: 'properties',
       title: 'Properties',
       type: 'array',
-      group: 'attributes',
+      group: 'specs',
       description:
         'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first.',
       of: [{
@@ -239,7 +244,7 @@ export const customizationOption = defineType({
       name: 'materialSource',
       title: 'Material source',
       type: 'reference',
-      group: 'attributes',
+      group: 'specs',
       to: [{ type: 'propertyValue' }],
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold a value.' },
@@ -251,7 +256,7 @@ export const customizationOption = defineType({
       name: 'physicalProperties',
       title: 'Physical properties',
       type: 'array',
-      group: 'attributes',
+      group: 'specs',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
@@ -263,7 +268,7 @@ export const customizationOption = defineType({
       name: 'aesthetic',
       title: 'Aesthetic',
       type: 'array',
-      group: 'attributes',
+      group: 'specs',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
@@ -275,7 +280,7 @@ export const customizationOption = defineType({
       name: 'colors',
       title: 'Colors',
       type: 'array',
-      group: 'attributes',
+      group: 'specs',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
@@ -287,7 +292,7 @@ export const customizationOption = defineType({
       name: 'sustainability',
       title: 'Sustainability',
       type: 'array',
-      group: 'attributes',
+      group: 'specs',
       readOnly: true,
       deprecated: { reason: 'Replaced by Properties — do not write to this field. 5 options still hold values.' },
       of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
@@ -296,13 +301,14 @@ export const customizationOption = defineType({
       } as never,
     }),
 
-    // ─── PAGE TAB ─────────────────────────────────────────────────────────────
+    // ─── CONTENT (landing-page prose) ─────────────────────────────────────────
 
     defineField({
       name: 'whatIsBlock',
       title: 'What is it?',
       type: 'object',
-      group: 'page',
+      group: 'content',
+      description: 'Landing-page explainer of what this customization is.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
@@ -312,7 +318,8 @@ export const customizationOption = defineType({
       name: 'whyChooseBlock',
       title: 'Why choose it?',
       type: 'object',
-      group: 'page',
+      group: 'content',
+      description: 'Landing-page copy on why a customer would pick this customization.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
@@ -333,7 +340,7 @@ export const customizationOption = defineType({
       name: 'specTables',
       title: 'Spec tables',
       type: 'array',
-      group: 'page',
+      group: 'specs',
       description:
         'The rows this option states, for each table its customization type declares. Leave a table out and it simply does not render.',
       of: [{
@@ -479,7 +486,7 @@ export const customizationOption = defineType({
       name: 'applicableCapabilities',
       title: 'Applicable customizations',
       type: 'array',
-      group: 'page',
+      group: 'categorization',
       description: 'What can be applied TO or used WITH this?',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
     }),
@@ -487,7 +494,7 @@ export const customizationOption = defineType({
       name: 'comparedAgainst',
       title: 'Compared against',
       type: 'array',
-      group: 'page',
+      group: 'categorization',
       description: 'Sibling comparison — minimum 3 required.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       validation: (Rule) =>
@@ -500,7 +507,7 @@ export const customizationOption = defineType({
       name: 'relatedCapabilities',
       title: 'Related customizations',
       type: 'array',
-      group: 'page',
+      group: 'categorization',
       description: 'See also — cross-category links.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
     }),
@@ -508,7 +515,8 @@ export const customizationOption = defineType({
       name: 'faqs',
       title: 'FAQs',
       type: 'array',
-      group: 'page',
+      group: 'categorization',
+      description: 'Question-and-answer pairs shown on the customization landing page.',
       of: [
         {
           type: 'object',
@@ -526,13 +534,14 @@ export const customizationOption = defineType({
       ],
     }),
 
-    // ─── SEO TAB ──────────────────────────────────────────────────────────────
+    // ─── SEO ──────────────────────────────────────────────────────────────────
 
     defineField({
       name: 'metaTitle',
       title: 'Meta title',
       type: 'string',
       group: 'seo',
+      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -541,20 +550,27 @@ export const customizationOption = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
+      description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
+
+    // ─── SOCIAL ───────────────────────────────────────────────────────────────
+
     defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
-      group: 'seo',
+      group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.capability),
       options: { hotspot: true },
+      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
+      ],
     })),
-
-    // Robots toggles from the one shared definition every other page type uses.
-    // This type had meta tags and no way to keep the page out of the index.
-    ...seoFields({ group: 'seo', meta: false }),
   ],
 
   preview: {
