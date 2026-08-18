@@ -1,14 +1,13 @@
-import { capabilityCategory } from './capabilityCategory'
+import { customizationCategory } from './customizationCategory'
 import { socialLink } from '../lib/social-link-schema'
-import { capabilityType } from './capabilityType'
-import { capability } from './capability'
-import { attributeGroup } from './attributeGroup'
-import { attribute } from './attribute'
-import { productCategory } from './productCategory'
-import { productStyleCategory } from './productStyleCategory'
-import { industry } from './industry'
-import { industryCategory } from './industryCategory'
-import { useCase } from './useCase'
+import { customizationType } from './customizationType'
+import { customizationOption } from './customizationOption'
+import { optionGroup } from './optionGroup'
+import { property } from './property'
+import { propertyValue } from './propertyValue'
+import { productLine } from './productLine'
+import { productStyle } from './productStyle'
+import { bundle } from './bundle'
 import { product } from './product'
 import { author } from './author'
 import { blogCategory } from './blogCategory'
@@ -43,7 +42,6 @@ import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
 import {
   pageBuilderBlocks,
-  pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
   pageBuilderFooter,
@@ -54,23 +52,22 @@ export const schemaTypes = [
   socialLink,
 
   // Customization layer
-  capabilityCategory,
-  capabilityType,
-  capability,
+  customizationCategory,
+  customizationType,
+  customizationOption,
+  optionGroup,
 
   // Attribute layer
-  attributeGroup,
-  attribute,
+  property,
+  propertyValue,
 
   // Product taxonomy
-  productCategory,
-  productStyleCategory,
-  industry,
-  industryCategory,
-  useCase,
+  productLine,
+  productStyle,
 
   // Product layer
   product,
+  bundle,
 
   // Solutions & Core Entities
   solution,
@@ -103,7 +100,6 @@ export const schemaTypes = [
 
   // Page builder
   ...pageBuilderBlocks,
-  pageBuilder,
   pageBuilderHome,
   pageBuilderLanding,
   pageBuilderFooter,

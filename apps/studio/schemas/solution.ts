@@ -1,6 +1,19 @@
 import { defineField, defineType } from 'sanity'
 import { BulbOutlineIcon } from '@sanity/icons'
 import { MEDIA_TAG, ogMediaTags, taggedImageField } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+
+const SOLUTION_TYPES = [
+  { title: 'Industry', value: 'industry' },
+  { title: 'Channel', value: 'channel' },
+  { title: 'Focus', value: 'focus' },
+  { title: 'Use case', value: 'use-case' },
+] as const
+
+const SOLUTION_TYPE_TITLES: Record<string, string> = Object.fromEntries(
+  SOLUTION_TYPES.map(({ value, title }) => [value, title]),
+)
 
 export const solution = defineType({
   name: 'solution',
@@ -22,7 +35,7 @@ export const solution = defineType({
       type: 'string',
       group: 'basic',
       description: 'Used in the Studio nav only. Not shown on the website.',
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('internalTitle')),
     }),
 
     defineField({
@@ -30,11 +43,10 @@ export const solution = defineType({
       title: 'Solution type',
       type: 'string',
       group: 'basic',
+      description:
+        'Which axis this solution sits on. Pick one only — a term on two axes appears twice in the nav and splits its own search authority. The axis is not part of the URL, so re-categorising never needs a redirect.',
       options: {
-        list: [
-          { title: 'Industry', value: 'industry' },
-          { title: 'Use Case', value: 'use-case' },
-        ],
+        list: [...SOLUTION_TYPES],
         layout: 'radio',
       },
       initialValue: 'industry',
@@ -118,7 +130,7 @@ export const solution = defineType({
       of: [
         {
           type: 'reference',
-          to: [{ type: 'productCategory' }],
+          to: [{ type: 'productLine' }],
         },
       ],
     }),
@@ -132,7 +144,8 @@ export const solution = defineType({
       of: [
         {
           type: 'reference',
-          to: [{ type: 'capabilityCategory' }],
+          to: [{ type: 'customizationCategory' }],
+          options: { disableNew: true },
         },
       ],
     }),
@@ -193,6 +206,10 @@ export const solution = defineType({
       description: 'Social share image. Recommended: 1200×630px.',
       options: { hotspot: true },
     })),
+
+    // Robots toggles from the one shared definition every other page type uses.
+    // This type had meta tags and no way to keep the page out of the index.
+    ...seoFields({ group: 'seo', meta: false }),
   ],
 
   preview: {
@@ -202,10 +219,9 @@ export const solution = defineType({
       media: 'heroImage',
     },
     prepare({ title, solutionType, media }) {
-      const label = solutionType === 'industry' ? 'Industry' : 'Use Case'
       return {
         title: title ?? 'Untitled solution',
-        subtitle: label,
+        subtitle: SOLUTION_TYPE_TITLES[solutionType] ?? 'No type set',
         media,
       }
     },

@@ -127,7 +127,7 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
       return slug ? `/solutions/${slug}` : null;
     case "caseStudy":
       return slug ? `/case-studies/${slug}` : null;
-    case "capabilityCategory": {
+    case "customizationCategory": {
       const category = doc.category?.trim();
       if (category && slug) return `/capabilities/${category}/${slug}`;
       return null;

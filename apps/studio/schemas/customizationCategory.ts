@@ -1,20 +1,26 @@
 import { defineField, defineType } from 'sanity'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
-export const attributeGroup = defineType({
-  name: 'attributeGroup',
-  title: 'Attribute Group',
+export const customizationCategory = defineType({
+  name: 'customizationCategory',
+  title: 'Customization Category',
   type: 'document',
+  groups: [{ name: 'content', title: 'Content', default: true }],
   fields: [
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      validation: (Rule) => Rule.required(),
+      group: 'content',
+      description: 'The customization category name — the top grouping in the sidebar (e.g. "Print", "Finish").',
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
+      group: 'content',
+      description: 'URL-safe identifier, generated from the title.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required(),
     }),
@@ -22,12 +28,16 @@ export const attributeGroup = defineType({
       name: 'description',
       title: 'Description',
       type: 'text',
-      rows: 2,
+      rows: 3,
+      group: 'content',
+      description: 'One sentence on what this category groups, for the content team.',
     }),
     defineField({
       name: 'order',
       title: 'Display order',
       type: 'number',
+      group: 'content',
+      description: 'Lower numbers appear first in the sidebar.',
     }),
   ],
   preview: {

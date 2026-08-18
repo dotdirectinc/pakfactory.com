@@ -19,7 +19,7 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'product',
   'solution',
   'caseStudy',
-  'capabilityCategory',
+  'customizationCategory',
   // Resources
   'guide',
   'glossaryTerm',
@@ -40,11 +40,22 @@ export const linkableReferenceTo = LINKABLE_DOCUMENT_TYPES.map((type) => ({ type
  * Excludes topics / search / 404 blogPage singletons (not good CTA targets).
  * Allows home, contribute, landing, and static blogPages.
  */
+// Exclude by _id, not pageRole: pageRole is null on exactly the three
+// singletons we want to hide, so `pageRole in [...]` matched nothing and the
+// Topic Landing, Search and 404 pages were offered as link targets (PROD-2314).
+// The _id (published or draft) is what actually identifies them.
 export const LINKABLE_TYPE_FILTER = `(_type in $types) && !(
-  _type == "blogPage" && pageRole in $excludedBlogPageRoles
+  _id in $excludedIds
 )`
 
 export const linkableTypeFilterParams = {
   types: [...LINKABLE_DOCUMENT_TYPES],
-  excludedBlogPageRoles: ['topics', 'search', 'notFound'],
+  excludedIds: [
+    'blogTopicsPage',
+    'blogNotFoundPage',
+    'blogSearchPage',
+    'drafts.blogTopicsPage',
+    'drafts.blogNotFoundPage',
+    'drafts.blogSearchPage',
+  ],
 }

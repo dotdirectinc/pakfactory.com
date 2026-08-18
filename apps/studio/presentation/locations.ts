@@ -158,7 +158,7 @@ export const websiteLocations: DocumentLocationResolvers = {
           }
         : { locations: [] },
   }),
-  // TODO(capability): apps/www routes capability detail via capabilityCategory
+  // TODO(capability): apps/www routes capability detail via customizationCategory
   // (CAPABILITY_BY_CATEGORY_AND_SLUG_QUERY), another schema/routing divergence.
   // Add a guarded resolver once the capability routing model is settled.
 }

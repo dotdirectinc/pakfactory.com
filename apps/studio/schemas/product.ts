@@ -1,36 +1,35 @@
 import { defineField, defineType } from 'sanity'
-import { createInheritedSpecInput } from '../components/InheritedSpecInput'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { seoFields } from '../lib/seo-fields'
+import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 
 export const product = defineType({
   name: 'product',
   title: 'Product',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
-    { name: 'classification', title: 'Category' },
-    { name: 'capabilities', title: 'Customization' },
-    { name: 'attributes', title: 'Attributes' },
+    { name: 'content', title: 'Content', default: true },
+    { name: 'categorization', title: 'Categorization' },
     { name: 'specs', title: 'Specs' },
-    { name: 'page', title: 'Page' },
-    { name: 'related', title: 'Related' },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // ─── BASIC ────────────────────────────────────────────────────────────────
+    // ─── CONTENT ──────────────────────────────────────────────────────────────
 
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'The product name (e.g. "Straight Tuck End Box").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'sku',
       title: 'SKU',
       type: 'string',
-      group: 'basic',
+      group: 'specs',
       description: 'Format: XXX-NNN (e.g. FCB-001, RIG-042)',
       validation: (Rule) => Rule.required(),
     }),
@@ -38,34 +37,24 @@ export const product = defineType({
       name: 'cardName',
       title: 'Card name',
       type: 'string',
-      group: 'basic',
+      group: 'content',
       description: 'Optional display name override for product listing cards. Leave blank to use Title.',
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'basic',
+      group: 'content',
       options: { source: 'title' },
-      validation: (Rule) =>
-        Rule.required().custom(async (slug, context) => {
-          if (!slug?.current) return 'Slug is required'
-          const client = context.getClient({ apiVersion: '2024-01-01' })
-          const doc = context.document as { _id?: string }
-          const id = doc?._id?.replace('drafts.', '')
-          const draftId = `drafts.${id}`
-          const existing = await client.fetch(
-            `*[_type == "product" && slug.current == $slug && !(_id in [$id, $draftId])][0]._id`,
-            { slug: slug.current, id, draftId }
-          )
-          return existing ? 'Slug must be unique across all products' : true
-        }),
+      description: 'The /products/ URL segment. Must be unique across products and product lines.',
+      validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
     defineField({
       name: 'status',
       title: 'Status',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'Lifecycle: Active (sold now), Coming soon, or Discontinued.',
       options: {
         layout: 'radio',
         list: [
@@ -78,10 +67,11 @@ export const product = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'primaryClassification',
+      name: 'kind',
       title: 'Product type',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'Standard (line/style catalogue), Industry (solution-led), or Both — controls which fields show.',
       options: {
         layout: 'radio',
         list: [
@@ -97,7 +87,7 @@ export const product = defineType({
       name: 'media',
       title: 'Media',
       type: 'array',
-      group: 'basic',
+      group: 'content',
       description: 'First image = hero.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
@@ -109,15 +99,16 @@ export const product = defineType({
       name: 'productCategories',
       title: 'Product lines',
       type: 'array',
-      group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'industry',
-      of: [{ type: 'reference', to: [{ type: 'productCategory' }] }],
+      group: 'categorization',
+      description: 'The product line(s) this product belongs to. Required for standard products.',
+      hidden: ({ document }) => document?.kind === 'industry',
+      of: [{ type: 'reference', to: [{ type: 'productLine' }], options: { disableNew: true } }],
       validation: (Rule) =>
         Rule.custom((val: unknown[] | undefined, context) => {
-          const doc = context.document as { primaryClassification?: string }
+          const doc = context.document as { kind?: string }
           if (
-            (doc?.primaryClassification === 'standard' ||
-              doc?.primaryClassification === 'both') &&
+            (doc?.kind === 'standard' ||
+              doc?.kind === 'both') &&
             (!val || val.length === 0)
           ) {
             return 'At least one product line is required for standard products'
@@ -129,85 +120,80 @@ export const product = defineType({
       name: 'productStyleCategories',
       title: 'Product styles',
       type: 'array',
-      group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'industry',
+      group: 'categorization',
+      description: 'The style(s) within the selected product line(s). Scoped to the chosen lines.',
+      hidden: ({ document }) => document?.kind === 'industry',
       of: [{
         type: 'reference',
-        to: [{ type: 'productStyleCategory' }],
+        to: [{ type: 'productStyle' }],
         options: {
+          disableNew: true,
           filter: ({ document }: { document: { productCategories?: Array<{ _ref?: string }> } }) => {
             const refs = (document?.productCategories ?? [])
               .map((r) => r._ref)
               .filter(Boolean)
             if (!refs.length) return {}
-            return { filter: 'productCategory._ref in $refs', params: { refs } }
+            return { filter: 'productLine._ref in $refs', params: { refs } }
           },
         },
       }],
     }),
 
-    // Industry fields — visible when Product type is Industry or Both
-    defineField({
-      name: 'industries',
-      title: 'Industries',
-      type: 'array',
-      group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'standard',
-      of: [{ type: 'reference', to: [{ type: 'industry' }] }],
-    }),
-    defineField({
-      name: 'industryCategories',
-      title: 'Industry segments',
-      type: 'array',
-      group: 'classification',
-      hidden: ({ document }) => document?.primaryClassification === 'standard',
-      of: [{ type: 'reference', to: [{ type: 'industryCategory' }] }],
-    }),
-    defineField({
-      name: 'useCases',
-      title: 'Use cases',
-      type: 'array',
-      group: 'attributes',
-      of: [{ type: 'reference', to: [{ type: 'useCase' }] }],
-    }),
-
-    // ─── CUSTOMIZATION ────────────────────────────────────────────────────────
+    // ─── SOLUTIONS ────────────────────────────────────────────────────────────
+    // The single Solutions field. It replaced the legacy `industries`,
+    // `industryCategories` and `useCases` reference arrays, which were retired in
+    // PROD-2298 / PROD-2299 (data repointed to Solutions on production) and removed
+    // from the schema here in PROD-2284 along with the industry/useCase types.
 
     defineField({
-      name: 'capabilitiesOverride',
-      title: 'Customization overwrite',
+      name: 'solutions',
+      title: 'Solutions',
       type: 'array',
-      group: 'capabilities',
+      group: 'categorization',
       description:
-        'Leave empty — customizations are inherited automatically from this product\'s category via GROQ. Add items here only to override completely (replaces the full inherited set, not a merge).',
-      of: [{ type: 'reference', to: [{ type: 'capability' }] }],
+        'Every solution this product serves — industries, channels, focus areas and use cases in one list. Replaces the separate Industries, Industry segments and Use cases fields.',
+      of: [{
+        type: 'reference',
+        to: [{ type: 'solution' }],
+        options: { disableNew: true },
+      }],
+    }),
+
+    defineField({
+      name: 'primarySolution',
+      title: 'Primary solution',
+      type: 'reference',
+      group: 'categorization',
+      to: [{ type: 'solution' }],
+      options: { disableNew: true },
+      description:
+        'The one solution this product leads with — it names the parent in the breadcrumb. Required for inspiration presets once the Product type field lands; optional for standard products.',
     }),
 
     // ─── SPECS ────────────────────────────────────────────────────────────────
 
     defineField({
       name: 'moq',
-      title: 'MOQ override',
+      title: 'MOQ',
       type: 'number',
       group: 'specs',
-      description: 'Set only if this product differs from the style default.',
-      components: { input: createInheritedSpecInput('defaultMoq', ' units') },
+      description:
+        'This product\'s own minimum order quantity, in units. Not an override — there is no style default to override, and a style that needs a figure takes the lowest among its products.',
     }),
     defineField({
       name: 'leadTimeDays',
-      title: 'Lead time override (days)',
+      title: 'Lead time (days)',
       type: 'number',
       group: 'specs',
-      description: 'Set only if this product differs from the style default.',
-      components: { input: createInheritedSpecInput('defaultLeadTimeDays', ' days') },
+      description: 'This product\'s own production lead time, in days.',
     }),
-    // ─── PAGE ─────────────────────────────────────────────────────────────────
+    // ─── CONTENT (prose & gallery) ────────────────────────────────────────────
 
     defineField({
       name: 'description',
       title: 'Short description',
       type: 'text',
-      group: 'page',
+      group: 'content',
       rows: 3,
       description: 'Used in product cards and listing pages.',
     }),
@@ -215,7 +201,8 @@ export const product = defineType({
       name: 'whatIsBlock',
       title: 'What is it?',
       type: 'object',
-      group: 'page',
+      group: 'content',
+      description: 'Landing-page explainer of what this product is.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
@@ -225,17 +212,30 @@ export const product = defineType({
       name: 'whyChooseBlock',
       title: 'Why choose it?',
       type: 'object',
-      group: 'page',
+      group: 'content',
+      description: 'Landing-page copy on why a customer would choose this product.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
       ],
     }),
     defineField({
+      name: 'showcaseImages',
+      title: 'Showcase images',
+      type: 'array',
+      group: 'content',
+      description: 'Additional gallery images for the product landing page.',
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
+    }),
+
+    // ─── CATEGORIZATION (curated lists) ───────────────────────────────────────
+
+    defineField({
       name: 'faqs',
       title: 'FAQs',
       type: 'array',
-      group: 'page',
+      group: 'categorization',
+      description: 'Question-and-answer pairs shown on the product landing page.',
       of: [
         {
           type: 'object',
@@ -248,20 +248,10 @@ export const product = defineType({
       ],
     }),
     defineField({
-      name: 'showcaseImages',
-      title: 'Showcase images',
-      type: 'array',
-      group: 'page',
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
-    }),
-
-    // ─── RELATED ──────────────────────────────────────────────────────────────
-
-    defineField({
       name: 'comparedAgainst',
       title: 'Compared against',
       type: 'array',
-      group: 'related',
+      group: 'categorization',
       description: 'Sibling comparison — minimum 3.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
       validation: (Rule) =>
@@ -274,7 +264,8 @@ export const product = defineType({
       name: 'relatedProducts',
       title: 'Related products',
       type: 'array',
-      group: 'related',
+      group: 'categorization',
+      description: 'Other products to cross-link from this one\'s landing page.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
     }),
 
@@ -285,6 +276,7 @@ export const product = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
+      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -293,15 +285,29 @@ export const product = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
+      description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+
+    // The three robots toggles, from the one shared definition every blog type
+    // already uses. Product had none at all — no way to keep a page out of the
+    // index on what will be the site's highest-volume type. Meta fields are not
+    // taken from the shared set: its copy describes the blog's fallback chain.
+    ...seoFields({ group: 'seo', meta: false }),
+
+    // ─── SOCIAL ───────────────────────────────────────────────────────────────
+
     defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
-      group: 'seo',
+      group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.product),
       options: { hotspot: true },
+      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
+      ],
     })),
   ],
 

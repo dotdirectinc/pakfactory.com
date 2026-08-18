@@ -24,7 +24,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "caseStudiesPage", "client",
- *     "solution", "productCategory", "expertiseStage", "capability"
+ *     "solution", "productLine", "expertiseStage", "customizationOption"
  *   ]
  *
  * `caseStudy` = the studies; `caseStudiesPage` = listing SEO/hero + per-detail CTA;
@@ -48,9 +48,9 @@ const CASE_STUDY_TYPES = new Set([
   "caseStudiesPage",
   "client",
   "solution",
-  "productCategory",
+  "productLine",
   "expertiseStage",
-  "capability",
+  "customizationOption",
 ]);
 
 export async function POST(request: Request) {
