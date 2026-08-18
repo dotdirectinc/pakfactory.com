@@ -18,13 +18,12 @@ import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopi
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import { CHANNELS } from './lib/channels'
 import {
-  adminStructure,
   blogStructure,
-  websiteStructure,
+  caseStudiesStructure,
   productsStructure,
   customizationStructure,
-  solutionsStructure,
-  academyStructure,
+  globalStructure,
+  allContentStructure,
 } from './structure'
 import { BlogCategoryPostsView } from './components/BlogCategoryPostsView'
 import { RelatedPostsView } from './components/RelatedPostsView'
@@ -274,26 +273,15 @@ const releasesAndScheduleDisabled = {
 }
 
 export default defineConfig([
-  // ── Admin — full access (default workspace at /) ───────────────────────────
-  {
-    name: 'admin',
-    title: `Global${datasetSuffix}`,
-    basePath: '/admin',
-    projectId,
-    dataset,
-    schema,
-    ...releasesAndScheduleDisabled,
-    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
-    plugins: [
-      structureTool({ structure: adminStructure, defaultDocumentNode }),
-      blogI18nPlugin,
-      colorInput(),
-      media(),
-      visionTool(),
-    ],
-  },
+  // Six workspaces (PROD-2329 / D1, per D39), in switcher order: Blog · Case
+  // Studies · Products · Customization · Global · All Content. `admin` and
+  // `website` are retired. Every workspace registers the FULL schema — they
+  // differ only in structure (§3.1) — so cross-workspace reference pickers and
+  // search keep working. The remaining four (Solutions · Expertise · Resources ·
+  // Main Website) land in D2 when they have content; until then every type is
+  // still browsable via All Content.
 
-  // ── Blog — editorial team ──────────────────────────────────────────────────
+  // ── Blog — editorial team (its own site: header/footer/nav) ────────────────
   {
     name: 'blog',
     title: `Blog${datasetSuffix}`,
@@ -330,22 +318,21 @@ export default defineConfig([
     ],
   },
 
-  // ── Website — marketing / web team ────────────────────────────────────────
+  // ── Case Studies — case study team (previews apps/www /case-studies) ───────
   {
-    name: 'website',
-    title: `Marketing Website${datasetSuffix}`,
-    basePath: '/website',
+    name: 'caseStudies',
+    title: `Case Studies${datasetSuffix}`,
+    basePath: '/case-studies',
     projectId,
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
-    // Case studies are edited here, so this workspace needs `documentActions` too —
-    // without it `caseStudy` falls back to Sanity's stock publish and
-    // `publishCaseStudy` never runs (no slug-change redirect, no `publishedAt`
-    // backfill). Only `newDocumentOptions` stays workspace-specific.
+    // caseStudy needs `documentActions` so `publishCaseStudy` runs (slug-change
+    // redirect + `publishedAt` backfill); without it Sanity's stock publish is
+    // used and neither happens.
     document: { actions: documentActions },
     plugins: [
-      structureTool({ structure: websiteStructure, defaultDocumentNode }),
+      structureTool({ structure: caseStudiesStructure, defaultDocumentNode }),
       presentationTool({
         name: 'presentation',
         title: 'Presentation',
@@ -409,9 +396,44 @@ export default defineConfig([
     ],
   },
 
-  // ── Solutions — add back when Solutions workflow is defined ──────────────
-  // { name: 'solutions', title: 'Solutions', basePath: '/solutions', ... }
+  // ── Global — taxonomy (Property, Property Value) + technical SEO (redirects,
+  //    Global Settings). What applies everywhere (§3.1). PROD-2329 / D1. ──────
+  {
+    name: 'global',
+    title: `Global${datasetSuffix}`,
+    basePath: '/global',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: globalStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
 
-  // ── Academy — add back when Academy schema is built ───────────────────────
-  // { name: 'academy', title: 'Academy', basePath: '/academy', ... }
+  // ── All Content — flat, every document type; last in the switcher. The safety
+  //    net so a type filed in no dedicated workspace stays browsable. PROD-2329.
+  {
+    name: 'allContent',
+    title: `All Content${datasetSuffix}`,
+    basePath: '/all',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: allContentStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── D2 (PROD-2330) — Solutions · Expertise · Resources · Main Website land
+  //    here when they have content / their types are built.
 ])
