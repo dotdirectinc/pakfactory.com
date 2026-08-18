@@ -8,29 +8,28 @@ export const product = defineType({
   title: 'Product',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
-    { name: 'classification', title: 'Category' },
-    { name: 'attributes', title: 'Attributes' },
+    { name: 'content', title: 'Content', default: true },
+    { name: 'categorization', title: 'Categorization' },
     { name: 'specs', title: 'Specs' },
-    { name: 'page', title: 'Page' },
-    { name: 'related', title: 'Related' },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // ─── BASIC ────────────────────────────────────────────────────────────────
+    // ─── CONTENT ──────────────────────────────────────────────────────────────
 
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'The product name (e.g. "Straight Tuck End Box").',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'sku',
       title: 'SKU',
       type: 'string',
-      group: 'basic',
+      group: 'specs',
       description: 'Format: XXX-NNN (e.g. FCB-001, RIG-042)',
       validation: (Rule) => Rule.required(),
     }),
@@ -38,14 +37,14 @@ export const product = defineType({
       name: 'cardName',
       title: 'Card name',
       type: 'string',
-      group: 'basic',
+      group: 'content',
       description: 'Optional display name override for product listing cards. Leave blank to use Title.',
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'basic',
+      group: 'content',
       options: { source: 'title' },
       description: 'The /products/ URL segment. Must be unique across products and product lines.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
@@ -54,7 +53,8 @@ export const product = defineType({
       name: 'status',
       title: 'Status',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'Lifecycle: Active (sold now), Coming soon, or Discontinued.',
       options: {
         layout: 'radio',
         list: [
@@ -70,7 +70,8 @@ export const product = defineType({
       name: 'kind',
       title: 'Product type',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'Standard (line/style catalogue), Industry (solution-led), or Both — controls which fields show.',
       options: {
         layout: 'radio',
         list: [
@@ -86,7 +87,7 @@ export const product = defineType({
       name: 'media',
       title: 'Media',
       type: 'array',
-      group: 'basic',
+      group: 'content',
       description: 'First image = hero.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
@@ -98,9 +99,10 @@ export const product = defineType({
       name: 'productCategories',
       title: 'Product lines',
       type: 'array',
-      group: 'classification',
+      group: 'categorization',
+      description: 'The product line(s) this product belongs to. Required for standard products.',
       hidden: ({ document }) => document?.kind === 'industry',
-      of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
+      of: [{ type: 'reference', to: [{ type: 'productLine' }], options: { disableNew: true } }],
       validation: (Rule) =>
         Rule.custom((val: unknown[] | undefined, context) => {
           const doc = context.document as { kind?: string }
@@ -118,12 +120,14 @@ export const product = defineType({
       name: 'productStyleCategories',
       title: 'Product styles',
       type: 'array',
-      group: 'classification',
+      group: 'categorization',
+      description: 'The style(s) within the selected product line(s). Scoped to the chosen lines.',
       hidden: ({ document }) => document?.kind === 'industry',
       of: [{
         type: 'reference',
         to: [{ type: 'productStyle' }],
         options: {
+          disableNew: true,
           filter: ({ document }: { document: { productCategories?: Array<{ _ref?: string }> } }) => {
             const refs = (document?.productCategories ?? [])
               .map((r) => r._ref)
@@ -145,7 +149,7 @@ export const product = defineType({
       name: 'solutions',
       title: 'Solutions',
       type: 'array',
-      group: 'related',
+      group: 'categorization',
       description:
         'Every solution this product serves — industries, channels, focus areas and use cases in one list. Replaces the separate Industries, Industry segments and Use cases fields.',
       of: [{
@@ -159,7 +163,7 @@ export const product = defineType({
       name: 'primarySolution',
       title: 'Primary solution',
       type: 'reference',
-      group: 'related',
+      group: 'categorization',
       to: [{ type: 'solution' }],
       options: { disableNew: true },
       description:
@@ -183,13 +187,13 @@ export const product = defineType({
       group: 'specs',
       description: 'This product\'s own production lead time, in days.',
     }),
-    // ─── PAGE ─────────────────────────────────────────────────────────────────
+    // ─── CONTENT (prose & gallery) ────────────────────────────────────────────
 
     defineField({
       name: 'description',
       title: 'Short description',
       type: 'text',
-      group: 'page',
+      group: 'content',
       rows: 3,
       description: 'Used in product cards and listing pages.',
     }),
@@ -197,7 +201,8 @@ export const product = defineType({
       name: 'whatIsBlock',
       title: 'What is it?',
       type: 'object',
-      group: 'page',
+      group: 'content',
+      description: 'Landing-page explainer of what this product is.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
@@ -207,17 +212,30 @@ export const product = defineType({
       name: 'whyChooseBlock',
       title: 'Why choose it?',
       type: 'object',
-      group: 'page',
+      group: 'content',
+      description: 'Landing-page copy on why a customer would choose this product.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
       ],
     }),
     defineField({
+      name: 'showcaseImages',
+      title: 'Showcase images',
+      type: 'array',
+      group: 'content',
+      description: 'Additional gallery images for the product landing page.',
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
+    }),
+
+    // ─── CATEGORIZATION (curated lists) ───────────────────────────────────────
+
+    defineField({
       name: 'faqs',
       title: 'FAQs',
       type: 'array',
-      group: 'page',
+      group: 'categorization',
+      description: 'Question-and-answer pairs shown on the product landing page.',
       of: [
         {
           type: 'object',
@@ -230,20 +248,10 @@ export const product = defineType({
       ],
     }),
     defineField({
-      name: 'showcaseImages',
-      title: 'Showcase images',
-      type: 'array',
-      group: 'page',
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
-    }),
-
-    // ─── RELATED ──────────────────────────────────────────────────────────────
-
-    defineField({
       name: 'comparedAgainst',
       title: 'Compared against',
       type: 'array',
-      group: 'related',
+      group: 'categorization',
       description: 'Sibling comparison — minimum 3.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
       validation: (Rule) =>
@@ -256,7 +264,8 @@ export const product = defineType({
       name: 'relatedProducts',
       title: 'Related products',
       type: 'array',
-      group: 'related',
+      group: 'categorization',
+      description: 'Other products to cross-link from this one\'s landing page.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
     }),
 
@@ -267,6 +276,7 @@ export const product = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
+      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -275,22 +285,30 @@ export const product = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
+      description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
-    defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
-      type: 'image',
-      group: 'seo',
-      mediaTags: ogMediaTags(MEDIA_TAG.product),
-      options: { hotspot: true },
-    })),
 
     // The three robots toggles, from the one shared definition every blog type
     // already uses. Product had none at all — no way to keep a page out of the
     // index on what will be the site's highest-volume type. Meta fields are not
     // taken from the shared set: its copy describes the blog's fallback chain.
     ...seoFields({ group: 'seo', meta: false }),
+
+    // ─── SOCIAL ───────────────────────────────────────────────────────────────
+
+    defineField(taggedImageField({
+      name: 'ogImage',
+      title: 'OG image',
+      type: 'image',
+      group: 'social',
+      mediaTags: ogMediaTags(MEDIA_TAG.product),
+      options: { hotspot: true },
+      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
+      ],
+    })),
   ],
 
   preview: {

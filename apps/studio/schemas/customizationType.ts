@@ -7,32 +7,37 @@ export const customizationType = defineType({
   title: 'Customization Type',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
-    { name: 'sharedSpecs', title: 'Shared Specs' },
+    { name: 'content', title: 'Content', default: true },
+    { name: 'specs', title: 'Specs' },
     { name: 'seo', title: 'SEO' },
+    { name: 'social', title: 'Social' },
   ],
   fields: [
-    // Basic tab
+    // ─── CONTENT ──────────────────────────────────────────────────────────────
+
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
-      group: 'basic',
+      group: 'content',
+      description: 'The customization type name (e.g. "Foil Stamping", "Window Patching").',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      group: 'basic',
+      group: 'content',
       options: { source: 'title' },
+      description: 'URL-safe identifier, generated from the title.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'category',
       title: 'Category',
       type: 'reference',
-      group: 'basic',
+      group: 'content',
+      description: 'The customization category this type belongs to (its parent) — required.',
       to: [{ type: 'customizationCategory' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -41,21 +46,35 @@ export const customizationType = defineType({
       name: 'description',
       title: 'Description',
       type: 'text',
-      group: 'basic',
+      group: 'content',
       rows: 3,
+      description: 'One sentence on what this customization type is, for the content team.',
     }),
-    // ─── PROPERTIES ───────────────────────────────────────────────────────────
-    // The Type declares which properties apply to the options beneath it, and
-    // how each one is used. This declaration is what scopes the Option's
-    // `properties` picker — the eight per-topic fields it replaces each carried
-    // their own hardcoded group filter, which is why Finish Type was unreachable
-    // from any deployed type.
+    defineField({
+      name: 'order',
+      title: 'Display order',
+      type: 'number',
+      group: 'content',
+      description: 'Lower numbers appear first within the category.',
+    }),
+    defineField({
+      name: 'media',
+      title: 'Media',
+      type: 'array',
+      group: 'content',
+      description: 'Illustrative images for this customization type.',
+      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
+    }),
+
+    // ─── SPECS ────────────────────────────────────────────────────────────────
+    // The Type declares which properties and spec tables apply to the options
+    // beneath it. It holds no values of its own — the option states its own rows.
 
     defineField({
       name: 'properties',
       title: 'Properties',
       type: 'array',
-      group: 'basic',
+      group: 'specs',
       description:
         'Which properties the options under this type describe themselves with. An option can only pick values from the properties listed here, so an empty list means its Properties field will have nothing to choose from.',
       of: [{
@@ -93,42 +112,11 @@ export const customizationType = defineType({
         },
       }],
     }),
-
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'basic',
-    }),
-    defineField({
-      name: 'media',
-      title: 'Media',
-      type: 'array',
-      group: 'basic',
-      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
-    }),
-
-    // Shared Specs tab
-    // `sharedSpecsNote` was help text stored as content — the same sentence on
-    // 9 documents in two variants. It is now a schema description, written once
-    // on each table below. The field is deprecated rather than dropped because
-    // those 9 values still exist; it comes out once they are cleared.
-    defineField({
-      name: 'sharedSpecsNote',
-      title: 'About Shared Specs',
-      type: 'string',
-      group: 'sharedSpecs',
-      readOnly: true,
-      deprecated: {
-        reason:
-          'Help text belongs in the schema, not in a field. It also describes inheritance, which no longer exists — the option states its own rows. Do not write to this field.',
-      },
-    }),
     defineField({
       name: 'optionGroups',
       title: 'Spec tables',
       type: 'array',
-      group: 'sharedSpecs',
+      group: 'specs',
       description:
         'Which spec tables the options under this type fill in, and whether each option picks one row or several. The type declares the columns; it holds no rows of its own.',
       of: [{
@@ -166,13 +154,30 @@ export const customizationType = defineType({
         },
       }],
     }),
+    // `sharedSpecsNote` was help text stored as content — the same sentence on
+    // 9 documents in two variants. It is now a schema description, written once
+    // on each table above. The field is deprecated rather than dropped because
+    // those 9 values still exist; it comes out once they are cleared.
+    defineField({
+      name: 'sharedSpecsNote',
+      title: 'About Shared Specs',
+      type: 'string',
+      group: 'specs',
+      readOnly: true,
+      deprecated: {
+        reason:
+          'Help text belongs in the schema, not in a field. It also describes inheritance, which no longer exists — the option states its own rows. Do not write to this field.',
+      },
+    }),
 
-    // SEO tab
+    // ─── SEO ──────────────────────────────────────────────────────────────────
+
     defineField({
       name: 'metaTitle',
       title: 'Meta title',
       type: 'string',
       group: 'seo',
+      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -181,21 +186,29 @@ export const customizationType = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
+      description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+
+    // ─── SOCIAL ───────────────────────────────────────────────────────────────
+
     defineField(taggedImageField({
       name: 'ogImage',
       title: 'OG image',
       type: 'image',
-      group: 'seo',
+      group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.capability),
       options: { hotspot: true },
+      description: 'Open Graph / social-share image.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
+      ],
     })),
   ],
   preview: {
     select: { title: 'title', category: 'category.title' },
     prepare({ title, category }) {
-      return { title, subtitle: category }
+      return { title, subtitle: category ? `Type in ${category}` : 'Customization Type' }
     },
   },
 })
