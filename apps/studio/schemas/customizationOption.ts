@@ -175,29 +175,10 @@ export const customizationOption = defineType({
         }).warning(),
     }),
 
-    // Deprecated by PROD-2306 — replaced by "Applies to". Kept read-only until the
-    // 8 populated docs are migrated (migrate:customization-applies-to), then removed
-    // in a follow-up. Do not write to these.
-    defineField({
-      name: 'applicableProductCategories',
-      title: 'Applicable product categories',
-      type: 'array',
-      group: 'categorization',
-      readOnly: true,
-      deprecated: { reason: 'Replaced by "Applies to" (PROD-2306). Being migrated, then removed. 8 options still hold values.' },
-      description: 'Which product groupings use this customization?',
-      of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
-    }),
-    defineField({
-      name: 'applicableProductStyleCategories',
-      title: 'Applicable product style categories',
-      type: 'array',
-      group: 'categorization',
-      readOnly: true,
-      deprecated: { reason: 'Replaced by "Applies to" (PROD-2306). Unpopulated; will be removed.' },
-      description: 'Which structural styles specifically?',
-      of: [{ type: 'reference', to: [{ type: 'productStyle' }] }],
-    }),
+    // `applicableProductCategories` / `applicableProductStyleCategories` were
+    // removed here in PROD-2306 once the backfill into `appliesTo` was verified on
+    // production (8/8 options). Run migrate:unset-legacy-applies to drop the now
+    // orphaned field data from the dataset.
     // Legacy industry / use-case reference arrays (applicableIndustryCategories,
     // useCases, industries) were removed in PROD-2284 — unpopulated on every
     // capability and pointing at the now-retired industry/industryCategory/useCase
