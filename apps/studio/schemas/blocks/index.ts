@@ -100,14 +100,9 @@ function insertMenuOptions(
   }
 }
 
-/** @deprecated Use pageBuilderHome or pageBuilderLanding on blogPage. */
-export const pageBuilder = defineType({
-  name: 'pageBuilder',
-  title: 'Page blocks',
-  type: 'array',
-  of: homePageBuilderBlocks.map(({ name }) => defineArrayMember({ type: name })),
-  options: { insertMenu: insertMenuOptions(INSERT_GROUPS_HOME) },
-})
+// `pageBuilder` (a byte-identical duplicate of `pageBuilderHome`, referenced by
+// nothing) was removed in PROD-2313 — one array type per page family, so new
+// sections are registered once and the two can't silently diverge.
 
 export const pageBuilderHome = defineType({
   name: 'pageBuilderHome',
