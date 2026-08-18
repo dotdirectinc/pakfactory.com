@@ -36,11 +36,13 @@ export const optionGroup = defineType({
   title: 'Option group',
   type: 'document',
   icon: ThLargeIcon,
+  groups: [{ name: 'content', title: 'Content', default: true }],
   fields: [
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
+      group: 'content',
       description: 'The table\'s name, as an editor sees it — "Thickness", "Colour range".',
       validation: (Rule) => Rule.required(),
     }),
@@ -49,6 +51,7 @@ export const optionGroup = defineType({
       name: 'columns',
       title: 'Columns',
       type: 'array',
+      group: 'content',
       description:
         'The columns every option filling in this table states a value for. Order here is the order they appear in.',
       validation: (Rule) => Rule.required().min(1),
