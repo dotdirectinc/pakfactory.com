@@ -1640,5 +1640,114 @@ export const customizationStructure = (
         .title('Customization')
         .items([...customizationItems(S)]);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// D1 workspaces (PROD-2329 / D39) — Case Studies · Global · All Content.
+// Blog / Products / Customization have their own structures above. Every
+// workspace registers the full schema; they differ only in structure (§3.1).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Case Studies — Case Study · Client · its listing page (§3.1). */
+export function caseStudiesItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+    return [
+        S.listItem()
+            .title('Case Studies')
+            .icon(CaseIcon)
+            .schemaType('caseStudy')
+            .child(
+                S.documentTypeList('caseStudy')
+                    .title('Case Studies')
+                    .defaultOrdering([{field: 'publishedAt', direction: 'desc'}]),
+            ),
+        S.listItem()
+            .title('Clients')
+            .icon(UserIcon)
+            .schemaType('client')
+            .child(
+                S.documentTypeList('client')
+                    .title('Clients')
+                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
+            ),
+        S.listItem()
+            .title('Case Studies Page')
+            .icon(CogIcon)
+            .child(
+                S.editor().id('caseStudiesPage').schemaType('caseStudiesPage').documentId('caseStudiesPage'),
+            ),
+    ];
+}
+
+/** Global — what applies everywhere: taxonomy + technical SEO (§3.1). Property
+ *  and Property Value are homed here and also listed in Products/Customization. */
+export function globalItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+    return [
+        ...propertyGlobalItems(S),
+        S.divider().title('Technical SEO'),
+        S.listItem()
+            .title('Redirects')
+            .schemaType('redirect')
+            .child(S.documentTypeList('redirect').title('Redirects')),
+        S.listItem()
+            .title('Redirect Groups')
+            .schemaType('redirectGroup')
+            .child(S.documentTypeList('redirectGroup').title('Redirect Groups')),
+        S.listItem()
+            .title('Global Settings')
+            .icon(CogIcon)
+            .child(S.editor().id('settings').schemaType('settings').documentId('settings')),
+    ];
+}
+
+/** Case Studies workspace. */
+export const caseStudiesStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Case Studies')
+        .items([...caseStudiesItems(S)]);
+
+/** Global workspace. */
+export const globalStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Global')
+        .items([...globalItems(S)]);
+
+/** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
+ *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
+ *  Resources and Main Website stay unbuilt (unbuilt types / Questions for Dev #1). */
+export const solutionsWorkspaceStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Solutions')
+        .items([
+            S.listItem()
+                .title('Solutions')
+                .icon(BulbOutlineIcon)
+                .schemaType('solution')
+                .child(
+                    S.documentTypeList('solution')
+                        .title('Solutions')
+                        .defaultOrdering([{field: 'internalTitle', direction: 'asc'}]),
+                ),
+            S.listItem()
+                .title('Solutions Settings')
+                .icon(CogIcon)
+                .child(
+                    S.editor().id('solutionsSettings').schemaType('solutionsSettings').documentId('solutionsSettings'),
+                ),
+        ]);
+
+/** All Content — flat, every registered document type; last in the switcher.
+ *  The safety net so a type filed in no dedicated workspace is still browsable. */
+export const allContentStructure = (S: StructureBuilder) =>
+    S.list()
+        .title('All Content')
+        .items(S.documentTypeListItems());
+
 // Default export — Admin (backwards-compatible fallback)
 export const structure = adminStructure;
