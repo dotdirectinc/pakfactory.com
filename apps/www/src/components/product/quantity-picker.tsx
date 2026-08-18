@@ -161,7 +161,7 @@ export function QuantityPicker({
                     <div
                         role="listbox"
                         aria-multiselectable="true"
-                        className="absolute inset-x-0 z-40 mt-1.5 overflow-hidden rounded-xl border border-input bg-background shadow-lg"
+                        className="absolute inset-x-0 z-40 mt-2 overflow-hidden rounded-xl border border-input bg-background shadow-lg"
                     >
                         <div className="border-b border-input py-5 px-4 flex flex-col gap-2">
                             <p className="text-xs leading-snug text-muted-foreground">
@@ -172,6 +172,7 @@ export function QuantityPicker({
                                     type="number"
                                     min={1}
                                     placeholder="Type your own quantity"
+                                    className="bg-background"
                                     value={customVolume}
                                     onChange={(event) =>
                                         setCustomVolume(
@@ -200,7 +201,7 @@ export function QuantityPicker({
                                 </Button>
                             </div>
                             {customError ? (
-                                <p className="mt-1.5 px-3 text-xs text-destructive">
+                                <p className="mt-2 px-3 text-xs text-destructive">
                                     {customError}
                                 </p>
                             ) : null}
@@ -223,7 +224,7 @@ export function QuantityPicker({
                                         }
                                         className={cn(
                                             ROW_GRID,
-                                            'h-auto w-full rounded-none px-3 py-2.5 text-sm font-medium hover:bg-muted',
+                                            'h-auto w-full rounded-none px-3 py-2 text-sm font-medium hover:bg-muted',
                                             index > 0 && 'border-t border-input',
                                         )}
                                     >

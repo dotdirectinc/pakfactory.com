@@ -11,6 +11,7 @@ import {QuantityPicker} from '@/components/product/quantity-picker';
 import type {CustomizationOption, Product} from '@/lib/catalog/types';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
+import type {RequestReferenceImage} from '@/lib/request/request.storage';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 type ProductRequestRailProps = {
@@ -35,6 +36,11 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
     );
     const [volumes, setVolumes] = useState<number[]>([]);
     const [contents, setContents] = useState('');
+    const [detailsOptIn, setDetailsOptIn] = useState(false);
+    const [notes, setNotes] = useState('');
+    const [referenceImages, setReferenceImages] = useState<RequestReferenceImage[]>(
+        [],
+    );
     const [customizations] = useState<CustomizationOption[]>(initialCustomizations);
     const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
@@ -58,6 +64,10 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             quantities: volumes,
             contents,
             customizations,
+            ...(detailsOptIn && notes.trim() ? {notes} : {}),
+            ...(detailsOptIn && referenceImages.length
+                ? {referenceImages}
+                : {}),
         });
         const nextConfirmation = {
             productTitle: product.title,
@@ -76,6 +86,16 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
         });
         setVolumes([]);
         setContents('');
+        if (!detailsOptIn) {
+            for (const image of referenceImages) {
+                if (image.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(image.url);
+                }
+            }
+        }
+        setDetailsOptIn(false);
+        setNotes('');
+        setReferenceImages([]);
     }
 
     return (
@@ -102,6 +122,12 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
                     id={`contents-${product.slug}`}
                     value={contents}
                     onChange={setContents}
+                    detailsOptIn={detailsOptIn}
+                    onDetailsOptInChange={setDetailsOptIn}
+                    notes={notes}
+                    onNotesChange={setNotes}
+                    referenceImages={referenceImages}
+                    onReferenceImagesChange={setReferenceImages}
                 />
             </section>
 

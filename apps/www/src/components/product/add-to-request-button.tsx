@@ -10,7 +10,7 @@ type AddToRequestButtonProps = {
 
 export function AddToRequestButton({disabled, onClick}: AddToRequestButtonProps) {
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
             <Button
                 type="button"
                 className="h-auto w-full px-6 py-3 text-base"
