@@ -41,12 +41,14 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
     const contentsReady = Boolean(contents.trim());
     const ready = volumes.length > 0 && contentsReady;
 
-    function toggleVolume(volume: number) {
+    function addVolume(volume: number) {
         setVolumes((prev) =>
-            prev.includes(volume)
-                ? prev.filter((item) => item !== volume)
-                : [...prev, volume].sort((a, b) => a - b),
+            prev.includes(volume) ? prev : [...prev, volume].sort((a, b) => a - b),
         );
+    }
+
+    function removeVolume(volume: number) {
+        setVolumes((prev) => prev.filter((item) => item !== volume));
     }
 
     function handleAdd() {
@@ -89,7 +91,9 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
                 <QuantityPicker
                     className="mt-4"
                     volumes={volumes}
-                    onToggle={toggleVolume}
+                    onAdd={addVolume}
+                    onRemove={removeVolume}
+                    moq={product.moq ?? 500}
                 />
             </section>
 

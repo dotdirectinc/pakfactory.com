@@ -24,6 +24,7 @@ const matteMagneticGiftBox: Product = {
     ],
     productLine: rigidBoxesLine,
     productStyle: magneticClosureStyle,
+    moq: 500,
     availableCustomizations: [
         {id: 'rigid-board', label: 'Rigid Board', category: 'material'},
         {id: 'cmyk-offset', label: 'CMYK Offset Printing', category: 'print'},
@@ -46,6 +47,7 @@ const shirtBox: Product = {
     productLine: rigidBoxesLine,
     productStyle: magneticClosureStyle,
     primarySolution: 'apparel',
+    moq: 500,
     availableCustomizations: [
         {id: 'rigid-board', label: 'Rigid Board', category: 'material'},
         {id: 'cmyk-offset', label: 'CMYK Offset Printing', category: 'print'},
