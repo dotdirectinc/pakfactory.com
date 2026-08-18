@@ -34,6 +34,7 @@ Invoke them by name when the task matches; they align with the blog’s AEO/GEO 
 - Prefer **repository tools** (read, search, apply_patch) over shell when the task is file-scoped.
 - For **version-sensitive** library APIs, use the **Context7** MCP (`resolve-library-id` → `query-docs`) as described in `AGENTS.md`.
 - Do not suggest **npm** or **yarn** for this repo; use **pnpm** per `AGENTS.md`.
+- Styling: follow `AGENTS.md` § UI and design system — ui CSS, then app CSS, then `className`.
 
 ## JIRA workflow
 

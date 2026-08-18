@@ -1,27 +1,12 @@
 import type {Metadata} from 'next';
-import CategoryFilter from '@/components/modules/category-filter';
-import ProductGrid from '@/components/modules/product-grid';
-import SectionHeader from '@/components/modules/section-header';
-
-export const dynamic = 'force-dynamic';
+import {ProductCatalogView} from '@/components/product/product-catalog-view';
+import {listLines} from '@/lib/catalog/catalog';
 
 export const metadata: Metadata = {
     title: 'Products',
-    description: 'Browse programs and collections.',
+    description: 'Browse packaging product lines and styles.',
 };
 
-export default async function ProductsIndexPage() {
-    return (
-        <>
-            <div className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
-                <SectionHeader
-                    title="Products"
-                    description="Custom packaging solutions tailored to your brand."
-                />
-            </div>
-            <CategoryFilter>
-                <ProductGrid />
-            </CategoryFilter>
-        </>
-    );
+export default function ProductsIndexPage() {
+    return <ProductCatalogView lines={listLines()} />;
 }
