@@ -21,6 +21,8 @@ import {
   adminStructure,
   blogStructure,
   websiteStructure,
+  productsStructure,
+  customizationStructure,
   solutionsStructure,
   academyStructure,
 } from './structure'
@@ -365,6 +367,42 @@ export default defineConfig([
         ],
         resolve: { locations: websiteLocations },
       }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Products — Product Line · Product Style · Product (PROD-2309 / D39) ────
+  {
+    name: 'products',
+    title: `Products${datasetSuffix}`,
+    basePath: '/products',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: productsStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Customization — Category · Type · Option · Option Group (PROD-2309) ────
+  {
+    name: 'customization',
+    title: `Customization${datasetSuffix}`,
+    basePath: '/customization',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: customizationStructure, defaultDocumentNode }),
       colorInput(),
       media(),
       visionTool(),
