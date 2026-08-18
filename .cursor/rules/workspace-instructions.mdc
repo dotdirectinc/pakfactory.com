@@ -14,7 +14,6 @@ Do not contradict `AGENTS.md`. Blog 3.0 ticket → code map: **[docs/blog-3-jira
 ## Preserve shared UI primitives (no preemptive changes)
 
 - **Do not edit** existing components under [`packages/ui/src/components`](packages/ui/src/components) (e.g. button, badge, dropdown-menu) except when fixing a confirmed bug you were explicitly asked to fix.
-- **Do not change** [`packages/ui/src/globals.css`](packages/ui/src/globals.css) or [`apps/www/src/app/globals.css`](apps/www/src/app/globals.css) for new features: no new tokens, `@theme` tweaks, or drive-by restyling.
+- **CSS cascade:** follow **[AGENTS.md](../../AGENTS.md)** § UI and design system — `@pakfactory/ui/globals.css`, then the app’s `globals.css`, then component `className`. App CSS may add a token only when ui does not define it; do not drive-by edit `packages/ui/src/globals.css` for a single feature.
 - **Allowed exception:** **add** new primitive files only when required (e.g. `navigation-menu.tsx` from the shadcn CLI)—additive files only; leave existing primitive source unchanged.
-- Prefer fixing layout or one-off styling in **app or block code** (e.g. `apps/www/src/components/shadcn-studio/blocks/…`, page components) using existing tokens and arbitrary `className` values where needed—not by changing the shared design system.
 - **Do not change** global shell layout (e.g. root `layout.tsx`, existing navbar blocks) unless the task explicitly asks for it.

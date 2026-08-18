@@ -59,12 +59,11 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 These rules align with [`.cursor/rules/workspace-instructions.mdc`](.cursor/rules/workspace-instructions.mdc):
 
 - **Do not edit** existing files under `packages/ui/src/components` except when fixing a **confirmed** bug you were asked to fix.
-- **Do not change** `packages/ui/src/globals.css` or `apps/www/src/app/globals.css` for new features (no new design tokens, no drive-by `@theme` edits).
+- **CSS cascade (binding):** consume tokens in this order — (1) `@pakfactory/ui/globals.css`, (2) the app’s `globals.css`, (3) component `className`. Do not hardcode sizes or hex in a component when a token already exists. Add a token to the app CSS only when ui does not define it; if a second app needs the same token, move it into `@pakfactory/ui` (ADR-006). Do not change `packages/ui/src/globals.css` as a drive-by for a single feature.
 - **Allowed:** add **new** primitive files only when required (e.g. from shadcn CLI) — additive only.
-- Prefer layout and one-off styling in **app or page code** using existing tokens and `className`.
 - **Do not change** global shell layout (root `layout.tsx`, global navbar) unless the task explicitly asks for it.
 
-For `apps/blog`, do not add new tokens in `apps/blog/src/app/globals.css` for features; use `@pakfactory/ui` tokens and local `className` only.
+For `apps/blog`, prefer `@pakfactory/ui` tokens and `className`; do not add blog-local tokens for a one-off feature. If blog and www need the same token, put it in `@pakfactory/ui`.
 
 ## Sanity and GROQ
 
