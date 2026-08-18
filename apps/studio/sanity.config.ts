@@ -22,6 +22,7 @@ import {
   caseStudiesStructure,
   productsStructure,
   customizationStructure,
+  solutionsWorkspaceStructure,
   globalStructure,
   allContentStructure,
 } from './structure'
@@ -396,6 +397,24 @@ export default defineConfig([
     ],
   },
 
+  // ── Solutions — the Solution type (30 docs) + its settings (PROD-2330 / D2) ─
+  {
+    name: 'solutions',
+    title: `Solutions${datasetSuffix}`,
+    basePath: '/solutions',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
   // ── Global — taxonomy (Property, Property Value) + technical SEO (redirects,
   //    Global Settings). What applies everywhere (§3.1). PROD-2329 / D1. ──────
   {
@@ -434,6 +453,8 @@ export default defineConfig([
     ],
   },
 
-  // ── D2 (PROD-2330) — Solutions · Expertise · Resources · Main Website land
-  //    here when they have content / their types are built.
+  // ── D2 (PROD-2330) — Solutions added above (30 docs). Expertise · Resources ·
+  //    Main Website stay unbuilt: Expertise Service type missing, most Resources
+  //    types missing, Main Website blocked on Questions for Dev #1 (shared page
+  //    types vs type-per-page). Reachable via All Content meanwhile.
 ])

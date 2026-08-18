@@ -1715,6 +1715,33 @@ export const globalStructure = (
         .title('Global')
         .items([...globalItems(S)]);
 
+/** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
+ *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
+ *  Resources and Main Website stay unbuilt (unbuilt types / Questions for Dev #1). */
+export const solutionsWorkspaceStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Solutions')
+        .items([
+            S.listItem()
+                .title('Solutions')
+                .icon(BulbOutlineIcon)
+                .schemaType('solution')
+                .child(
+                    S.documentTypeList('solution')
+                        .title('Solutions')
+                        .defaultOrdering([{field: 'internalTitle', direction: 'asc'}]),
+                ),
+            S.listItem()
+                .title('Solutions Settings')
+                .icon(CogIcon)
+                .child(
+                    S.editor().id('solutionsSettings').schemaType('solutionsSettings').documentId('solutionsSettings'),
+                ),
+        ]);
+
 /** All Content — flat, every registered document type; last in the switcher.
  *  The safety net so a type filed in no dedicated workspace is still browsable. */
 export const allContentStructure = (S: StructureBuilder) =>
