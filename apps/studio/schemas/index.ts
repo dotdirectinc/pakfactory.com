@@ -7,6 +7,7 @@ import { property } from './property'
 import { propertyValue } from './propertyValue'
 import { productLine } from './productLine'
 import { productStyle } from './productStyle'
+import { bundle } from './bundle'
 import { product } from './product'
 import { author } from './author'
 import { blogCategory } from './blogCategory'
@@ -66,6 +67,7 @@ export const schemaTypes = [
 
   // Product layer
   product,
+  bundle,
 
   // Solutions & Core Entities
   solution,
