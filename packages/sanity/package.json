@@ -28,7 +28,8 @@
     "migrate:customization-applies-to": "tsx scripts/migrate-customization-applies-to.ts",
     "migrate:remove-404-promobanner": "tsx scripts/migrate-remove-404-promobanner.ts",
     "migrate:unset-legacy-applies": "tsx scripts/migrate-unset-legacy-applies.ts",
-    "migrate:solution-titles": "tsx scripts/migrate-solution-titles.ts"
+    "migrate:solution-titles": "tsx scripts/migrate-solution-titles.ts",
+    "migrate:product-style-line": "tsx scripts/migrate-product-style-line.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0"
