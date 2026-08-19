@@ -37,7 +37,7 @@ function comparisonKey(value: string): string {
  * @param field the type's name field — `title` everywhere except `solution`,
  *              which still calls it `internalTitle` until the rename lands.
  */
-export function uniqueTaxonomyTitle(field: 'title' | 'internalTitle' = 'title') {
+export function uniqueTaxonomyTitle(field: string = 'title') {
   return async (value: string | undefined, context: ValidationContext) => {
     // Emptiness is `Rule.required()`'s job, not this rule's.
     if (!value?.trim()) return true

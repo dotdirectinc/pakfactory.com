@@ -1786,6 +1786,11 @@ export const resourcesWorkspaceStructure = (
                 .schemaType('guide')
                 .child(S.documentTypeList('guide').title('Guides')),
             S.listItem()
+                .title('Dielines')
+                .icon(DocumentsIcon)
+                .schemaType('dieline')
+                .child(S.documentTypeList('dieline').title('Dielines')),
+            S.listItem()
                 .title('Help Articles')
                 .schemaType('helpArticle')
                 .child(S.documentTypeList('helpArticle').title('Help Articles')),
