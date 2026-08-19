@@ -1,0 +1,37 @@
+/** Href registry for top-level www flows (PROD-1429). Nav may import later. */
+export const WWW_ROUTES = {
+    home: '/',
+    products: '/products',
+    capabilities: '/capabilities',
+    caseStudies: '/case-studies',
+    solutions: '/solutions',
+    expertise: '/expertise',
+    about: '/about',
+    contact: '/contact',
+    account: '/account',
+    policies: '/policies',
+    bundles: '/bundles',
+    request: '/request',
+} as const;
+
+export type WwwRouteHref = (typeof WWW_ROUTES)[keyof typeof WWW_ROUTES];
+
+export function productHref(slug: string): string {
+    return `${WWW_ROUTES.products}/${slug}`;
+}
+
+export function productStyleHref(lineSlug: string, styleSlug: string): string {
+    return `${WWW_ROUTES.products}/${lineSlug}/${styleSlug}`;
+}
+
+export function solutionHref(slug: string): string {
+    return `${WWW_ROUTES.solutions}/${slug}`;
+}
+
+export function policyHref(slug: string): string {
+    return `${WWW_ROUTES.policies}/${slug}`;
+}
+
+export function bundleHref(slug: string): string {
+    return `${WWW_ROUTES.bundles}/${slug}`;
+}
