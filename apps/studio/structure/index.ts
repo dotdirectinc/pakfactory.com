@@ -1745,6 +1745,10 @@ export const expertiseStructure = (
                 .title('Expertise Stages')
                 .schemaType('expertiseStage')
                 .child(S.documentTypeList('expertiseStage').title('Expertise Stages')),
+            S.listItem()
+                .title('Expertise Services')
+                .schemaType('expertiseService')
+                .child(S.documentTypeList('expertiseService').title('Expertise Services')),
         ]);
 
 /** Resources workspace (PROD-2330 / D2) — the built types today (Glossary Term ·

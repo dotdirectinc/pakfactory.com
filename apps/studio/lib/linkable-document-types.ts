@@ -18,6 +18,7 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'page',
   'product',
   'solution',
+  'expertiseStage',
   'caseStudy',
   'customizationCategory',
   // Resources
