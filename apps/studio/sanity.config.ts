@@ -27,7 +27,6 @@ import {
   resourcesWorkspaceStructure,
   mainWebsiteStructure,
   globalStructure,
-  allContentStructure,
 } from './structure'
 import { BlogCategoryPostsView } from './components/BlogCategoryPostsView'
 import { RelatedPostsView } from './components/RelatedPostsView'
@@ -277,13 +276,15 @@ const releasesAndScheduleDisabled = {
 }
 
 export default defineConfig([
-  // Six workspaces (PROD-2329 / D1, per D39), in switcher order: Blog · Case
-  // Studies · Products · Customization · Global · All Content. `admin` and
-  // `website` are retired. Every workspace registers the FULL schema — they
-  // differ only in structure (§3.1) — so cross-workspace reference pickers and
-  // search keep working. The remaining four (Solutions · Expertise · Resources ·
-  // Main Website) land in D2 when they have content; until then every type is
-  // still browsable via All Content.
+  // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
+  // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
+  // Resources · Main Website · Global. `admin` and `website` are retired, and an
+  // "All Content" workspace is intentionally absent — D39 change (4) rejects it:
+  // every workspace registers the FULL schema, so an unfiled type stays reachable
+  // by search and in every reference picker, and Vision (array::unique(*[]._type))
+  // audits type coverage more thoroughly than a catch-all sidebar. The guard is
+  // the rule "a type isn't done until its workspace is named" (§3.1), not a
+  // workspace. (PROD-2334.)
 
   // ── Blog — editorial team (its own site: header/footer/nav) ────────────────
   {
@@ -492,28 +493,11 @@ export default defineConfig([
     ],
   },
 
-  // ── All Content — flat, every document type; last in the switcher. The safety
-  //    net so a type filed in no dedicated workspace stays browsable. PROD-2329.
-  {
-    name: 'allContent',
-    title: `All Content${datasetSuffix}`,
-    basePath: '/all',
-    projectId,
-    dataset,
-    schema,
-    ...releasesAndScheduleDisabled,
-    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
-    plugins: [
-      structureTool({ structure: allContentStructure, defaultDocumentNode }),
-      colorInput(),
-      media(),
-      visionTool(),
-    ],
-  },
-
-  // All ten workspaces are now present (PROD-2329 D1 + PROD-2330 D2). The four D2
-  // areas ship with the types that exist today; their pending types join when
-  // built: Expertise Service (Expertise); FAQ/Help Category/Dieline (Resources);
-  // Home/Content/Legal Page + Website Navigation (Main Website — Questions for
-  // Dev #1: shared page types vs type-per-page).
+  // All nine workspaces are present (PROD-2329 D1 + PROD-2330 D2, per D39). The
+  // four D2 areas ship with the types that exist today; their pending types join
+  // when built: Expertise Service (Expertise); FAQ/Help Category/Dieline
+  // (Resources); Home/Content/Legal Page + Website Navigation (Main Website —
+  // Questions for Dev #1: shared page types vs type-per-page). The retiring `page`
+  // type is deliberately filed nowhere (deletion tracked in Cleanup) — its 4 legacy
+  // documents stay searchable/referenceable while they are migrated out.
 ])

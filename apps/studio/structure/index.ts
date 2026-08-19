@@ -1641,9 +1641,10 @@ export const customizationStructure = (
         .items([...customizationItems(S)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// D1 workspaces (PROD-2329 / D39) — Case Studies · Global · All Content.
-// Blog / Products / Customization have their own structures above. Every
-// workspace registers the full schema; they differ only in structure (§3.1).
+// D1 workspaces (PROD-2329 / D39) — Case Studies · Global (+ Solutions ·
+// Expertise · Resources · Main Website in D2). Blog / Products / Customization
+// have their own structures above. Every workspace registers the full schema;
+// they differ only in structure (§3.1). No "All Content" catch-all — D39 (4).
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Case Studies — Case Study · Client · its listing page (§3.1). */
@@ -1808,12 +1809,10 @@ export const mainWebsiteStructure = (
                 .child(S.editor().id('termsOfService').schemaType('termsOfService').documentId('termsOfService')),
         ]);
 
-/** All Content — flat, every registered document type; last in the switcher.
- *  The safety net so a type filed in no dedicated workspace is still browsable. */
-export const allContentStructure = (S: StructureBuilder) =>
-    S.list()
-        .title('All Content')
-        .items(S.documentTypeListItems());
+// The "All Content" catch-all structure was removed with its workspace (D39
+// change (4), PROD-2334): the nine workspaces cover every filed type, and an
+// unfiled type is still reachable by search / reference pickers and audited via
+// Vision (array::unique(*[]._type)). See sanity.config.ts.
 
 // Default export — Admin (backwards-compatible fallback)
 export const structure = adminStructure;
