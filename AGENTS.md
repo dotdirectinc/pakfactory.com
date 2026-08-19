@@ -158,12 +158,13 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | ----------------- | ---------------------------------------------------------------------------------- |
 | **Project key**   | `PROD`                                                                             |
 | **Issue prefix**  | `PROD-123`                                                                         |
-| **Base branch**   | `origin/staging` — fetch first; do **not** branch from `main` or an unrelated feature branch |
-| **Branches**      | CI-enforced prefix + slug (see map below). Allowlist: `feat/` `feature/` `features/` `fix/` `bugfix/` `hotfix/` `chore/` — see [`.github/workflows/branch-name-lint.yml`](.github/workflows/branch-name-lint.yml). Prefer `feat/` / `fix/` / `chore/`. |
-| **PR base**       | `staging`                                                                          |
+| **Base branch**   | Blog / studio / live-www hotfixes: `origin/staging`. www rebuild: `origin/www-new-release`. Fetch first; do **not** branch from `main` or an unrelated feature branch. |
+| **Branches**      | CI-enforced prefix + slug (see map below). Allowlist: `feat/` `feature/` `features/` `fix/` `bugfix/` `hotfix/` `chore/` — see [`.github/workflows/branch-name-lint.yml`](.github/workflows/branch-name-lint.yml). Prefer `feat/` / `fix/` / `chore/`. Long-lived exceptions: `staging`, `www-new-release`. |
+| **PR base**       | Blog / studio / live-www: `staging`. www rebuild: `www-new-release`. Launch only: `www-new-release` → `staging`. Never PR `www-new-release` into `main`. |
 | **Commits**       | `PROD-123: summary` or trailer `Refs: PROD-123`                                    |
 | **PR titles**     | `[PROD-123] Short description`                                                     |
 | **Blog 3.0 epic** | [PROD-1480](https://dotdirect.atlassian.net/browse/PROD-1480) — tech prerequisites |
+| **www rebuild**   | Long-lived trunk **`www-new-release`** (see below) — not live `staging` |
 
 ### Issue type → branch prefix (binding)
 
@@ -177,12 +178,26 @@ Must match the CI allowlist in [`.github/workflows/branch-name-lint.yml`](.githu
 | Urgent production fix | `hotfix` | `hotfix/PROD-123-short-slug` |
 | Anything else | `feat` (state the assumption in the handoff comment) | |
 
+### www rebuild trunk (`www-new-release`)
+
+Until the unfinished marketing-site rebuild launches, keep it **off** the live `staging` → `main` path so blog/studio (and the current www) can ship independently.
+
+- **Live path (unchanged):** blog, studio, and current www hotfixes: `feat/…` → `staging` → `main`.
+- **Rebuild path:** www rebuild tickets cut from `origin/www-new-release` and PR with `gh pr create --base www-new-release`.
+- **Epics** (e.g. [PROD-2362](https://dotdirect.atlassian.net/browse/PROD-2362)) PR into `www-new-release`, not `staging`. One epic at a time on the trunk; when that epic is done, merge it into `www-new-release` and cut the next epic from `www-new-release`. Do not use the epic branch as the site trunk.
+- **Sync:** merge `origin/staging` into `www-new-release` regularly using **merge commits** (do not rebase once more than one person uses the branch).
+- **Shared packages** (`packages/ui`, `packages/sanity`, lockfile, turbo): land on `staging` first if blog/studio need them; then merge `staging` → `www-new-release` the same day. www-only changes may land on `www-new-release` and ride the launch PR.
+- **Launch:** one PR `www-new-release` → `staging`, then the existing auto PR `staging` → `main`. Never open `www-new-release` → `main` ([`enforce-branch-flow.yml`](.github/workflows/enforce-branch-flow.yml) already requires head = `staging`).
+- **Vercel:** public **pakfactory.com** production stays on `main` (current www). Point a **non-prod** www Vercel project (or that project's Production Branch) at `www-new-release` for a stable QA URL — not a one-off PR preview. Do **not** change the live www project's production branch to `www-new-release`. [`apps/www/vercel.json`](apps/www/vercel.json) `ignoreCommand` builds on `main`, `staging`, and `www-new-release` (exit 1 = do not skip) so the QA project actually deploys.
+
 ### Branch & handoff workflow (binding for agents)
 
-1. Read the Jira issue type → choose a **CI-allowed** prefix → `git fetch origin staging` → `git checkout -b {prefix}/PROD-###-short-slug origin/staging`.
+1. Read the Jira issue type → choose a **CI-allowed** prefix. Fetch the right trunk, then cut from it:
+   - Blog / studio / live-www: `git fetch origin staging` → `git checkout -b {prefix}/PROD-###-short-slug origin/staging`.
+   - www rebuild: `git fetch origin www-new-release` → `git checkout -b {prefix}/PROD-###-short-slug origin/www-new-release`.
 2. Implement on that branch.
 3. When the story is satisfied: add a **Jira comment** summarizing what shipped and that acceptance criteria are met (branch name, key files/behavior, how to verify).
-4. When the user asks to wrap up / ship: push and open a PR with **`gh pr create` targeting `staging`** (title `[PROD-###] …`). Do **not** push or open a PR unless the user asked to finish or ship.
+4. When the user asks to wrap up / ship: push and open a PR (title `[PROD-###] …`). **`--base staging`** for blog / studio / live-www; **`--base www-new-release`** for www rebuild. Do **not** push or open a PR unless the user asked to finish or ship.
 
 Full ticket-to-code mapping: [`docs/blog-3-jira-conventions.md`](docs/blog-3-jira-conventions.md).
 
