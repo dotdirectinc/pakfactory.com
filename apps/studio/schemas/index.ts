@@ -18,12 +18,10 @@ import { inlineBlocks, caseStudyInlineBlocks } from './inline'
 import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
-import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticPages'
 import { expertiseStage } from './expertiseStage'
 import { expertiseService } from './expertiseService'
 import { client } from './client'
 import { caseStudy } from './caseStudy'
-import { caseStudiesPage } from './caseStudiesPage'
 import { faq } from './faq'
 import { helpCategory } from './helpCategory'
 import { guide } from './guide'
@@ -38,7 +36,6 @@ import {
   pageSettings,
 } from './blogTypeSettings'
 import { blogPage } from './blogPage'
-import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
 import { homePage } from './homePage'
 import { listingPage } from './listingPage'
@@ -86,8 +83,7 @@ export const schemaTypes = [
   expertiseService,
   client,
   caseStudy,
-  caseStudiesPage,
-  solutionsSettings,
+
 
   // Platform pages (PROD-2292) — four shared types, semantic IDs
   homePage,
@@ -137,8 +133,4 @@ export const schemaTypes = [
   authorSettings,
   pageSettings,
   blogPage,
-  aboutPage,
-  contactPage,
-  privacyPolicy,
-  termsOfService,
 ]

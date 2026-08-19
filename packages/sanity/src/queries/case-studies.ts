@@ -131,8 +131,14 @@ export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
 }`;
 
-/** Singleton `caseStudiesPage` document — hero copy, CTA config, SEO. */
-export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"][0] {
+/**
+ * Case-studies listing page. Consolidated onto the shared `listingPage` type
+ * (PROD-2292) but keeps its semantic id `caseStudiesPage`, so this reads by _id.
+ * The old hero/CTA/related fields now live as page sections and resolve to null
+ * here — the listing component falls back to its defaults until the front end
+ * renders listingPage sections. SEO/OG carry across on the retyped doc.
+ */
+export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0] {
   heroEyebrow,
   heroHeading,
   heroIntro,
