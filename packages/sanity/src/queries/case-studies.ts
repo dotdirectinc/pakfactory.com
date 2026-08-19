@@ -11,7 +11,7 @@ const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(headline, internalTitle),
+  "title": coalesce(headline, title, internalTitle),
   "slug": slug.current,
   solutionType
 }`;
@@ -146,7 +146,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"]
 
 /** All taxonomy options for the listing page filter UI — single round-trip. */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(order asc) ${TAXONOMY_ITEM}
 }`;
