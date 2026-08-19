@@ -1768,6 +1768,16 @@ export const resourcesWorkspaceStructure = (
         .title('Resources')
         .items([
             S.listItem()
+                .title('FAQs')
+                .icon(HelpCircleIcon)
+                .schemaType('faq')
+                .child(S.documentTypeList('faq').title('FAQs')),
+            S.listItem()
+                .title('Help Categories')
+                .icon(FolderIcon)
+                .schemaType('helpCategory')
+                .child(S.documentTypeList('helpCategory').title('Help Categories')),
+            S.listItem()
                 .title('Glossary Terms')
                 .schemaType('glossaryTerm')
                 .child(S.documentTypeList('glossaryTerm').title('Glossary Terms')),

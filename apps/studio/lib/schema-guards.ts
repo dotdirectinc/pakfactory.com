@@ -1,5 +1,3 @@
-import type { Rule } from 'sanity'
-
 /**
  * The §2.6 field-level patterns as one importable set — required/read-only,
  * source-owned marking, curated-list maximums, warn-don't-block ranges, and
@@ -68,10 +66,13 @@ export function deprecateField(reason: string): { deprecated: { reason: string }
  * @example  validation: maxCurated(4)      // up to 4, unique
  */
 export function maxCurated(max: number, min?: number) {
-  return (Rule: Rule) => {
-    let rule = Rule.max(max).unique()
-    if (typeof min === 'number') rule = rule.min(min)
-    return rule
+  // Generic over the concrete rule (ArrayRule, etc.) so the returned builder is
+  // assignable to a field's `validation` — a plain `(Rule) => Rule` returns the
+  // base type and TypeScript rejects it against `ValidationBuilder<ArrayRule>`.
+  return <R extends { max(n: number): R; min(n: number): R; unique(): R }>(rule: R): R => {
+    let out = rule.max(max).unique()
+    if (typeof min === 'number') out = out.min(min)
+    return out
   }
 }
 
@@ -86,15 +87,20 @@ export function maxCurated(max: number, min?: number) {
  */
 export function warnOutOfRange(min: number, max: number, unit = '') {
   const suffix = unit ? ` ${unit}` : ''
-  return (Rule: Rule) =>
-    Rule.custom((value: unknown) => {
-      if (value === undefined || value === null) return true
-      if (typeof value !== 'number') return true
-      if (value < min || value > max) {
-        return `Outside the usual ${min}–${max}${suffix} range. You can still save — double-check it's intended.`
-      }
-      return true
-    }).warning()
+  // Generic over the concrete rule (NumberRule, etc.) — see `maxCurated`.
+  return <R extends { custom(fn: (value: unknown) => true | string): R; warning(): R }>(
+    rule: R,
+  ): R =>
+    rule
+      .custom((value: unknown) => {
+        if (value === undefined || value === null) return true
+        if (typeof value !== 'number') return true
+        if (value < min || value > max) {
+          return `Outside the usual ${min}–${max}${suffix} range. You can still save — double-check it's intended.`
+        }
+        return true
+      })
+      .warning()
 }
 
 /**
