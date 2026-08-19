@@ -3,6 +3,7 @@ import { ThLargeIcon } from '@sanity/icons'
 import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { deprecateField } from '../lib/schema-guards'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
@@ -30,7 +31,7 @@ export const productStyle = defineType({
   title: 'Product Style',
   type: 'document',
   icon: ThLargeIcon,
-  groups: groupsFor(['content', 'categorization', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -199,6 +200,7 @@ export const productStyle = defineType({
       description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],

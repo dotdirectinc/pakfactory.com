@@ -4,6 +4,7 @@ import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 
 /**
@@ -24,7 +25,7 @@ export const bundle = defineType({
   // Foundations (PROD-2286): the tab set comes from the one shared definition,
   // not a local literal — same field, same tab, everywhere (§2.4). Output is
   // identical to the previous inline array.
-  groups: groupsFor(['content', 'categorization', 'specs', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'specs', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
 
@@ -170,6 +171,7 @@ export const bundle = defineType({
       description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: 'seo', meta: false }),
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
