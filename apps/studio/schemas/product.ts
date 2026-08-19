@@ -127,40 +127,50 @@ export const product = defineType({
     }),
 
     // ─── CATEGORIZATION (classification refs + curated lists) ─────────────────
+    // A product can belong to MORE THAN ONE line and style (Crystal's design) —
+    // these are arrays, not single references.
     defineField({
-      name: 'productLine',
-      title: 'Product line',
-      type: 'reference',
+      name: 'productCategories',
+      title: 'Product lines',
+      type: 'array',
       group: GROUPS.categorization,
-      to: [{ type: 'productLine' }],
-      options: { disableNew: true },
-      description: `The line this product belongs to. Required for standard products. ${SOURCE_OWNED_NOTE}`,
+      description: `The product line(s) this product belongs to — a product can span more than one. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
       hidden: ({ document }) => isInspiration(document),
+      of: [{ type: 'reference', to: [{ type: 'productLine' }], options: { disableNew: true } }],
       validation: (Rule) =>
         Rule.custom((val, context) => {
-          if (isStandard(context.document) && !val) return 'Required for standard products.'
+          const arr = val as unknown[] | undefined
+          if (isStandard(context.document) && (!Array.isArray(arr) || arr.length === 0))
+            return 'At least one product line is required for standard products.'
           return true
         }),
     }),
     defineField({
-      name: 'productStyle',
-      title: 'Product style',
-      type: 'reference',
+      name: 'productStyleCategories',
+      title: 'Product styles',
+      type: 'array',
       group: GROUPS.categorization,
-      to: [{ type: 'productStyle' }],
-      options: {
-        disableNew: true,
-        filter: ({ document }: { document: { productLine?: { _ref?: string } } }) => {
-          const ref = document?.productLine?._ref
-          if (!ref) return { filter: 'false' }
-          return { filter: 'productLine._ref == $ref', params: { ref } }
-        },
-      } as never, // Sanity's defineField over-narrows a single-ref dynamic filter to `string`; same workaround as customizationOption.
-      description: `The style within the chosen line. Required for standard products. ${SOURCE_OWNED_NOTE}`,
+      description: `The construction style(s) — a product can have more than one. Scoped to the chosen lines. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
       hidden: ({ document }) => isInspiration(document),
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'productStyle' }],
+          options: {
+            disableNew: true,
+            filter: ({ document }: { document: { productCategories?: Array<{ _ref?: string }> } }) => {
+              const refs = (document?.productCategories ?? []).map((r) => r._ref).filter(Boolean)
+              if (!refs.length) return {}
+              return { filter: 'productLine._ref in $refs', params: { refs } }
+            },
+          },
+        },
+      ],
       validation: (Rule) =>
         Rule.custom((val, context) => {
-          if (isStandard(context.document) && !val) return 'Required for standard products.'
+          const arr = val as unknown[] | undefined
+          if (isStandard(context.document) && (!Array.isArray(arr) || arr.length === 0))
+            return 'At least one product style is required for standard products.'
           return true
         }),
     }),
@@ -372,22 +382,6 @@ export const product = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
 
     // ─── DEPRECATED (kept for schema-on-read until the mock data is re-seeded) ─
-    defineField({
-      name: 'productCategories',
-      title: 'Product lines (old)',
-      type: 'array',
-      group: GROUPS.categorization,
-      of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
-      ...deprecateField('Replaced by the single Product line reference. Re-seed populates the new field.'),
-    }),
-    defineField({
-      name: 'productStyleCategories',
-      title: 'Product styles (old)',
-      type: 'array',
-      group: GROUPS.categorization,
-      of: [{ type: 'reference', to: [{ type: 'productStyle' }] }],
-      ...deprecateField('Replaced by the single Product style reference. Re-seed populates the new field.'),
-    }),
     defineField({
       name: 'cardName',
       title: 'Card name',
