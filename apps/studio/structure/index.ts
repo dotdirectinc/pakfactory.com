@@ -1811,6 +1811,30 @@ export const mainWebsiteStructure = (
                 .title('Terms of Service')
                 .icon(CogIcon)
                 .child(S.editor().id('termsOfService').schemaType('termsOfService').documentId('termsOfService')),
+
+            // Platform pages (PROD-2292) — four shared types. The four static
+            // singletons above fold into Content Page / Legal Page when their
+            // documents are migrated (PROD-2292 pt 3).
+            S.divider(),
+            S.listItem()
+                .title('Home Page')
+                .icon(HomeIcon)
+                .child(S.editor().id('homePage').schemaType('homePage').documentId('homePage')),
+            S.listItem()
+                .title('Listing Pages')
+                .icon(ThLargeIcon)
+                .schemaType('listingPage')
+                .child(S.documentTypeList('listingPage').title('Listing Pages')),
+            S.listItem()
+                .title('Content Pages')
+                .icon(DocumentTextIcon)
+                .schemaType('contentPage')
+                .child(S.documentTypeList('contentPage').title('Content Pages')),
+            S.listItem()
+                .title('Legal Pages')
+                .icon(LockIcon)
+                .schemaType('legalPage')
+                .child(S.documentTypeList('legalPage').title('Legal Pages')),
         ]);
 
 // The "All Content" catch-all structure was removed with its workspace (D39

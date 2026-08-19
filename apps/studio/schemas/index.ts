@@ -40,6 +40,11 @@ import {
 import { blogPage } from './blogPage'
 import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
+import { homePage } from './homePage'
+import { listingPage } from './listingPage'
+import { contentPage } from './contentPage'
+import { legalPage } from './legalPage'
+import { websiteSections } from './sections'
 import { post } from './post'
 import { videoPost } from './videoPost'
 import { redirect } from './redirect'
@@ -82,6 +87,15 @@ export const schemaTypes = [
   caseStudy,
   caseStudiesPage,
   solutionsSettings,
+
+  // Platform pages (PROD-2292) — four shared types, semantic IDs
+  homePage,
+  listingPage,
+  contentPage,
+  legalPage,
+
+  // Website section inventory (PROD-2292 pt 2) — presentation-free page sections
+  ...websiteSections,
 
   // Resources
   faq,
