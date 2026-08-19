@@ -1640,5 +1640,179 @@ export const customizationStructure = (
         .title('Customization')
         .items([...customizationItems(S)]);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// D1 workspaces (PROD-2329 / D39) — Case Studies · Global (+ Solutions ·
+// Expertise · Resources · Main Website in D2). Blog / Products / Customization
+// have their own structures above. Every workspace registers the full schema;
+// they differ only in structure (§3.1). No "All Content" catch-all — D39 (4).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Case Studies — Case Study · Client · its listing page (§3.1). */
+export function caseStudiesItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+    return [
+        S.listItem()
+            .title('Case Studies')
+            .icon(CaseIcon)
+            .schemaType('caseStudy')
+            .child(
+                S.documentTypeList('caseStudy')
+                    .title('Case Studies')
+                    .defaultOrdering([{field: 'publishedAt', direction: 'desc'}]),
+            ),
+        S.listItem()
+            .title('Clients')
+            .icon(UserIcon)
+            .schemaType('client')
+            .child(
+                S.documentTypeList('client')
+                    .title('Clients')
+                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
+            ),
+        S.listItem()
+            .title('Case Studies Page')
+            .icon(CogIcon)
+            .child(
+                S.editor().id('caseStudiesPage').schemaType('caseStudiesPage').documentId('caseStudiesPage'),
+            ),
+    ];
+}
+
+/** Global — what applies everywhere: taxonomy + technical SEO (§3.1). Property
+ *  and Property Value are homed here and also listed in Products/Customization. */
+export function globalItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+    return [
+        ...propertyGlobalItems(S),
+        S.divider().title('Technical SEO'),
+        S.listItem()
+            .title('Redirects')
+            .schemaType('redirect')
+            .child(S.documentTypeList('redirect').title('Redirects')),
+        S.listItem()
+            .title('Redirect Groups')
+            .schemaType('redirectGroup')
+            .child(S.documentTypeList('redirectGroup').title('Redirect Groups')),
+        S.listItem()
+            .title('Global Settings')
+            .icon(CogIcon)
+            .child(S.editor().id('settings').schemaType('settings').documentId('settings')),
+    ];
+}
+
+/** Case Studies workspace. */
+export const caseStudiesStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Case Studies')
+        .items([...caseStudiesItems(S)]);
+
+/** Global workspace. */
+export const globalStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Global')
+        .items([...globalItems(S)]);
+
+/** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
+ *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
+ *  Resources and Main Website stay unbuilt (unbuilt types / Questions for Dev #1). */
+export const solutionsWorkspaceStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Solutions')
+        .items([
+            S.listItem()
+                .title('Solutions')
+                .icon(BulbOutlineIcon)
+                .schemaType('solution')
+                .child(
+                    S.documentTypeList('solution')
+                        .title('Solutions')
+                        .defaultOrdering([{field: 'internalTitle', direction: 'asc'}]),
+                ),
+            S.listItem()
+                .title('Solutions Settings')
+                .icon(CogIcon)
+                .child(
+                    S.editor().id('solutionsSettings').schemaType('solutionsSettings').documentId('solutionsSettings'),
+                ),
+        ]);
+
+/** Expertise workspace (PROD-2330 / D2) — Expertise Stage today; Expertise
+ *  Service joins when that type is built. */
+export const expertiseStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Expertise')
+        .items([
+            S.listItem()
+                .title('Expertise Stages')
+                .schemaType('expertiseStage')
+                .child(S.documentTypeList('expertiseStage').title('Expertise Stages')),
+        ]);
+
+/** Resources workspace (PROD-2330 / D2) — the built types today (Glossary Term ·
+ *  Guide · Help Article). FAQ · Help Category · Dieline join when they exist. */
+export const resourcesWorkspaceStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Resources')
+        .items([
+            S.listItem()
+                .title('Glossary Terms')
+                .schemaType('glossaryTerm')
+                .child(S.documentTypeList('glossaryTerm').title('Glossary Terms')),
+            S.listItem()
+                .title('Guides')
+                .schemaType('guide')
+                .child(S.documentTypeList('guide').title('Guides')),
+            S.listItem()
+                .title('Help Articles')
+                .schemaType('helpArticle')
+                .child(S.documentTypeList('helpArticle').title('Help Articles')),
+        ]);
+
+/** Main Website workspace (PROD-2330 / D2) — the pages no content area owns.
+ *  Today: the four static-page singletons. Home / Content / Legal Page and
+ *  Website Navigation wait on Questions for Dev #1 (shared types vs per-page). */
+export const mainWebsiteStructure = (
+    S: StructureBuilder,
+    _context: StructureResolverContext,
+) =>
+    S.list()
+        .title('Main Website')
+        .items([
+            S.listItem()
+                .title('About Page')
+                .icon(CogIcon)
+                .child(S.editor().id('aboutPage').schemaType('aboutPage').documentId('aboutPage')),
+            S.listItem()
+                .title('Contact Page')
+                .icon(CogIcon)
+                .child(S.editor().id('contactPage').schemaType('contactPage').documentId('contactPage')),
+            S.listItem()
+                .title('Privacy Policy')
+                .icon(CogIcon)
+                .child(S.editor().id('privacyPolicy').schemaType('privacyPolicy').documentId('privacyPolicy')),
+            S.listItem()
+                .title('Terms of Service')
+                .icon(CogIcon)
+                .child(S.editor().id('termsOfService').schemaType('termsOfService').documentId('termsOfService')),
+        ]);
+
+// The "All Content" catch-all structure was removed with its workspace (D39
+// change (4), PROD-2334): the nine workspaces cover every filed type, and an
+// unfiled type is still reachable by search / reference pickers and audited via
+// Vision (array::unique(*[]._type)). See sanity.config.ts.
+
 // Default export — Admin (backwards-compatible fallback)
 export const structure = adminStructure;

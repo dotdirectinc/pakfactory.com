@@ -18,13 +18,15 @@ import { publishTopicGroupToTopicsPage } from './actions/publishTopicGroupToTopi
 import { BLOG_I18N_SCHEMA_TYPES, SUPPORTED_LANGUAGES } from './lib/languages'
 import { CHANNELS } from './lib/channels'
 import {
-  adminStructure,
   blogStructure,
-  websiteStructure,
+  caseStudiesStructure,
   productsStructure,
   customizationStructure,
-  solutionsStructure,
-  academyStructure,
+  solutionsWorkspaceStructure,
+  expertiseStructure,
+  resourcesWorkspaceStructure,
+  mainWebsiteStructure,
+  globalStructure,
 } from './structure'
 import { BlogCategoryPostsView } from './components/BlogCategoryPostsView'
 import { RelatedPostsView } from './components/RelatedPostsView'
@@ -274,26 +276,17 @@ const releasesAndScheduleDisabled = {
 }
 
 export default defineConfig([
-  // ── Admin — full access (default workspace at /) ───────────────────────────
-  {
-    name: 'admin',
-    title: `Global${datasetSuffix}`,
-    basePath: '/admin',
-    projectId,
-    dataset,
-    schema,
-    ...releasesAndScheduleDisabled,
-    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
-    plugins: [
-      structureTool({ structure: adminStructure, defaultDocumentNode }),
-      blogI18nPlugin,
-      colorInput(),
-      media(),
-      visionTool(),
-    ],
-  },
+  // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
+  // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
+  // Resources · Main Website · Global. `admin` and `website` are retired, and an
+  // "All Content" workspace is intentionally absent — D39 change (4) rejects it:
+  // every workspace registers the FULL schema, so an unfiled type stays reachable
+  // by search and in every reference picker, and Vision (array::unique(*[]._type))
+  // audits type coverage more thoroughly than a catch-all sidebar. The guard is
+  // the rule "a type isn't done until its workspace is named" (§3.1), not a
+  // workspace. (PROD-2334.)
 
-  // ── Blog — editorial team ──────────────────────────────────────────────────
+  // ── Blog — editorial team (its own site: header/footer/nav) ────────────────
   {
     name: 'blog',
     title: `Blog${datasetSuffix}`,
@@ -330,22 +323,21 @@ export default defineConfig([
     ],
   },
 
-  // ── Website — marketing / web team ────────────────────────────────────────
+  // ── Case Studies — case study team (previews apps/www /case-studies) ───────
   {
-    name: 'website',
-    title: `Marketing Website${datasetSuffix}`,
-    basePath: '/website',
+    name: 'caseStudies',
+    title: `Case Studies${datasetSuffix}`,
+    basePath: '/case-studies',
     projectId,
     dataset,
     schema,
     ...releasesAndScheduleDisabled,
-    // Case studies are edited here, so this workspace needs `documentActions` too —
-    // without it `caseStudy` falls back to Sanity's stock publish and
-    // `publishCaseStudy` never runs (no slug-change redirect, no `publishedAt`
-    // backfill). Only `newDocumentOptions` stays workspace-specific.
+    // caseStudy needs `documentActions` so `publishCaseStudy` runs (slug-change
+    // redirect + `publishedAt` backfill); without it Sanity's stock publish is
+    // used and neither happens.
     document: { actions: documentActions },
     plugins: [
-      structureTool({ structure: websiteStructure, defaultDocumentNode }),
+      structureTool({ structure: caseStudiesStructure, defaultDocumentNode }),
       presentationTool({
         name: 'presentation',
         title: 'Presentation',
@@ -409,9 +401,103 @@ export default defineConfig([
     ],
   },
 
-  // ── Solutions — add back when Solutions workflow is defined ──────────────
-  // { name: 'solutions', title: 'Solutions', basePath: '/solutions', ... }
+  // ── Solutions — the Solution type (30 docs) + its settings (PROD-2330 / D2) ─
+  {
+    name: 'solutions',
+    title: `Solutions${datasetSuffix}`,
+    basePath: '/solutions',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
 
-  // ── Academy — add back when Academy schema is built ───────────────────────
-  // { name: 'academy', title: 'Academy', basePath: '/academy', ... }
+  // ── Expertise — Expertise Stage (Expertise Service joins later) — D2 ───────
+  {
+    name: 'expertise',
+    title: `Expertise${datasetSuffix}`,
+    basePath: '/expertise',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: expertiseStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Resources — Glossary · Guide · Help Article (FAQ/Help Cat/Dieline later) ─
+  {
+    name: 'resources',
+    title: `Resources${datasetSuffix}`,
+    basePath: '/resources',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Main Website — the pages no content area owns. Static pages today; Home/
+  //    Content/Legal Page + Website Navigation pending Questions for Dev #1. ──
+  {
+    name: 'mainWebsite',
+    title: `Main Website${datasetSuffix}`,
+    basePath: '/main-website',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // ── Global — taxonomy (Property, Property Value) + technical SEO (redirects,
+  //    Global Settings). What applies everywhere (§3.1). PROD-2329 / D1. ──────
+  {
+    name: 'global',
+    title: `Global${datasetSuffix}`,
+    basePath: '/global',
+    projectId,
+    dataset,
+    schema,
+    ...releasesAndScheduleDisabled,
+    document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
+    plugins: [
+      structureTool({ structure: globalStructure, defaultDocumentNode }),
+      colorInput(),
+      media(),
+      visionTool(),
+    ],
+  },
+
+  // All nine workspaces are present (PROD-2329 D1 + PROD-2330 D2, per D39). The
+  // four D2 areas ship with the types that exist today; their pending types join
+  // when built: Expertise Service (Expertise); FAQ/Help Category/Dieline
+  // (Resources); Home/Content/Legal Page + Website Navigation (Main Website —
+  // Questions for Dev #1: shared page types vs type-per-page). The retiring `page`
+  // type is deliberately filed nowhere (deletion tracked in Cleanup) — its 4 legacy
+  // documents stay searchable/referenceable while they are migrated out.
 ])
