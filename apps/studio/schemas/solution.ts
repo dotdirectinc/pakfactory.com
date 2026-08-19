@@ -3,6 +3,7 @@ import { BulbOutlineIcon } from '@sanity/icons'
 import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { deprecateField } from '../lib/schema-guards'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
@@ -42,7 +43,7 @@ export const solution = defineType({
   title: 'Solution',
   type: 'document',
   icon: BulbOutlineIcon,
-  groups: groupsFor(['content', 'categorization', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -226,6 +227,7 @@ export const solution = defineType({
       description: 'Target 140–160 chars.',
       validation: (Rule) => Rule.max(160),
     }),
+    pageSectionsField(SECTION_ALLOW.marketPage),
     ...seoFields({ group: GROUPS.seo, meta: false, indexDefault: true }),
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────

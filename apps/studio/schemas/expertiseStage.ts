@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { StarIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { faqsField } from '../lib/faq-field'
@@ -24,7 +25,7 @@ export const expertiseStage = defineType({
   title: 'Expertise Stage',
   type: 'document',
   icon: StarIcon,
-  groups: groupsFor(['content', 'categorization', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -149,6 +150,7 @@ export const expertiseStage = defineType({
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
+    pageSectionsField(SECTION_ALLOW.marketPage),
     ...seoFields({ group: GROUPS.seo, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],

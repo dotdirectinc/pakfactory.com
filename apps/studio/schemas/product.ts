@@ -4,6 +4,7 @@ import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { deprecateField } from '../lib/schema-guards'
 
@@ -37,7 +38,7 @@ export const product = defineType({
   title: 'Product',
   type: 'document',
   icon: PackageIcon,
-  groups: groupsFor(['content', 'categorization', 'specs', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'specs', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -378,6 +379,7 @@ export const product = defineType({
       description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
 
