@@ -1,38 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@pakfactory/ui/lib/utils";
-import type { NavLink } from "@pakfactory/ui/components/site-nav";
+import type {SiteNavItem} from "@pakfactory/ui/components/site-nav";
 
 type SiteNavLinksProps = {
-  links: NavLink[];
+  items: SiteNavItem[];
 };
 
-export function SiteNavLinks({ links }: SiteNavLinksProps) {
-  const pathname = usePathname();
-
-  if (links.length === 0) return null;
+export function SiteNavLinks({items}: SiteNavLinksProps) {
+  if (items.length === 0) return null;
 
   return (
     <nav
-      className="hidden items-center gap-8 text-base font-medium md:flex"
+      className="hidden items-center gap-6 text-base font-medium text-foreground md:flex"
       aria-label="Site navigation"
     >
-      {links.map(({ href, label }) => {
-        const isActive =
-          pathname === href || pathname.startsWith(`${href}/page/`);
+      {items.map((item) => {
+        if (item.href) {
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="py-2 text-foreground no-underline transition-colors hover:text-foreground/80"
+            >
+              {item.label}
+            </Link>
+          );
+        }
+
         return (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              "text-muted-foreground transition-colors hover:text-foreground",
-              isActive && "font-semibold text-primary",
-            )}
+          <span
+            key={item.key}
+            className="cursor-default py-2 text-foreground"
+            aria-disabled="true"
           >
-            {label}
-          </Link>
+            {item.label}
+          </span>
         );
       })}
     </nav>
