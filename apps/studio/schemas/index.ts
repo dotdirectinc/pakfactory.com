@@ -23,9 +23,12 @@ import { expertiseStage } from './expertiseStage'
 import { client } from './client'
 import { caseStudy } from './caseStudy'
 import { caseStudiesPage } from './caseStudiesPage'
-import { glossaryTerm, guide, helpArticle } from './resources'
+import { helpArticle } from './resources'
 import { faq } from './faq'
 import { helpCategory } from './helpCategory'
+import { guide } from './guide'
+import { glossaryTerm } from './glossaryTerm'
+import { dieline } from './dieline'
 import { blogNavigation } from './blogNavigation'
 import {
   postSettings,
@@ -82,8 +85,9 @@ export const schemaTypes = [
   // Resources
   faq,
   helpCategory,
-  glossaryTerm,
   guide,
+  dieline,
+  glossaryTerm,
   helpArticle,
 
   // Editorial

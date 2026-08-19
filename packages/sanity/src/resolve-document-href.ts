@@ -133,8 +133,13 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
       return null;
     }
     case "guide":
+      return slug ? `/resources/guides/${slug}` : null;
+    case "dieline":
+      return slug ? `/resources/dielines/${slug}` : null;
     case "glossaryTerm":
+      return slug ? `/glossary/${slug}` : null;
     case "helpArticle":
+      // Retiring (PROD-2289 pt 3), 0 documents — kept at its old path until removed.
       return slug ? `/resources/${slug}` : null;
     case "helpCategory":
       // A Help Center section — the nav links straight into these. General FAQs
