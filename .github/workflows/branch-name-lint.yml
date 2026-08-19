@@ -3,6 +3,7 @@ name: Branch name
 # Enforces the branch naming standard: feat/… | feature/… | fix/… | chore/…
 # (a PROD-#### Jira key in the description is recommended, e.g. feat/PROD-1957-algolia-search).
 # The `staging` promotion branch is exempt (it PRs into main).
+# The `www-new-release` rebuild trunk is exempt so the launch PR into staging can pass.
 # Required status check to select on staging + main: "Validate branch name".
 #
 # Also runs on `push` to `staging` so this check is stamped on the staging commit
@@ -13,7 +14,7 @@ name: Branch name
 on:
     pull_request:
         types: [opened, edited, reopened, synchronize]
-        branches: [staging, main]
+        branches: [staging, main, www-new-release]
     push:
         branches: [staging]
 
@@ -32,8 +33,9 @@ jobs:
                   BRANCH: ${{ github.head_ref || github.ref_name }}
               run: |
                   # Allow the staging -> main promotion branch (and pushes to staging).
-                  if [ "$BRANCH" = "staging" ]; then
-                    echo "OK: staging promotion branch."
+                  # Allow the www rebuild trunk so www-new-release -> staging can pass.
+                  if [ "$BRANCH" = "staging" ] || [ "$BRANCH" = "www-new-release" ]; then
+                    echo "OK: '$BRANCH' is an exempt long-lived branch."
                     exit 0
                   fi
                   # Require an approved prefix with a non-empty description.

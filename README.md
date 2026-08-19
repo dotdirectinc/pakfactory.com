@@ -102,6 +102,8 @@ To **deploy hosted Studio**, use `pnpm --filter @pakfactory/studio run deploy` (
 
 **Vercel:** use `pnpm install --frozen-lockfile` if the dashboard still defaults to npm.
 
+**www rebuild preview:** until launch, public **pakfactory.com** stays on `main`. QA the rebuild on the non-prod `pakfactory-com` project’s stable git-branch alias: [pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app](https://pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app). Keep that project’s Production Branch on `main` (case-studies origin). See [`AGENTS.md`](./AGENTS.md) § www rebuild trunk.
+
 ### Blog app on Vercel (`apps/blog`, PROD-1496)
 
 Create a **separate** Vercel project from `apps/www`. Build/install commands are defined in [`apps/blog/vercel.json`](apps/blog/vercel.json) (Vercel reads them when Root Directory is `apps/blog`).
