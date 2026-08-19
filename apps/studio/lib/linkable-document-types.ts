@@ -26,11 +26,11 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'glossaryTerm',
   'helpCategory',
   'dieline',
-  // Static singletons (fixed routes)
-  'aboutPage',
-  'contactPage',
-  'privacyPolicy',
-  'termsOfService',
+  // Shared page types (PROD-2292) — home, listings, company pages, legal pages
+  'homePage',
+  'listingPage',
+  'contentPage',
+  'legalPage',
 ] as const
 
 export type LinkableDocumentType = (typeof LINKABLE_DOCUMENT_TYPES)[number]
