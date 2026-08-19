@@ -3,6 +3,7 @@ import { ThLargeIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 
 /**
  * Listing Page — the page that fronts a collection (Entities/Listing Page.md).
@@ -21,7 +22,7 @@ export const listingPage = defineType({
   title: 'Listing Page',
   type: 'document',
   icon: ThLargeIcon,
-  groups: groupsFor(['content', 'categorization', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
   fields: [
     defineField({
       name: 'title',
@@ -97,8 +98,8 @@ export const listingPage = defineType({
       ],
     }),
 
-    // `sections` (hero · intro · the collection row · FAQs · CTA) lands with the
-    // shared section inventory — PROD-2292 pt 2.
+    // The collection row (route-scoped), FAQs, Quote CTA, rich text.
+    pageSectionsField(SECTION_ALLOW.listing),
 
     ...seoFields({ group: GROUPS.seo, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),

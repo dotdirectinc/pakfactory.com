@@ -3,6 +3,7 @@ import { HomeIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 
 /**
  * Home Page — the site's front door, the one page that argues across every area
@@ -23,7 +24,7 @@ export const homePage = defineType({
   title: 'Home Page',
   type: 'document',
   icon: HomeIcon,
-  groups: groupsFor(['content', 'seo', 'social']),
+  groups: groupsFor(['content', 'sections', 'seo', 'social']),
   fields: [
     defineField({
       name: 'title',
@@ -33,7 +34,8 @@ export const homePage = defineType({
       description: 'Internal Studio label. The visible headline is a section’s job.',
       validation: (Rule) => Rule.required(),
     }),
-    // `sections` (the page itself) lands with the shared section inventory — PROD-2292 pt 2.
+    // This page IS its sections — every area's sections are available here.
+    pageSectionsField(SECTION_ALLOW.home),
     ...seoFields({ group: GROUPS.seo, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],

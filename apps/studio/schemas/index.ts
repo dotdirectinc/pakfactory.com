@@ -44,6 +44,7 @@ import { homePage } from './homePage'
 import { listingPage } from './listingPage'
 import { contentPage } from './contentPage'
 import { legalPage } from './legalPage'
+import { websiteSections } from './sections'
 import { post } from './post'
 import { videoPost } from './videoPost'
 import { redirect } from './redirect'
@@ -92,6 +93,9 @@ export const schemaTypes = [
   listingPage,
   contentPage,
   legalPage,
+
+  // Website section inventory (PROD-2292 pt 2) — presentation-free page sections
+  ...websiteSections,
 
   // Resources
   faq,

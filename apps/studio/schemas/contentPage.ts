@@ -3,6 +3,7 @@ import { DocumentTextIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
 
 /**
  * Content Page — a standing page that isn't a listing and isn't the homepage:
@@ -23,7 +24,7 @@ export const contentPage = defineType({
   title: 'Content Page',
   type: 'document',
   icon: DocumentTextIcon,
-  groups: groupsFor(['content', 'seo', 'social']),
+  groups: groupsFor(['content', 'sections', 'seo', 'social']),
   fields: [
     defineField({
       name: 'title',
@@ -42,8 +43,8 @@ export const contentPage = defineType({
         'Required for new pages. The four launch pages (about, contact, search, 404) are pinned by semantic ID instead, so their slug may be empty.',
       options: { source: 'title' },
     }),
-    // `sections` (content + conversion, NO catalogue sections) lands with the
-    // shared section inventory — PROD-2292 pt 2.
+    // Content + proof + conversion sections — no catalogue (scoped per §2.4).
+    pageSectionsField(SECTION_ALLOW.content),
     ...seoFields({ group: GROUPS.seo, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
