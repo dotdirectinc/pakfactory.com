@@ -5,7 +5,7 @@ export const MEDIA_TAG = {
   blog: 'blog',
   website: 'website',
   product: 'product',
-  capability: 'capability',
+  customization: 'customization',
   solution: 'solution',
   ogSocial: 'og-social',
 } as const

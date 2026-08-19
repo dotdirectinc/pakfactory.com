@@ -99,7 +99,7 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'content',
       description: 'Add images in render order — first image = hero.',
-      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
+      of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
     }),
 
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
@@ -181,8 +181,8 @@ export const customizationOption = defineType({
     // orphaned field data from the dataset.
     // Legacy industry / use-case reference arrays (applicableIndustryCategories,
     // useCases, industries) were removed in PROD-2284 — unpopulated on every
-    // capability and pointing at the now-retired industry/industryCategory/useCase
-    // types. Capability applicability is expressed via `properties[]` below.
+    // option and pointing at the now-retired industry/industryCategory/useCase
+    // types. Option applicability is expressed via `properties[]` below.
     // ─── PROPERTIES ───────────────────────────────────────────────────────────
     // One field replacing eight. Each of the eight hardcoded its own property
     // group in a picker filter, so a group with no matching field was
@@ -464,7 +464,7 @@ export const customizationOption = defineType({
 
     // Related items
     defineField({
-      name: 'applicableCapabilities',
+      name: 'applicableCustomizations',
       title: 'Applicable customizations',
       type: 'array',
       group: 'categorization',
@@ -485,7 +485,7 @@ export const customizationOption = defineType({
         }),
     }),
     defineField({
-      name: 'relatedCapabilities',
+      name: 'relatedCustomizations',
       title: 'Related customizations',
       type: 'array',
       group: 'categorization',
@@ -545,7 +545,7 @@ export const customizationOption = defineType({
       title: 'OG image',
       type: 'image',
       group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.capability),
+      mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
       description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
       fields: [
