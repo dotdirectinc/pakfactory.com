@@ -23,7 +23,6 @@ import { expertiseStage } from './expertiseStage'
 import { client } from './client'
 import { caseStudy } from './caseStudy'
 import { caseStudiesPage } from './caseStudiesPage'
-import { helpArticle } from './resources'
 import { faq } from './faq'
 import { helpCategory } from './helpCategory'
 import { guide } from './guide'
@@ -88,7 +87,6 @@ export const schemaTypes = [
   guide,
   dieline,
   glossaryTerm,
-  helpArticle,
 
   // Editorial
   author,

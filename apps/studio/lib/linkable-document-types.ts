@@ -23,7 +23,6 @@ export const LINKABLE_DOCUMENT_TYPES = [
   // Resources
   'guide',
   'glossaryTerm',
-  'helpArticle',
   'helpCategory',
   'dieline',
   // Static singletons (fixed routes)

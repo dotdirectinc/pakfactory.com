@@ -1423,17 +1423,6 @@ export function resourcesItems(
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
 
-        // ── Help Desk ─────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Help Desk')
-            .icon(HelpCircleIcon)
-            .schemaType('helpArticle')
-            .child(
-                S.documentTypeList('helpArticle')
-                    .title('Help Articles')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
-            ),
-
     ];
 }
 
@@ -1790,10 +1779,6 @@ export const resourcesWorkspaceStructure = (
                 .icon(DocumentsIcon)
                 .schemaType('dieline')
                 .child(S.documentTypeList('dieline').title('Dielines')),
-            S.listItem()
-                .title('Help Articles')
-                .schemaType('helpArticle')
-                .child(S.documentTypeList('helpArticle').title('Help Articles')),
         ]);
 
 /** Main Website workspace (PROD-2330 / D2) — the pages no content area owns.
