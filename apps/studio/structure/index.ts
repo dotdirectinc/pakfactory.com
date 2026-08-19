@@ -1835,6 +1835,10 @@ export const mainWebsiteStructure = (
                 .icon(LockIcon)
                 .schemaType('legalPage')
                 .child(S.documentTypeList('legalPage').title('Legal Pages')),
+            S.listItem()
+                .title('Navigation')
+                .icon(ThLargeIcon)
+                .child(S.editor().id('websiteNavigation').schemaType('websiteNavigation').documentId('websiteNavigation')),
         ]);
 
 // The "All Content" catch-all structure was removed with its workspace (D39
