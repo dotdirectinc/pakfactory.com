@@ -3,6 +3,7 @@ import { PackageIcon } from '@sanity/icons'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields } from '../lib/seo-fields'
+import { groupsFor } from '../lib/field-groups'
 
 /**
  * Bundle — a set of inspiration products sold together (a launch kit, a gift set).
@@ -19,13 +20,10 @@ export const bundle = defineType({
   title: 'Bundle',
   type: 'document',
   icon: PackageIcon,
-  groups: [
-    { name: 'content', title: 'Content', default: true },
-    { name: 'categorization', title: 'Categorization' },
-    { name: 'specs', title: 'Specs' },
-    { name: 'seo', title: 'SEO' },
-    { name: 'social', title: 'Social' },
-  ],
+  // Foundations (PROD-2286): the tab set comes from the one shared definition,
+  // not a local literal — same field, same tab, everywhere (§2.4). Output is
+  // identical to the previous inline array.
+  groups: groupsFor(['content', 'categorization', 'specs', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
 
