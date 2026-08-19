@@ -136,6 +136,11 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
     case "glossaryTerm":
     case "helpArticle":
       return slug ? `/resources/${slug}` : null;
+    case "helpCategory":
+      // A Help Center section — the nav links straight into these. General FAQs
+      // nest under it at /help/<category>/<answer> (added with the Help Center
+      // front-end); the category page itself is /help/<slug>.
+      return slug ? `/help/${slug}` : null;
     default:
       return null;
   }

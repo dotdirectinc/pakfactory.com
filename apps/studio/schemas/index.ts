@@ -24,6 +24,8 @@ import { client } from './client'
 import { caseStudy } from './caseStudy'
 import { caseStudiesPage } from './caseStudiesPage'
 import { glossaryTerm, guide, helpArticle } from './resources'
+import { faq } from './faq'
+import { helpCategory } from './helpCategory'
 import { blogNavigation } from './blogNavigation'
 import {
   postSettings,
@@ -78,6 +80,8 @@ export const schemaTypes = [
   solutionsSettings,
 
   // Resources
+  faq,
+  helpCategory,
   glossaryTerm,
   guide,
   helpArticle,

@@ -24,6 +24,7 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'guide',
   'glossaryTerm',
   'helpArticle',
+  'helpCategory',
   // Static singletons (fixed routes)
   'aboutPage',
   'contactPage',
