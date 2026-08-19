@@ -45,7 +45,7 @@ export const SECTION_ALLOW = {
   // Company pages: content · proof · conversion — NO catalogue.
   content: [...FAMILY.content, ...FAMILY.proof, ...FAMILY.conversion],
   // Content-area page types (wired in pt 3):
-  productPage: [...FAMILY.catalogue, ...FAMILY.proof, 'faqSection', ...FAMILY.content, 'quoteCta'],
+  productPage: [...FAMILY.catalogue, ...FAMILY.proof, ...FAMILY.content, 'quoteCta'],
   marketPage: [...FAMILY.market, ...FAMILY.catalogue, ...FAMILY.proof, ...FAMILY.content, 'quoteCta'],
 } as const
 
@@ -54,7 +54,9 @@ export const SECTION_ALLOW = {
  * filtered to the allowed sections and keeps its grouping/icons.
  */
 export function pageSectionsField(allow: readonly string[], group: GroupName = 'sections') {
-  const list = [...allow]
+  // Dedupe — a family spread can overlap an explicit entry (e.g. faqSection lives
+  // in `content`), and a `sections` array can't hold the same type twice.
+  const list = Array.from(new Set(allow))
   const insertGroups = INSERT_GROUPS.map((g) => ({
     ...g,
     of: g.of.filter((n) => list.includes(n)),
