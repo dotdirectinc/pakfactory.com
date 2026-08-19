@@ -1,9 +1,10 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { seoFields } from '../lib/seo-fields'
-import { groupsFor } from '../lib/field-groups'
+import { seoFields, socialFields } from '../lib/seo-fields'
+import { groupsFor, GROUPS } from '../lib/field-groups'
+import { faqsField } from '../lib/faq-field'
 
 /**
  * Bundle — a set of inspiration products sold together (a launch kit, a gift set).
@@ -134,23 +135,7 @@ export const bundle = defineType({
       description: 'Every solution this bundle targets — industries, channels, focus areas, use cases.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
     }),
-    defineField({
-      name: 'faqs',
-      title: 'FAQs',
-      type: 'array',
-      group: 'categorization',
-      description: 'Question-and-answer pairs shown on the bundle page. Curated, 3–6.',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'question', type: 'string', title: 'Question' },
-            { name: 'answer', type: 'array', title: 'Answer', of: [{ type: 'block' }] },
-          ],
-          preview: { select: { title: 'question' } },
-        },
-      ],
-    }),
+    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
     // ─── SPECS ────────────────────────────────────────────────────────────────
 
@@ -189,18 +174,7 @@ export const bundle = defineType({
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
 
-    defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
-      type: 'image',
-      group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.product),
-      options: { hotspot: true },
-      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
-    })),
+    ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
     select: { title: 'title', status: 'status', count: 'includedProducts.length', media: 'media.0' },
