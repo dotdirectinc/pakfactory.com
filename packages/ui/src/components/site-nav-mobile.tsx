@@ -1,91 +1,104 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {useEffect, useState} from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { Button } from "@pakfactory/ui/components/button";
-import type { NavLink } from "@pakfactory/ui/components/site-nav";
+import {Menu, X} from "lucide-react";
+import {usePathname} from "next/navigation";
+import {Button} from "@pakfactory/ui/components/button";
+import {PageDielineSection} from "@pakfactory/ui/components/page-dieline-section";
+import type {
+  SiteNavCta,
+  SiteNavItem,
+  SiteNavRequest,
+} from "@pakfactory/ui/components/site-nav";
 
 type SiteNavMobileProps = {
-  navLinks: NavLink[];
-  getQuoteHref: string;
-  ctaLabel: string;
+  items: SiteNavItem[];
+  cta: SiteNavCta;
+  request?: SiteNavRequest;
 };
 
-export function SiteNavMobile({
-  navLinks,
-  getQuoteHref,
-  ctaLabel,
-}: SiteNavMobileProps) {
-  const [open, setOpen] = useState(false);
+export function SiteNavMobile({items, cta, request}: SiteNavMobileProps) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
-  // Close on route change
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // Prevent body scroll while open
   useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  function close() {
+    setOpen(false);
+  }
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-9 lg:hidden"
-        aria-label={open ? "Close navigation" : "Open navigation"}
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex size-9 items-center justify-center rounded-2xl text-foreground md:hidden"
+        aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
       >
-        {open ? (
-          <X className="size-5" strokeWidth={1.75} />
-        ) : (
-          <Menu className="size-5" strokeWidth={1.75} />
-        )}
-      </Button>
+        {open ? <X className="size-6" /> : <Menu className="size-6" />}
+      </button>
 
-      {open && (
-        <div
-          className="fixed inset-x-0 top-16 z-40 h-[calc(100dvh-4rem)] overflow-y-auto bg-background lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Navigation menu"
-        >
-          <nav
-            className="flex flex-col px-4 py-2 sm:px-6"
-            aria-label="Mobile navigation"
-          >
-            {navLinks.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                className="border-b border-dashed border-border py-5 text-lg font-medium text-foreground transition-colors hover:text-muted-foreground"
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
+      {open ? (
+        <div className="absolute inset-x-0 top-full z-50 max-h-[75vh] overflow-y-auto border-b border-border bg-background shadow-lg md:hidden">
+          <PageDielineSection innerClassName="py-4">
+            <nav className="mb-4 space-y-1" aria-label="Mobile navigation">
+              {items.map((item) => {
+                if (item.href) {
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      onClick={close}
+                      className="block py-2 text-sm font-medium text-foreground no-underline"
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
 
-          <div className="px-4 py-6 sm:px-6">
-            <Button
-              className="w-full rounded-full bg-primary text-base font-medium text-primary-foreground hover:bg-primary/90"
-              size="lg"
-              asChild
-            >
-              <a href={getQuoteHref}>{ctaLabel}</a>
-            </Button>
-          </div>
+                return (
+                  <span
+                    key={item.key}
+                    className="block py-2 text-sm font-medium text-foreground"
+                    aria-disabled="true"
+                  >
+                    {item.label}
+                  </span>
+                );
+              })}
+            </nav>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-4">
+              {request ? (
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href={request.href} onClick={close}>
+                    {request.label}
+                    {request.count > 0 ? ` (${request.count})` : ""}
+                  </Link>
+                </Button>
+              ) : null}
+              <Button className="w-full rounded-full" asChild>
+                <Link href={cta.href} onClick={close}>
+                  {cta.label}
+                </Link>
+              </Button>
+            </div>
+          </PageDielineSection>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
