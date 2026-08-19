@@ -63,7 +63,7 @@ export const customizationType = defineType({
       type: 'array',
       group: 'content',
       description: 'Illustrative images for this customization type.',
-      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
+      of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
     }),
 
     // ─── SPECS ────────────────────────────────────────────────────────────────
@@ -154,21 +154,10 @@ export const customizationType = defineType({
         },
       }],
     }),
-    // `sharedSpecsNote` was help text stored as content — the same sentence on
-    // 9 documents in two variants. It is now a schema description, written once
-    // on each table above. The field is deprecated rather than dropped because
-    // those 9 values still exist; it comes out once they are cleared.
-    defineField({
-      name: 'sharedSpecsNote',
-      title: 'About Shared Specs',
-      type: 'string',
-      group: 'specs',
-      readOnly: true,
-      deprecated: {
-        reason:
-          'Help text belongs in the schema, not in a field. It also describes inheritance, which no longer exists — the option states its own rows. Do not write to this field.',
-      },
-    }),
+    // `sharedSpecsNote` (help text stored as content, the last of the six
+    // inheritance fields) was removed in PROD-2250 — the sentence now lives as a
+    // schema description on each table. migrate:customization-cleanup clears the
+    // 9 orphaned values from the dataset.
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 
@@ -197,7 +186,7 @@ export const customizationType = defineType({
       title: 'OG image',
       type: 'image',
       group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.capability),
+      mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
       description: 'Open Graph / social-share image.',
       fields: [
