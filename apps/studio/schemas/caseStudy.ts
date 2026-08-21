@@ -271,8 +271,12 @@ export const caseStudy = defineType({
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
       description: 'Product filter + chips. Reuses the deployed Product Lines taxonomy.',
     }),
+    // `expertise` / `customizations` (PROD-2293) — the fields carry their real
+    // names now; only the old `name` lied. Added beside the deprecated originals;
+    // the query reads the new field and falls back to the old until
+    // migrate:casestudy-rename-fields has run, so the www app is untouched.
     defineField({
-      name: 'expertiseAreas',
+      name: 'expertise',
       title: 'Expertise',
       type: 'array',
       group: 'categorization',
@@ -280,12 +284,32 @@ export const caseStudy = defineType({
       description: 'Expertise filter + chips (the 6 lifecycle stages).',
     }),
     defineField({
-      name: 'capabilities',
+      name: 'customizations',
       title: 'Customizations',
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       description: 'Detail chip group only (no launch filter). Materials, finishes, certifications.',
+    }),
+    defineField({
+      name: 'expertiseAreas',
+      title: 'Expertise (deprecated)',
+      type: 'array',
+      group: 'categorization',
+      readOnly: true,
+      deprecated: { reason: 'Renamed to Expertise (PROD-2293). Run migrate:casestudy-rename-fields; removed after.' },
+      of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
+      description: 'Deprecated — use Expertise above. Kept until its values are migrated.',
+    }),
+    defineField({
+      name: 'capabilities',
+      title: 'Customizations (deprecated)',
+      type: 'array',
+      group: 'categorization',
+      readOnly: true,
+      deprecated: { reason: 'Renamed to Customizations (PROD-2293). Run migrate:casestudy-rename-fields; removed after.' },
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
+      description: 'Deprecated — use Customizations above. Kept until its values are migrated.',
     }),
     defineField({
       name: 'relatedStudies',
