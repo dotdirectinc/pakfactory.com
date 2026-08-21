@@ -107,14 +107,21 @@ export const customizationOption = defineType({
     // ─── APPLICABILITY (PROD-2306) ────────────────────────────────────────────
     // Applicability lives on the Option, not a standalone rule type (D8b, the rule
     // type was withdrawn). `appliesTo` empty = applies to everything; scope it to
-    // narrow. `incompatibleWith` is a short manufacturing deny-list, not thousands.
+    // narrow.
+    //
+    // PROD-2250 (Eric + Richard, 2026-08-21): `appliesTo`/`except` target PRODUCTS
+    // ONLY — never another Customization Option. Every Option↔Option relationship
+    // goes through `incompatibleWith`, and only through it. This makes the
+    // Sanity↔Registry boundary crisp: Sanity enumerates pairwise clashes; the
+    // Registry generalises the rule over tags. (Withdraws the spec's "for a finish
+    // that's the material" clause; verified 0/33 options ever targeted an Option.)
     defineField({
       name: 'appliesTo',
       title: 'Applies to',
       type: 'array',
       group: 'categorization',
       description:
-        'What this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, Products, or — for a finish constrained by its material — Customization Options.',
+        'What products this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, or Products. (Option-to-option clashes go in Incompatible with, not here.)',
       of: [
         {
           type: 'reference',
@@ -122,7 +129,6 @@ export const customizationOption = defineType({
             { type: 'productLine' },
             { type: 'productStyle' },
             { type: 'product' },
-            { type: 'customizationOption' },
           ],
         },
       ],
@@ -133,7 +139,7 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'Optional carve-outs from Applies to — the specific targets this option is NOT available on. Should be narrower than Applies to.',
+        'Optional carve-outs from Applies to — the specific products this option is NOT available on. Should be narrower than Applies to.',
       of: [
         {
           type: 'reference',
@@ -141,7 +147,6 @@ export const customizationOption = defineType({
             { type: 'productLine' },
             { type: 'productStyle' },
             { type: 'product' },
-            { type: 'customizationOption' },
           ],
         },
       ],
@@ -162,14 +167,36 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. Keep it symmetric: if A lists B, B should list A.',
+        'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. This is the ONLY channel for option-to-option relationships (PROD-2250). Keep it symmetric: if A lists B, B should list A.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
+      // Self-reference is an error; asymmetry is a warning. incompatibleWith now
+      // carries the whole Option↔Option relationship (appliesTo no longer targets
+      // Options — PROD-2250), so a missing reciprocal is worth surfacing.
       validation: (Rule) =>
-        Rule.custom((value, context) => {
+        Rule.custom(async (value, context) => {
           const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
           const refs = (value as { _ref?: string }[] | undefined) ?? []
-          if (refs.some((r) => r._ref?.replace(/^drafts\./, '') === selfId)) {
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+          if (ids.includes(selfId)) {
             return 'An option cannot be incompatible with itself.'
+          }
+          if (ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const targets = await client.fetch<{ _id: string; back: string[] }[]>(
+              `*[_id in $ids]{ _id, "back": incompatibleWith[]._ref }`,
+              { ids },
+            )
+            const listsSelf = (id: string) => {
+              const t = targets.find((x) => x._id.replace(/^drafts\./, '') === id)
+              return (t?.back ?? []).some((r) => r?.replace(/^drafts\./, '') === selfId)
+            }
+            const asymmetric = ids.filter((id) => !listsSelf(id))
+            if (asymmetric.length > 0) {
+              return `Not symmetric — ${asymmetric.length} listed option(s) don't list this one back. Add this option to their "Incompatible with" too.`
+            }
+          } catch {
+            return true // never block on a lookup failure
           }
           return true
         }).warning(),
@@ -313,15 +340,11 @@ export const customizationOption = defineType({
     // on that Property Value. Never populated, so nothing to migrate. If a number
     // ever differs per Option it returns as a small value→fact list here.
 
-    // Related items
-    defineField({
-      name: 'applicableCustomizations',
-      title: 'Applicable customizations',
-      type: 'array',
-      group: 'categorization',
-      description: 'What can be applied TO or used WITH this?',
-      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-    }),
+    // Related items.
+    // `applicableCustomizations` (an Option→Option allow-list) was removed in
+    // PROD-2250 — it was the same relationship the "products only" decision routed
+    // exclusively through `incompatibleWith`, expressed in the opposite direction,
+    // and it was never in the entity spec. 0/33 options populated it.
     defineField({
       name: 'comparedAgainst',
       title: 'Compared against',
