@@ -1,6 +1,6 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
-import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { uniqueSlugAcross } from '../lib/slug-rules'
+import { checkScopedTaxonomyTitle } from '../lib/taxonomy-rules'
+import { uniqueSlugWithinParent } from '../lib/slug-rules'
 import {
   NUMBER_FACT_LABELS,
   TEXT_FACT_LABELS,
@@ -24,7 +24,24 @@ export const propertyValue = defineType({
       type: 'string',
       group: 'content',
       description: 'The value an editor picks — e.g. "Matte", "300 GSM", "Kraft".',
-      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
+      // Unique within the PARENT PROPERTY, not across every Property Value
+      // (Eric + Richard, 2026-08-21). A value cannot exist outside a Property,
+      // so its identity is (Property, title) — Board Colour's "Gold" and Foil
+      // Colour's "Gold" are two terms in two lists, the same scoping `kindOf`
+      // already uses. A cross-Property match is a warning, not a block: usually
+      // legitimate, occasionally one idea filed twice, never grounds to refuse
+      // the save. Two rules because Sanity cannot mix an error and a warning in
+      // one `custom`.
+      validation: (Rule) => [
+        Rule.required().custom(async (value, context) => {
+          const r = await checkScopedTaxonomyTitle(value, context, 'property', 'property')
+          return 'ok' in r || r.level !== 'error' ? true : r.message
+        }),
+        Rule.custom(async (value, context) => {
+          const r = await checkScopedTaxonomyTitle(value, context, 'property', 'property')
+          return 'ok' in r || r.level !== 'warning' ? true : r.message
+        }).warning(),
+      ],
     }),
     defineField({
       name: 'slug',
@@ -34,7 +51,12 @@ export const propertyValue = defineType({
       description:
         'URL-safe identifier, generated from the title. A stable key — rename the title freely, but change the slug deliberately (a slug in a URL needs a redirect).',
       options: { source: 'title' },
-      validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['propertyValue'])),
+      // Scoped to the Property for the same reason as the title: the filter URL
+      // is ?<property>=<slug>, so the property is the namespace and two Golds
+      // never meet. Checked before shipping — no front-end query looks a value
+      // up by slug alone.
+      validation: (Rule) =>
+        Rule.required().custom(uniqueSlugWithinParent('propertyValue', 'property', 'property')),
     }),
     defineField({
       name: 'property',

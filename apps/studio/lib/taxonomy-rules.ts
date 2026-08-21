@@ -67,3 +67,94 @@ export function uniqueTaxonomyTitle(field: string = 'title') {
       : true
   }
 }
+
+/**
+ * Same rule, scoped to a PARENT reference rather than to the whole type.
+ *
+ * For nine of the ten taxonomies the type is the list, and `uniqueTaxonomyTitle`
+ * above is right. `propertyValue` is the exception: a value cannot exist outside
+ * a Property (the reference is required), so its identity is
+ * **(Property, title)** rather than title alone. Board Colour's *Gold* and Foil
+ * Colour's *Gold* are two terms in two lists that happen to share a word — the
+ * same relationship `kindOf` already models as same-Property-only.
+ *
+ * Decided with Eric + Richard, 2026-08-21. §4.2's own worked example is a
+ * within-list case — "Food Safe" against "Food-Safe" — so scoping to the parent
+ * serves the rule's stated purpose exactly, and a type-wide block was broader
+ * than the reason given for it.
+ *
+ * Two severities, because the two cases are different:
+ *
+ *   error    same title, same Property  — a genuine duplicate
+ *   warning  same title, other Property — usually fine, occasionally the
+ *            "Food Safe exists in two lists" drift, which is worth a look but
+ *            must not block a legitimate Gold/Gold
+ *
+ * Returning a `warning` from `Rule.custom` requires the caller to chain
+ * `.warning()`, which cannot be mixed with an error in one rule — so this
+ * returns a discriminated result and the schema wires up two rules from it.
+ */
+export type ScopedTitleCheck =
+  | { ok: true }
+  | { level: 'error' | 'warning'; message: string }
+
+export async function checkScopedTaxonomyTitle(
+  value: string | undefined,
+  context: ValidationContext,
+  scopeField: string,
+  scopeLabel: string,
+): Promise<ScopedTitleCheck> {
+  if (!value?.trim()) return { ok: true }
+
+  const doc = context.document as Record<string, unknown> | undefined
+  const type = doc?._type as string | undefined
+  if (!type) return { ok: true }
+
+  const scopeRef = (doc?.[scopeField] as { _ref?: string } | undefined)?._ref
+  const publishedId = (doc?._id as string | undefined)?.replace(/^drafts\./, '')
+  const client = context.getClient({ apiVersion: '2024-01-01' })
+
+  const siblings = await client.fetch<
+    { title: string | null; scope: string | null; scopeTitle: string | null }[]
+  >(
+    `*[_type == $type && !(_id in [$id, $draftId])]{
+       "title": title,
+       "scope": ${scopeField}._ref,
+       "scopeTitle": ${scopeField}->title
+     }`,
+    { type, id: publishedId ?? '', draftId: `drafts.${publishedId ?? ''}` },
+  )
+
+  const key = comparisonKey(value)
+  const matches = siblings.filter((row) => row.title && comparisonKey(row.title) === key)
+  if (matches.length === 0) return { ok: true }
+
+  // A value with no parent yet can't be scoped, so treat any match as a clash
+  // rather than waving it through on a technicality.
+  const sameScope = scopeRef
+    ? matches.find((m) => m.scope === scopeRef)
+    : matches[0]
+
+  if (sameScope) {
+    return {
+      level: 'error',
+      message:
+        `"${sameScope.title}" already exists in ${sameScope.scopeTitle ?? `this ${scopeLabel}`}. ` +
+        `Terms have to be unique within a ${scopeLabel}, ignoring case and punctuation — ` +
+        `"Food Safe" and "Food-Safe" cannot both exist in one.`,
+    }
+  }
+
+  const others = matches
+    .map((m) => m.scopeTitle)
+    .filter(Boolean)
+    .join(', ')
+
+  return {
+    level: 'warning',
+    message:
+      `"${value}" also exists in ${others || `another ${scopeLabel}`}. That is allowed — ` +
+      `the same term can sit under more than one ${scopeLabel} — but check these are ` +
+      `genuinely different things, and not one idea filed twice.`,
+  }
+}
