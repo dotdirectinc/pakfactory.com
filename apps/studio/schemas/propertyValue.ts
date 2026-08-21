@@ -189,13 +189,33 @@ export const propertyValue = defineType({
           },
         }),
       ],
-      // One row per label — Caliper cannot appear twice on one value.
       validation: (Rule) =>
-        Rule.custom((facts) => {
-          const list = Array.isArray(facts) ? (facts as { label?: string }[]) : []
+        Rule.custom((facts, context) => {
+          const list = Array.isArray(facts) ? (facts as { label?: string; value?: number }[]) : []
+
+          // One row per label — Caliper cannot appear twice on one value.
           const labels = list.map((f) => f?.label).filter(Boolean) as string[]
           const dup = labels.find((l, i) => labels.indexOf(l) !== i)
-          return dup ? `Each label may appear once — "${dup}" is repeated.` : true
+          if (dup) return `Each label may appear once — "${dup}" is repeated.`
+
+          // Caliper guard (PROD-2287 · per-Option thickness decision): a point IS
+          // 1/1000", so `caliper` is definitional and gets retyped once per
+          // (board × thickness) document — the one number free to drift. Where the
+          // title starts with a point size (`12pt - SBS`), a caliper fact must
+          // equal size ÷ 1000. Fires only on such titles; silent with no caliper
+          // row. ⚠️ Order is load-bearing: `SBS 12pt` skips this (fail-open).
+          const title = ((context.document as { title?: string } | undefined)?.title ?? '').trim()
+          const m = title.match(/^(\d+(?:\.\d+)?)\s*pt\b/i)
+          if (m) {
+            const caliper = list.find((f) => f?.label === 'caliper')
+            if (caliper && typeof caliper.value === 'number') {
+              const expected = parseFloat(m[1]) / 1000
+              if (Math.abs(caliper.value - expected) > 1e-9) {
+                return `Caliper for ${m[1]}pt must be ${expected}" (point size ÷ 1000). A measured — rather than nominal — caliper is a different label, not a different number.`
+              }
+            }
+          }
+          return true
         }),
     }),
     // ─── Retiring ────────────────────────────────────────────────────────────
