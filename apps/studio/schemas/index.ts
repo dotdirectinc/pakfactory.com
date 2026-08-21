@@ -2,7 +2,6 @@ import { customizationCategory } from './customizationCategory'
 import { socialLink } from '../lib/social-link-schema'
 import { customizationType } from './customizationType'
 import { customizationOption } from './customizationOption'
-import { optionGroup } from './optionGroup'
 import { property } from './property'
 import { propertyValue } from './propertyValue'
 import { productLine } from './productLine'
@@ -63,7 +62,6 @@ export const schemaTypes = [
   customizationCategory,
   customizationType,
   customizationOption,
-  optionGroup,
 
   // Attribute layer
   property,

@@ -112,48 +112,12 @@ export const customizationType = defineType({
         },
       }],
     }),
-    defineField({
-      name: 'optionGroups',
-      title: 'Spec tables',
-      type: 'array',
-      group: 'specs',
-      description:
-        'Which spec tables the options under this type fill in, and whether each option picks one row or several. The type declares the columns; it holds no rows of its own.',
-      of: [{
-        type: 'object',
-        name: 'declaredOptionGroup',
-        fields: [
-          defineField({
-            name: 'group',
-            title: 'Table',
-            type: 'reference',
-            to: [{ type: 'optionGroup' }],
-            options: { disableNew: true },
-            description: 'The table definition — its columns come from there.',
-            validation: (Rule) => Rule.required(),
-          }),
-          defineField({
-            name: 'cardinality',
-            title: 'How many rows an option states',
-            type: 'string',
-            description:
-              'Pick one — the options of this type are mutually exclusive on this table. Pick many — an option can state several rows.',
-            options: {
-              layout: 'radio',
-              list: [
-                { title: 'Pick one', value: 'one' },
-                { title: 'Pick many', value: 'many' },
-              ],
-            },
-            initialValue: 'one',
-            validation: (Rule) => Rule.required(),
-          }),
-        ],
-        preview: {
-          select: { title: 'group.title', subtitle: 'cardinality' },
-        },
-      }],
-    }),
+    // `optionGroups` (declared spec tables, pick-one/pick-many) was removed in
+    // PROD-2250 — Decisions D41 deleted Option Group. What a spec table listed
+    // was always a set of choices, so those become Property Value documents and
+    // arrive through `properties` above; the numbers beside them become `facts`
+    // on the Property Value. Never populated, so nothing to migrate.
+    //
     // `sharedSpecsNote` (help text stored as content, the last of the six
     // inheritance fields) was removed in PROD-2250 — the sentence now lives as a
     // schema description on each table. migrate:customization-cleanup clears the

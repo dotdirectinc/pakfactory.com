@@ -774,19 +774,6 @@ export function knowledgeLibraryItems(
                                                 ).title('Customization Types'),
                                             ),
                                         S.listItem()
-                                            .title('Option Groups')
-                                            .schemaType('optionGroup')
-                                            .child(
-                                                S.documentTypeList('optionGroup')
-                                                    .title('Option Groups')
-                                                    .defaultOrdering([
-                                                        {
-                                                            field: 'title',
-                                                            direction: 'asc',
-                                                        },
-                                                    ]),
-                                            ),
-                                        S.listItem()
                                             .title('Attribute Groups')
                                             .schemaType('property')
                                             .child(
@@ -1507,10 +1494,6 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
             .title('Options')
             .schemaType('customizationOption')
             .child(S.documentTypeList('customizationOption').title('Customization Options')),
-        S.listItem()
-            .title('Option Groups')
-            .schemaType('optionGroup')
-            .child(S.documentTypeList('optionGroup').title('Option Groups')),
         S.divider().title('Global'),
         ...propertyGlobalItems(S),
     ];
