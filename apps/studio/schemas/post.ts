@@ -2,19 +2,23 @@ import {defineField, defineType} from 'sanity';
 import {languageField, uniqueSlugPerLanguage} from '../lib/i18n-fields';
 import {MEDIA_TAG, taggedImageField} from '../lib/media-tags'
 import {seoFields, socialFields} from '../lib/seo-fields';
+import {faqsField} from '../lib/faq-field';
 import {inlineBlocks} from './inline';
 
 export const post = defineType({
     name: 'post',
     title: 'Post',
     type: 'document',
+    // §2.4 tab order (PROD-2293): Schema & AI sits sixth in the canonical set,
+    // before SEO and Social — `tldr` is required, so its tab must not be the
+    // furthest from where an editor starts. (Post skips Sections and Specs.)
     groups: [
         {name: 'content', title: 'Content', default: true},
         {name: 'categorization', title: 'Categorization'},
         {name: 'publishing', title: 'Publishing'},
+        {name: 'schemaAi', title: 'Schema & AI'},
         {name: 'seo', title: 'SEO'},
         {name: 'social', title: 'Social'},
-        {name: 'schemaAi', title: 'Schema & AI'},
     ],
     fields: [
         defineField(languageField),
@@ -205,13 +209,24 @@ export const post = defineType({
             validation: (Rule) =>
                 Rule.required().min(1).error('TL;DR / Key takeaways is required.'),
         }),
+        // FAQs (PROD-2293) — the shared field, mixed mode: reference a shared FAQ
+        // document when the answer lives elsewhere, or type one in place. Sits
+        // under Categorization with every other type's FAQs. Supersedes the
+        // deprecated `faqItems` below; the front end reads `faqs` and falls back
+        // to `faqItems` until migrate:post-faqitems-to-faqs has run.
+        faqsField({group: 'categorization', mode: 'mixed'}),
         defineField({
             name: 'faqItems',
-            title: 'FAQ items',
+            title: 'FAQ items (deprecated)',
             type: 'array',
             group: 'schemaAi',
+            readOnly: true,
+            deprecated: {
+                reason:
+                    'Replaced by FAQs under Categorization (PROD-2293). Run migrate:post-faqitems-to-faqs, then this field is removed. Do not add new items here.',
+            },
             description:
-                'Optional Q&A pairs. Renders a visible FAQ section and emits FAQPage JSON-LD (no Google rich result; value is the visible block + AI extraction).',
+                'Deprecated — use FAQs under Categorization. Still rendered until its values are migrated across.',
             of: [
                 {
                     type: 'object',

@@ -272,6 +272,11 @@ const POST_DETAIL_FIELDS = /* groq */ `{
       }
     }
   },
+  "faqs": faqs[]{
+    "question": select(_type == "faqRef" => @->question, question),
+    "answer": select(_type == "faqRef" => @->answer, answer),
+    "answerText": select(_type == "faqRef" => pt::text(@->answer), pt::text(answer))
+  },
   "faqItems": faqItems[]{
     question,
     answer,
