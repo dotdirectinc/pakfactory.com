@@ -15,42 +15,42 @@
  * each label up. `unit` is empty for a unitless fact (Max colours → bare number).
  *
  * ✅ Confirmed against the Metallic Paperboard configurator prototype (2026-08-21):
- * the columns it renders are Caliper · Basis weight · Commonly used for. Two of
- * those three are below. The third is deliberately absent — see BASIS WEIGHT.
+ * the columns it renders are Caliper · Basis weight · Commonly used for. All
+ * three are below.
  *
  * Escape hatch (D41): if this grows past ~30 entries or production wants units
  * editable without a deploy, `label` becomes a reference to a small document type
- * carrying `title` + `unit`. At 5 entries that trigger is a long way off.
+ * carrying `title` + `unit`. At 6 entries that trigger is a long way off.
  *
  * Numbers and text use separate lists so a numeric label can't land on a text
  * fact (and vice versa); units only exist on numbers.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * 🔴 BASIS WEIGHT IS MISSING ON PURPOSE. DO NOT ADD IT HERE.
+ * WHY BASIS WEIGHT IS ALLOWED HERE (decided by Eric + Richard, 2026-08-21)
  *
- * The prototype renders it as a column, so it IS wanted on the page — but it
- * cannot live on a Property Value. `facts` sits on a document shared by every
- * Option that offers it, so it has exactly one slot per label, and basis weight
- * is not one number:
+ * D41 ruled that per-pairing numbers must NOT sit on a Property Value, because
+ * one document is shared by every Option that offers it and basis weight is not
+ * one number (18pt SBS ≈ 450 GSM against 18pt kraft ≈ 300 GSM). That reasoning
+ * assumed ONE `14pt` document serving every material.
  *
- *   12pt metallic paperboard  ≈ 250gsm     (metallized film + clay coat, denser)
- *   12pt kraft / CCNB         ≈ 220gsm
- *   18pt SBS ≈ 450 GSM vs 18pt kraft ≈ 300 GSM   (Decisions D41, verified)
+ * The 2026-08-21 decision changes that premise: a thickness value is scoped to
+ * its (Property × Customization Type) pairing and carries a DISTINCT TITLE —
+ * `12pt - Corrugated`, `12pt - Blister Plastic` — so each pairing has its own
+ * document and its own slot per label. One slot is now enough.
  *
- * Caliper passes the test — 12pt IS 0.012" on every board, by definition. Basis
- * weight fails it. Add `basisWeight` to this list and the first editor to type
- * 250 on the shared `12pt` document publishes it to the SBS and kraft pages too,
- * with nothing to validate it and no error anywhere.
+ * This is NOT the variant D41 rejected. That one was two documents both titled
+ * `14pt`, and D41's own closing test was: "the tell that it is duplication
+ * rather than distinction is that both documents have the same title. If two
+ * values genuinely differ, they should not share a name." Distinct titles are
+ * exactly what that test asks for — and `uniqueTaxonomyTitle` on `title`
+ * already enforces it, so the rejected shape cannot be saved.
  *
- * Per-Option numbers need the overlay field on Customization Option that D41
- * named but deliberately did not build ("the Option gains no field today").
- * Property Value.md: "it goes on the Customization Option as the same row shape
- * with a reference to the value it annotates".
- *
- * UNBLOCK: confirm with Eric whether 12pt shows 250gsm on the SBS page too.
- *   • same number everywhere → it passes the test; add it here.
- *   • different per material → build the Option overlay; it never belongs here.
- * Until then the column simply does not render, which stores nothing wrong.
+ * ⚠️ The cost D41 named is real and now accepted: caliper is identical across
+ * every material at a given point size (12pt IS 0.012" by definition), so it
+ * gets retyped once per pairing and can drift once per pairing. Nothing
+ * validates that today. If drift shows up, the fix is a Studio action that
+ * copies a sibling's rows at creation — not a shared document, which is the
+ * thing this decision deliberately moved away from.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -72,12 +72,14 @@ export type FactLabel = {
 export const NUMBER_FACT_LABELS: readonly FactLabel[] = [
   // ✅ In the prototype. 12pt → 0.012" — the number IS the value (D41's test).
   { value: 'caliper', title: 'Caliper', unit: 'in', symbol: '"' },
+  // ✅ In the prototype. Per-pairing, which is why the value must be per-pairing
+  // too — see the header block. Cell reads `250gsm`, hugging.
+  { value: 'basisWeight', title: 'Basis weight', unit: 'gsm' },
   // From D41's own worked examples: geometry / process ceilings, which are
   // intrinsic to the value and so identical across every Option that offers it.
   { value: 'fluteHeight', title: 'Flute height', unit: 'mm' },
   { value: 'filmThickness', title: 'Film thickness', unit: 'µm' },
   { value: 'maxColours', title: 'Max colours' }, // unitless — bare number
-  // 🔴 basisWeight intentionally absent — see the header block above.
 ] as const
 
 /** Text facts — `factText`. No unit. */
