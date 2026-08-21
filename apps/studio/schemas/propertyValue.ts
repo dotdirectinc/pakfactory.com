@@ -1,7 +1,12 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { NUMBER_FACT_LABELS, TEXT_FACT_LABELS, factLabelOptions } from '../lib/fact-labels'
+import {
+  NUMBER_FACT_LABELS,
+  TEXT_FACT_LABELS,
+  factLabelOptions,
+  formatFactValue,
+} from '../lib/fact-labels'
 
 export const propertyValue = defineType({
   name: 'propertyValue',
@@ -129,7 +134,7 @@ export const propertyValue = defineType({
               const l = NUMBER_FACT_LABELS.find((x) => x.value === label)
               return {
                 title: l?.title ?? label ?? 'Number fact',
-                subtitle: value == null ? '—' : `${value}${l?.unit ? ` ${l.unit}` : ''}`,
+                subtitle: value == null ? '—' : formatFactValue(value, l),
               }
             },
           },
