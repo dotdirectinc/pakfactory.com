@@ -216,13 +216,30 @@ export const customizationOption = defineType({
     // unreachable — which is why none of the 33 options can state a Finish Type.
     // Scope now comes from the Type's declaration instead of from the field name.
 
+    // A `kindOf` TARGET is never selectable — it renders as a group heading and
+    // nothing else (agreed with Eric, 2026-08-21). Champagne and Deep gold are
+    // the choices; "Gold" is the heading they sit under, and a customer never
+    // clicks it. Offering the target as well would put one document on screen
+    // twice — clickable in one place, a label in another — which is the failure
+    // D40 set out to prevent.
+    //
+    // D40 stated it as a rule about the LIST ("either none has kindOf or every
+    // one does"). This is the rule about the TARGET, which is narrower and
+    // catches more: it holds across two panels, where the list rule doesn't, and
+    // it allows a plain value beside a grouped one (Copper next to Champagne
+    // under Gold) — legal and unconfusing, because Gold is never clickable
+    // anywhere. See PROD-2250; Decisions D40 needs amending to match.
+    //
+    // Both halves are needed. The filter stops it being picked; the validation
+    // catches a value that BECAME a target after it was already stated, which no
+    // picker can see.
     defineField({
       name: 'properties',
       title: 'Properties',
       type: 'array',
       group: 'specs',
       description:
-        'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first.',
+        'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first. Values that other values are a "kind of" do not appear: they render as group headings, never as choices.',
       of: [{
         type: 'reference',
         to: [{ type: 'propertyValue' }],
@@ -234,12 +251,45 @@ export const customizationOption = defineType({
             if (!typeRef) return { filter: 'false' }
             return {
               filter:
-                'property._ref in *[_id == $typeRef][0].properties[].property._ref',
+                'property._ref in *[_id == $typeRef][0].properties[].property._ref' +
+                ' && !(_id in *[_type == "propertyValue" && defined(kindOf)].kindOf._ref)',
               params: { typeRef },
             }
           },
         },
       }],
+      validation: (Rule) =>
+        Rule.custom(async (properties, context) => {
+          const refs = ((properties as { _ref?: string }[] | undefined) ?? [])
+            .map((r) => r?._ref)
+            .filter(Boolean) as string[]
+          if (refs.length === 0) return true
+
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+          const { targetIds, stated } = await client.fetch<{
+            targetIds: string[] | null
+            stated: { _id: string; title: string | null }[]
+          }>(
+            `{
+              "targetIds": array::unique(*[_type == "propertyValue" && defined(kindOf)].kindOf._ref),
+              "stated": *[_type == "propertyValue" && _id in $refs]{_id, title}
+            }`,
+            { refs },
+          )
+
+          const targets = new Set(targetIds ?? [])
+          const offending = (stated ?? []).filter((v) => targets.has(v._id))
+          if (offending.length === 0) return true
+
+          const names = offending.map((v) => `"${v.title ?? v._id}"`).join(', ')
+          return (
+            `${names} ${offending.length === 1 ? 'is a value that others' : 'are values that others'} ` +
+            `are a "kind of", so ${offending.length === 1 ? 'it renders' : 'they render'} as a group ` +
+            `heading rather than a choice. Offer the specific values instead — Champagne and Deep gold, ` +
+            `not Gold. If you need a plain option in the group, give it a name of its own ` +
+            `("Classic gold") with its own "kind of".`
+          )
+        }),
     }),
 
     // ─── RETIRING ─────────────────────────────────────────────────────────────
