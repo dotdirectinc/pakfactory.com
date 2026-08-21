@@ -166,6 +166,9 @@ export type BlogPostDetail = DocSeoFields & {
   body?: PortableTextBlock[];
   tldr?: PortableTextBlock[];
   tldrText?: string;
+  // `faqs` (PROD-2293) supersedes `faqItems`; both resolve to {question, answer,
+  // answerText}. Prefer `faqs`, fall back to `faqItems` until the migration runs.
+  faqs?: PostFaqItem[];
   faqItems?: PostFaqItem[];
   relatedPosts?: HomePostCard[];
 };
@@ -318,7 +321,7 @@ export async function buildPostJsonLd(post: BlogPostDetail): Promise<string> {
   if (authorNode) nodes.push(authorNode);
   nodes.push(article, crumbs);
 
-  const faqItems = (post.faqItems ?? [])
+  const faqItems = ((post.faqs?.length ? post.faqs : post.faqItems) ?? [])
     .filter((item) => item.question?.trim() && item.answerText?.trim())
     .map((item) => ({
       question: item.question!.trim(),

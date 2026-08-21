@@ -45,7 +45,7 @@ export function PostArticleColumn({
                 />
             ) : null}
 
-            <PostFaqSection items={post.faqItems ?? []} />
+            <PostFaqSection items={(post.faqs?.length ? post.faqs : post.faqItems) ?? []} />
             <PostTagChips tags={post.tags ?? []} />
 
             {/* Mobile: author, share, Ask AI at the foot of the article */}
