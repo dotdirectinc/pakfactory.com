@@ -1,8 +1,11 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { seoFields } from '../lib/seo-fields'
+import { seoFields, socialFields } from '../lib/seo-fields'
+import { groupsFor, GROUPS } from '../lib/field-groups'
+import { pageSectionsField, SECTION_ALLOW } from './sections'
+import { faqsField } from '../lib/faq-field'
 
 /**
  * Bundle — a set of inspiration products sold together (a launch kit, a gift set).
@@ -19,13 +22,10 @@ export const bundle = defineType({
   title: 'Bundle',
   type: 'document',
   icon: PackageIcon,
-  groups: [
-    { name: 'content', title: 'Content', default: true },
-    { name: 'categorization', title: 'Categorization' },
-    { name: 'specs', title: 'Specs' },
-    { name: 'seo', title: 'SEO' },
-    { name: 'social', title: 'Social' },
-  ],
+  // Foundations (PROD-2286): the tab set comes from the one shared definition,
+  // not a local literal — same field, same tab, everywhere (§2.4). Output is
+  // identical to the previous inline array.
+  groups: groupsFor(['content', 'categorization', 'sections', 'specs', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
 
@@ -136,23 +136,7 @@ export const bundle = defineType({
       description: 'Every solution this bundle targets — industries, channels, focus areas, use cases.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
     }),
-    defineField({
-      name: 'faqs',
-      title: 'FAQs',
-      type: 'array',
-      group: 'categorization',
-      description: 'Question-and-answer pairs shown on the bundle page. Curated, 3–6.',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'question', type: 'string', title: 'Question' },
-            { name: 'answer', type: 'array', title: 'Answer', of: [{ type: 'block' }] },
-          ],
-          preview: { select: { title: 'question' } },
-        },
-      ],
-    }),
+    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
     // ─── SPECS ────────────────────────────────────────────────────────────────
 
@@ -187,22 +171,12 @@ export const bundle = defineType({
       description: 'The search-result snippet. Aim for ≤160 characters.',
       validation: (Rule) => Rule.max(160),
     }),
+    pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: 'seo', meta: false }),
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
 
-    defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
-      type: 'image',
-      group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.product),
-      options: { hotspot: true },
-      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
-    })),
+    ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
     select: { title: 'title', status: 'status', count: 'includedProducts.length', media: 'media.0' },

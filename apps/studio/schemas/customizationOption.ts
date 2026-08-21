@@ -99,7 +99,7 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'content',
       description: 'Add images in render order — first image = hero.',
-      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
+      of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
     }),
 
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
@@ -107,14 +107,21 @@ export const customizationOption = defineType({
     // ─── APPLICABILITY (PROD-2306) ────────────────────────────────────────────
     // Applicability lives on the Option, not a standalone rule type (D8b, the rule
     // type was withdrawn). `appliesTo` empty = applies to everything; scope it to
-    // narrow. `incompatibleWith` is a short manufacturing deny-list, not thousands.
+    // narrow.
+    //
+    // PROD-2250 (Eric + Richard, 2026-08-21): `appliesTo`/`except` target PRODUCTS
+    // ONLY — never another Customization Option. Every Option↔Option relationship
+    // goes through `incompatibleWith`, and only through it. This makes the
+    // Sanity↔Registry boundary crisp: Sanity enumerates pairwise clashes; the
+    // Registry generalises the rule over tags. (Withdraws the spec's "for a finish
+    // that's the material" clause; verified 0/33 options ever targeted an Option.)
     defineField({
       name: 'appliesTo',
       title: 'Applies to',
       type: 'array',
       group: 'categorization',
       description:
-        'What this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, Products, or — for a finish constrained by its material — Customization Options.',
+        'What products this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, or Products. (Option-to-option clashes go in Incompatible with, not here.)',
       of: [
         {
           type: 'reference',
@@ -122,7 +129,6 @@ export const customizationOption = defineType({
             { type: 'productLine' },
             { type: 'productStyle' },
             { type: 'product' },
-            { type: 'customizationOption' },
           ],
         },
       ],
@@ -133,7 +139,7 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'Optional carve-outs from Applies to — the specific targets this option is NOT available on. Should be narrower than Applies to.',
+        'Optional carve-outs from Applies to — the specific products this option is NOT available on. Should be narrower than Applies to.',
       of: [
         {
           type: 'reference',
@@ -141,7 +147,6 @@ export const customizationOption = defineType({
             { type: 'productLine' },
             { type: 'productStyle' },
             { type: 'product' },
-            { type: 'customizationOption' },
           ],
         },
       ],
@@ -162,14 +167,36 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. Keep it symmetric: if A lists B, B should list A.',
+        'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. This is the ONLY channel for option-to-option relationships (PROD-2250). Keep it symmetric: if A lists B, B should list A.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
+      // Self-reference is an error; asymmetry is a warning. incompatibleWith now
+      // carries the whole Option↔Option relationship (appliesTo no longer targets
+      // Options — PROD-2250), so a missing reciprocal is worth surfacing.
       validation: (Rule) =>
-        Rule.custom((value, context) => {
+        Rule.custom(async (value, context) => {
           const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
           const refs = (value as { _ref?: string }[] | undefined) ?? []
-          if (refs.some((r) => r._ref?.replace(/^drafts\./, '') === selfId)) {
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+          if (ids.includes(selfId)) {
             return 'An option cannot be incompatible with itself.'
+          }
+          if (ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const targets = await client.fetch<{ _id: string; back: string[] }[]>(
+              `*[_id in $ids]{ _id, "back": incompatibleWith[]._ref }`,
+              { ids },
+            )
+            const listsSelf = (id: string) => {
+              const t = targets.find((x) => x._id.replace(/^drafts\./, '') === id)
+              return (t?.back ?? []).some((r) => r?.replace(/^drafts\./, '') === selfId)
+            }
+            const asymmetric = ids.filter((id) => !listsSelf(id))
+            if (asymmetric.length > 0) {
+              return `Not symmetric — ${asymmetric.length} listed option(s) don't list this one back. Add this option to their "Incompatible with" too.`
+            }
+          } catch {
+            return true // never block on a lookup failure
           }
           return true
         }).warning(),
@@ -181,8 +208,8 @@ export const customizationOption = defineType({
     // orphaned field data from the dataset.
     // Legacy industry / use-case reference arrays (applicableIndustryCategories,
     // useCases, industries) were removed in PROD-2284 — unpopulated on every
-    // capability and pointing at the now-retired industry/industryCategory/useCase
-    // types. Capability applicability is expressed via `properties[]` below.
+    // option and pointing at the now-retired industry/industryCategory/useCase
+    // types. Option applicability is expressed via `properties[]` below.
     // ─── PROPERTIES ───────────────────────────────────────────────────────────
     // One field replacing eight. Each of the eight hardcoded its own property
     // group in a picker filter, so a group with no matching field was
@@ -307,170 +334,17 @@ export const customizationOption = defineType({
       ],
     }),
 
-    // ─── SPEC TABLES ──────────────────────────────────────────────────────────
-    // This option's own complete rows. Nothing is inherited: the type declares
-    // which tables apply (`optionGroups`) and this states the values. Replaces
-    // the three show/override pairs, which were the last surviving piece of
-    // inheritance-with-overrides — and which nobody ever used.
-    //
-    // Emptiness is the switch. A table with rows renders and one without
-    // doesn't, so the retired `show*` booleans could only ever disagree with
-    // the data.
+    // `specTables` was removed in PROD-2250 — Decisions D41 deleted Option Group.
+    // A spec-table row was always a choice, so it becomes a Property Value
+    // (offered through `properties` above); the numbers beside it become `facts`
+    // on that Property Value. Never populated, so nothing to migrate. If a number
+    // ever differs per Option it returns as a small value→fact list here.
 
-    defineField({
-      name: 'specTables',
-      title: 'Spec tables',
-      type: 'array',
-      group: 'specs',
-      description:
-        'The rows this option states, for each table its customization type declares. Leave a table out and it simply does not render.',
-      of: [{
-        type: 'object',
-        name: 'specTable',
-        fields: [
-          defineField({
-            name: 'group',
-            title: 'Table',
-            type: 'reference',
-            to: [{ type: 'optionGroup' }],
-            options: {
-              disableNew: true,
-              // Only the tables this option's type actually declares.
-              filter: ({ document }) => {
-                const typeRef = (document as { type?: { _ref?: string } } | undefined)?.type?._ref
-                if (!typeRef) return { filter: 'false' }
-                return {
-                  filter: '_id in *[_id == $typeRef][0].optionGroups[].group._ref',
-                  params: { typeRef },
-                }
-              },
-            },
-            description: 'Pick from the tables declared on this option\'s customization type.',
-            validation: (Rule) => Rule.required(),
-          }),
-          defineField({
-            name: 'rows',
-            title: 'Rows',
-            type: 'array',
-            description:
-              'One entry per row. Each cell names a column from the table definition and carries its value.',
-            of: [{
-              type: 'object',
-              name: 'specRow',
-              fields: [
-                defineField({
-                  name: 'cells',
-                  title: 'Cells',
-                  type: 'array',
-                  description: 'One per column in the table definition.',
-                  of: [{
-                    type: 'object',
-                    name: 'specCell',
-                    fields: [
-                      defineField({
-                        name: 'column',
-                        title: 'Column',
-                        type: 'string',
-                        description: 'Must match a column name on the table definition.',
-                        validation: (Rule) => Rule.required(),
-                      }),
-                      defineField({
-                        name: 'text',
-                        title: 'Text',
-                        type: 'string',
-                        description: 'For text columns.',
-                      }),
-                      defineField({
-                        name: 'number',
-                        title: 'Number',
-                        type: 'number',
-                        description: 'For number columns.',
-                      }),
-                      defineField({
-                        name: 'color',
-                        title: 'Colour',
-                        type: 'string',
-                        description: 'For colour columns — a hex code, e.g. #1D2058.',
-                      }),
-                      defineField({
-                        name: 'image',
-                        title: 'Image',
-                        type: 'image',
-                        description: 'For image columns.',
-                        options: { hotspot: true },
-                        fields: [
-                          defineField({ name: 'alt', title: 'Alt text', type: 'string' }),
-                        ],
-                      }),
-                      defineField({
-                        name: 'boolean',
-                        title: 'Yes / no',
-                        type: 'boolean',
-                        description: 'For yes/no columns.',
-                      }),
-                    ],
-                    preview: {
-                      select: {
-                        title: 'column',
-                        text: 'text',
-                        number: 'number',
-                        color: 'color',
-                        boolean: 'boolean',
-                      },
-                      prepare({ title, text, number, color, boolean }) {
-                        const value = [text, number, color, boolean]
-                          .find((candidate) => candidate !== undefined && candidate !== null)
-                        return {
-                          title: title ?? 'No column',
-                          subtitle: value === undefined ? '—' : String(value),
-                        }
-                      },
-                    },
-                  }],
-                }),
-              ],
-              preview: {
-                select: { cells: 'cells' },
-                prepare({ cells }) {
-                  const list = Array.isArray(cells) ? cells : []
-                  const summary = list
-                    .map((cell: Record<string, unknown>) => {
-                      const value = [cell.text, cell.number, cell.color, cell.boolean]
-                        .find((candidate) => candidate !== undefined && candidate !== null)
-                      return value === undefined ? null : `${cell.column}: ${value}`
-                    })
-                    .filter(Boolean)
-                  return {
-                    title: summary[0] ?? 'Empty row',
-                    subtitle: summary.slice(1).join(' · '),
-                  }
-                },
-              },
-            }],
-          }),
-        ],
-        preview: {
-          select: { title: 'group.title', rows: 'rows' },
-          prepare({ title, rows }) {
-            const count = Array.isArray(rows) ? rows.length : 0
-            return {
-              title: title ?? 'No table selected',
-              subtitle: count === 1 ? '1 row' : `${count} rows`,
-            }
-          },
-        },
-      }],
-    }),
-
-    // Related items
-    defineField({
-      name: 'applicableCapabilities',
-      title: 'Applicable customizations',
-      type: 'array',
-      group: 'categorization',
-      description: 'What can be applied TO or used WITH this?',
-      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-    }),
+    // Related items.
+    // `applicableCustomizations` (an Option→Option allow-list) was removed in
+    // PROD-2250 — it was the same relationship the "products only" decision routed
+    // exclusively through `incompatibleWith`, expressed in the opposite direction,
+    // and it was never in the entity spec. 0/33 options populated it.
     defineField({
       name: 'comparedAgainst',
       title: 'Compared against',
@@ -485,7 +359,7 @@ export const customizationOption = defineType({
         }),
     }),
     defineField({
-      name: 'relatedCapabilities',
+      name: 'relatedCustomizations',
       title: 'Related customizations',
       type: 'array',
       group: 'categorization',
@@ -545,7 +419,7 @@ export const customizationOption = defineType({
       title: 'OG image',
       type: 'image',
       group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.capability),
+      mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
       description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
       fields: [
