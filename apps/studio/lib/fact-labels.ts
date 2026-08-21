@@ -12,7 +12,7 @@
  *
  * Column order on the page comes from THIS list, never the array order (editors
  * drag rows; two values won't agree). The front end walks the list and looks
- * each label up. `unit` is empty for a unitless fact (Max colours → bare number).
+ * each label up. `unit` is empty for a unitless fact (Max colors → bare number).
  *
  * ✅ Confirmed against the Metallic Paperboard configurator prototype (2026-08-21):
  * the columns it renders are Caliper · Basis weight · Commonly used for. All
@@ -79,7 +79,7 @@ export const NUMBER_FACT_LABELS: readonly FactLabel[] = [
   // intrinsic to the value and so identical across every Option that offers it.
   { value: 'fluteHeight', title: 'Flute height', unit: 'mm' },
   { value: 'filmThickness', title: 'Film thickness', unit: 'µm' },
-  { value: 'maxColours', title: 'Max colours' }, // unitless — bare number
+  { value: 'maxColors', title: 'Max colors' }, // unitless — bare number
 ] as const
 
 /** Text facts — `factText`. No unit. */
@@ -88,7 +88,7 @@ export const TEXT_FACT_LABELS: readonly FactLabel[] = [
   { value: 'commonlyUsedFor', title: 'Commonly used for' },
 ] as const
 
-/** Studio dropdown options: `Caliper (in)`, `Max colours`, `Commonly used for`. */
+/** Studio dropdown options: `Caliper (in)`, `Max colors`, `Commonly used for`. */
 export function factLabelOptions(labels: readonly FactLabel[]) {
   return labels.map((l) => ({
     title: l.unit ? `${l.title} (${l.unit})` : l.title,
