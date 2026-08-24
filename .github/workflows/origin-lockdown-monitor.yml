@@ -1,0 +1,82 @@
+name: Origin lockdown monitor
+
+# PROD-2207. The live /case-studies surface depends on nginx (Magento box) sending
+# a shared `X-Origin-Proxy` header to the Vercel origin. That nginx vhost is NOT in
+# git, so the header can vanish on a config reload or box rebuild with no diff to
+# review — and the failure is a redirect LOOP on a live page, because the origin
+# bounces /case-studies back to the apex, which proxies it straight back.
+#
+# This checks BOTH halves, because they fail in opposite directions:
+#   A. apex serves            → nginx is still sending the header
+#   B. origin still redirects → the Vercel lockdown is still protecting
+# Losing A is an outage. Losing B is a silent SEO regression. One is loud, one is
+# not, which is exactly why the quiet one needs a monitor.
+
+on:
+  schedule:
+    # Off-the-hour on purpose: :00 and :30 are the most oversubscribed GitHub
+    # cron slots and the first dropped under load.
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: apex serves + origin locked down
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: A — live apex must serve, not redirect
+        run: |
+          set -euo pipefail
+          url="https://pakfactory.com/case-studies"
+          hdrs="$(curl -sS --max-time 20 -o /tmp/body -D - "$url" | tr -d '\r')"
+          code="$(printf '%s' "$hdrs" | grep -m1 '^HTTP/' | awk '{print $2}')"
+          loc="$(printf '%s' "$hdrs" | grep -i '^location:' || true)"
+
+          echo "status=$code"
+          [ "$code" = "200" ] || { echo "::error::apex returned $code, expected 200"; exit 1; }
+
+          if [ -n "$loc" ]; then
+            echo "::error::apex is REDIRECTING ($loc)"
+            echo "::error::nginx has probably stopped sending X-Origin-Proxy — this is a redirect loop"
+            exit 1
+          fi
+
+          # A 200 with the wrong body is still broken; assert it is the real page.
+          grep -q 'rel="canonical" href="https://pakfactory.com/case-studies"' /tmp/body \
+            || { echo "::error::apex 200 but canonical marker missing — wrong content served"; exit 1; }
+          echo "apex OK"
+
+      - name: B — direct origin hit must stay locked down
+        run: |
+          set -euo pipefail
+          url="https://origin.case-studies.pakfactory.com/case-studies"
+          hdrs="$(curl -sS --max-time 20 -o /dev/null -D - "$url" | tr -d '\r')"
+          code="$(printf '%s' "$hdrs" | grep -m1 '^HTTP/' | awk '{print $2}')"
+          robots="$(printf '%s' "$hdrs" | grep -i '^x-robots-tag:' || true)"
+
+          echo "status=$code  $robots"
+          case "$code" in
+            30[1278]) ;;
+            *) echo "::error::origin returned $code — expected a redirect to the apex."
+               echo "::error::the lockdown is OFF; the origin is serving indexable duplicates"
+               exit 1 ;;
+          esac
+
+          printf '%s' "$robots" | grep -qi 'noindex' \
+            || echo "::warning::origin redirects but carries no X-Robots-Tag: noindex"
+          echo "origin locked down OK"
+
+      - name: Notify Slack on failure
+        # Optional: skipped when the secret is absent, so the job still fails loudly
+        # via GitHub's own notification either way.
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            -d "{\"text\":\":rotating_light: *Origin lockdown check failed* (PROD-2207) — <https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|run>\"}" \
+            "$SLACK_WEBHOOK_URL"
