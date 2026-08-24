@@ -11,7 +11,9 @@
     "SANITY_STUDIO_PROJECT_ID",
     "SANITY_STUDIO_DATASET",
     "SANITY_STUDIO_PREVIEW_URL",
-    "PORT"
+    "PORT",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY"
   ],
   "tasks": {
     "dev": {
@@ -29,12 +31,21 @@
         "NEXT_PUBLIC_SITE_URL",
         "CONTRIBUTE_WEBHOOK_URL",
         "NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL",
-        "PORT"
+        "PORT",
+        "BACKEND_API_BASE_URL",
+        "SERVICE_SHARED_SECRET",
+        "WWW_ORIGIN_PROXY_SECRET"
       ]
     },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**"
+      ],
       "env": [
         "NEXT_PUBLIC_SANITY_PROJECT_ID",
         "NEXT_PUBLIC_SANITY_DATASET",
@@ -52,7 +63,10 @@
         "@pakfactory/sanity#typecheck",
         "@pakfactory/ui#typecheck"
       ],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
       "env": [
         "NEXT_PUBLIC_SANITY_PROJECT_ID",
         "NEXT_PUBLIC_SANITY_DATASET",
@@ -66,7 +80,10 @@
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL",
         "SANITY_REVALIDATE_SECRET",
-        "WWW_DISABLE_INDEXING"
+        "WWW_DISABLE_INDEXING",
+        "BACKEND_API_BASE_URL",
+        "SERVICE_SHARED_SECRET",
+        "WWW_ORIGIN_PROXY_SECRET"
       ]
     },
     "@pakfactory/blog#build": {
@@ -75,7 +92,10 @@
         "@pakfactory/sanity#typecheck",
         "@pakfactory/ui#typecheck"
       ],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
       "env": [
         "NEXT_PUBLIC_SANITY_PROJECT_ID",
         "NEXT_PUBLIC_SANITY_DATASET",
@@ -95,7 +115,9 @@
     },
     "lint": {},
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "clean": {
       "cache": false
