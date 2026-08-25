@@ -17,4 +17,151 @@ export const REQUEST_COPY = {
     specialistCanPropose:
         'A specialist can propose materials and finishes with your request.',
     customizeItYourself: 'Customize it yourself',
+
+    // BriefBuilder / wizard
+    railHeading:
+        'The more you share, the faster our specialists can quote it.',
+    needHelpPrefix: 'Need help?',
+    startChat: 'Start chat',
+    yourRefPrefix: 'Your ref# is',
+    refPlaceholder: 'RFQ-#####',
+    close: 'Close',
+    saveDraft: 'Save draft',
+
+    productsTitle: 'Products',
+    productsSubtitle: 'Add & configure your items',
+    servicesTitle: 'Services',
+    servicesSubtitle: 'Optional extras',
+    servicesHeading: 'Services',
+    servicesDesc: 'Add any extras you might want. No commitment.',
+    requirementsTitle: 'Your Requirements',
+    requirementsSubtitle: 'Tell us what you need and when you need it.',
+    yourInformationTitle: 'Your Information',
+    yourInformationSubtitle:
+        'Add your name and shipping location so we can prepare your quote.',
+    reviewTitle: 'Review your request',
+    reviewSubtitle:
+        'One last look — then a specialist will quote pricing, lead time, and next steps.',
+    letterheadName: 'PakFactory',
+    letterheadTagline: 'Custom packaging quotes',
+    preparedFor: 'Prepared for',
+    shippedToAddress: 'Shipped to Address',
+    paperEdit: 'Edit',
+    paperBrief: 'Brief',
+    paperQty: 'Qty',
+    paperItem: 'Item',
+    paperConfiguration: 'Configuration',
+    noProductsAdded: 'No products added.',
+    regionToConfirm: 'Region — to confirm',
+    notSet: 'Not set',
+    paperDisclaimer:
+        'This is a request, not a priced quote. A PakFactory specialist reviews your request and returns a full quote — pricing, lead time, and next steps — within one business day.',
+    refLabel: 'Ref',
+    timeFramePrefix: 'Time frame:',
+    packagingPrefix: 'Packaging:',
+    quantityPrefix: 'Quantity:',
+    unitsSuffix: 'units',
+    budgetOnPaper: 'Approximate yearly packaging budget?',
+    specialistToAdvise: 'Specialist to advise',
+
+    quantityLabel: 'Quantity',
+    quantityPlaceholder: 'e.g. 500',
+    quantityHelp: 'Quantities are in multiples of 100.',
+    quantityError: 'Enter a quantity in multiples of 100.',
+    notesLabel: 'Tell us what you\'re packaging and when you need it.',
+    notesPlaceholder:
+        'What you\'re launching and what matters most across these items.',
+    timelineLabel: 'Time frame',
+    timelinePlaceholder: 'e.g. Need quote by Sept 15 — Ship by mid-October',
+    annualSpendLabel: 'Approximate yearly packaging budget?',
+    shipToLabel: 'Where should this ship to?',
+    addFilesLabel: 'Add files',
+    additionalFilesLabel:
+        'Do you have additional files you want to send to us?',
+    filesDropTitle: 'Drop artwork, dielines or product photos',
+    filesExpressDropTitle: 'Drop dielines, artwork, PDFs, or product photos',
+
+    contactHeading: 'Your Information',
+    contactDesc: 'Name and work email to start. The rest is optional.',
+    firstName: 'First name',
+    lastName: 'Last name',
+    workEmail: 'Work email',
+    phone: 'Phone',
+    company: 'Company',
+    industry: 'Industry',
+    companyOffice: 'Company office address',
+    companyOfficeOptional: 'optional',
+
+    reviewPaperBadge: 'Quote request',
+    requestSummary: 'Request summary',
+    productsCountOne: '1 product',
+    productsCountMany: '{n} products',
+    noProductsCount: 'No products',
+    requestAQuote: 'Request a quote',
+    submitFootnote: 'Our specialist will be in contact with a quote.',
+    submitting: 'Submitting…',
+    submitHelperContact:
+        'Add your name and shipping location to submit request.',
+    submitHelperExpress:
+        'Add what you\'re packaging, a quantity, your name, and shipping location to submit request.',
+
+    quoteRequested: 'Quote requested',
+    quoteRequestedBody:
+        'Thanks — a PakFactory specialist will review your request and follow up with your quote within one business day.',
+    keepBrowsing: 'Keep browsing products',
+    backToYourRequest: 'Back to Your Request',
+
+    assistTitle: 'Have a document already? Let us fill this in.',
+    assistBody:
+        'Drop a spec sheet or RFQ (PDF, DOC, or image) and we\'ll pre-fill the fields for you to review.',
+    uploadDocument: 'Upload a document',
+    tryASample: 'Try a sample',
+    assistDonePrefix: 'Pre-filled from',
+    assistDoneSuffix: '— please review the fields below.',
+    useDifferentDocument: 'Use a different document',
+    assistReading: 'and pulling out the details…',
+
+    browseProducts: 'Browse products',
+    addProductsCta: 'Add products from the catalog',
+    expandProductsCta: 'Add products to this request',
+    removeLine: 'Remove',
+    noProductsYet: 'No products on this request yet.',
+    signIn: 'Sign in',
+
+    leaveTitle: 'Save as draft?',
+    leaveBody:
+        'Save this request so you can pick up where you left off, or discard and return.',
+    leaveSave: 'Save draft',
+    leaveDiscard: 'Discard',
+    leaveCancel: 'Cancel',
+
+    startBuilder: 'Continue your request',
+    startExpress: 'Get a quote',
+    entryExpress: 'Requirements Only Quote (Express)',
+    entryProducts: 'Product Only Quote',
+    entryServices: 'Service Only Quote',
+    continueRequest: 'Continue your request',
+    productsUpsellTitle: 'Products',
+    productsUpsellSubtitle: 'Optional — add catalog products to this quote.',
+    yourRequestHeading: 'Your Request',
+    yourRequestStub:
+        'Choose how you want to start — or continue a request in progress.',
 } as const;
+
+export const SERVICE_OPTIONS = [
+    {id: 'design', label: 'Packaging Design'},
+    {id: 'structural', label: 'Structural / Dieline Engineering'},
+    {id: 'sourcing', label: 'Sourcing'},
+    {id: 'fulfilment', label: 'Fulfilment'},
+] as const;
+
+export const INDUSTRY_OPTIONS = [
+    'Food & Beverage',
+    'Beauty & Personal Care',
+    'Health & Wellness',
+    'Cannabis',
+    'Electronics',
+    'Apparel & Accessories',
+    'Home & Lifestyle',
+    'Other',
+] as const;

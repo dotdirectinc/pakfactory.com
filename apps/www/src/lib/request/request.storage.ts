@@ -33,11 +33,81 @@ export type AddLineInput = {
     referenceImages?: RequestReferenceImage[];
 };
 
-const EMPTY_LINES: RequestLine[] = [];
+export type ShippingAddress = {
+    id?: string;
+    label?: string;
+    line1?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    postalCode?: string;
+};
+
+export type RequestEntryKind = 'express' | 'products' | 'services';
+
+export type RequestDraft = {
+    title?: string;
+    notes: string;
+    timeline: string;
+    packagingContents: string;
+    expressQuantity: string;
+    annualSpend: string;
+    shippingAddress: ShippingAddress | null;
+    companyAddress: ShippingAddress | null;
+    contactFirstName: string;
+    contactLastName: string;
+    contactEmail: string;
+    contactPhone: string;
+    contactCompany: string;
+    contactIndustry: string;
+    services: string[];
+    servicesEnabled: boolean;
+    express: boolean;
+    productsExpanded: boolean;
+    entryKind: RequestEntryKind;
+    artworkNames: string[];
+    submittedAt: string | null;
+    ref: string | null;
+};
+
+export type RequestState = {
+    lines: RequestLine[];
+    draft: RequestDraft;
+};
+
+export const EMPTY_DRAFT: RequestDraft = {
+    notes: '',
+    timeline: '',
+    packagingContents: '',
+    expressQuantity: '',
+    annualSpend: '',
+    shippingAddress: null,
+    companyAddress: null,
+    contactFirstName: '',
+    contactLastName: '',
+    contactEmail: '',
+    contactPhone: '',
+    contactCompany: '',
+    contactIndustry: '',
+    services: [],
+    servicesEnabled: false,
+    express: false,
+    productsExpanded: false,
+    entryKind: 'products',
+    artworkNames: [],
+    submittedAt: null,
+    ref: null,
+};
+
+const EMPTY_STATE: RequestState = {
+    lines: [],
+    draft: EMPTY_DRAFT,
+};
+
 const listeners = new Set<() => void>();
 
 let cachedRaw: string | null | undefined;
-let cachedLines: RequestLine[] = EMPTY_LINES;
+let cachedState: RequestState = EMPTY_STATE;
 
 function isRequestLine(value: unknown): value is RequestLine {
     if (!value || typeof value !== 'object') return false;
@@ -51,15 +121,98 @@ function isRequestLine(value: unknown): value is RequestLine {
     );
 }
 
-function parseLines(raw: string | null): RequestLine[] {
-    if (!raw) return EMPTY_LINES;
+function asString(value: unknown, fallback = ''): string {
+    return typeof value === 'string' ? value : fallback;
+}
+
+function asBool(value: unknown, fallback = false): boolean {
+    return typeof value === 'boolean' ? value : fallback;
+}
+
+function parseShipping(value: unknown): ShippingAddress | null {
+    if (!value || typeof value !== 'object') return null;
+    const a = value as ShippingAddress;
+    return {
+        ...(typeof a.id === 'string' ? {id: a.id} : {}),
+        ...(typeof a.label === 'string' ? {label: a.label} : {}),
+        ...(typeof a.line1 === 'string' ? {line1: a.line1} : {}),
+        ...(typeof a.city === 'string' ? {city: a.city} : {}),
+        ...(typeof a.region === 'string' ? {region: a.region} : {}),
+        ...(typeof a.country === 'string' ? {country: a.country} : {}),
+        ...(typeof a.postalCode === 'string' ? {postalCode: a.postalCode} : {}),
+    };
+}
+
+
+function parseEntryKind(
+    value: unknown,
+    express: boolean,
+    productsExpanded: boolean,
+): RequestEntryKind {
+    if (value === 'express' || value === 'products' || value === 'services') {
+        return value;
+    }
+    if (express) return 'express';
+    return productsExpanded || true ? 'products' : 'products';
+}
+
+function parseDraft(value: unknown): RequestDraft {
+    if (!value || typeof value !== 'object') return {...EMPTY_DRAFT};
+    const d = value as Partial<RequestDraft>;
+    return {
+        ...EMPTY_DRAFT,
+        title: typeof d.title === 'string' ? d.title : undefined,
+        notes: asString(d.notes),
+        timeline: asString(d.timeline),
+        packagingContents: asString(d.packagingContents),
+        expressQuantity: asString(d.expressQuantity),
+        annualSpend: asString(d.annualSpend),
+        shippingAddress: parseShipping(d.shippingAddress),
+        companyAddress: parseShipping(d.companyAddress),
+        contactFirstName: asString(d.contactFirstName),
+        contactLastName: asString(d.contactLastName),
+        contactEmail: asString(d.contactEmail),
+        contactPhone: asString(d.contactPhone),
+        contactCompany: asString(d.contactCompany),
+        contactIndustry: asString(d.contactIndustry),
+        services: Array.isArray(d.services)
+            ? d.services.filter((s): s is string => typeof s === 'string')
+            : [],
+        servicesEnabled: asBool(d.servicesEnabled),
+        express: asBool(d.express),
+        productsExpanded: asBool(d.productsExpanded),
+        entryKind: parseEntryKind(d.entryKind, asBool(d.express), asBool(d.productsExpanded)),
+        artworkNames: Array.isArray(d.artworkNames)
+            ? d.artworkNames.filter((s): s is string => typeof s === 'string')
+            : [],
+        submittedAt:
+            typeof d.submittedAt === 'string' || d.submittedAt === null
+                ? d.submittedAt
+                : null,
+        ref: typeof d.ref === 'string' || d.ref === null ? d.ref : null,
+    };
+}
+
+function parseState(raw: string | null): RequestState {
+    if (!raw) return EMPTY_STATE;
     try {
         const parsed: unknown = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return EMPTY_LINES;
-        const lines = parsed.filter(isRequestLine);
-        return lines.length ? lines : EMPTY_LINES;
+        // Legacy: bare array of lines (PROD-2342).
+        if (Array.isArray(parsed)) {
+            const lines = parsed.filter(isRequestLine);
+            return {
+                lines: lines.length ? lines : [],
+                draft: {...EMPTY_DRAFT, productsExpanded: lines.length > 0},
+            };
+        }
+        if (!parsed || typeof parsed !== 'object') return EMPTY_STATE;
+        const obj = parsed as {lines?: unknown; draft?: unknown};
+        const lines = Array.isArray(obj.lines)
+            ? obj.lines.filter(isRequestLine)
+            : [];
+        return {lines, draft: parseDraft(obj.draft)};
     } catch {
-        return EMPTY_LINES;
+        return EMPTY_STATE;
     }
 }
 
@@ -72,16 +225,34 @@ function emit() {
     for (const listener of listeners) listener();
 }
 
-export function getRequestSnapshot(): RequestLine[] {
-    const raw = readRaw();
-    if (raw === cachedRaw) return cachedLines;
+function persist(state: RequestState): void {
+    if (typeof window === 'undefined') return;
+    const raw = JSON.stringify(state);
+    window.localStorage.setItem(REQUEST_STORAGE_KEY, raw);
     cachedRaw = raw;
-    cachedLines = parseLines(raw);
-    return cachedLines;
+    cachedState = state;
+    emit();
+}
+
+export function getRequestStateSnapshot(): RequestState {
+    const raw = readRaw();
+    if (raw === cachedRaw) return cachedState;
+    cachedRaw = raw;
+    cachedState = parseState(raw);
+    return cachedState;
+}
+
+export function getRequestStateServerSnapshot(): RequestState {
+    return EMPTY_STATE;
+}
+
+/** @deprecated Prefer getRequestStateSnapshot().lines */
+export function getRequestSnapshot(): RequestLine[] {
+    return getRequestStateSnapshot().lines;
 }
 
 export function getRequestServerSnapshot(): RequestLine[] {
-    return EMPTY_LINES;
+    return [];
 }
 
 export function subscribeRequest(onStoreChange: () => void): () => void {
@@ -97,13 +268,13 @@ export function subscribeRequest(onStoreChange: () => void): () => void {
     };
 }
 
+export function saveRequestState(state: RequestState): void {
+    persist(state);
+}
+
 export function saveRequestLines(lines: RequestLine[]): void {
-    if (typeof window === 'undefined') return;
-    const raw = JSON.stringify(lines);
-    window.localStorage.setItem(REQUEST_STORAGE_KEY, raw);
-    cachedRaw = raw;
-    cachedLines = lines;
-    emit();
+    const current = getRequestStateSnapshot();
+    persist({...current, lines});
 }
 
 export function createRequestLine(input: AddLineInput): RequestLine {
@@ -127,6 +298,122 @@ export function createRequestLine(input: AddLineInput): RequestLine {
 
 export function addRequestLine(input: AddLineInput): RequestLine {
     const line = createRequestLine(input);
-    saveRequestLines([...getRequestSnapshot(), line]);
+    const current = getRequestStateSnapshot();
+    persist({
+        lines: [...current.lines, line],
+        draft: {
+            ...current.draft,
+            productsExpanded: true,
+            express: current.draft.express,
+        },
+    });
     return line;
+}
+
+export function removeRequestLine(lineId: string): void {
+    const current = getRequestStateSnapshot();
+    persist({
+        ...current,
+        lines: current.lines.filter((line) => line.id !== lineId),
+    });
+}
+
+export function updateRequestDraft(patch: Partial<RequestDraft>): RequestDraft {
+    const current = getRequestStateSnapshot();
+    const draft = {...current.draft, ...patch};
+    persist({...current, draft});
+    return draft;
+}
+
+export function expandRequestProducts(): void {
+    updateRequestDraft({productsExpanded: true});
+}
+
+export function resetExpressDraft(): void {
+    const current = getRequestStateSnapshot();
+    persist({
+        lines: current.lines,
+        draft: {
+            ...EMPTY_DRAFT,
+            productsExpanded: current.lines.length > 0,
+        },
+    });
+}
+
+export function startExpressDraft(): void {
+    persist({
+        lines: [],
+        draft: {
+            ...EMPTY_DRAFT,
+            express: true,
+            productsExpanded: false,
+            entryKind: 'express',
+            servicesEnabled: false,
+            title: defaultDraftTitle(),
+        },
+    });
+}
+
+export function ensureBuilderDraft(
+    opts?: {express?: boolean; mode?: RequestEntryKind},
+): void {
+    const current = getRequestStateSnapshot();
+    const mode: RequestEntryKind =
+        opts?.mode ??
+        (opts?.express ? 'express' : 'products');
+
+    if (mode === 'express') {
+        if (
+            current.draft.entryKind !== 'express' ||
+            !current.draft.express ||
+            current.draft.submittedAt
+        ) {
+            startExpressDraft();
+        }
+        return;
+    }
+
+    if (mode === 'services') {
+        const base = current.draft.submittedAt
+            ? {...EMPTY_DRAFT}
+            : {...current.draft};
+        persist({
+            lines: current.draft.submittedAt ? [] : current.lines,
+            draft: {
+                ...base,
+                express: false,
+                entryKind: 'services',
+                productsExpanded: false,
+                servicesEnabled: true,
+                title: base.title || defaultDraftTitle(),
+                submittedAt: null,
+                ref: null,
+            },
+        });
+        return;
+    }
+
+    // products entry
+    persist({
+        ...current,
+        draft: {
+            ...current.draft,
+            express: false,
+            entryKind: 'products',
+            productsExpanded: true,
+            servicesEnabled: current.draft.servicesEnabled,
+            title: current.draft.title || defaultDraftTitle(),
+            ...(current.draft.submittedAt
+                ? {submittedAt: null, ref: null}
+                : {}),
+        },
+    });
+}
+
+export function defaultDraftTitle(date = new Date()): string {
+    return `Draft request - ${date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    })}`;
 }
