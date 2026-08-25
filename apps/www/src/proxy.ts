@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import {
   buildRuleset,
   resolveRedirect,
@@ -189,7 +190,58 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  return NextResponse.next();
+  return withSession(req);
+}
+
+/**
+ * Refresh the Supabase session and carry the rotated cookies onto the response.
+ *
+ * ORDER MATTERS, and it is the reason this runs LAST rather than first.
+ * Supabase ROTATES the refresh token: a successful refresh invalidates the old
+ * one and issues a new pair via Set-Cookie. If we refreshed and then returned a
+ * redirect that dropped those cookies, the browser would keep a token the server
+ * has already retired — silently signing the buyer out on the next request. So
+ * the lockdown redirect (PROD-2207) and CMS redirect resolution (PROD-2157) each
+ * get their chance to return first, and the session is only touched on the path
+ * that actually returns `next()` and can carry Set-Cookie.
+ *
+ * getUser(), not getSession(): getSession trusts the cookie as-is, while getUser
+ * revalidates it against the auth server. In a proxy that difference is the whole
+ * point — a forged or stale cookie must not look like a live session.
+ *
+ * If the Supabase env is absent this is a no-op returning a plain `next()`, so
+ * the case-study surface behaves exactly as it did before auth existed.
+ */
+async function withSession(req: NextRequest): Promise<NextResponse> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return NextResponse.next();
+
+  let res = NextResponse.next({ request: req });
+
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return req.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        // Write to the REQUEST too, so a Server Component rendering later in this
+        // same pass reads the refreshed token rather than the one it arrived with.
+        for (const { name, value } of cookiesToSet) req.cookies.set(name, value);
+        res = NextResponse.next({ request: req });
+        for (const { name, value, options } of cookiesToSet) {
+          res.cookies.set(name, value, options);
+        }
+      },
+    },
+  });
+
+  // Triggers the refresh when the access token is near expiry. Deliberately does
+  // NOT gate anything: route protection is a separate concern and belongs with
+  // the routes, not in the redirect proxy.
+  await supabase.auth.getUser();
+
+  return res;
 }
 
 export const config = {
