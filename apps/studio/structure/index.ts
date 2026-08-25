@@ -38,12 +38,6 @@ import {
     BLOG_CONTRIBUTE_PAGE_IDS,
 } from '../lib/languages';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FEATURE FLAG
-// Set to false to revert all workspaces to Global Settings only.
-// ─────────────────────────────────────────────────────────────────────────────
-const WORKSPACE_SETTINGS = true;
-
 /** Flip true when design ships landing/static Studio lists (ADR-009 Studio UX gate). */
 const BLOG_STUDIO_LANDING_PAGES = false;
 
@@ -780,19 +774,6 @@ export function knowledgeLibraryItems(
                                                 ).title('Customization Types'),
                                             ),
                                         S.listItem()
-                                            .title('Option Groups')
-                                            .schemaType('optionGroup')
-                                            .child(
-                                                S.documentTypeList('optionGroup')
-                                                    .title('Option Groups')
-                                                    .defaultOrdering([
-                                                        {
-                                                            field: 'title',
-                                                            direction: 'asc',
-                                                        },
-                                                    ]),
-                                            ),
-                                        S.listItem()
                                             .title('Attribute Groups')
                                             .schemaType('property')
                                             .child(
@@ -1253,84 +1234,12 @@ export function coreEntitiesItems(
                                       .child(
                                           S.editor()
                                               .id('caseStudiesPage')
-                                              .schemaType('caseStudiesPage')
+                                              .schemaType('listingPage')
                                               .documentId('caseStudiesPage'),
                                       ),
                               ]),
                       ),
               ]),
-    ];
-}
-
-export function staticPagesItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider(),
-
-        // Collapsed into a single expandable item so panel 1 stays a constant
-        // length as more pages are added. Grouped by purpose inside the panel.
-        S.listItem()
-            .title('Static Pages')
-            .icon(DocumentTextIcon)
-            .child(
-                S.list()
-                    .title('Static Pages')
-                    .items([
-                        S.divider().title('Company'),
-
-                        S.listItem()
-                            .title('About Us')
-                            .icon(UserIcon)
-                            .child(
-                                S.editor()
-                                    .id('aboutPage')
-                                    .schemaType('aboutPage')
-                                    .documentId('aboutPage'),
-                            ),
-
-                        S.listItem()
-                            .title('Contact Us')
-                            .icon(EnvelopeIcon)
-                            .child(
-                                S.editor()
-                                    .id('contactPage')
-                                    .schemaType('contactPage')
-                                    .documentId('contactPage'),
-                            ),
-
-                        S.divider().title('Legal'),
-
-                        S.listItem()
-                            .title('Privacy Policy')
-                            .icon(LockIcon)
-                            .child(
-                                S.editor()
-                                    .id('privacyPolicy')
-                                    .schemaType('privacyPolicy')
-                                    .documentId('privacyPolicy'),
-                            ),
-
-                        S.listItem()
-                            .title('Terms of Service')
-                            .icon(DocumentTextIcon)
-                            .child(
-                                S.editor()
-                                    .id('termsOfService')
-                                    .schemaType('termsOfService')
-                                    .documentId('termsOfService'),
-                            ),
-
-                        // ── Long tail of narrative/marketing pages ──────────────────────────
-                        // When the generic `page` builder ships, surface it here:
-                        // S.divider().title('Marketing'),
-                        // S.listItem()
-                        //   .title('Pages')
-                        //   .icon(DocumentsIcon)
-                        //   .schemaType('page')
-                        //   .child(S.documentTypeList('page').title('Pages')),
-                    ]),
-            ),
     ];
 }
 
@@ -1423,17 +1332,6 @@ export function resourcesItems(
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
 
-        // ── Help Desk ─────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Help Desk')
-            .icon(HelpCircleIcon)
-            .schemaType('helpArticle')
-            .child(
-                S.documentTypeList('helpArticle')
-                    .title('Help Articles')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
-            ),
-
     ];
 }
 
@@ -1449,28 +1347,12 @@ export function settingsItems(
     context: StructureResolverContext,
     options: SettingsOptions = {},
 ): (ListItemBuilder | DividerBuilder)[] {
-    const showSolutions = WORKSPACE_SETTINGS && options.solutions;
-
     return [
         S.divider().title('Settings'),
 
         ...(options.media ? [mediaLibraryItem(S)] : []),
 
         redirectsDeskItem(S, context),
-
-        ...(showSolutions
-            ? [
-                  S.listItem()
-                      .title('Solutions Settings')
-                      .icon(CogIcon)
-                      .child(
-                          S.editor()
-                              .id('solutionsSettings')
-                              .schemaType('solutionsSettings')
-                              .documentId('solutionsSettings'),
-                      ),
-              ]
-            : []),
 
         S.listItem()
             .title('Global Settings')
@@ -1528,7 +1410,6 @@ export const websiteStructure = (
                 // Website workspace. TODO: drop the "Core Pages" label later.
                 label: 'Core Pages',
             }),
-            ...staticPagesItems(S),
             mediaLibraryItem(S),
             ...settingsItems(S, context),
         ]);
@@ -1613,10 +1494,6 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
             .title('Options')
             .schemaType('customizationOption')
             .child(S.documentTypeList('customizationOption').title('Customization Options')),
-        S.listItem()
-            .title('Option Groups')
-            .schemaType('optionGroup')
-            .child(S.documentTypeList('optionGroup').title('Option Groups')),
         S.divider().title('Global'),
         ...propertyGlobalItems(S),
     ];
@@ -1672,7 +1549,7 @@ export function caseStudiesItems(S: StructureBuilder): (ListItemBuilder | Divide
             .title('Case Studies Page')
             .icon(CogIcon)
             .child(
-                S.editor().id('caseStudiesPage').schemaType('caseStudiesPage').documentId('caseStudiesPage'),
+                S.editor().id('caseStudiesPage').schemaType('listingPage').documentId('caseStudiesPage'),
             ),
     ];
 }
@@ -1735,12 +1612,6 @@ export const solutionsWorkspaceStructure = (
                         .title('Solutions')
                         .defaultOrdering([{field: 'internalTitle', direction: 'asc'}]),
                 ),
-            S.listItem()
-                .title('Solutions Settings')
-                .icon(CogIcon)
-                .child(
-                    S.editor().id('solutionsSettings').schemaType('solutionsSettings').documentId('solutionsSettings'),
-                ),
         ]);
 
 /** Expertise workspace (PROD-2330 / D2) — Expertise Stage today; Expertise
@@ -1756,6 +1627,10 @@ export const expertiseStructure = (
                 .title('Expertise Stages')
                 .schemaType('expertiseStage')
                 .child(S.documentTypeList('expertiseStage').title('Expertise Stages')),
+            S.listItem()
+                .title('Expertise Services')
+                .schemaType('expertiseService')
+                .child(S.documentTypeList('expertiseService').title('Expertise Services')),
         ]);
 
 /** Resources workspace (PROD-2330 / D2) — the built types today (Glossary Term ·
@@ -1768,6 +1643,16 @@ export const resourcesWorkspaceStructure = (
         .title('Resources')
         .items([
             S.listItem()
+                .title('FAQs')
+                .icon(HelpCircleIcon)
+                .schemaType('faq')
+                .child(S.documentTypeList('faq').title('FAQs')),
+            S.listItem()
+                .title('Help Categories')
+                .icon(FolderIcon)
+                .schemaType('helpCategory')
+                .child(S.documentTypeList('helpCategory').title('Help Categories')),
+            S.listItem()
                 .title('Glossary Terms')
                 .schemaType('glossaryTerm')
                 .child(S.documentTypeList('glossaryTerm').title('Glossary Terms')),
@@ -1776,9 +1661,10 @@ export const resourcesWorkspaceStructure = (
                 .schemaType('guide')
                 .child(S.documentTypeList('guide').title('Guides')),
             S.listItem()
-                .title('Help Articles')
-                .schemaType('helpArticle')
-                .child(S.documentTypeList('helpArticle').title('Help Articles')),
+                .title('Dielines')
+                .icon(DocumentsIcon)
+                .schemaType('dieline')
+                .child(S.documentTypeList('dieline').title('Dielines')),
         ]);
 
 /** Main Website workspace (PROD-2330 / D2) — the pages no content area owns.
@@ -1791,22 +1677,32 @@ export const mainWebsiteStructure = (
     S.list()
         .title('Main Website')
         .items([
+            // Platform pages (PROD-2292) — four shared types. The old static
+            // singletons (aboutPage/contactPage/privacyPolicy/termsOfService)
+            // folded into Content Page / Legal Page and were removed in pt 3.
             S.listItem()
-                .title('About Page')
-                .icon(CogIcon)
-                .child(S.editor().id('aboutPage').schemaType('aboutPage').documentId('aboutPage')),
+                .title('Home Page')
+                .icon(HomeIcon)
+                .child(S.editor().id('homePage').schemaType('homePage').documentId('homePage')),
             S.listItem()
-                .title('Contact Page')
-                .icon(CogIcon)
-                .child(S.editor().id('contactPage').schemaType('contactPage').documentId('contactPage')),
+                .title('Listing Pages')
+                .icon(ThLargeIcon)
+                .schemaType('listingPage')
+                .child(S.documentTypeList('listingPage').title('Listing Pages')),
             S.listItem()
-                .title('Privacy Policy')
-                .icon(CogIcon)
-                .child(S.editor().id('privacyPolicy').schemaType('privacyPolicy').documentId('privacyPolicy')),
+                .title('Content Pages')
+                .icon(DocumentTextIcon)
+                .schemaType('contentPage')
+                .child(S.documentTypeList('contentPage').title('Content Pages')),
             S.listItem()
-                .title('Terms of Service')
-                .icon(CogIcon)
-                .child(S.editor().id('termsOfService').schemaType('termsOfService').documentId('termsOfService')),
+                .title('Legal Pages')
+                .icon(LockIcon)
+                .schemaType('legalPage')
+                .child(S.documentTypeList('legalPage').title('Legal Pages')),
+            S.listItem()
+                .title('Navigation')
+                .icon(ThLargeIcon)
+                .child(S.editor().id('websiteNavigation').schemaType('websiteNavigation').documentId('websiteNavigation')),
         ]);
 
 // The "All Content" catch-all structure was removed with its workspace (D39

@@ -23,11 +23,12 @@ const INDEXNOW_HOST = "pakfactory.com";
  * filtered to every type a case-studies page renders:
  *
  *   _type in [
- *     "caseStudy", "caseStudiesPage", "client",
+ *     "caseStudy", "listingPage", "client",
  *     "solution", "productLine", "expertiseStage", "customizationOption"
  *   ]
  *
- * `caseStudy` = the studies; `caseStudiesPage` = listing SEO/hero + per-detail CTA;
+ * `caseStudy` = the studies; `listingPage` = the case-studies listing settings doc
+ * (id `caseStudiesPage`, consolidated onto the shared listingPage type in PROD-2292);
  * `client` = card/detail client name+logo+industry; the four taxonomies =
  * products / expertise / customization / industry chips shown on cards + detail.
  *
@@ -45,7 +46,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  */
 const CASE_STUDY_TYPES = new Set([
   "caseStudy",
-  "caseStudiesPage",
+  "listingPage",
   "client",
   "solution",
   "productLine",

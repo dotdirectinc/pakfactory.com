@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { uniqueSlugAcross } from '../lib/slug-rules'
 
 export const property = defineType({
   name: 'property',
@@ -20,9 +21,10 @@ export const property = defineType({
       title: 'Slug',
       type: 'slug',
       group: 'content',
-      description: 'URL-safe identifier from the title; used to scope which values a Customization Type may declare.',
+      description:
+        'URL-safe identifier from the title; used to scope which values a Customization Type may declare. Load-bearing — Studio picker filters resolve against it, so change it deliberately.',
       options: { source: 'title' },
-      validation: (Rule) => Rule.required(),
+      validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['property'])),
     }),
     defineField({
       name: 'description',
@@ -33,20 +35,46 @@ export const property = defineType({
       description: 'One sentence on what this property captures, for the content team.',
     }),
     defineField({
+      name: 'cardinality',
+      title: 'Values per document',
+      type: 'string',
+      group: 'content',
+      description:
+        'Does a document hold ONE value of this property, or MANY? Shape is one; Structural Features are many. Intrinsic to the property, so it is never restated per line or per type.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'One', value: 'one' },
+          { title: 'Many', value: 'many' },
+        ],
+      },
+      initialValue: 'one',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
       name: 'order',
       title: 'Display order',
       type: 'number',
       group: 'content',
       description: 'Lower numbers sort first where properties are listed.',
+      // Retiring (§4.3). Ordering moves to an ordered array on the listing/nav
+      // singleton (PROD-2292); kept read-only until that array exists and the
+      // values migrate, so no ordering data is lost in the interim.
+      deprecated: {
+        reason: 'Ordering moves to an ordered array on the listing/nav singleton (PROD-2292).',
+      },
     }),
   ],
   preview: {
-    select: { title: 'title', order: 'order' },
-    prepare({ title, order }) {
-      return { title, subtitle: order !== undefined ? `Order: ${order}` : '' }
+    select: { title: 'title', cardinality: 'cardinality' },
+    prepare({ title, cardinality }) {
+      return {
+        title,
+        subtitle: cardinality === 'many' ? 'Many values per document' : 'One value per document',
+      }
     },
   },
   orderings: [
-    { title: 'Display order', name: 'orderAsc', by: [{ field: 'order', direction: 'asc' }] },
+    { title: 'Title (A–Z)', name: 'titleAsc', by: [{ field: 'title', direction: 'asc' }] },
   ],
 })

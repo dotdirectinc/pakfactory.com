@@ -18,17 +18,19 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'page',
   'product',
   'solution',
+  'expertiseStage',
   'caseStudy',
   'customizationCategory',
   // Resources
   'guide',
   'glossaryTerm',
-  'helpArticle',
-  // Static singletons (fixed routes)
-  'aboutPage',
-  'contactPage',
-  'privacyPolicy',
-  'termsOfService',
+  'helpCategory',
+  'dieline',
+  // Shared page types (PROD-2292) — home, listings, company pages, legal pages
+  'homePage',
+  'listingPage',
+  'contentPage',
+  'legalPage',
 ] as const
 
 export type LinkableDocumentType = (typeof LINKABLE_DOCUMENT_TYPES)[number]

@@ -2,7 +2,6 @@ import { customizationCategory } from './customizationCategory'
 import { socialLink } from '../lib/social-link-schema'
 import { customizationType } from './customizationType'
 import { customizationOption } from './customizationOption'
-import { optionGroup } from './optionGroup'
 import { property } from './property'
 import { propertyValue } from './propertyValue'
 import { productLine } from './productLine'
@@ -18,12 +17,15 @@ import { inlineBlocks, caseStudyInlineBlocks } from './inline'
 import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
-import { aboutPage, contactPage, privacyPolicy, termsOfService } from './staticPages'
 import { expertiseStage } from './expertiseStage'
+import { expertiseService } from './expertiseService'
 import { client } from './client'
 import { caseStudy } from './caseStudy'
-import { caseStudiesPage } from './caseStudiesPage'
-import { glossaryTerm, guide, helpArticle } from './resources'
+import { faq } from './faq'
+import { helpCategory } from './helpCategory'
+import { guide } from './guide'
+import { glossaryTerm } from './glossaryTerm'
+import { dieline } from './dieline'
 import { blogNavigation } from './blogNavigation'
 import {
   postSettings,
@@ -33,8 +35,13 @@ import {
   pageSettings,
 } from './blogTypeSettings'
 import { blogPage } from './blogPage'
-import { solutionsSettings } from './solutionsSettings'
 import { page } from './page'
+import { homePage } from './homePage'
+import { listingPage } from './listingPage'
+import { contentPage } from './contentPage'
+import { legalPage } from './legalPage'
+import { websiteSections } from './sections'
+import { websiteNavigation } from './websiteNavigation'
 import { post } from './post'
 import { videoPost } from './videoPost'
 import { redirect } from './redirect'
@@ -55,7 +62,6 @@ export const schemaTypes = [
   customizationCategory,
   customizationType,
   customizationOption,
-  optionGroup,
 
   // Attribute layer
   property,
@@ -72,15 +78,27 @@ export const schemaTypes = [
   // Solutions & Core Entities
   solution,
   expertiseStage,
+  expertiseService,
   client,
   caseStudy,
-  caseStudiesPage,
-  solutionsSettings,
+
+
+  // Platform pages (PROD-2292) — four shared types, semantic IDs
+  homePage,
+  listingPage,
+  contentPage,
+  legalPage,
+
+  // Website section inventory (PROD-2292 pt 2) — presentation-free page sections
+  ...websiteSections,
+  websiteNavigation,
 
   // Resources
-  glossaryTerm,
+  faq,
+  helpCategory,
   guide,
-  helpArticle,
+  dieline,
+  glossaryTerm,
 
   // Editorial
   author,
@@ -113,8 +131,4 @@ export const schemaTypes = [
   authorSettings,
   pageSettings,
   blogPage,
-  aboutPage,
-  contactPage,
-  privacyPolicy,
-  termsOfService,
 ]
