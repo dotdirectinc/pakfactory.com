@@ -1,5 +1,6 @@
 'use client';
 
+import {Badge} from '@pakfactory/ui/components/badge';
 import {Button} from '@pakfactory/ui/components/button';
 
 function GoogleMark({className}: {className?: string}) {
@@ -32,21 +33,49 @@ function GoogleMark({className}: {className?: string}) {
 
 type LoginGoogleButtonProps = {
     label: string;
+    /** Copy for the inline unavailability badge. */
+    comingSoonLabel?: string;
 };
 
-/** UI-only — no OAuth until PROD-1426. */
-export function LoginGoogleButton({label}: LoginGoogleButtonProps) {
+/**
+ * Inert until OAuth is actually in scope.
+ *
+ * PROD-1426 explicitly excludes social/SSO providers, so this renders a control
+ * that cannot work. Shipping it live would be a button that silently does
+ * nothing; hiding it loses the design intent. It is disabled and SAYS SO.
+ *
+ * Three deliberate choices:
+ *
+ *  - `aria-disabled`, not `disabled`. A real `disabled` attribute drops the
+ *    button out of the tab order, so keyboard and screen-reader users meet a
+ *    control they can neither reach nor be told about. This stays focusable and
+ *    announces "Continue with Google, Coming soon" as its accessible name.
+ *  - A VISIBLE badge, not a tooltip. Tooltips need hover, and hover does not
+ *    exist on phones or tablets — a large share of this audience. A tooltip
+ *    would explain the button to desktop users and leave everyone else tapping a
+ *    dead control. (`disabled` would also suppress the hover event entirely.)
+ *  - No click-to-explain popup. Making someone act to discover that acting is
+ *    pointless is the worst of the options.
+ */
+export function LoginGoogleButton({
+    label,
+    comingSoonLabel = 'Coming soon',
+}: LoginGoogleButtonProps) {
     return (
         <Button
             type="button"
             variant="outline"
-            className="h-11 w-full rounded-sm"
-            onClick={() => {
-                /* Auth wiring: PROD-1426 */
-            }}
+            aria-disabled="true"
+            // aria-disabled is advisory only — the handler must actually refuse,
+            // or the control stays clickable for anyone using a mouse.
+            onClick={(event) => event.preventDefault()}
+            className="h-11 w-full cursor-not-allowed rounded-sm opacity-70 hover:bg-background"
         >
             <GoogleMark className="size-4" />
             {label}
+            <Badge variant="secondary" className="ml-1">
+                {comingSoonLabel}
+            </Badge>
         </Button>
     );
 }
