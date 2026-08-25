@@ -48,7 +48,7 @@ silently reverted by the next person who pastes from here.
 | Auth → Rate Limits → **Emails sent per hour** | raised above the default | enabling custom SMTP does not lift Supabase's own cap; the default is a handful per hour |
 | Auth → **Minimum password length** / strength | set deliberately | password is the primary credential now, not a fallback |
 
-A 6-digit code is short, so the rate limit is a **security control** here, not
+The code is short, so the rate limit is a **security control** here, not
 just a throughput setting — it is what makes brute-forcing impractical.
 
 ## Rendering check
@@ -57,3 +57,17 @@ No build step, so preview by opening the file in a browser (the `{{ .Token }}`
 placeholder shows literally) or by sending a real test from the dashboard.
 Email clients ignore external CSS, webfonts, flexbox and grid, which is why these
 are table-based with inline styles.
+
+## Code length is a dashboard setting, not a constant
+
+`.Token` renders whatever length **Auth → Email OTP length** is set to. This
+project currently issues **8** digits.
+
+Nothing in the app may hardcode a length. A `maxLength={6}` on the code input
+silently truncated a pasted code, and Supabase rejected the truncated value with
+`otp_expired` / *"Token has expired or is invalid"* — which reads as an expiry
+problem and points at the email, not at the form. Confirmed against staging via
+`admin/generate_link`: `email_otp` came back as `12227575`.
+
+Note also that Supabase returns that same error for a **wrong** token, not only a
+stale one, so UI copy should never claim "expired" on its own.
