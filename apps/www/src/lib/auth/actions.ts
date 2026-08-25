@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../supabase/server";
 import { mapAuthError } from "./errors";
+import { safeNext } from "./session";
 
 /**
  * Auth server actions (PROD-1426).
@@ -97,7 +98,8 @@ export async function signIn(_prev: ActionState, form: FormData): Promise<Action
     return { error: mapped.message, email };
   }
 
-  redirect("/account");
+  // Resume wherever the gate interrupted them, not a fixed landing page.
+  redirect(safeNext(String(form.get("next") ?? "") || undefined));
 }
 
 export async function requestPasswordReset(

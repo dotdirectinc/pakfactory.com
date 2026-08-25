@@ -3,6 +3,7 @@ import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {AuthCard} from '@/components/auth/auth-card';
 import {AuthField} from '@/components/auth/auth-field';
 import {AuthForm} from '@/components/auth/auth-form';
+import Link from 'next/link';
 import {resendCode, verifyEmail} from '@/lib/auth/actions';
 
 export const metadata: Metadata = {
@@ -35,7 +36,23 @@ export default async function VerifyPage({
             }
         >
             <AuthForm action={verifyEmail} submitLabel="Confirm">
-                <input type="hidden" name="email" value={email} />
+                {/*
+                  Without ?email= this page used to be a dead end: the hidden field
+                  was empty, so both buttons failed with "Enter your email first"
+                  and there was nothing to type into. Landing here directly is not
+                  exotic — it happens on a bookmark, a reload after the query is
+                  stripped, or a link shared between devices.
+                */}
+                {email ? (
+                    <input type="hidden" name="email" value={email} />
+                ) : (
+                    <AuthField
+                        name="email"
+                        label="Email"
+                        type="email"
+                        autoComplete="username"
+                    />
+                )}
                 <AuthField
                     name="token"
                     label="Code"
@@ -53,8 +70,24 @@ export default async function VerifyPage({
             {/* Separate form: resending must not submit the code field, and a
                 nested form is invalid HTML. */}
             <AuthForm action={resendCode} submitLabel="Send a new code">
-                <input type="hidden" name="email" value={email} />
+                {email ? (
+                    <input type="hidden" name="email" value={email} />
+                ) : (
+                    <AuthField
+                        name="email"
+                        label="Email"
+                        type="email"
+                        autoComplete="username"
+                    />
+                )}
             </AuthForm>
+
+            <p className="text-muted-foreground text-sm">
+                Already confirmed?{' '}
+                <Link href="/login" className="underline">
+                    Sign in
+                </Link>
+            </p>
         </AuthCard>
     );
 }

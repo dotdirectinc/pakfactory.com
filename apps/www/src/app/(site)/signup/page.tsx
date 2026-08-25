@@ -4,14 +4,20 @@ import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {AuthCard} from '@/components/auth/auth-card';
 import {AuthField} from '@/components/auth/auth-field';
 import {AuthForm} from '@/components/auth/auth-form';
+import {redirect} from 'next/navigation';
 import {signUp} from '@/lib/auth/actions';
+import {getUser} from '@/lib/auth/session';
 
 export const metadata: Metadata = {
     title: 'Create an account',
     robots: robotsDirectiveToMetadata({index: false, follow: false}),
 };
 
-export default function SignupPage() {
+export default async function SignupPage() {
+    if (await getUser()) {
+        redirect('/account');
+    }
+
     return (
         <AuthCard
             title="Create an account"

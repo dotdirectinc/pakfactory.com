@@ -4,7 +4,9 @@ import {robotsDirectiveToMetadata} from '@/lib/seo';
 import {AuthCard} from '@/components/auth/auth-card';
 import {AuthField} from '@/components/auth/auth-field';
 import {AuthForm} from '@/components/auth/auth-form';
+import {redirect} from 'next/navigation';
 import {signIn} from '@/lib/auth/actions';
+import {getUser, safeNext} from '@/lib/auth/session';
 
 /**
  * Every auth page sets robots explicitly rather than leaning on the root layout's
@@ -27,10 +29,17 @@ const CALLBACK_ERRORS: Record<string, string> = {
 export default async function LoginPage({
     searchParams,
 }: {
-    searchParams: Promise<{error?: string}>;
+    searchParams: Promise<{error?: string; next?: string}>;
 }) {
-    const {error} = await searchParams;
+    const {error, next} = await searchParams;
     const notice = error ? CALLBACK_ERRORS[error] : undefined;
+    const destination = safeNext(next);
+
+    // Already signed in: showing a sign-in form to someone who is signed in is a
+    // dead end that invites them to re-enter credentials for no reason.
+    if (await getUser()) {
+        redirect(destination);
+    }
 
     return (
         <AuthCard
@@ -52,6 +61,9 @@ export default async function LoginPage({
             ) : null}
 
             <AuthForm action={signIn} submitLabel="Sign in">
+                {/* Carries the gate's return-to through the POST, so signing in
+                    resumes the journey rather than landing on /account. */}
+                <input type="hidden" name="next" value={destination} />
                 <AuthField name="email" label="Email" type="email" autoComplete="username" />
                 <AuthField
                     name="password"
