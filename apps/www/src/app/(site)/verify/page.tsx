@@ -30,8 +30,8 @@ export default async function VerifyPage({
             title="Confirm your email"
             description={
                 email
-                    ? `Enter the 6-digit code we sent to ${email}.`
-                    : 'Enter the 6-digit code we emailed you.'
+                    ? `Enter the code we sent to ${email}.`
+                    : 'Enter the code we emailed you.'
             }
         >
             <AuthForm action={verifyEmail} submitLabel="Confirm">
@@ -41,7 +41,11 @@ export default async function VerifyPage({
                     label="Code"
                     autoComplete="one-time-code"
                     inputMode="numeric"
-                    maxLength={6}
+                    // Deliberately NOT capped at 6. Supabase's OTP length is a
+                    // dashboard setting — this project issues EIGHT digits — and a
+                    // maxLength of 6 silently truncated the pasted code, which
+                    // Supabase then rejected as "expired". The input must not
+                    // encode an assumption the dashboard owns.
                     hint="The code expires in one hour."
                 />
             </AuthForm>

@@ -58,17 +58,15 @@ export function mapAuthError(err: unknown): MappedAuthError {
     };
   }
 
-  if (has("expired", "otp_expired")) {
-    return {
-      kind: "code_expired",
-      message: "That code has expired. Request a new one.",
-    };
-  }
-
-  if (has("invalid otp", "token has invalid", "otp_invalid", "invalid token")) {
+  // Supabase returns ONE error for both cases — error_code `otp_expired` with
+  // "Token has expired or is invalid" — for a wrong code as well as a stale one.
+  // Claiming "expired" for a mistyped code sends the buyer to request a new code
+  // when the one they hold is fine, so the message names both possibilities.
+  if (has("expired", "otp_expired", "invalid otp", "otp_invalid", "invalid token")) {
     return {
       kind: "code_invalid",
-      message: "That code isn't right. Check the digits and try again.",
+      message:
+        "That code is invalid or has expired. Check the digits, or request a new one.",
     };
   }
 

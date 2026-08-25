@@ -29,7 +29,7 @@ export default async function ResetPasswordPage({
                     label="Code"
                     autoComplete="one-time-code"
                     inputMode="numeric"
-                    maxLength={6}
+                    // Not capped — see the note in verify/page.tsx.
                 />
                 <AuthField
                     name="password"
