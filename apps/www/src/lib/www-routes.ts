@@ -12,6 +12,9 @@ export const WWW_ROUTES = {
     policies: '/policies',
     bundles: '/bundles',
     request: '/request',
+    requestBuilder: '/request/builder',
+    requestNew: '/request/new',
+    requestServices: '/request/services',
 } as const;
 
 export type WwwRouteHref = (typeof WWW_ROUTES)[keyof typeof WWW_ROUTES];
