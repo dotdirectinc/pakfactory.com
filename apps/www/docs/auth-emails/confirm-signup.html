@@ -6,7 +6,8 @@
   not involved, which is why this is plain HTML rather than a React Email
   component with a build step.
 
-  CODE, NOT LINK — deliberate. `.Token` renders a 6-digit code.
+  CODE, NOT LINK — deliberate. `.Token` renders a numeric code — length is the dashboard's
+  Auth → Email OTP length setting, currently EIGHT digits. Nothing may hardcode it.
   `.ConfirmationURL` would render a clickable link, and corporate mail
   security (Defender Safe Links, Proofpoint, Mimecast) PRE-FETCHES links to scan
   them. Supabase confirmation tokens are single-use, so the scanner consumes the
