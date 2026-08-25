@@ -20,7 +20,11 @@ type PrivacyPolicy = {
     metaDescription?: string;
 };
 
-const QUERY = `*[_type == "privacyPolicy"][0]{
+// Privacy policy consolidated onto the shared `legalPage` type (PROD-2292),
+// pinned id `privacyPage`; `body` carried across in the migration. Read by _id
+// so the retype doesn't drop the page. (metaTitle/metaDescription are not on
+// legalPage yet — they fall back to the defaults in generateMetadata.)
+const QUERY = `*[_id == "privacyPage"][0]{
   body,
   metaTitle,
   metaDescription

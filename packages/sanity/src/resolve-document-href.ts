@@ -45,11 +45,20 @@ const BLOG_SURFACE_TYPES = new Set([
   "author",
 ]);
 
-const STATIC_SINGLETON_PATHS: Record<string, string> = {
+/**
+ * Fixed routes for the shared page types (PROD-2292), keyed by the document's
+ * semantic `_id`. homePage/listingPage/legalPage carry no slug, so the id is the
+ * route. Only `homePage`, `privacyPage` and `caseStudiesPage` exist today; the
+ * others resolve once their documents are created.
+ */
+const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
+  homePage: "/",
   aboutPage: "/about",
   contactPage: "/contact",
-  privacyPolicy: "/privacy",
-  termsOfService: "/terms",
+  searchPage: "/search",
+  privacyPage: "/privacy",
+  termsPage: "/terms",
+  caseStudiesPage: "/case-studies",
 };
 
 /** Pinned blogPage singleton ids → public paths (role implied by id when pageRole is unset). */
@@ -88,10 +97,7 @@ function joinOrigin(origin: string, path: string): string {
 export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
   const type = doc._type ?? "";
   const slug = doc.slug?.trim();
-
-  if (STATIC_SINGLETON_PATHS[type]) {
-    return STATIC_SINGLETON_PATHS[type];
-  }
+  const idPath = PAGE_SINGLETON_ID_PATHS[stripDraftId(doc._id)];
 
   switch (type) {
     case "blogCategory":
@@ -125,6 +131,8 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
     }
     case "solution":
       return slug ? `/solutions/${slug}` : null;
+    case "expertiseStage":
+      return slug ? `/expertise/${slug}` : null;
     case "caseStudy":
       return slug ? `/case-studies/${slug}` : null;
     case "customizationCategory": {
@@ -133,9 +141,26 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
       return null;
     }
     case "guide":
+      return slug ? `/resources/guides/${slug}` : null;
+    case "dieline":
+      return slug ? `/resources/dielines/${slug}` : null;
     case "glossaryTerm":
-    case "helpArticle":
-      return slug ? `/resources/${slug}` : null;
+      return slug ? `/glossary/${slug}` : null;
+    case "helpCategory":
+      // A Help Center section — the nav links straight into these. General FAQs
+      // nest under it at /help/<category>/<answer> (added with the Help Center
+      // front-end); the category page itself is /help/<slug>.
+      return slug ? `/help/${slug}` : null;
+    // Shared page types (PROD-2292) — fixed routes keyed by semantic id.
+    case "homePage":
+      return "/";
+    case "listingPage":
+    case "legalPage":
+      return idPath ?? null;
+    case "contentPage":
+      // Semantic-id singletons (about/contact/search/404) first, else by slug.
+      if (idPath) return idPath;
+      return slug ? `/${slug}` : null;
     default:
       return null;
   }

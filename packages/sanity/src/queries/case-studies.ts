@@ -11,7 +11,7 @@ const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(headline, internalTitle),
+  "title": coalesce(headline, title, internalTitle),
   "slug": slug.current,
   solutionType
 }`;
@@ -131,8 +131,14 @@ export const CASE_STUDY_SITEMAP_QUERY = /* groq */ `*[
   "lastmod": coalesce(lastModified, publishedAt, _updatedAt)
 }`;
 
-/** Singleton `caseStudiesPage` document — hero copy, CTA config, SEO. */
-export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"][0] {
+/**
+ * Case-studies listing page. Consolidated onto the shared `listingPage` type
+ * (PROD-2292) but keeps its semantic id `caseStudiesPage`, so this reads by _id.
+ * The old hero/CTA/related fields now live as page sections and resolve to null
+ * here — the listing component falls back to its defaults until the front end
+ * renders listingPage sections. SEO/OG carry across on the retyped doc.
+ */
+export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0] {
   heroEyebrow,
   heroHeading,
   heroIntro,
@@ -146,7 +152,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_type == "caseStudiesPage"]
 
 /** All taxonomy options for the listing page filter UI — single round-trip. */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(order asc) ${TAXONOMY_ITEM}
 }`;

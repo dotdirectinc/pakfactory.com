@@ -63,7 +63,7 @@ export const customizationType = defineType({
       type: 'array',
       group: 'content',
       description: 'Illustrative images for this customization type.',
-      of: [taggedImageType([MEDIA_TAG.capability], { hotspot: true })],
+      of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
     }),
 
     // ─── SPECS ────────────────────────────────────────────────────────────────
@@ -112,63 +112,16 @@ export const customizationType = defineType({
         },
       }],
     }),
-    defineField({
-      name: 'optionGroups',
-      title: 'Spec tables',
-      type: 'array',
-      group: 'specs',
-      description:
-        'Which spec tables the options under this type fill in, and whether each option picks one row or several. The type declares the columns; it holds no rows of its own.',
-      of: [{
-        type: 'object',
-        name: 'declaredOptionGroup',
-        fields: [
-          defineField({
-            name: 'group',
-            title: 'Table',
-            type: 'reference',
-            to: [{ type: 'optionGroup' }],
-            options: { disableNew: true },
-            description: 'The table definition — its columns come from there.',
-            validation: (Rule) => Rule.required(),
-          }),
-          defineField({
-            name: 'cardinality',
-            title: 'How many rows an option states',
-            type: 'string',
-            description:
-              'Pick one — the options of this type are mutually exclusive on this table. Pick many — an option can state several rows.',
-            options: {
-              layout: 'radio',
-              list: [
-                { title: 'Pick one', value: 'one' },
-                { title: 'Pick many', value: 'many' },
-              ],
-            },
-            initialValue: 'one',
-            validation: (Rule) => Rule.required(),
-          }),
-        ],
-        preview: {
-          select: { title: 'group.title', subtitle: 'cardinality' },
-        },
-      }],
-    }),
-    // `sharedSpecsNote` was help text stored as content — the same sentence on
-    // 9 documents in two variants. It is now a schema description, written once
-    // on each table above. The field is deprecated rather than dropped because
-    // those 9 values still exist; it comes out once they are cleared.
-    defineField({
-      name: 'sharedSpecsNote',
-      title: 'About Shared Specs',
-      type: 'string',
-      group: 'specs',
-      readOnly: true,
-      deprecated: {
-        reason:
-          'Help text belongs in the schema, not in a field. It also describes inheritance, which no longer exists — the option states its own rows. Do not write to this field.',
-      },
-    }),
+    // `optionGroups` (declared spec tables, pick-one/pick-many) was removed in
+    // PROD-2250 — Decisions D41 deleted Option Group. What a spec table listed
+    // was always a set of choices, so those become Property Value documents and
+    // arrive through `properties` above; the numbers beside them become `facts`
+    // on the Property Value. Never populated, so nothing to migrate.
+    //
+    // `sharedSpecsNote` (help text stored as content, the last of the six
+    // inheritance fields) was removed in PROD-2250 — the sentence now lives as a
+    // schema description on each table. migrate:customization-cleanup clears the
+    // 9 orphaned values from the dataset.
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 
@@ -197,7 +150,7 @@ export const customizationType = defineType({
       title: 'OG image',
       type: 'image',
       group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.capability),
+      mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
       description: 'Open Graph / social-share image.',
       fields: [
