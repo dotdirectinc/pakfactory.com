@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import {zodResolver} from '@hookform/resolvers/zod';
+import {useTransition} from 'react';
 import {useForm} from 'react-hook-form';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
@@ -11,6 +12,7 @@ import {
     forgotPasswordSchema,
     type ForgotPasswordValues,
 } from '@/lib/auth/auth-form-schema';
+import {requestPasswordReset} from '@/lib/auth/actions';
 import {FORGOT_PASSWORD_COPY} from '@/lib/copy/forgot-password';
 import {LOGIN_COPY} from '@/lib/copy/login';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -18,6 +20,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 
 export function ForgotPasswordForm() {
+    const [pending, startTransition] = useTransition();
     const {
         register,
         handleSubmit,
@@ -28,8 +31,16 @@ export function ForgotPasswordForm() {
         defaultValues: {email: ''},
     });
 
-    function onSubmit(_data: ForgotPasswordValues) {
-        /* Auth wiring: PROD-1426 */
+    function onSubmit(data: ForgotPasswordValues) {
+        const form = new FormData();
+        form.set('email', data.email);
+
+        // Always advances to /reset-password, registered address or not — the
+        // action deliberately ignores its own result so this form cannot confirm
+        // whether an account exists. Failures are logged server-side instead.
+        startTransition(async () => {
+            await requestPasswordReset({}, form);
+        });
     }
 
     const email = watch('email');
@@ -82,7 +93,7 @@ export function ForgotPasswordForm() {
                     className="h-11 w-full rounded-sm"
                     disabled={!canSubmit}
                 >
-                    {FORGOT_PASSWORD_COPY.sendResetCode}
+                    {pending ? 'Sending…' : FORGOT_PASSWORD_COPY.sendResetCode}
                 </Button>
             </form>
 

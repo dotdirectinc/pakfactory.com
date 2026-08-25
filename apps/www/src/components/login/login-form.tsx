@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, useTransition} from 'react';
 import Link from 'next/link';
 import {Eye, EyeOff} from 'lucide-react';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -15,13 +15,19 @@ import {
     authCredentialsSchema,
     type AuthCredentials,
 } from '@/lib/auth/auth-form-schema';
+import {signIn} from '@/lib/auth/actions';
 import {LOGIN_COPY} from '@/lib/copy/login';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 
-export function LoginForm() {
+export function LoginForm({next}: {next?: string}) {
     const [showPassword, setShowPassword] = useState(false);
+    // Server-side failures (wrong credentials, unconfirmed account, rate limit)
+    // are separate from react-hook-form's client validation: the field errors say
+    // "this input is malformed", this says "the server rejected it".
+    const [serverError, setServerError] = useState<string>();
+    const [pending, startTransition] = useTransition();
     const {
         register,
         handleSubmit,
@@ -32,8 +38,20 @@ export function LoginForm() {
         defaultValues: {email: '', password: ''},
     });
 
-    function onSubmit(_data: AuthCredentials) {
-        /* Auth wiring: PROD-1426 */
+    function onSubmit(data: AuthCredentials) {
+        setServerError(undefined);
+        const form = new FormData();
+        form.set('email', data.email);
+        form.set('password', data.password);
+        if (next) form.set('next', next);
+
+        // The action redirects on success (throwing NEXT_REDIRECT, which Next
+        // handles) and returns {error} on failure, so there is nothing to do in
+        // the success branch.
+        startTransition(async () => {
+            const result = await signIn({}, form);
+            if (result?.error) setServerError(result.error);
+        });
     }
 
     const email = watch('email');
@@ -136,12 +154,18 @@ export function LoginForm() {
                     ) : null}
                 </div>
 
+                {serverError ? (
+                    <p className="text-sm text-destructive" role="alert">
+                        {serverError}
+                    </p>
+                ) : null}
+
                 <Button
                     type="submit"
                     className="h-11 w-full rounded-sm"
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || pending}
                 >
-                    {LOGIN_COPY.signIn}
+                    {pending ? LOGIN_COPY.signingIn : LOGIN_COPY.signIn}
                 </Button>
             </form>
 

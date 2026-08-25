@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
+import {WWW_ROUTES} from '@/lib/www-routes';
 import {AuthCard} from '@/components/auth/auth-card';
 import {AuthField} from '@/components/auth/auth-field';
 import {AuthForm} from '@/components/auth/auth-form';
@@ -84,7 +85,7 @@ export default async function VerifyPage({
 
             <p className="text-muted-foreground text-sm">
                 Already confirmed?{' '}
-                <Link href="/login" className="underline">
+                <Link href={WWW_ROUTES.login} className="underline">
                     Sign in
                 </Link>
             </p>

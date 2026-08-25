@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type {Metadata} from 'next';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
+import {WWW_ROUTES} from '@/lib/www-routes';
 import {AuthCard} from '@/components/auth/auth-card';
 import {AuthField} from '@/components/auth/auth-field';
 import {AuthForm} from '@/components/auth/auth-form';
@@ -45,11 +46,11 @@ export default async function ResetPasswordPage({
             footer={
                 <>
                     No code? Check the address on the{' '}
-                    <Link href="/forgot-password" className="underline">
+                    <Link href={WWW_ROUTES.forgotPassword} className="underline">
                         previous step
                     </Link>
                     , or{' '}
-                    <Link href="/signup" className="underline">
+                    <Link href={WWW_ROUTES.signUp} className="underline">
                         create an account
                     </Link>
                     .

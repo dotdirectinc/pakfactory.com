@@ -5,6 +5,8 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {cn} from '@pakfactory/ui/lib/utils';
 import Logo from '@/components/layout/logo';
+import {Button} from '@pakfactory/ui/components/button';
+import {sendPasswordResetForCurrentUser, signOut} from '@/lib/auth/actions';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -30,7 +32,14 @@ function isPillActive(pathname: string, href: string): boolean {
     return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AccountShell({children}: {children: ReactNode}) {
+export function AccountShell({
+    children,
+    userEmail,
+}: {
+    children: ReactNode;
+    /** Supplied by the gating layout, which has already resolved the session. */
+    userEmail?: string;
+}) {
     const pathname = usePathname();
 
     return (
@@ -69,12 +78,30 @@ export function AccountShell({children}: {children: ReactNode}) {
                         })}
                     </nav>
 
-                    <Link
-                        href={WWW_ROUTES.login}
-                        className="shrink-0 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                    >
-                        {ACCOUNT_COPY.signOut}
-                    </Link>
+                    {/*
+                      Forms, not Links. This was a <Link href="/login">, which
+                      navigated to the sign-in page while leaving the session
+                      intact — it looked like signing out without doing it. Both
+                      of these mutate state, and a GET that changes state can be
+                      fired by a prefetch or a link scanner.
+                    */}
+                    <div className="flex shrink-0 items-center gap-2">
+                        {userEmail ? (
+                            <span className="hidden text-sm text-muted-foreground sm:inline">
+                                {userEmail}
+                            </span>
+                        ) : null}
+                        <form action={sendPasswordResetForCurrentUser}>
+                            <Button type="submit" variant="ghost" size="sm">
+                                Reset password
+                            </Button>
+                        </form>
+                        <form action={signOut}>
+                            <Button type="submit" variant="outline" size="sm">
+                                {ACCOUNT_COPY.signOut}
+                            </Button>
+                        </form>
+                    </div>
                 </div>
 
                 <nav

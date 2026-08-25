@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, useTransition} from 'react';
 import Link from 'next/link';
 import {Eye, EyeOff} from 'lucide-react';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -16,12 +16,15 @@ import {
     type AuthCredentials,
 } from '@/lib/auth/auth-form-schema';
 import {LOGIN_COPY} from '@/lib/copy/login';
+import {signUp} from '@/lib/auth/actions';
 import {SIGN_UP_COPY} from '@/lib/copy/sign-up';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 
 export function SignUpForm() {
+    const [serverError, setServerError] = useState<string>();
+    const [pending, startTransition] = useTransition();
     const [showPassword, setShowPassword] = useState(false);
     const {
         register,
@@ -33,8 +36,20 @@ export function SignUpForm() {
         defaultValues: {email: '', password: ''},
     });
 
-    function onSubmit(_data: AuthCredentials) {
-        /* Auth wiring: PROD-1426 */
+    function onSubmit(data: AuthCredentials) {
+        setServerError(undefined);
+        const form = new FormData();
+        form.set('email', data.email);
+        form.set('password', data.password);
+
+        // On success the action redirects to /verify — including when the address
+        // is ALREADY registered, so this form cannot be used to discover who has
+        // an account. The email is the username here, so that reply would be a
+        // customer list.
+        startTransition(async () => {
+            const result = await signUp({}, form);
+            if (result?.error) setServerError(result.error);
+        });
     }
 
     const email = watch('email');
@@ -132,10 +147,16 @@ export function SignUpForm() {
                     ) : null}
                 </div>
 
+                {serverError ? (
+                    <p className="text-sm text-destructive" role="alert">
+                        {serverError}
+                    </p>
+                ) : null}
+
                 <Button
                     type="submit"
                     className="h-11 w-full rounded-sm"
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || pending}
                 >
                     {SIGN_UP_COPY.signUp}
                 </Button>
