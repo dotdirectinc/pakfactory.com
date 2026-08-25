@@ -108,11 +108,23 @@ export async function requestPasswordReset(
   if (!email) return { error: "Enter your email.", email };
 
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email);
+  const {error} = await supabase.auth.resetPasswordForEmail(email);
 
-  // Deliberately ignores the result. Reporting "no account with that email"
-  // would make this form an account-enumeration oracle; the screen says "if that
-  // address has an account, a code is on its way" either way.
+  // The BUYER is told the same thing either way — reporting "no account with that
+  // email" would make this form an account-enumeration oracle. But the failure is
+  // logged server-side, because silence in both directions is how a genuinely
+  // broken sender (rate limit hit, SMTP misconfigured, template rejected) becomes
+  // indistinguishable from working. That cost real debugging time on 2026-08-25:
+  // the only way to tell whether an email had gone out was querying
+  // recovery_sent_at through the admin API.
+  if (error) {
+    console.error("[auth] resetPasswordForEmail failed", {
+      code: (error as {code?: string}).code,
+      status: (error as {status?: number}).status,
+      message: error.message,
+    });
+  }
+
   redirect(`/reset-password?email=${encodeURIComponent(email)}`);
 }
 
