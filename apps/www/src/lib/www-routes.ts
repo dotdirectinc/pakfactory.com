@@ -9,6 +9,12 @@ export const WWW_ROUTES = {
     about: '/about',
     contact: '/contact',
     account: '/account',
+    /** List URL; detail is `/account/requests/[id]` via accountRequestHref. */
+    accountRequests: '/account/requests',
+    accountProfile: '/account/profile',
+    login: '/login',
+    signUp: '/sign-up',
+    forgotPassword: '/forgot-password',
     policies: '/policies',
     bundles: '/bundles',
     request: '/request',
@@ -18,6 +24,10 @@ export const WWW_ROUTES = {
 } as const;
 
 export type WwwRouteHref = (typeof WWW_ROUTES)[keyof typeof WWW_ROUTES];
+
+export function accountRequestHref(id: string): string {
+    return `${WWW_ROUTES.accountRequests}/${id}`;
+}
 
 export function productHref(slug: string): string {
     return `${WWW_ROUTES.products}/${slug}`;
