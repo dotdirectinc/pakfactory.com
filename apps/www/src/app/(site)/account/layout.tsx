@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
-import {signOut} from '@/lib/auth/actions';
+import {sendPasswordResetForCurrentUser, signOut} from '@/lib/auth/actions';
 import {requireUser} from '@/lib/auth/session';
 
 /**
@@ -25,13 +25,20 @@ export default async function AccountLayout({children}: {children: ReactNode}) {
                 <p className="text-muted-foreground text-sm">
                     Signed in as <span className="text-foreground">{user.email}</span>
                 </p>
-                {/* A form, not a link: signing out mutates state, and a GET that
-                    changes state can be fired by a prefetch or a scanner. */}
-                <form action={signOut}>
-                    <Button type="submit" variant="outline" size="sm">
-                        Sign out
-                    </Button>
-                </form>
+                {/* Forms, not links: both mutate state, and a GET that changes
+                    state can be fired by a prefetch or a link scanner. */}
+                <div className="flex items-center gap-2">
+                    <form action={sendPasswordResetForCurrentUser}>
+                        <Button type="submit" variant="ghost" size="sm">
+                            Reset password
+                        </Button>
+                    </form>
+                    <form action={signOut}>
+                        <Button type="submit" variant="outline" size="sm">
+                            Sign out
+                        </Button>
+                    </form>
+                </div>
             </div>
             {children}
         </>

@@ -151,6 +151,39 @@ export async function resetPassword(_prev: ActionState, form: FormData): Promise
   redirect("/account");
 }
 
+/**
+ * Send a reset code to the SIGNED-IN buyer and take them to the code screen.
+ *
+ * The address comes from the session, never from a form field. A hidden input
+ * would be tamperable, turning an authenticated page into a way to fire reset
+ * emails at arbitrary addresses — our own sender, our own reputation.
+ *
+ * Note this is reset-by-email, not change-password. A signed-in buyer would
+ * normally change their password by supplying the current one, with no email
+ * round trip; that belongs with the account portal, which PROD-1426 scopes out.
+ * This exposes the existing reset flow so it can be exercised without signing
+ * out first.
+ */
+export async function sendPasswordResetForCurrentUser(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) redirect("/login");
+
+  const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+  if (error) {
+    console.error("[auth] resetPasswordForEmail (signed-in) failed", {
+      code: (error as { code?: string }).code,
+      status: (error as { status?: number }).status,
+      message: error.message,
+    });
+  }
+
+  redirect(`/reset-password?email=${encodeURIComponent(user.email)}`);
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
