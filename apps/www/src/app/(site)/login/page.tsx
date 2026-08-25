@@ -17,7 +17,21 @@ export const metadata: Metadata = {
     robots: robotsDirectiveToMetadata({index: false, follow: false}),
 };
 
-export default function LoginPage() {
+/** Messages for the callback handler's `?error=` values (see app/auth/callback). */
+const CALLBACK_ERRORS: Record<string, string> = {
+    link_invalid: 'That link was not valid. Sign in below, or request a new code.',
+    link_expired:
+        'That link has already been used or has expired. Sign in below, or request a new code.',
+};
+
+export default async function LoginPage({
+    searchParams,
+}: {
+    searchParams: Promise<{error?: string}>;
+}) {
+    const {error} = await searchParams;
+    const notice = error ? CALLBACK_ERRORS[error] : undefined;
+
     return (
         <AuthCard
             title="Sign in"
@@ -31,6 +45,12 @@ export default function LoginPage() {
                 </>
             }
         >
+            {notice ? (
+                <p role="alert" className="text-destructive text-sm leading-relaxed">
+                    {notice}
+                </p>
+            ) : null}
+
             <AuthForm action={signIn} submitLabel="Sign in">
                 <AuthField name="email" label="Email" type="email" autoComplete="username" />
                 <AuthField
