@@ -4,8 +4,6 @@ export const LOGIN_COPY = {
     title: 'Welcome back',
     subtitle: 'Sign in to your account',
     continueWithGoogle: 'Continue with Google',
-    /** Inline badge on the disabled Google button — OAuth is out of scope for PROD-1426. */
-    googleComingSoon: 'Coming soon',
     or: 'or',
     emailLabel: 'Email',
     emailPlaceholder: 'you@example.com',

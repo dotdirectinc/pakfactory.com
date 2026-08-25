@@ -1,7 +1,8 @@
 'use client';
 
-import {Badge} from '@pakfactory/ui/components/badge';
+import {useState, useTransition} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
+import {createClient} from '@/lib/supabase/client';
 
 function GoogleMark({className}: {className?: string}) {
     return (
@@ -33,49 +34,64 @@ function GoogleMark({className}: {className?: string}) {
 
 type LoginGoogleButtonProps = {
     label: string;
-    /** Copy for the inline unavailability badge. */
-    comingSoonLabel?: string;
+    /** Where to land after consent; forwarded through the callback. */
+    next?: string;
 };
 
 /**
- * Inert until OAuth is actually in scope.
+ * Google OAuth (PROD-1426).
  *
- * PROD-1426 explicitly excludes social/SSO providers, so this renders a control
- * that cannot work. Shipping it live would be a button that silently does
- * nothing; hiding it loses the design intent. It is disabled and SAYS SO.
+ * signInWithOAuth runs in the BROWSER — it needs to navigate the user to Google,
+ * which a Server Action cannot do — so this uses the browser client. Supabase
+ * sends the buyer back to `redirectTo` with `?code=`, which app/auth/callback
+ * exchanges for a session. That handler already existed for link-style emails;
+ * OAuth reuses it unchanged.
  *
- * Three deliberate choices:
- *
- *  - `aria-disabled`, not `disabled`. A real `disabled` attribute drops the
- *    button out of the tab order, so keyboard and screen-reader users meet a
- *    control they can neither reach nor be told about. This stays focusable and
- *    announces "Continue with Google, Coming soon" as its accessible name.
- *  - A VISIBLE badge, not a tooltip. Tooltips need hover, and hover does not
- *    exist on phones or tablets — a large share of this audience. A tooltip
- *    would explain the button to desktop users and leave everyone else tapping a
- *    dead control. (`disabled` would also suppress the hover event entirely.)
- *  - No click-to-explain popup. Making someone act to discover that acting is
- *    pointless is the worst of the options.
+ * Google is unreachable from mainland China, so this must stay a SECONDARY path:
+ * email + password has to remain equally prominent, never demoted to a fallback
+ * beneath it.
  */
-export function LoginGoogleButton({
-    label,
-    comingSoonLabel = 'Coming soon',
-}: LoginGoogleButtonProps) {
+export function LoginGoogleButton({label, next}: LoginGoogleButtonProps) {
+    const [error, setError] = useState<string>();
+    const [pending, startTransition] = useTransition();
+
+    function onClick() {
+        setError(undefined);
+        startTransition(async () => {
+            const supabase = createClient();
+            const callback = new URL('/auth/callback', window.location.origin);
+            if (next) callback.searchParams.set('next', next);
+
+            const {error: oauthError} = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {redirectTo: callback.toString()},
+            });
+
+            // Only reached if the redirect itself could not be started; a
+            // successful call navigates away and nothing after it runs.
+            if (oauthError) {
+                setError('Could not reach Google. Try email and password instead.');
+            }
+        });
+    }
+
     return (
-        <Button
-            type="button"
-            variant="outline"
-            aria-disabled="true"
-            // aria-disabled is advisory only — the handler must actually refuse,
-            // or the control stays clickable for anyone using a mouse.
-            onClick={(event) => event.preventDefault()}
-            className="h-11 w-full cursor-not-allowed rounded-sm opacity-70 hover:bg-background"
-        >
-            <GoogleMark className="size-4" />
-            {label}
-            <Badge variant="secondary" className="ml-1">
-                {comingSoonLabel}
-            </Badge>
-        </Button>
+        <div className="flex w-full flex-col gap-2">
+            <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full rounded-sm"
+                onClick={onClick}
+                disabled={pending}
+            >
+                <GoogleMark className="size-4" />
+                {label}
+            </Button>
+            {error ? (
+                <p role="alert" className="text-xs text-destructive">
+                    {error}
+                </p>
+            ) : null}
+        </div>
     );
 }

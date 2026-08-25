@@ -71,10 +71,7 @@ export function SignUpForm() {
                 </p>
             </div>
 
-            <LoginGoogleButton
-                label={LOGIN_COPY.continueWithGoogle}
-                comingSoonLabel={LOGIN_COPY.googleComingSoon}
-            />
+            <LoginGoogleButton label={LOGIN_COPY.continueWithGoogle} />
 
             <div className="relative flex items-center gap-4">
                 <Separator className="flex-1" />

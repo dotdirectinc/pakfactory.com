@@ -14,6 +14,9 @@ const CALLBACK_ERRORS: Record<string, string> = {
     link_invalid: 'That link was not valid. Sign in below, or request a new code.',
     link_expired:
         'That link has already been used or has expired. Sign in below, or request a new code.',
+    // Cancelling is a choice, not a fault — say nothing that reads like an error.
+    oauth_cancelled: 'Google sign-in was cancelled. You can sign in with your email instead.',
+    oauth_failed: "Google sign-in didn't complete. Try again, or sign in with your email.",
 };
 
 export default async function LoginPage({

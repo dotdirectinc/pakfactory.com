@@ -22,6 +22,16 @@ export async function GET(request: Request) {
     const requested = searchParams.get('next') ?? '/account';
     const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/account';
 
+    // OAuth failures do NOT arrive as a missing code — Google returns
+    // `?error=access_denied&error_description=…`. Without this branch, a buyer
+    // who simply pressed Cancel on the consent screen was told "That link was not
+    // valid", which describes a different problem entirely.
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+        const kind = oauthError === 'access_denied' ? 'oauth_cancelled' : 'oauth_failed';
+        return NextResponse.redirect(`${origin}/login?error=${kind}`);
+    }
+
     if (!code) {
         return NextResponse.redirect(`${origin}/login?error=link_invalid`);
     }

@@ -73,10 +73,7 @@ export function LoginForm({next}: {next?: string}) {
                 </p>
             </div>
 
-            <LoginGoogleButton
-                label={LOGIN_COPY.continueWithGoogle}
-                comingSoonLabel={LOGIN_COPY.googleComingSoon}
-            />
+            <LoginGoogleButton label={LOGIN_COPY.continueWithGoogle} next={next} />
 
             <div className="relative flex items-center gap-4">
                 <Separator className="flex-1" />
