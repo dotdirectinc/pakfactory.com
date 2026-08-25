@@ -27,6 +27,16 @@ export function buildSiteNavProps(): WwwSiteNavModel {
                 label: 'Expertise',
                 href: WWW_ROUTES.expertise,
             },
+            {
+                key: 'account',
+                label: 'Account',
+                href: WWW_ROUTES.account,
+            },
+            {
+                key: 'signIn',
+                label: 'Sign in',
+                href: WWW_ROUTES.login,
+            },
         ],
         cta: {
             label: 'Get a Quote',
