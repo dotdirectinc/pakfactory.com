@@ -10,6 +10,8 @@ export const LOGIN_COPY = {
     passwordLabel: 'Password',
     forgotPassword: 'Forgot password?',
     signIn: 'Sign in',
+    /** Shown while the sign-in request is in flight (PROD-1426). */
+    signingIn: 'Signing in…',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
     noAccount: "Don't have an account?",

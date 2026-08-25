@@ -4,7 +4,7 @@
   "versionCode": 1,
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3003",
+    "dev": "NODE_OPTIONS='--max-http-header-size=32768' next dev --port 3003",
     "build": "next build",
     "start": "next start --port 3000",
     "lint": "eslint .",

@@ -7,7 +7,25 @@ import { fileURLToPath } from "node:url";
 const appDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(appDir, "../..");
 
-loadEnvConfig(repoRoot);
+/**
+ * `forceReload` is load-bearing, not defensive.
+ *
+ * @next/env caches on its FIRST call and later calls for a different directory
+ * are no-ops — they return the cached result and assign nothing. Next loads
+ * `apps/www/.env.local` before evaluating this config, so a plain
+ * `loadEnvConfig(repoRoot)` silently returns that cached app-dir result and every
+ * root-only variable stays undefined. It even reports having loaded `.env.local`,
+ * which is what makes it so hard to spot.
+ *
+ * That was invisible while every www variable also existed in the app-level file.
+ * It surfaced the moment NEXT_PUBLIC_SUPABASE_URL was added to the repo root
+ * only: signup failed with "Your project's URL and Key are required to create a
+ * Supabase client!" while Sanity kept working.
+ *
+ * Local dev only — on Vercel the platform populates process.env directly and no
+ * .env.local exists.
+ */
+loadEnvConfig(repoRoot, undefined, undefined, true);
 
 const nextConfig: NextConfig = {
   // Monorepo: trace from repo root so hoisted `sharp` / `@img/*` native bins

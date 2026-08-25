@@ -1,6 +1,8 @@
 'use client';
 
+import {useState, useTransition} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
+import {createClient} from '@/lib/supabase/client';
 
 function GoogleMark({className}: {className?: string}) {
     return (
@@ -32,21 +34,64 @@ function GoogleMark({className}: {className?: string}) {
 
 type LoginGoogleButtonProps = {
     label: string;
+    /** Where to land after consent; forwarded through the callback. */
+    next?: string;
 };
 
-/** UI-only — no OAuth until PROD-1426. */
-export function LoginGoogleButton({label}: LoginGoogleButtonProps) {
+/**
+ * Google OAuth (PROD-1426).
+ *
+ * signInWithOAuth runs in the BROWSER — it needs to navigate the user to Google,
+ * which a Server Action cannot do — so this uses the browser client. Supabase
+ * sends the buyer back to `redirectTo` with `?code=`, which app/auth/callback
+ * exchanges for a session. That handler already existed for link-style emails;
+ * OAuth reuses it unchanged.
+ *
+ * Google is unreachable from mainland China, so this must stay a SECONDARY path:
+ * email + password has to remain equally prominent, never demoted to a fallback
+ * beneath it.
+ */
+export function LoginGoogleButton({label, next}: LoginGoogleButtonProps) {
+    const [error, setError] = useState<string>();
+    const [pending, startTransition] = useTransition();
+
+    function onClick() {
+        setError(undefined);
+        startTransition(async () => {
+            const supabase = createClient();
+            const callback = new URL('/auth/callback', window.location.origin);
+            if (next) callback.searchParams.set('next', next);
+
+            const {error: oauthError} = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {redirectTo: callback.toString()},
+            });
+
+            // Only reached if the redirect itself could not be started; a
+            // successful call navigates away and nothing after it runs.
+            if (oauthError) {
+                setError('Could not reach Google. Try email and password instead.');
+            }
+        });
+    }
+
     return (
-        <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full rounded-sm"
-            onClick={() => {
-                /* Auth wiring: PROD-1426 */
-            }}
-        >
-            <GoogleMark className="size-4" />
-            {label}
-        </Button>
+        <div className="flex w-full flex-col gap-2">
+            <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full rounded-sm"
+                onClick={onClick}
+                disabled={pending}
+            >
+                <GoogleMark className="size-4" />
+                {label}
+            </Button>
+            {error ? (
+                <p role="alert" className="text-xs text-destructive">
+                    {error}
+                </p>
+            ) : null}
+        </div>
     );
 }
