@@ -19,6 +19,9 @@ CI allowlist prefixes: `feat/` `feature/` `features/` `fix/` `bugfix/` `hotfix/`
 - QA rebuild at stable git-branch alias:  
   https://pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app  
   Do not change Production Branch to `www-new-release`.
+- Stakeholder staging: https://staging.pakfactory.com — same `www-new-release` build, fixed link,
+  gated by Vercel Authentication (team seat). Preview deployment on purpose; never promote it.
+  Details + access requests: AGENTS.md § www rebuild trunk → Stakeholder staging.
 
 ## Shared packages
 

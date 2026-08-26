@@ -27,6 +27,30 @@ const repoRoot = join(appDir, "../..");
  */
 loadEnvConfig(repoRoot, undefined, undefined, true);
 
+/**
+ * Non-production origins must never be indexed (PROD-2404, extends PROD-2207).
+ *
+ * `staging.pakfactory.com` is a **preview** deployment of `www-new-release`, so its
+ * `VERCEL_ENV` is `preview`. The only other place this app emits `X-Robots-Tag` is
+ * the origin-lockdown redirect in `src/proxy.ts`, which is deliberately
+ * production-only and whose matcher skips `_next/`, `api/`, and any path with a dot
+ * — so nothing was stamping preview responses at all.
+ *
+ * Vercel Authentication already walls staging off from crawlers; this header is
+ * defence in depth for the day protection is relaxed (shareable link, automation
+ * bypass token) and for the assets the proxy never sees.
+ *
+ * Kept in step with `WWW_DISABLE_INDEXING` — the same kill-switch `src/lib/seo.ts`
+ * uses for page-level `robots` metadata. Parsed inline rather than imported so
+ * `next.config.ts` stays free of app-source imports.
+ */
+function shouldSendNoIndexHeader(): boolean {
+  const killSwitch = process.env.WWW_DISABLE_INDEXING?.trim().toLowerCase();
+  if (killSwitch && ["1", "true", "yes", "on"].includes(killSwitch)) return true;
+  // Anything that is not a Vercel production build: preview, development, local.
+  return process.env.VERCEL_ENV !== "production";
+}
+
 const nextConfig: NextConfig = {
   // Monorepo: trace from repo root so hoisted `sharp` / `@img/*` native bins
   // are included in Vercel serverless functions (PROD-2206 `/api/wm` serve mode).
@@ -46,6 +70,17 @@ const nextConfig: NextConfig = {
     resolveAlias: {
       "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
     },
+  },
+  async headers() {
+    if (!shouldSendNoIndexHeader()) return [];
+    return [
+      {
+        // Every response this app serves, including `/_next/*` and static files
+        // the proxy matcher excludes.
+        source: "/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
   },
   images: {
     remotePatterns: [

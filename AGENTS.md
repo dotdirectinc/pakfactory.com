@@ -190,6 +190,15 @@ Until the unfinished marketing-site rebuild launches, keep it **off** the live `
 - **Launch:** one PR `www-new-release` → `staging`, then the existing auto PR `staging` → `main`. Never open `www-new-release` → `main` ([`enforce-branch-flow.yml`](.github/workflows/enforce-branch-flow.yml) already requires head = `staging`).
 - **Vercel:** public **pakfactory.com** production stays on `main` (current www). The non-prod www project **`pakfactory-com`** (team PakFactory's Projects) stays on Production Branch **`main`** so `origin.case-studies.pakfactory.com` is unchanged. QA the rebuild at the stable git-branch alias [pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app](https://pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app) — not a one-off PR preview. Do **not** change that project's Production Branch to `www-new-release`, and do **not** change any live www project's production branch. [`apps/www/vercel.json`](apps/www/vercel.json) `ignoreCommand` builds on `main`, `staging`, and `www-new-release` (exit 1 = do not skip) so that branch actually deploys.
 
+#### Stakeholder staging — `staging.pakfactory.com` (PROD-2404)
+
+- **URL:** <https://staging.pakfactory.com> — always the latest `www-new-release` build. Share this with stakeholders instead of a per-PR preview URL, which changes on every deploy.
+- **How it deploys:** custom domain on the www Vercel project (team *PakFactory's Projects*), assigned to the **`www-new-release` git branch**. Every push to that branch redeploys it — no manual promotion step. [`apps/www/vercel.json`](apps/www/vercel.json) `ignoreCommand` already whitelists the branch.
+- **It is a _preview_ deployment on purpose.** Vercel Authentication is included for Preview and is a paid feature for Production, so do not "promote" this domain or point any Production Branch at `www-new-release`.
+- **Who has access:** anyone signed in to Vercel holding a seat on the *PakFactory's Projects* team. Signed-out visitors get the Vercel login wall and never see site content. There is **no** app-level login for staging and none is planned.
+- **How to request access:** ask Richard Qin for a Vercel team seat. For a stakeholder who should not hold a seat, use Vercel → the www project → Settings → Deployment Protection → **Shareable Link**, time-boxed. Which stakeholders get a seat vs a link is tracked on [PROD-2404](https://dotdirect.atlassian.net/browse/PROD-2404).
+- **Never indexable:** [`apps/www/next.config.ts`](apps/www/next.config.ts) sends `X-Robots-Tag: noindex, nofollow` on every non-production response, and [`apps/www/src/app/robots.txt/route.ts`](apps/www/src/app/robots.txt/route.ts) serves a blanket `Disallow: /`. Both sit behind the auth wall today and are deliberate belt-and-braces for the day protection is relaxed (shareable link, automation bypass token) — do not remove them.
+
 ### Branch & handoff workflow (binding for agents)
 
 1. Read the Jira issue type → choose a **CI-allowed** prefix. Fetch the right trunk, then cut from it:
