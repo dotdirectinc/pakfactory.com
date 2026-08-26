@@ -1,6 +1,7 @@
 /**
  * robots.txt for the www app — reachable ONLY at the Vercel origin host
- * (`pakfactory-com-www.vercel.app`) and preview deployments.
+ * (`pakfactory-com-www.vercel.app`) and preview deployments, including the fixed
+ * stakeholder staging host `staging.pakfactory.com` (PROD-2404).
  *
  * The public/canonical `pakfactory.com/robots.txt` is served by **Magento** (the
  * apex, RFC 9309 per-host) and is NOT this file. nginx on the Magento boxes proxies
