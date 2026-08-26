@@ -93,6 +93,35 @@ export const customizationOption = defineType({
       initialValue: 'active',
       validation: (Rule) => Rule.required(),
     }),
+    // D47 / ADR-017: `role` sits on the OPTION, not the Type. A Type is a taxonomy
+    // of what things are and can be mixed — Lamination holds a technical Matte
+    // Lamination and a customer-facing Leather Lamination. Holding the flag on the
+    // parent would make an Option inherit its own properties (inheritance-with-
+    // overrides, retired by D12/D30). Whether a Type is a configurator panel is a
+    // rollup: true if any of its Options is `configurable`.
+    defineField({
+      name: 'role',
+      title: 'Role',
+      type: 'string',
+      group: 'content',
+      description:
+        'Does a customer pick this in the configurator? Configurable: Matte, High-Barrier, SBS. ' +
+        'Reference: VMPET Film, Matte Lamination — real materials and processes a customer never picks ' +
+        'directly, reached through the simplified option they achieve. This also decides whether the ' +
+        'document has a URL: reference options have library pages, configurable options do not.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'Configurable — a customer picks this in the configurator', value: 'configurable' },
+          { title: 'Reference — technical; it has a library page but never reaches the configurator', value: 'reference' },
+        ],
+      },
+      // Fails loud: a forgotten `reference` Option produces a warning nobody needed,
+      // which is visible. A forgotten `configurable` Option would go silent and hide
+      // a customer-facing choice.
+      initialValue: 'configurable',
+      validation: (Rule) => Rule.required(),
+    }),
     defineField({
       name: 'media',
       title: 'Media',
