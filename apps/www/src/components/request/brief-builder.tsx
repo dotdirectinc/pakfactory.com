@@ -75,7 +75,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         ensureBuilder({mode: entryKind});
     }, [entryKind, ensureBuilder]);
 
-    const expressCold = isExpressCold(draft, lines);
+    const expressCold = isExpressCold(draft);
     const submitted = Boolean(draft.submittedAt && draft.ref);
     const showProducts = showProductsSection(draft, lines);
     const showServices = showServicesSection(draft, lines);

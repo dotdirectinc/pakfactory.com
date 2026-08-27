@@ -9,11 +9,19 @@ export function expressQuantityDigits(value: string): string {
     return String(value ?? '').replace(/[^0-9]/g, '');
 }
 
+/**
+ * Express quotes requirements only until the buyer expands products, so
+ * `productsExpanded` — not the pool contents — decides which fields apply.
+ */
+function isExpressRequirementsOnly(draft: RequestDraft): boolean {
+    return draft.express && !draft.productsExpanded;
+}
+
 export function isExpressQuantityReady(
     draft: RequestDraft,
-    lines: RequestLine[],
+    _lines: RequestLine[],
 ): boolean {
-    if (!draft.express || lines.length > 0) return true;
+    if (!isExpressRequirementsOnly(draft)) return true;
     const digits = expressQuantityDigits(draft.expressQuantity);
     const n = Number(digits);
     return digits.length > 0 && n > 0 && n % 100 === 0;
@@ -24,10 +32,10 @@ export function isContentsReady(
     lines: RequestLine[],
 ): boolean {
     if (!draft.express) return true;
-    if (lines.length > 0) {
-        return lines.every((line) => line.contents.trim().length > 0);
+    if (isExpressRequirementsOnly(draft)) {
+        return draft.packagingContents.trim().length > 0;
     }
-    return draft.packagingContents.trim().length > 0;
+    return lines.every((line) => line.contents.trim().length > 0);
 }
 
 export function isNotesReady(draft: RequestDraft): boolean {
@@ -69,22 +77,20 @@ export function canSubmitRequest(
     );
 }
 
-export function isExpressCold(
-    draft: RequestDraft,
-    lines: RequestLine[],
-): boolean {
-    return draft.express && !draft.productsExpanded && lines.length === 0;
+export function isExpressCold(draft: RequestDraft): boolean {
+    return isExpressRequirementsOnly(draft);
 }
 
 export function showFullRail(draft: RequestDraft, lines: RequestLine[]): boolean {
     if (draft.entryKind === 'services') {
         return draft.servicesEnabled || draft.productsExpanded || lines.length > 0;
     }
-    return draft.productsExpanded || lines.length > 0 || !draft.express;
+    if (draft.express) return draft.productsExpanded;
+    return true;
 }
 
 export function showProductsSection(draft: RequestDraft, lines: RequestLine[]): boolean {
-    if (draft.entryKind === 'express' && !draft.productsExpanded && lines.length === 0) {
+    if (draft.entryKind === 'express' && !draft.productsExpanded) {
         return false;
     }
     if (draft.entryKind === 'services') {
@@ -94,7 +100,7 @@ export function showProductsSection(draft: RequestDraft, lines: RequestLine[]): 
 }
 
 export function showServicesSection(draft: RequestDraft, lines: RequestLine[]): boolean {
-    if (draft.entryKind === 'express' && !draft.productsExpanded && lines.length === 0) {
+    if (draft.entryKind === 'express' && !draft.productsExpanded) {
         return false;
     }
     if (draft.entryKind === 'services') return true;

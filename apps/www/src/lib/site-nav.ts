@@ -40,7 +40,7 @@ export function buildSiteNavProps(): WwwSiteNavModel {
         ],
         cta: {
             label: 'Get a Quote',
-            href: WWW_ROUTES.contact,
+            href: WWW_ROUTES.requestNew,
         },
     };
 }
