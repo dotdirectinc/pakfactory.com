@@ -45,9 +45,12 @@
  * re-running it is a no-op once the data agrees.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run backfill:customization-role
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run backfill:customization-role -- --apply
- *   NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run backfill:customization-role -- --apply
+ *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset development
+ *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset development --apply
+ *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset production --apply
+ *
+ * `--dataset` is REQUIRED with `--apply` — NEXT_PUBLIC_SANITY_DATASET is deliberately
+ * not enough for a write. See scripts/lib/script-args.mjs for why.
  *
  * ⚠️  The development dataset is nightly-synced from production, so a dev-only apply
  * is wiped overnight. Run development first to verify, then production to make it stick.
@@ -63,6 +66,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseScriptArgs, resolveDataset } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -70,11 +74,18 @@ loadEnv({ path: join(repoRoot, '.env.local') })
 loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
-const apply = process.argv.includes('--apply')
-// Correct Options that already carry a role but contradict the diagram. Off by
-// default: the plain backfill must stay non-destructive, and flipping a value an
-// editor can see is a deliberate act, not a side effect of filling blanks.
-const reclassify = process.argv.includes('--reclassify')
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset <development|production> [--reclassify] [--apply]
+
+  --dataset   which dataset to read/write. Required with --apply.
+  --apply     actually write. Omit for a dry run.
+  --reclassify  also correct roles that contradict the diagram.`
+// `--reclassify` corrects Options that already carry a role but contradict the
+// diagram. Off by default: the plain backfill must stay non-destructive, and
+// flipping a value an editor can see is a deliberate act, not a side effect of
+// filling blanks.
+const args = parseScriptArgs({ flags: ['reclassify'], usage: USAGE })
+const { apply, reclassify } = args
 
 /**
  * Slugs to write as `reference` instead of `configurable`, from the Capabilities Flow
@@ -95,8 +106,8 @@ const REFERENCE_SLUGS = new Set([
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_STUDIO_DATASET || 'development'
+// `--dataset` wins over the environment; --apply refuses a defaulted dataset.
+const DATASET = resolveDataset(args, USAGE)
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_API_READ_TOKEN || process.env.SANITY_TOKEN
 

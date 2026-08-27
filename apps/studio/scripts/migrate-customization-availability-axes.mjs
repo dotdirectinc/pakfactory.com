@@ -39,13 +39,16 @@
  * restore the old keys.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run migrate:availability-axes
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run migrate:availability-axes -- --apply
- *   NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run migrate:availability-axes -- --apply
+ *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset development
+ *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset development --apply
+ *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset production --apply
  *
  * ⚠️  Run this in the SAME deploy as the schema change. Between the schema shipping and
  * this running, the 8 populated options show an empty "Available on products" while
  * their data sits under `appliesTo`.
+ *
+ * `--dataset` is REQUIRED with `--apply` — NEXT_PUBLIC_SANITY_DATASET is deliberately
+ * not enough for a write. See scripts/lib/script-args.mjs for why.
  *
  * ⚠️  The development dataset is nightly-synced from production, so a dev-only apply is
  * wiped overnight. Run development first to verify, then production to make it stick.
@@ -55,6 +58,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseScriptArgs, resolveDataset } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -62,7 +66,13 @@ loadEnv({ path: join(repoRoot, '.env.local') })
 loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
-const apply = process.argv.includes('--apply')
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset <development|production> [--apply]
+
+  --dataset   which dataset to read/write. Required with --apply.
+  --apply     actually write. Omit for a dry run.`
+const args = parseScriptArgs({ usage: USAGE })
+const { apply } = args
 
 /** old key → new key. A key with no new name is unset outright. */
 const RENAMES = [
@@ -82,8 +92,8 @@ const MULTIPLE_SELECT_TYPE_SLUGS = new Set([
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_STUDIO_DATASET || 'development'
+// `--dataset` wins over the environment; --apply refuses a defaulted dataset.
+const DATASET = resolveDataset(args, USAGE)
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_API_READ_TOKEN || process.env.SANITY_TOKEN
 
