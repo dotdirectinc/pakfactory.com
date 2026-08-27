@@ -2,6 +2,8 @@ import type {PortableTextBlock} from '@portabletext/types';
 import type {Metadata} from 'next';
 import Link from 'next/link';
 import {PortableText} from '@portabletext/react';
+import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {WWW_ROUTES} from '@/lib/www-routes';
 import {getSanityClient} from '@/lib/sanity/client';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {HOME_PAGE_QUERY} from '@pakfactory/sanity/queries';
@@ -40,23 +42,28 @@ export default async function Home() {
     const sub = home?.body?.length ? null : 'Custom packaging, simplified.';
 
     return (
-        <main className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-            <h1 className="text-4xl font-bold tracking-tight">{headline}</h1>
-            {home?.body?.length ? (
-                <div className="prose prose-neutral mt-6 max-w-2xl dark:prose-invert">
-                    <PortableText value={home.body} />
+        <main className="min-h-screen bg-background">
+            <PageHeadingSection
+                title={headline}
+                description={
+                    home?.body?.length ? (
+                        <div className="prose prose-neutral max-w-none dark:prose-invert">
+                            <PortableText value={home.body} />
+                        </div>
+                    ) : (
+                        sub
+                    )
+                }
+            >
+                <div className="mt-4 flex gap-3">
+                    <Button asChild size="lg">
+                        <Link href={WWW_ROUTES.products}>Products</Link>
+                    </Button>
+                    <Button asChild size="lg" variant="outline">
+                        <Link href={WWW_ROUTES.capabilities}>Capabilities</Link>
+                    </Button>
                 </div>
-            ) : (
-                <p className="mt-4 text-muted-foreground">{sub}</p>
-            )}
-            <div className="mt-8 flex gap-3">
-                <Button asChild size="lg">
-                    <Link href="/products">Products</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                    <Link href="/capabilities">Capabilities</Link>
-                </Button>
-            </div>
+            </PageHeadingSection>
         </main>
     );
 }

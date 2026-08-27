@@ -1,6 +1,10 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import Link from 'next/link';
+import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {WWW_ROUTES} from '@/lib/www-routes';
 import {getPublishedSanityClient, getSanityClient} from '@/lib/sanity/client';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
@@ -108,22 +112,31 @@ export default async function CapabilityDetailPage({
     ];
 
     return (
-        <div className="mx-auto max-w-7xl px-4 pt-8 pb-16 sm:px-6 lg:px-8">
-            <nav className="mb-6 text-sm text-muted-foreground">
-                <Link href="/capabilities" className="hover:underline">
-                    Capabilities
-                </Link>
-                <span className="mx-2">/</span>
-                <Link
-                    href={`/capabilities/${capability.category}`}
-                    className="hover:underline capitalize"
-                >
-                    {capability.category}
-                </Link>
-                <span className="mx-2">/</span>
-                <span>{capability.title}</span>
-            </nav>
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    {label: 'Home', href: WWW_ROUTES.home},
+                    {label: 'Capabilities', href: WWW_ROUTES.capabilities},
+                    {
+                        label: capability.category,
+                        href: `${WWW_ROUTES.capabilities}/${capability.category}`,
+                    },
+                    {label: capability.title},
+                ]}
+            />
+            <PageHeadingSection
+                eyebrow={capability.category}
+                title={capability.title}
+                description={
+                    capability.description ? (
+                        <p className="whitespace-pre-line">
+                            {capability.description}
+                        </p>
+                    ) : undefined
+                }
+            />
 
+            <PageDielineSection innerClassName="pb-16 pt-8">
             {(() => {
                 const g = capability.gallery ?? [];
                 const slot = (i: number) =>
@@ -175,22 +188,7 @@ export default async function CapabilityDetailPage({
                 );
             })()}
 
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                <div className="space-y-4 lg:col-span-2">
-                    <p className="text-sm uppercase tracking-wide text-muted-foreground">
-                        {capability.category}
-                    </p>
-                    <h1 className="text-3xl font-semibold sm:text-4xl">
-                        {capability.title}
-                    </h1>
-                    {capability.description ? (
-                        <p className="text-muted-foreground max-w-3xl whitespace-pre-line">
-                            {capability.description}
-                        </p>
-                    ) : null}
-                </div>
-
-                {useCases.length > 0 ? (
+            {useCases.length > 0 ? (
                     <aside className="rounded-xl border p-6">
                         <h2 className="text-lg font-semibold">
                             {capability.title} Can Be Used For:
@@ -223,7 +221,7 @@ export default async function CapabilityDetailPage({
                         </div>
                     </aside>
                 ) : null}
-            </div>
-        </div>
+            </PageDielineSection>
+        </>
     );
 }

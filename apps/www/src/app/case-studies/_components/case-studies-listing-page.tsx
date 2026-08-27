@@ -25,6 +25,8 @@ import {
   resolveCaseStudiesListingOgImageUrl,
 } from "@/lib/case-study-metadata";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import { PageBreadcrumbSection } from "@/components/common/page-breadcrumb-section";
+import { PageHeadingSection } from "@/components/common/page-heading-section";
 import { CaseStudyListingGrid } from "./case-study-listing-grid";
 import {
   CASE_STUDIES_BASE_PATH,
@@ -152,16 +154,17 @@ export async function CaseStudiesListingPage({
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
 
-      <PageDielineSection
-        className="border-b border-dashed border-border"
-        innerClassName="flex flex-col gap-4 py-16 text-foreground"
-      >
-        <p className="text-lg font-semibold leading-7">{eyebrow}</p>
-        <h1 className="text-[36px] font-semibold leading-10 tracking-tight">
-          {heading}
-        </h1>
-        {hasHeroIntro ? (
-          <div className="max-w-[1141px] text-xl leading-7 text-muted-foreground">
+      <PageBreadcrumbSection
+        items={[{ label: "Home", href: "/" }, { label: "Case Studies" }]}
+      />
+
+      <PageHeadingSection
+        variant="compact"
+        eyebrow={eyebrow}
+        title={heading}
+        innerClassName="border-b border-dashed border-border"
+        description={
+          hasHeroIntro ? (
             <PortableText
               value={heroIntro as PortableTextBlock[]}
               components={{
@@ -191,13 +194,11 @@ export async function CaseStudiesListingPage({
                 },
               }}
             />
-          </div>
-        ) : (
-          <p className="max-w-[1141px] text-xl leading-7 text-muted-foreground">
-            {FALLBACK_INTRO}
-          </p>
-        )}
-      </PageDielineSection>
+          ) : (
+            FALLBACK_INTRO
+          )
+        }
+      />
 
       {studies.length === 0 ? (
         <PageDielineSection innerClassName="py-12">

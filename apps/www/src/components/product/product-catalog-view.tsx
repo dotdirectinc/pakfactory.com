@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import {PackageIcon} from 'lucide-react';
 import {Badge} from '@pakfactory/ui/components/badge';
+import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {PageHeadingSection} from '@/components/common/page-heading-section';
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
+
+const TILE_GRID_CLASS = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3';
 
 function TileMedia({src, alt}: {src?: string; alt: string}) {
     return (
@@ -86,40 +91,50 @@ function StyleTile({
 
 export function ProductCatalogView({lines}: {lines: ProductLine[]}) {
     return (
-        <div className="mx-auto max-w-7xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
-            <header>
-                <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-                <p className="mt-2 text-muted-foreground">
-                    Custom packaging solutions tailored to your brand.
-                </p>
-            </header>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {lines.map((line) => (
-                    <LineTile key={line.slug} line={line} />
-                ))}
-            </div>
-        </div>
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    {label: 'Home', href: WWW_ROUTES.home},
+                    {label: 'Products'},
+                ]}
+            />
+            <PageHeadingSection
+                title="Products"
+                description="Custom packaging solutions tailored to your brand."
+            />
+            <PageDielineSection innerClassName="pb-24 pt-8">
+                <div className={TILE_GRID_CLASS}>
+                    {lines.map((line) => (
+                        <LineTile key={line.slug} line={line} />
+                    ))}
+                </div>
+            </PageDielineSection>
+        </>
     );
 }
 
 export function ProductLineView({line}: {line: ProductLine}) {
     return (
-        <div className="mx-auto max-w-7xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
-            <header>
-                <p className="text-sm text-muted-foreground">
-                    <Link href={WWW_ROUTES.products} className="hover:underline">
-                        Products
-                    </Link>
-                </p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight">{line.title}</h1>
-                <p className="mt-2 text-muted-foreground">{line.description}</p>
-            </header>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {line.styles.map((style) => (
-                    <StyleTile key={style.slug} line={line} style={style} />
-                ))}
-            </div>
-        </div>
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    {label: 'Home', href: WWW_ROUTES.home},
+                    {label: 'Products', href: WWW_ROUTES.products},
+                    {label: line.title},
+                ]}
+            />
+            <PageHeadingSection
+                title={line.title}
+                description={line.description}
+            />
+            <PageDielineSection innerClassName="pb-24 pt-8">
+                <div className={TILE_GRID_CLASS}>
+                    {line.styles.map((style) => (
+                        <StyleTile key={style.slug} line={line} style={style} />
+                    ))}
+                </div>
+            </PageDielineSection>
+        </>
     );
 }
 
@@ -134,27 +149,26 @@ export function ProductStyleView({
         (product) => product.productStyle.slug === style.slug,
     );
     return (
-        <div className="mx-auto max-w-7xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
-            <header>
-                <p className="text-sm text-muted-foreground">
-                    <Link href={WWW_ROUTES.products} className="hover:underline">
-                        Products
-                    </Link>
-                    {' · '}
-                    <Link href={productHref(line.slug)} className="hover:underline">
-                        {line.title}
-                    </Link>
-                </p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight">{style.title}</h1>
-                <p className="mt-2 text-muted-foreground">
-                    {style.title} styles in {line.title}.
-                </p>
-            </header>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((product) => (
-                    <ProductTile key={product.slug} product={product} />
-                ))}
-            </div>
-        </div>
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    {label: 'Home', href: WWW_ROUTES.home},
+                    {label: 'Products', href: WWW_ROUTES.products},
+                    {label: line.title, href: productHref(line.slug)},
+                    {label: style.title},
+                ]}
+            />
+            <PageHeadingSection
+                title={style.title}
+                description={`${style.title} styles in ${line.title}.`}
+            />
+            <PageDielineSection innerClassName="pb-24 pt-8">
+                <div className={TILE_GRID_CLASS}>
+                    {products.map((product) => (
+                        <ProductTile key={product.slug} product={product} />
+                    ))}
+                </div>
+            </PageDielineSection>
+        </>
     );
 }
