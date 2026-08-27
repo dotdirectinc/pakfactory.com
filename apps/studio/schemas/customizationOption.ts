@@ -68,6 +68,25 @@ export const customizationOption = defineType({
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
+    // Designed in `Entities/Customization Option.md` and never built until now:
+    // "The definition lives there ONLY; the Option page pulls it, never retypes it."
+    //
+    // This is the field `whatIsBlock` retires INTO. Until it existed, deprecating
+    // `whatIsBlock` left its 8 documents of definition copy with nowhere to go — the
+    // consequence ADR-017 recorded and this closes.
+    //
+    // ⚠️ There are 0 Glossary Term documents today, so the picker starts empty. That is
+    // the authoring backlog, not a schema problem: `disableNew` is deliberately NOT set
+    // here, because the terms have to be created before anything can point at them.
+    defineField({
+      name: 'glossaryTerm',
+      title: 'Glossary term',
+      type: 'reference',
+      group: 'content',
+      to: [{ type: 'glossaryTerm' }],
+      description:
+        'The industry term this option is an instance of. The definition lives on the Glossary Term only — the option page pulls it and never restates it.',
+    }),
     defineField({
       name: 'status',
       title: 'Status',
@@ -498,12 +517,17 @@ export const customizationOption = defineType({
     // toward. The migration unsets the key on any straggler.
     // Note: `glossaryTerm.relatedCustomizations` is a different field on a different
     // type and is untouched.
+    // Deprecated, not deleted (PROD-2250, Rename Map). `faqs` is NOT in the designed
+    // field list in `Entities/Customization Option.md` — which that file calls "the
+    // truth until it ships" — and it appears nowhere in it. But 2 Options carry real
+    // Q&A, so deleting the field would destroy content that has no home yet. This
+    // answers "not designed" without answering "throw it away".
     defineField({
       name: 'faqs',
-      title: 'FAQs',
+      title: 'FAQs (old)',
       type: 'array',
       group: 'categorization',
-      description: 'Question-and-answer pairs shown on the customization landing page.',
+      ...deprecateField('Not in the designed field list for Customization Option — do not add more. The 2 populated documents are kept until there is somewhere to move them.'),
       of: [
         {
           type: 'object',

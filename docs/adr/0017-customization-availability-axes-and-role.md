@@ -130,6 +130,24 @@ So `productLine` is a **single reference** and `productStyle` stays an **array**
 
 **Verified lossless before the change:** of 26 products, **0** sat in more than one line, **0** in more than one style, and every existing single ref agreed with its array's first entry. The migration re-checks all three per dataset and refuses to write if any fails.
 
+## Follow-on: the zero-populated Rename Map rows, and `glossaryTerm`
+
+Cleared while the product tables were still empty — all schema-only, and much cheaper now than after the product data source populates:
+
+| Change | Populated | Note |
+| --- | --- | --- |
+| `productLine.styleOrder` → `styles` | 0 | an array is ordered by definition, so `*Order` named the mechanism |
+| `productStyle.bannerImage` → `cardImage` | 0 | a banner is a shape, not a meaning; matches Product Line and Case Study |
+| `productStyle.hero.title` → `hero.label` | 0 | *labelled* "Badge label" but *named* `title`, so it collided with the document's own title in every projection |
+| `dieline.gated` → `isGated` | 0 | a boolean reads as a question; 0 dieline documents exist at all |
+| `customizationOption.faqs` → deprecated | **2** | not in the designed field list — see below |
+
+**No migration ships with these.** All four renames are 0-populated *including drafts*, so there is nothing to move; a migration would have been ceremony. The one live-looking reader — `PRODUCT_COLLECTION_META_FOR_PATH_QUERY` reading `hero.title` and `bannerImage` — is **dead**: it filters on `product.primaryLandingPage` and `primaryCollection`, neither of which exists on the product schema, and dereferences a `productCollection` type that does not exist. Same family as the stale `/capabilities/**` routes; a separate problem, not fixed here.
+
+**`faqs` is deprecated rather than deleted.** It is absent from the designed field list in `Entities/Customization Option.md` — the file that calls itself *"the truth until it ships"* — but 2 Options carry real Q&A. Deprecating answers *"not designed"* without answering *"throw it away"*.
+
+**`customizationOption.glossaryTerm` is now built.** It was designed (*"The definition lives there **only**; the Option page pulls it, never retypes it"*) and never deployed. This is the field `whatIsBlock` retires **into** — until it existed, deprecating `whatIsBlock` left its 8 documents of definition copy with nowhere to go, which is the consequence recorded above and now closed. ⚠️ There are **0 Glossary Term documents**, so the picker starts empty; `disableNew` is deliberately not set, because the terms must be creatable before anything can point at them.
+
 ## Consequences
 
 - **`reference` is classified from Eric's `Capabilities Flow` diagram (2026-08-26), which is the authoritative source.** The diagram badges each **Type**, and the badges map onto `role` one-for-one: *"Not Customizable"* → every Option under it is `reference`; no badge, or *"Single / Multiple Selection (Within Each Type)"* → `configurable`; *"only for Product Customization" + "No detail page"* → `configurable`. Reference Types: **Pouch Layer** (Materials), **Lamination**, **Surface Coating**, **Cutting**, **Gluing** (Finishing). Configurable-but-no-page Types: **Surface Finish (paper-based)**, **Surface Finish (non-paper)**, **Pouch Material**, **Food-Grade Material**.

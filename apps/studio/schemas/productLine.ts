@@ -144,8 +144,10 @@ export const productLine = defineType({
       ],
     }),
     defineField({
-      name: 'styleOrder',
-      title: 'Style order',
+      // Renamed from `styleOrder` (D33): an array is ordered by definition, so
+      // `*Order` named the mechanism rather than the thing. 0 populated at the rename.
+      name: 'styles',
+      title: 'Styles',
       type: 'array',
       group: GROUPS.categorization,
       description: 'Display order for the styles grid. Never a gate — unlisted styles append alphabetically.',
