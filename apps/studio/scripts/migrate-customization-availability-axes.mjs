@@ -176,7 +176,7 @@ async function main() {
   // ── 2. Types — backfill cardinality ───────────────────────────────────────────
   const types = await client.fetch(
     `*[_type == "customizationType" && !defined(cardinality)]{
-       _id, title, "slug": slug.current, "category": category->title,
+       _id, title, "slug": slug.current, "category": type->category->title,
        "isDraft": _id in path("drafts.**") } | order(category asc, title asc)`,
   )
   const typePatches = types.map((t) => ({

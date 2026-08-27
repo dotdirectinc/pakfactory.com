@@ -139,7 +139,7 @@ async function main() {
   // draft that lacks it overwrites the published document and unsets the field again.
   const docs = await client.fetch(
     `*[_type == "customizationOption" && !defined(role)]{
-       _id, title, "slug": slug.current, "type": type->title, "category": category->title,
+       _id, title, "slug": slug.current, "type": type->title, "category": type->category->title,
        "isDraft": _id in path("drafts.**")
      } | order(category asc, type asc, title asc)`,
   )

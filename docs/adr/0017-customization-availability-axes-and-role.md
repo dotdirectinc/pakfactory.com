@@ -107,6 +107,15 @@ This matches how the Registry resolves scope (`rule_scope`, ADR-0008 #10 option 
 
 **Applied 2026-08-26, after the diagram:** the six Options the first backfill mis-set — Matte / Gloss / Soft Touch Lamination and UV / Aqueous / Varnish Coating — are corrected to `reference` by `backfill:customization-role -- --reclassify`, and the `Coating` Type is split by `split:coating-type`. Splitting the Type does **not** reintroduce a Type-level role flag: the Type carries no `role` field, it is only that each Type's Options now happen to agree.
 
+## Follow-on: the remaining Rename Map rows on `customizationOption`
+
+Not part of D47, but executed against the same type once D47's build order closed
+(`pakfactory-content-model/Rename Map.md`, "Still to do — fields"):
+
+- **`category` retired.** The Category is reachable as `type->category`, and a second stored path to the same fact is how the two drift apart. Removing it also removed the Type picker's filter, which needed a category on *this* document to narrow by — so the Type picker is now unfiltered and always visible. That trade (23 Types instead of a narrowed handful, with search) was taken rather than storing a fact twice to make a picker shorter. **Verified lossless before removal:** all 33 Options agreed with `type->category`, 0 drift, and no Option's Type lacked a category. The migration re-runs that check per dataset and refuses to unset if it fails.
+- **`whyChooseBlock` → `benefits`**, matching Product and Product Style (D33) — "block" named the mechanism, not the meaning. **`whatIsBlock` retired**: an Option is an instance, and the definition of what a thing *is* belongs to the Glossary Term, stated once.
+- Both old fields are **deprecated, not deleted** — 8 of 33 carry copy, and `whatIsBlock` has nowhere to move to until the glossary surface exists. That is steps 1–4 of the Rename Map's procedure; step 5 waits for a sweep once nothing reads them.
+
 ## Consequences
 
 - **`reference` is classified from Eric's `Capabilities Flow` diagram (2026-08-26), which is the authoritative source.** The diagram badges each **Type**, and the badges map onto `role` one-for-one: *"Not Customizable"* → every Option under it is `reference`; no badge, or *"Single / Multiple Selection (Within Each Type)"* → `configurable`; *"only for Product Customization" + "No detail page"* → `configurable`. Reference Types: **Pouch Layer** (Materials), **Lamination**, **Surface Coating**, **Cutting**, **Gluing** (Finishing). Configurable-but-no-page Types: **Surface Finish (paper-based)**, **Surface Finish (non-paper)**, **Pouch Material**, **Food-Grade Material**.

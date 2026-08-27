@@ -46,35 +46,26 @@ export const customizationOption = defineType({
           return existing ? 'Slug must be unique across all customizations' : true
         }),
     }),
-    defineField({
-      name: 'category',
-      title: 'Category',
-      type: 'reference',
-      group: 'content',
-      description: 'The customization category this option belongs to — required. Scopes the Type picker below.',
-      to: [{ type: 'customizationCategory' }],
-      options: { disableNew: true },
-      validation: (Rule) => Rule.required(),
-    }),
+    // `category` was retired here (PROD-2250, Rename Map). The Category is reachable as
+    // `type->category`, and a second stored path to the same fact is how the two drift
+    // apart. Verified on production before removal: all 33 Options agreed with
+    // `type->category`, and no Option's Type lacked a category — so the value is
+    // reconstructible everywhere and nothing is lost.
+    //
+    // It also carried the Type picker's filter, which is why that goes with it: the
+    // filter needed a category stored on THIS document to narrow by. The Type picker is
+    // now unfiltered and always visible. That is a real trade — 23 Types instead of a
+    // narrowed handful — taken because the alternative is storing a fact twice to make
+    // a picker shorter. Search in the picker covers it.
     defineField({
       name: 'type',
       title: 'Type',
       type: 'reference',
       group: 'content',
       to: [{ type: 'customizationType' }],
-      description: 'Filtered by the selected category. Select a category first.',
-      options: {
-        disableNew: true,
-        filter: ({ document }: { document: { category?: { _ref?: string } } }) => {
-          const categoryRef = document?.category?._ref
-          if (!categoryRef) return { filter: 'false' }
-          return {
-            filter: 'category._ref == $categoryRef',
-            params: { categoryRef },
-          }
-        },
-      },
-      hidden: ({ document }) => !document?.category,
+      description:
+        'Which Customization Type this option belongs to. The Category follows from the Type — it is not stored here.',
+      options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -432,27 +423,48 @@ export const customizationOption = defineType({
 
     // ─── CONTENT (landing-page prose) ─────────────────────────────────────────
 
+    // `benefits` replaces `whyChooseBlock`, matching what Product and Product Style
+    // already ship (D33). "Block" meant rich text and named the mechanism, not the
+    // meaning. The old field is deprecated rather than deleted — 8 of 33 Options carry
+    // copy — and the migration copies it across, so this is steps 1-4 of the rename
+    // procedure with step 5 left for a later sweep.
     defineField({
-      name: 'whatIsBlock',
-      title: 'What is it?',
+      name: 'benefits',
+      title: 'Benefits',
       type: 'object',
       group: 'content',
-      description: 'Landing-page explainer of what this customization is.',
+      description:
+        'Why a customer would pick this customization (renamed from whyChooseBlock, D33). Argues the choice; it must not restate the definition — that belongs to the Glossary Term.',
+      fields: [
+        defineField({ name: 'title', title: 'Title', type: 'string' }),
+        defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
+      ],
+    }),
+    // Retired for the same reason Product's did: an Option is an instance, and the
+    // definition of what a thing IS belongs to the Glossary Term, stated once, not
+    // restated per Option. Deprecated rather than deleted — 8 of 33 carry copy, and
+    // there is no glossary surface to move it to yet.
+    defineField({
+      name: 'whatIsBlock',
+      title: 'What is it? (old)',
+      type: 'object',
+      group: 'content',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
       ],
+      ...deprecateField('Retired — the definition belongs to the Glossary Term, never the option.'),
     }),
     defineField({
       name: 'whyChooseBlock',
-      title: 'Why choose it?',
+      title: 'Why choose it? (old)',
       type: 'object',
       group: 'content',
-      description: 'Landing-page copy on why a customer would pick this customization.',
       fields: [
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
       ],
+      ...deprecateField('Renamed to Benefits.'),
     }),
 
     // `specTables` was removed in PROD-2250 — Decisions D41 deleted Option Group.
