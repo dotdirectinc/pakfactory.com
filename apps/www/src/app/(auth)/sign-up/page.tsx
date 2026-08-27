@@ -1,5 +1,7 @@
+import {redirect} from 'next/navigation';
 import type {Metadata} from 'next';
 import {SignUpPageView} from '@/components/login/sign-up-page-view';
+import {getUser} from '@/lib/auth/session';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 
 export const metadata: Metadata = {
@@ -7,6 +9,10 @@ export const metadata: Metadata = {
     robots: robotsDirectiveToMetadata({index: false, follow: false}),
 };
 
-export default function SignUpPage() {
+export default async function SignUpPage() {
+    if (await getUser()) {
+        redirect('/account');
+    }
+
     return <SignUpPageView />;
 }
