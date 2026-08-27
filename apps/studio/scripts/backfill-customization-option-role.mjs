@@ -34,11 +34,15 @@
  * holding both, which is why the slugs below are enumerated per-Option rather than
  * derived from the Type. Splitting the Type is separate work.
  *
- * Idempotent: only writes where `role` is missing — never overwrites an editor's value.
- * That means the six published Lamination / Surface Coating Options already carrying
- * `configurable` from the first backfill are NOT corrected by this script; changing a
- * value an editor can see is an editorial decision, not a backfill. They are listed at
- * the end of a run so the discrepancy is visible.
+ * Idempotent: the default run only writes where `role` is MISSING — it never overwrites
+ * an editor's value. Options that already carry a role but contradict the diagram are
+ * listed at the end of a run instead.
+ *
+ * `--reclassify` additionally corrects those. It was approved 2026-08-26 for the six
+ * Options the first backfill mis-set (Matte / Gloss / Soft Touch Lamination and UV /
+ * Aqueous / Varnish Coating), which were written `configurable` before the Capabilities
+ * Flow diagram was available. It only ever writes the role the diagram dictates, so
+ * re-running it is a no-op once the data agrees.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
  *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run backfill:customization-role
@@ -67,6 +71,10 @@ loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
 const apply = process.argv.includes('--apply')
+// Correct Options that already carry a role but contradict the diagram. Off by
+// default: the plain backfill must stay non-destructive, and flipping a value an
+// editor can see is a deliberate act, not a side effect of filling blanks.
+const reclassify = process.argv.includes('--reclassify')
 
 /**
  * Slugs to write as `reference` instead of `configurable`, from the Capabilities Flow
@@ -117,7 +125,7 @@ const client = createClient({
 
 async function main() {
   console.log(`\n🔧  Backfill customizationOption.role (PROD-2250, D47 / ADR-017)`)
-  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${apply ? 'APPLY (writes)' : 'DRY-RUN (no writes)'}\n`)
+  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${apply ? 'APPLY (writes)' : 'DRY-RUN (no writes)'}${reclassify ? ' +RECLASSIFY (corrects existing roles)' : ''}\n`)
 
   // Drafts are backfilled too, not just reported: `role` is required, and publishing a
   // draft that lacks it overwrites the published document and unsets the field again.
@@ -133,17 +141,22 @@ async function main() {
   const mismatched = await client.fetch(
     `*[_type == "customizationOption" && defined(role) && role != "reference"
        && slug.current in $refs && !(_id in path("drafts.**"))]{
-       title, role, "slug": slug.current, "type": type->title } | order(type asc, title asc)`,
+       _id, title, role, "slug": slug.current, "type": type->title } | order(type asc, title asc)`,
     { refs: [...REFERENCE_SLUGS] },
   )
   const reportMismatched = () => {
     if (!mismatched.length) return
-    console.log(`\n⚠️  ${mismatched.length} published Option(s) are classified \`configurable\` but sit under a Type the Capabilities Flow diagram badges "Not Customizable". Not changed — flipping a value an editor can see is an editorial decision:`)
-    mismatched.forEach((d) => console.log(`     ${d.type ?? '—'} › ${d.title} [${d.slug}] — currently ${d.role}`))
+    if (reclassify) {
+      console.log(`\n\u267b\ufe0f  ${mismatched.length} published Option(s) will be RECLASSIFIED to \`reference\` — their Type is badged "Not Customizable" in the Capabilities Flow diagram:`)
+      mismatched.forEach((d) => console.log(`${apply ? '   \u270f\ufe0f' : '   \u2022'} ${d.type ?? '\u2014'} \u203a ${d.title} [${d.slug}] \u2014 ${d.role} \u2192 reference`))
+    } else {
+      console.log(`\n\u26a0\ufe0f  ${mismatched.length} published Option(s) are classified \`configurable\` but sit under a Type the Capabilities Flow diagram badges "Not Customizable". Not changed \u2014 re-run with \`--reclassify\` to correct them:`)
+      mismatched.forEach((d) => console.log(`     ${d.type ?? '\u2014'} \u203a ${d.title} [${d.slug}] \u2014 currently ${d.role}`))
+    }
     console.log('')
   }
 
-  if (docs.length === 0) {
+  if (docs.length === 0 && !(reclassify && mismatched.length)) {
     console.log('✅  Nothing to backfill — every Option already has a role.')
     reportMismatched()
     return
@@ -163,7 +176,7 @@ async function main() {
 
   const nRef = changes.filter((c) => c.role === 'reference').length
   const nDraft = changes.filter((c) => c.isDraft).length
-  console.log(`\n${changes.length} doc(s) to backfill — ${changes.length - nRef} configurable, ${nRef} reference (${nDraft} of them drafts)`)
+  if (changes.length) console.log(`\n${changes.length} doc(s) to backfill — ${changes.length - nRef} configurable, ${nRef} reference (${nDraft} of them drafts)`)
 
   if (nDraft) {
     console.log(`\n📝  ${nDraft} draft(s) patched below still need a human to review and PUBLISH in the Studio — patching a draft does not publish it.`)
@@ -178,8 +191,16 @@ async function main() {
 
   const tx = client.transaction()
   for (const c of changes) tx.patch(c._id, (p) => p.set({ role: c.role }))
+  if (reclassify) {
+    // Patch the draft too where one exists, so the correction is not undone the next
+    // time somebody publishes.
+    const ids = mismatched.flatMap((d) => [d._id, `drafts.${d._id}`])
+    const live = await client.fetch(`*[_id in $ids]._id`, { ids })
+    for (const _id of live) tx.patch(_id, (p) => p.set({ role: 'reference' }))
+  }
   await tx.commit()
-  console.log(`\n✅  Backfilled role on ${changes.length} Option(s) in ${DATASET}.\n`)
+  const nReclassified = reclassify ? mismatched.length : 0
+  console.log(`\n✅  ${changes.length} Option(s) backfilled${nReclassified ? `, ${nReclassified} reclassified to reference` : ''} in ${DATASET}.\n`)
 }
 
 main().catch((err) => {
