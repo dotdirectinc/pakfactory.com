@@ -73,6 +73,27 @@ const USAGE = `Usage:
   --yes-production  Second gate; required to write to production.`
 const args = parseScriptArgs({ usage: USAGE })
 const { confirm: apply } = args
+const COATING_ID = 'type-coating-r2304'
+const SPOT_ID = 'type-spot-coating-r2304'
+const FINISHES_CATEGORY_ID = 'cat-finishes-r2304'
+
+/** Option slugs that move from the old `Coating` Type to the new `Spot Coating` Type. */
+const SPOT_OPTION_SLUGS = ['spot-uv']
+
+const SURFACE_COATING = {
+  title: 'Surface Coating',
+  slug: 'surface-coating',
+  description:
+    'Coatings applied across the whole printed surface — aqueous, UV, and varnish. Not picked in the configurator; a customer reaches these through the Surface Finish they achieve.',
+}
+
+const SPOT_COATING = {
+  title: 'Spot Coating',
+  slug: 'spot-coating',
+  description:
+    'Coatings applied to selected areas of the design for contrast — spot UV, spot gloss, spot glitter, raised and textured spot UV.',
+}
+
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
 // Straight from the flag — `--dataset` is required, so there is nothing to fall back to.
@@ -184,7 +205,7 @@ async function main() {
     return
   }
   if (!apply) {
-    console.log(`\n${steps.length} write(s) pending. DRY-RUN only — re-run with \`-- --apply\`. Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
+    console.log(`\n${steps.length} write(s) pending. DRY-RUN only — re-run with \`--confirm\` (production also needs \`--yes-production\`). Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
     return
   }
 
