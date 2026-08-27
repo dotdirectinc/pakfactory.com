@@ -67,6 +67,7 @@ Verify:
 - pnpm --filter @pakfactory/www typecheck && pnpm --filter @pakfactory/www build
 - Local: apps/www (port 3000) — paths exercised: {paths}
 - QA: https://pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app (trunk alias) and/or the PR preview after open
+- Stakeholder staging (same branch, fixed link, Vercel-auth gated): https://staging.pakfactory.com
 ```
 
 Optional: transition to **Request For Approval** (Product project transition id `51`, same as blog skill) when that status is appropriate for the ticket. Do not invent other transitions.

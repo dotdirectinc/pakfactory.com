@@ -104,6 +104,8 @@ To **deploy hosted Studio**, use `pnpm --filter @pakfactory/studio run deploy` (
 
 **www rebuild preview:** until launch, public **pakfactory.com** stays on `main`. QA the rebuild on the non-prod `pakfactory-com` project’s stable git-branch alias: [pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app](https://pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app). Keep that project’s Production Branch on `main` (case-studies origin). See [`AGENTS.md`](./AGENTS.md) § www rebuild trunk.
 
+**Stakeholder staging:** [staging.pakfactory.com](https://staging.pakfactory.com) is a fixed link that always serves the latest `www-new-release` build. It is a Vercel **preview** deployment of the `pakfactory-com` project, gated by Vercel Authentication — a seat on the *PakFactory's Projects* Vercel team is required, there is no app-level login, and it is never indexable. Access requests and the full setup are documented in [`AGENTS.md`](./AGENTS.md) § www rebuild trunk → Stakeholder staging.
+
 ### Blog app on Vercel (`apps/blog`, PROD-1496)
 
 Create a **separate** Vercel project from `apps/www`. Build/install commands are defined in [`apps/blog/vercel.json`](apps/blog/vercel.json) (Vercel reads them when Root Directory is `apps/blog`).
