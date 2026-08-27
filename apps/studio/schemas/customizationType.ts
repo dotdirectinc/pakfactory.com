@@ -42,6 +42,34 @@ export const customizationType = defineType({
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
+    // D47 §4 / ADR-017 — `cardinality` must ship in the same PR as, or ahead of, any
+    // `customizationType` target on `incompatibleWithCustomizations` (D43): naming a
+    // whole Type as a clash only reads unambiguously once you know whether a customer
+    // takes one Option from it or several.
+    //
+    // Not inherited from the Category. Materials are one-per-Type by the diagram's
+    // blanket "Single Selection (Within Each Type)", but Finishing and Additional
+    // Customization are mixed — Embossing & Debossing and Closures allow several while
+    // Foiling and Windows do not — so the Category cannot answer it.
+    defineField({
+      name: 'cardinality',
+      title: 'How many can a customer choose?',
+      type: 'string',
+      group: 'content',
+      description:
+        'How many of this type\'s options a customer may pick in the configurator. One — Paperboard: a box is made of a single board. Several — Embossing & Debossing: a design can carry more than one.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'One — a single option from this type', value: 'single' },
+          { title: 'Several — any number of this type\'s options', value: 'multiple' },
+        ],
+      },
+      // Defaults to `single`, which is what the diagram states for every Material and
+      // Printing type and for most of Finishing; `multiple` is the marked exception.
+      initialValue: 'single',
+      validation: (Rule) => Rule.required(),
+    }),
     defineField({
       name: 'description',
       title: 'Description',

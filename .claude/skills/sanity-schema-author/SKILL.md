@@ -19,6 +19,7 @@ workflow; it lives on `feature/sanity-studio-ux` in the studio worktree.
 
 - **Worktree/branch:** `pakfactory.com-sanity-studio-ux` on `feature/sanity-studio-ux`. Schema work **never** rides on `feature/blog` (see `single-app-commits-and-branches.md`).
 - **Source of truth:** `apps/studio/schemas/` (registered in `schemas/index.ts`), desk in `apps/studio/structure/`, actions in `apps/studio/actions/`, seeds in `apps/studio/scripts/{seed,seed-blog-dev}.mjs`.
+- **Scripts:** content-model **migrations** go in `packages/sanity/scripts/*.ts` (run via `tsx`) — that is where every field rename/backfill lives, e.g. `migrate-customization-applies-to.ts`. `apps/studio/scripts/` is for **operational** scripts only: seeds, redirect maintenance, structure/parity checks. Both take `--dataset` (required, no env fallback) / `--confirm` / `--yes-production`. See `.claude/rules/dataset-script-placement-and-flags.md` and BUG-0032 — this skill previously named only the seeds, and three migrations landed in the wrong directory as a result.
 - **Stack:** Sanity 5, TS 5, pnpm. Project `8293wrxp`; dev dataset **`development`**.
 - Read [`AGENTS.md`](../../AGENTS.md) § Sanity and GROQ (including **Sanity content — agent guardrails**), and the content-team checklist (PROD-1601).
 

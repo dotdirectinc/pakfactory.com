@@ -838,7 +838,7 @@ export function knowledgeLibraryItems(
                                                 S.documentTypeList('product')
                                                     .title('Products')
                                                     .filter(
-                                                        '$styleId in productStyleCategories[]._ref && (kind == "standard" || kind == "both")',
+                                                        '$styleId in productStyle[]._ref && (kind == "standard" || kind == "both")',
                                                     )
                                                     .params({styleId}),
                                             ),
@@ -969,7 +969,7 @@ export function coreEntitiesItems(
                                                 S.documentTypeList('product')
                                                     .title('Products')
                                                     .filter(
-                                                        '$styleId in productStyleCategories[]._ref && (kind == "standard" || kind == "both")',
+                                                        '$styleId in productStyle[]._ref && (kind == "standard" || kind == "both")',
                                                     )
                                                     .params({styleId}),
                                             ),
