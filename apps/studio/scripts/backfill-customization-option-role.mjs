@@ -46,11 +46,11 @@
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
  *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset development
- *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset development --apply
- *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset production --apply
+ *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset production --confirm --yes-production
  *
- * `--dataset` is REQUIRED with `--apply` — NEXT_PUBLIC_SANITY_DATASET is deliberately
- * not enough for a write. See scripts/lib/script-args.mjs for why.
+ * Follows the `packages/sanity/scripts/` convention: `--dataset` is required always,
+ * `--confirm` writes, and production additionally needs `--yes-production`.
  *
  * ⚠️  The development dataset is nightly-synced from production, so a dev-only apply
  * is wiped overnight. Run development first to verify, then production to make it stick.
@@ -66,7 +66,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseScriptArgs, resolveDataset } from './lib/script-args.mjs'
+import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -75,39 +75,19 @@ loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
 const USAGE = `Usage:
-  pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset <development|production> [--reclassify] [--apply]
+  pnpm --filter @pakfactory/studio run backfill:customization-role -- --dataset <development|production> [--reclassify] [--confirm] [--yes-production]
 
-  --dataset   which dataset to read/write. Required with --apply.
-  --apply     actually write. Omit for a dry run.
-  --reclassify  also correct roles that contradict the diagram.`
-// `--reclassify` corrects Options that already carry a role but contradict the
-// diagram. Off by default: the plain backfill must stay non-destructive, and
-// flipping a value an editor can see is a deliberate act, not a side effect of
-// filling blanks.
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.
+  --reclassify      Also correct roles that contradict the diagram.`
 const args = parseScriptArgs({ flags: ['reclassify'], usage: USAGE })
-const { apply, reclassify } = args
-
-/**
- * Slugs to write as `reference` instead of `configurable`, from the Capabilities Flow
- * diagram. Enumerated per-Option because Sanity's single `Coating` Type spans two of
- * Eric's Types (see the header).
- */
-const REFERENCE_SLUGS = new Set([
-  // Finishing › Lamination — "Not Customizable"
-  'matte-lamination',
-  'gloss-lamination',
-  'soft-touch-lamination',
-  // Finishing › Surface Coating — "Not Customizable". NOT `spot-uv`, which the diagram
-  // puts under the un-badged `Spot Coating` Type.
-  'uv-coating',
-  'aqueous-coating',
-  'varnish-coating',
-])
-
+const { confirm: apply, reclassify } = args
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
-// `--dataset` wins over the environment; --apply refuses a defaulted dataset.
-const DATASET = resolveDataset(args, USAGE)
+// Straight from the flag — `--dataset` is required, so there is nothing to fall back to.
+const DATASET = args.dataset
+
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_API_READ_TOKEN || process.env.SANITY_TOKEN
 
@@ -116,7 +96,7 @@ if (!TOKEN) {
   process.exit(1)
 }
 if (apply && !(process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_TOKEN)) {
-  console.error('❌  --apply needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
+  console.error('❌  --confirm needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
   process.exit(1)
 }
 
@@ -136,7 +116,7 @@ const client = createClient({
 
 async function main() {
   console.log(`\n🔧  Backfill customizationOption.role (PROD-2250, D47 / ADR-017)`)
-  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${apply ? 'APPLY (writes)' : 'DRY-RUN (no writes)'}${reclassify ? ' +RECLASSIFY (corrects existing roles)' : ''}\n`)
+  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${describeMode(args)}${reclassify ? ' +RECLASSIFY (corrects existing roles)' : ''}\n`)
 
   // Drafts are backfilled too, not just reported: `role` is required, and publishing a
   // draft that lacks it overwrites the published document and unsets the field again.
