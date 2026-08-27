@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
+import { deprecateField } from '../lib/schema-guards'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -133,24 +134,35 @@ export const customizationOption = defineType({
 
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
 
-    // ─── APPLICABILITY (PROD-2306) ────────────────────────────────────────────
-    // Applicability lives on the Option, not a standalone rule type (D8b, the rule
-    // type was withdrawn). `appliesTo` empty = applies to everything; scope it to
-    // narrow.
+    // ─── AVAILABILITY (PROD-2250 / D47 / ADR-017) ─────────────────────────────
+    // One `appliesTo` array used to answer two unrelated questions — which products
+    // offer this as a choice, and which materials it can be applied to — and which
+    // grid a given row belonged to was knowable only by inspecting each reference's
+    // `_type`. D42 patched that with a rule that rejected a wrong-axis pick; a field
+    // that needs a rule to stop it crossing its own axis is the wrong field.
     //
-    // PROD-2250 (Eric + Richard, 2026-08-21): `appliesTo`/`except` target PRODUCTS
-    // ONLY — never another Customization Option. Every Option↔Option relationship
-    // goes through `incompatibleWith`, and only through it. This makes the
-    // Sanity↔Registry boundary crisp: Sanity enumerates pairwise clashes; the
-    // Registry generalises the rule over tags. (Withdraws the spec's "for a finish
-    // that's the material" clause; verified 0/33 options ever targeted an Option.)
+    // The deciding argument is the DEFAULT. One array can carry only one meaning for
+    // "empty", and the two grids need opposite ones: an unauthored product list must
+    // fail closed (offered nowhere), while an unauthored material list must fail open
+    // (no restriction). Hence one field per axis, each with the default its own
+    // question demands. D42's wrong-axis validation is retired rather than
+    // reimplemented — each picker now offers one axis, so a wrong-axis pick is
+    // unpickable rather than rejected.
+    //
+    // Boundary rule, repeated in both descriptions so it cannot be lost:
+    //   Material constraints are always POSITIVE, in `worksOnCustomizations`.
+    //   `incompatibleWithCustomizations` is only for two things a customer might
+    //   otherwise pick together.
+    // Without it, "Soft Touch doesn't work on blister plastic" has two homes and the
+    // allow-list/deny-list duplication comes straight back.
+
     defineField({
-      name: 'appliesTo',
-      title: 'Applies to',
+      name: 'availableOnProducts',
+      title: 'Available on products',
       type: 'array',
       group: 'categorization',
       description:
-        'What products this option is available on. Leave EMPTY to mean it applies to everything. Otherwise scope it to specific Product Lines, Product Styles, or Products. (Option-to-option clashes go in Incompatible with, not here.)',
+        'Which products offer this as a choice — scope it to Product Lines, Product Styles, or individual Products. EMPTY MEANS OFFERED NOWHERE: this list is the whole answer, so a configurable option needs at least one entry. What this can be applied on top of goes in "Works on", not here.',
       of: [
         {
           type: 'reference',
@@ -161,19 +173,38 @@ export const customizationOption = defineType({
           ],
         },
       ],
+      // Reads `role` (D47 §2). Before `role` existed this warning fired on 25 of 33
+      // options while admitting it could not tell which case it was in — the kind of
+      // warning editors learn to ignore before the real one arrives. Now each branch
+      // says something true and actionable.
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const role = (context.document as { role?: string } | undefined)?.role
+          if (role === 'configurable' && list.length === 0) {
+            return 'Empty means offered nowhere, so this option never reaches the configurator. Scope it to at least one Product Line, Style, or Product — or set Role to Reference if it is technical and never picked directly.'
+          }
+          if (role === 'reference' && list.length > 0) {
+            return 'A reference option is never picked in the configurator, so product availability has no effect. Clear it, or set Role to Configurable.'
+          }
+          return true
+        }).warning(),
     }),
     defineField({
-      name: 'except',
-      title: 'Except',
+      name: 'exceptProducts',
+      title: 'Except on',
       type: 'array',
       group: 'categorization',
       description:
-        'Optional carve-outs from Applies to — the specific products this option is NOT available on. Should be narrower than Applies to.',
+        'Carve-outs from "Available on products" — the specific Styles or Products this is NOT available on. Empty means no carve-out. Should be narrower than what Available on products opened up.',
+      // Narrower than the field it replaces, which also accepted a Product Line: a
+      // carve-out at line grain is the same statement as not listing the line above.
+      // D42's plan to add a `customizationOption` target is withdrawn (D47 §1) —
+      // material constraints are positive, in `worksOnCustomizations`.
       of: [
         {
           type: 'reference',
           to: [
-            { type: 'productLine' },
             { type: 'productStyle' },
             { type: 'product' },
           ],
@@ -183,24 +214,57 @@ export const customizationOption = defineType({
         Rule.custom((except, context) => {
           const list = Array.isArray(except) ? except : []
           if (list.length === 0) return true
-          const appliesTo = (context.document as { appliesTo?: unknown[] } | undefined)?.appliesTo
-          if (!appliesTo || appliesTo.length === 0) {
-            return 'Except is set while Applies to is empty (= everything). A carve-out from "everything" is usually clearer as a scoped Applies to.'
+          const available = (context.document as { availableOnProducts?: unknown[] } | undefined)
+            ?.availableOnProducts
+          if (!available || available.length === 0) {
+            return 'Except on is set while Available on products is empty (= offered nowhere). A carve-out from nothing has no effect — scope Available on products instead.'
           }
           return true
         }).warning(),
     }),
     defineField({
-      name: 'incompatibleWith',
-      title: 'Incompatible with',
+      name: 'worksOnCustomizations',
+      title: 'Works on',
       type: 'array',
       group: 'categorization',
       description:
-        'Other Customization Options that cannot be combined with this one — real manufacturing clashes only, a short deny-list. This is the ONLY channel for option-to-option relationships (PROD-2250). Keep it symmetric: if A lists B, B should list A.',
-      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-      // Self-reference is an error; asymmetry is a warning. incompatibleWith now
-      // carries the whole Option↔Option relationship (appliesTo no longer targets
-      // Options — PROD-2250), so a missing reciprocal is worth surfacing.
+        'Which materials or other customizations this can be applied ON TOP OF — Soft Touch Lamination works on paperboard, not on blister plastic. EMPTY MEANS NO MATERIAL RESTRICTION: this only narrows what Available on products already opened up, it never widens it. Point at a whole Customization Type to mean "any option under it".',
+      // The finish × material constraint, which had nowhere to live under the single
+      // `appliesTo` array — this is the field whose absence forced the Surface Finish
+      // split by material family (ADR-017 §4). Empty fails OPEN, the opposite of
+      // `availableOnProducts`, which is the whole reason it is its own field.
+      of: [
+        {
+          type: 'reference',
+          to: [
+            { type: 'customizationType' },
+            { type: 'customizationOption' },
+          ],
+        },
+      ],
+    }),
+    defineField({
+      name: 'incompatibleWithCustomizations',
+      title: "Can't combine with",
+      type: 'array',
+      group: 'categorization',
+      description:
+        'Two things a customer might otherwise pick together but cannot — real manufacturing clashes only, a short deny-list. Empty means no known clash, which fails open deliberately: an unauthored clash must not invent one. A material constraint is NOT a clash — that belongs in "Works on". Keep it symmetric: if A lists B, B should list A.',
+      of: [
+        {
+          type: 'reference',
+          to: [
+            { type: 'customizationType' },
+            { type: 'customizationOption' },
+          ],
+        },
+      ],
+      // Self-reference is an error; asymmetry is a warning. Symmetry is only asked of
+      // option→option pairs: a Type has no reciprocal field to answer with, so naming
+      // a whole Type is one-directional by construction. That Type target is what
+      // makes `customizationType.cardinality` a prerequisite (D43) — "can't combine
+      // with Embossing & Debossing" only reads unambiguously once you know whether a
+      // customer takes one option from that type or several.
       validation: (Rule) =>
         Rule.custom(async (value, context) => {
           const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
@@ -212,20 +276,48 @@ export const customizationOption = defineType({
           if (ids.length === 0) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
-            const targets = await client.fetch<{ _id: string; back: string[] }[]>(
-              `*[_id in $ids]{ _id, "back": incompatibleWith[]._ref }`,
+            const targets = await client.fetch<{ _id: string; _type: string; back: string[] }[]>(
+              `*[_id in $ids]{ _id, _type, "back": incompatibleWithCustomizations[]._ref }`,
               { ids },
             )
-            const listsSelf = (id: string) => {
-              const t = targets.find((x) => x._id.replace(/^drafts\./, '') === id)
-              return (t?.back ?? []).some((r) => r?.replace(/^drafts\./, '') === selfId)
-            }
-            const asymmetric = ids.filter((id) => !listsSelf(id))
+            const options = targets.filter((t) => t._type === 'customizationOption')
+            const listsSelf = (t: { back: string[] }) =>
+              (t.back ?? []).some((r) => r?.replace(/^drafts\./, '') === selfId)
+            const asymmetric = options.filter((t) => !listsSelf(t))
             if (asymmetric.length > 0) {
-              return `Not symmetric — ${asymmetric.length} listed option(s) don't list this one back. Add this option to their "Incompatible with" too.`
+              return `Not symmetric — ${asymmetric.length} listed option(s) don't list this one back. Add this option to their "Can't combine with" too.`
             }
           } catch {
             return true // never block on a lookup failure
+          }
+          return true
+        }).warning(),
+    }),
+    // D47 §1 — `achieves` names CANDIDATES, not a recipe. It points from a technical
+    // option at the simplified, customer-facing option it can deliver: VMPET Film
+    // achieves High-Barrier. The reverse list shown on the simplified option is
+    // derived from whatever points at it, so nothing is typed there.
+    //
+    // The non-sufficiency caveat lives in this description because that is the
+    // editor-facing surface. The derived reverse list is customer-facing, and
+    // "High-Barrier — achievable by: PET, VMPET, LDPE" still reads as "any of these
+    // gives you high barrier": whatever renders it needs its own framing copy. That
+    // is a rendering concern and no schema change fixes it.
+    defineField({
+      name: 'achieves',
+      title: 'Achieves',
+      type: 'array',
+      group: 'categorization',
+      description:
+        'On a technical (Reference) option only: which simplified, customer-facing option this one can deliver — VMPET Film achieves High-Barrier. Listing an option here does NOT claim this one is sufficient on its own; which combination is actually used is decided at quoting.',
+      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          if (list.length === 0) return true
+          const role = (context.document as { role?: string } | undefined)?.role
+          if (role === 'configurable') {
+            return 'Achieves is for technical options — it names the simplified option this one delivers. A configurable option is already the simplified end of that relationship, so it should be the target, not the source.'
           }
           return true
         }).warning(),
@@ -374,27 +466,26 @@ export const customizationOption = defineType({
     // PROD-2250 — it was the same relationship the "products only" decision routed
     // exclusively through `incompatibleWith`, expressed in the opposite direction,
     // and it was never in the entity spec. 0/33 options populated it.
+    // D47 §5 / ADR-017 — retired, matching the treatment its Product twin already
+    // shipped (`product.comparedAgainst`). Comparison is content: a guide, written
+    // once, linked from both. Kept rather than dropped because 8 of 33 options are
+    // populated; `deprecateField` renders it read-only with a visible reason so the
+    // data stays legible while nothing new is written. The minimum-3 rule goes with
+    // it — a read-only field cannot be brought up to a minimum.
     defineField({
       name: 'comparedAgainst',
-      title: 'Compared against',
+      title: 'Compared against (old)',
       type: 'array',
       group: 'categorization',
-      description: 'Sibling comparison — minimum 3 required.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-      validation: (Rule) =>
-        Rule.custom((val: unknown[] | undefined) => {
-          if (!val || val.length === 0) return true
-          return val.length >= 3 ? true : 'Comparison requires at least 3 items'
-        }),
+      ...deprecateField('Retired — comparison is content: a guide, written once, linked from both.'),
     }),
-    defineField({
-      name: 'relatedCustomizations',
-      title: 'Related customizations',
-      type: 'array',
-      group: 'categorization',
-      description: 'See also — cross-category links.',
-      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-    }),
+    // `relatedCustomizations` ("See also — cross-category links") was hard-removed
+    // here in PROD-2250 / D47 §5. Unlike `comparedAgainst` it was populated on 0 of
+    // 33 options, so there was no data to keep legible and nothing to deprecate
+    // toward. The migration unsets the key on any straggler.
+    // Note: `glossaryTerm.relatedCustomizations` is a different field on a different
+    // type and is untouched.
     defineField({
       name: 'faqs',
       title: 'FAQs',
