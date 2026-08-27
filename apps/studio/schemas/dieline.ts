@@ -93,9 +93,9 @@ export const dieline = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
   preview: {
-    select: { title: 'title', gated: 'gated', subtitle: 'slug.current' },
-    prepare({ title, gated, subtitle }) {
-      const tag = gated ? 'Gated' : 'Open'
+    select: { title: 'title', isGated: 'isGated', subtitle: 'slug.current' },
+    prepare({ title, isGated, subtitle }) {
+      const tag = isGated ? 'Gated' : 'Open'
       return {
         title: title || 'Untitled dieline',
         subtitle: [subtitle ? `/resources/dielines/${subtitle}` : '', tag].filter(Boolean).join(' · '),

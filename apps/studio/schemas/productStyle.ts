@@ -24,7 +24,7 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * product count is unbounded, so product display order derives from a query, not
  * a maintained array (⚠️ the entity spec still lists productOrder; flagged for
  * Eric — this follows the ticket + the model's derive-don't-maintain rule).
- * `order` is deprecated: the styles grid order lives on the Line (`styleOrder`).
+ * `order` is deprecated: the styles grid order lives on the Line (`styles`).
  */
 export const productStyle = defineType({
   name: 'productStyle',
@@ -172,8 +172,8 @@ export const productStyle = defineType({
       title: 'Display order',
       type: 'number',
       group: GROUPS.content,
-      // Retiring (§4.3): the styles-grid order lives on the Line (`styleOrder`).
-      ...deprecateField('The styles-grid order lives on the Product Line (styleOrder). Do not use.'),
+      // Retiring (§4.3): the styles-grid order lives on the Line (`styles`).
+      ...deprecateField('The styles-grid order lives on the Product Line (styles). Do not use.'),
     }),
 
     // ─── CATEGORIZATION ───────────────────────────────────────────────────────
@@ -210,12 +210,12 @@ export const productStyle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', bannerImage: 'bannerImage' },
-    prepare({ title, display, line, heroImage, bannerImage }) {
+    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
+    prepare({ title, display, line, heroImage, cardImage }) {
       return {
         title: display || title || 'Untitled style',
         subtitle: line ? `Style of ${line}` : 'Product Style',
-        media: bannerImage ?? heroImage,
+        media: cardImage ?? heroImage,
       }
     },
   },
