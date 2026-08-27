@@ -103,9 +103,11 @@ export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
                             <p className="text-sm font-medium text-foreground">
                                 {REQUEST_COPY.assistTitle}
                             </p>
-                            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-                                {REQUEST_COPY.assistBody}
-                            </p>
+                            {REQUEST_COPY.assistBody ? (
+                                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                                    {REQUEST_COPY.assistBody}
+                                </p>
+                            ) : null}
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-3 pl-9 sm:pl-0">

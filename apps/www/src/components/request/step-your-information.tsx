@@ -9,6 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@pakfactory/ui/components/select';
+import {AnnualSpendField} from '@/components/request/annual-spend-field';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft, ShippingAddress} from '@/lib/request/request.storage';
 import {normalizeAddress} from '@/lib/request/shipping-address';
@@ -73,9 +74,11 @@ export function StepYourInformation({
                 <h2 className="text-2xl font-semibold tracking-tight">
                     {REQUEST_COPY.contactHeading}
                 </h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                    {REQUEST_COPY.contactDesc}
-                </p>
+                {REQUEST_COPY.contactDesc ? (
+                    <p className="mt-1.5 text-sm text-muted-foreground">
+                        {REQUEST_COPY.contactDesc}
+                    </p>
+                ) : null}
             </div>
 
             <div className="space-y-3">
@@ -153,12 +156,13 @@ export function StepYourInformation({
                 </div>
 
                 <div className="pt-4">
-                    <Label className="mb-1 block text-xs font-medium">
+                    <Label className="mb-1 block text-sm font-medium">
                         {REQUEST_COPY.companyOffice}
-                        <span className="ml-1 font-normal text-muted-foreground">
-                            {REQUEST_COPY.companyOfficeOptional}
-                        </span>
+                        <span className="ml-0.5 text-amber-600">*</span>
                     </Label>
+                    <p className="mb-4 text-xs text-muted-foreground">
+                        {REQUEST_COPY.companyAddressHelp}
+                    </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <Input
                             className={FIELD_CLASS}
@@ -194,6 +198,12 @@ export function StepYourInformation({
                         />
                     </div>
                 </div>
+
+                <AnnualSpendField
+                    className="pt-4"
+                    value={draft.annualSpend}
+                    onChange={(annualSpend) => onPatch({annualSpend})}
+                />
             </div>
         </section>
     );

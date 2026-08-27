@@ -113,7 +113,7 @@ function ReviewSummaryBody({
         <>
             <div
                 className={cn(
-                    'grid grid-cols-1 gap-x-10 gap-y-4 border-b border-dashed border-[#E9E9E7] pb-5 sm:grid-cols-2',
+                    'grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2',
                     compact ? 'mt-0' : 'mt-5',
                 )}
             >
@@ -181,6 +181,10 @@ function ReviewSummaryBody({
                     ) : null}
                 </div>
             </div>
+            <div
+                className="mt-5 border-b border-dashed border-[#E9E9E7]"
+                aria-hidden
+            />
 
             {lines.length === 0 ? (
                 <p className="mt-5 text-[13px] text-muted-foreground">
@@ -264,10 +268,12 @@ function ReviewSummaryBody({
                 ) : null}
                 {draft.express &&
                 lines.length === 0 &&
-                draft.expressQuantity ? (
+                draft.expressQuantities.length > 0 ? (
                     <p className="mt-1 text-[12.5px] text-muted-foreground">
                         {REQUEST_COPY.quantityPrefix}{' '}
-                        {Number(draft.expressQuantity).toLocaleString('en-US')}{' '}
+                        {draft.expressQuantities
+                            .map((n) => n.toLocaleString('en-US'))
+                            .join(', ')}{' '}
                         {REQUEST_COPY.unitsSuffix}
                     </p>
                 ) : null}
@@ -493,11 +499,6 @@ export function StepReview({
                         {pending
                             ? REQUEST_COPY.submitting
                             : REQUEST_COPY.requestAQuote}
-                        {!ready && helperCapitalized ? (
-                            <span className="text-[11px] font-medium text-background/80">
-                                {helperCapitalized}
-                            </span>
-                        ) : null}
                     </Button>
                     <p className="mt-2 text-center text-[11px] leading-snug text-muted-foreground">
                         {REQUEST_COPY.submitFootnote}
@@ -545,11 +546,6 @@ export function StepReview({
                         {pending
                             ? REQUEST_COPY.submitting
                             : REQUEST_COPY.requestAQuote}
-                        {!ready && helperCapitalized ? (
-                            <span className="text-[11px] font-medium text-background/80">
-                                {helperCapitalized}
-                            </span>
-                        ) : null}
                     </Button>
                     <p className="mx-auto mt-2 w-1/2 text-center text-[11px] leading-snug text-muted-foreground">
                         {REQUEST_COPY.submitFootnote}

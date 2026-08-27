@@ -240,9 +240,11 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                     <h2 className="text-2xl font-semibold tracking-tight">
                         {REQUEST_COPY.productsUpsellTitle}
                     </h2>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                        {REQUEST_COPY.productsUpsellSubtitle}
-                    </p>
+                    {REQUEST_COPY.productsUpsellSubtitle ? (
+                        <p className="mt-1.5 text-sm text-muted-foreground">
+                            {REQUEST_COPY.productsUpsellSubtitle}
+                        </p>
+                    ) : null}
                 </div>
                 <button
                     type="button"
@@ -408,7 +410,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                 />
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <main className="flex min-h-[calc(100dvh-68px)] flex-1 flex-col lg:border-l lg:border-dashed lg:border-border lg:pl-10">
+                    <main className="flex min-h-[calc(100dvh-68px)] flex-1 flex-col lg:border-l lg:border-r lg:border-dashed lg:border-border lg:pl-10">
                         <div
                             className={cn(
                                 'mx-auto w-full max-w-[760px] px-6 sm:px-10',

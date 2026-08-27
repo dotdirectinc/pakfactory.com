@@ -20,7 +20,11 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 
-export function LoginForm() {
+type LoginFormProps = {
+    embedded?: boolean;
+};
+
+export function LoginForm({embedded = false}: LoginFormProps) {
     const [showPassword, setShowPassword] = useState(false);
     const {
         register,
@@ -46,14 +50,16 @@ export function LoginForm() {
 
     return (
         <div className="flex w-full max-w-sm flex-col gap-6">
-            <div className="flex flex-col gap-2 text-center">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                    {LOGIN_COPY.title}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    {LOGIN_COPY.subtitle}
-                </p>
-            </div>
+            {embedded ? null : (
+                <div className="flex flex-col gap-2 text-center">
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                        {LOGIN_COPY.title}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {LOGIN_COPY.subtitle}
+                    </p>
+                </div>
+            )}
 
             <LoginGoogleButton label={LOGIN_COPY.continueWithGoogle} />
 
