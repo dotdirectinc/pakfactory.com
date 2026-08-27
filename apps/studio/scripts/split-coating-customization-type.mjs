@@ -205,7 +205,7 @@ async function main() {
     return
   }
   if (!apply) {
-    console.log(`\n${steps.length} write(s) pending. DRY-RUN only — re-run with \`-- --apply\`. Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
+    console.log(`\n${steps.length} write(s) pending. DRY-RUN only — re-run with \`--confirm\` (production also needs \`--yes-production\`). Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
     return
   }
 

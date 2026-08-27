@@ -193,7 +193,7 @@ async function main() {
   reportMismatched()
 
   if (!apply) {
-    console.log(`\nDRY-RUN only — re-run with \`-- --apply\` to write. Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
+    console.log(`\nDRY-RUN only — re-run with \`--confirm\` (production also needs \`--yes-production\`) to write. Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
     return
   }
 
