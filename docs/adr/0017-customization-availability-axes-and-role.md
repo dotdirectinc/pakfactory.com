@@ -116,6 +116,20 @@ Not part of D47, but executed against the same type once D47's build order close
 - **`whyChooseBlock` → `benefits`**, matching Product and Product Style (D33) — "block" named the mechanism, not the meaning. **`whatIsBlock` retired**: an Option is an instance, and the definition of what a thing *is* belongs to the Glossary Term, stated once.
 - Both old fields are **deprecated, not deleted** — 8 of 33 carry copy, and `whatIsBlock` has nowhere to move to until the glossary surface exists. That is steps 1–4 of the Rename Map's procedure; step 5 waits for a sweep once nothing reads them.
 
+## Follow-on: product line/style cardinality
+
+Settled with Richard **2026-08-27**, before the product data source begins populating — the last blocker on that work:
+
+> **A product belongs to exactly one Product Line, but may take several Styles within that line.**
+
+So `productLine` is a **single reference** and `productStyle` stays an **array**. The asymmetry is the decision, not an oversight, and it is narrower than `Entities/Product.md`, which says *Single* for both — the Style half of that spec is what changed.
+
+**Why it needed settling rather than reading off the docs.** Three sources said Single (D1's Line → Style → Product hierarchy, `Product.md`, Rename Map row 70) but the deployed schema said arrays for both, on the grounds that a product can span more than one line. The Rename Map's *"nothing in the model supports"* was written without that context, and `Product.md`'s rows were last touched by a mechanical find-replace, so "Single" surviving there was not evidence anyone had re-affirmed it.
+
+**The invisible second copy is the real defect this closes.** Every product already carried `productLine` and `productStyle` in the *data* — written by `packages/sanity/scripts/migrate-product-refs.ts` — while **neither was declared in the schema**. Editors saw only the arrays, nothing kept the singles in step, and because they were undeclared no validation could see them drift. They agreed only because nobody had edited since. The first bulk write would have broken that silently.
+
+**Verified lossless before the change:** of 26 products, **0** sat in more than one line, **0** in more than one style, and every existing single ref agreed with its array's first entry. The migration re-checks all three per dataset and refuses to write if any fails.
+
 ## Consequences
 
 - **`reference` is classified from Eric's `Capabilities Flow` diagram (2026-08-26), which is the authoritative source.** The diagram badges each **Type**, and the badges map onto `role` one-for-one: *"Not Customizable"* → every Option under it is `reference`; no badge, or *"Single / Multiple Selection (Within Each Type)"* → `configurable`; *"only for Product Customization" + "No detail page"* → `configurable`. Reference Types: **Pouch Layer** (Materials), **Lamination**, **Surface Coating**, **Cutting**, **Gluing** (Finishing). Configurable-but-no-page Types: **Surface Finish (paper-based)**, **Surface Finish (non-paper)**, **Pouch Material**, **Food-Grade Material**.
