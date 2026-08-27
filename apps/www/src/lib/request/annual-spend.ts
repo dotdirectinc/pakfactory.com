@@ -1,4 +1,4 @@
-/** Annual spend helpers for the BriefBuilder Requirements field. */
+/** Annual spend helpers for the Brief Builder Your Information field. */
 
 export function digitsOnlySpend(value: string | number | null | undefined): string {
     return String(value ?? '').replace(/[^0-9]/g, '');

@@ -15,10 +15,11 @@ import type {
 type SiteNavMobileProps = {
   items: SiteNavItem[];
   cta: SiteNavCta;
+  signIn?: SiteNavCta;
   request?: SiteNavRequest;
 };
 
-export function SiteNavMobile({items, cta, request}: SiteNavMobileProps) {
+export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -87,6 +88,13 @@ export function SiteNavMobile({items, cta, request}: SiteNavMobileProps) {
                   <Link href={request.href} onClick={close}>
                     {request.label}
                     {request.count > 0 ? ` (${request.count})` : ""}
+                  </Link>
+                </Button>
+              ) : null}
+              {signIn ? (
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href={signIn.href} onClick={close}>
+                    {signIn.label}
                   </Link>
                 </Button>
               ) : null}

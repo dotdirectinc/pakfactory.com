@@ -5,9 +5,14 @@ export type WwwSiteNavModel = {
     homeHref: string;
     items: SiteNavItem[];
     cta: SiteNavCta;
+    signIn: SiteNavCta;
 };
 
-export function buildSiteNavProps(): WwwSiteNavModel {
+export function buildSiteNavProps(options?: {
+    authenticated?: boolean;
+}): WwwSiteNavModel {
+    const authenticated = Boolean(options?.authenticated);
+
     return {
         homeHref: WWW_ROUTES.home,
         items: [
@@ -27,17 +32,16 @@ export function buildSiteNavProps(): WwwSiteNavModel {
                 label: 'Expertise',
                 href: WWW_ROUTES.expertise,
             },
-            {
-                key: 'account',
-                label: 'Account',
-                href: WWW_ROUTES.account,
-            },
-            {
-                key: 'signIn',
-                label: 'Sign in',
-                href: WWW_ROUTES.login,
-            },
         ],
+        signIn: authenticated
+            ? {
+                  label: 'Account',
+                  href: WWW_ROUTES.account,
+              }
+            : {
+                  label: 'Sign in',
+                  href: WWW_ROUTES.login,
+              },
         cta: {
             label: 'Get a Quote',
             href: WWW_ROUTES.contact,

@@ -3,7 +3,7 @@
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {AnnualSpendField} from '@/components/request/annual-spend-field';
+import {QuantityPicker} from '@/components/product/quantity-picker';
 import {
     BriefAssistUpload,
     type AssistFill,
@@ -12,7 +12,6 @@ import {FilesDropzone} from '@/components/request/files-dropzone';
 import {ShippingToAddress} from '@/components/request/shipping-to-address';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft} from '@/lib/request/request.storage';
-import {expressQuantityDigits} from '@/lib/request/validation';
 
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 const TEXTAREA_CLASS =
@@ -33,15 +32,6 @@ export function StepRequirements({
     sectionRef,
     className,
 }: StepRequirementsProps) {
-    const qtyDigits = expressQuantityDigits(draft.expressQuantity);
-    const qtyNumber = Number(qtyDigits);
-    const qtyError =
-        qtyDigits.length === 0
-            ? ''
-            : qtyNumber > 0 && qtyNumber % 100 !== 0
-              ? REQUEST_COPY.quantityError
-              : '';
-
     function onAssistFill(fields: AssistFill) {
         onPatch({
             packagingContents: fields.packagingContents,
@@ -69,9 +59,11 @@ export function StepRequirements({
                 <h2 className="text-[26px] font-semibold tracking-tight">
                     {REQUEST_COPY.requirementsTitle}
                 </h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                    {REQUEST_COPY.requirementsSubtitle}
-                </p>
+                {REQUEST_COPY.requirementsSubtitle ? (
+                    <p className="mt-1.5 text-sm text-muted-foreground">
+                        {REQUEST_COPY.requirementsSubtitle}
+                    </p>
+                ) : null}
             </div>
 
             <div className="space-y-6">
@@ -100,28 +92,28 @@ export function StepRequirements({
                                 {REQUEST_COPY.quantityLabel}
                                 <span className="ml-0.5 text-amber-600">*</span>
                             </Label>
-                            <Input
-                                inputMode="numeric"
-                                className={FIELD_CLASS}
-                                placeholder={REQUEST_COPY.quantityPlaceholder}
-                                value={draft.expressQuantity}
-                                onChange={(e) =>
+                            <QuantityPicker
+                                className="mt-2"
+                                volumes={draft.expressQuantities}
+                                onAdd={(volume) =>
                                     onPatch({
-                                        expressQuantity: e.target.value.replace(
-                                            /[^0-9]/g,
-                                            '',
-                                        ),
+                                        expressQuantities: [
+                                            ...new Set([
+                                                ...draft.expressQuantities,
+                                                volume,
+                                            ]),
+                                        ].sort((a, b) => a - b),
+                                    })
+                                }
+                                onRemove={(volume) =>
+                                    onPatch({
+                                        expressQuantities:
+                                            draft.expressQuantities.filter(
+                                                (n) => n !== volume,
+                                            ),
                                     })
                                 }
                             />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                {REQUEST_COPY.quantityHelp}
-                            </p>
-                            {qtyError ? (
-                                <p className="mt-1 text-xs text-destructive">
-                                    {qtyError}
-                                </p>
-                            ) : null}
                         </div>
                     </>
                 ) : null}
@@ -154,11 +146,6 @@ export function StepRequirements({
                         />
                     </div>
                 ) : null}
-
-                <AnnualSpendField
-                    value={draft.annualSpend}
-                    onChange={(annualSpend) => onPatch({annualSpend})}
-                />
 
                 <ShippingToAddress
                     value={draft.shippingAddress}
