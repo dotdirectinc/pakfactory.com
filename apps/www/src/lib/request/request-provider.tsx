@@ -19,11 +19,13 @@ import {
     startExpressDraft,
     subscribeRequest,
     updateRequestDraft,
+    updateRequestLine,
     type AddLineInput,
     type RequestDraft,
     type RequestEntryKind,
     type RequestLine,
     type RequestState,
+    type UpdateLinePatch,
 } from '@/lib/request/request.storage';
 
 type RequestContextValue = {
@@ -31,6 +33,7 @@ type RequestContextValue = {
     draft: RequestDraft;
     addLine: (input: AddLineInput) => RequestLine;
     removeLine: (lineId: string) => void;
+    updateLine: (lineId: string, patch: UpdateLinePatch) => void;
     updateDraft: (patch: Partial<RequestDraft>) => void;
     expandProducts: () => void;
     startExpress: () => void;
@@ -50,6 +53,9 @@ export function RequestProvider({children}: {children: ReactNode}) {
     const addLine = useCallback((input: AddLineInput) => addRequestLine(input), []);
     const removeLine = useCallback((lineId: string) => {
         removeRequestLine(lineId);
+    }, []);
+    const updateLine = useCallback((lineId: string, patch: UpdateLinePatch) => {
+        updateRequestLine(lineId, patch);
     }, []);
     const updateDraft = useCallback((patch: Partial<RequestDraft>) => {
         updateRequestDraft(patch);
@@ -76,6 +82,7 @@ export function RequestProvider({children}: {children: ReactNode}) {
             draft: state.draft,
             addLine,
             removeLine,
+            updateLine,
             updateDraft,
             expandProducts,
             startExpress,
@@ -87,6 +94,7 @@ export function RequestProvider({children}: {children: ReactNode}) {
             state.draft,
             addLine,
             removeLine,
+            updateLine,
             updateDraft,
             expandProducts,
             startExpress,

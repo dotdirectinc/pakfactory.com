@@ -147,13 +147,13 @@ function parseShipping(value: unknown): ShippingAddress | null {
 function parseEntryKind(
     value: unknown,
     express: boolean,
-    productsExpanded: boolean,
+    _productsExpanded: boolean,
 ): RequestEntryKind {
     if (value === 'express' || value === 'products' || value === 'services') {
         return value;
     }
     if (express) return 'express';
-    return productsExpanded || true ? 'products' : 'products';
+    return 'products';
 }
 
 function parseDraft(value: unknown): RequestDraft {
@@ -318,6 +318,61 @@ export function removeRequestLine(lineId: string): void {
     });
 }
 
+export type UpdateLinePatch = Partial<
+    Pick<
+        RequestLine,
+        | 'contents'
+        | 'notes'
+        | 'referenceImages'
+        | 'customizations'
+        | 'quantities'
+    >
+>;
+
+export function updateRequestLine(
+    lineId: string,
+    patch: UpdateLinePatch,
+): RequestLine | null {
+    const current = getRequestStateSnapshot();
+    let updated: RequestLine | null = null;
+    const lines = current.lines.map((line) => {
+        if (line.id !== lineId) return line;
+        const next: RequestLine = {
+            ...line,
+            ...(patch.contents !== undefined
+                ? {contents: patch.contents.trim()}
+                : {}),
+            ...(patch.quantities !== undefined
+                ? {
+                      quantities: [...patch.quantities]
+                          .filter((n) => n > 0)
+                          .sort((a, b) => a - b),
+                  }
+                : {}),
+            ...(patch.customizations !== undefined
+                ? {customizations: patch.customizations}
+                : {}),
+        };
+        if (patch.notes !== undefined) {
+            const trimmed = patch.notes.trim();
+            if (trimmed) next.notes = trimmed;
+            else delete next.notes;
+        }
+        if (patch.referenceImages !== undefined) {
+            if (patch.referenceImages.length) {
+                next.referenceImages = patch.referenceImages;
+            } else {
+                delete next.referenceImages;
+            }
+        }
+        updated = next;
+        return next;
+    });
+    if (!updated) return null;
+    persist({...current, lines});
+    return updated;
+}
+
 export function updateRequestDraft(patch: Partial<RequestDraft>): RequestDraft {
     const current = getRequestStateSnapshot();
     const draft = {...current.draft, ...patch};
@@ -341,8 +396,9 @@ export function resetExpressDraft(): void {
 }
 
 export function startExpressDraft(): void {
+    const current = getRequestStateSnapshot();
     persist({
-        lines: [],
+        lines: current.lines,
         draft: {
             ...EMPTY_DRAFT,
             express: true,

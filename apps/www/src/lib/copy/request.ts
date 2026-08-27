@@ -146,6 +146,23 @@ export const REQUEST_COPY = {
     yourRequestHeading: 'Your Request',
     yourRequestStub:
         'Choose how you want to start — or continue a request in progress.',
+    yourRequestSupporting:
+        'Your added products. Select the ones you want quoted.',
+    nothingAddedYet: 'Nothing added yet.',
+    startYourRequest: 'Start your request',
+    startYourRequestCount: 'Start your request ({n})',
+    customizeLine: 'Customize',
+    customizeUnavailable: 'Customization from Your Request is coming soon.',
+    additionalNotesAction: 'Additional Notes',
+    referenceImagesAction: 'Reference Images',
+    saveNotes: 'Save',
+    saveImages: 'Save',
+    draftRequestsHeading: 'Draft requests',
+    draftRequestsEmpty: 'No draft requests yet.',
+    emptySelectHint: 'Select products to get started.',
+    selectedCountOne: '1 product selected',
+    selectedCountMany: '{n} products selected',
+    selectedCountNone: 'No products selected',
 } as const;
 
 export const SERVICE_OPTIONS = [
