@@ -1,46 +1,57 @@
 /**
  * Argument parsing for the `apps/studio/scripts/*.mjs` dataset tools.
  *
- * Written after a real miss on 2026-08-27: the scripts took their dataset from
- * `NEXT_PUBLIC_SANITY_DATASET` only, so
+ * This implements the migration-script convention already established in
+ * `packages/sanity/scripts/` — 12 of the 15 scripts there use it (see
+ * `migrate-product-style-line.ts`, `migrate-rename-commercial-types.ts`,
+ * `migrate-unset-legacy-applies.ts`, …):
  *
- *   pnpm run migrate:availability-axes -- --dataset production --apply
+ *   --dataset <name>    REQUIRED, always. There is no environment fallback.
+ *   --confirm           actually write. Without it every run is a dry run.
+ *   --yes-production    second gate. A write to `production` is refused without it.
  *
- * — the obvious thing to type — silently ignored `--dataset`, fell back to the
- * `development` default, and printed a confident "Nothing to do — development is
- * already migrated." The run looked like a success. Production was untouched.
+ * `apps/studio/scripts/` had drifted to env-var-only invocation, and three scripts
+ * written in Aug 2026 (backfill-customization-option-role, split-coating-customization-type,
+ * migrate-customization-availability-axes) copied that local habit instead of the
+ * convention one directory over. This module is the correction; new Studio dataset
+ * scripts should import it rather than re-roll `process.argv.includes`.
  *
- * Two rules follow from that, and both matter more than the flag itself:
+ * Why `--dataset` is required rather than defaulted — the bug that prompted this:
+ * on 2026-08-27, `pnpm run migrate:availability-axes -- --dataset production --confirm`
+ * was parsed as `argv.includes('--apply')` and nothing else. The flag was dropped, the
+ * dataset fell back to a `development` default, and the run printed
+ * "dataset=development mode=APPLY (writes)" then "Nothing to do — already migrated."
+ * That reads as success. Production was untouched and nothing said so.
  *
- *   1. An unrecognised argument is an ERROR, never a shrug. A typo'd or unsupported
- *      flag must stop the run, because the failure mode of ignoring it is a write to
- *      the wrong dataset that reports success.
- *   2. `--apply` must not accept a DEFAULTED dataset. Writing requires the dataset to
- *      be named — by `--dataset` or by the environment — so "I meant production" can
- *      never quietly become "it wrote development".
+ * Hence three rules, in order of importance:
+ *   1. An unrecognised argument is an ERROR, never a shrug. Ignoring a typo'd flag has
+ *      exactly one failure mode — a write aimed at the wrong dataset that reports
+ *      success.
+ *   2. `--dataset` is required even for a dry run. An ambient default is what turned a
+ *      dropped flag into a silent no-op; removing the default removes the class.
+ *   3. Production needs `--yes-production` on top of `--confirm`. Two gates, because
+ *      `production` is one keystroke from `development` in shell history.
  *
  * `pnpm run x -- --flag` forwards a literal `--` in argv; it is skipped.
  */
 
-/** @param {string} msg */
 function fail(msg, usage) {
-  console.error(`❌  ${msg}`)
-  if (usage) console.error(`\n${usage}`)
+  console.error(`\n✖ ${msg}\n`)
+  if (usage) console.error(`${usage}\n`)
   process.exit(1)
 }
 
 /**
  * @param {object}   opts
- * @param {string[]} [opts.flags]   extra boolean flag names beyond `--apply`
- * @param {string}   [opts.usage]   usage text printed on an argument error
- * @param {string[]} [opts.argv]    defaults to process.argv.slice(2)
- * @returns {{ apply: boolean, dataset: string|undefined, datasetWasExplicit: boolean } & Record<string, boolean>}
+ * @param {string[]} [opts.flags]  extra boolean flags beyond --confirm / --yes-production
+ * @param {string}   [opts.usage]  usage text printed on an argument error
+ * @param {string[]} [opts.argv]   defaults to process.argv.slice(2)
+ * @returns {{ dataset: string, confirm: boolean, yesProduction: boolean } & Record<string, boolean>}
  */
 export function parseScriptArgs({ flags = [], usage, argv = process.argv.slice(2) } = {}) {
-  const booleans = new Set(['apply', ...flags])
-  /** @type {Record<string, unknown>} */
-  const out = { dataset: undefined, datasetWasExplicit: false }
-  for (const f of booleans) out[f] = false
+  const booleans = new Set(['confirm', 'yes-production', ...flags])
+  const out = { dataset: undefined }
+  for (const f of booleans) out[camel(f)] = false
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -58,12 +69,19 @@ export function parseScriptArgs({ flags = [], usage, argv = process.argv.slice(2
         fail('`--dataset` needs a value, e.g. `--dataset production`.', usage)
       }
       out.dataset = value
-      out.datasetWasExplicit = true
+      continue
+    }
+    // `--apply` was the spelling three Studio scripts shipped with in Aug 2026 before
+    // this convention was adopted. Accepted so anything already written down keeps
+    // working; `--confirm` is the name to use.
+    if (name === 'apply') {
+      console.warn('⚠️  `--apply` is the old spelling — use `--confirm`, matching packages/sanity/scripts.')
+      out.confirm = true
       continue
     }
     if (booleans.has(name)) {
       if (inline !== undefined) fail(`\`--${name}\` is a switch and takes no value.`, usage)
-      out[name] = true
+      out[camel(name)] = true
       continue
     }
     fail(
@@ -71,32 +89,24 @@ export function parseScriptArgs({ flags = [], usage, argv = process.argv.slice(2
       usage,
     )
   }
-  return /** @type {any} */ (out)
-}
 
-/**
- * Resolve the dataset from the flag, then the environment.
- *
- * `--apply` requires the EXPLICIT flag — an env value is not enough. `.env.local` is
- * ambient: it is loaded from three files, survives between sessions, and is exactly
- * what nobody re-reads before typing `--apply`. A dry run may lean on it; a write must
- * name its target on the command line, where it is visible in shell history next to
- * the thing it did.
- *
- * @returns {string}
- */
-export function resolveDataset({ dataset, datasetWasExplicit, apply }, usage) {
-  if (apply && !datasetWasExplicit) {
+  if (!out.dataset) {
     fail(
-      '`--apply` writes, so the dataset must be named on the command line: add `--dataset production` or `--dataset development`.\n' +
-        '   NEXT_PUBLIC_SANITY_DATASET is deliberately NOT enough for a write — it is ambient and easy to be wrong about.',
+      '`--dataset` is required — name the target explicitly, e.g. `--dataset development`.\n' +
+        '  There is deliberately no environment fallback: an ambient default is what let a\n' +
+        '  dropped flag write to the wrong dataset and report success.',
       usage,
     )
   }
-  return (
-    dataset ||
-    process.env.NEXT_PUBLIC_SANITY_DATASET ||
-    process.env.SANITY_STUDIO_DATASET ||
-    'development'
-  )
+  if (out.dataset === 'production' && out.confirm && !out.yesProduction) {
+    fail('Refusing to write to production without --yes-production.', usage)
+  }
+  return out
+}
+
+const camel = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+
+/** Human-readable run mode for the banner. */
+export function describeMode({ confirm, dataset }) {
+  return confirm ? `CONFIRM (writes to ${dataset})` : 'DRY-RUN (no writes)'
 }

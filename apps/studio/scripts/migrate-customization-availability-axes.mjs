@@ -40,15 +40,15 @@
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
  *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset development
- *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset development --apply
- *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset production --apply
+ *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset production --confirm --yes-production
  *
  * ⚠️  Run this in the SAME deploy as the schema change. Between the schema shipping and
  * this running, the 8 populated options show an empty "Available on products" while
  * their data sits under `appliesTo`.
  *
- * `--dataset` is REQUIRED with `--apply` — NEXT_PUBLIC_SANITY_DATASET is deliberately
- * not enough for a write. See scripts/lib/script-args.mjs for why.
+ * Follows the `packages/sanity/scripts/` convention: `--dataset` is required always,
+ * `--confirm` writes, and production additionally needs `--yes-production`.
  *
  * ⚠️  The development dataset is nightly-synced from production, so a dev-only apply is
  * wiped overnight. Run development first to verify, then production to make it stick.
@@ -58,7 +58,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseScriptArgs, resolveDataset } from './lib/script-args.mjs'
+import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -67,33 +67,18 @@ loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
 const USAGE = `Usage:
-  pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset <development|production> [--apply]
+  pnpm --filter @pakfactory/studio run migrate:availability-axes -- --dataset <development|production> [--confirm] [--yes-production]
 
-  --dataset   which dataset to read/write. Required with --apply.
-  --apply     actually write. Omit for a dry run.`
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
 const args = parseScriptArgs({ usage: USAGE })
-const { apply } = args
-
-/** old key → new key. A key with no new name is unset outright. */
-const RENAMES = [
-  ['appliesTo', 'availableOnProducts'],
-  ['except', 'exceptProducts'],
-  ['incompatibleWith', 'incompatibleWithCustomizations'],
-]
-const DROPS = ['relatedCustomizations']
-
-/** Type slugs a customer may pick SEVERAL options from. Everything else is `single`. */
-const MULTIPLE_SELECT_TYPE_SLUGS = new Set([
-  'embossing-debossing',
-  'closures',
-  'reinforcement-utility',
-  'pulls-lifts', // the diagram's "Opening & Access"
-])
-
+const { confirm: apply } = args
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
-// `--dataset` wins over the environment; --apply refuses a defaulted dataset.
-const DATASET = resolveDataset(args, USAGE)
+// Straight from the flag — `--dataset` is required, so there is nothing to fall back to.
+const DATASET = args.dataset
+
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_API_READ_TOKEN || process.env.SANITY_TOKEN
 
@@ -102,7 +87,7 @@ if (!TOKEN) {
   process.exit(1)
 }
 if (apply && !(process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_TOKEN)) {
-  console.error('❌  --apply needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
+  console.error('❌  --confirm needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
   process.exit(1)
 }
 
@@ -120,7 +105,7 @@ const client = createClient({
 
 async function main() {
   console.log(`\n🔧  Migrate customization availability axes + cardinality (PROD-2250, D47 / ADR-017)`)
-  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${apply ? 'APPLY (writes)' : 'DRY-RUN (no writes)'}\n`)
+  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${describeMode(args)}\n`)
 
   // ── 1. Options — move the keys ────────────────────────────────────────────────
   const oldKeys = [...RENAMES.map(([from]) => from), ...DROPS]

@@ -40,11 +40,11 @@
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
  *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset development
- *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset development --apply
- *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset production --apply
+ *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset production --confirm --yes-production
  *
- * `--dataset` is REQUIRED with `--apply` — NEXT_PUBLIC_SANITY_DATASET is deliberately
- * not enough for a write. See scripts/lib/script-args.mjs for why.
+ * Follows the `packages/sanity/scripts/` convention: `--dataset` is required always,
+ * `--confirm` writes, and production additionally needs `--yes-production`.
  *
  * ⚠️  The development dataset is nightly-synced from production, so a dev-only apply is
  * wiped overnight. Run development first to verify, then production to make it stick.
@@ -57,7 +57,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parseScriptArgs, resolveDataset } from './lib/script-args.mjs'
+import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -66,38 +66,18 @@ loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
 const USAGE = `Usage:
-  pnpm --filter @pakfactory/studio run split:coating-type -- --dataset <development|production> [--apply]
+  pnpm --filter @pakfactory/studio run split:coating-type -- --dataset <development|production> [--confirm] [--yes-production]
 
-  --dataset   which dataset to read/write. Required with --apply.
-  --apply     actually write. Omit for a dry run.`
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
 const args = parseScriptArgs({ usage: USAGE })
-const { apply } = args
-
-const COATING_ID = 'type-coating-r2304'
-const SPOT_ID = 'type-spot-coating-r2304'
-const FINISHES_CATEGORY_ID = 'cat-finishes-r2304'
-
-/** Option slugs that move from the old `Coating` Type to the new `Spot Coating` Type. */
-const SPOT_OPTION_SLUGS = ['spot-uv']
-
-const SURFACE_COATING = {
-  title: 'Surface Coating',
-  slug: 'surface-coating',
-  description:
-    'Coatings applied across the whole printed surface — aqueous, UV, and varnish. Not picked in the configurator; a customer reaches these through the Surface Finish they achieve.',
-}
-
-const SPOT_COATING = {
-  title: 'Spot Coating',
-  slug: 'spot-coating',
-  description:
-    'Coatings applied to selected areas of the design for contrast — spot UV, spot gloss, spot glitter, raised and textured spot UV.',
-}
-
+const { confirm: apply } = args
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
-// `--dataset` wins over the environment; --apply refuses a defaulted dataset.
-const DATASET = resolveDataset(args, USAGE)
+// Straight from the flag — `--dataset` is required, so there is nothing to fall back to.
+const DATASET = args.dataset
+
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_API_READ_TOKEN || process.env.SANITY_TOKEN
 
@@ -106,7 +86,7 @@ if (!TOKEN) {
   process.exit(1)
 }
 if (apply && !(process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_TOKEN)) {
-  console.error('❌  --apply needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
+  console.error('❌  --confirm needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
   process.exit(1)
 }
 
@@ -125,7 +105,7 @@ const client = createClient({
 
 async function main() {
   console.log(`\n🔧  Split the Coating Customization Type (PROD-2250, D47 / ADR-017)`)
-  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${apply ? 'APPLY (writes)' : 'DRY-RUN (no writes)'}\n`)
+  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${describeMode(args)}\n`)
 
   const coating = await client.fetch(`*[_id == $id][0]{ _id, title, "slug": slug.current, order, "categoryRef": category._ref }`, { id: COATING_ID })
   if (!coating) {
