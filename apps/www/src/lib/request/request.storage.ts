@@ -168,13 +168,13 @@ function parseShipping(value: unknown): ShippingAddress | null {
 function parseEntryKind(
     value: unknown,
     express: boolean,
-    productsExpanded: boolean,
+    _productsExpanded: boolean,
 ): RequestEntryKind {
     if (value === 'express' || value === 'products' || value === 'services') {
         return value;
     }
     if (express) return 'express';
-    return productsExpanded || true ? 'products' : 'products';
+    return 'products';
 }
 
 function parseDraft(value: unknown): RequestDraft {
@@ -342,6 +342,61 @@ export function removeRequestLine(lineId: string): void {
     });
 }
 
+export type UpdateLinePatch = Partial<
+    Pick<
+        RequestLine,
+        | 'contents'
+        | 'notes'
+        | 'referenceImages'
+        | 'customizations'
+        | 'quantities'
+    >
+>;
+
+export function updateRequestLine(
+    lineId: string,
+    patch: UpdateLinePatch,
+): RequestLine | null {
+    const current = getRequestStateSnapshot();
+    let updated: RequestLine | null = null;
+    const lines = current.lines.map((line) => {
+        if (line.id !== lineId) return line;
+        const next: RequestLine = {
+            ...line,
+            ...(patch.contents !== undefined
+                ? {contents: patch.contents.trim()}
+                : {}),
+            ...(patch.quantities !== undefined
+                ? {
+                      quantities: [...patch.quantities]
+                          .filter((n) => n > 0)
+                          .sort((a, b) => a - b),
+                  }
+                : {}),
+            ...(patch.customizations !== undefined
+                ? {customizations: patch.customizations}
+                : {}),
+        };
+        if (patch.notes !== undefined) {
+            const trimmed = patch.notes.trim();
+            if (trimmed) next.notes = trimmed;
+            else delete next.notes;
+        }
+        if (patch.referenceImages !== undefined) {
+            if (patch.referenceImages.length) {
+                next.referenceImages = patch.referenceImages;
+            } else {
+                delete next.referenceImages;
+            }
+        }
+        updated = next;
+        return next;
+    });
+    if (!updated) return null;
+    persist({...current, lines});
+    return updated;
+}
+
 export function updateRequestDraft(patch: Partial<RequestDraft>): RequestDraft {
     const current = getRequestStateSnapshot();
     const draft = {...current.draft, ...patch};
@@ -353,7 +408,8 @@ export function expandRequestProducts(): void {
     updateRequestDraft({productsExpanded: true});
 }
 
-export function resetExpressDraft(): void {
+/** Clears everything the buyer typed. Product lines in the pool survive. */
+export function discardRequestDraft(): void {
     const current = getRequestStateSnapshot();
     persist({
         lines: current.lines,
@@ -364,16 +420,41 @@ export function resetExpressDraft(): void {
     });
 }
 
+/**
+ * True when the buyer has typed nothing into the draft. Entry bookkeeping
+ * (entryKind, express, productsExpanded, servicesEnabled, title) is set by the
+ * route rather than the buyer, so it does not count as content.
+ */
+export function isDraftEmpty(draft: RequestDraft): boolean {
+    return (
+        draft.notes.trim() === '' &&
+        draft.timeline.trim() === '' &&
+        draft.packagingContents.trim() === '' &&
+        draft.annualSpend.trim() === '' &&
+        draft.contactFirstName.trim() === '' &&
+        draft.contactLastName.trim() === '' &&
+        draft.contactEmail.trim() === '' &&
+        draft.contactPhone.trim() === '' &&
+        draft.contactCompany.trim() === '' &&
+        draft.contactIndustry.trim() === '' &&
+        draft.expressQuantities.length === 0 &&
+        draft.services.length === 0 &&
+        draft.artworkNames.length === 0 &&
+        draft.shippingAddress === null &&
+        draft.companyAddress === null
+    );
+}
+
 export function startExpressDraft(): void {
+    const current = getRequestStateSnapshot();
     persist({
-        lines: [],
+        lines: current.lines,
         draft: {
             ...EMPTY_DRAFT,
             express: true,
             productsExpanded: false,
             entryKind: 'express',
             servicesEnabled: false,
-            title: defaultDraftTitle(),
         },
     });
 }

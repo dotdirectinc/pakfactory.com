@@ -2,13 +2,15 @@ import type { Metadata } from 'next';
 
 import { CAPABILITY_CATEGORY_ENTRIES_QUERY } from '@pakfactory/sanity/queries';
 
+import { PageBreadcrumbSection } from '@/components/common/page-breadcrumb-section';
+import { PageHeadingSection } from '@/components/common/page-heading-section';
 import {
     CapabilityCatalog,
     type CapabilityCatalogItem,
     type CapabilityCatalogTab,
 } from '@/components/modules/capability-catalog';
-import SectionHeader from '@/components/modules/section-header';
 import { getSanityClient } from '@/lib/sanity/client';
+import { WWW_ROUTES } from '@/lib/www-routes';
 
 export const metadata: Metadata = {
     title: 'Capabilities',
@@ -25,12 +27,16 @@ export default async function CapabilitiesIndexPage() {
 
     return (
         <>
-            <div className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
-                <SectionHeader
-                    title="Capabilities"
-                    description="Materials and finishes available for your packaging."
-                />
-            </div>
+            <PageBreadcrumbSection
+                items={[
+                    { label: 'Home', href: WWW_ROUTES.home },
+                    { label: 'Capabilities' },
+                ]}
+            />
+            <PageHeadingSection
+                title="Capabilities"
+                description="Materials and finishes available for your packaging."
+            />
             <div className="mt-8">
                 <CapabilityCatalog tabs={TABS} items={items ?? []} />
             </div>

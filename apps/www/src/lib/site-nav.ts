@@ -44,7 +44,7 @@ export function buildSiteNavProps(options?: {
               },
         cta: {
             label: 'Get a Quote',
-            href: WWW_ROUTES.contact,
+            href: WWW_ROUTES.requestExpress,
         },
     };
 }

@@ -18,8 +18,8 @@ export const WWW_ROUTES = {
     policies: '/policies',
     bundles: '/bundles',
     request: '/request',
-    requestBuilder: '/request/builder',
-    requestNew: '/request/new',
+    requestProducts: '/request/products',
+    requestExpress: '/request/general',
     requestServices: '/request/services',
 } as const;
 

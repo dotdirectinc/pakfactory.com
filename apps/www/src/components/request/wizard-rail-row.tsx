@@ -28,13 +28,16 @@ export function WizardRailRow({
     onClick,
     disabled = false,
 }: WizardRailRowProps) {
+    const hasSubtitle = Boolean(row.subtitle?.trim());
+
     return (
         <button
             type="button"
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                'group relative flex min-h-11 w-full items-start gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-40',
+                'group relative flex min-h-11 w-full gap-3 rounded-md px-2 pb-6 pt-2 text-left transition-colors hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-40',
+                hasSubtitle ? 'items-start' : 'items-center',
             )}
         >
             {!isLast ? (
@@ -46,7 +49,12 @@ export function WizardRailRow({
                     aria-hidden
                 />
             ) : null}
-            <span className="relative z-10 mt-0.5 shrink-0">
+            <span
+                className={cn(
+                    'relative z-10 shrink-0',
+                    hasSubtitle && 'mt-0.5',
+                )}
+            >
                 {complete ? (
                     <span className="flex size-6 items-center justify-center rounded-full bg-foreground">
                         <Check
@@ -66,7 +74,7 @@ export function WizardRailRow({
                     />
                 )}
             </span>
-            <span className="min-w-0 flex-1 pb-4">
+            <span className="min-w-0 flex-1">
                 <span
                     className={cn(
                         'block text-sm leading-tight',
@@ -77,7 +85,7 @@ export function WizardRailRow({
                 >
                     {row.title}
                 </span>
-                {row.subtitle ? (
+                {hasSubtitle ? (
                     <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                         {row.subtitle}
                     </span>

@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
 
+import { PageBreadcrumbSection } from '@/components/common/page-breadcrumb-section';
+import { PageHeadingSection } from '@/components/common/page-heading-section';
+import { WWW_ROUTES } from '@/lib/www-routes';
+
 export const metadata: Metadata = {
     title: 'Capability category',
 };
@@ -11,9 +15,20 @@ export default async function CapabilityCategoryPage({
 }) {
     const { category } = await params;
     return (
-        <div className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
-            <h1 className="text-3xl font-semibold">Category: {category}</h1>
-            <p className="mt-2 text-muted-foreground">Landing page placeholder.</p>
-        </div>
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    { label: 'Home', href: WWW_ROUTES.home },
+                    { label: 'Capabilities', href: WWW_ROUTES.capabilities },
+                    { label: category },
+                ]}
+            />
+            <PageHeadingSection
+                eyebrow="Capability"
+                title={category}
+                titleClassName="capitalize"
+                description="Landing page placeholder."
+            />
+        </>
     );
 }

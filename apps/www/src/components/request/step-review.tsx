@@ -10,12 +10,18 @@ import {
     SheetTitle,
 } from '@pakfactory/ui/components/sheet';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {LogoMark} from '@/components/layout/logo-mark';
 import {getProduct} from '@/lib/catalog/catalog';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {formatSpendLabel} from '@/lib/request/annual-spend';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
 import {formatAddressLines} from '@/lib/request/shipping-address';
-import {canSubmitRequest} from '@/lib/request/validation';
+import {
+    canSubmitRequest,
+    isExpressRequirementsOnly,
+} from '@/lib/request/validation';
+import {MessageDialog} from '@/components/ui/message-dialog';
+import {logSubmitPayload} from '@/lib/rfq/log-submit-payload';
 import {submitRequest} from '@/lib/rfq/submit-request';
 
 type StepReviewProps = {
@@ -68,12 +74,7 @@ function ReviewLetterhead({
     return (
         <div className="flex items-start justify-between gap-4 border-b border-dashed border-[#E9E9E7] pb-4">
             <div className="flex items-center gap-2.5">
-                <div
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background"
-                    aria-hidden
-                >
-                    PF
-                </div>
+                <LogoMark className="size-9 shrink-0" />
                 <div className="leading-tight">
                     <p className="text-[15px] font-semibold tracking-tight">
                         {REQUEST_COPY.letterheadName}
@@ -266,8 +267,7 @@ function ReviewSummaryBody({
                         {draft.packagingContents}
                     </p>
                 ) : null}
-                {draft.express &&
-                lines.length === 0 &&
+                {isExpressRequirementsOnly(draft) &&
                 draft.expressQuantities.length > 0 ? (
                     <p className="mt-1 text-[12.5px] text-muted-foreground">
                         {REQUEST_COPY.quantityPrefix}{' '}
@@ -427,14 +427,21 @@ export function StepReview({
 
     function handleSubmit() {
         setError('');
+        logSubmitPayload(draft, lines);
         startTransition(async () => {
-            const result = await submitRequest({draft, lines});
-            if (!result.ok) {
-                setError(result.error);
-                return;
+            try {
+                const result = await submitRequest({draft, lines});
+                if (!result.ok) {
+                    setError(result.error);
+                    return;
+                }
+                setSummaryOpen(false);
+                onSubmitted(result.ref);
+            } catch {
+                // A transport-level failure rejects rather than returning a
+                // result; without this the buyer gets an error overlay.
+                setError(REQUEST_COPY.submitTransportError);
             }
-            setSummaryOpen(false);
-            onSubmitted(result.ref);
         });
     }
 
@@ -503,11 +510,6 @@ export function StepReview({
                     <p className="mt-2 text-center text-[11px] leading-snug text-muted-foreground">
                         {REQUEST_COPY.submitFootnote}
                     </p>
-                    {error ? (
-                        <p className="mt-2 text-center text-xs text-destructive">
-                            {error}
-                        </p>
-                    ) : null}
                 </div>
 
                 {/* Desktop letter paper */}
@@ -550,11 +552,6 @@ export function StepReview({
                     <p className="mx-auto mt-2 w-1/2 text-center text-[11px] leading-snug text-muted-foreground">
                         {REQUEST_COPY.submitFootnote}
                     </p>
-                    {error ? (
-                        <p className="mx-auto mt-2 w-1/2 text-center text-xs text-destructive">
-                            {error}
-                        </p>
-                    ) : null}
                 </div>
             </div>
 
@@ -601,11 +598,6 @@ export function StepReview({
                             : REQUEST_COPY.requestAQuote}
                     </Button>
                 </div>
-                {error ? (
-                    <p className="mx-auto mt-1 max-w-[820px] px-4 text-xs text-destructive">
-                        {error}
-                    </p>
-                ) : null}
             </div>
 
             {/* Mobile summary sheet */}
@@ -643,6 +635,18 @@ export function StepReview({
                     </div>
                 </SheetContent>
             </Sheet>
+
+            <MessageDialog
+                open={Boolean(error)}
+                title={REQUEST_COPY.submitErrorTitle}
+                description={error}
+                actionLabel={REQUEST_COPY.submitErrorRetry}
+                onAction={handleSubmit}
+                secondaryLabel={REQUEST_COPY.submitErrorClose}
+                onSecondary={() => setError('')}
+                onDismiss={() => setError('')}
+                pending={pending}
+            />
         </section>
     );
 }
