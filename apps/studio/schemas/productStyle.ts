@@ -84,7 +84,10 @@ export const productStyle = defineType({
       description: 'Landing-page hero: badge, headline (the H1 — not a name), supporting copy and image.',
       options: { collapsible: true, collapsed: false },
       fields: [
-        defineField({ name: 'title', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
+        // Renamed from `hero.title` (D33). The field was *labelled* "Badge label" but
+        // *named* `title`, so it collided with the document's own title in every
+        // projection. 0 populated at the rename.
+        defineField({ name: 'label', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
         defineField({ name: 'headline', title: 'Headline', type: 'string', description: 'The page H1 (e.g. "Magnetic Closure Rigid Boxes"). Leave blank to use the site default.' }),
         defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the headline.' }),
         defineField(taggedImageField({
@@ -99,8 +102,10 @@ export const productStyle = defineType({
       ],
     }),
     defineField(taggedImageField({
-      name: 'bannerImage',
-      title: 'Banner image',
+      // Renamed from `bannerImage` (D33) — a banner is a shape, not a meaning. Matches
+      // the name Product Line and Case Study already use. 0 populated at the rename.
+      name: 'cardImage',
+      title: 'Card image',
       type: 'image',
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],

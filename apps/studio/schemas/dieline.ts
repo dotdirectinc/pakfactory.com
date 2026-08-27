@@ -57,7 +57,9 @@ export const dieline = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'gated',
+      // Renamed from `gated` (D33) — a boolean reads as a question. 0 documents of
+      // this type exist at the rename, so there is nothing to migrate.
+      name: 'isGated',
       title: 'Gated',
       type: 'boolean',
       group: GROUPS.content,
