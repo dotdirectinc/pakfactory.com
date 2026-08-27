@@ -39,6 +39,8 @@ Without it, *"Soft Touch doesn't work on blister plastic"* has two homes and the
 
 **`except` is frozen** — not widened, not split, not removed. D42's plan to add a `customizationOption` target is withdrawn. At **0 of 33 populated** every path stays open, and the first real carve-out in authoring decides which axis it belongs to.
 
+Its targets do narrow to `productStyle · product`: the field it replaces also accepted a `productLine`, and a carve-out at line grain says the same thing as not listing that line in `availableOnProducts`. At 0 of 33 populated nothing is stranded, and the migration reports anything it finds rather than filtering silently.
+
 ### 2. `role` on the Option — `configurable` | `reference`
 
 Required, `initialValue: 'configurable'`, with a **backfill of all 33 published Options in the same PR as the field**.
@@ -69,6 +71,18 @@ The split (*Surface Finish — Paper* / *— Film*, each with its own *Matte*) w
 
 Two Options titled *Matte* is therefore a deliberate exception with distinct slugs (`matte-paper` / `matte-film`). **Do not merge them, and do not add uniqueness validation on Option titles.**
 
+### 4b. `cardinality` on the Type — `single` | `multiple`
+
+Required, `initialValue: 'single'`, backfilled for all existing Types in the same migration.
+
+> How many of this Type's Options a customer may pick in the configurator.
+
+**It is a prerequisite for the `customizationType` target on `incompatibleWithCustomizations`** (D43): *"can't combine with Embossing & Debossing"* only reads unambiguously once you know whether a customer takes one Option from that Type or several. The two therefore ship together.
+
+**Not inherited from the Category.** Materials carry a blanket *"Single Selection (Within Each Type)"* in the diagram, but Finishing and Additional Customization are mixed — Embossing & Debossing and Closures allow several while Foiling and Windows do not — so the Category cannot answer it.
+
+`multiple` is the **marked exception**: the diagram badges exactly those Types *"Multiple Selection (Within Each Type)"*, and everything else is `single`. In this dataset that is **Embossing & Debossing, Closures, Reinforcement & Utility, and Pulls & Lifts** (the diagram's *Opening & Access*); the diagram's *Embellishments* and *Technology* have no Sanity Type yet.
+
 ### 5. One scope algebra
 
 > Resolve availability by the most specific matching entry. Where entries match at different grains — product, style, line — the narrower one decides. `exceptProducts` is shorthand for a denial at a finer grain, not a separate mechanism.
@@ -83,11 +97,11 @@ This matches how the Registry resolves scope (`rule_scope`, ADR-0008 #10 option 
 
 ## Build order
 
-1. **`role` + the backfill of all 33**, in one PR. Until the backfill runs the availability warning fires on every unclassified document, which is the noise `role` exists to remove.
-2. The four availability fields — three renames and one new field — with the conditional warning on `availableOnProducts` reading `role`. **This is a data migration, not a rename:** `appliesTo` is populated on 8 of 33 documents and renaming the key in the schema strands those values. A `migrate-*.mjs` ships in the same PR.
-3. `achieves`, with the non-sufficiency description.
-4. `cardinality` on `customizationType` ships **in the same PR as, or ahead of,** any `customizationType` target on `incompatibleWithCustomizations` (D43).
-5. Retire `relatedCustomizations` on `customizationOption` (hard remove, 0 of 33 populated) and give `comparedAgainst` the same `deprecateField()` treatment as its Product twin (already shipped there).
+1. ✅ **`role` + the backfill of all 33**, in one PR (#379). Until the backfill runs the availability warning fires on every unclassified document, which is the noise `role` exists to remove.
+2. ✅ The four availability fields — three renames and one new field — with the conditional warning on `availableOnProducts` reading `role`. **This was a data migration, not a rename:** `appliesTo` is populated on 8 of 33 documents and renaming the key in the schema strands those values, so `migrate-customization-availability-axes.mjs` shipped in the same PR.
+3. ✅ `achieves`, with the non-sufficiency description in the field description.
+4. ✅ `cardinality` on `customizationType` — shipped **in the same PR as** the `customizationType` target on `incompatibleWithCustomizations` (D43), which is what required it. See §4b.
+5. ✅ Retired `relatedCustomizations` on `customizationOption` (hard remove, 0 of 33 populated) and gave `comparedAgainst` the same `deprecateField()` treatment as its Product twin. `comparedAgainst` is **deprecated, not removed** — 8 of 33 are populated, so the data stays legible while nothing new is written; its minimum-3 rule goes with it, since a read-only field cannot be brought up to a minimum.
 
 **Do not implement:** axis validation, a `customizationOption` target on `exceptProducts`, a Type-level role flag, uniqueness validation on Option titles, or Studio enforcement of `kindOf`.
 
