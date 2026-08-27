@@ -24,6 +24,7 @@
     "backfill:customization-role": "node scripts/backfill-customization-option-role.mjs",
     "split:coating-type": "node scripts/split-coating-customization-type.mjs",
     "migrate:availability-axes": "node scripts/migrate-customization-availability-axes.mjs",
+    "migrate:option-category-benefits": "node scripts/migrate-customization-option-category-and-benefits.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
