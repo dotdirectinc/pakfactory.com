@@ -50,7 +50,7 @@ export type RequestDraft = {
     notes: string;
     timeline: string;
     packagingContents: string;
-    expressQuantity: string;
+    expressQuantities: number[];
     annualSpend: string;
     shippingAddress: ShippingAddress | null;
     companyAddress: ShippingAddress | null;
@@ -79,7 +79,7 @@ export const EMPTY_DRAFT: RequestDraft = {
     notes: '',
     timeline: '',
     packagingContents: '',
-    expressQuantity: '',
+    expressQuantities: [],
     annualSpend: '',
     shippingAddress: null,
     companyAddress: null,
@@ -129,6 +129,27 @@ function asBool(value: unknown, fallback = false): boolean {
     return typeof value === 'boolean' ? value : fallback;
 }
 
+function parseExpressQuantities(value: unknown, legacy?: unknown): number[] {
+    if (Array.isArray(value)) {
+        return [
+            ...new Set(
+                value.filter(
+                    (n): n is number =>
+                        typeof n === 'number' &&
+                        Number.isFinite(n) &&
+                        n > 0,
+                ),
+            ),
+        ].sort((a, b) => a - b);
+    }
+    if (typeof legacy === 'string') {
+        const digits = legacy.replace(/[^0-9]/g, '');
+        const n = Number(digits);
+        if (digits.length > 0 && n > 0) return [n];
+    }
+    return [];
+}
+
 function parseShipping(value: unknown): ShippingAddress | null {
     if (!value || typeof value !== 'object') return null;
     const a = value as ShippingAddress;
@@ -165,7 +186,10 @@ function parseDraft(value: unknown): RequestDraft {
         notes: asString(d.notes),
         timeline: asString(d.timeline),
         packagingContents: asString(d.packagingContents),
-        expressQuantity: asString(d.expressQuantity),
+        expressQuantities: parseExpressQuantities(
+            (d as {expressQuantities?: unknown}).expressQuantities,
+            (d as {expressQuantity?: unknown}).expressQuantity,
+        ),
         annualSpend: asString(d.annualSpend),
         shippingAddress: parseShipping(d.shippingAddress),
         companyAddress: parseShipping(d.companyAddress),

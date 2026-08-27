@@ -37,6 +37,8 @@ export type SiteNavProps = {
   logo?: ReactNode;
   items: SiteNavItem[];
   cta: SiteNavCta;
+  /** Sign-in / Account link, rendered with the request folder (after the divider). */
+  signIn?: SiteNavCta;
   request?: SiteNavRequest;
 };
 
@@ -60,6 +62,7 @@ export function SiteNav({
   logo,
   items,
   cta,
+  signIn,
   request,
 }: SiteNavProps) {
   const requestCount = request?.count ?? 0;
@@ -80,48 +83,63 @@ export function SiteNav({
 
         <div className="flex items-center gap-5">
           <SiteNavLinks items={items} />
-          <SiteNavMobile items={items} cta={cta} request={request} />
+          <SiteNavMobile
+            items={items}
+            cta={cta}
+            signIn={signIn}
+            request={request}
+          />
 
           <Separator orientation="vertical" className="hidden !h-6 md:block" />
 
-          {request ? (
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative size-9"
-                    aria-label={requestAria}
-                    asChild
+          {signIn || request ? (
+            <div className="hidden items-center gap-4 md:flex">
+              {request ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative size-9"
+                      aria-label={requestAria}
+                      asChild
+                    >
+                      <Link href={request.href}>
+                        {requestCount > 0 ? (
+                          <FolderOpen className="size-6" strokeWidth={1.75} />
+                        ) : (
+                          <FolderPlus className="size-6" strokeWidth={1.75} />
+                        )}
+                        {requestCount > 0 ? (
+                          <span
+                            className={cn(
+                              "pointer-events-none absolute -right-0.5 -bottom-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-semibold text-background ring-2 ring-background",
+                              requestCount > 99 && "px-1.5 text-[9px]",
+                            )}
+                          >
+                            {requestCount > 99 ? "99+" : requestCount}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    sideOffset={8}
+                    className="rounded-full px-3 py-1.5 text-[13px] font-medium [&>svg]:hidden"
                   >
-                    <Link href={request.href}>
-                      {requestCount > 0 ? (
-                        <FolderOpen className="size-6" strokeWidth={1.75} />
-                      ) : (
-                        <FolderPlus className="size-6" strokeWidth={1.75} />
-                      )}
-                      {requestCount > 0 ? (
-                        <span
-                          className={cn(
-                            "pointer-events-none absolute -right-0.5 -bottom-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-semibold text-background ring-2 ring-background",
-                            requestCount > 99 && "px-1.5 text-[9px]",
-                          )}
-                        >
-                          {requestCount > 99 ? "99+" : requestCount}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="bottom"
-                  sideOffset={8}
-                  className="rounded-full px-3 py-1.5 text-[13px] font-medium [&>svg]:hidden"
+                    {request.label}
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+              {signIn ? (
+                <Link
+                  href={signIn.href}
+                  className="py-2 text-base font-medium text-foreground no-underline transition-colors hover:text-foreground/80"
                 >
-                  {request.label}
-                </TooltipContent>
-              </Tooltip>
+                  {signIn.label}
+                </Link>
+              ) : null}
             </div>
           ) : null}
 

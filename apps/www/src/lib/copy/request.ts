@@ -19,8 +19,7 @@ export const REQUEST_COPY = {
     customizeItYourself: 'Customize it yourself',
 
     // BriefBuilder / wizard
-    railHeading:
-        'The more you share, the faster our specialists can quote it.',
+    railHeading: 'The more you share, the faster we can quote.',
     needHelpPrefix: 'Need help?',
     startChat: 'Start chat',
     yourRefPrefix: 'Your ref# is',
@@ -29,16 +28,15 @@ export const REQUEST_COPY = {
     saveDraft: 'Save draft',
 
     productsTitle: 'Products',
-    productsSubtitle: 'Add & configure your items',
+    productsSubtitle: 'Add items',
     servicesTitle: 'Services',
-    servicesSubtitle: 'Optional extras',
+    servicesSubtitle: 'Extras',
     servicesHeading: 'Services',
-    servicesDesc: 'Add any extras you might want. No commitment.',
+    servicesDesc: '',
     requirementsTitle: 'Your Requirements',
-    requirementsSubtitle: 'Tell us what you need and when you need it.',
+    requirementsSubtitle: '',
     yourInformationTitle: 'Your Information',
-    yourInformationSubtitle:
-        'Add your name and shipping location so we can prepare your quote.',
+    yourInformationSubtitle: '',
     reviewTitle: 'Review your request',
     reviewSubtitle:
         'One last look — then a specialist will quote pricing, lead time, and next steps.',
@@ -55,42 +53,40 @@ export const REQUEST_COPY = {
     regionToConfirm: 'Region — to confirm',
     notSet: 'Not set',
     paperDisclaimer:
-        'This is a request, not a priced quote. A PakFactory specialist reviews your request and returns a full quote — pricing, lead time, and next steps — within one business day.',
+        'This is a request, not a quote. We’ll reply within one business day.',
     refLabel: 'Ref',
     timeFramePrefix: 'Time frame:',
     packagingPrefix: 'Packaging:',
     quantityPrefix: 'Quantity:',
     unitsSuffix: 'units',
-    budgetOnPaper: 'Approximate yearly packaging budget?',
+    budgetOnPaper: 'Yearly Packaging Spend',
     specialistToAdvise: 'Specialist to advise',
 
     quantityLabel: 'Quantity',
     quantityPlaceholder: 'e.g. 500',
     quantityHelp: 'Quantities are in multiples of 100.',
     quantityError: 'Enter a quantity in multiples of 100.',
-    notesLabel: 'Tell us what you\'re packaging and when you need it.',
-    notesPlaceholder:
-        'What you\'re launching and what matters most across these items.',
+    notesLabel: 'Brief',
+    notesPlaceholder: 'What you’re packaging and when you need it',
     timelineLabel: 'Time frame',
     timelinePlaceholder: 'e.g. Need quote by Sept 15 — Ship by mid-October',
-    annualSpendLabel: 'Approximate yearly packaging budget?',
-    shipToLabel: 'Where should this ship to?',
+    annualSpendLabel: 'Yearly Packaging Spend',
+    shipToLabel: 'Ship to',
     addFilesLabel: 'Add files',
-    additionalFilesLabel:
-        'Do you have additional files you want to send to us?',
+    additionalFilesLabel: 'Add files',
     filesDropTitle: 'Drop artwork, dielines or product photos',
     filesExpressDropTitle: 'Drop dielines, artwork, PDFs, or product photos',
 
     contactHeading: 'Your Information',
-    contactDesc: 'Name and work email to start. The rest is optional.',
+    contactDesc: '',
     firstName: 'First name',
     lastName: 'Last name',
-    workEmail: 'Work email',
+    workEmail: 'Email',
     phone: 'Phone',
     company: 'Company',
     industry: 'Industry',
-    companyOffice: 'Company office address',
-    companyOfficeOptional: 'optional',
+    companyOffice: 'Company Address',
+    companyAddressHelp: 'No company? Use your name.',
 
     reviewPaperBadge: 'Quote request',
     requestSummary: 'Request summary',
@@ -98,7 +94,7 @@ export const REQUEST_COPY = {
     productsCountMany: '{n} products',
     noProductsCount: 'No products',
     requestAQuote: 'Request a quote',
-    submitFootnote: 'Our specialist will be in contact with a quote.',
+    submitFootnote: 'We’ll follow up with a quote.',
     submitting: 'Submitting…',
     submitHelperContact:
         'Add your name and shipping location to submit request.',
@@ -107,13 +103,12 @@ export const REQUEST_COPY = {
 
     quoteRequested: 'Quote requested',
     quoteRequestedBody:
-        'Thanks — a PakFactory specialist will review your request and follow up with your quote within one business day.',
+        'Thanks. We’ll follow up within one business day.',
     keepBrowsing: 'Keep browsing products',
     backToYourRequest: 'Back to Your Request',
 
-    assistTitle: 'Have a document already? Let us fill this in.',
-    assistBody:
-        'Drop a spec sheet or RFQ (PDF, DOC, or image) and we\'ll pre-fill the fields for you to review.',
+    assistTitle: 'Upload a document to pre-fill',
+    assistBody: '',
     uploadDocument: 'Upload a document',
     tryASample: 'Try a sample',
     assistDonePrefix: 'Pre-filled from',
@@ -129,8 +124,7 @@ export const REQUEST_COPY = {
     signIn: 'Sign in',
 
     leaveTitle: 'Save as draft?',
-    leaveBody:
-        'Save this request so you can pick up where you left off, or discard and return.',
+    leaveBody: 'Save to continue later, or discard.',
     leaveSave: 'Save draft',
     leaveDiscard: 'Discard',
     leaveCancel: 'Cancel',
@@ -142,10 +136,10 @@ export const REQUEST_COPY = {
     entryServices: 'Service Only Quote',
     continueRequest: 'Continue your request',
     productsUpsellTitle: 'Products',
-    productsUpsellSubtitle: 'Optional — add catalog products to this quote.',
+    productsUpsellSubtitle: '',
     yourRequestHeading: 'Your Request',
     yourRequestStub:
-        'Choose how you want to start — or continue a request in progress.',
+        'Start a new request or continue one in progress.',
     yourRequestSupporting:
         'Your added products. Select the ones you want quoted.',
     nothingAddedYet: 'Nothing added yet.',

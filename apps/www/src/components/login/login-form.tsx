@@ -21,7 +21,14 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 
-export function LoginForm({next}: {next?: string}) {
+export function LoginForm({
+    next,
+    embedded = false,
+}: {
+    next?: string;
+    /** The dialog supplies its own heading, so skip the in-form title. */
+    embedded?: boolean;
+}) {
     const [showPassword, setShowPassword] = useState(false);
     // Server-side failures (wrong credentials, unconfirmed account, rate limit)
     // are separate from react-hook-form's client validation: the field errors say
@@ -64,14 +71,16 @@ export function LoginForm({next}: {next?: string}) {
 
     return (
         <div className="flex w-full max-w-sm flex-col gap-6">
-            <div className="flex flex-col gap-2 text-center">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                    {LOGIN_COPY.title}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    {LOGIN_COPY.subtitle}
-                </p>
-            </div>
+            {embedded ? null : (
+                <div className="flex flex-col gap-2 text-center">
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                        {LOGIN_COPY.title}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        {LOGIN_COPY.subtitle}
+                    </p>
+                </div>
+            )}
 
             <LoginGoogleButton label={LOGIN_COPY.continueWithGoogle} next={next} />
 

@@ -30,9 +30,11 @@ export function StepServices({
                     <h2 className="text-2xl font-semibold tracking-tight">
                         {REQUEST_COPY.servicesHeading}
                     </h2>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                        {REQUEST_COPY.servicesDesc}
-                    </p>
+                    {REQUEST_COPY.servicesDesc ? (
+                        <p className="mt-1.5 text-sm text-muted-foreground">
+                            {REQUEST_COPY.servicesDesc}
+                        </p>
+                    ) : null}
                 </div>
                 <button
                     type="button"
