@@ -83,6 +83,23 @@ const USAGE = `Usage:
   --reclassify      Also correct roles that contradict the diagram.`
 const args = parseScriptArgs({ flags: ['reclassify'], usage: USAGE })
 const { confirm: apply, reclassify } = args
+/**
+ * Slugs to write as `reference` instead of `configurable`, from the Capabilities Flow
+ * diagram. Enumerated per-Option because Sanity's single `Coating` Type spans two of
+ * Eric's Types (see the header).
+ */
+const REFERENCE_SLUGS = new Set([
+  // Finishing › Lamination — "Not Customizable"
+  'matte-lamination',
+  'gloss-lamination',
+  'soft-touch-lamination',
+  // Finishing › Surface Coating — "Not Customizable". NOT `spot-uv`, which the diagram
+  // puts under the un-badged `Spot Coating` Type.
+  'uv-coating',
+  'aqueous-coating',
+  'varnish-coating',
+])
+
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
 // Straight from the flag — `--dataset` is required, so there is nothing to fall back to.

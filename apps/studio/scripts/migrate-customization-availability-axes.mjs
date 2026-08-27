@@ -74,6 +74,22 @@ const USAGE = `Usage:
   --yes-production  Second gate; required to write to production.`
 const args = parseScriptArgs({ usage: USAGE })
 const { confirm: apply } = args
+/** old key → new key. A key with no new name is unset outright. */
+const RENAMES = [
+  ['appliesTo', 'availableOnProducts'],
+  ['except', 'exceptProducts'],
+  ['incompatibleWith', 'incompatibleWithCustomizations'],
+]
+const DROPS = ['relatedCustomizations']
+
+/** Type slugs a customer may pick SEVERAL options from. Everything else is `single`. */
+const MULTIPLE_SELECT_TYPE_SLUGS = new Set([
+  'embossing-debossing',
+  'closures',
+  'reinforcement-utility',
+  'pulls-lifts', // the diagram's "Opening & Access"
+])
+
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
 // Straight from the flag — `--dataset` is required, so there is nothing to fall back to.
