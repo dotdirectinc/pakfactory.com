@@ -408,7 +408,8 @@ export function expandRequestProducts(): void {
     updateRequestDraft({productsExpanded: true});
 }
 
-export function resetExpressDraft(): void {
+/** Clears everything the buyer typed. Product lines in the pool survive. */
+export function discardRequestDraft(): void {
     const current = getRequestStateSnapshot();
     persist({
         lines: current.lines,
@@ -417,6 +418,31 @@ export function resetExpressDraft(): void {
             productsExpanded: current.lines.length > 0,
         },
     });
+}
+
+/**
+ * True when the buyer has typed nothing into the draft. Entry bookkeeping
+ * (entryKind, express, productsExpanded, servicesEnabled, title) is set by the
+ * route rather than the buyer, so it does not count as content.
+ */
+export function isDraftEmpty(draft: RequestDraft): boolean {
+    return (
+        draft.notes.trim() === '' &&
+        draft.timeline.trim() === '' &&
+        draft.packagingContents.trim() === '' &&
+        draft.annualSpend.trim() === '' &&
+        draft.contactFirstName.trim() === '' &&
+        draft.contactLastName.trim() === '' &&
+        draft.contactEmail.trim() === '' &&
+        draft.contactPhone.trim() === '' &&
+        draft.contactCompany.trim() === '' &&
+        draft.contactIndustry.trim() === '' &&
+        draft.expressQuantities.length === 0 &&
+        draft.services.length === 0 &&
+        draft.artworkNames.length === 0 &&
+        draft.shippingAddress === null &&
+        draft.companyAddress === null
+    );
 }
 
 export function startExpressDraft(): void {
@@ -429,7 +455,6 @@ export function startExpressDraft(): void {
             productsExpanded: false,
             entryKind: 'express',
             servicesEnabled: false,
-            title: defaultDraftTitle(),
         },
     });
 }

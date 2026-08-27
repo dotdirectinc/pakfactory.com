@@ -220,3 +220,51 @@ Regression QA:
 ## 10. Rollback
 
 If anything regresses: `git revert <migration-sha>` (or `git checkout <baseline-sha> -- packages/ui/src/globals.css`), rebuild both apps. Because the change is one file and one commit, rollback is atomic and does not touch dark mode, charts, or any component.
+
+---
+
+## 11. Amendment — 2026-08-27: 2026 primary green `#285429` (www only)
+
+The 2026 website design moves primary green to `#285429`. Source of truth: Figma node [5178:75186](https://www.figma.com/design/m2bfgzA4X8AED7OM9ia5sL/New-Website---2026-New-Version?node-id=5178-75186) (nav "Get a quote" CTA).
+
+**`packages/ui` is deliberately unchanged** — it still ships the §3 green `#2b5f2d`. Editing the shared token would repaint `apps/blog`, which is live on the `staging` → `main` path while the www rebuild sits on `www-new-release`. So the new green is applied as a **www-only overlay** in `apps/www/src/app/globals.css`.
+
+`#2b5f2d` → `#285429` (rgb 43,95,45 → 40,84,41): slightly darker and less saturated. White-on-green contrast improves from ~7.6:1 to ~8.8:1, clearing WCAG AAA for body text.
+
+### Tokens overridden in www's `:root`
+
+| Token | ui ships | www overrides to |
+| --- | --- | --- |
+| `--primary` | `#2b5f2d` | `#285429` |
+| `--primary-foreground` | `#ffffff` | `#ffffff` (pinned, no-op today) |
+| `--ring` | `#2b5f2d` | `#285429` |
+| `--primary-hover` | `#245125` | `#214822` |
+| `--button-primary-hover` | *(www-only token)* | `#214822` (was `#2e3e27`) |
+
+`--primary-hover` is rescaled by preserving its per-channel ratio to the old primary, so the relationship set in §4 carries over to the new base.
+
+**Not overridden**, because www has no consumers and dead overrides rot: `--primary-active`, `--opacity-primary-10`…`-60`, `--primary-gradient`, `--shadow-primary-*`, and the `--sidebar-*` family. Add one only when a www component starts using it. Dark mode is untouched — it inverts `--primary` to `rgb(229 229 229)`, so no green lives there.
+
+### Default Button restyled
+
+The unlayered www-only rule for `[data-slot="button"][data-variant="default"]` moved from **forest `#17280f` + lemongrass `#ade35c`** to `var(--primary)` + `var(--primary-foreground)`, keeping the `9999px` pill. This rule is what actually paints the CTA — it is unlayered on purpose and beats the ui primitive's `bg-primary` / `text-primary-foreground` utilities, so the earlier forest/lemongrass pairing, not `--primary`, was the button's real source of color.
+
+`--brand-forest` and `--brand-lemongrass` remain defined. Forest is still used by `apps/www/src/components/product/customization-entry.tsx`; lemongrass now has no consumer but stays as a palette token.
+
+Because the button rule and `--primary` both changed, every default button in www plus `bg-primary` (7 components), `text-primary` (13 files), `border-primary` (2), and all focus rings shift to the new green at once.
+
+### Promotion path
+
+When www launches and blog adopts the 2026 palette, move `--primary`, `--primary-foreground`, `--ring`, and `--primary-hover` into `packages/ui/src/globals.css` per ADR-006 and delete the www overrides. Overriding ui-defined tokens in app CSS is a conscious, temporary divergence from the `AGENTS.md` rule that app CSS only *adds* tokens ui lacks; it is bounded by that promotion step.
+
+### Follow-up: duplicate declarations in ui
+
+`packages/ui/src/globals.css` `:root` declares `--primary-hover`, `--primary-active`, and the whole `--opacity-primary-*` ramp **twice** — once inline in the §3 palette block, once in the §4 families block. Later declarations win, so the §4 copies are the effective values. The `--opacity-neutral-*` ramp is duplicated the same way. Any future retune of the shared token must edit both copies or it will half-apply. Worth its own `packages/ui` ticket on `staging`.
+
+### Auth email templates
+
+`apps/www/docs/auth-emails/confirm-signup.html` and `reset-password.html` hardcode the brand hex inline (email clients strip CSS variables). Both moved to `#285429`. They are **pasted into the Supabase dashboard by hand**, so the repo edit alone changes nothing in production — a human must re-paste both templates.
+
+### Note for design
+
+The Figma node hardcodes `#285429` as a raw hex rather than binding it to a variable, and exposes no green hover/active state, so the hover value above is derived in code. Promoting primary to a real Figma variable would make future retunes a single edit on the design side.

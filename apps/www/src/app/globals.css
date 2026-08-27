@@ -3,8 +3,8 @@
 @source "../../../../packages/components/src";
 
 /*
-  www-only overlay: 2026 --brand-* / --support-* aliases and default
-  Button (forest + lemongrass).
+  www-only overlay: 2026 --brand-* / --support-* aliases, the 2026 primary
+  green override, and the default Button (primary green pill, white label).
   Do not copy this block into apps/blog or case-study CSS.
   If blog and case studies need the same tokens, move them into
   packages/ui/src/globals.css (ADR-006) so all apps inherit them.
@@ -43,8 +43,16 @@
   --ai-accent-soft: rgba(33, 31, 87, 0.4);
   --primary-soft: #E3E5E2;
 
-  /* Default Button hover — forest lightened (~10%). ui has no pairing. */
-  --button-primary-hover: #2e3e27;
+  /* 2026 primary green (Figma node 5178:75186). www-only until launch;
+     ui still ships #2b5f2d so apps/blog is unaffected. Promote into
+     packages/ui (ADR-006) when www goes live and blog adopts the new green. */
+  --primary: #285429;
+  --primary-foreground: #ffffff;
+  --ring: #285429;
+  --primary-hover: #214822;      /* primary darkened, matches ui's ratio */
+
+  /* Default Button hover — new primary darkened. Was #2e3e27 (forest). */
+  --button-primary-hover: #214822;
 }
 
 @theme inline {
@@ -78,14 +86,15 @@
 }
 
 /*
-  www-only: default Button (data-variant=default) — forest + lemongrass pill.
+  www-only: default Button (data-variant=default) — primary green pill, white
+  label (was forest + lemongrass).
   Do not copy into blog. If all apps need this, move into packages/ui (ADR-006).
   Unlayered so it wins over the ui primitive’s bg-primary / rounded-md utilities.
 */
 [data-slot="button"][data-variant="default"] {
   border-radius: 9999px;
-  background-color: var(--brand-forest);
-  color: var(--brand-lemongrass);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 [data-slot="button"][data-variant="default"]:hover:not(:disabled) {

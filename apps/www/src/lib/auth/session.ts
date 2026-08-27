@@ -31,6 +31,47 @@ export async function requireUser(returnTo: string): Promise<User> {
 }
 
 /**
+ * The name to greet a signed-in buyer with.
+ *
+ * Supabase spreads whatever the provider sent into user_metadata, so the shape
+ * differs per provider (Google sends full_name, others send name, email sign-ups
+ * send neither). Reading it here keeps that guesswork out of the components.
+ */
+export function accountDisplayName(user: User): string {
+    const metadata = user.user_metadata as {
+        full_name?: unknown;
+        name?: unknown;
+    } | null;
+
+    const fromMetadata = [metadata?.full_name, metadata?.name].find(
+        (value): value is string =>
+            typeof value === 'string' && value.trim().length > 0,
+    );
+    if (fromMetadata) return fromMetadata.trim();
+
+    const localPart = user.email?.split('@')[0] ?? '';
+    return localPart.replace(/[._-]+/g, ' ').trim();
+}
+
+/**
+ * The provider's profile photo, when the session came with one.
+ *
+ * https only: user_metadata is provider-supplied and writable, so it must not be
+ * able to feed a javascript: or data: URL into an img src.
+ */
+export function accountAvatarUrl(user: User): string | undefined {
+    const metadata = user.user_metadata as {
+        avatar_url?: unknown;
+        picture?: unknown;
+    } | null;
+
+    return [metadata?.avatar_url, metadata?.picture].find(
+        (value): value is string =>
+            typeof value === 'string' && value.startsWith('https://'),
+    );
+}
+
+/**
  * A relative, single-slash path or nothing.
  *
  * `next` arrives from a query string, so it is attacker-controlled: an unchecked

@@ -10,12 +10,12 @@ import {
 } from 'react';
 import {
     addRequestLine,
+    discardRequestDraft,
     ensureBuilderDraft,
     expandRequestProducts,
     getRequestStateServerSnapshot,
     getRequestStateSnapshot,
     removeRequestLine,
-    resetExpressDraft,
     startExpressDraft,
     subscribeRequest,
     updateRequestDraft,
@@ -38,7 +38,7 @@ type RequestContextValue = {
     expandProducts: () => void;
     startExpress: () => void;
     ensureBuilder: (opts?: {express?: boolean; mode?: RequestEntryKind}) => void;
-    resetExpress: () => void;
+    discardDraft: () => void;
 };
 
 const RequestContext = createContext<RequestContextValue | null>(null);
@@ -72,8 +72,8 @@ export function RequestProvider({children}: {children: ReactNode}) {
         },
         [],
     );
-    const resetExpress = useCallback(() => {
-        resetExpressDraft();
+    const discardDraft = useCallback(() => {
+        discardRequestDraft();
     }, []);
 
     const value = useMemo(
@@ -87,7 +87,7 @@ export function RequestProvider({children}: {children: ReactNode}) {
             expandProducts,
             startExpress,
             ensureBuilder,
-            resetExpress,
+            discardDraft,
         }),
         [
             state.lines,
@@ -99,7 +99,7 @@ export function RequestProvider({children}: {children: ReactNode}) {
             expandProducts,
             startExpress,
             ensureBuilder,
-            resetExpress,
+            discardDraft,
         ],
     );
 

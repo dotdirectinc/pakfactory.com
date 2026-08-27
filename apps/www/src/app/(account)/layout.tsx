@@ -1,6 +1,10 @@
 import type {ReactNode} from 'react';
 import {AccountShell} from '@/components/account/account-shell';
-import {requireUser} from '@/lib/auth/session';
+import {
+    accountAvatarUrl,
+    accountDisplayName,
+    requireUser,
+} from '@/lib/auth/session';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 /**
@@ -23,5 +27,13 @@ export default async function AccountRouteLayout({children}: {children: ReactNod
     // the buyer on a landing page.
     const user = await requireUser(WWW_ROUTES.account);
 
-    return <AccountShell userEmail={user.email ?? ''}>{children}</AccountShell>;
+    return (
+        <AccountShell
+            displayName={accountDisplayName(user)}
+            email={user.email ?? ''}
+            avatarUrl={accountAvatarUrl(user)}
+        >
+            {children}
+        </AccountShell>
+    );
 }

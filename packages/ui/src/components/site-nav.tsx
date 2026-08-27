@@ -39,6 +39,8 @@ export type SiteNavProps = {
   cta: SiteNavCta;
   /** Sign-in / Account link, rendered with the request folder (after the divider). */
   signIn?: SiteNavCta;
+  /** Takes the signIn link's place on desktop when the visitor has a session. */
+  account?: ReactNode;
   request?: SiteNavRequest;
 };
 
@@ -63,6 +65,7 @@ export function SiteNav({
   items,
   cta,
   signIn,
+  account,
   request,
 }: SiteNavProps) {
   const requestCount = request?.count ?? 0;
@@ -92,8 +95,8 @@ export function SiteNav({
 
           <Separator orientation="vertical" className="hidden !h-6 md:block" />
 
-          {signIn || request ? (
-            <div className="hidden items-center gap-4 md:flex">
+          {signIn || account || request ? (
+            <div className="hidden items-center gap-2 md:flex">
               {request ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -132,14 +135,15 @@ export function SiteNav({
                   </TooltipContent>
                 </Tooltip>
               ) : null}
-              {signIn ? (
-                <Link
-                  href={signIn.href}
-                  className="py-2 text-base font-medium text-foreground no-underline transition-colors hover:text-foreground/80"
-                >
-                  {signIn.label}
-                </Link>
-              ) : null}
+              {account ??
+                (signIn ? (
+                  <Link
+                    href={signIn.href}
+                    className="py-2 text-base font-medium text-foreground no-underline transition-colors hover:text-foreground/80"
+                  >
+                    {signIn.label}
+                  </Link>
+                ) : null)}
             </div>
           ) : null}
 

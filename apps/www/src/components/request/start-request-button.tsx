@@ -28,7 +28,7 @@ export function StartRequestButton({
 
     function onStart() {
         ensureBuilder({mode: 'products'});
-        router.push(WWW_ROUTES.requestBuilder);
+        router.push(WWW_ROUTES.requestProducts);
     }
 
     return (

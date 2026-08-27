@@ -1,24 +1,37 @@
 import type {ReactNode} from 'react';
+import type {User} from '@supabase/supabase-js';
 import {WwwSiteNav} from '@/components/layout/www-site-nav';
+import {accountAvatarUrl, accountDisplayName} from '@/lib/auth/session';
 import {RequestRoot} from '@/lib/request/request-root';
 import {buildSiteNavProps} from '@/lib/site-nav';
 import {createClient} from '@/lib/supabase/server';
 
 export default async function SiteLayout({children}: {children: ReactNode}) {
-    let authenticated = false;
+    let user: User | null = null;
     try {
         const supabase = await createClient();
         const {data} = await supabase.auth.getUser();
-        authenticated = Boolean(data.user);
+        user = data.user;
     } catch {
-        authenticated = false;
+        user = null;
     }
 
-    const nav = buildSiteNavProps({authenticated});
+    const nav = buildSiteNavProps({authenticated: Boolean(user)});
 
     return (
         <RequestRoot>
-            <WwwSiteNav {...nav} />
+            <WwwSiteNav
+                {...nav}
+                account={
+                    user
+                        ? {
+                              displayName: accountDisplayName(user),
+                              email: user.email ?? '',
+                              avatarUrl: accountAvatarUrl(user),
+                          }
+                        : undefined
+                }
+            />
             {children}
         </RequestRoot>
     );

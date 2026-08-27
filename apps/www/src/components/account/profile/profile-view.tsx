@@ -5,6 +5,7 @@ import {Button} from '@pakfactory/ui/components/button';
 import {ProfileCompanyAddressSection} from '@/components/account/profile/profile-company-address';
 import {ProfileContactSection} from '@/components/account/profile/profile-contact';
 import {ProfileMarketingSection} from '@/components/account/profile/profile-marketing';
+import {ProfilePasswordSection} from '@/components/account/profile/profile-password';
 import {ProfileShippingAddressesSection} from '@/components/account/profile/profile-shipping-addresses';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
 import type {ProfileMock} from '@/lib/account/profile-mock';
@@ -33,6 +34,7 @@ export function ProfileView({profile}: ProfileViewProps) {
             <ProfileMarketingSection
                 initialEnabled={profile.marketingEmail}
             />
+            <ProfilePasswordSection />
 
             <div>
                 <Button asChild variant="outline" className="rounded-full">

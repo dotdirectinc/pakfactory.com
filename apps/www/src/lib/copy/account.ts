@@ -1,5 +1,7 @@
 export const ACCOUNT_COPY = {
     signOut: 'Sign out',
+    welcomeBack: 'Welcome back,',
+    accountMenu: 'Account menu',
     requestsTitle: 'Requests',
     requestsEmpty:
         'You have not submitted any requests yet. Start a request to get a quote from our packaging specialists.',
@@ -9,6 +11,9 @@ export const ACCOUNT_COPY = {
     companyAddressTitle: 'Company address',
     addressesTitle: 'Addresses',
     marketingTitle: 'Marketing preferences',
+    passwordTitle: 'Password',
+    resetPassword: 'Reset password',
+    resetPasswordDescription: 'Send a reset link to your email',
     edit: 'Edit',
     done: 'Done',
     add: 'Add',

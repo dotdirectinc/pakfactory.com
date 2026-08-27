@@ -107,7 +107,19 @@ export const REQUEST_COPY = {
     keepBrowsing: 'Keep browsing products',
     backToYourRequest: 'Back to Your Request',
 
-    assistTitle: 'Upload a document to pre-fill',
+    submitSuccessTitle: 'Request submitted',
+    submitSuccessBody:
+        'Thanks. A packaging specialist will follow up within one business day.',
+    submitSuccessAction: 'Continue',
+    submitErrorTitle: 'We couldn’t submit your request',
+    submitErrorRetry: 'Try again',
+    submitErrorClose: 'Close',
+    /** Shown when the action throws rather than returning a validation error. */
+    submitTransportError:
+        'We couldn’t reach the server. Your answers are saved — please try again.',
+
+    // Restore to 'Upload a document to pre-fill' to re-enable the banner.
+    assistTitle: '',
     assistBody: '',
     uploadDocument: 'Upload a document',
     tryASample: 'Try a sample',
@@ -128,6 +140,17 @@ export const REQUEST_COPY = {
     leaveSave: 'Save draft',
     leaveDiscard: 'Discard',
     leaveCancel: 'Cancel',
+
+    expressHeading: 'New request',
+
+    expressPoolTitle: 'You already have products saved',
+    expressPoolBodyOne:
+        'You have 1 product in your request. Add it to this quote, or ask about your requirements on their own.',
+    expressPoolBodyMany:
+        'You have {n} products in your request. Add them to this quote, or ask about your requirements on their own.',
+    expressPoolIncludeOne: 'Include my product',
+    expressPoolIncludeMany: 'Include my {n} products',
+    expressPoolRequirementsOnly: 'Requirements only',
 
     startBuilder: 'Continue your request',
     startExpress: 'Get a quote',

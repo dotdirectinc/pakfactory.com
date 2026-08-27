@@ -2,10 +2,10 @@ import type {Metadata} from 'next';
 import {BriefBuilder} from '@/components/request/brief-builder';
 
 export const metadata: Metadata = {
-    title: 'Get a quote',
+    title: 'Product quote',
     robots: {index: false, follow: false},
 };
 
-export default function RequestNewPage() {
-    return <BriefBuilder mode="express" />;
+export default function RequestProductsPage() {
+    return <BriefBuilder mode="products" />;
 }
