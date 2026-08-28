@@ -106,46 +106,114 @@ async function main() {
   }
   console.log('✅  Safety: no product spans two lines; every existing productLine agrees with its array.\n')
 
+  // Selected by what a document LACKS, not by what it carries.
+  //
+  // The first version filtered on `defined(productCategories) || defined(productStyleCategories)`
+  // — "has a legacy key" — and that missed two drafts on production:
+  //
+  //   Auto Bottom Box (1-2-3)   no line/style keys AT ALL, and none of the legacy
+  //                             ones either. Publishing it would have WIPED both
+  //                             fields off a live product and failed the new
+  //                             required-validation.
+  //   TEST!!!Telescoping Box    carried `productCategory` / `productStyleCategory`
+  //                             — the SINGULAR keys from a generation before the
+  //                             ones this migration knew about.
+  //
+  // Both are the same mistake: enumerating the shapes I expected to find instead of
+  // asking the question that actually matters, which is "would publishing this
+  // leave the document without a line or a style". A legacy key is one reason for
+  // that and not the only one, and the set of legacy keys is open-ended — there
+  // turned out to be two generations of them.
   const docs = await client.fetch(
-    `*[_type == "product" && (defined(productCategories) || defined(productStyleCategories))]{
+    `*[_type == "product" && (
+         !defined(productLine) || !defined(productStyle) ||
+         defined(productCategories) || defined(productStyleCategories) ||
+         defined(productCategory)   || defined(productStyleCategory)
+       )]{
        _id, title, "isDraft": _id in path("drafts.**"),
-       productCategories, productStyleCategories, productLine, productStyle
+       productCategories, productStyleCategories,
+       // Older singular generation, found on a draft that predates the arrays.
+       productCategory, productStyleCategory,
+       productLine, productStyle,
+       // For a DRAFT with nothing usable of its own, the published document is the
+       // correct source: a draft is an edit of it, so carrying its values forward
+       // is what "publish this draft" should have meant all along.
+       "publishedLine": *[_id == string::split(^._id, "drafts.")[1]][0].productLine,
+       "publishedStyle": *[_id == string::split(^._id, "drafts.")[1]][0].productStyle
      } | order(title asc)`,
   )
 
   const patches = []
+  const unresolved = []
   for (const d of docs) {
     const set = {}
     const unset = []
     const notes = []
 
-    if (Array.isArray(d.productCategories)) {
-      const first = d.productCategories[0]
-      if (first?._ref && !d.productLine) {
-        set.productLine = { _type: 'reference', _ref: first._ref }
-        notes.push('line←array[0]')
-      } else if (first?._ref) {
-        notes.push('line already set')
-      }
-      unset.push('productCategories')
+    // ── productLine: single reference ────────────────────────────────────────
+    // Sources in precedence order. Each is "the best available statement of which
+    // line this product is in", strongest first; a draft falls back to its
+    // published document last, because that is what publishing would overwrite.
+    const lineRef =
+      d.productLine?._ref ??
+      d.productCategories?.[0]?._ref ??
+      d.productCategory?._ref ??
+      (d.isDraft ? d.publishedLine?._ref : undefined)
+
+    if (!d.productLine && lineRef) {
+      set.productLine = { _type: 'reference', _ref: lineRef }
+      notes.push(
+        d.productCategories?.[0]?._ref ? 'line←array[0]'
+          : d.productCategory?._ref ? 'line←legacy singular'
+          : 'line←published',
+      )
     }
 
-    if (Array.isArray(d.productStyleCategories)) {
-      // Overwrite whatever `productStyle` holds — the earlier one-off left a SINGLE
-      // reference there, which this decision reverses back to an array.
-      const already = Array.isArray(d.productStyle)
-      if (!already) {
-        set.productStyle = d.productStyleCategories
-        notes.push(`styles←array(${d.productStyleCategories.length})`)
-      } else {
-        notes.push('styles already an array')
-      }
-      unset.push('productStyleCategories')
+    // ── productStyle: array ──────────────────────────────────────────────────
+    // `productStyle` may already hold a SINGLE reference from the earlier one-off,
+    // which this decision reverses — so "already correct" means already an ARRAY.
+    const styleArray =
+      (Array.isArray(d.productStyle) && d.productStyle.length ? d.productStyle : null) ??
+      (Array.isArray(d.productStyleCategories) && d.productStyleCategories.length
+        ? d.productStyleCategories
+        : null) ??
+      (d.productStyle?._ref ? [{ _type: 'reference', _ref: d.productStyle._ref }] : null) ??
+      (d.productStyleCategory?._ref
+        ? [{ _type: 'reference', _ref: d.productStyleCategory._ref }]
+        : null) ??
+      (d.isDraft && Array.isArray(d.publishedStyle) && d.publishedStyle.length
+        ? d.publishedStyle
+        : null)
+
+    if (!Array.isArray(d.productStyle) && styleArray) {
+      set.productStyle = styleArray
+      notes.push(`styles←${styleArray.length}`)
+    }
+
+    for (const key of ['productCategories', 'productStyleCategories', 'productCategory', 'productStyleCategory']) {
+      if (d[key] !== undefined && d[key] !== null) unset.push(key)
+    }
+
+    // A document this query selected but nothing could resolve is the case worth
+    // shouting about: it would publish without a line or a style and fail the
+    // required rule. Silence here is what let two of them sit on production.
+    const willHaveLine = set.productLine || d.productLine
+    const willHaveStyle = set.productStyle || Array.isArray(d.productStyle)
+    if (!willHaveLine || !willHaveStyle) {
+      unresolved.push({ ...d, willHaveLine: !!willHaveLine, willHaveStyle: !!willHaveStyle })
     }
 
     if (!Object.keys(set).length && !unset.length) continue
-    console.log(`${apply ? '✏️ ' : '•'} ${d.isDraft ? '[draft] ' : ''}${d.title ?? d._id}  ${notes.join(', ')}`)
+    console.log(`${apply ? '✏️ ' : '•'} ${d.isDraft ? '[draft] ' : ''}${d.title ?? d._id}  ${notes.join(', ') || 'drop legacy keys'}`)
     patches.push({ _id: d._id, set, unset })
+  }
+
+  if (unresolved.length) {
+    console.log(`\n⚠️  ${unresolved.length} document(s) would still be missing a line or a style after this run — publishing them fails the required rule and, for a draft, wipes the published value:`)
+    unresolved.forEach((d) =>
+      console.log(`     ${d.isDraft ? '[draft] ' : ''}${d.title ?? d._id}  line=${d.willHaveLine ? 'ok' : 'MISSING'} style=${d.willHaveStyle ? 'ok' : 'MISSING'}`),
+    )
+    console.log('     Fix in the Studio, or discard the draft.\n')
   }
 
   if (!patches.length) {
