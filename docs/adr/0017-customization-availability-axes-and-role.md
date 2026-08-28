@@ -148,6 +148,20 @@ Cleared while the product tables were still empty — all schema-only, and much 
 
 **`customizationOption.glossaryTerm` is now built.** It was designed (*"The definition lives there **only**; the Option page pulls it, never retypes it"*) and never deployed. This is the field `whatIsBlock` retires **into** — until it existed, deprecating `whatIsBlock` left its 8 documents of definition copy with nowhere to go, which is the consequence recorded above and now closed. ⚠️ There are **0 Glossary Term documents**, so the picker starts empty; `disableNew` is deliberately not set, because the terms must be creatable before anything can point at them.
 
+## Follow-on: `productStyle[0]` is the primary
+
+Settled with Richard **2026-08-27**, closing the last incompatibility between the Sanity model and the spec registry.
+
+The registry resolves a product's offer set from **one** style — `product.style_id`, flagged `is_primary` in `app.product_style_link` — while Sanity's `productStyle` is an array with no primary flag. The rule is **positional: `productStyle[0]` is the primary.**
+
+That is already what both sides do: the registry's importer takes `multi(…)[0]`, and `is_primary` is backfilled from `product.style_id`. The rule had simply never been stated, so nothing depended on it deliberately and nothing checked it.
+
+**Position is therefore meaningful** — dragging the array in the Studio changes which style the offer set resolves from. The field description says so, because an editor reordering a list has no other way to know.
+
+**Why a warning rather than a resolution.** The registry deliberately left the merge primary-only (`20260819190000_product_style_links.sql`): going many-to-many needs a production ruling between **union / intersection / primary-only**, because two style-tier rows for one attribute can disagree and the merge would otherwise pick one arbitrarily. Today's multi-style products are compatible, so primary-only and union return the same answer — but that is a property of the current data, not of the model. `app.v_style_disagreement` reports the first genuine contradiction, which is when that deferred ruling becomes due.
+
+The check is **deliberately narrow**: only two style-tier rows explicitly stating different `offered`. Presence-vs-absence is not reported, because a style with no row is inheriting from the family tier and reporting that would fire on nearly every product — the same failure as the pre-`role` availability warning, which fired on 25 of 33 documents and taught editors to ignore it.
+
 ## Consequences
 
 - **`reference` is classified from Eric's `Capabilities Flow` diagram (2026-08-26), which is the authoritative source.** The diagram badges each **Type**, and the badges map onto `role` one-for-one: *"Not Customizable"* → every Option under it is `reference`; no badge, or *"Single / Multiple Selection (Within Each Type)"* → `configurable`; *"only for Product Customization" + "No detail page"* → `configurable`. Reference Types: **Pouch Layer** (Materials), **Lamination**, **Surface Coating**, **Cutting**, **Gluing** (Finishing). Configurable-but-no-page Types: **Surface Finish (paper-based)**, **Surface Finish (non-paper)**, **Pouch Material**, **Food-Grade Material**.
