@@ -51,7 +51,7 @@ Supabase email template setup: [`docs/auth-emails/README.md`](./docs/auth-emails
 | --- | ------- |
 | www | http://localhost:3003 |
 | blog | http://localhost:3004 |
-| admin | http://localhost:3005 |
+| admin | http://localhost:4000 |
 | studio | http://localhost:3333 |
 
 Studio presentation preview should use www **3003** for `SANITY_STUDIO_PREVIEW_URL_WWW`.
