@@ -133,6 +133,21 @@ export const product = defineType({
     // SEVERAL Styles within that line. So `productLine` is a single reference and
     // `productStyle` stays an array — the asymmetry is the decision, not an oversight.
     //
+    // POSITION IS MEANINGFUL on `productStyle` (settled 2026-08-27). The registry
+    // resolves a product's offer set from ONE style — `product.style_id`, its
+    // `is_primary` link — and this array has no primary flag to map onto. The rule
+    // is positional: **`productStyle[0]` is the primary.** That is already what both
+    // sides do (the importer takes `multi(...)[0]`, and `is_primary` is backfilled
+    // from `style_id`); it simply had never been stated.
+    //
+    // The consequence is editor-facing, which is why the description says so:
+    // dragging this array changes which style the offer set resolves from. Today
+    // that is harmless — the styles on a product are compatible, so primary-only and
+    // union agree — but that is a property of the current data, not of the model.
+    // `app.v_style_disagreement` in the registry reports the first case where two
+    // linked styles genuinely contradict each other, which is when the deferred
+    // union / intersection / primary-only ruling becomes due.
+    //
     // This supersedes the earlier "a product can span more than one line" comment,
     // which came from reading Crystal's design as symmetric across both levels. It is
     // also narrower than `Entities/Product.md`, which says Single for BOTH — the Style
@@ -160,7 +175,7 @@ export const product = defineType({
       title: 'Product styles',
       type: 'array',
       group: GROUPS.categorization,
-      description: `The construction style(s) — a product may have more than one, but all within its single product line. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
+      description: `The construction style(s) — a product may have more than one, but all within its single product line. THE FIRST ONE IS THE PRIMARY: it is the style the product data source uses to work out what the product can be ordered with, so reordering this list changes that. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
       hidden: ({ document }) => isInspiration(document),
       of: [
         {
