@@ -21,6 +21,8 @@ pnpm dev:www    # http://localhost:3003
 pnpm build:www && pnpm --filter @pakfactory/www start   # port 3000
 ```
 
+Running `pnpm dev` from the repo root starts all apps via Turbo; www alone is `pnpm dev:www` → **3003**. Port **3000** is only `next start` after a production build.
+
 ## Environment
 
 1. Copy root [`.env.example`](../../.env.example) → `.env.local` at repo root
@@ -51,7 +53,7 @@ Supabase email template setup: [`docs/auth-emails/README.md`](./docs/auth-emails
 | --- | ------- |
 | www | http://localhost:3003 |
 | blog | http://localhost:3004 |
-| admin | http://localhost:3005 |
+| admin | http://localhost:4000 |
 | studio | http://localhost:3333 |
 
 Studio presentation preview should use www **3003** for `SANITY_STUDIO_PREVIEW_URL_WWW`.

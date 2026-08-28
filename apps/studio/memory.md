@@ -51,7 +51,7 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 | --- | ------- |
 | www | http://localhost:3003 |
 | blog | http://localhost:3004 |
-| admin | http://localhost:3005 |
+| admin | http://localhost:4000 |
 | studio | http://localhost:3333 |
 
 ## `.env.production`

@@ -16,5 +16,5 @@ When editing **`apps/admin/`**, follow [`apps/admin/AGENTS.md`](../../AGENTS.md)
 - **Dev bypass:** `ADMIN_DEV_BYPASS` — local only, never production or shared preview deploys.
 - **Packages:** `@pakfactory/domain`, `@pakfactory/supabase`, `@pakfactory/auth-ui`, `@pakfactory/ui` — no Sanity.
 - **Env:** Supabase in root `.env.local`; admin overrides in `apps/admin/.env.local` — see [`.env.example`](../../.env.example).
-- **Local dev:** `pnpm dev:admin` → port **3005**.
+- **Local dev:** `pnpm dev:admin` → port **4000**.
 - **Cookie collisions:** admin and www share `localhost` Supabase cookies — see AGENTS.md troubleshooting for HTTP 431 recovery.
