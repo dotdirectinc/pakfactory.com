@@ -7,7 +7,6 @@ import { createBrowserClient } from "@supabase/ssr";
  * member expressions on purpose. Next inlines these at build time by matching the
  * source text, so a computed lookup (`process.env[key]`) is NOT replaced and
  * arrives as `undefined` in the browser bundle — silently, with no build error.
- * That exact mistake emptied BLOG_BASE_PATH in the blog app and cost a day.
  */
 export function createClient() {
   return createBrowserClient(

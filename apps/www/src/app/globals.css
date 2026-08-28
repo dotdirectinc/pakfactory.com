@@ -1,6 +1,7 @@
 @import "@pakfactory/ui/globals.css";
-@source "../../../../packages/ui/src";
-@source "../../../../packages/components/src";
+@import "@pakfactory/ui/tailwind-sources.css";
+@import "@pakfactory/components/tailwind-sources.css";
+@import "@pakfactory/brief-builder-ui/tailwind-sources.css";
 
 /*
   www-only overlay: 2026 --brand-* / --support-* aliases, the 2026 primary

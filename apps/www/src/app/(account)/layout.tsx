@@ -4,7 +4,7 @@ import {
     accountAvatarUrl,
     accountDisplayName,
     requireUser,
-} from '@/lib/auth/session';
+} from '@pakfactory/supabase/session';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 /**

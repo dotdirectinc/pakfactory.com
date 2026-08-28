@@ -1,10 +1,10 @@
 import type {ReactNode} from 'react';
 import type {User} from '@supabase/supabase-js';
 import {WwwSiteNav} from '@/components/layout/www-site-nav';
-import {accountAvatarUrl, accountDisplayName} from '@/lib/auth/session';
+import {accountAvatarUrl, accountDisplayName} from '@pakfactory/supabase/session';
 import {RequestRoot} from '@/lib/request/request-root';
 import {buildSiteNavProps} from '@/lib/site-nav';
-import {createClient} from '@/lib/supabase/server';
+import {createClient} from '@pakfactory/supabase/server';
 
 export default async function SiteLayout({children}: {children: ReactNode}) {
     let user: User | null = null;

@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
+    "./tailwind-sources.css": "./src/tailwind-sources.css",
     "./layout/*": "./src/layout/*.tsx",
     "./modules/*": "./src/modules/*.tsx",
     "./commons/*": "./src/commons/*.ts",

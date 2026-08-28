@@ -1,0 +1,31 @@
+{
+  "name": "@pakfactory/brief-builder-ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tailwind-sources.css": "./src/tailwind-sources.css",
+    "./request-review-copy": "./src/request-review-copy.ts",
+    "./request-review-paper": "./src/request-review-paper.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pakfactory/domain": "workspace:*",
+    "@pakfactory/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}

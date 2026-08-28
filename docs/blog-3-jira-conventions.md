@@ -67,11 +67,11 @@ This document maps **done** Blog 3.0 dev tickets to **binding** patterns in the 
 ## PROD-1496 — URLs and deployment
 
 - **No `basePath`:** `apps/blog` serves at the deployment root (`/`, `/[slug]`, `/rss.xml`). Jira “/blog” refers to the monorepo app path, not a URL prefix.
-- **`NEXT_PUBLIC_SITE_URL`:** blog origin only (e.g. `https://blog.pakfactory.com`, `http://localhost:3003`) for canonicals and JSON-LD.
+- **`NEXT_PUBLIC_SITE_URL`:** blog origin only (e.g. `https://blog.pakfactory.com`, `http://localhost:3004`) for canonicals and JSON-LD.
 - **`NEXT_PUBLIC_WWW_URL`:** main marketing site for organization JSON-LD and outbound industry links.
 - **Vercel:** separate project, root `apps/blog`, install/build in [`apps/blog/vercel.json`](../apps/blog/vercel.json). Ops checklist: [`apps/blog/memory.md`](../apps/blog/memory.md).
 - **404:** unknown routes use [`not-found.tsx`](../apps/blog/src/app/not-found.tsx) via `notFound()` — not Vercel platform 404.
-- **Local URLs:** `http://localhost:3003`, `http://localhost:3003/<slug>` (default `PORT=3003`).
+- **Local URLs:** `http://localhost:3004`, `http://localhost:3004/<slug>` (default `PORT=3004`).
 
 ## PROD-1497 — Blog home
 

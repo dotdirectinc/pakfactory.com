@@ -4,6 +4,6 @@ import { NextResponse } from "next/server";
 export async function GET() {
   (await draftMode()).disable();
   return NextResponse.redirect(
-    new URL("/", process.env["SANITY_STUDIO_PREVIEW_URL"] || "http://localhost:3003"),
+    new URL("/", process.env["SANITY_STUDIO_PREVIEW_URL"] || "http://localhost:3004"),
   );
 }

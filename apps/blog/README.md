@@ -17,7 +17,7 @@ All commands run from the **repo root** unless noted. Use **pnpm** only (never n
 
 ```bash
 pnpm install
-pnpm dev:blog          # turbo run dev --filter=@pakfactory/blog → http://localhost:3003
+pnpm dev:blog          # turbo run dev --filter=@pakfactory/blog → http://localhost:3004
 ```
 
 You'll usually also want the Studio running to edit content:
@@ -36,7 +36,7 @@ pnpm dev:studio        # Sanity Studio (apps/studio)
 
 After seeding, open Studio → **Pages → Homepage** → **Page blocks** tab to reorder blocks.
 
-Local URL is **`http://localhost:3003/`** — the home page is at the root, **not** `/blog` (the `/blog` prefix is a hosting concern, see [URL scheme](#routing--url-scheme)). Don't use port 3001/3000.
+Local URL is **`http://localhost:3004/`** — the home page is at the root, **not** `/blog` (the `/blog` prefix is a hosting concern, see [URL scheme](#routing--url-scheme)). Don't use port 3001/3000.
 
 ### Environment
 

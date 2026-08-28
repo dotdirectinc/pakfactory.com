@@ -65,7 +65,7 @@ const nextConfig: NextConfig = {
       "node_modules/@img/sharp-linux-x64/**/*",
     ],
   },
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
   turbopack: {
     resolveAlias: {
       "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
