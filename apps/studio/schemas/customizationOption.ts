@@ -373,72 +373,14 @@ export const customizationOption = defineType({
       }],
     }),
 
-    // ─── RETIRING ─────────────────────────────────────────────────────────────
-    // Superseded by `properties` above. Still populated, so they are marked
-    // deprecated rather than dropped (Conventions §4.3): Sanity renders them
-    // read-only with a visible message. They come out once the values are
-    // carried across. Counts are published documents on 2026-08-14.
-
-    defineField({
-      name: 'materialSource',
-      title: 'Material source',
-      type: 'reference',
-      group: 'specs',
-      to: [{ type: 'propertyValue' }],
-      readOnly: true,
-      deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold a value.' },
-      options: {
-        filter: 'property->slug.current == "source"',
-      },
-    }),
-    defineField({
-      name: 'physicalProperties',
-      title: 'Physical properties',
-      type: 'array',
-      group: 'specs',
-      readOnly: true,
-      deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
-      options: {
-        filter: 'property->slug.current == "physical-properties"',
-      } as never,
-    }),
-    defineField({
-      name: 'aesthetic',
-      title: 'Aesthetic',
-      type: 'array',
-      group: 'specs',
-      readOnly: true,
-      deprecated: { reason: 'Replaced by Properties — do not write to this field. 8 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
-      options: {
-        filter: 'property->slug.current == "aesthetic"',
-      } as never,
-    }),
-    defineField({
-      name: 'colors',
-      title: 'Colors',
-      type: 'array',
-      group: 'specs',
-      readOnly: true,
-      deprecated: { reason: 'Replaced by Properties — do not write to this field. 4 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
-      options: {
-        filter: 'property->slug.current == "color"',
-      } as never,
-    }),
-    defineField({
-      name: 'sustainability',
-      title: 'Sustainability',
-      type: 'array',
-      group: 'specs',
-      readOnly: true,
-      deprecated: { reason: 'Replaced by Properties — do not write to this field. 5 options still hold values.' },
-      of: [{ type: 'reference', to: [{ type: 'propertyValue' }] }],
-      options: {
-        filter: 'property->slug.current == "sustainability"',
-      } as never,
-    }),
+    // The five per-topic property fields — `materialSource`, `physicalProperties`,
+    // `aesthetic`, `colors`, `sustainability` — were REMOVED here (Rename Map step 5).
+    // They were deprecated for months, which the Map warns is not the same as finished.
+    //
+    // Removal was verified lossless first, not assumed from the deprecation: all
+    // 33 references they held across 8 Options were already present in `properties`,
+    // with zero gaps. The migration unsets the keys so the dataset does not keep
+    // orphaned copies of data `properties` already owns.
 
     // ─── CONTENT (landing-page prose) ─────────────────────────────────────────
 
@@ -459,10 +401,22 @@ export const customizationOption = defineType({
         defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
       ],
     }),
+    // ─── STILL DEPRECATED — step 5 could not finish these three ───────────────
+    // The Rename Map's own warning is that "deprecating is not finishing". Six of the
+    // nine deprecated fields came out; these three cannot, and each is blocked for a
+    // different reason worth stating rather than re-deriving:
+    //
+    //   whatIsBlock      8 populated · destination `glossaryTerm` exists but holds
+    //                    0 documents. Removing it destroys the only copy.
+    //   comparedAgainst  8 populated · no successor field at all.
+    //   faqs             2 populated · not in the designed field list, no successor.
+    //
+    // None is a migration. Each needs a decision about where the content goes, or an
+    // accepted loss. They are marked read-only meanwhile so nothing new accrues.
+    //
     // Retired for the same reason Product's did: an Option is an instance, and the
     // definition of what a thing IS belongs to the Glossary Term, stated once, not
-    // restated per Option. Deprecated rather than deleted — 8 of 33 carry copy, and
-    // there is no glossary surface to move it to yet.
+    // restated per Option.
     defineField({
       name: 'whatIsBlock',
       title: 'What is it? (old)',
@@ -472,19 +426,12 @@ export const customizationOption = defineType({
         { name: 'title', type: 'string', title: 'Heading' },
         { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
       ],
-      ...deprecateField('Retired — the definition belongs to the Glossary Term, never the option.'),
+      ...deprecateField('Retired — the definition belongs to the Glossary Term. NOT YET REMOVABLE: 8 options hold copy and there are 0 Glossary Term documents to move it to. Removing it now would destroy the only copy.'),
     }),
-    defineField({
-      name: 'whyChooseBlock',
-      title: 'Why choose it? (old)',
-      type: 'object',
-      group: 'content',
-      fields: [
-        { name: 'title', type: 'string', title: 'Heading' },
-        { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
-      ],
-      ...deprecateField('Renamed to Benefits.'),
-    }),
+    // `whyChooseBlock` was REMOVED here (Rename Map step 5). All 8 Options that
+    // carried it have a populated `benefits`, verified before removal — the copy the
+    // earlier migration made is complete, so the old field held nothing `benefits`
+    // does not.
 
     // `specTables` was removed in PROD-2250 — Decisions D41 deleted Option Group.
     // A spec-table row was always a choice, so it becomes a Property Value
@@ -509,7 +456,7 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-      ...deprecateField('Retired — comparison is content: a guide, written once, linked from both.'),
+      ...deprecateField('Retired — comparison is content: a guide, written once, linked from both. NOT YET REMOVABLE: 8 options are populated and there is no successor field, so removal is deletion, not migration.'),
     }),
     // `relatedCustomizations` ("See also — cross-category links") was hard-removed
     // here in PROD-2250 / D47 §5. Unlike `comparedAgainst` it was populated on 0 of

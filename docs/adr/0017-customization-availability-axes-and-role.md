@@ -162,6 +162,27 @@ That is already what both sides do: the registry's importer takes `multi(…)[0]
 
 The check is **deliberately narrow**: only two style-tier rows explicitly stating different `offered`. Presence-vs-absence is not reported, because a style with no row is inheriting from the family tier and reporting that would fire on nearly every product — the same failure as the pre-`role` availability warning, which fired on 25 of 33 documents and taught editors to ignore it.
 
+## Follow-on: Rename Map step 5 — six of nine retired fields removed
+
+The Rename Map's procedure ends at *"remove the old field"*, and warns that a field marked `deprecated()` sits at steps 1–4, not 5 — those rows *"read as done and are not"*. Nine deprecated fields on `customizationOption` had been sitting at step 4. **Six came out; three could not.**
+
+**Removed, each verified lossless first rather than inferred from the deprecation:**
+
+| Field(s) | Successor | Evidence |
+| --- | --- | --- |
+| `materialSource` · `physicalProperties` · `aesthetic` · `colors` · `sustainability` | `properties` | all **33** references across 8 Options were already in `properties`, zero gaps |
+| `whyChooseBlock` | `benefits` | all **8** Options carrying it have a populated `benefits` |
+
+`migrate:unset-retired-fields` re-checks both conditions **per dataset** and refuses to write if either fails — "it was safe on production" is not a fact about development. Removing a field from the schema does not remove it from the documents, so the migration unsets the keys; otherwise the dataset keeps six orphaned copies, which is the same undeclared-second-copy that `productLine`/`productStyle` showed is how two sources of one fact drift apart.
+
+**Not removable, and each blocked differently:**
+
+- **`whatIsBlock`** — 8 populated, and its destination `glossaryTerm` exists but holds **0 documents**. Removing it destroys the only copy.
+- **`comparedAgainst`** — 8 populated, **no successor field at all**. Removal would be deletion, not migration.
+- **`faqs`** — 2 populated, not in the designed field list, no successor.
+
+None of the three is a migration; each needs a decision about where the content goes, or an accepted loss. They stay read-only meanwhile so nothing new accrues, and the schema now records why each is stuck rather than leaving it to be re-derived.
+
 ## Consequences
 
 - **`reference` is classified from Eric's `Capabilities Flow` diagram (2026-08-26), which is the authoritative source.** The diagram badges each **Type**, and the badges map onto `role` one-for-one: *"Not Customizable"* → every Option under it is `reference`; no badge, or *"Single / Multiple Selection (Within Each Type)"* → `configurable`; *"only for Product Customization" + "No detail page"* → `configurable`. Reference Types: **Pouch Layer** (Materials), **Lamination**, **Surface Coating**, **Cutting**, **Gluing** (Finishing). Configurable-but-no-page Types: **Surface Finish (paper-based)**, **Surface Finish (non-paper)**, **Pouch Material**, **Food-Grade Material**.
