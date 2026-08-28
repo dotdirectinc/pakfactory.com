@@ -1,0 +1,21 @@
+{
+  "name": "@pakfactory/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./request": "./src/request.ts",
+    "./shipping-address": "./src/shipping-address.ts",
+    "./annual-spend": "./src/annual-spend.ts",
+    "./internal-account": "./src/internal-account.ts",
+    "./adapters/requests": "./src/adapters/requests.ts",
+    "./adapters/mock-requests": "./src/adapters/mock-requests.ts",
+    "./adapters/internal-account": "./src/adapters/internal-account.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

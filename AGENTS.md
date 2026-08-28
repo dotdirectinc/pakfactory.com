@@ -12,7 +12,7 @@ The development tool does not change the rules. Whether you build through **Clau
 
 ## Identity
 
-- **PakFactory** is a custom packaging company. This monorepo powers the **marketing site** (`apps/www`), **blog** (`apps/blog`), and **Sanity Studio** (`apps/studio`). Structured content lives in **Sanity**; Next.js apps consume shared [`@pakfactory/sanity`](packages/sanity) and [`@pakfactory/ui`](packages/ui).
+- **PakFactory** is a custom packaging company. This monorepo powers the **marketing site** (`apps/www`), **blog** (`apps/blog`), **internal admin** (`apps/admin`), and **Sanity Studio** (`apps/studio`). Structured content lives in **Sanity**; Next.js apps consume shared [`@pakfactory/sanity`](packages/sanity) and [`@pakfactory/ui`](packages/ui).
 
 - **Platform Evolution**: The blog is the **first production stream** — patterns proven here (content ops, SEO/AEO/GEO, CI, previews) set the bar for future streams.
 
@@ -47,8 +47,9 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 
 | Path                                 | Role                                                      |
 | ------------------------------------ | --------------------------------------------------------- |
-| [`apps/www`](apps/www)               | Main marketing site (port **3000**)                       |
-| [`apps/blog`](apps/blog)             | Blog app — Platform Evolution stream #1 (port **3001**)   |
+| [`apps/www`](apps/www)               | Main marketing site — rebuild trunk (dev **3003**, prod start **3000**) |
+| [`apps/blog`](apps/blog)             | Blog app — Platform Evolution stream #1 (port **3004**) |
+| [`apps/admin`](apps/admin)           | Internal back office — PROD-2405 (port **4000**); PR base `www-new-release` |
 | [`apps/studio`](apps/studio)         | Sanity Studio (port **3333**)                             |
 | [`packages/sanity`](packages/sanity) | Shared schemas, GROQ queries, scripts                     |
 | [`packages/ui`](packages/ui)         | Shared shadcn-style UI primitives                         |

@@ -434,7 +434,7 @@ Current tree is correct per ADR-009 + PROD-1597. The multi-purpose `[category]` 
 1. `sanity deploy` — push schema changes (pageRole validation skip, removed inline `promo` / `promoBanner`, 404 `pageBuilder` field).
 2. **One-time backfill (if "Page role Required"):** run `node apps/studio/scripts/seed-blog-singleton-pages.mjs` or patch `pageRole: "notFound"` on `blogNotFoundPage` via Vision/API.
 3. Seed or configure blocks: **Pages → 404 page → Page blocks** (Popular Row + Newsletter), or use the seed script above. Remove any leftover `promoBanner` blocks from existing documents in Studio.
-4. Verify at `http://localhost:3003/404-preview` (Presentation uses the same URL).
+4. Verify at `http://localhost:3004/404-preview` (Presentation uses the same URL).
 5. `pnpm build:blog` + Figma QA at 1440/390 (+768/1280/1920).
 
 **Known:** studio `tsc` still nags `documentId` on the singleton `initialValue` — pre-existing (home/topics use the same signature; Sanity provides it at runtime; Vite build unaffected).
@@ -593,8 +593,8 @@ Document internationalization (`@sanity/document-internationalization`, EN + FR)
 
 ```bash
 pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
-curl -sI "http://localhost:3003/contribute" | grep -i robots
-curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
+curl -sI "http://localhost:3004/contribute" | grep -i robots
+curl -s "http://localhost:3004/contribute" | grep -o '"@type":"WebPage"'
 ```
 
 ### Ops follow-up
@@ -640,9 +640,9 @@ curl -s "http://localhost:3003/contribute" | grep -o '"@type":"WebPage"'
 
 ```bash
 pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
-curl -s "http://localhost:3003/search?q=box" | grep -o "<article" | wc -l        # >0 (relevance)
-curl -sI "http://localhost:3003/search?q=box" ; curl -s … | grep robots          # noindex, follow
-curl -s "http://localhost:3003/search?q=zzzznomatch99"                           # zero-results + Popular this month
+curl -s "http://localhost:3004/search?q=box" | grep -o "<article" | wc -l        # >0 (relevance)
+curl -sI "http://localhost:3004/search?q=box" ; curl -s … | grep robots          # noindex, follow
+curl -s "http://localhost:3004/search?q=zzzznomatch99"                           # zero-results + Popular this month
 ```
 
 ## PROD-1496 — Vercel deployment (approach A, implemented in repo)
@@ -679,11 +679,11 @@ Preview deployments: enable on PRs; set preview Sanity vars as needed.
 
 | URL                             | Purpose                                       |
 | ------------------------------- | --------------------------------------------- |
-| `http://localhost:3003`         | Home (default dev port; override with `PORT`) |
-| `http://localhost:3003/<slug>`  | Post                                          |
-| `http://localhost:3003/rss.xml` | RSS 2.0 feed (PROD-1505)                      |
+| `http://localhost:3004`         | Home (default dev port; override with `PORT`) |
+| `http://localhost:3004/<slug>`  | Post                                          |
+| `http://localhost:3004/rss.xml` | RSS 2.0 feed (PROD-1505)                      |
 
-Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003` in root or `apps/blog/.env.local` for canonical/JSON-LD (or rely on default in `site.ts`).
+Set `NEXT_PUBLIC_SITE_URL=http://localhost:3004` in root or `apps/blog/.env.local` for canonical/JSON-LD (or rely on default in `site.ts`).
 
 ### Verification
 
@@ -691,8 +691,8 @@ Set `NEXT_PUBLIC_SITE_URL=http://localhost:3003` in root or `apps/blog/.env.loca
 pnpm build:blog
 pnpm dev:blog
 
-curl -sI http://localhost:3003 | head -5
-curl -sI 'http://localhost:3003?page=2' | grep -i robots
+curl -sI http://localhost:3004 | head -5
+curl -sI 'http://localhost:3004?page=2' | grep -i robots
 ```
 
 After deploy:
@@ -785,7 +785,7 @@ Posts ranked by `viewCount` (Views) desc within a configurable day window (`post
 
 ```bash
 pnpm dev:blog
-curl -sI http://localhost:3003/this-slug-does-not-exist | head -8
+curl -sI http://localhost:3004/this-slug-does-not-exist | head -8
 # Expect HTTP 404 and robots noindex on HTML (check page source or metadata)
 ```
 
@@ -820,7 +820,7 @@ curl -sI http://localhost:3003/this-slug-does-not-exist | head -8
 
 ```bash
 pnpm dev:blog
-open http://localhost:3003
+open http://localhost:3004
 pnpm build:blog
 ```
 
@@ -859,9 +859,9 @@ Funnel events marketing can trigger on in GTM (blog): `post_read`, `search_perfo
 
 | Item                      | Value                                                              |
 | ------------------------- | ------------------------------------------------------------------ |
-| `apps/blog/package.json`  | `next dev --port ${PORT:-3003}`                                    |
-| `site.ts` fallback origin | `http://localhost:3003` when `NEXT_PUBLIC_SITE_URL` unset          |
-| Public URL                | **`http://localhost:3003/`** (home at root; do not append `/blog`) |
+| `apps/blog/package.json`  | `next dev --port ${PORT:-3004}`                                    |
+| `site.ts` fallback origin | `http://localhost:3004` when `NEXT_PUBLIC_SITE_URL` unset          |
+| Public URL                | **`http://localhost:3004/`** (home at root; do not append `/blog`) |
 
 Do not use port **3001** unless you set `PORT=3001` explicitly (another service may already use 3001).
 
@@ -929,7 +929,7 @@ After seeding, refresh Studio (`pnpm dev:studio`) and blog home.
 
 ### Troubleshooting empty home page
 
-1. Open **`http://localhost:3003`** (not `:3001`, not `localhost:3000`).
+1. Open **`http://localhost:3004`** (not `:3001`, not `localhost:3000`).
 2. Confirm banner shows **Project: `8293wrxp`**, **Token: set**, **Configured: yes**.
 3. If not: sync env into `apps/blog/.env.local` from root (see `apps/blog/.env.example`).
 4. Stop dev server → `rm -rf apps/blog/.next` → `pnpm dev:blog`.
@@ -966,9 +966,9 @@ Remove or narrow the banner once local CMS connection is stable.
 **QA (post URL bugfix):** From `/category/business-strategy`, cards link to `/category/business-strategy/{postSlug}` (not `/{postSlug}`). Legacy `/{postSlug}` redirects when category is known.
 
 ```bash
-open http://localhost:3003/category/packaging-news
-open http://localhost:3003/category/business-strategy/tco-folding-cartons-vs-rigid
-open http://localhost:3003/category/trends?tag=some-tag
+open http://localhost:3004/category/packaging-news
+open http://localhost:3004/category/business-strategy/tco-folding-cartons-vs-rigid
+open http://localhost:3004/category/trends?tag=some-tag
 ```
 
 ---
@@ -986,8 +986,8 @@ open http://localhost:3003/category/trends?tag=some-tag
 | UI          | `_components/all-posts-archive.tsx`, `archive-filter-sidebar.tsx`, `archive-pagination.tsx` |
 
 ```bash
-open http://localhost:3003/all
-curl -sI http://localhost:3003/all/page/99 | head -5  # expect 404 when out of range
+open http://localhost:3004/all
+curl -sI http://localhost:3004/all/page/99 | head -5  # expect 404 when out of range
 ```
 
 ---
@@ -1005,8 +1005,8 @@ curl -sI http://localhost:3003/all/page/99 | head -5  # expect 404 when out of r
 | Shared revalidate | `src/lib/blog-cache.ts` (`BLOG_REVALIDATE_SECONDS = 60`) |
 
 ```bash
-curl -s http://localhost:3003/rss.xml | head -20
-curl -sI http://localhost:3003/rss.xml | grep -i content-type
+curl -s http://localhost:3004/rss.xml | head -20
+curl -sI http://localhost:3004/rss.xml | grep -i content-type
 ```
 
 ## Full-bleed page-builder — dashed border toggles
@@ -1097,7 +1097,7 @@ explicitly (else it matches all types and breaks orderings — e.g. `author` has
 ```bash
 pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
 # Default (no env): origin-root, byte-identical to pre-PROD-1596 output.
-curl -s http://localhost:3003/sitemap.xml | head -20
+curl -s http://localhost:3004/sitemap.xml | head -20
 # With NEXT_PUBLIC_BLOG_BASE_PATH=/blog set: every <loc>/<link>/canonical gains /blog
 # (verified against the running dev server — sitemap, RSS, and canonicals all prefixed).
 ```
@@ -1135,11 +1135,11 @@ curl -s http://localhost:3003/sitemap.xml | head -20
 
 ```bash
 pnpm --filter @pakfactory/blog typecheck && pnpm build:blog
-curl -sI -o /dev/null -w "%{http_code}" http://localhost:3003/tag/sustainability   # 200
-curl -s http://localhost:3003/tag/does-not-exist | head -1                          # 404 page
-curl -s http://localhost:3003/tag/foil-stamp | grep robots                          # noindex (0 posts)
-curl -s 'http://localhost:3003/tag/sustainability?year=2099' | grep robots          # noindex (filtered)
-curl -s http://localhost:3003/tag/beauty | grep -i 'tracking-wide'                  # kicker "Industry"
+curl -sI -o /dev/null -w "%{http_code}" http://localhost:3004/tag/sustainability   # 200
+curl -s http://localhost:3004/tag/does-not-exist | head -1                          # 404 page
+curl -s http://localhost:3004/tag/foil-stamp | grep robots                          # noindex (0 posts)
+curl -s 'http://localhost:3004/tag/sustainability?year=2099' | grep robots          # noindex (filtered)
+curl -s http://localhost:3004/tag/beauty | grep -i 'tracking-wide'                  # kicker "Industry"
 ```
 
 ---
@@ -1243,9 +1243,9 @@ Redirect lookup runs **only on would-be-404s** (zero cost on valid pages); Sanit
 
 ```bash
 # create redirect /legacy-redirect-test → /all (type 301), then:
-curl -sI http://localhost:3003/legacy-redirect-test   # 308 → /all
-curl -sI http://localhost:3003/unknown-xyz            # 404
-curl -sI http://localhost:3003/trends                 # 200 (live page, no cost)
+curl -sI http://localhost:3004/legacy-redirect-test   # 308 → /all
+curl -sI http://localhost:3004/unknown-xyz            # 404
+curl -sI http://localhost:3004/trends                 # 200 (live page, no cost)
 ```
 
 ## PROD-1609 — Component architecture: schema-grouped shared components (implemented)
@@ -1306,7 +1306,7 @@ apps/blog/src/
 | Concern | Where / value |
 | --- | --- |
 | **CORS** | `https://pakfactory-blog.vercel.app` added to project `8293wrxp` (allow credentials). **Admin-only** — the robot deploy/editor/viewer tokens all lack the `sanity.project.cors` grant (verified: all 401). |
-| **Studio preview origin** | `apps/studio/.env.production` (committed, public `SANITY_STUDIO_*` only) → `SANITY_STUDIO_PREVIEW_URL_BLOG=https://pakfactory-blog.vercel.app`. Vite **production** builds (`sanity build`/`deploy`) load `.env.production` over `.env.local` (verified Vite 7.3.2: `.env.[mode]` > `.env.local`); `sanity dev` keeps localhost. **Deploy trap:** `source`ing `.env.local` for the token injects `…=http://localhost:3003` into the shell, which beats `.env.production` (shell var wins) → bakes localhost. Extract only the token. |
+| **Studio preview origin** | `apps/studio/.env.production` (committed, public `SANITY_STUDIO_*` only) → `SANITY_STUDIO_PREVIEW_URL_BLOG=https://pakfactory-blog.vercel.app`. Vite **production** builds (`sanity build`/`deploy`) load `.env.production` over `.env.local` (verified Vite 7.3.2: `.env.[mode]` > `.env.local`); `sanity dev` keeps localhost. **Deploy trap:** `source`ing `.env.local` for the token injects `…=http://localhost:3004` into the shell, which beats `.env.production` (shell var wins) → bakes localhost. Extract only the token. |
 | **Draft-aware render** | `fetchBlogHomePageBuilder()` → **`getPreviewableSanityClient()`** (commit `6d9068d`). |
 | **Studio host** | now **`pakfactory.sanity.studio`** (appId `wzfe5kfkev9dwchv1b07110h`, commit `dafb66e`). Old `pakfactory` (project `ix8fju7k`, appId `dyspvqz55…`) undeployed; `pakfactory-2` removed. |
 | **Vercel env (staging)** | `SANITY_API_READ_TOKEN` set (required by `/api/draft-mode/enable`); dataset `development` (matches the Studio's edited dataset). |

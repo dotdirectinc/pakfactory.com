@@ -2,7 +2,7 @@
 
 import {useState, useTransition} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
-import {createClient} from '@/lib/supabase/client';
+import {createClient} from '@pakfactory/supabase/client';
 
 function GoogleMark({className}: {className?: string}) {
     return (

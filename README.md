@@ -6,8 +6,9 @@ Private Turborepo workspace that powers Pakfactory’s marketing site, blog, and
 
 | Path | Package | Description |
 |------|---------|-------------|
-| `apps/www` | `@pakfactory/www` | Main Next.js site (port **3000**). |
-| `apps/blog` | `@pakfactory/blog` | Blog Next.js app (port **3001**). |
+| `apps/www` | `@pakfactory/www` | Main Next.js site (dev **3003**, prod start **3000**). |
+| `apps/blog` | `@pakfactory/blog` | Blog Next.js app (port **3004**). |
+| `apps/admin` | `@pakfactory/admin` | Internal back office for staff (port **4000**). |
 | `apps/studio` | `@pakfactory/studio` | Sanity Studio for editors (port **3333**). |
 | `packages/sanity` | `@pakfactory/sanity` | Shared GROQ queries, schemas, and maintenance scripts. |
 | `packages/ui` | `@pakfactory/ui` | Shared UI primitives (Tailwind + Radix-style components). |
@@ -24,9 +25,12 @@ The monorepo ships **versioned** AI assistant context so **Claude Code**, **Curs
 1. **[`AGENTS.md`](./AGENTS.md)** — canonical stack, domain rules, MCP expectations, ADR summary skeleton, JIRA defaults, and verification checklist.
 2. **[`CLAUDE.md`](./CLAUDE.md)** — Claude Code entry point; references `AGENTS.md` and registers in-repo **skills** under [`.claude/skills/`](./.claude/skills/).
 3. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor rules (`.mdc`); [`pakfactory-stack.mdc`](./.cursor/rules/pakfactory-stack.mdc) reinforces `AGENTS.md` for every session.
-4. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog-only overrides (routes, Sanity query patterns, AEO/GEO targets).
-5. **`apps/blog/.cursor/rules/blog.mdc`** — applies when editing files under `apps/blog/`.
-6. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — maps completed Jira tickets (PROD-1480, PROD-1516, etc.) to binding code patterns.
+4. **[`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md)** — www rebuild overrides (routes, auth, RFQ, staging).
+5. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog-only overrides (routes, Sanity query patterns, AEO/GEO targets).
+6. **[`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md)** — Studio schema and content-model conventions.
+7. **[`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md)** — admin back office scope and local dev (newer apps may use `AGENTS.md` until they graduate to `CLAUDE.md`).
+8. **`apps/*/.cursor/rules/*.mdc`** — per-app Cursor rules when editing files under each app.
+9. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — maps completed Jira tickets (PROD-1480, PROD-1516, etc.) to binding code patterns.
 
 **Per tool**
 
@@ -72,14 +76,16 @@ After `git pull`, ask your assistant:
    - `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SANITY_API_VERSION`
    - `NEXT_PUBLIC_SANITY_STUDIO_URL` (e.g. `http://localhost:3333`)
    - `SANITY_API_READ_TOKEN` — viewer token so draft content can load in dev on the Next apps
-   - For Studio: `SANITY_STUDIO_PREVIEW_URL` (e.g. `http://localhost:3000`) and matching `SANITY_STUDIO_*` project/dataset if you do not rely solely on `NEXT_PUBLIC_*` names
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — required for www buyer auth and admin staff login
+   - For Studio: `SANITY_STUDIO_PREVIEW_URL` (e.g. `http://localhost:3003` for www dev) and matching `SANITY_STUDIO_*` project/dataset if you do not rely solely on `NEXT_PUBLIC_*` names
    - `SANITY_API_WRITE_TOKEN` — **only** for scripts that write to the dataset (`pnpm run seed:demo`, migrations)
 
    **Where `.env.local` lives**
 
-   - **`apps/www`** loads env from the **repository root** (see `apps/www/next.config.ts`).
+   - **`apps/www`** loads env from the **repository root** (see `apps/www/next.config.ts`). Optional overrides: [`apps/www/.env.example`](apps/www/.env.example).
    - **`apps/studio`** reads **`apps/studio/.env.local`** when you run `pnpm dev:studio` (Vite does not use root `.env.local` automatically). Keep `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET` in sync with root — e.g. `8293wrxp` + `development` after `pnpm seed`.
    - **`apps/blog`** — root `.env.local` via `next.config.ts` (`loadEnvConfig`), plus **`apps/blog/.env.local`** for overrides (port, Sanity copy). See [`apps/blog/.env.example`](apps/blog/.env.example) and [`apps/blog/memory.md`](apps/blog/memory.md) (local dev / empty home troubleshooting).
+   - **`apps/admin`** — root `.env.local` for Supabase; **`apps/admin/.env.local`** for admin-specific overrides. See [`apps/admin/.env.example`](apps/admin/.env.example) and [`apps/admin/AGENTS.md`](apps/admin/AGENTS.md).
    - **`packages/sanity`** scripts load **repo root** `.env.local`.
 
    Optional (premium shadcn studio registry): `EMAIL` and `LICENSE_KEY` as in `.env.example`.
@@ -90,9 +96,10 @@ All commands run from the **repository root**.
 
 | Command | What it does |
 |---------|----------------|
-| `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
-| `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
-| `pnpm dev:blog` | Blog → [http://localhost:3003](http://localhost:3003) (default port **3003**; set `PORT` to override) |
+| `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio, admin). |
+| `pnpm dev:www` | Next.js main site → [http://localhost:3003](http://localhost:3003) (dev; prod `start` uses port **3000**) |
+| `pnpm dev:blog` | Blog → [http://localhost:3004](http://localhost:3004) (default port **3004**; set `PORT` to override) |
+| `pnpm dev:admin` | Internal admin → [http://localhost:4000](http://localhost:4000) |
 | `pnpm seed:blog-dev` | Extra blog test posts + industries into Sanity **`development`** (after full studio seed) |
 | `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 

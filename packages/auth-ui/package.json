@@ -1,0 +1,36 @@
+{
+  "name": "@pakfactory/auth-ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tailwind-sources.css": "./src/tailwind-sources.css",
+    "./auth-split-layout": "./src/auth-split-layout.tsx",
+    "./login-form": "./src/login-form.tsx",
+    "./login-copy": "./src/login-copy.ts",
+    "./auth-credentials-schema": "./src/auth-credentials-schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@pakfactory/ui": "workspace:*",
+    "lucide-react": "^0.468.0",
+    "react-hook-form": "^7.86.0",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}
