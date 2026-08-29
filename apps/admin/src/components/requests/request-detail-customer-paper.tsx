@@ -124,7 +124,8 @@ export function RequestDetailCustomerPaperStack({
         className,
       )}
     >
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[43rem] flex-col items-center justify-center gap-6 overflow-y-auto px-6 pb-6 pt-6 xl:pt-0">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[43rem] flex-col overflow-y-auto px-6 py-6">
+        <div className="my-auto flex w-full flex-col items-center gap-6">
         {pageSlices.map((pageSlice, index) => (
           <CustomerPaperSheet
             key={`${pageSlice.pageLabel ?? "page"}-${index}`}
@@ -132,6 +133,7 @@ export function RequestDetailCustomerPaperStack({
             pageSlice={pageSlice}
           />
         ))}
+        </div>
       </div>
     </div>
   );
