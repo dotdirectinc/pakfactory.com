@@ -48,12 +48,9 @@ Factory: [`src/lib/adapters.ts`](src/lib/adapters.ts).
 
 ## Local dev
 
-1. Root [`.env.local`](../../.env.local) must include `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same `pakfactory-web` project as www).
+1. Root [`.env.local`](../../.env.local) must include `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same `pakfactory-web` project as www) when testing real login.
 2. Copy [`apps/admin/.env.example`](.env.example) to `apps/admin/.env.local` (or set vars in root `.env.local`).
-3. Set `ADMIN_INTERNAL_ACCOUNT_ALLOWLIST` to `your-email@example.com:zoho-user-sales-1` (a real Supabase user you can sign in with).
-4. Run `pnpm dev:admin` from the repo root → http://localhost:4000.
-5. Sign in with the allowlisted email → home shows mock requests for `zoho-user-sales-1`.
-6. Sign in with a buyer account (not on the allowlist) → refusal on `/login`, session cleared, no redirect loop.
+3. Run `pnpm dev:admin` from the repo root → http://localhost:4000.
 
 ### Dev auth bypass (local UI only)
 
@@ -64,9 +61,15 @@ ADMIN_DEV_BYPASS=true
 ADMIN_DEV_BYPASS_ZOHO_USER_ID=zoho-user-sales-1
 ```
 
-Active only when `NODE_ENV=development`, `ADMIN_DEV_BYPASS=true`, and not `VERCEL_ENV=production`. Opens `http://localhost:4000/` without login; `/login` redirects home. Header shows **Dev bypass active**. Logic: [`src/lib/auth/dev-bypass.ts`](src/lib/auth/dev-bypass.ts).
+Active only when `NODE_ENV=development`, `ADMIN_DEV_BYPASS=true`, and not `VERCEL_ENV=production`. Opens http://localhost:4000/requests without login; `/login` redirects home. Header shows **Dev Mode**. Logic: [`src/lib/auth/dev-bypass.ts`](src/lib/auth/dev-bypass.ts). Backend restores full auth on [PROD-2415](https://dotdirect.atlassian.net/browse/PROD-2415) in [`src/lib/auth/require-internal-user.ts`](src/lib/auth/require-internal-user.ts).
+
+Without `ADMIN_DEV_BYPASS=true`, use real Supabase login: set `ADMIN_INTERNAL_ACCOUNT_ALLOWLIST` to `your-email@example.com:zoho-user-sales-1` and sign in on `/login`. Active `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` must be set in the repo root `.env.local` — run `pnpm env:staging` (or `pnpm env:prod`) if you only have `_STAGING` / `_PROD` suffixed keys.
 
 ## Troubleshooting
+
+### Login page error: Supabase URL and Key required
+
+Root `.env.local` may list `NEXT_PUBLIC_SUPABASE_URL_STAGING` without the active `NEXT_PUBLIC_SUPABASE_URL`. Apps read the unsuffixed keys only. Fix: `pnpm env:staging` from the repo root, then restart `pnpm dev:admin`. Or skip login for UI work with `ADMIN_DEV_BYPASS=true` in `apps/admin/.env.local`.
 
 ### HTTP 431 or redirect weirdness
 

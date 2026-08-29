@@ -20,12 +20,14 @@ export function AdminLoginPageView({
         variant: "primary",
       }}
     >
-      {notice ? (
-        <p role="alert" className="w-full max-w-sm text-sm text-destructive">
-          {notice}
-        </p>
-      ) : null}
-      <AdminLoginForm next={next} />
+      <div className="flex w-full max-w-sm flex-col gap-4">
+        <AdminLoginForm next={next} />
+        {notice ? (
+          <p role="alert" className="text-sm text-destructive">
+            {notice}
+          </p>
+        ) : null}
+      </div>
     </AuthSplitLayout>
   );
 }

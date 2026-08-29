@@ -32,4 +32,6 @@ export const ADMIN_LOGIN_ERRORS: Record<string, string> = {
     "Google sign-in was cancelled. You can sign in with your email instead.",
   oauth_failed:
     "Google sign-in didn't complete. Try again, or sign in with your email.",
+  supabase_not_configured:
+    "Supabase is not configured locally. Run `pnpm env:staging` from the repo root, or set ADMIN_DEV_BYPASS=true in apps/admin/.env.local.",
 };

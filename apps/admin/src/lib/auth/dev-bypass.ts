@@ -1,3 +1,11 @@
+/**
+ * Local development auth bypass and mock session.
+ *
+ * Backend (PROD-2415): restore the real guardrail in
+ * `require-internal-user.ts` — Supabase session + internal-account check.
+ * Remove bypass usage once that ships.
+ */
+
 import type { User } from "@supabase/supabase-js";
 import type { InternalAccount } from "@pakfactory/domain/internal-account";
 

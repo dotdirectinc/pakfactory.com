@@ -7,6 +7,7 @@ const appDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(appDir, "../..");
 
 loadEnvConfig(repoRoot, undefined, undefined, true);
+loadEnvConfig(appDir, undefined, undefined, true);
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: repoRoot,
