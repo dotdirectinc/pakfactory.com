@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import { SanityImage } from '@/components/ui/sanity-image';
-import { Badge } from '@pakfactory/ui/components/badge';
+import {SanityImage} from '@/components/ui/sanity-image';
+import {Badge} from '@pakfactory/ui/components/badge';
 import {
     Card,
     CardContent,
@@ -22,11 +22,11 @@ type Props = {
     item: CapabilityCardItem;
 };
 
-export function CapabilityCard({ item }: Props) {
+export function CapabilityCard({item}: Props) {
     const href = `/capabilities/${item.categoryValue}/${item.slug}`;
     return (
         <Link href={href} className="group block">
-            <Card className="overflow-hidden p-0 gap-0 transition-shadow hover:shadow-md">
+            <Card className="gap-0 overflow-hidden p-0 transition-shadow hover:shadow-md">
                 <CardContent className="p-0">
                     <div className="relative aspect-[4/3] w-full bg-muted">
                         {item.imageUrl ? (
@@ -42,9 +42,14 @@ export function CapabilityCard({ item }: Props) {
                     </div>
                 </CardContent>
                 <CardFooter className="flex items-center justify-between gap-2 px-3 py-2">
-                    <span className="truncate text-sm font-medium">{item.title}</span>
+                    <span className="truncate text-sm font-medium">
+                        {item.title}
+                    </span>
                     {item.categoryLabel ? (
-                        <Badge variant="secondary" className="shrink-0 text-[10px]">
+                        <Badge
+                            variant="secondary"
+                            className="shrink-0 text-[10px]"
+                        >
                             {item.categoryLabel}
                         </Badge>
                     ) : null}

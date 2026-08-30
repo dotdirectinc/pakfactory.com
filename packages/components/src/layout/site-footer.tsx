@@ -119,7 +119,7 @@ export function SiteFooter({
   );
 
   return (
-    <footer className="bg-background">
+    <footer className="bg-muted">
       <PageDielineSection innerClassName="px-0 md:px-0">
         <div className="border-t border-dashed border-foreground/10 px-4 py-16 text-center md:px-8">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">

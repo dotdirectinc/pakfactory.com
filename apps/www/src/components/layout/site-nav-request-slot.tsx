@@ -1,6 +1,7 @@
 'use client';
 
-import {SiteNav, type SiteNavProps} from '@pakfactory/ui/components/site-nav';
+import type {PrimaryNavItem} from '@pakfactory/components/layout/primary-nav-types';
+import {SiteNav} from '@pakfactory/components/layout/site-nav';
 import {
     AccountMenu,
     type AccountMenuProps,
@@ -9,18 +10,32 @@ import Logo from '@/components/layout/logo';
 import {useRequest} from '@/lib/request/request-provider';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-export type WwwSiteNavProps = Omit<SiteNavProps, 'logo' | 'request' | 'account'> & {
-    /** Plain data rather than JSX, so the server layout can pass it across. */
+export type SiteNavRequestSlotProps = {
+    homeHref: string;
+    navItems: PrimaryNavItem[];
+    cta: {href: string; label: string};
+    signIn: {href: string; label: string};
     account?: AccountMenuProps;
 };
 
-export function WwwSiteNav({account, ...props}: WwwSiteNavProps) {
+/** Client bridge: injects live request count into marketing SiteNav. */
+export function SiteNavRequestSlot({
+    homeHref,
+    navItems,
+    cta,
+    signIn,
+    account,
+}: SiteNavRequestSlotProps) {
     const {lines} = useRequest();
 
     return (
         <SiteNav
-            {...props}
+            variant="marketing"
+            homeHref={homeHref}
             logo={<Logo className="gap-3" />}
+            navItems={navItems}
+            cta={cta}
+            signIn={signIn}
             account={
                 account ? <AccountMenu {...account} size="sm" /> : undefined
             }
