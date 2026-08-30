@@ -9,30 +9,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@pakfactory/ui/components/select';
+import {
+    PageDielineSection,
+} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {CapabilityCard, type CapabilityCardItem} from './capability-card';
-
-export type CapabilityCatalogTab = {
-    label: string;
-    value: 'material' | 'finish';
-};
-
-/** One Sanity `capabilityCategory` row for the landing grid. */
-export type CapabilityCatalogItem = {
-    _id: string;
-    title: string;
-    slug: string;
-    category: 'material' | 'finish';
-    imageUrl?: string | null;
-    imageAlt?: string | null;
-};
-
-type Props = {
-    tabs: CapabilityCatalogTab[];
-    items: CapabilityCatalogItem[];
-    className?: string;
-};
+import {CapabilityCatalogList} from '@/components/capability/capability-catalog-list';
+import type {CapabilityCardItem} from '@/components/capability/capability-card';
+import type {
+    CapabilityCatalogItem,
+    CapabilityCatalogTab,
+} from '@/components/capability/capability-catalog-view';
 
 const MATERIAL_TYPE_OPTIONS = [
     {value: 'paperboard', label: 'Paperboard'},
@@ -54,7 +41,15 @@ const FINISH_SUSTAINABILITY_OPTIONS = [
     {value: 'compostable', label: 'Compostable'},
 ] as const;
 
-export function CapabilityCatalog({tabs, items, className}: Props) {
+type CapabilityCatalogPanelProps = {
+    tabs: CapabilityCatalogTab[];
+    items: CapabilityCatalogItem[];
+};
+
+export function CapabilityCatalogPanel({
+    tabs,
+    items,
+}: CapabilityCatalogPanelProps) {
     const [active, setActive] = useState<CapabilityCatalogTab['value']>(
         tabs[0]?.value ?? 'material',
     );
@@ -88,14 +83,8 @@ export function CapabilityCatalog({tabs, items, className}: Props) {
     }, [items, active, tabs]);
 
     return (
-        <section
-            className={cn(
-                'mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8',
-                className,
-            )}
-        >
-            {/* Category pills */}
-            <div className="mb-12 flex flex-wrap items-center gap-2">
+        <PageDielineSection innerClassName="pb-24 pt-8">
+            <div className="mb-8 flex flex-wrap items-center gap-2">
                 {tabs.map((tab) => {
                     const isActive = tab.value === active;
                     return (
@@ -117,8 +106,7 @@ export function CapabilityCatalog({tabs, items, className}: Props) {
                 })}
             </div>
 
-            {/* Property filters */}
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <FilterSelect
                     key={`${active}-type`}
                     label="Type"
@@ -142,19 +130,10 @@ export function CapabilityCatalog({tabs, items, className}: Props) {
                 />
             </div>
 
-            {/* Grid */}
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {filtered.map((item) => (
-                    <CapabilityCard key={item._id} item={item} />
-                ))}
+            <div className="mt-6">
+                <CapabilityCatalogList items={filtered} />
             </div>
-
-            {filtered.length === 0 ? (
-                <div className="mt-6 rounded-lg border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-                    No capabilities in this category yet.
-                </div>
-            ) : null}
-        </section>
+        </PageDielineSection>
     );
 }
 

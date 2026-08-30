@@ -1,9 +1,11 @@
 import type {ReactNode} from 'react';
 import type {User} from '@supabase/supabase-js';
-import {WwwSiteNav} from '@/components/layout/www-site-nav';
+import {SiteFooter} from '@pakfactory/components/layout/site-footer';
+import {SiteNavRequestSlot} from '@/components/layout/site-nav-request-slot';
 import {accountAvatarUrl, accountDisplayName} from '@pakfactory/supabase/session';
 import {RequestRoot} from '@/lib/request/request-root';
-import {buildSiteNavProps} from '@/lib/site-nav';
+import {buildSiteNavProps, toMarketingNavItems} from '@/lib/site-nav';
+import {fetchWwwFooterData} from '@/lib/www-footer';
 import {createClient} from '@pakfactory/supabase/server';
 
 export default async function SiteLayout({children}: {children: ReactNode}) {
@@ -17,11 +19,15 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
     }
 
     const nav = buildSiteNavProps({authenticated: Boolean(user)});
+    const footer = await fetchWwwFooterData();
 
     return (
         <RequestRoot>
-            <WwwSiteNav
-                {...nav}
+            <SiteNavRequestSlot
+                homeHref={nav.homeHref}
+                navItems={toMarketingNavItems(nav.items)}
+                cta={nav.cta}
+                signIn={nav.signIn}
                 account={
                     user
                         ? {
@@ -33,6 +39,13 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
                 }
             />
             {children}
+            <SiteFooter
+                columns={footer.columns}
+                contactHref={footer.cta.href}
+                contactLabel={footer.cta.label}
+                social={footer.social}
+                aiLinks={footer.aiLinks}
+            />
         </RequestRoot>
     );
 }

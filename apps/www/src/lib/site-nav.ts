@@ -1,3 +1,4 @@
+import type {PrimaryNavItem} from '@pakfactory/components/layout/primary-nav-types';
 import type {SiteNavCta, SiteNavItem} from '@pakfactory/ui/components/site-nav';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -7,6 +8,14 @@ export type WwwSiteNavModel = {
     cta: SiteNavCta;
     signIn: SiteNavCta;
 };
+
+export function toMarketingNavItems(items: SiteNavItem[]): PrimaryNavItem[] {
+    return items.map((item) => ({
+        key: item.key,
+        label: item.label,
+        href: item.href ?? WWW_ROUTES.capabilities,
+    }));
+}
 
 export function buildSiteNavProps(options?: {
     authenticated?: boolean;

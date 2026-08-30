@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Box } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
@@ -11,24 +12,43 @@ import {
   SiteNavCompactProvider,
   SiteNavTopRow,
 } from "./site-nav-compact";
+import {
+  MarketingSiteNav,
+  type MarketingNavCta,
+  type MarketingNavRequest,
+} from "./site-nav-marketing";
 import type { PrimaryNavHeader, PrimaryNavItem } from "./primary-nav-types";
 
 export type { PrimaryNavHeader, PrimaryNavItem } from "./primary-nav-types";
+export type { MarketingNavCta, MarketingNavRequest } from "./site-nav-marketing";
 
-type Props = {
+type BlogSiteNavProps = {
+  variant?: "blog";
   navItems: PrimaryNavItem[];
   header: PrimaryNavHeader;
   homeHref: string;
-  /** When false, the header scrolls with the page. Defaults to true. */
   sticky?: boolean;
 };
 
-export function SiteNav({
+type MarketingSiteNavShellProps = {
+  variant: "marketing";
+  homeHref?: string;
+  logo?: ReactNode;
+  navItems: PrimaryNavItem[];
+  cta: MarketingNavCta;
+  signIn?: MarketingNavCta;
+  account?: ReactNode;
+  request?: MarketingNavRequest;
+};
+
+export type SiteNavProps = BlogSiteNavProps | MarketingSiteNavShellProps;
+
+function BlogSiteNav({
   navItems,
   header,
   homeHref,
   sticky = true,
-}: Props) {
+}: BlogSiteNavProps) {
   const { logo, cta } = header;
 
   return (
@@ -37,7 +57,8 @@ export function SiteNav({
         "z-40",
         sticky ? "sticky -top-0 lg:-top-16" : "relative",
       )}
-    >      <div className="bg-background">
+    >
+      <div className="bg-background">
         <SiteNavCompactProvider navItems={navItems} cta={cta}>
           <SiteNavTopRow>
             <Link
@@ -97,4 +118,13 @@ export function SiteNav({
       </div>
     </header>
   );
+}
+
+export function SiteNav(props: SiteNavProps) {
+  if (props.variant === "marketing") {
+    const { variant: _variant, ...marketingProps } = props;
+    return <MarketingSiteNav {...marketingProps} />;
+  }
+
+  return <BlogSiteNav {...props} />;
 }

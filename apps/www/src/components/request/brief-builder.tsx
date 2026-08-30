@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Loader2, Pencil, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
+import {pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 import Logo from '@/components/layout/logo';
 import {BriefBuilderRail} from '@/components/request/brief-builder-rail';
@@ -445,7 +446,9 @@ export function BriefBuilder({
                             className="h-9 max-w-xs rounded-sm border border-input bg-background px-2 text-sm font-semibold"
                             value={title}
                             autoFocus
-                            onChange={(e) => updateDraft({title: e.target.value})}
+                            onChange={(e) =>
+                                updateDraft({title: e.target.value})
+                            }
                             onBlur={() => setEditingTitle(false)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') setEditingTitle(false);
@@ -486,7 +489,10 @@ export function BriefBuilder({
                         onClick={handleClose}
                     >
                         {leaving ? (
-                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                            <Loader2
+                                className="size-4 animate-spin"
+                                aria-hidden
+                            />
                         ) : (
                             <X className="size-4" aria-hidden />
                         )}
@@ -495,7 +501,12 @@ export function BriefBuilder({
                 </div>
             </header>
 
-            <div className="mx-auto flex w-full max-w-7xl flex-1 items-stretch px-4 sm:px-6 lg:px-8">
+            <div
+                className={cn(
+                    pageDielineOuterClass(),
+                    'mx-auto flex w-full max-w-[var(--layout-max)] flex-1 items-stretch',
+                )}
+            >
                 <BriefBuilderRail
                     rows={railRows}
                     activeKey={activeKey}
