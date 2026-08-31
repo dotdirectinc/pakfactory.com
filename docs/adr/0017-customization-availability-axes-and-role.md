@@ -198,9 +198,26 @@ None of the three is a migration; each needs a decision about where the content 
 - **`blogPage.pageRole` is the naming precedent, not the pattern precedent.** `listingPage.ts` calls it "the `blogPage.pageRole` mistake" and the Rename Map retires it (null on 3 of 5 documents). The word `role` is settled; do not cite `pageRole` as an endorsed shape.
 - `achieves` lists candidates, not a recipe. The non-sufficiency caveat lives in the **field description**, which is editor-facing, while the derived reverse list is customer-facing — *"High-Barrier — achievable by: PET, VMPET, LDPE"* still reads as *any of these gives you high barrier*. Whatever renders that list needs framing copy. Rendering concern, no schema change.
 
+## Follow-on: Eric's schema review (D48)
+
+Reviewed against the deployed schema 2026-08-26, vetted and settled as **D48** in `pakfactory-content-model/Decisions.md`. Seven items landed here; the rest were already built, already done, or withdrawn.
+
+**Fixed**
+
+- **`customizationType.cardinality` was `single`/`many`'s wrong twin** — it shipped `single`/`multiple` while `property.cardinality` shipped `one`/`many`. Two fields sharing a name and storing different vocabularies: invisible in the Studio (identical labels), only visible in code. Now `one`/`many` on both. ⚠️ The review called this schema-only; it is not — `cardinality` is **required**, so 23 live Types would fail validation, and the value feeds the registry's `spec_attribute.multi_select` projection.
+- **`faqs` restored** — I had deprecated it as *"not in the designed field list"*, which was a **silence, not a decision**: no D-number removed it, nine other public-page types design it, and principle Q-D permits it. Now the shared `faqsField({ mode: 'mixed' })` — the same call Guide and Post make, so the members match by reuse rather than reimplementation.
+- **The own-Type clash check did not exist.** The review read it as deployed-at-warning needing promotion to error; what was deployed was a *self-reference* check, a different thing. Built at **error** with D43's teaching message verbatim, because a bare rejection blocks the editor without showing them the field they actually wanted.
+- **A comment that lied.** The old rule read *"Self-reference is an error; asymmetry is a warning"* and terminated in `.warning()` — so self-reference only warned. Split into two rules so the levels are real.
+- `customizationType.order` deprecated · "Colour" → "Color" · the stale *"no banner image"* sentence removed · `canonical` → `canonicalUrl`, one definition in `lib/seo-fields.ts` serving 21 types.
+- **`fact-labels.ts` lifted to `packages/sanity`** — the review asked whether the front end could import it or would have to duplicate the key→unit map. In `apps/studio/lib/` it could not without reaching into another app's internals. Now `@pakfactory/sanity/fact-labels`, one definition for the Studio and both front ends.
+
+**Already built, contrary to the review:** the `availableOnProducts` warning does read `role` (its 🔴 do-this-first item); the `facts` rule already reads *"Each label may appear once"* at error level; and `fact-labels.ts` already carried `{ value, title, unit, symbol }` as separate parts.
+
+**Also found, outside the review's scope:** 33 Options still carried `showThicknessTable` / `showFluteTypeTable` / `showColorRange` as orphaned document keys. Gone from the schema, still in the data — the review deliberately excluded documents, so it could not see them.
+
 ## References
 
-- `pakfactory-content-model/Decisions.md` — **D47** (authoritative), D42–D46
+- `pakfactory-content-model/Decisions.md` — **D47** (authoritative), D42–D48. 🔗 **That register and this one are the two halves of the record: model decisions live there, Studio implementation decisions live here.** Neither is complete alone — cite both.
 - `Capabilities Flow` (Eric, 2026-08-26) — the Type-level `role` badges; **authoritative for classification**
 - `pakfactory-content-model/POC/explainers/availability-axes-and-role.html` — reasoning and diagrams
 - `pakfactory-content-model/Entities/Customization Option.md` · `Customization Type.md`

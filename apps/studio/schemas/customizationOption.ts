@@ -2,6 +2,7 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
 import { deprecateField } from '../lib/schema-guards'
+import { faqsField } from '../lib/faq-field'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -269,20 +270,45 @@ export const customizationOption = defineType({
           ],
         },
       ],
-      // Self-reference is an error; asymmetry is a warning. Symmetry is only asked of
-      // option→option pairs: a Type has no reciprocal field to answer with, so naming
-      // a whole Type is one-directional by construction. That Type target is what
-      // makes `customizationType.cardinality` a prerequisite (D43) — "can't combine
-      // with Embossing & Debossing" only reads unambiguously once you know whether a
-      // customer takes one option from that type or several.
-      validation: (Rule) =>
+      // Two rules at two levels, because they fail differently (D48's principle:
+      // error where a wrong entry means the RIGHT MECHANISM never gets used and
+      // nobody notices; warning where it is visible on the page and someone reports).
+      //
+      // ⚠️ The previous single rule carried the comment "Self-reference is an error"
+      // while terminating in `.warning()` — the comment described the intent and the
+      // code did not deliver it. Splitting them is what makes the levels real.
+      validation: (Rule) => [
+        // ── ERROR ──────────────────────────────────────────────────────────────
+        // Self-reference, and the own-Type clash D43 requires. Neither has a
+        // legitimate case: an Option cannot clash with itself, and it is BY
+        // DEFINITION inside its own Type — so an error here can only fire on invalid
+        // data, which is what makes an error safe. A warning gets published through,
+        // and not carelessly: the editor believes they have just recorded "only one
+        // lamination per box", so the warning reads as pedantry.
+        Rule.custom(async (value, context) => {
+          const doc = context.document as { _id?: string; type?: { _ref?: string } } | undefined
+          const selfId = (doc?._id ?? '').replace(/^drafts\./, '')
+          const ownTypeRef = doc?.type?._ref?.replace(/^drafts\./, '')
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+
+          if (ids.includes(selfId)) return 'An option cannot be incompatible with itself.'
+
+          // The message does the teaching, and that is the point — a bare rejection
+          // blocks the editor without showing them the field they actually wanted.
+          if (ownTypeRef && ids.includes(ownTypeRef)) {
+            return "An Option can't clash with its own Type. If you mean 'only one Lamination per box', set cardinality to one on the Lamination Type instead — that's a different field, on the Type."
+          }
+          return true
+        }),
+        // ── WARNING ────────────────────────────────────────────────────────────
+        // Asymmetry is visible and recoverable, so it warns. Symmetry is only asked
+        // of option→option pairs: a Type has no reciprocal field to answer with, so
+        // naming a whole Type is one-directional by construction.
         Rule.custom(async (value, context) => {
           const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
           const refs = (value as { _ref?: string }[] | undefined) ?? []
           const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
-          if (ids.includes(selfId)) {
-            return 'An option cannot be incompatible with itself.'
-          }
           if (ids.length === 0) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
@@ -302,6 +328,7 @@ export const customizationOption = defineType({
           }
           return true
         }).warning(),
+      ],
     }),
     // D47 §1 — `achieves` names CANDIDATES, not a recipe. It points from a technical
     // option at the simplified, customer-facing option it can deliver: VMPET Film
@@ -464,33 +491,19 @@ export const customizationOption = defineType({
     // toward. The migration unsets the key on any straggler.
     // Note: `glossaryTerm.relatedCustomizations` is a different field on a different
     // type and is untouched.
-    // Deprecated, not deleted (PROD-2250, Rename Map). `faqs` is NOT in the designed
-    // field list in `Entities/Customization Option.md` — which that file calls "the
-    // truth until it ships" — and it appears nowhere in it. But 2 Options carry real
-    // Q&A, so deleting the field would destroy content that has no home yet. This
-    // answers "not designed" without answering "throw it away".
-    defineField({
-      name: 'faqs',
-      title: 'FAQs (old)',
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField('Not in the designed field list for Customization Option — do not add more. The 2 populated documents are kept until there is somewhere to move them.'),
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'question', type: 'string', title: 'Question' },
-            {
-              name: 'answer',
-              type: 'array',
-              title: 'Answer',
-              of: [{ type: 'block' }],
-            },
-          ],
-          preview: { select: { title: 'question' } },
-        },
-      ],
-    }),
+    // Restored 2026-08-31 (D48, Eric's schema review). I had deprecated this on the
+    // grounds that it was "not in the designed field list" — but that was a SILENCE,
+    // not a decision: no D-number ever removed it, and nine other public-page types
+    // design `faqs`. Principle Q-D permits it, and both cases genuinely occur —
+    // "does lamination affect recyclability?" is shared across all three laminations,
+    // "why does Soft Touch scuff?" is not.
+    //
+    // Uses the shared `faqsField` in `mixed` mode, which is the same call Guide and
+    // Post make, so the members match reference-for-reference rather than by
+    // reimplementation. ⚠️ The three existing entries were written against an
+    // ANONYMOUS object member and carry no `_type`; the migration stamps them
+    // `faqItem` so the helper can render them.
+    faqsField({ group: 'categorization', mode: 'mixed' }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 

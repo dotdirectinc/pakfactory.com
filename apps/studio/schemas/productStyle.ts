@@ -96,7 +96,7 @@ export const productStyle = defineType({
           type: 'image',
           mediaTags: [MEDIA_TAG.product],
           options: { hotspot: true },
-          description: 'Primary hero visual. Also the card image when no banner image is set.',
+          description: 'Primary hero visual. Also used as the card image when Card image is empty.',
           fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
         })),
       ],
