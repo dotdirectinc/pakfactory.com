@@ -123,8 +123,8 @@ export function buildWwwV5FooterColumns(): FooterColumns {
         title: "Customizations",
         links: [
           {
-            label: "Capabilities",
-            href: WWW_ROUTES.capabilities,
+            label: 'Customization',
+            href: WWW_ROUTES.customizations,
           },
           { label: "Bundles", href: WWW_ROUTES.bundles },
           {
@@ -259,7 +259,7 @@ export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
       {
         title: "Custom packaging",
         links: [
-          { label: "Products", href: `${WWW_URL}/capabilities` },
+          { label: "Products", href: `${WWW_URL}/products` },
           { label: "Industries", href: `${WWW_URL}/industries` },
           { label: "Services", href: `${WWW_URL}/solutions` },
           { label: "Why PakFactory", href: `${WWW_URL}/why-pakfactory` },

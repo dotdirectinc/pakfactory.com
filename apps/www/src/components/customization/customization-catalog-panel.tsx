@@ -9,17 +9,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@pakfactory/ui/components/select';
-import {
-    PageDielineSection,
-} from '@pakfactory/ui/components/page-dieline-section';
+import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {CapabilityCatalogList} from '@/components/capability/capability-catalog-list';
-import type {CapabilityCardItem} from '@/components/capability/capability-card';
-import type {
-    CapabilityCatalogItem,
-    CapabilityCatalogTab,
-} from '@/components/capability/capability-catalog-view';
+import {CustomizationCatalogList} from '@/components/customization/customization-catalog-list';
+import type {CustomizationCardData} from '@/components/customization/customization-card';
+import type {CustomizationCatalogTab} from '@/components/customization/customization-catalog-view';
 
 const MATERIAL_TYPE_OPTIONS = [
     {value: 'paperboard', label: 'Paperboard'},
@@ -41,16 +36,16 @@ const FINISH_SUSTAINABILITY_OPTIONS = [
     {value: 'compostable', label: 'Compostable'},
 ] as const;
 
-type CapabilityCatalogPanelProps = {
-    tabs: CapabilityCatalogTab[];
-    items: CapabilityCatalogItem[];
+type CustomizationCatalogPanelProps = {
+    tabs: CustomizationCatalogTab[];
+    items: CustomizationCardData[];
 };
 
-export function CapabilityCatalogPanel({
+export function CustomizationCatalogPanel({
     tabs,
     items,
-}: CapabilityCatalogPanelProps) {
-    const [active, setActive] = useState<CapabilityCatalogTab['value']>(
+}: CustomizationCatalogPanelProps) {
+    const [active, setActive] = useState<CustomizationCatalogTab['value']>(
         tabs[0]?.value ?? 'material',
     );
 
@@ -67,18 +62,14 @@ export function CapabilityCatalogPanel({
         };
     }, [active]);
 
-    const filtered = useMemo<CapabilityCardItem[]>(() => {
+    const filtered = useMemo<CustomizationCardData[]>(() => {
         return items
-            .filter((item) => item.category === active)
+            .filter((item) => item.categoryValue === active)
             .map((item) => ({
-                _id: item._id,
-                title: item.title,
-                slug: item.slug,
-                categoryValue: item.category,
-                categoryLabel: tabs.find((t) => t.value === item.category)
-                    ?.label,
-                imageUrl: item.imageUrl ?? null,
-                imageAlt: item.imageAlt ?? item.title,
+                ...item,
+                categoryLabel:
+                    item.categoryLabel ??
+                    tabs.find((tab) => tab.value === item.categoryValue)?.label,
             }));
     }, [items, active, tabs]);
 
@@ -131,7 +122,7 @@ export function CapabilityCatalogPanel({
             </div>
 
             <div className="mt-6">
-                <CapabilityCatalogList items={filtered} />
+                <CustomizationCatalogList items={filtered} />
             </div>
         </PageDielineSection>
     );

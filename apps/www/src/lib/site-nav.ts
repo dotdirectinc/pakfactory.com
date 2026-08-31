@@ -13,7 +13,7 @@ export function toMarketingNavItems(items: SiteNavItem[]): PrimaryNavItem[] {
     return items.map((item) => ({
         key: item.key,
         label: item.label,
-        href: item.href ?? WWW_ROUTES.capabilities,
+        href: item.href ?? WWW_ROUTES.customizations,
     }));
 }
 
@@ -30,7 +30,11 @@ export function buildSiteNavProps(options?: {
                 label: 'Product',
                 href: WWW_ROUTES.products,
             },
-            {key: 'customization', label: 'Customization'},
+            {
+                key: 'customization',
+                label: 'Customization',
+                href: WWW_ROUTES.customizations,
+            },
             {
                 key: 'solution',
                 label: 'Solution',

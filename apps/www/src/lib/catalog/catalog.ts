@@ -1,4 +1,6 @@
 import {LINES, PRODUCTS} from '@/lib/catalog/catalog.mock';
+import {CUSTOMIZATION_CATEGORIES} from '@/lib/catalog/customization.mock';
+import type {CustomizationCardData} from '@/components/customization/customization-card';
 import type {
     Product,
     ProductLine,
@@ -16,6 +18,24 @@ export function listLines(): ProductLine[] {
 
 export function listProducts(): Product[] {
     return PRODUCTS;
+}
+
+export function listCustomizationCategories(): CustomizationCardData[] {
+    return CUSTOMIZATION_CATEGORIES;
+}
+
+export function getCustomizationCategory(
+    category: string,
+    handle: string,
+): CustomizationCardData | null {
+    const categoryKey = normalizeSlug(category);
+    const handleKey = normalizeSlug(handle);
+    return (
+        CUSTOMIZATION_CATEGORIES.find(
+            (item) =>
+                item.categoryValue === categoryKey && item.slug === handleKey,
+        ) ?? null
+    );
 }
 
 export function getProduct(slug: string): Product | null {

@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import {PackageIcon} from 'lucide-react';
-import {Badge} from '@pakfactory/ui/components/badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {
+    ProductCard,
+    type ProductCardData,
+} from '@/components/product/product-card';
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
 
@@ -24,26 +27,19 @@ function TileMedia({src, alt}: {src?: string; alt: string}) {
     );
 }
 
-function ProductTile({product}: {product: Product}) {
-    return (
-        <Link
-            href={productHref(product.slug)}
-            className="group flex flex-col overflow-hidden rounded-xl bg-muted transition-shadow hover:shadow-md"
-        >
-            <TileMedia src={product.media[0]?.src} alt={product.media[0]?.alt ?? product.title} />
-            <div className="flex flex-col gap-1 p-4">
-                <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">{product.title}</p>
-                    {product.kind === 'inspiration' ? (
-                        <Badge variant="secondary">Inspiration</Badge>
-                    ) : null}
-                </div>
-                <p className="line-clamp-2 text-xs text-muted-foreground">
-                    {product.description}
-                </p>
-            </div>
-        </Link>
-    );
+function toProductCardData(
+    product: Product,
+    line: ProductLine,
+): ProductCardData {
+    return {
+        title: product.title,
+        href: productHref(product.slug),
+        sku: product.sku,
+        eyebrowLabel: product.productStyle.title ?? line.title,
+        imageUrl: product.media[0]?.src ?? null,
+        imageAlt: product.media[0]?.alt ?? product.title,
+        moq: product.moq,
+    };
 }
 
 function LineTile({line}: {line: ProductLine}) {
@@ -165,7 +161,10 @@ export function ProductStyleView({
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>
                     {products.map((product) => (
-                        <ProductTile key={product.slug} product={product} />
+                        <ProductCard
+                            key={product.slug}
+                            data={toProductCardData(product, line)}
+                        />
                     ))}
                 </div>
             </PageDielineSection>
