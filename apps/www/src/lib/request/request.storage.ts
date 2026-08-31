@@ -46,6 +46,17 @@ export type ShippingAddress = {
 export type RequestEntryKind = 'express' | 'products' | 'services';
 
 export type RequestDraft = {
+    /**
+     * Identifies the DRAFT — stable across edit-and-resubmit, and the grouping
+     * key the backend stores as `rfq.draft_id` (ADR-0012 D10).
+     *
+     * ⚠️ NOT the idempotency key. That is a per-submit-CLICK id minted in
+     * `submitRequest`, because a buyer who edits and resubmits has formed a
+     * second intent and is entitled to a second RFQ — whether two similar
+     * requests are really one is sales' judgement, not ours. This id is what
+     * lets them see the two came from one draft and make that call.
+     */
+    id: string;
     title?: string;
     notes: string;
     timeline: string;
@@ -76,6 +87,9 @@ export type RequestState = {
 };
 
 export const EMPTY_DRAFT: RequestDraft = {
+    // Minted per module load rather than per draft; parseDraft below mints a
+    // fresh one for any draft that lacks it, so no two drafts ever share this.
+    id: newId('draft'),
     notes: '',
     timeline: '',
     packagingContents: '',
@@ -178,10 +192,13 @@ function parseEntryKind(
 }
 
 function parseDraft(value: unknown): RequestDraft {
-    if (!value || typeof value !== 'object') return {...EMPTY_DRAFT};
+    if (!value || typeof value !== 'object') return {...EMPTY_DRAFT, id: newId('draft')};
     const d = value as Partial<RequestDraft>;
     return {
         ...EMPTY_DRAFT,
+        // Every draft saved before this field existed gets one on first read,
+        // so `pakfactory.request.v1` needs no migration step and no version bump.
+        id: typeof d.id === 'string' && d.id ? d.id : newId('draft'),
         title: typeof d.title === 'string' ? d.title : undefined,
         notes: asString(d.notes),
         timeline: asString(d.timeline),
@@ -301,11 +318,14 @@ export function saveRequestLines(lines: RequestLine[]): void {
     persist({...current, lines});
 }
 
+export function newId(fallbackPrefix: string): string {
+    return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${fallbackPrefix}-${Date.now()}`;
+}
+
 export function createRequestLine(input: AddLineInput): RequestLine {
-    const id =
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : `line-${Date.now()}`;
+    const id = newId('line');
     return {
         id,
         productSlug: input.productSlug,
