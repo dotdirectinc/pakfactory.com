@@ -72,12 +72,41 @@ export function isLineReady(line: QuantityLine): boolean {
   return line.quantities.every((q) => isQuantityValid(q, line.moq));
 }
 
-/** Express lane: with no lines, the requirements block carries contents + quantity. */
+/**
+ * Every express quantity the buyer asked to be quoted, as one list.
+ *
+ * The builder's express step appends and removes freely
+ * (`step-requirements.tsx`), so a buyer can ask for 2,500 AND 5,000 exactly as
+ * they can on a product line. `expressQuantity` — singular — was written before
+ * that was noticed, and reading only it drops every tier after the first: buyer
+ * data lost in silence, on the one field the whole quote hangs on.
+ *
+ * Singular is still accepted and still first, so older clients keep working.
+ */
+export function expressQuantities(requirements: {
+  expressQuantity?: number;
+  expressQuantities?: number[];
+}): number[] {
+  const many = requirements.expressQuantities ?? [];
+  const one = typeof requirements.expressQuantity === 'number' ? [requirements.expressQuantity] : [];
+  // Dedupe: a client that sends both (the migration window) must not quote twice.
+  //
+  // 🔴 Returns what was SENT — it does not filter out invalid values. Dropping a
+  // 0 here would hand `isExpressReady` a list of only the survivors, so a
+  // submission carrying a bad tier would pass on the strength of its good ones.
+  // Validation rejects; this function reports.
+  return [...new Set([...one, ...many])];
+}
+
+/** Express lane: with no lines, the requirements block carries contents + quantities. */
 export function isExpressReady(requirements: {
   packagingContents?: string;
   expressQuantity?: number;
+  expressQuantities?: number[];
 }): boolean {
   const contents = requirements.packagingContents ?? '';
   if (contents.trim().length === 0) return false;
-  return isQuantityValid(requirements.expressQuantity ?? 0);
+  const quantities = expressQuantities(requirements);
+  if (quantities.length === 0) return false;
+  return quantities.every((q) => isQuantityValid(q));
 }
