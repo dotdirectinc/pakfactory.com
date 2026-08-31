@@ -17,11 +17,12 @@ export type InternalSession = {
 export async function requireInternalUser(
   returnTo: string,
 ): Promise<InternalSession> {
-  // TODO(PROD-2415): Backend — restore auth guardrail here:
-  //   1. const user = await getUser(); redirect to /login if missing
-  //   2. const account = await getInternalAccountAdapter().getByEmail(user.email)
-  //   3. redirect /auth/sign-out?error=not_internal if not on allowlist
-  // Until then, opt in with ADMIN_DEV_BYPASS=true (see dev-bypass.ts).
+  // The guardrail below is live: session → internal account → refuse if absent.
+  // With ADMIN_DATA_SOURCE=supabase the account comes from `public.internal_user`
+  // under RLS (PROD-2415); with `mock` it comes from the allowlist env var.
+  //
+  // ⚠️ ADMIN_DEV_BYPASS short-circuits ALL of it and returns a fabricated
+  // session. Local only — see dev-bypass.ts.
   if (isAdminDevBypassEnabled()) {
     return getDevBypassSession();
   }
