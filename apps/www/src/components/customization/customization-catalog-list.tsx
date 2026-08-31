@@ -1,17 +1,19 @@
 import {
-    CapabilityCard,
-    type CapabilityCardItem,
-} from '@/components/capability/capability-card';
+    CustomizationCard,
+    type CustomizationCardData,
+} from '@/components/customization/customization-card';
 
-type CapabilityCatalogListProps = {
-    items: CapabilityCardItem[];
+type CustomizationCatalogListProps = {
+    items: CustomizationCardData[];
 };
 
-export function CapabilityCatalogList({items}: CapabilityCatalogListProps) {
+export function CustomizationCatalogList({
+    items,
+}: CustomizationCatalogListProps) {
     if (items.length === 0) {
         return (
             <div className="rounded-lg border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-                No capabilities in this category yet.
+                No customizations in this category yet.
             </div>
         );
     }
@@ -19,7 +21,7 @@ export function CapabilityCatalogList({items}: CapabilityCatalogListProps) {
     return (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {items.map((item) => (
-                <CapabilityCard key={item._id} item={item} />
+                <CustomizationCard key={item._id} item={item} />
             ))}
         </div>
     );

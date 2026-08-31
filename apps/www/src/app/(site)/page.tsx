@@ -60,7 +60,7 @@ export default async function Home() {
                         <Link href={WWW_ROUTES.products}>Products</Link>
                     </Button>
                     <Button asChild size="lg" variant="outline">
-                        <Link href={WWW_ROUTES.capabilities}>Capabilities</Link>
+                        <Link href={WWW_ROUTES.customizations}>Customization</Link>
                     </Button>
                 </div>
             </PageHeadingSection>

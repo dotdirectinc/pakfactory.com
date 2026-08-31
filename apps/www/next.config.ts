@@ -104,6 +104,25 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i.ytimg.com" },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/capabilities",
+        destination: "/customizations",
+        permanent: true,
+      },
+      {
+        source: "/capabilities/:category",
+        destination: "/customizations/:category",
+        permanent: true,
+      },
+      {
+        source: "/capabilities/:category/:handle",
+        destination: "/customizations/:category/:handle",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
