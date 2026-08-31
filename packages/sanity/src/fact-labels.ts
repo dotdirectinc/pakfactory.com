@@ -1,4 +1,13 @@
 /**
+ * Moved here from `apps/studio/lib/` on 2026-08-31 (D48, Eric's schema review).
+ *
+ * The review asked whether the front end can import this map or would have to
+ * duplicate it — and while it sat in the Studio app it could not, without reaching
+ * into another app's internals. Duplicating it is the one outcome the list exists to
+ * prevent: two copies of key→unit drift, and then a column header and its cells
+ * disagree. `packages/sanity` is the package the Studio and both front ends already
+ * depend on, so one definition now serves all three.
+ *
  * The fixed label list for Property Value `facts` (Decisions D41).
  *
  * A fact's label is NOT free text — free labels drift to "Caliper" · "caliper" ·

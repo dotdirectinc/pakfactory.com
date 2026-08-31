@@ -104,7 +104,7 @@ export function seoFields({
     ...(canonical
       ? [
           defineField({
-            name: 'canonical',
+            name: 'canonicalUrl',
             title: 'Canonical URL',
             type: 'string',
             group,
