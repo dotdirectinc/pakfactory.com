@@ -26,6 +26,7 @@
     "migrate:availability-axes": "node scripts/migrate-customization-availability-axes.mjs",
     "migrate:option-category-benefits": "node scripts/migrate-customization-option-category-and-benefits.mjs",
     "migrate:product-cardinality": "node scripts/migrate-product-line-style-cardinality.mjs",
+    "migrate:unset-retired-fields": "node scripts/migrate-unset-retired-option-fields.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
