@@ -49,13 +49,32 @@ export type QuantityLine = {
 };
 
 export type LocationLike = {
+  city?: string;
   country?: string;
 } | null | undefined;
 
-/** A location is usable when we know at least the country.
- *  Mirrors the client's `hasShippingLocation`. */
+/**
+ * A location is usable when we know BOTH the city and the country.
+ *
+ * The shipping step collects exactly these two fields, side by side
+ * (`shipping-to-address.tsx`), and a quote needs both: a country alone cannot be
+ * costed, and a city alone is ambiguous.
+ *
+ * ⚠️ This function previously required only the country and carried the comment
+ * "Mirrors the client's hasShippingLocation" — which was NOT true. The client
+ * accepted city OR country, so the two rules disagreed in both directions: a
+ * city-only draft passed the client gate and was rejected by the server, while a
+ * country-only draft passed both despite being unquotable. The comment is likely
+ * why nobody noticed; it asserted a parity that had never been checked.
+ *
+ * The client rule changes with this one. If you edit either, edit both — they are
+ * one decision expressed twice, and the vendored copy of this file is what the
+ * parity check compares.
+ */
 export function hasLocation(address: LocationLike): boolean {
-  return Boolean(address?.country && address.country.trim().length > 0);
+  const city = address?.city?.trim() ?? '';
+  const country = address?.country?.trim() ?? '';
+  return city.length > 0 && country.length > 0;
 }
 
 /** Assumption 1: positive, and at or above MOQ when MOQ is known. */
