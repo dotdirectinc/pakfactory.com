@@ -94,7 +94,24 @@ export function AdminAccountMenu({
         })}
         <DropdownMenuSeparator />
         <form action={signOutInternal}>
-          <DropdownMenuItem asChild>
+          {/*
+            🔴 onSelect must preventDefault, or sign-out silently does nothing.
+
+            Selecting a Radix item closes the menu, which unmounts this <form>.
+            React dispatches a Server Action asynchronously after the submit
+            event, so the form can be gone before the POST is sent — the click
+            registers, the menu closes, and nothing else happens. No error, no
+            network request, no clue.
+
+            Confirmed by elimination: GET /auth/sign-out does the same work
+            outside the menu and signs out correctly, so signOut() and the cookie
+            clearing were never at fault.
+
+            preventDefault keeps the menu open long enough for the action to
+            dispatch; the redirect inside it then navigates away, so the menu
+            never needs closing by hand.
+          */}
+          <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
             <button type="submit" className="w-full text-left">
               {ADMIN_ACCOUNT_COPY.signOut}
             </button>
