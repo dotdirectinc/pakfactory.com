@@ -6,7 +6,7 @@ import {
   TEXT_FACT_LABELS,
   factLabelOptions,
   formatFactValue,
-} from '../lib/fact-labels'
+} from '@pakfactory/sanity/fact-labels'
 
 export const propertyValue = defineType({
   name: 'propertyValue',
@@ -32,8 +32,14 @@ export const propertyValue = defineType({
       // legitimate, occasionally one idea filed twice, never grounds to refuse
       // the save. Two rules because Sanity cannot mix an error and a warning in
       // one `custom`.
+      // `Rule.required()` is its OWN entry, not chained onto the first custom rule.
+      // Verified against the deployed manifest 2026-08-31: this field serialised as
+      // `custom` with no `presence` flag, while `slug` two fields below — chained
+      // `Rule.required().custom(...)` — serialised both. The array form was swallowing
+      // it, so the Studio showed no required marker. (Eric's review #9, D48.)
       validation: (Rule) => [
-        Rule.required().custom(async (value, context) => {
+        Rule.required(),
+        Rule.custom(async (value, context) => {
           const r = await checkScopedTaxonomyTitle(value, context, 'property', 'property')
           return 'ok' in r || r.level !== 'error' ? true : r.message
         }),
