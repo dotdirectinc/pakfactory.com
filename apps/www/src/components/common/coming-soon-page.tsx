@@ -1,5 +1,8 @@
 import type {Metadata} from 'next';
+import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
+import {WWW_ROUTES} from '@/lib/www-routes';
 
 type ComingSoonPageProps = {
     title: string;
@@ -15,11 +18,16 @@ export function comingSoonMetadata(title: string): Metadata {
 
 export function ComingSoonPage({title, note}: ComingSoonPageProps) {
     return (
-        <main className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-            <p className="mt-4 max-w-2xl text-muted-foreground">
-                {note ?? 'This page is reserved. Content is coming soon.'}
-            </p>
+        <main className="min-h-screen bg-background">
+            <PageBreadcrumbSection
+                items={[{label: 'Home', href: WWW_ROUTES.home}, {label: title}]}
+            />
+            <PageHeadingSection
+                title={title}
+                description={
+                    note ?? 'This page is reserved. Content is coming soon.'
+                }
+            />
         </main>
     );
 }

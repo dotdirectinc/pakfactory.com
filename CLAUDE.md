@@ -14,7 +14,10 @@ Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack,
     - @.claude/rules/commit-mode.md — toggle between `one-app-per-commit` and `mix-commiter` (mutually exclusive). The active mode lives in `.claude/commit-mode`; check it with `./.claude/commit-mode.sh`. When `mix-commiter` is active, the single-app-commits rule above is **paused**.
 - **Component organization & clean-`src/` structure:** canonical in **[`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)** (the former management-root `clean-src-structure` / `components-by-reusability` rule drafts are superseded by it; see the [ADR register](docs/adr/)).
 - Inherits from **user-global** `~/.claude/CLAUDE.md` (if present) and this repository’s [`AGENTS.md`](./AGENTS.md).
+- For work under **`apps/www`**, also read [`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md).
 - For work under **`apps/blog`**, also read [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
+- For work under **`apps/studio`**, also read [`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md).
+- For work under **`apps/admin`**, also read [`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md). Newer apps may ship `AGENTS.md` until they graduate to `CLAUDE.md`.
 
 ## Skills
 

@@ -1,0 +1,19 @@
+---
+description: Sanity Studio — schemas, SEO fields, seeds; see apps/studio/CLAUDE.md
+globs: apps/studio/**/*
+alwaysApply: false
+---
+
+# Studio app (`@pakfactory/studio`)
+
+When editing **`apps/studio/`**, follow [`apps/studio/CLAUDE.md`](../../CLAUDE.md) and repo [`AGENTS.md`](../../../../AGENTS.md) § Sanity content — agent guardrails.
+
+**Quick rules:**
+
+- **Schemas in git only** — use `defineType` / `defineField` / `defineArrayMember`.
+- **SEO/Social:** always `lib/seo-fields.ts` (`seoFields` + `socialFields`) — never per-schema `metaTitle` duplicates.
+- **ADR-014:** singular type names, titles, and desk labels.
+- **Never seed or write documents** — no `seed:*` scripts, no MCP create/patch/publish (humans only).
+- **Blocks:** page-builder types in `schemas/blocks/`; register in `schemas/blocks/index.ts`.
+- **Env:** `apps/studio/.env.local` (not root); preview URLs → www **3003**, blog **3004**.
+- **Local dev:** `pnpm dev:studio` → port **3333**.

@@ -6,6 +6,7 @@ import type {
   SocialLink,
 } from "@pakfactory/components/layout/site-footer";
 import { getWwwUrl } from "@/lib/site";
+import { policyHref, WWW_ROUTES } from "@/lib/www-routes";
 
 // Released blog lives at pakfactory.com/blog. The old blog.pakfactory.com
 // subdomain 301-redirects to the blog home and drops the path, so links must
@@ -80,8 +81,121 @@ export const FOOTER_AI_LINKS: AiLink[] = [
  *  footerNavigation.builder has no ctaTextAndButton block. */
 export const FOOTER_CTA: { label: string; href: string } = {
   label: "Let's talk packaging",
-  href: "https://www.pakfactory.com/contact-us",
+  href: WWW_ROUTES.contact,
 };
+
+/** POC/V5 www footer grid — Product · Customizations · Academy / … */
+export function buildWwwV5FooterColumns(): FooterColumns {
+  return [
+    [
+      {
+        title: "Product",
+        links: [
+          { label: "Products", href: WWW_ROUTES.products },
+          { label: "About", href: WWW_ROUTES.about },
+          { label: "Contact", href: WWW_ROUTES.contact },
+          {
+            label: "Privacy Policy",
+            href: policyHref("privacy-policy"),
+          },
+          {
+            label: "Case Studies",
+            href: WWW_ROUTES.caseStudies,
+          },
+        ],
+      },
+      {
+        title: "Solutions",
+        links: [
+          { label: "Solutions", href: WWW_ROUTES.solutions },
+          { label: "Contact", href: WWW_ROUTES.contact },
+        ],
+      },
+      {
+        title: "Expertise",
+        links: [
+          { label: "Expertise", href: WWW_ROUTES.expertise },
+        ],
+      },
+    ],
+    [
+      {
+        title: "Customizations",
+        links: [
+          {
+            label: 'Customization',
+            href: WWW_ROUTES.customizations,
+          },
+          { label: "Bundles", href: WWW_ROUTES.bundles },
+          {
+            label: "Request a Quote",
+            href: WWW_ROUTES.requestExpress,
+          },
+        ],
+      },
+      {
+        title: "Blog",
+        links: [
+          { label: "Blog", href: BLOG_URL, external: true },
+          { label: "Contribute", href: `${BLOG_URL}/contribute`, external: true },
+          { label: "Topics", href: `${BLOG_URL}/topics`, external: true },
+        ],
+      },
+      {
+        title: "Orders & Shipment",
+        links: [
+          { label: "Account", href: WWW_ROUTES.account },
+          {
+            label: "Account Requests",
+            href: WWW_ROUTES.accountRequests,
+          },
+        ],
+      },
+    ],
+    [
+      {
+        title: "Academy",
+        links: [
+          {
+            label: "Packaging Type",
+            href: `${BLOG_URL}/topics?group=packaging-type`,
+            external: true,
+          },
+          {
+            label: "Industry",
+            href: `${BLOG_URL}/topics?group=industry`,
+            external: true,
+          },
+          {
+            label: "Sustainability",
+            href: `${BLOG_URL}/sustainability`,
+            external: true,
+          },
+        ],
+      },
+      {
+        title: "Resources",
+        links: [
+          {
+            label: "Case Studies",
+            href: WWW_ROUTES.caseStudies,
+          },
+          { label: "Policies", href: WWW_ROUTES.policies },
+        ],
+      },
+      {
+        title: "Support",
+        links: [
+          { label: "Contact", href: WWW_ROUTES.contact },
+          {
+            label: "Help Center",
+            href: WWW_ROUTES.contact,
+          },
+        ],
+      },
+    ],
+  ];
+}
 
 export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
   const browseByCategories: FooterLink[] = navItems.map((item) => ({
@@ -145,7 +259,7 @@ export function buildFooterColumns(navItems: PrimaryNavItem[]): FooterColumns {
       {
         title: "Custom packaging",
         links: [
-          { label: "Products", href: `${WWW_URL}/capabilities` },
+          { label: "Products", href: `${WWW_URL}/products` },
           { label: "Industries", href: `${WWW_URL}/industries` },
           { label: "Services", href: `${WWW_URL}/solutions` },
           { label: "Why PakFactory", href: `${WWW_URL}/why-pakfactory` },

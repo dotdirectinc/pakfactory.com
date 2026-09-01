@@ -1,7 +1,7 @@
 import {redirect} from 'next/navigation';
 import type {Metadata} from 'next';
 import {LoginPageView} from '@/components/login/login-page-view';
-import {getUser, safeNext} from '@/lib/auth/session';
+import {getUser, safeNext} from '@pakfactory/supabase/session';
 import {robotsDirectiveToMetadata} from '@/lib/seo';
 
 export const metadata: Metadata = {

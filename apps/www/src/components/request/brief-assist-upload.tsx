@@ -19,12 +19,22 @@ const SAMPLE_FILL: AssistFill = {
     notes: 'Launching a spring cold-pressed juice line for retail and DTC. Priority is a premium unboxing, food-safe and recyclable materials, and consistent brand color across every piece. Targeting a March launch.',
 };
 
+// Drives the idle-row layout: with no body the icon centers against the single
+// title line instead of top-aligning.
+const hasBody = Boolean(REQUEST_COPY.assistBody.trim());
+
+// Temporarily hidden: blanking assistTitle in copy/request.ts hides the whole
+// banner. Restore the title string to bring document pre-fill back.
+const hasTitle = Boolean(REQUEST_COPY.assistTitle.trim());
+
 type BriefAssistUploadProps = {
     onFill: (fields: AssistFill) => void;
     className?: string;
 };
 
 export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
+    if (!hasTitle) return null;
+
     const [status, setStatus] = useState<'idle' | 'reading' | 'done'>('idle');
     const [fileName, setFileName] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
@@ -92,8 +102,18 @@ export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
                 </div>
             ) : (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                    <div className="flex items-start gap-2">
-                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-background/80">
+                    <div
+                        className={cn(
+                            'flex gap-2',
+                            hasBody ? 'items-start' : 'items-center',
+                        )}
+                    >
+                        <span
+                            className={cn(
+                                'flex size-7 shrink-0 items-center justify-center rounded-full bg-background/80',
+                                hasBody && 'mt-0.5',
+                            )}
+                        >
                             <Sparkles
                                 className="size-3.5 text-foreground"
                                 aria-hidden
@@ -103,7 +123,7 @@ export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
                             <p className="text-sm font-medium text-foreground">
                                 {REQUEST_COPY.assistTitle}
                             </p>
-                            {REQUEST_COPY.assistBody ? (
+                            {hasBody ? (
                                 <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                                     {REQUEST_COPY.assistBody}
                                 </p>

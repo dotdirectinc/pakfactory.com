@@ -51,6 +51,23 @@ function shouldSendNoIndexHeader(): boolean {
   return process.env.VERCEL_ENV !== "production";
 }
 
+/** Turbopack PostCSS resolves @import from repo root — alias workspace CSS to packages/. */
+const workspaceCssAliases = {
+  "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
+  "@pakfactory/ui/tailwind-sources.css": join(
+    repoRoot,
+    "packages/ui/src/tailwind-sources.css",
+  ),
+  "@pakfactory/components/tailwind-sources.css": join(
+    repoRoot,
+    "packages/components/src/tailwind-sources.css",
+  ),
+  "@pakfactory/brief-builder-ui/tailwind-sources.css": join(
+    repoRoot,
+    "packages/brief-builder-ui/src/tailwind-sources.css",
+  ),
+} as const;
+
 const nextConfig: NextConfig = {
   // Monorepo: trace from repo root so hoisted `sharp` / `@img/*` native bins
   // are included in Vercel serverless functions (PROD-2206 `/api/wm` serve mode).
@@ -65,11 +82,9 @@ const nextConfig: NextConfig = {
       "node_modules/@img/sharp-linux-x64/**/*",
     ],
   },
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
   turbopack: {
-    resolveAlias: {
-      "@pakfactory/ui/globals.css": join(repoRoot, "packages/ui/src/globals.css"),
-    },
+    resolveAlias: workspaceCssAliases,
   },
   async headers() {
     if (!shouldSendNoIndexHeader()) return [];
@@ -88,6 +103,25 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn.shadcnstudio.com" },
       { protocol: "https", hostname: "i.ytimg.com" },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: "/capabilities",
+        destination: "/customizations",
+        permanent: true,
+      },
+      {
+        source: "/capabilities/:category",
+        destination: "/customizations/:category",
+        permanent: true,
+      },
+      {
+        source: "/capabilities/:category/:handle",
+        destination: "/customizations/:category/:handle",
+        permanent: true,
+      },
+    ];
   },
 };
 

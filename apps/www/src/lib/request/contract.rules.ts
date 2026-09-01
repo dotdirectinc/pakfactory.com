@@ -49,13 +49,32 @@ export type QuantityLine = {
 };
 
 export type LocationLike = {
+  city?: string;
   country?: string;
 } | null | undefined;
 
-/** A location is usable when we know at least the country.
- *  Mirrors the client's `hasShippingLocation`. */
+/**
+ * A location is usable when we know BOTH the city and the country.
+ *
+ * The shipping step collects exactly these two fields, side by side
+ * (`shipping-to-address.tsx`), and a quote needs both: a country alone cannot be
+ * costed, and a city alone is ambiguous.
+ *
+ * ⚠️ This function previously required only the country and carried the comment
+ * "Mirrors the client's hasShippingLocation" — which was NOT true. The client
+ * accepted city OR country, so the two rules disagreed in both directions: a
+ * city-only draft passed the client gate and was rejected by the server, while a
+ * country-only draft passed both despite being unquotable. The comment is likely
+ * why nobody noticed; it asserted a parity that had never been checked.
+ *
+ * The client rule changes with this one. If you edit either, edit both — they are
+ * one decision expressed twice, and the vendored copy of this file is what the
+ * parity check compares.
+ */
 export function hasLocation(address: LocationLike): boolean {
-  return Boolean(address?.country && address.country.trim().length > 0);
+  const city = address?.city?.trim() ?? '';
+  const country = address?.country?.trim() ?? '';
+  return city.length > 0 && country.length > 0;
 }
 
 /** Assumption 1: positive, and at or above MOQ when MOQ is known. */
@@ -72,12 +91,41 @@ export function isLineReady(line: QuantityLine): boolean {
   return line.quantities.every((q) => isQuantityValid(q, line.moq));
 }
 
-/** Express lane: with no lines, the requirements block carries contents + quantity. */
+/**
+ * Every express quantity the buyer asked to be quoted, as one list.
+ *
+ * The builder's express step appends and removes freely
+ * (`step-requirements.tsx`), so a buyer can ask for 2,500 AND 5,000 exactly as
+ * they can on a product line. `expressQuantity` — singular — was written before
+ * that was noticed, and reading only it drops every tier after the first: buyer
+ * data lost in silence, on the one field the whole quote hangs on.
+ *
+ * Singular is still accepted and still first, so older clients keep working.
+ */
+export function expressQuantities(requirements: {
+  expressQuantity?: number;
+  expressQuantities?: number[];
+}): number[] {
+  const many = requirements.expressQuantities ?? [];
+  const one = typeof requirements.expressQuantity === 'number' ? [requirements.expressQuantity] : [];
+  // Dedupe: a client that sends both (the migration window) must not quote twice.
+  //
+  // 🔴 Returns what was SENT — it does not filter out invalid values. Dropping a
+  // 0 here would hand `isExpressReady` a list of only the survivors, so a
+  // submission carrying a bad tier would pass on the strength of its good ones.
+  // Validation rejects; this function reports.
+  return [...new Set([...one, ...many])];
+}
+
+/** Express lane: with no lines, the requirements block carries contents + quantities. */
 export function isExpressReady(requirements: {
   packagingContents?: string;
   expressQuantity?: number;
+  expressQuantities?: number[];
 }): boolean {
   const contents = requirements.packagingContents ?? '';
   if (contents.trim().length === 0) return false;
-  return isQuantityValid(requirements.expressQuantity ?? 0);
+  const quantities = expressQuantities(requirements);
+  if (quantities.length === 0) return false;
+  return quantities.every((q) => isQuantityValid(q));
 }

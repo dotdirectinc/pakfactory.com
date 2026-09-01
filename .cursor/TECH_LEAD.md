@@ -63,6 +63,7 @@ When the repo is intact, expect a **Turborepo**-style layout:
 
 - Prefer **repo-root** **`.env.local`** for local secrets; some apps symlink to it (e.g. `apps/www/.env.local` → `../../.env.local`).
 - **Never commit** secrets or real `.env.local` contents.
+- When introducing a new env var, document it in the relevant **`.env.example`** and add it to **`turbo.json`** `globalEnv` / task `env` lists (Turbo strips undeclared vars).
 - Redact tokens and keys in screenshots, issues, and AI chat logs.
 
 ---

@@ -1,9 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "../supabase/server";
+import { createClient } from "@pakfactory/supabase/server";
 import { mapAuthError } from "./errors";
-import { safeNext } from "./session";
+import { safeNext } from "@pakfactory/supabase/session";
 
 /**
  * Auth server actions (PROD-1426).

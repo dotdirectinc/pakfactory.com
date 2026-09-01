@@ -2,7 +2,7 @@
 export const WWW_ROUTES = {
     home: '/',
     products: '/products',
-    capabilities: '/capabilities',
+    customizations: '/customizations',
     caseStudies: '/case-studies',
     solutions: '/solutions',
     expertise: '/expertise',
@@ -18,8 +18,8 @@ export const WWW_ROUTES = {
     policies: '/policies',
     bundles: '/bundles',
     request: '/request',
-    requestBuilder: '/request/builder',
-    requestNew: '/request/new',
+    requestProducts: '/request/products',
+    requestExpress: '/request/general',
     requestServices: '/request/services',
 } as const;
 
@@ -35,6 +35,13 @@ export function productHref(slug: string): string {
 
 export function productStyleHref(lineSlug: string, styleSlug: string): string {
     return `${WWW_ROUTES.products}/${lineSlug}/${styleSlug}`;
+}
+
+export function customizationCategoryHref(
+    category: 'material' | 'finish',
+    slug: string,
+): string {
+    return `${WWW_ROUTES.customizations}/${category}/${slug}`;
 }
 
 export function solutionHref(slug: string): string {

@@ -1,11 +1,13 @@
 'use client';
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, useTransition} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {Pencil, X} from 'lucide-react';
+import {Loader2, Pencil, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
+import {pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
+import Logo from '@/components/layout/logo';
 import {BriefBuilderRail} from '@/components/request/brief-builder-rail';
 import {StepProducts} from '@/components/request/step-products';
 import {StepRequirements} from '@/components/request/step-requirements';
@@ -13,9 +15,15 @@ import {StepReview} from '@/components/request/step-review';
 import {StepServices} from '@/components/request/step-services';
 import {StepYourInformation} from '@/components/request/step-your-information';
 import type {WizardRailRowData} from '@/components/request/wizard-rail-row';
+import {LeaveDialog} from '@/components/ui/leave-dialog';
+import {MessageDialog} from '@/components/ui/message-dialog';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
-import type {RequestEntryKind} from '@/lib/request/request.storage';
+import {
+    defaultDraftTitle,
+    isDraftEmpty,
+    type RequestEntryKind,
+} from '@/lib/request/request.storage';
 import {
     canSubmitRequest,
     isContactReady,
@@ -34,6 +42,12 @@ const SECTION_TOP_OFFSET = 108;
 
 type BriefBuilderProps = {
     mode?: 'builder' | 'express' | 'products' | 'services';
+    /**
+     * Skip the mount-time draft start so a wrapper can read the pool before it
+     * is reset. Child effects run before parent effects, so the wrapper cannot
+     * otherwise observe the pre-entry draft.
+     */
+    deferStart?: boolean;
 };
 
 function resolveEntryKind(mode: BriefBuilderProps['mode']): RequestEntryKind {
@@ -42,7 +56,10 @@ function resolveEntryKind(mode: BriefBuilderProps['mode']): RequestEntryKind {
     return 'products';
 }
 
-export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
+export function BriefBuilder({
+    mode = 'builder',
+    deferStart = false,
+}: BriefBuilderProps) {
     const router = useRouter();
     const {
         lines,
@@ -50,10 +67,28 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         updateDraft,
         removeLine,
         ensureBuilder,
-        resetExpress,
+        discardDraft,
     } = useRequest();
 
     const entryKind = resolveEntryKind(mode);
+
+    // The server snapshot is always a products-entry draft, so until
+    // ensureBuilder syncs storage, trust the route. Otherwise sections paint
+    // and then vanish.
+    const synced = draft.entryKind === entryKind;
+    const viewDraft = useMemo(
+        () =>
+            synced
+                ? draft
+                : {
+                      ...draft,
+                      entryKind,
+                      express: entryKind === 'express',
+                      productsExpanded: false,
+                      servicesEnabled: entryKind === 'services',
+                  },
+        [synced, draft, entryKind],
+    );
 
     const [activeKey, setActiveKey] = useState(
         entryKind === 'express'
@@ -64,6 +99,29 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
     );
     const [editingTitle, setEditingTitle] = useState(false);
     const [leaveOpen, setLeaveOpen] = useState(false);
+    const [leaving, startLeaving] = useTransition();
+
+    // Discarding while the builder is still mounted would blank the form under
+    // the user during the navigation, so hold it until the route unmounts us.
+    const discardOnLeave = useRef(false);
+    useEffect(
+        () => () => {
+            if (discardOnLeave.current) discardDraft();
+        },
+        [discardDraft],
+    );
+
+    // The draft title is dated and lives only in storage, so it cannot be
+    // rendered on the server. Hold a placeholder for the first paint rather
+    // than showing an undated title that then changes.
+    const [hydrated, setHydrated] = useState(false);
+    useEffect(() => {
+        setHydrated(true);
+    }, []);
+
+    // Acknowledgement over the confirmation page. Component state, not draft
+    // state, so revisiting a submitted draft shows the page without the dialog.
+    const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
 
     const productsRef = useRef<HTMLElement>(null);
     const servicesRef = useRef<HTMLElement>(null);
@@ -72,13 +130,14 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
     const reviewRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
+        if (deferStart) return;
         ensureBuilder({mode: entryKind});
-    }, [entryKind, ensureBuilder]);
+    }, [deferStart, entryKind, ensureBuilder]);
 
-    const expressCold = isExpressCold(draft, lines);
+    const expressCold = isExpressCold(viewDraft);
     const submitted = Boolean(draft.submittedAt && draft.ref);
-    const showProducts = showProductsSection(draft, lines);
-    const showServices = showServicesSection(draft, lines);
+    const showProducts = showProductsSection(viewDraft, lines);
+    const showServices = showServicesSection(viewDraft, lines);
 
     const itemsReady = isItemsReady(draft, lines);
     const notesReady = isNotesReady(draft);
@@ -90,7 +149,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
 
     const railRows: WizardRailRowData[] = useMemo(() => {
         const rows: WizardRailRowData[] = [];
-        const servicesFirst = draft.entryKind === 'services';
+        const servicesFirst = viewDraft.entryKind === 'services';
 
         const productsRow: WizardRailRowData = {
             key: 'products',
@@ -109,7 +168,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
             rows.push(servicesRow);
             // Products upsell: always show rail row; body is toggle or full list.
             rows.push(productsRow);
-        } else if (draft.entryKind === 'products') {
+        } else if (viewDraft.entryKind === 'products') {
             rows.push(productsRow);
             // Services upsell: only show rail row when enabled (POC collapse).
             if (draft.servicesEnabled) rows.push(servicesRow);
@@ -140,7 +199,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         });
         return rows;
     }, [
-        draft.entryKind,
+        viewDraft.entryKind,
         draft.services.length,
         draft.servicesEnabled,
         showProducts,
@@ -201,6 +260,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
             ref,
             submittedAt: new Date().toISOString(),
         });
+        setShowSubmitSuccess(true);
     }
 
     function toggleService(id: string) {
@@ -210,31 +270,47 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         updateDraft({services: next, servicesEnabled: true});
     }
 
+    const closeHref =
+        draft.express || draft.entryKind === 'express'
+            ? WWW_ROUTES.products
+            : WWW_ROUTES.request;
+
+    function leave() {
+        startLeaving(() => {
+            router.push(closeHref);
+        });
+    }
+
     function handleClose() {
-        if (draft.express || draft.entryKind === 'express') {
-            resetExpress();
-            router.push(WWW_ROUTES.products);
+        // Express keeps no named draft, so there is nothing to offer to save.
+        // Input still persists on every keystroke, so leaving is lossless.
+        if (isExpress || isDraftEmpty(draft)) {
+            leave();
             return;
         }
         setLeaveOpen(true);
     }
 
+    // The dialog stays open while the navigation runs so its buttons can carry
+    // the pending state; the route change unmounts it.
     function discardAndLeave() {
-        setLeaveOpen(false);
-        router.push(WWW_ROUTES.request);
+        discardOnLeave.current = true;
+        leave();
     }
 
     function saveAndLeave() {
-        setLeaveOpen(false);
-        router.push(WWW_ROUTES.request);
+        leave();
     }
 
-    const title = draft.title || 'Draft request';
+    // Derived from the route, not the draft, so the header is right on the
+    // first paint. Express is a plain RFQ form: no draft title to name.
+    const isExpress = entryKind === 'express';
+    const title = draft.title || (hydrated ? defaultDraftTitle() : '');
     const hasLeadingSections =
-        showProducts || showServices || draft.entryKind === 'services';
+        showProducts || showServices || viewDraft.entryKind === 'services';
 
     const productsUpsellToggle =
-        draft.entryKind === 'services' ? (
+        viewDraft.entryKind === 'services' ? (
             <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-semibold tracking-tight">
@@ -265,7 +341,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         ) : null;
 
     const productsBlock =
-        draft.entryKind === 'services' ? (
+        viewDraft.entryKind === 'services' ? (
             <section
                 id="section-products"
                 data-section="products"
@@ -290,7 +366,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         ) : null;
 
     const servicesBlock =
-        draft.entryKind === 'products' || showServices ? (
+        viewDraft.entryKind === 'products' || showServices ? (
         <StepServices
             services={draft.services}
             servicesEnabled={draft.servicesEnabled}
@@ -309,13 +385,13 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
         return (
             <div className="flex min-h-screen flex-col bg-background">
                 <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
-                    <div
-                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background"
-                        aria-hidden
-                    >
-                        PF
-                    </div>
-                    <span className="text-sm font-medium">{title}</span>
+                    <Logo />
+                    <span className="text-border" aria-hidden>
+                        |
+                    </span>
+                    <span className="text-sm font-medium">
+                        {isExpress ? REQUEST_COPY.expressHeading : title}
+                    </span>
                 </header>
                 <main className="mx-auto flex w-full max-w-[760px] flex-1 flex-col items-start justify-center px-6 py-20 sm:px-10">
                     <h1 className="text-3xl font-semibold tracking-tight">
@@ -342,6 +418,13 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                         </Button>
                     </div>
                 </main>
+                <MessageDialog
+                    open={showSubmitSuccess}
+                    title={REQUEST_COPY.submitSuccessTitle}
+                    description={`${REQUEST_COPY.submitSuccessBody} ${REQUEST_COPY.yourRefPrefix} ${draft.ref}`}
+                    actionLabel={REQUEST_COPY.submitSuccessAction}
+                    onAction={() => setShowSubmitSuccess(false)}
+                />
             </div>
         );
     }
@@ -349,23 +432,32 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
     return (
         <div className="flex min-h-screen flex-col bg-background text-foreground">
             <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
-                <div className="flex min-w-0 items-center gap-2.5">
-                    <div
-                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background"
-                        aria-hidden
-                    >
-                        PF
-                    </div>
-                    {editingTitle ? (
+                <div className="flex min-w-0 items-center gap-2">
+                    <Logo />
+                    <span className="text-border" aria-hidden>
+                        |
+                    </span>
+                    {isExpress ? (
+                        <span className="text-sm font-medium">
+                            {REQUEST_COPY.expressHeading}
+                        </span>
+                    ) : editingTitle ? (
                         <input
                             className="h-9 max-w-xs rounded-sm border border-input bg-background px-2 text-sm font-semibold"
                             value={title}
                             autoFocus
-                            onChange={(e) => updateDraft({title: e.target.value})}
+                            onChange={(e) =>
+                                updateDraft({title: e.target.value})
+                            }
                             onBlur={() => setEditingTitle(false)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') setEditingTitle(false);
                             }}
+                        />
+                    ) : !hydrated ? (
+                        <span
+                            className="h-4 w-44 animate-pulse rounded bg-muted"
+                            aria-hidden
                         />
                     ) : (
                         <span className="flex min-w-0 items-center gap-1.5">
@@ -393,15 +485,28 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                         variant="ghost"
                         size="sm"
                         className="h-8 gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        disabled={leaving}
                         onClick={handleClose}
                     >
-                        <X className="size-4" aria-hidden />
+                        {leaving ? (
+                            <Loader2
+                                className="size-4 animate-spin"
+                                aria-hidden
+                            />
+                        ) : (
+                            <X className="size-4" aria-hidden />
+                        )}
                         {REQUEST_COPY.close}
                     </Button>
                 </div>
             </header>
 
-            <div className="mx-auto flex w-full max-w-7xl flex-1 items-stretch px-4 sm:px-6 lg:px-8">
+            <div
+                className={cn(
+                    pageDielineOuterClass(),
+                    'mx-auto flex w-full max-w-[var(--layout-max)] flex-1 items-stretch',
+                )}
+            >
                 <BriefBuilderRail
                     rows={railRows}
                     activeKey={activeKey}
@@ -419,7 +524,7 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                                     : 'pb-10 pt-8 sm:pb-12',
                             )}
                         >
-                            {draft.entryKind === 'services' ? (
+                            {viewDraft.entryKind === 'services' ? (
                                 <>
                                     {servicesBlock}
                                     {productsBlock}
@@ -435,7 +540,8 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                                 draft={draft}
                                 expressCold={
                                     expressCold ||
-                                    (draft.entryKind === 'express' && !showProducts)
+                                    (viewDraft.entryKind === 'express' &&
+                                        !showProducts)
                                 }
                                 onPatch={updateDraft}
                                 sectionRef={requirementsRef}
@@ -459,37 +565,18 @@ export function BriefBuilder({mode = 'builder'}: BriefBuilderProps) {
                 </div>
             </div>
 
-            {leaveOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-lg">
-                        <h2 className="text-lg font-semibold">
-                            {REQUEST_COPY.leaveTitle}
-                        </h2>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            {REQUEST_COPY.leaveBody}
-                        </p>
-                        <div className="mt-6 flex flex-wrap justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setLeaveOpen(false)}
-                            >
-                                {REQUEST_COPY.leaveCancel}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={discardAndLeave}
-                            >
-                                {REQUEST_COPY.leaveDiscard}
-                            </Button>
-                            <Button type="button" onClick={saveAndLeave}>
-                                {REQUEST_COPY.leaveSave}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            <LeaveDialog
+                open={leaveOpen}
+                title={REQUEST_COPY.leaveTitle}
+                description={REQUEST_COPY.leaveBody}
+                cancelLabel={REQUEST_COPY.leaveCancel}
+                onCancel={() => setLeaveOpen(false)}
+                discardLabel={REQUEST_COPY.leaveDiscard}
+                onDiscard={discardAndLeave}
+                saveLabel={REQUEST_COPY.leaveSave}
+                onSave={saveAndLeave}
+                pending={leaving}
+            />
         </div>
     );
 }

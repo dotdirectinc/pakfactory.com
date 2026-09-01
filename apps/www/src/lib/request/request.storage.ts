@@ -46,6 +46,17 @@ export type ShippingAddress = {
 export type RequestEntryKind = 'express' | 'products' | 'services';
 
 export type RequestDraft = {
+    /**
+     * Identifies the DRAFT — stable across edit-and-resubmit, and the grouping
+     * key the backend stores as `rfq.draft_id` (ADR-0012 D10).
+     *
+     * ⚠️ NOT the idempotency key. That is a per-submit-CLICK id minted in
+     * `submitRequest`, because a buyer who edits and resubmits has formed a
+     * second intent and is entitled to a second RFQ — whether two similar
+     * requests are really one is sales' judgement, not ours. This id is what
+     * lets them see the two came from one draft and make that call.
+     */
+    id: string;
     title?: string;
     notes: string;
     timeline: string;
@@ -76,6 +87,9 @@ export type RequestState = {
 };
 
 export const EMPTY_DRAFT: RequestDraft = {
+    // Minted per module load rather than per draft; parseDraft below mints a
+    // fresh one for any draft that lacks it, so no two drafts ever share this.
+    id: newId('draft'),
     notes: '',
     timeline: '',
     packagingContents: '',
@@ -168,20 +182,23 @@ function parseShipping(value: unknown): ShippingAddress | null {
 function parseEntryKind(
     value: unknown,
     express: boolean,
-    productsExpanded: boolean,
+    _productsExpanded: boolean,
 ): RequestEntryKind {
     if (value === 'express' || value === 'products' || value === 'services') {
         return value;
     }
     if (express) return 'express';
-    return productsExpanded || true ? 'products' : 'products';
+    return 'products';
 }
 
 function parseDraft(value: unknown): RequestDraft {
-    if (!value || typeof value !== 'object') return {...EMPTY_DRAFT};
+    if (!value || typeof value !== 'object') return {...EMPTY_DRAFT, id: newId('draft')};
     const d = value as Partial<RequestDraft>;
     return {
         ...EMPTY_DRAFT,
+        // Every draft saved before this field existed gets one on first read,
+        // so `pakfactory.request.v1` needs no migration step and no version bump.
+        id: typeof d.id === 'string' && d.id ? d.id : newId('draft'),
         title: typeof d.title === 'string' ? d.title : undefined,
         notes: asString(d.notes),
         timeline: asString(d.timeline),
@@ -301,11 +318,14 @@ export function saveRequestLines(lines: RequestLine[]): void {
     persist({...current, lines});
 }
 
+export function newId(fallbackPrefix: string): string {
+    return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${fallbackPrefix}-${Date.now()}`;
+}
+
 export function createRequestLine(input: AddLineInput): RequestLine {
-    const id =
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : `line-${Date.now()}`;
+    const id = newId('line');
     return {
         id,
         productSlug: input.productSlug,
@@ -342,6 +362,61 @@ export function removeRequestLine(lineId: string): void {
     });
 }
 
+export type UpdateLinePatch = Partial<
+    Pick<
+        RequestLine,
+        | 'contents'
+        | 'notes'
+        | 'referenceImages'
+        | 'customizations'
+        | 'quantities'
+    >
+>;
+
+export function updateRequestLine(
+    lineId: string,
+    patch: UpdateLinePatch,
+): RequestLine | null {
+    const current = getRequestStateSnapshot();
+    let updated: RequestLine | null = null;
+    const lines = current.lines.map((line) => {
+        if (line.id !== lineId) return line;
+        const next: RequestLine = {
+            ...line,
+            ...(patch.contents !== undefined
+                ? {contents: patch.contents.trim()}
+                : {}),
+            ...(patch.quantities !== undefined
+                ? {
+                      quantities: [...patch.quantities]
+                          .filter((n) => n > 0)
+                          .sort((a, b) => a - b),
+                  }
+                : {}),
+            ...(patch.customizations !== undefined
+                ? {customizations: patch.customizations}
+                : {}),
+        };
+        if (patch.notes !== undefined) {
+            const trimmed = patch.notes.trim();
+            if (trimmed) next.notes = trimmed;
+            else delete next.notes;
+        }
+        if (patch.referenceImages !== undefined) {
+            if (patch.referenceImages.length) {
+                next.referenceImages = patch.referenceImages;
+            } else {
+                delete next.referenceImages;
+            }
+        }
+        updated = next;
+        return next;
+    });
+    if (!updated) return null;
+    persist({...current, lines});
+    return updated;
+}
+
 export function updateRequestDraft(patch: Partial<RequestDraft>): RequestDraft {
     const current = getRequestStateSnapshot();
     const draft = {...current.draft, ...patch};
@@ -353,7 +428,8 @@ export function expandRequestProducts(): void {
     updateRequestDraft({productsExpanded: true});
 }
 
-export function resetExpressDraft(): void {
+/** Clears everything the buyer typed. Product lines in the pool survive. */
+export function discardRequestDraft(): void {
     const current = getRequestStateSnapshot();
     persist({
         lines: current.lines,
@@ -364,16 +440,41 @@ export function resetExpressDraft(): void {
     });
 }
 
+/**
+ * True when the buyer has typed nothing into the draft. Entry bookkeeping
+ * (entryKind, express, productsExpanded, servicesEnabled, title) is set by the
+ * route rather than the buyer, so it does not count as content.
+ */
+export function isDraftEmpty(draft: RequestDraft): boolean {
+    return (
+        draft.notes.trim() === '' &&
+        draft.timeline.trim() === '' &&
+        draft.packagingContents.trim() === '' &&
+        draft.annualSpend.trim() === '' &&
+        draft.contactFirstName.trim() === '' &&
+        draft.contactLastName.trim() === '' &&
+        draft.contactEmail.trim() === '' &&
+        draft.contactPhone.trim() === '' &&
+        draft.contactCompany.trim() === '' &&
+        draft.contactIndustry.trim() === '' &&
+        draft.expressQuantities.length === 0 &&
+        draft.services.length === 0 &&
+        draft.artworkNames.length === 0 &&
+        draft.shippingAddress === null &&
+        draft.companyAddress === null
+    );
+}
+
 export function startExpressDraft(): void {
+    const current = getRequestStateSnapshot();
     persist({
-        lines: [],
+        lines: current.lines,
         draft: {
             ...EMPTY_DRAFT,
             express: true,
             productsExpanded: false,
             entryKind: 'express',
             servicesEnabled: false,
-            title: defaultDraftTitle(),
         },
     });
 }

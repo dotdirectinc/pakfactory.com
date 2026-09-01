@@ -10,20 +10,22 @@ import {
 } from 'react';
 import {
     addRequestLine,
+    discardRequestDraft,
     ensureBuilderDraft,
     expandRequestProducts,
     getRequestStateServerSnapshot,
     getRequestStateSnapshot,
     removeRequestLine,
-    resetExpressDraft,
     startExpressDraft,
     subscribeRequest,
     updateRequestDraft,
+    updateRequestLine,
     type AddLineInput,
     type RequestDraft,
     type RequestEntryKind,
     type RequestLine,
     type RequestState,
+    type UpdateLinePatch,
 } from '@/lib/request/request.storage';
 
 type RequestContextValue = {
@@ -31,11 +33,12 @@ type RequestContextValue = {
     draft: RequestDraft;
     addLine: (input: AddLineInput) => RequestLine;
     removeLine: (lineId: string) => void;
+    updateLine: (lineId: string, patch: UpdateLinePatch) => void;
     updateDraft: (patch: Partial<RequestDraft>) => void;
     expandProducts: () => void;
     startExpress: () => void;
     ensureBuilder: (opts?: {express?: boolean; mode?: RequestEntryKind}) => void;
-    resetExpress: () => void;
+    discardDraft: () => void;
 };
 
 const RequestContext = createContext<RequestContextValue | null>(null);
@@ -50,6 +53,9 @@ export function RequestProvider({children}: {children: ReactNode}) {
     const addLine = useCallback((input: AddLineInput) => addRequestLine(input), []);
     const removeLine = useCallback((lineId: string) => {
         removeRequestLine(lineId);
+    }, []);
+    const updateLine = useCallback((lineId: string, patch: UpdateLinePatch) => {
+        updateRequestLine(lineId, patch);
     }, []);
     const updateDraft = useCallback((patch: Partial<RequestDraft>) => {
         updateRequestDraft(patch);
@@ -66,8 +72,8 @@ export function RequestProvider({children}: {children: ReactNode}) {
         },
         [],
     );
-    const resetExpress = useCallback(() => {
-        resetExpressDraft();
+    const discardDraft = useCallback(() => {
+        discardRequestDraft();
     }, []);
 
     const value = useMemo(
@@ -76,22 +82,24 @@ export function RequestProvider({children}: {children: ReactNode}) {
             draft: state.draft,
             addLine,
             removeLine,
+            updateLine,
             updateDraft,
             expandProducts,
             startExpress,
             ensureBuilder,
-            resetExpress,
+            discardDraft,
         }),
         [
             state.lines,
             state.draft,
             addLine,
             removeLine,
+            updateLine,
             updateDraft,
             expandProducts,
             startExpress,
             ensureBuilder,
-            resetExpress,
+            discardDraft,
         ],
     );
 

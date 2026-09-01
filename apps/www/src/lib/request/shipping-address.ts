@@ -1,35 +1,29 @@
 import type {ShippingAddress} from '@/lib/request/request.storage';
 
+export {formatAddressLines} from '@pakfactory/domain/shipping-address';
+
 export function makeShippingId(): string {
     return Math.random().toString(36).slice(2, 10);
 }
 
+/**
+ * A shipping location needs BOTH the city and the country.
+ *
+ * ⚠️ This was `||` and the server required the country alone, so the two rules
+ * disagreed in both directions: a city-only draft enabled the submit button and
+ * was then rejected with a 422, while a country-only draft passed both despite
+ * being unquotable. The server's rule even claimed to mirror this one.
+ *
+ * Same rule as `contract.rules.ts` → `hasLocation`, which the backend enforces.
+ * If you change one, change both.
+ */
 export function hasShippingLocation(
     address: ShippingAddress | null | undefined,
 ): boolean {
     if (!address || typeof address !== 'object') return false;
-    return Boolean(
-        String(address.city ?? '').trim() ||
-            String(address.country ?? '').trim(),
-    );
-}
-
-export function formatAddressLines(
-    address: ShippingAddress | null | undefined,
-): string[] {
-    if (!address || typeof address !== 'object') return [];
-    const lines: string[] = [];
-    if (String(address.label ?? '').trim()) lines.push(address.label!.trim());
-    if (String(address.line1 ?? '').trim()) lines.push(address.line1!.trim());
-    const cityRegion = [address.city, address.region, address.postalCode]
-        .map((p) => String(p ?? '').trim())
-        .filter(Boolean)
-        .join(', ');
-    if (cityRegion) lines.push(cityRegion);
-    if (String(address.country ?? '').trim()) {
-        lines.push(address.country!.trim());
-    }
-    return lines;
+    const city = String(address.city ?? '').trim();
+    const country = String(address.country ?? '').trim();
+    return Boolean(city && country);
 }
 
 export function normalizeAddress(
