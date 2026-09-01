@@ -51,19 +51,13 @@ export const property = defineType({
       initialValue: 'one',
       validation: (Rule) => Rule.required(),
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'content',
-      description: 'Lower numbers sort first where properties are listed.',
-      // Retiring (§4.3). Ordering moves to an ordered array on the listing/nav
-      // singleton (PROD-2292); kept read-only until that array exists and the
-      // values migrate, so no ordering data is lost in the interim.
-      deprecated: {
-        reason: 'Ordering moves to an ordered array on the listing/nav singleton (PROD-2292).',
-      },
-    }),
+    // `order` was REMOVED here on 2026-09-01. Its successor is real and already
+    // deployed: `listingPage.filters` is an ordered array of Property references, one
+    // per listing page, whose own description says an empty array falls back to every
+    // property in use, alphabetically. So the fallback is defined behaviour, not a
+    // break. What is missing is the listing-page DOCUMENTS — 1 of 19 exists today
+    // (`caseStudiesPage`) — so the 9 values are recorded in ADR-017 for whoever
+    // populates `catalogPage.filters` and the rest.
   ],
   preview: {
     select: { title: 'title', cardinality: 'cardinality' },

@@ -793,7 +793,7 @@ export function knowledgeLibraryItems(
                                                             direction: 'asc',
                                                         },
                                                         {
-                                                            field: 'order',
+                                                            field: 'title',
                                                             direction: 'asc',
                                                         },
                                                     ]),
@@ -1101,7 +1101,7 @@ export function coreEntitiesItems(
             .child(
                 S.documentTypeList('expertiseStage')
                     .title('Expertise Stages')
-                    .defaultOrdering([{field: 'order', direction: 'asc'}]),
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
 
         // ── Customization ─────────────────────────────────────────────────────────
@@ -1185,7 +1185,7 @@ export function coreEntitiesItems(
                                                             direction: 'asc',
                                                         },
                                                         {
-                                                            field: 'order',
+                                                            field: 'title',
                                                             direction: 'asc',
                                                         },
                                                     ]),

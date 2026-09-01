@@ -240,6 +240,40 @@ Eric audited every field carrying `deprecated` across the whole schema — **fou
 
 The three mock-product fields (`whatIsBlock`, `whyChooseBlock`, `comparedAgainst` on `product`) were removed with the rest rather than deferred to the product re-seed: nothing reads them, all 26 products are mock and due for wholesale replacement, and leaving them means the same sweep runs twice.
 
+## The five `order` fields, and why the blocks did not survive checking (2026-09-01)
+
+Eric's removal plan held five fields back — four "waiting for PROD-2292", one waiting for `productLine.styles` to be populated. Richard asked what each was actually blocked on. **Four of the five blocks were weaker than stated, and two were not blocks at all.** All five are removed; the values are recorded below because that is the only thing the deprecation was really protecting.
+
+**Nothing read any of them.** No GROQ query in `packages/sanity`, `apps/www` or `apps/blog`; the registry exporter's `order` comes from Postgres `sort_order`, never from Sanity. Three Studio **desk panes** did sort by them — `propertyValue` in two workspaces and the `expertiseStage` list — and are repointed to `title`, the same class of miss as the seven Solution panes caught a day earlier.
+
+| Field | Stated block | What checking found |
+| --- | --- | --- |
+| `customizationType.order` (14) | "the listing/nav singleton (PROD-2292)" | 🔴 **No such successor.** PROD-2292 builds 19 standing pages and **none is a customization or capabilities listing.** The field was deprecated toward something nobody specified. |
+| `propertyValue.order` (32) | same | 🔴 **No successor by design.** `listingPage.filters` states that *"the VALUES inside each filter are always derived from the content — never listed here."* Value order was designed away, not relocated. |
+| `property.order` (9) | same | **Real, and narrower than stated.** `listingPage.filters` is an ordered array of Property references and is **already deployed**; what is missing is the listing-page *documents* — 1 of 19 exists (`caseStudiesPage`). |
+| `expertiseStage.order` (6) | same | The stored numbers are the **known-wrong** sequence, as the field's own deprecation reason said. Removing them loses nothing that should be kept. Successor is `expertisePage.featured` (type deployed, document not yet created). |
+| `productStyle.order` (8) | "`productLine.styles` is empty on all 14 lines" | True and materially trivial. `productLine.styles` is *"never a gate — unlisted styles append alphabetically"*, so empty is defined behaviour. Of the three lines that have styles, **two order identically under the fallback**; the whole loss is the sequence of three mock Folding Carton styles. |
+
+**`productStyle.order` was for the styles grid on a Product Line** — the order the style cards appear in on a line's page. That role is `productLine.styles` now. It has never had a reader: `/products` is served by Magento, not this app.
+
+### The values, recorded before deletion
+
+`customizationType.order` — Material: Paperboard 1, Corrugated 2, Kraft Paper 3, Flexible Film 4 · Printing: Offset 1, Digital 2, Flexography 3 · Finishes: Embossing & Debossing 0, Lamination 1, Surface Coating 2, Spot Coating 2, Foiling 3 · Additional Customization: Die Cutting 2, Window Patching 3. (Surface Coating and Spot Coating collide at 2 — an artefact of the Coating split.)
+
+`property.order` — Source 1, Physical Properties 2, Performance 3, Aesthetic 4, Color 5, Opacity 6, Sustainability 7, Role 8, Finish Type 9. **This is the one sequence nothing else records**; re-apply it to `catalogPage.filters` when the listing pages are created.
+
+`propertyValue.order` — Source: Virgin Fiber, Recycled Fiber, Mixed Fiber · Physical Properties: Coated, Uncoated, Smooth, Textured, Printable · Performance: Moisture Resistant, Tear Resistant, Food Safe, Grease Resistant · Aesthetic: Premium Look, Natural Look, Bright White · Color: White, Natural Brown, Black · Opacity: Opaque, Translucent, Transparent · Sustainability: Recyclable, Biodegradable, Compostable, FSC Certified, Recycled Content · Role: Outer Layer, Barrier Layer, Sealant Layer · Finish Type: Matte, Gloss, Soft Touch.
+
+`expertiseStage.order` (the wrong sequence, for the record only) — Strategy 1, Design 2, Prototyping 3, Managed Manufacturing 4, Logistics 5, Fulfillment 6. Eric's real order is Design → Prototyping → Managed Manufacturing → Strategy → Logistics → Fulfillment.
+
+`productStyle.order` — Rigid Boxes: Magnetic Closure, Neck Box, Telescoping Box · Folding Cartons: Straight Tuck End, Reverse Tuck End, Auto Bottom (123) · `[Test]` Mailer Boxes: Regular Slotted Container, Snap-Lock Mailer.
+
+### 🔴 One open question this surfaces, for Eric
+
+If a listing filter's values must render in a meaningful order — *Matte → Gloss → Soft Touch*, not *Gloss → Matte → Soft Touch* — then `listingPage.filters` deriving values from content with no ordering is a gap, and the same is true of ordering Customization Types within a category. Neither has a home in any current spec. This is a design question, not a field to restore.
+
+**With this, the schema carries zero deprecated fields.**
+
 ## References
 
 - `pakfactory-content-model/Decisions.md` — **D47** (authoritative), D42–D48. 🔗 **That register and this one are the two halves of the record: model decisions live there, Studio implementation decisions live here.** Neither is complete alone — cite both.

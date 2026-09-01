@@ -5,7 +5,6 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { faqsField } from '../lib/faq-field'
-import { deprecateField } from '../lib/schema-guards'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 
@@ -119,22 +118,13 @@ export const expertiseStage = defineType({
       },
       initialValue: 'active',
     }),
-    defineField({
-      name: 'order',
-      title: 'Stage order',
-      type: 'number',
-      group: GROUPS.content,
-      // Retiring (§4.3): the display sequence moves to an ordered array on the
-      // Expertise landing page (PROD-2292). The deployed values are the WRONG
-      // sequence — kept read-only, never migrated.
-      //
-      // As of 2026-09-01 NOTHING sorts by it. `CASE_STUDY_FILTER_OPTIONS_QUERY` did
-      // (`order(order asc)`) and was repointed to `title asc`; that query is itself
-      // unexecuted — the listing grid derives its filters from the studies it already
-      // has. So this is now inert like `property.order` and `propertyValue.order`, and
-      // all four `order` fields come out together when PROD-2292 ships.
-      ...deprecateField('The stage sequence moves to the Expertise landing page (PROD-2292). These numbers are the old, wrong order — do not reuse them.'),
-    }),
+    // `order` was REMOVED here on 2026-09-01. Nothing read it: the one query that did
+    // (`CASE_STUDY_FILTER_OPTIONS_QUERY`, `order(order asc)`) is repointed to `title`
+    // and was never executed anyway. The stored numbers were the OLD, WRONG sequence —
+    // Strategy first — so removing them loses nothing that should be kept. Eric's real
+    // end-to-end order is in this file's header and belongs on the Expertise landing
+    // page (`expertisePage.featured`, a listingPage — the type is deployed, the
+    // document is not yet created). The 6 old values are recorded in ADR-017.
 
     // ─── CATEGORIZATION ───────────────────────────────────────────────────────
     defineField({

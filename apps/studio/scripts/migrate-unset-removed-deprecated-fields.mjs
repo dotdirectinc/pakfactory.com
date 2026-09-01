@@ -16,6 +16,20 @@
  * `Entities/Glossary Term.md:47` (move them into Glossary Terms first) is SUPERSEDED.
  * This is a deliberate loss, and it is the only one here.
  *
+ * The five `order` fields go too (2026-09-01, Richard's call after reviewing what each
+ * was actually blocked on). Eric's plan held them back — four for PROD-2292, one for
+ * `productLine.styles` — but the blocks did not survive checking:
+ *   customizationType.order  14 · successor "the listing/nav singleton" is NOT in
+ *     PROD-2292's scope; none of its 19 standing pages is a customization listing
+ *   propertyValue.order      32 · no successor by design — `listingPage.filters` says
+ *     values are always derived from content, never listed
+ *   property.order            9 · successor `listingPage.filters` IS deployed; only the
+ *     listing-page documents are missing (1 of 19 exists)
+ *   expertiseStage.order      6 · the stored numbers are the known-WRONG sequence
+ *   productStyle.order        8 · successor `productLine.styles` is deployed and
+ *     "never a gate — unlisted styles append alphabetically"
+ * All 69 values are written into ADR-017 before deletion.
+ *
  * Everything else is references or mock copy:
  *   customizationOption.comparedAgainst  8 docs · 3 refs each, no prose
  *   product.whatIsBlock / whyChooseBlock / comparedAgainst · all 26 products are mock
@@ -67,6 +81,16 @@ const REMOVED = {
   customizationOption: ['whatIsBlock', 'comparedAgainst'],
   product: ['cardName', 'whatIsBlock', 'whyChooseBlock', 'showcaseImages', 'comparedAgainst'],
   solution: ['relevantCapabilities'],
+  // The five `order` fields. Nothing reads any of them — no GROQ query in
+  // packages/sanity, apps/www or apps/blog, and the registry exporter's `order`
+  // comes from Postgres `sort_order`, never from Sanity. Three Studio desk panes
+  // did sort by them (propertyValue ×2 workspaces, expertiseStage) and are
+  // repointed to `title` in the same commit. Every value is recorded in ADR-017.
+  customizationType: ['order'],
+  property: ['order'],
+  propertyValue: ['order'],
+  productStyle: ['order'],
+  expertiseStage: ['order'],
 }
 
 const PROJECT_ID =
