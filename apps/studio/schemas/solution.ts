@@ -5,7 +5,6 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { deprecateField } from '../lib/schema-guards'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 
@@ -16,11 +15,11 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * a term exists so clients, case studies and products can be tagged; a page is
  * what a term has earned (`hasPage`, authored, never derived).
  *
- * Renames landing here (add → deprecate, §4.3):
- *   internalTitle → title (+ optional displayTitle) — human migration copies the
- *     value on the 30 docs (see packages/sanity migrate:solution-titles).
- *   relevantCapabilities → relevantCustomizations — "capability" is retired;
- *     both fields are empty on all 30 docs, so nothing to migrate.
+ * Both renames from §4.3 are COMPLETE (2026-09-01, Eric's removal plan):
+ *   internalTitle → title — `migrate:solution-titles` copied all 30 values and
+ *     they match `title` exactly; the old field is unset and gone.
+ *   relevantCapabilities → relevantCustomizations — the old field was empty on
+ *     all 30 docs, so removal was deletion of nothing.
  *
  * `sections` (page-builder) is intentionally deferred until the shared section
  * inventory exists (PROD-2292) — same call as Bundle; no section types to allow
@@ -61,15 +60,6 @@ export const solution = defineType({
       type: 'string',
       group: GROUPS.content,
       description: 'Optional front-end override. Empty is the normal case.',
-    }),
-    defineField({
-      name: 'internalTitle',
-      title: 'Internal title',
-      type: 'string',
-      group: GROUPS.content,
-      // Retiring (§4.3): superseded by `title`. Kept read-only until the 30 docs
-      // are migrated (migrate:solution-titles) and then removed.
-      ...deprecateField('Replaced by Title. Being migrated (migrate:solution-titles); do not edit.'),
     }),
     defineField({
       name: 'solutionType',
@@ -173,16 +163,6 @@ export const solution = defineType({
       ],
     }),
     defineField({
-      name: 'relevantCapabilities',
-      title: 'Relevant customizations (old)',
-      type: 'array',
-      group: GROUPS.categorization,
-      // Retiring (§4.3): renamed to relevantCustomizations. Empty on all 30 docs,
-      // so no data migration — remove once readers point at the new field.
-      of: [{ type: 'reference', to: [{ type: 'customizationCategory' }] }],
-      ...deprecateField('Renamed to Relevant customizations. Empty everywhere; do not use.'),
-    }),
-    defineField({
       name: 'relatedProducts',
       title: 'Related products',
       type: 'array',
@@ -237,15 +217,14 @@ export const solution = defineType({
   preview: {
     select: {
       title: 'title',
-      internalTitle: 'internalTitle',
       solutionType: 'solutionType',
       hasPage: 'hasPage',
       media: 'heroImage',
     },
-    prepare({ title, internalTitle, solutionType, hasPage, media }) {
+    prepare({ title, solutionType, hasPage, media }) {
       const axis = SOLUTION_TYPE_TITLES[solutionType] ?? 'No type set'
       return {
-        title: title || internalTitle || 'Untitled solution',
+        title: title || 'Untitled solution',
         subtitle: [axis, hasPage ? 'Has page' : 'Term only'].join(' · '),
         media,
       }

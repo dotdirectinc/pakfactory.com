@@ -912,7 +912,7 @@ export function solutionItems(
                 S.documentTypeList('solution')
                     .title('Solutions')
                     .defaultOrdering([
-                        {field: 'internalTitle', direction: 'asc'},
+                        {field: 'title', direction: 'asc'},
                     ]),
             ),
     ];
@@ -1021,7 +1021,7 @@ export function coreEntitiesItems(
                                     .title('All Solutions')
                                     .defaultOrdering([
                                         {
-                                            field: 'internalTitle',
+                                            field: 'title',
                                             direction: 'asc',
                                         },
                                     ]),
@@ -1037,7 +1037,7 @@ export function coreEntitiesItems(
                                     )
                                     .defaultOrdering([
                                         {
-                                            field: 'internalTitle',
+                                            field: 'title',
                                             direction: 'asc',
                                         },
                                     ]),
@@ -1053,7 +1053,7 @@ export function coreEntitiesItems(
                                     )
                                     .defaultOrdering([
                                         {
-                                            field: 'internalTitle',
+                                            field: 'title',
                                             direction: 'asc',
                                         },
                                     ]),
@@ -1069,7 +1069,7 @@ export function coreEntitiesItems(
                                     )
                                     .defaultOrdering([
                                         {
-                                            field: 'internalTitle',
+                                            field: 'title',
                                             direction: 'asc',
                                         },
                                     ]),
@@ -1085,7 +1085,7 @@ export function coreEntitiesItems(
                                     )
                                     .defaultOrdering([
                                         {
-                                            field: 'internalTitle',
+                                            field: 'title',
                                             direction: 'asc',
                                         },
                                     ]),
@@ -1610,7 +1610,7 @@ export const solutionsWorkspaceStructure = (
                 .child(
                     S.documentTypeList('solution')
                         .title('Solutions')
-                        .defaultOrdering([{field: 'internalTitle', direction: 'asc'}]),
+                        .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
         ]);
 

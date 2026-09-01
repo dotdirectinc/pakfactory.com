@@ -173,7 +173,11 @@ export const productStyle = defineType({
       type: 'number',
       group: GROUPS.content,
       // Retiring (§4.3): the styles-grid order lives on the Line (`styles`).
-      ...deprecateField('The styles-grid order lives on the Product Line (styles). Do not use.'),
+      // ⚠️ NOT REMOVABLE YET (Eric's removal plan, 2026-09-01). The replacement is
+      // correct in design but EMPTY: `productLine.styles` holds nothing on all 14
+      // lines, while this field is set on 8 styles. Removing it today would delete
+      // the only ordering that exists. Populate `productLine.styles` first.
+      ...deprecateField('The styles-grid order lives on the Product Line (styles). Do not use. Not yet removed: productLine.styles is empty on all 14 lines, so this is still the only ordering that exists.'),
     }),
 
     // ─── CATEGORIZATION ───────────────────────────────────────────────────────

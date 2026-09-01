@@ -127,6 +127,12 @@ export const expertiseStage = defineType({
       // Retiring (§4.3): the display sequence moves to an ordered array on the
       // Expertise landing page (PROD-2292). The deployed values are the WRONG
       // sequence — kept read-only, never migrated.
+      //
+      // As of 2026-09-01 NOTHING sorts by it. `CASE_STUDY_FILTER_OPTIONS_QUERY` did
+      // (`order(order asc)`) and was repointed to `title asc`; that query is itself
+      // unexecuted — the listing grid derives its filters from the studies it already
+      // has. So this is now inert like `property.order` and `propertyValue.order`, and
+      // all four `order` fields come out together when PROD-2292 ships.
       ...deprecateField('The stage sequence moves to the Expertise landing page (PROD-2292). These numbers are the old, wrong order — do not reuse them.'),
     }),
 

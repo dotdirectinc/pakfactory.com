@@ -215,6 +215,31 @@ Reviewed against the deployed schema 2026-08-26, vetted and settled as **D48** i
 
 **Also found, outside the review's scope:** 33 Options still carried `showThicknessTable` / `showFluteTypeTable` / `showColorRange` as orphaned document keys. Gone from the schema, still in the data — the review deliberately excluded documents, so it could not see them.
 
+## Follow-on: the deprecated-field removal (Eric, 2026-09-01)
+
+Eric audited every field carrying `deprecated` across the whole schema — **fourteen**, not the ten the D48 review listed — with a document count and a reader grep for each. **Nine came out.** The ADR records the two things that were decisions rather than bookkeeping, and the three corrections the audit needed.
+
+**The one deliberate content loss: `customizationOption.whatIsBlock`.** Its 8 values are not placeholder — they are written definitions of SBS, FBB, CCNB, Kraft and the four laminations, each headed *"What is X?"*. Step 5 had held the field back precisely because `glossaryTerm` held 0 documents and removing it would destroy the only copy; that reasoning was right and is now **moot rather than solved**. Eric read the copy and chose to **discard** it: glossary content will be written fresh in PakFactory's voice, so carrying eight inherited paragraphs through a migration first buys nothing. 🔴 The earlier plan in `Rename Map.md:64` and `Entities/Glossary Term.md:47` — migrate them into Glossary Terms — is **superseded**; do not resurrect it from those documents, which still describe it. `glossaryTerm` itself stays: set on 0 of 33 Options, pointing at 0 documents, which is an unbuilt layer and not a fault.
+
+**`comparedAgainst` was never a content question.** Step 5 kept it read-only on the grounds that 8 Options were populated and there was no successor, so removal would be "deletion, not migration". True, and irrelevant: each of the 8 held exactly three **references** to other Options, no prose, and the targets are mock documents due for replacement. The blocking reason was real but the thing it was protecting was not.
+
+**Three things the audit did not have, found in implementing it:**
+
+- **Seven desk panes ordered by `solution.internalTitle`** (`structure/index.ts` — the Solutions list and each of the four `solutionType` children, in two workspaces). The grep covered `apps/` and `packages/`; the Studio's own structure was outside it. Removing the field would have left every Solutions pane sorting by a key that no longer exists. Repointed to `title`, whose values are identical.
+- **Drafts.** The counts were taken on the published perspective; the raw perspective adds 5 product drafts carrying `whatIsBlock`/`whyChooseBlock` and 4 carrying `comparedAgainst`. Publishing any of them restores the key, so the unset covers drafts — 69 patches, not 60.
+- **`solution.internalTitle` is guarded rather than assumed.** `migrate:solution-titles` copied all 30 values and left the source in place; the unset is only safe because `title` matches. The script verifies that per document and **refuses to write** if any Solution's `title` is missing or differs, rather than trusting the earlier migration's own report — the BUG-0032 lesson applied to someone else's green tick.
+
+**The `expertiseStage.order` banner is corrected.** The audit opened with a 🔴: *"a live query sorts by numbers you documented as wrong"* — `CASE_STUDY_FILTER_OPTIONS_QUERY` does `order(order asc)` over a field whose own deprecation reason says the numbers are the old, wrong sequence. The query is real and the sort was wrong. It is **not live**: it is exported from `queries.ts` and imported by nothing, because `case-study-listing-grid.tsx` derives its filter options from the studies it already holds (`deriveOptions(studies, "expertiseAreas")`). This is the same trap the `apps/www` dead-query cluster sets — a grep hit that reads as a consumer. Repointed to `title asc` anyway and annotated, which also makes `expertiseStage.order` inert like its three siblings, so all four `order` fields now come out as one job with PROD-2292.
+
+**Still blocked, and why:**
+
+| Field(s) | Blocked on |
+| --- | --- |
+| `customizationType.order` · `property.order` · `propertyValue.order` · `expertiseStage.order` | **PROD-2292** — the listing/nav singleton that holds ordering does not exist. One job, four fields. |
+| `productStyle.order` | Its replacement `productLine.styles` is **empty on all 14 lines** while this field is set on 8 styles. Correct in design, holds nothing — removing it today deletes the only ordering that exists. Populate first. |
+
+The three mock-product fields (`whatIsBlock`, `whyChooseBlock`, `comparedAgainst` on `product`) were removed with the rest rather than deferred to the product re-seed: nothing reads them, all 26 products are mock and due for wholesale replacement, and leaving them means the same sweep runs twice.
+
 ## References
 
 - `pakfactory-content-model/Decisions.md` — **D47** (authoritative), D42–D48. 🔗 **That register and this one are the two halves of the record: model decisions live there, Studio implementation decisions live here.** Neither is complete alone — cite both.
