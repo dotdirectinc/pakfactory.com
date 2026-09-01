@@ -6,7 +6,6 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -410,53 +409,6 @@ export const product = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
-
-    // ─── DEPRECATED (kept for schema-on-read until the mock data is re-seeded) ─
-    defineField({
-      name: 'cardName',
-      title: 'Card name',
-      type: 'string',
-      group: GROUPS.content,
-      ...deprecateField('Retired — one naming convention (title / displayTitle). Do not use.'),
-    }),
-    defineField({
-      name: 'whatIsBlock',
-      title: 'What is it? (old)',
-      type: 'object',
-      group: GROUPS.content,
-      fields: [
-        { name: 'title', type: 'string', title: 'Heading' },
-        { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
-      ],
-      ...deprecateField('Retired — the definition belongs to Product Style / Glossary Term, never the product.'),
-    }),
-    defineField({
-      name: 'whyChooseBlock',
-      title: 'Why choose it? (old)',
-      type: 'object',
-      group: GROUPS.content,
-      fields: [
-        { name: 'title', type: 'string', title: 'Heading' },
-        { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
-      ],
-      ...deprecateField('Renamed to Benefits.'),
-    }),
-    defineField({
-      name: 'showcaseImages',
-      title: 'Showcase images (old)',
-      type: 'array',
-      group: GROUPS.content,
-      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
-      ...deprecateField('Retired — media is the one gallery (first image = hero).'),
-    }),
-    defineField({
-      name: 'comparedAgainst',
-      title: 'Compared against (old)',
-      type: 'array',
-      group: GROUPS.categorization,
-      of: [{ type: 'reference', to: [{ type: 'product' }] }],
-      ...deprecateField('Retired — comparison is content: a guide, written once, linked from both.'),
-    }),
   ],
 
   preview: {

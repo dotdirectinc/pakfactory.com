@@ -1,7 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { deprecateField } from '../lib/schema-guards'
 
 export const customizationType = defineType({
   name: 'customizationType',
@@ -83,15 +82,14 @@ export const customizationType = defineType({
       rows: 3,
       description: 'One sentence on what this customization type is, for the content team.',
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order (old)',
-      type: 'number',
-      group: 'content',
-      description: 'Lower numbers appear first within the category.',
-      readOnly: true,
-      ...deprecateField('Ordering moves to an ordered array on the listing/nav singleton (PROD-2292) — the same treatment productStyle.order and propertyValue.order already carry. Not removable until that singleton exists.'),
-    }),
+    // `order` was REMOVED here on 2026-09-01. It sorted Types within their category
+    // and nothing read it — no GROQ query, no desk pane, no registry projection (the
+    // exporter's `order` comes from Postgres `sort_order`). Its stated successor, "an
+    // ordered array on the listing/nav singleton (PROD-2292)", DOES NOT EXIST and is
+    // not in that ticket's scope: PROD-2292 builds 19 standing pages and none of them
+    // is a customization/capabilities listing. Keeping a read-only field against a
+    // successor nobody has specified is how a deprecation becomes permanent. The 14
+    // values are recorded in ADR-017 if the ordering is ever wanted back.
     defineField({
       name: 'media',
       title: 'Media',

@@ -1,7 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
-import { deprecateField } from '../lib/schema-guards'
 import { faqsField } from '../lib/faq-field'
 
 export const customizationOption = defineType({
@@ -428,33 +427,20 @@ export const customizationOption = defineType({
         defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
       ],
     }),
-    // ─── STILL DEPRECATED — step 5 could not finish these three ───────────────
-    // The Rename Map's own warning is that "deprecating is not finishing". Six of the
-    // nine deprecated fields came out; these three cannot, and each is blocked for a
-    // different reason worth stating rather than re-deriving:
+    // `whatIsBlock` was REMOVED here on 2026-09-01 (Eric's deprecated-fields removal
+    // plan). Step 5 had held it back on the grounds that its 8 documents of definition
+    // copy — SBS, FBB, CCNB, Kraft and the four laminations — were the only copy, and
+    // `glossaryTerm` held 0 documents to move them to. That reasoning was sound and is
+    // now MOOT, not solved: Eric read the 8 values and chose to DISCARD them. Glossary
+    // content will be written fresh in PakFactory's voice, so carrying eight inherited
+    // paragraphs through a migration first buys nothing. The earlier plan in
+    // `Rename Map.md:64` / `Entities/Glossary Term.md:47` (migrate into Glossary Terms)
+    // is superseded — do not resurrect it from those documents.
     //
-    //   whatIsBlock      8 populated · destination `glossaryTerm` exists but holds
-    //                    0 documents. Removing it destroys the only copy.
-    //   comparedAgainst  8 populated · no successor field at all.
-    //   faqs             2 populated · not in the designed field list, no successor.
+    // The `glossaryTerm` reference field above STAYS. It is set on 0 of 33 options and
+    // there are 0 glossaryTerm documents, so it resolves to nothing today; that is an
+    // unbuilt layer, not a fault.
     //
-    // None is a migration. Each needs a decision about where the content goes, or an
-    // accepted loss. They are marked read-only meanwhile so nothing new accrues.
-    //
-    // Retired for the same reason Product's did: an Option is an instance, and the
-    // definition of what a thing IS belongs to the Glossary Term, stated once, not
-    // restated per Option.
-    defineField({
-      name: 'whatIsBlock',
-      title: 'What is it? (old)',
-      type: 'object',
-      group: 'content',
-      fields: [
-        { name: 'title', type: 'string', title: 'Heading' },
-        { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
-      ],
-      ...deprecateField('Retired — the definition belongs to the Glossary Term. NOT YET REMOVABLE: 8 options hold copy and there are 0 Glossary Term documents to move it to. Removing it now would destroy the only copy.'),
-    }),
     // `whyChooseBlock` was REMOVED here (Rename Map step 5). All 8 Options that
     // carried it have a populated `benefits`, verified before removal — the copy the
     // earlier migration made is complete, so the old field held nothing `benefits`
@@ -471,20 +457,13 @@ export const customizationOption = defineType({
     // PROD-2250 — it was the same relationship the "products only" decision routed
     // exclusively through `incompatibleWith`, expressed in the opposite direction,
     // and it was never in the entity spec. 0/33 options populated it.
-    // D47 §5 / ADR-017 — retired, matching the treatment its Product twin already
-    // shipped (`product.comparedAgainst`). Comparison is content: a guide, written
-    // once, linked from both. Kept rather than dropped because 8 of 33 options are
-    // populated; `deprecateField` renders it read-only with a visible reason so the
-    // data stays legible while nothing new is written. The minimum-3 rule goes with
-    // it — a read-only field cannot be brought up to a minimum.
-    defineField({
-      name: 'comparedAgainst',
-      title: 'Compared against (old)',
-      type: 'array',
-      group: 'categorization',
-      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-      ...deprecateField('Retired — comparison is content: a guide, written once, linked from both. NOT YET REMOVABLE: 8 options are populated and there is no successor field, so removal is deletion, not migration.'),
-    }),
+    // `comparedAgainst` was retired in D47 §5 / ADR-017 (comparison is content: a guide,
+    // written once, linked from both) and REMOVED here on 2026-09-01. Step 5 had kept it
+    // read-only because 8 of 33 options were populated and there was no successor field,
+    // so removal would be deletion rather than migration. Eric confirmed the deletion:
+    // each of the 8 held exactly three REFERENCES to other options — no written content
+    // of any kind — and the targets are mock documents due for wholesale replacement.
+    // Nothing authored is lost.
     // `relatedCustomizations` ("See also — cross-category links") was hard-removed
     // here in PROD-2250 / D47 §5. Unlike `comparedAgainst` it was populated on 0 of
     // 33 options, so there was no data to keep legible and nothing to deprecate

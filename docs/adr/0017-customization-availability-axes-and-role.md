@@ -215,6 +215,65 @@ Reviewed against the deployed schema 2026-08-26, vetted and settled as **D48** i
 
 **Also found, outside the review's scope:** 33 Options still carried `showThicknessTable` / `showFluteTypeTable` / `showColorRange` as orphaned document keys. Gone from the schema, still in the data — the review deliberately excluded documents, so it could not see them.
 
+## Follow-on: the deprecated-field removal (Eric, 2026-09-01)
+
+Eric audited every field carrying `deprecated` across the whole schema — **fourteen**, not the ten the D48 review listed — with a document count and a reader grep for each. **Nine came out.** The ADR records the two things that were decisions rather than bookkeeping, and the three corrections the audit needed.
+
+**The one deliberate content loss: `customizationOption.whatIsBlock`.** Its 8 values are not placeholder — they are written definitions of SBS, FBB, CCNB, Kraft and the four laminations, each headed *"What is X?"*. Step 5 had held the field back precisely because `glossaryTerm` held 0 documents and removing it would destroy the only copy; that reasoning was right and is now **moot rather than solved**. Eric read the copy and chose to **discard** it: glossary content will be written fresh in PakFactory's voice, so carrying eight inherited paragraphs through a migration first buys nothing. 🔴 The earlier plan in `Rename Map.md:64` and `Entities/Glossary Term.md:47` — migrate them into Glossary Terms — is **superseded**; do not resurrect it from those documents, which still describe it. `glossaryTerm` itself stays: set on 0 of 33 Options, pointing at 0 documents, which is an unbuilt layer and not a fault.
+
+**`comparedAgainst` was never a content question.** Step 5 kept it read-only on the grounds that 8 Options were populated and there was no successor, so removal would be "deletion, not migration". True, and irrelevant: each of the 8 held exactly three **references** to other Options, no prose, and the targets are mock documents due for replacement. The blocking reason was real but the thing it was protecting was not.
+
+**Three things the audit did not have, found in implementing it:**
+
+- **Seven desk panes ordered by `solution.internalTitle`** (`structure/index.ts` — the Solutions list and each of the four `solutionType` children, in two workspaces). The grep covered `apps/` and `packages/`; the Studio's own structure was outside it. Removing the field would have left every Solutions pane sorting by a key that no longer exists. Repointed to `title`, whose values are identical.
+- **Drafts.** The counts were taken on the published perspective; the raw perspective adds 5 product drafts carrying `whatIsBlock`/`whyChooseBlock` and 4 carrying `comparedAgainst`. Publishing any of them restores the key, so the unset covers drafts — 69 patches, not 60.
+- **`solution.internalTitle` is guarded rather than assumed.** `migrate:solution-titles` copied all 30 values and left the source in place; the unset is only safe because `title` matches. The script verifies that per document and **refuses to write** if any Solution's `title` is missing or differs, rather than trusting the earlier migration's own report — the BUG-0032 lesson applied to someone else's green tick.
+
+**The `expertiseStage.order` banner is corrected.** The audit opened with a 🔴: *"a live query sorts by numbers you documented as wrong"* — `CASE_STUDY_FILTER_OPTIONS_QUERY` does `order(order asc)` over a field whose own deprecation reason says the numbers are the old, wrong sequence. The query is real and the sort was wrong. It is **not live**: it is exported from `queries.ts` and imported by nothing, because `case-study-listing-grid.tsx` derives its filter options from the studies it already holds (`deriveOptions(studies, "expertiseAreas")`). This is the same trap the `apps/www` dead-query cluster sets — a grep hit that reads as a consumer. Repointed to `title asc` anyway and annotated, which also makes `expertiseStage.order` inert like its three siblings, so all four `order` fields now come out as one job with PROD-2292.
+
+**Still blocked, and why:**
+
+| Field(s) | Blocked on |
+| --- | --- |
+| `customizationType.order` · `property.order` · `propertyValue.order` · `expertiseStage.order` | **PROD-2292** — the listing/nav singleton that holds ordering does not exist. One job, four fields. |
+| `productStyle.order` | Its replacement `productLine.styles` is **empty on all 14 lines** while this field is set on 8 styles. Correct in design, holds nothing — removing it today deletes the only ordering that exists. Populate first. |
+
+The three mock-product fields (`whatIsBlock`, `whyChooseBlock`, `comparedAgainst` on `product`) were removed with the rest rather than deferred to the product re-seed: nothing reads them, all 26 products are mock and due for wholesale replacement, and leaving them means the same sweep runs twice.
+
+## The five `order` fields, and why the blocks did not survive checking (2026-09-01)
+
+Eric's removal plan held five fields back — four "waiting for PROD-2292", one waiting for `productLine.styles` to be populated. Richard asked what each was actually blocked on. **Four of the five blocks were weaker than stated, and two were not blocks at all.** All five are removed; the values are recorded below because that is the only thing the deprecation was really protecting.
+
+**Nothing read any of them.** No GROQ query in `packages/sanity`, `apps/www` or `apps/blog`; the registry exporter's `order` comes from Postgres `sort_order`, never from Sanity. Three Studio **desk panes** did sort by them — `propertyValue` in two workspaces and the `expertiseStage` list — and are repointed to `title`, the same class of miss as the seven Solution panes caught a day earlier.
+
+| Field | Stated block | What checking found |
+| --- | --- | --- |
+| `customizationType.order` (14) | "the listing/nav singleton (PROD-2292)" | 🔴 **No such successor.** PROD-2292 builds 19 standing pages and **none is a customization or capabilities listing.** The field was deprecated toward something nobody specified. |
+| `propertyValue.order` (32) | same | 🔴 **No successor by design.** `listingPage.filters` states that *"the VALUES inside each filter are always derived from the content — never listed here."* Value order was designed away, not relocated. |
+| `property.order` (9) | same | **Real, and narrower than stated.** `listingPage.filters` is an ordered array of Property references and is **already deployed**; what is missing is the listing-page *documents* — 1 of 19 exists (`caseStudiesPage`). |
+| `expertiseStage.order` (6) | same | The stored numbers are the **known-wrong** sequence, as the field's own deprecation reason said. Removing them loses nothing that should be kept. Successor is `expertisePage.featured` (type deployed, document not yet created). |
+| `productStyle.order` (8) | "`productLine.styles` is empty on all 14 lines" | True and materially trivial. `productLine.styles` is *"never a gate — unlisted styles append alphabetically"*, so empty is defined behaviour. Of the three lines that have styles, **two order identically under the fallback**; the whole loss is the sequence of three mock Folding Carton styles. |
+
+**`productStyle.order` was for the styles grid on a Product Line** — the order the style cards appear in on a line's page. That role is `productLine.styles` now. It has never had a reader: `/products` is served by Magento, not this app.
+
+### The values, recorded before deletion
+
+`customizationType.order` — Material: Paperboard 1, Corrugated 2, Kraft Paper 3, Flexible Film 4 · Printing: Offset 1, Digital 2, Flexography 3 · Finishes: Embossing & Debossing 0, Lamination 1, Surface Coating 2, Spot Coating 2, Foiling 3 · Additional Customization: Die Cutting 2, Window Patching 3. (Surface Coating and Spot Coating collide at 2 — an artefact of the Coating split.)
+
+`property.order` — Source 1, Physical Properties 2, Performance 3, Aesthetic 4, Color 5, Opacity 6, Sustainability 7, Role 8, Finish Type 9. **This is the one sequence nothing else records**; re-apply it to `catalogPage.filters` when the listing pages are created.
+
+`propertyValue.order` — Source: Virgin Fiber, Recycled Fiber, Mixed Fiber · Physical Properties: Coated, Uncoated, Smooth, Textured, Printable · Performance: Moisture Resistant, Tear Resistant, Food Safe, Grease Resistant · Aesthetic: Premium Look, Natural Look, Bright White · Color: White, Natural Brown, Black · Opacity: Opaque, Translucent, Transparent · Sustainability: Recyclable, Biodegradable, Compostable, FSC Certified, Recycled Content · Role: Outer Layer, Barrier Layer, Sealant Layer · Finish Type: Matte, Gloss, Soft Touch.
+
+`expertiseStage.order` (the wrong sequence, for the record only) — Strategy 1, Design 2, Prototyping 3, Managed Manufacturing 4, Logistics 5, Fulfillment 6. Eric's real order is Design → Prototyping → Managed Manufacturing → Strategy → Logistics → Fulfillment.
+
+`productStyle.order` — Rigid Boxes: Magnetic Closure, Neck Box, Telescoping Box · Folding Cartons: Straight Tuck End, Reverse Tuck End, Auto Bottom (123) · `[Test]` Mailer Boxes: Regular Slotted Container, Snap-Lock Mailer.
+
+### 🔴 One open question this surfaces, for Eric
+
+If a listing filter's values must render in a meaningful order — *Matte → Gloss → Soft Touch*, not *Gloss → Matte → Soft Touch* — then `listingPage.filters` deriving values from content with no ordering is a gap, and the same is true of ordering Customization Types within a category. Neither has a home in any current spec. This is a design question, not a field to restore.
+
+**With this, the schema carries zero deprecated fields.**
+
 ## References
 
 - `pakfactory-content-model/Decisions.md` — **D47** (authoritative), D42–D48. 🔗 **That register and this one are the two halves of the record: model decisions live there, Studio implementation decisions live here.** Neither is complete alone — cite both.

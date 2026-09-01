@@ -267,20 +267,14 @@ export const propertyValue = defineType({
     // were empty on all 32 documents. A value's machine-readable rendering is now
     // `image` (a hex can't represent a metallic); its meaning lives in Glossary
     // Term, the single source of every definition.
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'content',
-      readOnly: true,
-      description: 'Lower numbers sort first within the parent property.',
-      // Retiring (§4.3), same as on Property: ordering moves to an ordered array
-      // on the listing/nav singleton (PROD-2292). Read-only until then — still
-      // set on all 32 values, so kept rather than dropped.
-      deprecated: {
-        reason: 'Ordering moves to an ordered array on the listing/nav singleton (PROD-2292).',
-      },
-    }),
+    // `order` was REMOVED here on 2026-09-01. ⚠️ Unlike Property's, this one has NO
+    // successor and never will under the current design: `listingPage.filters` states
+    // that "the VALUES inside each filter are always derived from the content — never
+    // listed here". So value order was designed away rather than relocated, and the 32
+    // curated sequences (Matte → Gloss → Soft Touch; Opaque → Translucent →
+    // Transparent) had nowhere to go. They are recorded in ADR-017. 🔴 If a filter's
+    // values must render in a meaningful order rather than alphabetically, that is an
+    // open question for Eric, not a field to restore here.
   ],
   preview: {
     select: { title: 'title', group: 'property.title', media: 'image', kindOf: 'kindOf.title' },
