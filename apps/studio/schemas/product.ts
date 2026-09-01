@@ -128,30 +128,54 @@ export const product = defineType({
     }),
 
     // ─── CATEGORIZATION (classification refs + curated lists) ─────────────────
-    // A product can belong to MORE THAN ONE line and style (Crystal's design) —
-    // these are arrays, not single references.
+    // Cardinality confirmed with Richard 2026-08-27, before the product data source
+    // begins populating: a product belongs to exactly ONE Product Line, but may take
+    // SEVERAL Styles within that line. So `productLine` is a single reference and
+    // `productStyle` stays an array — the asymmetry is the decision, not an oversight.
+    //
+    // POSITION IS MEANINGFUL on `productStyle` (settled 2026-08-27). The registry
+    // resolves a product's offer set from ONE style — `product.style_id`, its
+    // `is_primary` link — and this array has no primary flag to map onto. The rule
+    // is positional: **`productStyle[0]` is the primary.** That is already what both
+    // sides do (the importer takes `multi(...)[0]`, and `is_primary` is backfilled
+    // from `style_id`); it simply had never been stated.
+    //
+    // The consequence is editor-facing, which is why the description says so:
+    // dragging this array changes which style the offer set resolves from. Today
+    // that is harmless — the styles on a product are compatible, so primary-only and
+    // union agree — but that is a property of the current data, not of the model.
+    // `app.v_style_disagreement` in the registry reports the first case where two
+    // linked styles genuinely contradict each other, which is when the deferred
+    // union / intersection / primary-only ruling becomes due.
+    //
+    // This supersedes the earlier "a product can span more than one line" comment,
+    // which came from reading Crystal's design as symmetric across both levels. It is
+    // also narrower than `Entities/Product.md`, which says Single for BOTH — the Style
+    // half of that spec is what changed.
+    //
+    // Verified lossless on production before the change: of 26 products, 0 sat in more
+    // than one line and 0 in more than one style.
     defineField({
-      name: 'productCategories',
-      title: 'Product lines',
-      type: 'array',
+      name: 'productLine',
+      title: 'Product line',
+      type: 'reference',
       group: GROUPS.categorization,
-      description: `The product line(s) this product belongs to — a product can span more than one. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
+      to: [{ type: 'productLine' }],
+      options: { disableNew: true },
+      description: `The product line this product belongs to — exactly one. Required for standard products. ${SOURCE_OWNED_NOTE}`,
       hidden: ({ document }) => isInspiration(document),
-      of: [{ type: 'reference', to: [{ type: 'productLine' }], options: { disableNew: true } }],
       validation: (Rule) =>
         Rule.custom((val, context) => {
-          const arr = val as unknown[] | undefined
-          if (isStandard(context.document) && (!Array.isArray(arr) || arr.length === 0))
-            return 'At least one product line is required for standard products.'
+          if (isStandard(context.document) && !val) return 'A product line is required for standard products.'
           return true
         }),
     }),
     defineField({
-      name: 'productStyleCategories',
+      name: 'productStyle',
       title: 'Product styles',
       type: 'array',
       group: GROUPS.categorization,
-      description: `The construction style(s) — a product can have more than one. Scoped to the chosen lines. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
+      description: `The construction style(s) — a product may have more than one, but all within its single product line. THE FIRST ONE IS THE PRIMARY: it is the style the product data source uses to work out what the product can be ordered with, so reordering this list changes that. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
       hidden: ({ document }) => isInspiration(document),
       of: [
         {
@@ -159,10 +183,14 @@ export const product = defineType({
           to: [{ type: 'productStyle' }],
           options: {
             disableNew: true,
-            filter: ({ document }: { document: { productCategories?: Array<{ _ref?: string }> } }) => {
-              const refs = (document?.productCategories ?? []).map((r) => r._ref).filter(Boolean)
-              if (!refs.length) return {}
-              return { filter: 'productLine._ref in $refs', params: { refs } }
+            // Scoped to the ONE chosen line. Before the cardinality change this read
+            // `productLine._ref in $refs` off an array of lines; with a single line it
+            // is a direct match, which is also why a style can no longer be picked
+            // from a line the product does not belong to.
+            filter: ({ document }: { document: { productLine?: { _ref?: string } } }) => {
+              const ref = document?.productLine?._ref
+              if (!ref) return { filter: 'false' }
+              return { filter: 'productLine._ref == $ref', params: { ref } }
             },
           },
         },

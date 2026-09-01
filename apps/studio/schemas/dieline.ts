@@ -57,7 +57,9 @@ export const dieline = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'gated',
+      // Renamed from `gated` (D33) — a boolean reads as a question. 0 documents of
+      // this type exist at the rename, so there is nothing to migrate.
+      name: 'isGated',
       title: 'Gated',
       type: 'boolean',
       group: GROUPS.content,
@@ -91,9 +93,9 @@ export const dieline = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
   preview: {
-    select: { title: 'title', gated: 'gated', subtitle: 'slug.current' },
-    prepare({ title, gated, subtitle }) {
-      const tag = gated ? 'Gated' : 'Open'
+    select: { title: 'title', isGated: 'isGated', subtitle: 'slug.current' },
+    prepare({ title, isGated, subtitle }) {
+      const tag = isGated ? 'Gated' : 'Open'
       return {
         title: title || 'Untitled dieline',
         subtitle: [subtitle ? `/resources/dielines/${subtitle}` : '', tag].filter(Boolean).join(' · '),

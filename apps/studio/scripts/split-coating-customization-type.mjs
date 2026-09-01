@@ -39,9 +39,12 @@
  * would otherwise restore the old title, slug, or type reference.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run split:coating-type
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run split:coating-type -- --apply
- *   NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run split:coating-type -- --apply
+ *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset development
+ *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run split:coating-type -- --dataset production --confirm --yes-production
+ *
+ * Follows the `packages/sanity/scripts/` convention: `--dataset` is required always,
+ * `--confirm` writes, and production additionally needs `--yes-production`.
  *
  * ⚠️  The development dataset is nightly-synced from production, so a dev-only apply is
  * wiped overnight. Run development first to verify, then production to make it stick.
@@ -54,6 +57,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -61,8 +65,14 @@ loadEnv({ path: join(repoRoot, '.env.local') })
 loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
-const apply = process.argv.includes('--apply')
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run split:coating-type -- --dataset <development|production> [--confirm] [--yes-production]
 
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
+const args = parseScriptArgs({ usage: USAGE })
+const { confirm: apply } = args
 const COATING_ID = 'type-coating-r2304'
 const SPOT_ID = 'type-spot-coating-r2304'
 const FINISHES_CATEGORY_ID = 'cat-finishes-r2304'
@@ -86,8 +96,9 @@ const SPOT_COATING = {
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || process.env.SANITY_STUDIO_PROJECT_ID || '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET || process.env.SANITY_STUDIO_DATASET || 'development'
+// Straight from the flag — `--dataset` is required, so there is nothing to fall back to.
+const DATASET = args.dataset
+
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_API_READ_TOKEN || process.env.SANITY_TOKEN
 
@@ -96,7 +107,7 @@ if (!TOKEN) {
   process.exit(1)
 }
 if (apply && !(process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_TOKEN)) {
-  console.error('❌  --apply needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
+  console.error('❌  --confirm needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
   process.exit(1)
 }
 
@@ -115,7 +126,7 @@ const client = createClient({
 
 async function main() {
   console.log(`\n🔧  Split the Coating Customization Type (PROD-2250, D47 / ADR-017)`)
-  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${apply ? 'APPLY (writes)' : 'DRY-RUN (no writes)'}\n`)
+  console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${describeMode(args)}\n`)
 
   const coating = await client.fetch(`*[_id == $id][0]{ _id, title, "slug": slug.current, order, "categoryRef": category._ref }`, { id: COATING_ID })
   if (!coating) {
@@ -194,7 +205,7 @@ async function main() {
     return
   }
   if (!apply) {
-    console.log(`\n${steps.length} write(s) pending. DRY-RUN only — re-run with \`-- --apply\`. Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
+    console.log(`\n${steps.length} write(s) pending. DRY-RUN only — re-run with \`--confirm\` (production also needs \`--yes-production\`). Verify on DEVELOPMENT, then run PRODUCTION (dev is nightly-synced from prod).\n`)
     return
   }
 

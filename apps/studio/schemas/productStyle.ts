@@ -24,7 +24,7 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * product count is unbounded, so product display order derives from a query, not
  * a maintained array (⚠️ the entity spec still lists productOrder; flagged for
  * Eric — this follows the ticket + the model's derive-don't-maintain rule).
- * `order` is deprecated: the styles grid order lives on the Line (`styleOrder`).
+ * `order` is deprecated: the styles grid order lives on the Line (`styles`).
  */
 export const productStyle = defineType({
   name: 'productStyle',
@@ -84,7 +84,10 @@ export const productStyle = defineType({
       description: 'Landing-page hero: badge, headline (the H1 — not a name), supporting copy and image.',
       options: { collapsible: true, collapsed: false },
       fields: [
-        defineField({ name: 'title', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
+        // Renamed from `hero.title` (D33). The field was *labelled* "Badge label" but
+        // *named* `title`, so it collided with the document's own title in every
+        // projection. 0 populated at the rename.
+        defineField({ name: 'label', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
         defineField({ name: 'headline', title: 'Headline', type: 'string', description: 'The page H1 (e.g. "Magnetic Closure Rigid Boxes"). Leave blank to use the site default.' }),
         defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the headline.' }),
         defineField(taggedImageField({
@@ -99,8 +102,10 @@ export const productStyle = defineType({
       ],
     }),
     defineField(taggedImageField({
-      name: 'bannerImage',
-      title: 'Banner image',
+      // Renamed from `bannerImage` (D33) — a banner is a shape, not a meaning. Matches
+      // the name Product Line and Case Study already use. 0 populated at the rename.
+      name: 'cardImage',
+      title: 'Card image',
       type: 'image',
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
@@ -167,8 +172,8 @@ export const productStyle = defineType({
       title: 'Display order',
       type: 'number',
       group: GROUPS.content,
-      // Retiring (§4.3): the styles-grid order lives on the Line (`styleOrder`).
-      ...deprecateField('The styles-grid order lives on the Product Line (styleOrder). Do not use.'),
+      // Retiring (§4.3): the styles-grid order lives on the Line (`styles`).
+      ...deprecateField('The styles-grid order lives on the Product Line (styles). Do not use.'),
     }),
 
     // ─── CATEGORIZATION ───────────────────────────────────────────────────────
@@ -205,12 +210,12 @@ export const productStyle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', bannerImage: 'bannerImage' },
-    prepare({ title, display, line, heroImage, bannerImage }) {
+    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
+    prepare({ title, display, line, heroImage, cardImage }) {
       return {
         title: display || title || 'Untitled style',
         subtitle: line ? `Style of ${line}` : 'Product Style',
-        media: bannerImage ?? heroImage,
+        media: cardImage ?? heroImage,
       }
     },
   },

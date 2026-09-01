@@ -39,6 +39,8 @@ Without it, *"Soft Touch doesn't work on blister plastic"* has two homes and the
 
 **`except` is frozen** — not widened, not split, not removed. D42's plan to add a `customizationOption` target is withdrawn. At **0 of 33 populated** every path stays open, and the first real carve-out in authoring decides which axis it belongs to.
 
+Its targets do narrow to `productStyle · product`: the field it replaces also accepted a `productLine`, and a carve-out at line grain says the same thing as not listing that line in `availableOnProducts`. At 0 of 33 populated nothing is stranded, and the migration reports anything it finds rather than filtering silently.
+
 ### 2. `role` on the Option — `configurable` | `reference`
 
 Required, `initialValue: 'configurable'`, with a **backfill of all 33 published Options in the same PR as the field**.
@@ -69,6 +71,18 @@ The split (*Surface Finish — Paper* / *— Film*, each with its own *Matte*) w
 
 Two Options titled *Matte* is therefore a deliberate exception with distinct slugs (`matte-paper` / `matte-film`). **Do not merge them, and do not add uniqueness validation on Option titles.**
 
+### 4b. `cardinality` on the Type — `single` | `multiple`
+
+Required, `initialValue: 'single'`, backfilled for all existing Types in the same migration.
+
+> How many of this Type's Options a customer may pick in the configurator.
+
+**It is a prerequisite for the `customizationType` target on `incompatibleWithCustomizations`** (D43): *"can't combine with Embossing & Debossing"* only reads unambiguously once you know whether a customer takes one Option from that Type or several. The two therefore ship together.
+
+**Not inherited from the Category.** Materials carry a blanket *"Single Selection (Within Each Type)"* in the diagram, but Finishing and Additional Customization are mixed — Embossing & Debossing and Closures allow several while Foiling and Windows do not — so the Category cannot answer it.
+
+`multiple` is the **marked exception**: the diagram badges exactly those Types *"Multiple Selection (Within Each Type)"*, and everything else is `single`. In this dataset that is **Embossing & Debossing, Closures, Reinforcement & Utility, and Pulls & Lifts** (the diagram's *Opening & Access*); the diagram's *Embellishments* and *Technology* have no Sanity Type yet.
+
 ### 5. One scope algebra
 
 > Resolve availability by the most specific matching entry. Where entries match at different grains — product, style, line — the narrower one decides. `exceptProducts` is shorthand for a denial at a finer grain, not a separate mechanism.
@@ -83,22 +97,100 @@ This matches how the Registry resolves scope (`rule_scope`, ADR-0008 #10 option 
 
 ## Build order
 
-1. **`role` + the backfill of all 33**, in one PR. Until the backfill runs the availability warning fires on every unclassified document, which is the noise `role` exists to remove.
-2. The four availability fields — three renames and one new field — with the conditional warning on `availableOnProducts` reading `role`. **This is a data migration, not a rename:** `appliesTo` is populated on 8 of 33 documents and renaming the key in the schema strands those values. A `migrate-*.mjs` ships in the same PR.
-3. `achieves`, with the non-sufficiency description.
-4. `cardinality` on `customizationType` ships **in the same PR as, or ahead of,** any `customizationType` target on `incompatibleWithCustomizations` (D43).
-5. Retire `relatedCustomizations` on `customizationOption` (hard remove, 0 of 33 populated) and give `comparedAgainst` the same `deprecateField()` treatment as its Product twin (already shipped there).
+1. ✅ **`role` + the backfill of all 33**, in one PR (#379). Until the backfill runs the availability warning fires on every unclassified document, which is the noise `role` exists to remove.
+2. ✅ The four availability fields — three renames and one new field — with the conditional warning on `availableOnProducts` reading `role`. **This was a data migration, not a rename:** `appliesTo` is populated on 8 of 33 documents and renaming the key in the schema strands those values, so `migrate-customization-availability-axes.mjs` shipped in the same PR.
+3. ✅ `achieves`, with the non-sufficiency description in the field description.
+4. ✅ `cardinality` on `customizationType` — shipped **in the same PR as** the `customizationType` target on `incompatibleWithCustomizations` (D43), which is what required it. See §4b.
+5. ✅ Retired `relatedCustomizations` on `customizationOption` (hard remove, 0 of 33 populated) and gave `comparedAgainst` the same `deprecateField()` treatment as its Product twin. `comparedAgainst` is **deprecated, not removed** — 8 of 33 are populated, so the data stays legible while nothing new is written; its minimum-3 rule goes with it, since a read-only field cannot be brought up to a minimum.
 
 **Do not implement:** axis validation, a `customizationOption` target on `exceptProducts`, a Type-level role flag, uniqueness validation on Option titles, or Studio enforcement of `kindOf`.
 
 **Applied 2026-08-26, after the diagram:** the six Options the first backfill mis-set — Matte / Gloss / Soft Touch Lamination and UV / Aqueous / Varnish Coating — are corrected to `reference` by `backfill:customization-role -- --reclassify`, and the `Coating` Type is split by `split:coating-type`. Splitting the Type does **not** reintroduce a Type-level role flag: the Type carries no `role` field, it is only that each Type's Options now happen to agree.
+
+## Follow-on: the remaining Rename Map rows on `customizationOption`
+
+Not part of D47, but executed against the same type once D47's build order closed
+(`pakfactory-content-model/Rename Map.md`, "Still to do — fields"):
+
+- **`category` retired.** The Category is reachable as `type->category`, and a second stored path to the same fact is how the two drift apart. Removing it also removed the Type picker's filter, which needed a category on *this* document to narrow by — so the Type picker is now unfiltered and always visible. That trade (23 Types instead of a narrowed handful, with search) was taken rather than storing a fact twice to make a picker shorter. **Verified lossless before removal:** all 33 Options agreed with `type->category`, 0 drift, and no Option's Type lacked a category. The migration re-runs that check per dataset and refuses to unset if it fails.
+- **`whyChooseBlock` → `benefits`**, matching Product and Product Style (D33) — "block" named the mechanism, not the meaning. **`whatIsBlock` retired**: an Option is an instance, and the definition of what a thing *is* belongs to the Glossary Term, stated once.
+- Both old fields are **deprecated, not deleted** — 8 of 33 carry copy, and `whatIsBlock` has nowhere to move to until the glossary surface exists. That is steps 1–4 of the Rename Map's procedure; step 5 waits for a sweep once nothing reads them.
+
+## Follow-on: product line/style cardinality
+
+Settled with Richard **2026-08-27**, before the product data source begins populating — the last blocker on that work:
+
+> **A product belongs to exactly one Product Line, but may take several Styles within that line.**
+
+So `productLine` is a **single reference** and `productStyle` stays an **array**. The asymmetry is the decision, not an oversight, and it is narrower than `Entities/Product.md`, which says *Single* for both — the Style half of that spec is what changed.
+
+**Why it needed settling rather than reading off the docs.** Three sources said Single (D1's Line → Style → Product hierarchy, `Product.md`, Rename Map row 70) but the deployed schema said arrays for both, on the grounds that a product can span more than one line. The Rename Map's *"nothing in the model supports"* was written without that context, and `Product.md`'s rows were last touched by a mechanical find-replace, so "Single" surviving there was not evidence anyone had re-affirmed it.
+
+**The invisible second copy is the real defect this closes.** Every product already carried `productLine` and `productStyle` in the *data* — written by `packages/sanity/scripts/migrate-product-refs.ts` — while **neither was declared in the schema**. Editors saw only the arrays, nothing kept the singles in step, and because they were undeclared no validation could see them drift. They agreed only because nobody had edited since. The first bulk write would have broken that silently.
+
+**Verified lossless before the change:** of 26 products, **0** sat in more than one line, **0** in more than one style, and every existing single ref agreed with its array's first entry. The migration re-checks all three per dataset and refuses to write if any fails.
+
+## Follow-on: the zero-populated Rename Map rows, and `glossaryTerm`
+
+Cleared while the product tables were still empty — all schema-only, and much cheaper now than after the product data source populates:
+
+| Change | Populated | Note |
+| --- | --- | --- |
+| `productLine.styleOrder` → `styles` | 0 | an array is ordered by definition, so `*Order` named the mechanism |
+| `productStyle.bannerImage` → `cardImage` | 0 | a banner is a shape, not a meaning; matches Product Line and Case Study |
+| `productStyle.hero.title` → `hero.label` | 0 | *labelled* "Badge label" but *named* `title`, so it collided with the document's own title in every projection |
+| `dieline.gated` → `isGated` | 0 | a boolean reads as a question; 0 dieline documents exist at all |
+| `customizationOption.faqs` → deprecated | **2** | not in the designed field list — see below |
+
+**No migration ships with these.** All four renames are 0-populated *including drafts*, so there is nothing to move; a migration would have been ceremony. The one live-looking reader — `PRODUCT_COLLECTION_META_FOR_PATH_QUERY` reading `hero.title` and `bannerImage` — is **dead**: it filters on `product.primaryLandingPage` and `primaryCollection`, neither of which exists on the product schema, and dereferences a `productCollection` type that does not exist. Same family as the stale `/capabilities/**` routes; a separate problem, not fixed here.
+
+**`faqs` is deprecated rather than deleted.** It is absent from the designed field list in `Entities/Customization Option.md` — the file that calls itself *"the truth until it ships"* — but 2 Options carry real Q&A. Deprecating answers *"not designed"* without answering *"throw it away"*.
+
+**`customizationOption.glossaryTerm` is now built.** It was designed (*"The definition lives there **only**; the Option page pulls it, never retypes it"*) and never deployed. This is the field `whatIsBlock` retires **into** — until it existed, deprecating `whatIsBlock` left its 8 documents of definition copy with nowhere to go, which is the consequence recorded above and now closed. ⚠️ There are **0 Glossary Term documents**, so the picker starts empty; `disableNew` is deliberately not set, because the terms must be creatable before anything can point at them.
+
+## Follow-on: `productStyle[0]` is the primary
+
+Settled with Richard **2026-08-27**, closing the last incompatibility between the Sanity model and the spec registry.
+
+The registry resolves a product's offer set from **one** style — `product.style_id`, flagged `is_primary` in `app.product_style_link` — while Sanity's `productStyle` is an array with no primary flag. The rule is **positional: `productStyle[0]` is the primary.**
+
+That is already what both sides do: the registry's importer takes `multi(…)[0]`, and `is_primary` is backfilled from `product.style_id`. The rule had simply never been stated, so nothing depended on it deliberately and nothing checked it.
+
+**Position is therefore meaningful** — dragging the array in the Studio changes which style the offer set resolves from. The field description says so, because an editor reordering a list has no other way to know.
+
+**Why a warning rather than a resolution.** The registry deliberately left the merge primary-only (`20260819190000_product_style_links.sql`): going many-to-many needs a production ruling between **union / intersection / primary-only**, because two style-tier rows for one attribute can disagree and the merge would otherwise pick one arbitrarily. Today's multi-style products are compatible, so primary-only and union return the same answer — but that is a property of the current data, not of the model. `app.v_style_disagreement` reports the first genuine contradiction, which is when that deferred ruling becomes due.
+
+The check is **deliberately narrow**: only two style-tier rows explicitly stating different `offered`. Presence-vs-absence is not reported, because a style with no row is inheriting from the family tier and reporting that would fire on nearly every product — the same failure as the pre-`role` availability warning, which fired on 25 of 33 documents and taught editors to ignore it.
+
+## Follow-on: Rename Map step 5 — six of nine retired fields removed
+
+The Rename Map's procedure ends at *"remove the old field"*, and warns that a field marked `deprecated()` sits at steps 1–4, not 5 — those rows *"read as done and are not"*. Nine deprecated fields on `customizationOption` had been sitting at step 4. **Six came out; three could not.**
+
+**Removed, each verified lossless first rather than inferred from the deprecation:**
+
+| Field(s) | Successor | Evidence |
+| --- | --- | --- |
+| `materialSource` · `physicalProperties` · `aesthetic` · `colors` · `sustainability` | `properties` | all **33** references across 8 Options were already in `properties`, zero gaps |
+| `whyChooseBlock` | `benefits` | all **8** Options carrying it have a populated `benefits` |
+
+`migrate:unset-retired-fields` re-checks both conditions **per dataset** and refuses to write if either fails — "it was safe on production" is not a fact about development. Removing a field from the schema does not remove it from the documents, so the migration unsets the keys; otherwise the dataset keeps six orphaned copies, which is the same undeclared-second-copy that `productLine`/`productStyle` showed is how two sources of one fact drift apart.
+
+**Not removable, and each blocked differently:**
+
+- **`whatIsBlock`** — 8 populated, and its destination `glossaryTerm` exists but holds **0 documents**. Removing it destroys the only copy.
+- **`comparedAgainst`** — 8 populated, **no successor field at all**. Removal would be deletion, not migration.
+- **`faqs`** — 2 populated, not in the designed field list, no successor.
+
+None of the three is a migration; each needs a decision about where the content goes, or an accepted loss. They stay read-only meanwhile so nothing new accrues, and the schema now records why each is stuck rather than leaving it to be re-derived.
 
 ## Consequences
 
 - **`reference` is classified from Eric's `Capabilities Flow` diagram (2026-08-26), which is the authoritative source.** The diagram badges each **Type**, and the badges map onto `role` one-for-one: *"Not Customizable"* → every Option under it is `reference`; no badge, or *"Single / Multiple Selection (Within Each Type)"* → `configurable`; *"only for Product Customization" + "No detail page"* → `configurable`. Reference Types: **Pouch Layer** (Materials), **Lamination**, **Surface Coating**, **Cutting**, **Gluing** (Finishing). Configurable-but-no-page Types: **Surface Finish (paper-based)**, **Surface Finish (non-paper)**, **Pouch Material**, **Food-Grade Material**.
 - **This corrects the first reading of §2, which held that `reference` had no members.** That was inferred from D47's examples (VMPET Film and the other Pouch Layer films, still unauthored) rather than from a Type-level rule, and the first backfill therefore wrote `configurable` to all 33 published Options. The diagram puts **6 of them under reference Types** — Matte / Gloss / Soft Touch Lamination, and UV / Aqueous / Varnish Coating. Those six are surfaced by the backfill script, not silently flipped.
 - **Sanity's single `Coating` Type spanned two of Eric's Types; it is now split** (approved 2026-08-26). The diagram separates **Spot Coating** (un-badged: *Spot UV/Spot Gloss*, *Spot Glitter*, *Raised Spot UV*, *Textured Spot UV*) from **Surface Coating** (*"Not Customizable"*: UV, AQ (Aqueous), Varnish, Soft-Touch, …). `split:coating-type` **renames** `type-coating-r2304` in place to *Surface Coating* (`coating` → `surface-coating`) so the three Options that stay put keep the same reference, **creates** `type-spot-coating-r2304`, and **repoints** *Spot UV*. Renaming the slug is safe: `customizationType.slug` appears in no route and no GROQ query — `/capabilities/**` builds its path from the **category** document (`CAPABILITY_BY_CATEGORY_AND_SLUG_QUERY`, `resolve-document-href.ts`), so no redirect is needed.
-- **With §3, the Customization library's pages come only from the reference Types.** `/capabilities/**` currently returns 404 in production (site root and `/blog` return 200), so nothing regresses — but the route work must not be built to publish `configurable` Options.
+- **With §3, the Customization library's pages come only from the reference Types.** Nothing regresses, because `/capabilities/**` **is not served from this app at all** — but the route work must not be built to publish `configurable` Options.
+
+  ⚠️ **Corrected 2026-08-28.** This clause originally read *"`/capabilities/**` currently returns 404 in production (site root and `/blog` return 200)"*, and offered that 404 as evidence the Next routes were inert. The 404 is real but it is **Magento's**, not this app's: nginx proxies to Vercel **per-prefix** — only `/blog` and `/case-studies` — so `/capabilities` and `/products` never reach Next at all. Verified by response headers: `/capabilities` returns `PHPSESSID` + `x-magento-tags: … cms_p_617` (Magento's 404 CMS page), where `/blog` returns `x-powered-by: Next.js` + `x-vercel-id`. The conclusion holds *more* strongly than the original reasoning did — those routes are unreachable, not merely broken — but the evidence was wrong and would have misled anyone treating the 404 as a signal about this codebase.
 - **The product data source's `Detail Page` / `Capability URL Handle` columns are stale.** The Additional Customization sheet carries `Detail Page = Yes` on 67 of 68 rows with a handle assigned. Confirmed with Eric 2026-08-26: those handles were auto-generated, not a requirement, and do not constrain §3.
 - **`role` is enumerated per-slug only while a Type is mixed.** `REFERENCE_SLUGS` in `backfill-customization-option-role.mjs` exists because one Sanity Type held both roles. With `Coating` split, every Type in the current data is single-role again, and the classification could follow the Type. It is deliberately left per-slug: D47 §2 holds that **a Type can be mixed** (Lamination will hold a customer-facing *Leather Lamination*), so a Type-derived rule would have to be unwound the first time that lands. The enumeration is the shape that survives.
 - **The customer's own vocabulary loses its page.** *Matte finish* and *high-barrier pouch* are the highest-intent search terms and, as `configurable` Options, get no URL. `glossaryTerm` is intended to carry that vocabulary and the derived `achieves` reverse list — but it currently has **no route in `apps/www` or `apps/blog` and is rendered nowhere.** Building that surface is a prerequisite for the SEO position, not a follow-up, and is not yet ticketed.
