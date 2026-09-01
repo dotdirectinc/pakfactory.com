@@ -5,7 +5,6 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { deprecateField } from '../lib/schema-guards'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 
@@ -167,14 +166,15 @@ export const productStyle = defineType({
       },
       initialValue: 'active',
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: GROUPS.content,
-      // Retiring (§4.3): the styles-grid order lives on the Line (`styles`).
-      ...deprecateField('The styles-grid order lives on the Product Line (styles). Do not use.'),
-    }),
+    // `order` was REMOVED here on 2026-09-01. It set the display order of the style
+    // cards within a Product Line's styles grid, and nothing has ever read it — no
+    // GROQ query, no desk pane, and `/products` is served by Magento, not this app.
+    // Its successor `productLine.styles` is deployed and is explicitly "never a gate —
+    // unlisted styles append alphabetically", so an empty array is defined behaviour
+    // rather than a missing replacement. It was set on 8 mock styles across 3 lines;
+    // for two of those three the curated order and the alphabetical fallback are
+    // IDENTICAL, so the entire loss is the sequence of three Folding Carton styles.
+    // Recorded in ADR-017; re-apply to `productLine.styles` when real styles land.
 
     // ─── CATEGORIZATION ───────────────────────────────────────────────────────
     defineField({

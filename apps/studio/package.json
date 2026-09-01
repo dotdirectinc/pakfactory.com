@@ -28,6 +28,7 @@
     "migrate:product-cardinality": "node scripts/migrate-product-line-style-cardinality.mjs",
     "migrate:unset-retired-fields": "node scripts/migrate-unset-retired-option-fields.mjs",
     "migrate:schema-review-d48": "node scripts/migrate-schema-review-d48.mjs",
+    "migrate:unset-removed-deprecated": "node scripts/migrate-unset-removed-deprecated-fields.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
