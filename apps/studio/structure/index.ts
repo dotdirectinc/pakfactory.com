@@ -1206,6 +1206,13 @@ export function coreEntitiesItems(
                     .defaultOrdering([{field: 'name', direction: 'asc'}]),
             ),
 
+        // ── Testimonials (PROD-2293) — client quotes, stored once ───────────────────
+        S.listItem()
+            .title('Testimonials')
+            .icon(UserIcon)
+            .schemaType('testimonial')
+            .child(S.documentTypeList('testimonial').title('Testimonials')),
+
         // ── Case Studies ──────────────────────────────────────────────────────────
         ...(options.hideCaseStudies
             ? []
