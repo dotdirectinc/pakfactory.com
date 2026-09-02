@@ -57,7 +57,7 @@ const CASE_STUDY_CARD_FIELDS = /* groq */ `{
   "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText),
   "client": client->{ name, "logoUrl": logo.asset->url, ${CLIENT_INDUSTRY_ITEM} },
   "products": products[]->${TAXONOMY_ITEM},
-  "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
+  "expertiseAreas": select(count(expertise) > 0 => expertise, expertiseAreas)[]->${TAXONOMY_ITEM},
   "heroMediaType": heroMedia.mediaType
 }`;
 
@@ -83,8 +83,8 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
     "videoThumbnailHotspot": videoThumbnail.hotspot
   },
   "products": products[]->${TAXONOMY_ITEM},
-  "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
-  "customizations": capabilities[]->${TAXONOMY_ITEM},
+  "expertiseAreas": select(count(expertise) > 0 => expertise, expertiseAreas)[]->${TAXONOMY_ITEM},
+  "customizations": select(count(customizations) > 0 => customizations, capabilities)[]->${TAXONOMY_ITEM},
   "highlights": highlights[]{ _key, title, description },
   "challenge": challenge${CASE_STUDY_STORY_BODY},
   "solution": solution${CASE_STUDY_STORY_BODY},
