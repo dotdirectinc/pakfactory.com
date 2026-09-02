@@ -1,3 +1,104 @@
 @import "@pakfactory/ui/globals.css";
-@source "../../../../packages/ui/src";
-@source "../../../../packages/components/src";
+@import "@pakfactory/ui/tailwind-sources.css";
+@import "@pakfactory/components/tailwind-sources.css";
+@import "@pakfactory/brief-builder-ui/tailwind-sources.css";
+
+/*
+  www-only overlay: 2026 --brand-* / --support-* aliases, the 2026 primary
+  green override, and the default Button (primary green pill, white label).
+  Do not copy this block into apps/blog or case-study CSS.
+  If blog and case studies need the same tokens, move them into
+  packages/ui/src/globals.css (ADR-006) so all apps inherit them.
+*/
+
+:root {
+  /* Main palette */
+  --brand-blue: #211F57;
+  --brand-forest: #17280F;
+  --brand-lemongrass: #ADE35C;
+  --brand-yellow: #EBE46A;
+  --brand-sand: #EBD99F;
+  --brand-mint: #BAEBC2;
+  --brand-offwhite: #F1EFE8;
+  --brand-white: #FFFFFF;
+
+  /* Support palette — use sparingly */
+  --support-soil: #33200F;
+  --support-clay: #B45E2D;
+  --support-gold: #A6982F;
+  --support-stone: #D0C4A5;
+  --support-sage: #D0DCC0;
+  --support-palemint: #EEF4E3;
+  --support-black: #000000;
+
+  /* Per-surface label/eyebrow tints */
+  --on-blue-label: #9C9BC0;
+  --on-forest-label: #8FB47B;
+  --on-mint-label: #37613E;
+  --on-sand-label: #6E5B33;
+  --on-offwhite-label: #6B6A5E;
+
+  /* Convenience aliases that do not collide with ui shadcn slots */
+  --surface-kraft: var(--brand-sand);
+  --ai-accent: var(--brand-blue);
+  --ai-accent-soft: rgba(33, 31, 87, 0.4);
+  --primary-soft: #E3E5E2;
+
+  /* 2026 primary green (Figma node 5178:75186). www-only until launch;
+     ui still ships #2b5f2d so apps/blog is unaffected. Promote into
+     packages/ui (ADR-006) when www goes live and blog adopts the new green. */
+  --primary: #285429;
+  --primary-foreground: #ffffff;
+  --ring: #285429;
+  --primary-hover: #214822;      /* primary darkened, matches ui's ratio */
+
+  /* Default Button hover — new primary darkened. Was #2e3e27 (forest). */
+  --button-primary-hover: #214822;
+}
+
+@theme inline {
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-forest: var(--brand-forest);
+  --color-brand-lemongrass: var(--brand-lemongrass);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-sand: var(--brand-sand);
+  --color-brand-mint: var(--brand-mint);
+  --color-brand-offwhite: var(--brand-offwhite);
+  --color-brand-white: var(--brand-white);
+
+  --color-support-soil: var(--support-soil);
+  --color-support-clay: var(--support-clay);
+  --color-support-gold: var(--support-gold);
+  --color-support-stone: var(--support-stone);
+  --color-support-sage: var(--support-sage);
+  --color-support-palemint: var(--support-palemint);
+  --color-support-black: var(--support-black);
+
+  --color-on-blue-label: var(--on-blue-label);
+  --color-on-forest-label: var(--on-forest-label);
+  --color-on-mint-label: var(--on-mint-label);
+  --color-on-sand-label: var(--on-sand-label);
+  --color-on-offwhite-label: var(--on-offwhite-label);
+
+  --color-surface-kraft: var(--surface-kraft);
+  --color-ai-accent: var(--ai-accent);
+  --color-ai-accent-soft: var(--ai-accent-soft);
+  --color-primary-soft: var(--primary-soft);
+}
+
+/*
+  www-only: default Button (data-variant=default) — primary green pill, white
+  label (was forest + lemongrass).
+  Do not copy into blog. If all apps need this, move into packages/ui (ADR-006).
+  Unlayered so it wins over the ui primitive’s bg-primary / rounded-md utilities.
+*/
+[data-slot="button"][data-variant="default"] {
+  border-radius: 9999px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+[data-slot="button"][data-variant="default"]:hover:not(:disabled) {
+  background-color: var(--button-primary-hover);
+}
+

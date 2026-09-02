@@ -13,6 +13,7 @@ The blog needed a real visual foundation — the "dieline" layout system, typogr
 - **Layout:** `--layout-max: 1536px` (the dieline content column) and the dashed `border-x` "dieline" guides. The `PageDielineSection` layout primitive consumes `var(--layout-max)`.
 - **Typography:** the Geist font stack — `--font-geist-sans` / `--font-sans`, plus serif and mono. `GeistSans.variable` is wired on `<html>` in `apps/blog/src/app/layout.tsx`.
 - **Brand:** background/foreground, radius (`--radius: 0.625rem`), and the derived `--color-*` / `--radius-*` scales.
+- **Spacing:** 8px grid via `--spacing-grid-unit` (`p-grid-*` / `gap-grid-*`). Usage is binding for agents and humans — **[`AGENTS.md`](../../AGENTS.md)** § UI and design system (8pt; 4px half-step only for tight pairs; no 6/10/14px fractional Tailwind).
 
 An app's own `globals.css` (e.g. `apps/blog/src/app/globals.css`) is just `@import "@pakfactory/ui/globals.css";` — apps do not define their own tokens.
 

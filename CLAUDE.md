@@ -14,7 +14,10 @@ Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack,
     - @.claude/rules/commit-mode.md — toggle between `one-app-per-commit` and `mix-commiter` (mutually exclusive). The active mode lives in `.claude/commit-mode`; check it with `./.claude/commit-mode.sh`. When `mix-commiter` is active, the single-app-commits rule above is **paused**.
 - **Component organization & clean-`src/` structure:** canonical in **[`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)** (the former management-root `clean-src-structure` / `components-by-reusability` rule drafts are superseded by it; see the [ADR register](docs/adr/)).
 - Inherits from **user-global** `~/.claude/CLAUDE.md` (if present) and this repository’s [`AGENTS.md`](./AGENTS.md).
+- For work under **`apps/www`**, also read [`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md).
 - For work under **`apps/blog`**, also read [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
+- For work under **`apps/studio`**, also read [`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md).
+- For work under **`apps/admin`**, also read [`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md). Newer apps may ship `AGENTS.md` until they graduate to `CLAUDE.md`.
 
 ## Skills
 
@@ -26,6 +29,7 @@ These skills are **versioned in-repo** under [`.claude/skills/`](.claude/skills/
 | **on-page-seo-auditor**   | [`.claude/skills/on-page-seo-auditor/SKILL.md`](.claude/skills/on-page-seo-auditor/SKILL.md)     | Audits existing pages and TSX for metadata, JSON-LD, OG, and content structure with file/line style feedback.               |
 | **geo-content-optimizer** | [`.claude/skills/geo-content-optimizer/SKILL.md`](.claude/skills/geo-content-optimizer/SKILL.md) | Rewrites for **GEO** (generative/answer engines): clear answers first, entity-rich copy, FAQ JSON-LD when appropriate.      |
 | **blog-jira-delivery**    | [`.claude/skills/blog-jira-delivery/SKILL.md`](.claude/skills/blog-jira-delivery/SKILL.md)       | Blog 3.0 Jira stories: plan → `memory.md` → implement (`apps/studio` schemas) → build → commit → Jira Request For Approval. |
+| **deploy-www-release**    | [`.claude/skills/deploy-www-release/SKILL.md`](.claude/skills/deploy-www-release/SKILL.md)       | www rebuild handoff: verify `apps/www` → Jira AC comment → push → PR `--base www-new-release` (invoke explicitly).         |
 
 Invoke them by name when the task matches; they align with the blog’s AEO/GEO requirements in [`AGENTS.md`](./AGENTS.md) and [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md).
 
@@ -34,6 +38,7 @@ Invoke them by name when the task matches; they align with the blog’s AEO/GEO 
 - Prefer **repository tools** (read, search, apply_patch) over shell when the task is file-scoped.
 - For **version-sensitive** library APIs, use the **Context7** MCP (`resolve-library-id` → `query-docs`) as described in `AGENTS.md`.
 - Do not suggest **npm** or **yarn** for this repo; use **pnpm** per `AGENTS.md`.
+- Styling: follow `AGENTS.md` § UI and design system — ui CSS, then app CSS, then `className`; spacing is 8pt.
 
 ## JIRA workflow
 

@@ -54,7 +54,7 @@ const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` :
 // `/case-studies` — the route was moved to `case-studies/api/draft-mode/enable` and
 // the relative `enable` below resolves under this base. PROD-2223.
 const WWW_PREVIEW_RAW =
-  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000/case-studies/'
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3003/case-studies/'
 const WWW_PREVIEW_BASE = WWW_PREVIEW_RAW.endsWith('/')
   ? WWW_PREVIEW_RAW
   : `${WWW_PREVIEW_RAW}/`
@@ -65,9 +65,9 @@ const WWW_PREVIEW_BASE = WWW_PREVIEW_RAW.endsWith('/')
 // ('api/draft-mode/enable') only appends under the base path when the base ends
 // in '/' (PROD-2223). Prod → 'https://pakfactory.com/blog/' (the apex, served by
 // nginx — the origin.blog host now 307-redirects direct hits to the apex),
-// local → 'http://localhost:3003/'.
+// local → 'http://localhost:3004/'.
 const BLOG_PREVIEW_RAW =
-  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003/'
+  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3004/'
 const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
   ? BLOG_PREVIEW_RAW
   : `${BLOG_PREVIEW_RAW}/`
@@ -315,7 +315,7 @@ export default defineConfig([
           previewMode: { enable: 'api/draft-mode/enable' },
         },
         allowOrigins: [
-          'http://localhost:3003',
+          'http://localhost:3004',
           'https://origin.blog.pakfactory.com',
           'https://pakfactory.com',
         ],
@@ -354,7 +354,7 @@ export default defineConfig([
           previewMode: { enable: 'api/draft-mode/enable' },
         },
         allowOrigins: [
-          'http://localhost:3000',
+          'http://localhost:3003',
           'https://pakfactory-com-www.vercel.app',
           'https://pakfactory.com',
           // Magento may serve (or 301 to) the www host; keep both so Presentation

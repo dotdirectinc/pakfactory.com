@@ -2,7 +2,7 @@
  * Public site origin + base path for the blog app (canonicals, JSON-LD, RSS, sitemap).
  *
  * Set `NEXT_PUBLIC_SITE_URL` in repo root `.env.local`
- * (e.g. `https://blog.pakfactory.com`, `https://www.pakfactory.com`, or `http://localhost:3003`).
+ * (e.g. `https://blog.pakfactory.com`, `https://www.pakfactory.com`, or `http://localhost:3004`).
  *
  * `NEXT_PUBLIC_SITE_URL` is the **origin only** (scheme + host, no path). The blog's
  * path prefix lives in `BLOG_BASE_PATH` so the future move from subdomain
@@ -20,7 +20,7 @@ function readEnv(key: string): string {
 }
 
 function defaultLocalOrigin(): string {
-  const port = process.env.PORT?.trim() || "3003";
+  const port = process.env.PORT?.trim() || "3004";
   return `http://localhost:${port}`;
 }
 
@@ -97,7 +97,7 @@ export function absoluteUrl(path = "/"): string {
  * Absolute URL for the sitemap XSL stylesheet.
  *
  * Cannot use `absoluteUrl` here because `NEXT_PUBLIC_SITE_URL` may include a
- * path (e.g. `http://localhost:3003/blog` in local dev) even though `basePath`
+ * path (e.g. `http://localhost:3004/blog` in local dev) even though `basePath`
  * is not set in `next.config.ts`. `URL.origin` strips any path component from
  * the env value so the XSL href always points to the actual served route:
  *   origin + BLOG_BASE_PATH + "/sitemap.xsl"

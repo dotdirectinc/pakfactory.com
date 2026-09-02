@@ -12,7 +12,7 @@ The development tool does not change the rules. Whether you build through **Clau
 
 ## Identity
 
-- **PakFactory** is a custom packaging company. This monorepo powers the **marketing site** (`apps/www`), **blog** (`apps/blog`), and **Sanity Studio** (`apps/studio`). Structured content lives in **Sanity**; Next.js apps consume shared [`@pakfactory/sanity`](packages/sanity) and [`@pakfactory/ui`](packages/ui).
+- **PakFactory** is a custom packaging company. This monorepo powers the **marketing site** (`apps/www`), **blog** (`apps/blog`), **internal admin** (`apps/admin`), and **Sanity Studio** (`apps/studio`). Structured content lives in **Sanity**; Next.js apps consume shared [`@pakfactory/sanity`](packages/sanity) and [`@pakfactory/ui`](packages/ui).
 
 - **Platform Evolution**: The blog is the **first production stream** — patterns proven here (content ops, SEO/AEO/GEO, CI, previews) set the bar for future streams.
 
@@ -47,8 +47,9 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 
 | Path                                 | Role                                                      |
 | ------------------------------------ | --------------------------------------------------------- |
-| [`apps/www`](apps/www)               | Main marketing site (port **3000**)                       |
-| [`apps/blog`](apps/blog)             | Blog app — Platform Evolution stream #1 (port **3001**)   |
+| [`apps/www`](apps/www)               | Main marketing site — rebuild trunk (dev **3003**, prod start **3000**) |
+| [`apps/blog`](apps/blog)             | Blog app — Platform Evolution stream #1 (port **3004**) |
+| [`apps/admin`](apps/admin)           | Internal back office — PROD-2405 (port **4000**); PR base `www-new-release` |
 | [`apps/studio`](apps/studio)         | Sanity Studio (port **3333**)                             |
 | [`packages/sanity`](packages/sanity) | Shared schemas, GROQ queries, scripts                     |
 | [`packages/ui`](packages/ui)         | Shared shadcn-style UI primitives                         |
@@ -59,12 +60,12 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 These rules align with [`.cursor/rules/workspace-instructions.mdc`](.cursor/rules/workspace-instructions.mdc):
 
 - **Do not edit** existing files under `packages/ui/src/components` except when fixing a **confirmed** bug you were asked to fix.
-- **Do not change** `packages/ui/src/globals.css` or `apps/www/src/app/globals.css` for new features (no new design tokens, no drive-by `@theme` edits).
+- **CSS cascade (binding):** consume tokens in this order — (1) `@pakfactory/ui/globals.css`, (2) the app’s `globals.css`, (3) component `className`. Do not hardcode sizes or hex in a component when a token already exists. Add a token to the app CSS only when ui does not define it; if a second app needs the same token, move it into `@pakfactory/ui` (ADR-006). Do not change `packages/ui/src/globals.css` as a drive-by for a single feature.
 - **Allowed:** add **new** primitive files only when required (e.g. from shadcn CLI) — additive only.
-- Prefer layout and one-off styling in **app or page code** using existing tokens and `className`.
 - **Do not change** global shell layout (root `layout.tsx`, global navbar) unless the task explicitly asks for it.
+- **Spacing (8pt, binding):** layout and component padding/gaps use an 8px grid (`--spacing-grid-unit` in `@pakfactory/ui/globals.css`, ADR-006). Prefer even Tailwind steps (`gap-2`/`p-2` = 8px, `gap-4` = 16px, `gap-6` = 24px) or `gap-grid-*` / `p-grid-*` (`grid-1` = 8px). `gap-1` / `p-1` (4px) is the only half-step — tight pairs only (label ↔ description, icon ↔ label). Do not use fractional steps that yield 6/10/14px (`gap-1.5`, `gap-2.5`, `py-2.5`, `mt-1.5`, `space-y-1.5`). Form rhythm: label+description in one group (`gap-1`); group → control `gap-2`; between fields in a card `gap-4`.
 
-For `apps/blog`, do not add new tokens in `apps/blog/src/app/globals.css` for features; use `@pakfactory/ui` tokens and local `className` only.
+For `apps/blog`, prefer `@pakfactory/ui` tokens and `className`; do not add blog-local tokens for a one-off feature. If blog and www need the same token, put it in `@pakfactory/ui`.
 
 ## Sanity and GROQ
 
@@ -147,7 +148,7 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | **ADR-003 — Redirect strategy**      | 404-triggered cached map + tag-revalidated webhook; auto-create on slug change via a Studio document action. Build-time `redirects()` rejected (needs redeploy); Edge Config + middleware deferred (no hot-path cost vs. always-on middleware).  | [`docs/adr/0003-redirect-strategy.md`](docs/adr/0003-redirect-strategy.md)               |
 | **ADR-004 — Media library**          | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md)     |
 | **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
-| **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, and brand tokens centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                                                            | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
+| **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, brand tokens, and **8pt spacing** (`--spacing-grid-unit`) centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                 | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
 | **ADR-013 — Shared core vs feature composition** | Extract shared UI as controlled, props-only `ui/` primitives; features own data/URL wiring in `modules/` controllers. Never import one feature's component into another, and never fork a feature component — extract the shared core. | [`docs/adr/0013-shared-core-vs-feature-composition.md`](docs/adr/0013-shared-core-vs-feature-composition.md) |
 
 > ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) and **ADR-014 (Sanity naming — singular types/titles/desk labels; `_type` renames are content migrations)** are listed in the register linked above.
@@ -189,6 +190,15 @@ Until the unfinished marketing-site rebuild launches, keep it **off** the live `
 - **Shared packages** (`packages/ui`, `packages/sanity`, lockfile, turbo): land on `staging` first if blog/studio need them; then merge `staging` → `www-new-release` the same day. www-only changes may land on `www-new-release` and ride the launch PR.
 - **Launch:** one PR `www-new-release` → `staging`, then the existing auto PR `staging` → `main`. Never open `www-new-release` → `main` ([`enforce-branch-flow.yml`](.github/workflows/enforce-branch-flow.yml) already requires head = `staging`).
 - **Vercel:** public **pakfactory.com** production stays on `main` (current www). The non-prod www project **`pakfactory-com`** (team PakFactory's Projects) stays on Production Branch **`main`** so `origin.case-studies.pakfactory.com` is unchanged. QA the rebuild at the stable git-branch alias [pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app](https://pakfactory-com-git-www-new-release-pakfactory-projects-00b54385.vercel.app) — not a one-off PR preview. Do **not** change that project's Production Branch to `www-new-release`, and do **not** change any live www project's production branch. [`apps/www/vercel.json`](apps/www/vercel.json) `ignoreCommand` builds on `main`, `staging`, and `www-new-release` (exit 1 = do not skip) so that branch actually deploys.
+
+#### Stakeholder staging — `staging.pakfactory.com` (PROD-2404)
+
+- **URL:** <https://staging.pakfactory.com> — always the latest `www-new-release` build. Share this with stakeholders instead of a per-PR preview URL, which changes on every deploy.
+- **How it deploys:** custom domain on the **`pakfactory-com`** Vercel project (team *PakFactory's Projects*) — the same non-prod www project as the git-branch alias above — assigned to the **`www-new-release` git branch**. Every push to that branch redeploys it as a **Preview** deployment, with no manual promotion step; [`apps/www/vercel.json`](apps/www/vercel.json) `ignoreCommand` already whitelists the branch. Confirmed on the PROD-2404 merge: the push produced a `Preview – pakfactory-com` deployment that completed in ~80s and served the new commit.
+- **It is a _preview_ deployment on purpose.** Vercel Authentication is included for Preview and is a paid feature for Production, so do not "promote" this domain or point any Production Branch at `www-new-release`.
+- **Who has access:** anyone signed in to Vercel holding a seat on the *PakFactory's Projects* team (the `pakfactory-com` project). Signed-out visitors get the Vercel login wall and never see site content. There is **no** app-level login for staging and none is planned.
+- **How to request access:** ask Richard Qin for a Vercel team seat. For a stakeholder who should not hold a seat, use Vercel → the www project → Settings → Deployment Protection → **Shareable Link**, time-boxed. Which stakeholders get a seat vs a link is tracked on [PROD-2404](https://dotdirect.atlassian.net/browse/PROD-2404).
+- **Never indexable:** [`apps/www/next.config.ts`](apps/www/next.config.ts) sends `X-Robots-Tag: noindex, nofollow` on every non-production response, and [`apps/www/src/app/robots.txt/route.ts`](apps/www/src/app/robots.txt/route.ts) serves a blanket `Disallow: /`. Both sit behind the auth wall today and are deliberate belt-and-braces for the day protection is relaxed (shareable link, automation bypass token) — do not remove them.
 
 ### Branch & handoff workflow (binding for agents)
 

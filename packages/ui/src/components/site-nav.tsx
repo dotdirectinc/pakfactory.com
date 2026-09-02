@@ -1,91 +1,160 @@
-import type { ReactNode } from "react";
+"use client";
+
+import type {ReactNode} from "react";
 import Link from "next/link";
-import { Box } from "lucide-react";
-import { Button } from "@pakfactory/ui/components/button";
-import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
-import { SiteNavLinks } from "@pakfactory/ui/components/site-nav-links";
-import { SiteNavMobile } from "@pakfactory/ui/components/site-nav-mobile";
+import {Box, FolderOpen, FolderPlus} from "lucide-react";
+import {Button} from "@pakfactory/ui/components/button";
+import {Separator} from "@pakfactory/ui/components/separator";
+import {PageDielineSection} from "@pakfactory/ui/components/page-dieline-section";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@pakfactory/ui/components/tooltip";
+import {cn} from "@pakfactory/ui/lib/utils";
+import {SiteNavLinks} from "@pakfactory/ui/components/site-nav-links";
+import {SiteNavMobile} from "@pakfactory/ui/components/site-nav-mobile";
 
-export type NavLink = { href: string; label: string };
-
-export type SiteNavProps = {
-  /** Second-tier nav links shown on desktop. */
-  navLinks: NavLink[];
-  /** Absolute URL for the primary CTA button. */
-  getQuoteHref: string;
-  /** CTA button label. Defaults to "Get A Quote". */
-  ctaLabel?: string;
-  /**
-   * Optional slot rendered inside the sticky header below the nav row —
-   * the blog uses this for its reading-progress bar.
-   */
-  progressSlot?: ReactNode;
+export type SiteNavCta = {
+  href: string;
+  label: string;
 };
 
-export function SiteNav({
-  navLinks,
-  getQuoteHref,
-  ctaLabel = "Get A Quote",
-  progressSlot,
-}: SiteNavProps) {
+export type SiteNavItem = {
+  key: string;
+  label: string;
+  href?: string;
+};
+
+export type SiteNavRequest = {
+  href: string;
+  count: number;
+  label: string;
+};
+
+export type SiteNavProps = {
+  homeHref?: string;
+  logo?: ReactNode;
+  items: SiteNavItem[];
+  cta: SiteNavCta;
+  /** Sign-in / Account link, rendered with the request folder (after the divider). */
+  signIn?: SiteNavCta;
+  /** Takes the signIn link's place on desktop when the visitor has a session. */
+  account?: ReactNode;
+  request?: SiteNavRequest;
+};
+
+function DefaultLogo() {
   return (
-    <header className="sticky top-0 z-40 lg:-top-16">
-      {/* Top tier — PakFactory brand + desktop CTA + mobile hamburger */}
-      <div className="border-b border-dashed border-border bg-background">
-        <PageDielineSection innerClassName="flex h-16 items-center justify-between">
-          <Link
-            href="/"
-            className="flex shrink-0 items-center gap-2 no-underline"
+    <>
+      <Box
+        className="size-8 text-foreground"
+        strokeWidth={1.75}
+        aria-hidden
+      />
+      <span className="text-xl font-semibold tracking-tight text-foreground">
+        PakFactory
+      </span>
+    </>
+  );
+}
+
+export function SiteNav({
+  homeHref = "/",
+  logo,
+  items,
+  cta,
+  signIn,
+  account,
+  request,
+}: SiteNavProps) {
+  const requestCount = request?.count ?? 0;
+  const requestAria =
+    request && requestCount > 0
+      ? `${request.label}, ${requestCount} ${requestCount === 1 ? "item" : "items"}`
+      : request?.label;
+
+  return (
+    <header className="relative z-50 border-b border-dashed border-border bg-background">
+      <PageDielineSection innerClassName="flex h-16 items-center justify-between">
+        <Link
+          href={homeHref}
+          className="flex shrink-0 items-center gap-3 no-underline"
+        >
+          {logo ?? <DefaultLogo />}
+        </Link>
+
+        <div className="flex items-center gap-5">
+          <SiteNavLinks items={items} />
+          <SiteNavMobile
+            items={items}
+            cta={cta}
+            signIn={signIn}
+            request={request}
+          />
+
+          <Separator orientation="vertical" className="hidden !h-6 md:block" />
+
+          {signIn || account || request ? (
+            <div className="hidden items-center gap-2 md:flex">
+              {request ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative size-9"
+                      aria-label={requestAria}
+                      asChild
+                    >
+                      <Link href={request.href}>
+                        {requestCount > 0 ? (
+                          <FolderOpen className="size-6" strokeWidth={1.75} />
+                        ) : (
+                          <FolderPlus className="size-6" strokeWidth={1.75} />
+                        )}
+                        {requestCount > 0 ? (
+                          <span
+                            className={cn(
+                              "pointer-events-none absolute -right-0.5 -bottom-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-semibold text-background ring-2 ring-background",
+                              requestCount > 99 && "px-1.5 text-[9px]",
+                            )}
+                          >
+                            {requestCount > 99 ? "99+" : requestCount}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="bottom"
+                    sideOffset={8}
+                    className="rounded-full px-3 py-1.5 text-[13px] font-medium [&>svg]:hidden"
+                  >
+                    {request.label}
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+              {account ??
+                (signIn ? (
+                  <Link
+                    href={signIn.href}
+                    className="py-2 text-base font-medium text-foreground no-underline transition-colors hover:text-foreground/80"
+                  >
+                    {signIn.label}
+                  </Link>
+                ) : null)}
+            </div>
+          ) : null}
+
+          <Button
+            className="hidden h-10 rounded-full bg-primary px-6 text-base font-medium text-primary-foreground hover:bg-primary/90 sm:inline-flex"
+            asChild
           >
-            <Box
-              className="size-7 text-foreground"
-              strokeWidth={1.75}
-              aria-hidden
-            />
-            <span className="text-[15px] font-semibold tracking-tight text-foreground lg:text-xl">
-              PakFactory
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <Button
-              className="hidden h-10 rounded-full bg-primary px-6 text-base font-medium text-white hover:bg-primary/90 lg:inline-flex"
-              asChild
-            >
-              <a href={getQuoteHref}>{ctaLabel}</a>
-            </Button>
-
-            <SiteNavMobile
-              navLinks={navLinks}
-              getQuoteHref={getQuoteHref}
-              ctaLabel={ctaLabel}
-            />
-          </div>
-        </PageDielineSection>
-      </div>
-
-      {/* Bottom tier — nav links (desktop only) */}
-      <div className="hidden bg-background lg:block">
-        <div className="border-b border-dashed border-border">
-          <PageDielineSection innerClassName="flex h-16 items-center gap-8">
-            <SiteNavLinks links={navLinks} />
-          </PageDielineSection>
+            <Link href={cta.href}>{cta.label}</Link>
+          </Button>
         </div>
-        {progressSlot && (
-          <PageDielineSection innerClassName="px-0">
-            {progressSlot}
-          </PageDielineSection>
-        )}
-      </div>
-
-      {/* Progress slot — always rendered even on mobile (e.g. reading progress bar) */}
-      {progressSlot && (
-        <div className="lg:hidden">
-          <PageDielineSection innerClassName="px-0">
-            {progressSlot}
-          </PageDielineSection>
-        </div>
-      )}
+      </PageDielineSection>
     </header>
   );
 }

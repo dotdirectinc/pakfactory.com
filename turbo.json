@@ -13,7 +13,9 @@
     "SANITY_STUDIO_PREVIEW_URL",
     "PORT",
     "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_WWW_URL",
+    "NEXT_PUBLIC_BLOG_URL"
   ],
   "tasks": {
     "dev": {
@@ -29,12 +31,25 @@
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL",
         "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_WWW_URL",
+        "NEXT_PUBLIC_BLOG_URL",
+        "NEXT_PUBLIC_BLOG_BASE_PATH",
         "CONTRIBUTE_WEBHOOK_URL",
         "NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL",
+        "NEWSLETTER_WEBHOOK_URL",
+        "NEXT_PUBLIC_NEWSLETTER_WEBHOOK_URL",
+        "BLOG_DISABLE_INDEXING",
+        "NEXT_PUBLIC_WATERMARK_MODE",
         "PORT",
         "BACKEND_API_BASE_URL",
         "SERVICE_SHARED_SECRET",
-        "WWW_ORIGIN_PROXY_SECRET"
+        "WWW_ORIGIN_PROXY_SECRET",
+        "WWW_DISABLE_INDEXING",
+        "ADMIN_INTERNAL_ACCOUNT_ALLOWLIST",
+        "ADMIN_DATA_SOURCE",
+        "ADMIN_DEV_BYPASS",
+        "ADMIN_DEV_BYPASS_ZOHO_USER_ID",
+        "NEXT_PUBLIC_ADMIN_URL"
       ]
     },
     "build": {
@@ -52,6 +67,8 @@
         "NEXT_PUBLIC_SANITY_API_VERSION",
         "NEXT_PUBLIC_SANITY_STUDIO_URL",
         "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_WWW_URL",
+        "NEXT_PUBLIC_BLOG_URL",
         "SANITY_API_READ_TOKEN",
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
@@ -61,7 +78,10 @@
     "@pakfactory/www#build": {
       "dependsOn": [
         "@pakfactory/sanity#typecheck",
-        "@pakfactory/ui#typecheck"
+        "@pakfactory/ui#typecheck",
+        "@pakfactory/supabase#typecheck",
+        "@pakfactory/auth-ui#typecheck",
+        "@pakfactory/brief-builder-ui#typecheck"
       ],
       "outputs": [
         ".next/**",
@@ -74,16 +94,22 @@
         "NEXT_PUBLIC_SANITY_STUDIO_URL",
         "SANITY_STUDIO_URL",
         "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_WWW_URL",
+        "NEXT_PUBLIC_BLOG_URL",
         "SANITY_API_READ_TOKEN",
         "SANITY_API_WRITE_TOKEN",
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL",
         "SANITY_REVALIDATE_SECRET",
+        "VERCEL_ENV",
         "WWW_DISABLE_INDEXING",
+        "NEXT_PUBLIC_WATERMARK_MODE",
         "BACKEND_API_BASE_URL",
         "SERVICE_SHARED_SECRET",
-        "WWW_ORIGIN_PROXY_SECRET"
+        "WWW_ORIGIN_PROXY_SECRET",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY"
       ]
     },
     "@pakfactory/blog#build": {
@@ -103,14 +129,42 @@
         "NEXT_PUBLIC_SANITY_STUDIO_URL",
         "NEXT_PUBLIC_SITE_URL",
         "NEXT_PUBLIC_BLOG_BASE_PATH",
+        "NEXT_PUBLIC_WWW_URL",
         "SANITY_API_READ_TOKEN",
         "SANITY_API_WRITE_TOKEN",
         "SANITY_STUDIO_PROJECT_ID",
         "SANITY_STUDIO_DATASET",
         "SANITY_STUDIO_PREVIEW_URL",
         "SANITY_REVALIDATE_SECRET",
+        "BLOG_DISABLE_INDEXING",
+        "NEWSLETTER_WEBHOOK_URL",
+        "NEXT_PUBLIC_NEWSLETTER_WEBHOOK_URL",
         "CONTRIBUTE_WEBHOOK_URL",
         "NEXT_PUBLIC_CONTRIBUTE_WEBHOOK_URL"
+      ]
+    },
+    "@pakfactory/admin#build": {
+      "dependsOn": [
+        "@pakfactory/ui#typecheck",
+        "@pakfactory/domain#typecheck",
+        "@pakfactory/supabase#typecheck",
+        "@pakfactory/auth-ui#typecheck",
+        "@pakfactory/brief-builder-ui#typecheck"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_ADMIN_URL",
+        "NEXT_PUBLIC_WWW_URL",
+        "ADMIN_INTERNAL_ACCOUNT_ALLOWLIST",
+        "ADMIN_DATA_SOURCE",
+        "ADMIN_DEV_BYPASS",
+        "ADMIN_DEV_BYPASS_ZOHO_USER_ID",
+        "VERCEL_ENV"
       ]
     },
     "lint": {},

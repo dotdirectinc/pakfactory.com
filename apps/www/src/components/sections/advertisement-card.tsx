@@ -126,7 +126,6 @@ const AdvertisementCard = ({
                 priority
               />
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element -- demo fallback host not in next/image config
               <img
                 src={DEMO_FALLBACK_IMAGE}
                 alt={bannerAlt?.trim() || "Featured collection"}

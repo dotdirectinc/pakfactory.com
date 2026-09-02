@@ -45,6 +45,7 @@ Summary for implementation (do not contradict those rules):
 - Do **not** change `packages/ui/src/components` primitives except a **confirmed** bug you were asked to fix.
 - Do **not** change `packages/ui/src/globals.css` or `apps/www/src/app/globals.css` for new features (no new tokens or drive-by `@theme` edits); use existing tokens and `className` in app/block code.
 - Do **not** change root shell (`layout.tsx`, global navbar) unless the task explicitly asks.
+- **Spacing:** 8pt grid per [`AGENTS.md`](../../../AGENTS.md) § UI and design system.
 
 ---
 
