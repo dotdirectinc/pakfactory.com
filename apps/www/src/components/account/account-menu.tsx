@@ -131,7 +131,25 @@ export function AccountMenu({
                   submits — wrapping the form in the item leaves its padding dead.
                 */}
                 <form action={signOut}>
-                    <DropdownMenuItem asChild>
+                    {/*
+                      onSelect must preventDefault, or sign-out silently does
+                      nothing — the browser logs "Form submission canceled
+                      because the form is not connected".
+
+                      Selecting a Radix item closes the menu, which unmounts this
+                      <form>. React dispatches a Server Action asynchronously
+                      after the submit event, so the form is gone before the POST
+                      is sent. The click registers, the menu closes, and nothing
+                      else happens.
+
+                      preventDefault keeps the menu open long enough for the
+                      action to dispatch; the redirect inside it then navigates
+                      away, so the menu never needs closing by hand.
+
+                      Same fix as apps/admin (PR #419) — the identical pattern
+                      there failed identically.
+                    */}
+                    <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                         <button type="submit" className="w-full text-left">
                             {ACCOUNT_COPY.signOut}
                         </button>
