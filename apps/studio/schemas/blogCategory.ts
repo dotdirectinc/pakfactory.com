@@ -42,9 +42,12 @@ export const blogCategory = defineType({
         Rule.required()
           .custom(uniqueSlugPerLanguage('blogCategory')),
     }),
+    // `summary` / `heroImage` (PROD-2293) — added beside the deprecated
+    // originals; the query reads the new field and falls back to the old until
+    // migrate:blogcategory-rename-fields has run, so the blog app is untouched.
     defineField({
-      name: 'shortDescription',
-      title: 'Short description',
+      name: 'summary',
+      title: 'Summary',
       type: 'text',
       rows: 2,
       group: 'details',
@@ -54,6 +57,16 @@ export const blogCategory = defineType({
         Rule.max(100).warning(
           'Keep it under ~100 characters (spaces included) so it fits the homepage category card.',
         ),
+    }),
+    defineField({
+      name: 'shortDescription',
+      title: 'Short description (deprecated)',
+      type: 'text',
+      rows: 2,
+      group: 'details',
+      readOnly: true,
+      deprecated: { reason: 'Renamed to Summary (PROD-2293). Run migrate:blogcategory-rename-fields; removed after.' },
+      description: 'Deprecated — use Summary above. Kept until its value is migrated.',
     }),
     defineField({
       name: 'description',
@@ -66,7 +79,7 @@ export const blogCategory = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField(taggedImageField({
-      name: 'bannerImage',
+      name: 'heroImage',
       title: 'Featured image / banner',
       type: 'image',
       group: 'details',
@@ -81,6 +94,20 @@ export const blogCategory = defineType({
           type: 'string',
           description: 'Optional. Falls back to the alt text on the image asset.',
         }),
+      ],
+    })),
+    defineField(taggedImageField({
+      name: 'bannerImage',
+      title: 'Featured image / banner (deprecated)',
+      type: 'image',
+      group: 'details',
+      readOnly: true,
+      deprecated: { reason: 'Renamed to Featured image (heroImage) (PROD-2293). Run migrate:blogcategory-rename-fields; removed after.' },
+      mediaTags: [MEDIA_TAG.blog],
+      options: { hotspot: true },
+      description: 'Deprecated — use the Featured image above. Kept until its value is migrated.',
+      fields: [
+        defineField({ name: 'alt', title: 'Alt text override', type: 'string' }),
       ],
     })),
 
