@@ -61,13 +61,17 @@ export const customizationType = defineType({
       options: {
         layout: 'radio',
         list: [
-          { title: 'One — a single option from this type', value: 'single' },
-          { title: 'Several — any number of this type\'s options', value: 'multiple' },
+          { title: 'One — a single option from this type', value: 'one' },
+          { title: 'Several — any number of this type\'s options', value: 'many' },
         ],
       },
-      // Defaults to `single`, which is what the diagram states for every Material and
-      // Printing type and for most of Finishing; `multiple` is the marked exception.
-      initialValue: 'single',
+      // `one` / `many`, matching `property.cardinality` — the two fields share a name
+      // and must share a vocabulary, or a query written from the handbook reads `one`
+      // and finds `single` (Eric's schema review, D48). The Studio labels are unchanged.
+      //
+      // Defaults to `one`, which is what the diagram states for every Material and
+      // Printing type and for most of Finishing; `many` is the marked exception.
+      initialValue: 'one',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -78,13 +82,14 @@ export const customizationType = defineType({
       rows: 3,
       description: 'One sentence on what this customization type is, for the content team.',
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'content',
-      description: 'Lower numbers appear first within the category.',
-    }),
+    // `order` was REMOVED here on 2026-09-01. It sorted Types within their category
+    // and nothing read it — no GROQ query, no desk pane, no registry projection (the
+    // exporter's `order` comes from Postgres `sort_order`). Its stated successor, "an
+    // ordered array on the listing/nav singleton (PROD-2292)", DOES NOT EXIST and is
+    // not in that ticket's scope: PROD-2292 builds 19 standing pages and none of them
+    // is a customization/capabilities listing. Keeping a read-only field against a
+    // successor nobody has specified is how a deprecation becomes permanent. The 14
+    // values are recorded in ADR-017 if the ordering is ever wanted back.
     defineField({
       name: 'media',
       title: 'Media',
@@ -115,7 +120,7 @@ export const customizationType = defineType({
             type: 'reference',
             to: [{ type: 'property' }],
             options: { disableNew: true },
-            description: 'The named dimension — Sustainability, Colour, Finish Type.',
+            description: 'The named dimension — Sustainability, Color, Finish Type.',
             validation: (Rule) => Rule.required(),
           }),
           defineField({

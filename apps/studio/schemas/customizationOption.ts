@@ -1,7 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
-import { deprecateField } from '../lib/schema-guards'
+import { faqsField } from '../lib/faq-field'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -269,20 +269,45 @@ export const customizationOption = defineType({
           ],
         },
       ],
-      // Self-reference is an error; asymmetry is a warning. Symmetry is only asked of
-      // option→option pairs: a Type has no reciprocal field to answer with, so naming
-      // a whole Type is one-directional by construction. That Type target is what
-      // makes `customizationType.cardinality` a prerequisite (D43) — "can't combine
-      // with Embossing & Debossing" only reads unambiguously once you know whether a
-      // customer takes one option from that type or several.
-      validation: (Rule) =>
+      // Two rules at two levels, because they fail differently (D48's principle:
+      // error where a wrong entry means the RIGHT MECHANISM never gets used and
+      // nobody notices; warning where it is visible on the page and someone reports).
+      //
+      // ⚠️ The previous single rule carried the comment "Self-reference is an error"
+      // while terminating in `.warning()` — the comment described the intent and the
+      // code did not deliver it. Splitting them is what makes the levels real.
+      validation: (Rule) => [
+        // ── ERROR ──────────────────────────────────────────────────────────────
+        // Self-reference, and the own-Type clash D43 requires. Neither has a
+        // legitimate case: an Option cannot clash with itself, and it is BY
+        // DEFINITION inside its own Type — so an error here can only fire on invalid
+        // data, which is what makes an error safe. A warning gets published through,
+        // and not carelessly: the editor believes they have just recorded "only one
+        // lamination per box", so the warning reads as pedantry.
+        Rule.custom(async (value, context) => {
+          const doc = context.document as { _id?: string; type?: { _ref?: string } } | undefined
+          const selfId = (doc?._id ?? '').replace(/^drafts\./, '')
+          const ownTypeRef = doc?.type?._ref?.replace(/^drafts\./, '')
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+
+          if (ids.includes(selfId)) return 'An option cannot be incompatible with itself.'
+
+          // The message does the teaching, and that is the point — a bare rejection
+          // blocks the editor without showing them the field they actually wanted.
+          if (ownTypeRef && ids.includes(ownTypeRef)) {
+            return "An Option can't clash with its own Type. If you mean 'only one Lamination per box', set cardinality to one on the Lamination Type instead — that's a different field, on the Type."
+          }
+          return true
+        }),
+        // ── WARNING ────────────────────────────────────────────────────────────
+        // Asymmetry is visible and recoverable, so it warns. Symmetry is only asked
+        // of option→option pairs: a Type has no reciprocal field to answer with, so
+        // naming a whole Type is one-directional by construction.
         Rule.custom(async (value, context) => {
           const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
           const refs = (value as { _ref?: string }[] | undefined) ?? []
           const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
-          if (ids.includes(selfId)) {
-            return 'An option cannot be incompatible with itself.'
-          }
           if (ids.length === 0) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
@@ -302,6 +327,7 @@ export const customizationOption = defineType({
           }
           return true
         }).warning(),
+      ],
     }),
     // D47 §1 — `achieves` names CANDIDATES, not a recipe. It points from a technical
     // option at the simplified, customer-facing option it can deliver: VMPET Film
@@ -401,33 +427,20 @@ export const customizationOption = defineType({
         defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
       ],
     }),
-    // ─── STILL DEPRECATED — step 5 could not finish these three ───────────────
-    // The Rename Map's own warning is that "deprecating is not finishing". Six of the
-    // nine deprecated fields came out; these three cannot, and each is blocked for a
-    // different reason worth stating rather than re-deriving:
+    // `whatIsBlock` was REMOVED here on 2026-09-01 (Eric's deprecated-fields removal
+    // plan). Step 5 had held it back on the grounds that its 8 documents of definition
+    // copy — SBS, FBB, CCNB, Kraft and the four laminations — were the only copy, and
+    // `glossaryTerm` held 0 documents to move them to. That reasoning was sound and is
+    // now MOOT, not solved: Eric read the 8 values and chose to DISCARD them. Glossary
+    // content will be written fresh in PakFactory's voice, so carrying eight inherited
+    // paragraphs through a migration first buys nothing. The earlier plan in
+    // `Rename Map.md:64` / `Entities/Glossary Term.md:47` (migrate into Glossary Terms)
+    // is superseded — do not resurrect it from those documents.
     //
-    //   whatIsBlock      8 populated · destination `glossaryTerm` exists but holds
-    //                    0 documents. Removing it destroys the only copy.
-    //   comparedAgainst  8 populated · no successor field at all.
-    //   faqs             2 populated · not in the designed field list, no successor.
+    // The `glossaryTerm` reference field above STAYS. It is set on 0 of 33 options and
+    // there are 0 glossaryTerm documents, so it resolves to nothing today; that is an
+    // unbuilt layer, not a fault.
     //
-    // None is a migration. Each needs a decision about where the content goes, or an
-    // accepted loss. They are marked read-only meanwhile so nothing new accrues.
-    //
-    // Retired for the same reason Product's did: an Option is an instance, and the
-    // definition of what a thing IS belongs to the Glossary Term, stated once, not
-    // restated per Option.
-    defineField({
-      name: 'whatIsBlock',
-      title: 'What is it? (old)',
-      type: 'object',
-      group: 'content',
-      fields: [
-        { name: 'title', type: 'string', title: 'Heading' },
-        { name: 'body', type: 'array', title: 'Body', of: [{ type: 'block' }] },
-      ],
-      ...deprecateField('Retired — the definition belongs to the Glossary Term. NOT YET REMOVABLE: 8 options hold copy and there are 0 Glossary Term documents to move it to. Removing it now would destroy the only copy.'),
-    }),
     // `whyChooseBlock` was REMOVED here (Rename Map step 5). All 8 Options that
     // carried it have a populated `benefits`, verified before removal — the copy the
     // earlier migration made is complete, so the old field held nothing `benefits`
@@ -444,53 +457,32 @@ export const customizationOption = defineType({
     // PROD-2250 — it was the same relationship the "products only" decision routed
     // exclusively through `incompatibleWith`, expressed in the opposite direction,
     // and it was never in the entity spec. 0/33 options populated it.
-    // D47 §5 / ADR-017 — retired, matching the treatment its Product twin already
-    // shipped (`product.comparedAgainst`). Comparison is content: a guide, written
-    // once, linked from both. Kept rather than dropped because 8 of 33 options are
-    // populated; `deprecateField` renders it read-only with a visible reason so the
-    // data stays legible while nothing new is written. The minimum-3 rule goes with
-    // it — a read-only field cannot be brought up to a minimum.
-    defineField({
-      name: 'comparedAgainst',
-      title: 'Compared against (old)',
-      type: 'array',
-      group: 'categorization',
-      of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-      ...deprecateField('Retired — comparison is content: a guide, written once, linked from both. NOT YET REMOVABLE: 8 options are populated and there is no successor field, so removal is deletion, not migration.'),
-    }),
+    // `comparedAgainst` was retired in D47 §5 / ADR-017 (comparison is content: a guide,
+    // written once, linked from both) and REMOVED here on 2026-09-01. Step 5 had kept it
+    // read-only because 8 of 33 options were populated and there was no successor field,
+    // so removal would be deletion rather than migration. Eric confirmed the deletion:
+    // each of the 8 held exactly three REFERENCES to other options — no written content
+    // of any kind — and the targets are mock documents due for wholesale replacement.
+    // Nothing authored is lost.
     // `relatedCustomizations` ("See also — cross-category links") was hard-removed
     // here in PROD-2250 / D47 §5. Unlike `comparedAgainst` it was populated on 0 of
     // 33 options, so there was no data to keep legible and nothing to deprecate
     // toward. The migration unsets the key on any straggler.
     // Note: `glossaryTerm.relatedCustomizations` is a different field on a different
     // type and is untouched.
-    // Deprecated, not deleted (PROD-2250, Rename Map). `faqs` is NOT in the designed
-    // field list in `Entities/Customization Option.md` — which that file calls "the
-    // truth until it ships" — and it appears nowhere in it. But 2 Options carry real
-    // Q&A, so deleting the field would destroy content that has no home yet. This
-    // answers "not designed" without answering "throw it away".
-    defineField({
-      name: 'faqs',
-      title: 'FAQs (old)',
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField('Not in the designed field list for Customization Option — do not add more. The 2 populated documents are kept until there is somewhere to move them.'),
-      of: [
-        {
-          type: 'object',
-          fields: [
-            { name: 'question', type: 'string', title: 'Question' },
-            {
-              name: 'answer',
-              type: 'array',
-              title: 'Answer',
-              of: [{ type: 'block' }],
-            },
-          ],
-          preview: { select: { title: 'question' } },
-        },
-      ],
-    }),
+    // Restored 2026-08-31 (D48, Eric's schema review). I had deprecated this on the
+    // grounds that it was "not in the designed field list" — but that was a SILENCE,
+    // not a decision: no D-number ever removed it, and nine other public-page types
+    // design `faqs`. Principle Q-D permits it, and both cases genuinely occur —
+    // "does lamination affect recyclability?" is shared across all three laminations,
+    // "why does Soft Touch scuff?" is not.
+    //
+    // Uses the shared `faqsField` in `mixed` mode, which is the same call Guide and
+    // Post make, so the members match reference-for-reference rather than by
+    // reimplementation. ⚠️ The three existing entries were written against an
+    // ANONYMOUS object member and carry no `_type`; the migration stamps them
+    // `faqItem` so the helper can render them.
+    faqsField({ group: 'categorization', mode: 'mixed' }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
 
