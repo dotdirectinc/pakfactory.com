@@ -3,6 +3,7 @@ import type {
   RequestDraft,
   RequestLine,
   RequestSummary,
+  RequestAttachment,
   RequestEntryKind,
   ShippingAddress,
 } from "@pakfactory/domain/request";
@@ -54,6 +55,15 @@ type StoredSubmission = {
   metadata?: { entryKind?: RequestEntryKind };
 };
 
+/** A row of `public.rfq_attachment` — OUR index of what was actually stored. */
+export type RfqAttachmentRow = {
+  id: string;
+  filename: string;
+  kind: string | null;
+  content_type: string | null;
+  bytes: number | string | null;
+};
+
 export type RfqRow = {
   id: string;
   reference: string | null;
@@ -65,6 +75,28 @@ export type RfqRow = {
   created_at: string;
   updated_at: string;
 };
+
+/**
+ * 🔴 Read from `rfq_attachment`, NEVER from `payload.attachments`.
+ *
+ * The payload lists what the buyer's browser said it uploaded. This table lists
+ * what `persistAttachments` actually kept — it drops files that fail the type or
+ * size check after upload, and files whose key was not under the submission's own
+ * `pending/` prefix. Rendering the payload copy would offer downloads that 404,
+ * and only the row carries the `id` the resolve route needs.
+ *
+ * `bytes` is bigint in Postgres, which PostgREST serialises as a STRING to avoid
+ * precision loss. Coerce, or the UI formats "248310" as NaN.
+ */
+export function toAttachments(rows: RfqAttachmentRow[] | null): RequestAttachment[] {
+  return (rows ?? []).map((r) => ({
+    id: r.id,
+    name: r.filename,
+    kind: r.kind ?? "reference",
+    contentType: r.content_type ?? "application/octet-stream",
+    bytes: r.bytes === null || r.bytes === undefined ? null : Number(r.bytes),
+  }));
+}
 
 const asSubmission = (payload: unknown): StoredSubmission =>
   payload && typeof payload === "object" ? (payload as StoredSubmission) : {};
@@ -117,9 +149,6 @@ function toDraft(row: RfqRow, s: StoredSubmission): RequestDraft {
     express: s.metadata?.entryKind === "express",
     productsExpanded: lines.length > 0,
     entryKind: s.metadata?.entryKind ?? "products",
-    // Names only. Attachments are `[]` on every submission until the S3 upload
-    // step (ADR-0013) lands, so this is empty in practice today.
-    artworkNames: (s.attachments ?? []).map((a) => a.name),
     submittedAt: row.submitted_at,
     ref: row.reference,
   };
@@ -148,7 +177,10 @@ function toLines(row: RfqRow, s: StoredSubmission): RequestLine[] {
   }));
 }
 
-export function toRequest(row: RfqRow): Request {
+export function toRequest(
+  row: RfqRow,
+  attachmentRows: RfqAttachmentRow[] | null = null,
+): Request {
   const s = asSubmission(row.payload);
   return {
     id: row.id,
@@ -160,6 +192,7 @@ export function toRequest(row: RfqRow): Request {
     zohoLeadId: row.crm_lead_id,
     draft: toDraft(row, s),
     lines: toLines(row, s),
+    attachments: toAttachments(attachmentRows),
     submittedAt: row.submitted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
