@@ -3,7 +3,7 @@ name: blog-jira-delivery
 description: >-
   End-to-end delivery for PakFactory Blog 3.0 Jira stories (PROD-*): read ticket,
   plan against apps/studio schemas, update memory.md and blog-3-jira-conventions.md,
-  implement on feature/blog, verify build, commit, transition Jira to Request For Approval.
+  implement on feature/blog, verify build, commit, comment on Jira, then ASK before transitioning to Request For Approval.
 ---
 
 # Blog Jira delivery workflow
@@ -20,7 +20,7 @@ Use this skill when the user asks to implement a Blog 3.0 story, move a PROD tic
 ## Phase 1 — Intake (Jira + repo)
 
 1. Fetch the Jira issue (Atlassian MCP: `getJiraIssue`, cloudId from site).
-2. Transition to **In Progress** (`transitionJiraIssue`, transition id `61` on Product project).
+2. Transition to **In Progress** (`transitionJiraIssue`, transition id `61` on Product project). Ungated — a statement of intent, reversible, summons nobody (`jira-transition-gate.md`).
 3. Grep repo for existing routes, queries, and `_components` to avoid duplicate work.
 
 ## Phase 2 — Plan (print to user)
@@ -61,9 +61,13 @@ Local verify: `http://localhost:3004` — env/seed troubleshooting in [`apps/blo
 ## Phase 6 — Commit + Jira handoff
 
 1. Commit: `PROD-####: short summary` + `Refs: PROD-####` in body.
-2. Transition issue to **Request For Approval** (transition id `51`).
-3. Comment on Jira: branch, commit SHA, shipped list, verify commands.
-4. Print **implementation summary** for the user (files, behavior, ops follow-ups).
+2. Comment on Jira: branch, commit SHA, shipped list, verify commands. **Ungated.**
+3. Print **implementation summary** for the user (files, behavior, ops follow-ups).
+4. 🔴 **STOP.** Request For Approval (transition id `51`) is a **forward** move — it
+   summons a reviewer. Follow `jira-transition-gate.md`: show the confirmation block
+   with the ticket's acceptance criteria marked met / not met / unverified, and wait
+   for an explicit yes. Never transition in the same turn as the commit. If the user
+   does not answer, the comment stands and the status does not change.
 
 Do **not** push or open PR unless the user asks.
 
