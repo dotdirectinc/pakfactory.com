@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { RequestDetailCustomerPaperStack } from "@/components/requests/request-detail-customer-paper";
+import { RequestAttachments } from "@/components/requests/request-attachments";
 import { RequestDetailHeader } from "@/components/requests/request-detail-header";
 import { RequestDetailTimeline } from "@/components/requests/request-detail-timeline";
 import type { Request, ShippingAddress } from "@pakfactory/domain/request";
@@ -198,15 +199,15 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
             versions={request.versions}
           />
 
-          {draft.artworkNames.length > 0 ? (
-            <DetailSection title={ADMIN_REQUESTS_COPY.sectionArtwork}>
-              <ul className="list-inside list-disc text-sm text-foreground">
-                {draft.artworkNames.map((name) => (
-                  <li key={name}>{name}</li>
-                ))}
-              </ul>
-            </DetailSection>
-          ) : null}
+          {/* Always rendered, unlike the old names-only block which hid itself
+              when empty. A rep needs to know a request has NO files as much as
+              which ones it has — an absent section reads as "not loaded yet". */}
+          <DetailSection title={ADMIN_REQUESTS_COPY.sectionArtwork}>
+            <RequestAttachments
+              rfqId={request.id}
+              attachments={request.attachments}
+            />
+          </DetailSection>
 
           {draft.servicesEnabled ? (
             <DetailSection title={ADMIN_REQUESTS_COPY.sectionServices}>

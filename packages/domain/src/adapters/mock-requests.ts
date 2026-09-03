@@ -9,6 +9,7 @@ const FIXTURES: Request[] = [
     submittedAt: "2026-08-20T14:30:00.000Z",
     createdAt: "2026-08-20T14:30:00.000Z",
     updatedAt: "2026-08-20T14:30:00.000Z",
+    attachments: [],
     lines: [
       {
         id: "line_1",
@@ -46,7 +47,6 @@ const FIXTURES: Request[] = [
       express: false,
       productsExpanded: true,
       entryKind: "products",
-      artworkNames: [],
       submittedAt: "2026-08-20T14:30:00.000Z",
       ref: "RFQ-10042",
     },
@@ -92,6 +92,15 @@ const FIXTURES: Request[] = [
     submittedAt: "2026-08-22T09:15:00.000Z",
     createdAt: "2026-08-22T09:15:00.000Z",
     updatedAt: "2026-08-22T09:15:00.000Z",
+    attachments: [
+      {
+        id: "att-mock-1",
+        name: "brand-guide.pdf",
+        kind: "brief",
+        contentType: "application/pdf",
+        bytes: 248_310,
+      },
+    ],
     lines: [],
     draft: {
       notes: "",
@@ -112,7 +121,6 @@ const FIXTURES: Request[] = [
       express: true,
       productsExpanded: false,
       entryKind: "express",
-      artworkNames: ["brand-guide.pdf"],
       submittedAt: "2026-08-22T09:15:00.000Z",
       ref: "RFQ-10043",
     },

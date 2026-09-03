@@ -80,9 +80,29 @@ export type RequestDraft = {
   express: boolean;
   productsExpanded: boolean;
   entryKind: RequestEntryKind;
-  artworkNames: string[];
   submittedAt: string | null;
   ref: string | null;
+};
+
+/**
+ * A file stored against the request.
+ *
+ * 🔴 This replaces `RequestDraft.artworkNames`, and the difference is not
+ * cosmetic. `artworkNames` came from `rfq.payload.attachments` — what the buyer
+ * CLAIMED to send. This comes from the `rfq_attachment` table — what we actually
+ * STORED. `persistAttachments` rejects files that fail the type or size check
+ * after upload, so the two lists genuinely differ, and offering a download for a
+ * name that only ever existed in the payload would 404 on click.
+ *
+ * `id` is the attachment row id, and it is what the resolve route needs; a name
+ * alone can never be downloaded.
+ */
+export type RequestAttachment = {
+  id: string;
+  name: string;
+  kind: string;
+  contentType: string;
+  bytes: number | null;
 };
 
 export type Request = {
@@ -91,6 +111,8 @@ export type Request = {
   zohoLeadId?: string | null;
   draft: RequestDraft;
   lines: RequestLine[];
+  /** From `rfq_attachment`, readable by the assigned sales member under RLS. */
+  attachments: RequestAttachment[];
   submittedAt: string;
   createdAt: string;
   updatedAt: string;
