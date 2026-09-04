@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@pakfactory/ui/components/button";
 import { createClient } from "@pakfactory/supabase/client";
+import { INTERNAL_EMAIL_DOMAIN } from "@/lib/auth/internal-domain";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -53,7 +54,14 @@ export function AdminLoginGoogleButton({
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: callback.toString() },
+        options: {
+          redirectTo: callback.toString(),
+          // `hd` asks Google to show only company accounts, so a colleague with
+          // a personal Google session is not silently signed in as the wrong
+          // person. It is a HINT, not a control — the callback verifies both the
+          // domain and internal_user membership, and that is what actually gates.
+          queryParams: { hd: INTERNAL_EMAIL_DOMAIN },
+        },
       });
 
       if (oauthError) {
