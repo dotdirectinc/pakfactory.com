@@ -13,6 +13,7 @@ import {
     isShippingReady,
 } from '@/lib/request/validation';
 import {toWireSubmission} from '@/lib/rfq/to-wire-payload';
+import {getUser} from '@pakfactory/supabase/session';
 
 export type SubmitRequestInput = {
     draft: RequestDraft;
@@ -108,7 +109,28 @@ export async function submitRequest(
     // server-side; a buyer who edits and resubmits gets a new one and a second
     // RFQ, which is sales' call to judge, not ours (ADR-0012 D10).
     const submissionId = randomUUID();
-    const body = JSON.stringify(toWireSubmission(draft, lines, submissionId));
+
+    // 🔴 Read from the SESSION here, never taken from the client. This is the
+    // whole of what ADR-0012 D1 means by "identified by the BFF": the browser
+    // cannot reach the backend at all (HMAC gates it), so the id can only come
+    // from a server action that has already verified the session cookie.
+    //
+    // A guest submits with no id and that is the normal path — their
+    // confirmation email is their record, and history is an account feature
+    // (decided 2026-09-04). Failing to read the session must NOT fail the
+    // submit: a buyer who is signed in but whose session lookup errors should
+    // still get their request in, as a guest would.
+    let customerId: string | undefined;
+    try {
+        customerId = (await getUser())?.id;
+    } catch (err) {
+        console.error('[submitRequest] session lookup failed; submitting as guest', err);
+    }
+
+    const wire = toWireSubmission(draft, lines, submissionId);
+    const body = JSON.stringify(
+        customerId ? {...wire, customerId} : wire,
+    );
     const {ts, sig} = sign(body, secret);
     const ip = await clientIp();
 
