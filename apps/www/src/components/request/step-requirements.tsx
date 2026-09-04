@@ -1,5 +1,7 @@
 'use client';
 
+import {useEffect, useRef, useState} from 'react';
+
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -9,6 +11,11 @@ import {
     type AssistFill,
 } from '@/components/request/brief-assist-upload';
 import {FilesDropzone} from '@/components/request/files-dropzone';
+import {
+    fileRejectionReason,
+    useAttachmentUpload,
+} from '@/lib/rfq/use-attachment-upload';
+import type {RequestReferenceImage} from '@/lib/request/request.storage';
 import {ShippingToAddress} from '@/components/request/shipping-to-address';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft} from '@/lib/request/request.storage';
@@ -32,6 +39,41 @@ export function StepRequirements({
     sectionRef,
     className,
 }: StepRequirementsProps) {
+    // 🔴 Local state, then committed to the draft on change. The upload hook
+    // needs a React setter — uploads finish out of order and each result is
+    // written with `prev => …` keyed on id — whereas `onPatch` takes a whole
+    // object. Building one from a captured `draft` would let two concurrent
+    // uploads overwrite each other with stale snapshots.
+    const [images, setImages] = useState<RequestReferenceImage[]>(
+        draft.referenceImages ?? [],
+    );
+    const [rejected, setRejected] = useState<string[]>([]);
+    const upload = useAttachmentUpload(draft.id, setImages);
+
+    const onPatchRef = useRef(onPatch);
+    onPatchRef.current = onPatch;
+
+    useEffect(() => {
+        // `onPatch` is not stable across renders, so it is read through a ref
+        // rather than listed as a dependency — depending on it directly would
+        // commit on every render. `images` is the only real input.
+        onPatchRef.current({referenceImages: images});
+    }, [images]);
+
+    function onPickFiles(files: File[]) {
+        // Filtered before anything is shown: the signed S3 policy enforces type
+        // and size, but a rejection there is an opaque 403 after the bytes have
+        // gone up. Here we can say which file, and why.
+        const reasons: string[] = [];
+        const accepted = files.filter((file) => {
+            const reason = fileRejectionReason(file);
+            if (reason) reasons.push(reason);
+            return !reason;
+        });
+        setRejected(reasons);
+        if (accepted.length) void upload(accepted);
+    }
+
     function onAssistFill(fields: AssistFill) {
         onPatch({
             packagingContents: fields.packagingContents,
@@ -163,12 +205,9 @@ export function StepRequirements({
                             ? REQUEST_COPY.filesExpressDropTitle
                             : REQUEST_COPY.filesDropTitle
                     }
-                    files={draft.artworkNames}
-                    onPick={(names) =>
-                        onPatch({
-                            artworkNames: [...draft.artworkNames, ...names],
-                        })
-                    }
+                    images={images}
+                    rejected={rejected}
+                    onPick={onPickFiles}
                 />
             </div>
         </section>
