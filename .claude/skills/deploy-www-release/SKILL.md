@@ -70,7 +70,11 @@ Verify:
 - Stakeholder staging (same branch, fixed link, Vercel-auth gated): https://staging.pakfactory.com
 ```
 
-Optional: transition to **Request For Approval** (Product project transition id `51`, same as blog skill) when that status is appropriate for the ticket. Do not invent other transitions.
+🔴 **Ask before transitioning.** Request For Approval (Product project transition id
+`51`, same as blog skill) is a forward move that summons a reviewer — follow
+`jira-transition-gate.md`: show the confirmation block with the ticket's acceptance
+criteria marked met / not met / unverified, and wait for an explicit yes. Commenting is
+always fine without asking. Do not invent other transitions.
 
 ## Phase 5 — Push + PR
 
