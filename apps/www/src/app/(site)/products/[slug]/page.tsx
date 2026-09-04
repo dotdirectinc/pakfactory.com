@@ -4,6 +4,8 @@ import {ProductLineView} from '@/components/product/product-catalog-view';
 import {ProductDetailView} from '@/components/product/product-detail-view';
 import {getByProductsSegment, listLines, listProducts} from '@/lib/catalog/catalog';
 
+export const revalidate = 60;
+
 type PageProps = {
     params: Promise<{slug: string}>;
 };

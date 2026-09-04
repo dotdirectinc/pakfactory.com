@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import {Columns2, PackageIcon, Share2} from 'lucide-react';
+import {Columns2, Package, Share2} from 'lucide-react';
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
+import {Icon} from '@/components/ui/icon';
 import {IconActionRow} from '@/components/ui/icon-action-row';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
@@ -51,9 +52,9 @@ export function CustomizationCard({item}: CustomizationCardProps) {
                         />
                     ) : (
                         <span className="flex size-full items-center justify-center">
-                            <PackageIcon
-                                className="size-12 text-muted-foreground opacity-40"
-                                aria-hidden
+                            <Icon
+                                icon={Package}
+                                className="size-8 text-muted-foreground/50"
                             />
                         </span>
                     )}

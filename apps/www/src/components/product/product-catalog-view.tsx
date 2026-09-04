@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {PackageIcon} from 'lucide-react';
+import {Package} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
@@ -7,20 +7,22 @@ import {
     ProductCard,
     type ProductCardData,
 } from '@/components/product/product-card';
+import {Icon} from '@/components/ui/icon';
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
 
-const TILE_GRID_CLASS = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3';
+const TILE_GRID_CLASS =
+    'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
 
 function TileMedia({src, alt}: {src?: string; alt: string}) {
     return (
-        <div className="flex aspect-square items-center justify-center">
+        <div className="flex aspect-square items-center justify-center bg-muted/40">
             {src ? (
                 <img src={src} alt={alt} className="h-full w-full object-cover" />
             ) : (
-                <PackageIcon
-                    className="size-12 text-muted-foreground opacity-40"
-                    aria-hidden
+                <Icon
+                    icon={Package}
+                    className="size-8 text-muted-foreground/50"
                 />
             )}
         </div>
