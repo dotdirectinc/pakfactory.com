@@ -17,7 +17,18 @@ export type RequestCustomization = Pick<
 export type RequestReferenceImage = {
     id: string;
     name: string;
+    /**
+     * `blob:` URL for the local thumbnail ONLY. It never crosses the wire — a URL
+     * on the submitted payload is exactly what ADR-0013 D3 rules out — and it does
+     * not survive a page reload, so a persisted image without a `key` is a dead
+     * preview and is dropped at submit.
+     */
     url: string;
+    /** The S3 object key minted by the presign endpoint. This is what is sent. */
+    key?: string;
+    /** Optional so drafts persisted before uploads existed still deserialise. */
+    status?: 'uploading' | 'uploaded' | 'error';
+    bytes?: number;
 };
 
 export type RequestLine = {
@@ -93,7 +104,13 @@ export type RequestDraft = {
     express: boolean;
     productsExpanded: boolean;
     entryKind: RequestEntryKind;
+    /**
+     * Display names only, kept for drafts persisted before uploads existed.
+     * 🔴 NOT what is submitted — a name is not a file. `referenceImages` is.
+     */
     artworkNames: string[];
+    /** Request-level uploads (the requirements-step dropzone). */
+    referenceImages?: RequestReferenceImage[];
     submittedAt: string | null;
     ref: string | null;
 };
@@ -246,6 +263,9 @@ function parseDraft(value: unknown): RequestDraft {
         express: asBool(d.express),
         productsExpanded: asBool(d.productsExpanded),
         entryKind: parseEntryKind(d.entryKind, asBool(d.express), asBool(d.productsExpanded)),
+        ...(Array.isArray(d.referenceImages)
+            ? {referenceImages: d.referenceImages as RequestReferenceImage[]}
+            : {}),
         artworkNames: Array.isArray(d.artworkNames)
             ? d.artworkNames.filter((s): s is string => typeof s === 'string')
             : [],

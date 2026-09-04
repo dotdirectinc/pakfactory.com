@@ -10,6 +10,8 @@ export const REQUEST_COPY = {
     additionalNotesPlaceholder:
         'Fit, brand cues, or anything specific to this structure…',
     addImagesLabel: 'Add images',
+    imageUploading: 'Uploading…',
+    imageFailed: 'Failed',
     optional: '(optional)',
     no: 'No',
     yes: 'Yes',

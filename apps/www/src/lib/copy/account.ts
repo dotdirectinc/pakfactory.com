@@ -6,6 +6,18 @@ export const ACCOUNT_COPY = {
     requestsEmpty:
         'You have not submitted any quote requests yet. Start a quote request to get a quote from our packaging specialists.',
     startARequest: 'Start a quote request',
+    requestsGuestNote:
+        'Requests submitted without signing in are not listed here — check the confirmation email we sent you for the reference.',
+    backToRequests: '← All requests',
+    submittedOn: (date: string) => `Submitted ${date}`,
+    itemsHeading: 'Items',
+    filesHeading: 'Files you attached',
+    fieldContents: 'Contents',
+    fieldQuantity: 'Quantity',
+    fieldTimeline: 'Timeline',
+    fieldShipTo: 'Ship to',
+    fieldNotes: 'Notes',
+    fieldCustomizations: 'Customizations',
     profileTitle: 'Profile',
     contactTitle: 'Contact',
     companyAddressTitle: 'Company address',

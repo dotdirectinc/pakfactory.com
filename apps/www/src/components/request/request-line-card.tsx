@@ -25,6 +25,11 @@ import {
     toRequestCustomizations,
     type CustomizationBuilderState,
 } from '@/lib/customization-builder';
+import {useRequest} from '@/lib/request/request-provider';
+import {
+    fileRejectionReason,
+    useAttachmentUpload,
+} from '@/lib/rfq/use-attachment-upload';
 import type {
     RequestLine,
     RequestReferenceImage,
@@ -61,6 +66,7 @@ export function RequestLineCard({
     onRemove,
     onUpdate,
 }: RequestLineCardProps) {
+    const {draft} = useRequest();
     const title = line.productTitle ?? line.productSlug;
     const thumb = line.productMedia?.[0];
     const checkboxId = useId();
@@ -77,7 +83,9 @@ export function RequestLineCard({
     const [draftImages, setDraftImages] = useState<RequestReferenceImage[]>(
         line.referenceImages ?? [],
     );
+    const [rejected, setRejected] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const upload = useAttachmentUpload(draft.id, setDraftImages);
 
     useEffect(() => {
         if (!notesOpen) return;
@@ -101,18 +109,21 @@ export function RequestLineCard({
         .join(', ');
 
     function onPickFiles(event: React.ChangeEvent<HTMLInputElement>) {
-        const files = Array.from(event.target.files ?? []);
+        const picked = Array.from(event.target.files ?? []);
         event.target.value = '';
-        if (!files.length || room <= 0) return;
-        const next = files.slice(0, room).map((file) => ({
-            id:
-                typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                    ? crypto.randomUUID()
-                    : `ref-${Date.now()}-${file.name}`,
-            name: file.name,
-            url: URL.createObjectURL(file),
-        }));
-        setDraftImages([...draftImages, ...next]);
+        if (!picked.length || room <= 0) return;
+
+        // Same pre-filter as the product rail: the signed S3 policy enforces type
+        // and size, but a rejection there is an opaque 403 after the bytes have
+        // gone up. Here we can say which file, and why.
+        const reasons: string[] = [];
+        const accepted = picked.slice(0, room).filter((file) => {
+            const reason = fileRejectionReason(file);
+            if (reason) reasons.push(reason);
+            return !reason;
+        });
+        setRejected(reasons);
+        if (accepted.length) void upload(accepted);
     }
 
     function removeImage(imageId: string) {
@@ -120,7 +131,11 @@ export function RequestLineCard({
         if (doomed?.url.startsWith('blob:')) {
             URL.revokeObjectURL(doomed.url);
         }
-        setDraftImages(draftImages.filter((image) => image.id !== imageId));
+        // The S3 object under `pending/` is left to the bucket's 30-day lifecycle
+        // sweep. It is only promoted to `rfq/` if its key reaches submit, which it
+        // now cannot — and minting a delete permit for the browser would be a
+        // larger hole than letting the sweep handle it.
+        setDraftImages((prev) => prev.filter((image) => image.id !== imageId));
     }
 
     function saveNotes() {
@@ -326,11 +341,30 @@ export function RequestLineCard({
                                     key={image.id}
                                     className="relative size-11 overflow-hidden rounded-md border border-border bg-muted"
                                 >
+                                    {/* Local object URL — the preview only. What
+                                        the backend receives is `image.key`. */}
                                     <img
                                         src={image.url}
                                         alt=""
-                                        className="size-full object-cover"
+                                        className={`size-full object-cover ${
+                                            image.status === 'uploaded'
+                                                ? ''
+                                                : 'opacity-40'
+                                        }`}
                                     />
+                                    {image.status === 'uploading' ? (
+                                        <span
+                                            className="absolute inset-0 grid place-items-center text-[10px] font-medium text-foreground"
+                                            role="status"
+                                        >
+                                            {REQUEST_COPY.imageUploading}
+                                        </span>
+                                    ) : null}
+                                    {image.status === 'error' ? (
+                                        <span className="absolute inset-0 grid place-items-center bg-destructive/10 text-[10px] font-medium text-destructive">
+                                            {REQUEST_COPY.imageFailed}
+                                        </span>
+                                    ) : null}
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -348,7 +382,7 @@ export function RequestLineCard({
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept="image/*"
+                                        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,image/png,image/jpeg,image/webp,image/gif,application/pdf"
                                         multiple
                                         className="sr-only"
                                         onChange={onPickFiles}
@@ -368,6 +402,18 @@ export function RequestLineCard({
                                 </>
                             ) : null}
                         </div>
+                        {rejected.length ? (
+                            <ul className="mt-1 flex flex-col gap-0.5">
+                                {rejected.map((reason) => (
+                                    <li
+                                        key={reason}
+                                        className="text-xs text-destructive"
+                                    >
+                                        {reason}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : null}
                     </div>
                     <DialogFooter>
                         <Button type="button" onClick={saveImages}>

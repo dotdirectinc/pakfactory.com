@@ -25,14 +25,13 @@ type ProductRequestRailProps = {
 };
 
 export function ProductRequestRail({product}: ProductRequestRailProps) {
-    const {addLine} = useRequest();
+    const {addLine, draft} = useRequest();
     const initialBuilder = useMemo(() => {
         if (product.kind === 'inspiration' && product.availableCustomizations.length) {
             return seedFromCustomizations(product.availableCustomizations);
         }
         return createEmptyBuilderState();
     }, [product]);
-
     const [volumes, setVolumes] = useState<number[]>([]);
     const [contents, setContents] = useState('');
     const [detailsOptIn, setDetailsOptIn] = useState(false);
@@ -130,6 +129,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
                     onNotesChange={setNotes}
                     referenceImages={referenceImages}
                     onReferenceImagesChange={setReferenceImages}
+                    draftId={draft.id}
                 />
             </section>
 
