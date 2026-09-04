@@ -1,28 +1,39 @@
 "use client";
 
-import { LoginForm } from "@pakfactory/auth-ui/login-form";
 import { AdminLoginGoogleButton } from "@/components/login/admin-login-google-button";
-import { signInInternal } from "@/lib/auth/actions";
 import { ADMIN_LOGIN_COPY } from "@/lib/copy/login";
-import { adminWwwHrefs } from "@/lib/www-links";
 
+/**
+ * Google only. There is deliberately no email + password form here.
+ *
+ * Admin accounts are provisioned per person as `internal_user` rows, and a
+ * password form adds a second credential to manage, reset and leak for accounts
+ * that already have a company Google identity (decided 2026-09-04). It also gave
+ * the admin app its own forgot-password link into the CUSTOMER app, which is how
+ * staff ended up in the buyer flows.
+ *
+ * `signInInternal` and the shared `LoginForm` are gone from this path with it.
+ */
 export function AdminLoginForm({ next }: { next?: string }) {
-  const wwwHrefs = adminWwwHrefs();
-
   return (
-    <LoginForm
-      copy={ADMIN_LOGIN_COPY}
-      onSubmit={(form) => signInInternal({}, form)}
-      next={next}
-      hrefs={{
-        forgotPassword: wwwHrefs.forgotPassword,
-      }}
-      googleSlot={
-        <AdminLoginGoogleButton
-          label={ADMIN_LOGIN_COPY.continueWithGoogle}
-          next={next}
-        />
-      }
-    />
+    <div className="flex w-full flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {ADMIN_LOGIN_COPY.title}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {ADMIN_LOGIN_COPY.subtitle}
+        </p>
+      </div>
+
+      <AdminLoginGoogleButton
+        label={ADMIN_LOGIN_COPY.continueWithGoogle}
+        next={next}
+      />
+
+      <p className="text-xs leading-snug text-muted-foreground">
+        {ADMIN_LOGIN_COPY.accessNote}
+      </p>
+    </div>
   );
 }
