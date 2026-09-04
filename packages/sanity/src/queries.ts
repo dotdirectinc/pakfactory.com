@@ -106,6 +106,23 @@ export {
     type LlmsIndexLink,
 } from './queries/llms';
 
+export {
+    CATALOG_PRODUCT_FIELDS,
+    CATALOG_PRODUCTS_QUERY,
+    CATALOG_PRODUCT_BY_SLUG_QUERY,
+    CATALOG_PRODUCT_LINES_QUERY,
+    CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
+    type CatalogAvailableCustomizationDoc,
+    type CatalogCategoryDoc,
+    type CatalogLibraryOptionDoc,
+    type CatalogLineRefDoc,
+    type CatalogOptionDoc,
+    type CatalogProductDoc,
+    type CatalogProductLineDoc,
+    type CatalogStyleRefDoc,
+    type CatalogTypeDoc,
+} from './queries/catalog';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,

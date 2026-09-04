@@ -15,7 +15,6 @@ import {
 } from '@pakfactory/ui/components/sheet';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {LogoMark} from '@/components/layout/logo-mark';
-import {getProduct} from '@/lib/catalog/catalog';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {getRequestReviewCopy} from '@/lib/request/request-review-copy';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
@@ -77,7 +76,10 @@ export function StepReview({
         copy: reviewCopy,
         logoSlot: <LogoMark className="size-9 shrink-0" />,
         mode: 'interactive' as const,
-        productTitle: (slug: string) => getProduct(slug)?.title ?? slug,
+        productTitle: (slug: string) => {
+            const fromLine = lines.find((line) => line.productSlug === slug);
+            return fromLine?.productTitle ?? slug;
+        },
         onEditSection: (key: string) => {
             setSummaryOpen(false);
             onEditSection(key);

@@ -2,10 +2,10 @@ export const ACCOUNT_COPY = {
     signOut: 'Sign out',
     welcomeBack: 'Welcome back,',
     accountMenu: 'Account menu',
-    requestsTitle: 'Requests',
+    requestsTitle: 'Quote Requests',
     requestsEmpty:
-        'You have not submitted any requests yet. Start a request to get a quote from our packaging specialists.',
-    startARequest: 'Start a request',
+        'You have not submitted any quote requests yet. Start a quote request to get a quote from our packaging specialists.',
+    startARequest: 'Start a quote request',
     profileTitle: 'Profile',
     contactTitle: 'Contact',
     companyAddressTitle: 'Company address',

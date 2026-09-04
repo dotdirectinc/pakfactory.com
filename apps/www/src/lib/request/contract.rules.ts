@@ -28,9 +28,9 @@
  *     it is additive: `quantityMode: 'stated' | 'recommend'`.
  *
  *  3. MOQ IS CALLER-SUPPLIED AND OPTIONAL. No authoritative source exists yet —
- *     `catalog.mock.ts` today, Sanity `product.moq`, and eventually
- *     `v_product_effective.effective_moq` (ADR-0008 D10). Validate when present;
- *     skip when absent. Do not invent a default.
+ *     Sanity `product.moq`, and eventually `v_product_effective.effective_moq`
+ *     (ADR-0008 D10). Validate when present; skip when absent. Do not invent a
+ *     default.
  */
 
 /** Year-scoped, matching the quote side's `Q-2026-0891`. Minted by the backend at

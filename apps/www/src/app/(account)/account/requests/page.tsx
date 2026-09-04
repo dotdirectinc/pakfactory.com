@@ -5,7 +5,7 @@ import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-export const metadata = comingSoonMetadata('Requests');
+export const metadata = comingSoonMetadata('Quote Requests');
 
 export default function AccountRequestsPage() {
     return (

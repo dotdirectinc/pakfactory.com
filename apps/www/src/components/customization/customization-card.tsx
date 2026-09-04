@@ -18,7 +18,8 @@ export type CustomizationCardData = {
     _id: string;
     title: string;
     slug: string;
-    categoryValue: 'material' | 'finish';
+    /** Sanity customizationCategory.slug */
+    categoryValue: string;
     categoryLabel?: string;
     imageUrl?: string | null;
     imageAlt?: string | null;

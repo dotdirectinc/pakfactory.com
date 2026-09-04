@@ -6,7 +6,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 export type CustomizationCatalogTab = {
     label: string;
-    value: 'material' | 'finish';
+    value: string;
 };
 
 type CustomizationCatalogViewProps = {
