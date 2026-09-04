@@ -14,6 +14,7 @@ import {
 } from '@pakfactory/ui/components/dialog';
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {CustomizationBuilder} from '@/components/customization-builder/customization-builder';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {MAX_REF_IMAGES} from '@/components/product/contents-field';
@@ -46,6 +47,7 @@ const LINK_ACTION_CLASS =
 type RequestLineCardProps = {
     line: RequestLine;
     selected: boolean;
+    isLast?: boolean;
     onSelectedChange: (selected: boolean) => void;
     onRemove: (lineId: string) => void;
     onUpdate: (lineId: string, patch: UpdateLinePatch) => void;
@@ -62,6 +64,7 @@ function resolveBuilderState(line: RequestLine): CustomizationBuilderState {
 export function RequestLineCard({
     line,
     selected,
+    isLast = false,
     onSelectedChange,
     onRemove,
     onUpdate,
@@ -166,7 +169,13 @@ export function RequestLineCard({
     }
 
     return (
-        <li className="flex gap-3 rounded-xl border border-border p-4">
+        <li
+            className={cn(
+                'flex gap-3 px-2 py-4 transition-colors',
+                !isLast && 'border-b border-border',
+                selected && 'bg-muted/40',
+            )}
+        >
             <div className="flex shrink-0 items-start pt-1">
                 <Checkbox
                     id={checkboxId}

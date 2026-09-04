@@ -190,6 +190,14 @@ export const REQUEST_COPY = {
     selectedCountOne: '1 product selected',
     selectedCountMany: '{n} products selected',
     selectedCountNone: 'No products selected',
+    itemsHeading: 'Items ({n})',
+    clearAll: 'Clear all',
+    selectAll: 'Select all',
+    deselectAll: 'Deselect all',
+    addMoreProducts: 'Add more products',
+    selectedProductsHeading: 'Selected products',
+    selectedProductsSupporting: "The products we'll quote.",
+    prepareQuoteFootnote: "We'll prepare your quote.",
 } as const;
 
 export const SERVICE_OPTIONS = [
