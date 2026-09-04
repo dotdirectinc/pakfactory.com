@@ -185,12 +185,13 @@ export function toWireSubmission(
             addedAt: line.addedAt,
         })),
         services: [...draft.services],
-        // Request-level attachments stay empty because the builder has no
-        // request-level picker: both file inputs (`contents-field`,
-        // `request-line-card`) hang off a LINE, so every upload belongs to one.
-        // The express lane therefore cannot attach anything today — unchanged by
-        // this work, and worth knowing before someone reads `[]` as a bug.
-        attachments: [],
+        // 🔴 This was `[]` with a comment claiming the builder had no
+        // request-level picker. It has one — the requirements-step dropzone,
+        // which the express lane depends on entirely. It was missed because it
+        // never called `createObjectURL`, so a grep for that signature found
+        // nothing and absence-of-evidence was read as evidence-of-absence.
+        // RFQ-2026-00018 submitted with a file attached and stored none.
+        attachments: toWireAttachments(draft.referenceImages),
         metadata: {
             source: 'Request Builder',
             entryKind: draft.entryKind,

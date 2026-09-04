@@ -87,7 +87,13 @@ export type RequestDraft = {
     express: boolean;
     productsExpanded: boolean;
     entryKind: RequestEntryKind;
+    /**
+     * Display names only, kept for drafts persisted before uploads existed.
+     * 🔴 NOT what is submitted — a name is not a file. `referenceImages` is.
+     */
     artworkNames: string[];
+    /** Request-level uploads (the requirements-step dropzone). */
+    referenceImages?: RequestReferenceImage[];
     submittedAt: string | null;
     ref: string | null;
 };
@@ -234,6 +240,9 @@ function parseDraft(value: unknown): RequestDraft {
         express: asBool(d.express),
         productsExpanded: asBool(d.productsExpanded),
         entryKind: parseEntryKind(d.entryKind, asBool(d.express), asBool(d.productsExpanded)),
+        ...(Array.isArray(d.referenceImages)
+            ? {referenceImages: d.referenceImages as RequestReferenceImage[]}
+            : {}),
         artworkNames: Array.isArray(d.artworkNames)
             ? d.artworkNames.filter((s): s is string => typeof s === 'string')
             : [],
