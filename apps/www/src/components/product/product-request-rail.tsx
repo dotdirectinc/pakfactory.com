@@ -17,7 +17,7 @@ type ProductRequestRailProps = {
 };
 
 export function ProductRequestRail({product}: ProductRequestRailProps) {
-    const {addLine} = useRequest();
+    const {addLine, draft} = useRequest();
     const initialCustomizations = useMemo(
         () => (product.kind === 'inspiration' ? product.availableCustomizations : []),
         [product],
@@ -108,6 +108,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
                     onNotesChange={setNotes}
                     referenceImages={referenceImages}
                     onReferenceImagesChange={setReferenceImages}
+                    draftId={draft.id}
                 />
             </section>
 

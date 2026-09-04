@@ -1,6 +1,7 @@
 'use client';
 
-import {useRef} from 'react';
+import {useRef, useState} from 'react';
+import type {Dispatch, SetStateAction} from 'react';
 import {ImagePlus, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
@@ -12,6 +13,10 @@ import {
     TabsTrigger,
 } from '@pakfactory/ui/components/tabs';
 import {REQUEST_COPY} from '@/lib/copy/request';
+import {
+    fileRejectionReason,
+    useAttachmentUpload,
+} from '@/lib/rfq/use-attachment-upload';
 import type {RequestReferenceImage} from '@/lib/request/request.storage';
 
 export const MAX_REF_IMAGES = 5;
@@ -30,7 +35,13 @@ type ContentsFieldProps = {
     notes: string;
     onNotesChange: (value: string) => void;
     referenceImages: RequestReferenceImage[];
-    onReferenceImagesChange: (images: RequestReferenceImage[]) => void;
+    /** A React setter, not an array callback. Uploads finish out of order, so the
+     *  hook writes with `prev => …`; taking an array here would let two concurrent
+     *  uploads overwrite each other with stale snapshots. */
+    onReferenceImagesChange: Dispatch<SetStateAction<RequestReferenceImage[]>>;
+    /** Scopes the S3 key to this submission. `persistAttachments` refuses a key
+     *  that is not under the submission's own `pending/<draftId>/` prefix. */
+    draftId: string;
 };
 
 export function ContentsField({
@@ -43,23 +54,30 @@ export function ContentsField({
     onNotesChange,
     referenceImages,
     onReferenceImagesChange,
+    draftId,
 }: ContentsFieldProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [rejected, setRejected] = useState<string[]>([]);
+    const upload = useAttachmentUpload(draftId, onReferenceImagesChange);
     const room = MAX_REF_IMAGES - referenceImages.length;
 
     function onPickFiles(event: React.ChangeEvent<HTMLInputElement>) {
-        const files = Array.from(event.target.files ?? []);
+        const picked = Array.from(event.target.files ?? []);
         event.target.value = '';
-        if (!files.length || room <= 0) return;
-        const next = files.slice(0, room).map((file) => ({
-            id:
-                typeof crypto !== 'undefined' && 'randomUUID' in crypto
-                    ? crypto.randomUUID()
-                    : `ref-${Date.now()}-${file.name}`,
-            name: file.name,
-            url: URL.createObjectURL(file),
-        }));
-        onReferenceImagesChange([...referenceImages, ...next]);
+        if (!picked.length || room <= 0) return;
+
+        // Filtered before anything is shown. The signed S3 policy enforces type
+        // and size anyway, but a rejection there arrives as an opaque 403 after
+        // the bytes have gone up — telling the buyer here is both faster and the
+        // only place we can say WHICH file and why.
+        const reasons: string[] = [];
+        const accepted = picked.slice(0, room).filter((file) => {
+            const reason = fileRejectionReason(file);
+            if (reason) reasons.push(reason);
+            return !reason;
+        });
+        setRejected(reasons);
+        if (accepted.length) void upload(accepted);
     }
 
     function removeImage(imageId: string) {
@@ -67,8 +85,13 @@ export function ContentsField({
         if (doomed?.url.startsWith('blob:')) {
             URL.revokeObjectURL(doomed.url);
         }
-        onReferenceImagesChange(
-            referenceImages.filter((image) => image.id !== imageId),
+        // The S3 object is deliberately NOT deleted. It sits under `pending/`,
+        // which the bucket's lifecycle rule expires after 30 days, and it is only
+        // ever promoted to `rfq/` if its key reaches submit — which it now cannot.
+        // Deleting from the browser would need a second write permit, and minting
+        // one to delete is a larger hole than letting the sweep handle it.
+        onReferenceImagesChange((prev) =>
+            prev.filter((image) => image.id !== imageId),
         );
     }
 
@@ -147,12 +170,30 @@ export function ContentsField({
                                     key={image.id}
                                     className="relative size-11 overflow-hidden rounded-md border border-border bg-muted"
                                 >
-                                    {/* Preview URLs are local object URLs from the file picker. */}
+                                    {/* Local object URL — the preview only. What
+                                        the backend receives is `image.key`. */}
                                     <img
                                         src={image.url}
                                         alt=""
-                                        className="size-full object-cover"
+                                        className={`size-full object-cover ${
+                                            image.status === 'uploaded'
+                                                ? ''
+                                                : 'opacity-40'
+                                        }`}
                                     />
+                                    {image.status === 'uploading' ? (
+                                        <span
+                                            className="absolute inset-0 grid place-items-center text-[10px] font-medium text-foreground"
+                                            role="status"
+                                        >
+                                            {REQUEST_COPY.imageUploading}
+                                        </span>
+                                    ) : null}
+                                    {image.status === 'error' ? (
+                                        <span className="absolute inset-0 grid place-items-center bg-destructive/10 text-[10px] font-medium text-destructive">
+                                            {REQUEST_COPY.imageFailed}
+                                        </span>
+                                    ) : null}
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -170,7 +211,7 @@ export function ContentsField({
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept="image/*"
+                                        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,image/png,image/jpeg,image/webp,image/gif,application/pdf"
                                         multiple
                                         className="sr-only"
                                         onChange={onPickFiles}
@@ -188,6 +229,18 @@ export function ContentsField({
                                 </>
                             ) : null}
                         </div>
+                        {rejected.length ? (
+                            <ul className="mt-1 flex flex-col gap-0.5">
+                                {rejected.map((reason) => (
+                                    <li
+                                        key={reason}
+                                        className="text-xs text-destructive"
+                                    >
+                                        {reason}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : null}
                     </div>
                 </TabsContent>
             </Tabs>
