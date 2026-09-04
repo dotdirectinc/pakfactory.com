@@ -10,7 +10,18 @@ export type RequestCustomization = Pick<
 export type RequestReferenceImage = {
     id: string;
     name: string;
+    /**
+     * `blob:` URL for the local thumbnail ONLY. It never crosses the wire — a URL
+     * on the submitted payload is exactly what ADR-0013 D3 rules out — and it does
+     * not survive a page reload, so a persisted image without a `key` is a dead
+     * preview and is dropped at submit.
+     */
     url: string;
+    /** The S3 object key minted by the presign endpoint. This is what is sent. */
+    key?: string;
+    /** Optional so drafts persisted before uploads existed still deserialise. */
+    status?: 'uploading' | 'uploaded' | 'error';
+    bytes?: number;
 };
 
 export type RequestLine = {
