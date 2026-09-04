@@ -7,15 +7,18 @@ type PageProps = {
     params: Promise<{slug: string; styleSlug: string}>;
 };
 
-export function generateStaticParams(): {slug: string; styleSlug: string}[] {
-    return listLines().flatMap((line) =>
+export async function generateStaticParams(): Promise<
+    {slug: string; styleSlug: string}[]
+> {
+    const lines = await listLines();
+    return lines.flatMap((line) =>
         line.styles.map((style) => ({slug: line.slug, styleSlug: style.slug})),
     );
 }
 
 export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     const {slug, styleSlug} = await params;
-    const match = getStyle(slug, styleSlug);
+    const match = await getStyle(slug, styleSlug);
     if (!match) return {title: 'Product style'};
     return {
         title: `${match.style.title} · ${match.line.title}`,
@@ -25,7 +28,7 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
 
 export default async function ProductStylePage({params}: PageProps) {
     const {slug, styleSlug} = await params;
-    const match = getStyle(slug, styleSlug);
+    const match = await getStyle(slug, styleSlug);
     if (!match) notFound();
     return <ProductStyleView line={match.line} style={match.style} />;
 }

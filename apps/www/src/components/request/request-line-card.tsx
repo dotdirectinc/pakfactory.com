@@ -14,9 +14,17 @@ import {
 } from '@pakfactory/ui/components/dialog';
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
-import {getProduct} from '@/lib/catalog/catalog';
-import {REQUEST_COPY} from '@/lib/copy/request';
+import {CustomizationBuilder} from '@/components/customization-builder/customization-builder';
+import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {MAX_REF_IMAGES} from '@/components/product/contents-field';
+import {REQUEST_COPY} from '@/lib/copy/request';
+import {
+    createEmptyBuilderState,
+    buildStepsFromCatalog,
+    seedFromCustomizations,
+    toRequestCustomizations,
+    type CustomizationBuilderState,
+} from '@/lib/customization-builder';
 import {useRequest} from '@/lib/request/request-provider';
 import {
     fileRejectionReason,
@@ -43,6 +51,14 @@ type RequestLineCardProps = {
     onUpdate: (lineId: string, patch: UpdateLinePatch) => void;
 };
 
+function resolveBuilderState(line: RequestLine): CustomizationBuilderState {
+    if (line.customizationBuilder) return line.customizationBuilder;
+    if (line.customizations.length) {
+        return seedFromCustomizations(line.customizations);
+    }
+    return createEmptyBuilderState();
+}
+
 export function RequestLineCard({
     line,
     selected,
@@ -51,13 +67,17 @@ export function RequestLineCard({
     onUpdate,
 }: RequestLineCardProps) {
     const {draft} = useRequest();
-    const product = getProduct(line.productSlug);
-    const title = product?.title ?? line.productSlug;
-    const thumb = product?.media[0];
+    const title = line.productTitle ?? line.productSlug;
+    const thumb = line.productMedia?.[0];
     const checkboxId = useId();
+    const available = line.availableCustomizations ?? line.customizations;
 
     const [notesOpen, setNotesOpen] = useState(false);
     const [imagesOpen, setImagesOpen] = useState(false);
+    const [customizeOpen, setCustomizeOpen] = useState(false);
+    const [builderDraft, setBuilderDraft] = useState<CustomizationBuilderState>(
+        () => resolveBuilderState(line),
+    );
     const [draftContents, setDraftContents] = useState(line.contents);
     const [draftNotes, setDraftNotes] = useState(line.notes ?? '');
     const [draftImages, setDraftImages] = useState<RequestReferenceImage[]>(
@@ -77,6 +97,11 @@ export function RequestLineCard({
         if (!imagesOpen) return;
         setDraftImages(line.referenceImages ?? []);
     }, [imagesOpen, line.referenceImages]);
+
+    useEffect(() => {
+        if (!customizeOpen) return;
+        setBuilderDraft(resolveBuilderState(line));
+    }, [customizeOpen, line]);
 
     const room = MAX_REF_IMAGES - draftImages.length;
     const qtySummary = line.quantities
@@ -124,6 +149,20 @@ export function RequestLineCard({
     function saveImages() {
         onUpdate(line.id, {referenceImages: draftImages});
         setImagesOpen(false);
+    }
+
+    function handleCustomizeOpenChange(open: boolean) {
+        if (!open) {
+            onUpdate(line.id, {
+                customizationBuilder: builderDraft,
+                customizations: toRequestCustomizations(
+                    builderDraft,
+                    CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+                    buildStepsFromCatalog(available),
+                ),
+            });
+        }
+        setCustomizeOpen(open);
     }
 
     return (
@@ -197,9 +236,7 @@ export function RequestLineCard({
                         type="button"
                         variant="link"
                         className={LINK_ACTION_CLASS}
-                        disabled
-                        title={REQUEST_COPY.customizeUnavailable}
-                        aria-disabled="true"
+                        onClick={() => setCustomizeOpen(true)}
                     >
                         {REQUEST_COPY.customizeLine}
                     </Button>
@@ -221,6 +258,15 @@ export function RequestLineCard({
                     </Button>
                 </div>
             </div>
+
+            <CustomizationBuilder
+                open={customizeOpen}
+                onOpenChange={handleCustomizeOpenChange}
+                availableCustomizations={available}
+                value={builderDraft}
+                onChange={setBuilderDraft}
+                productTitle={title}
+            />
 
             <Dialog open={notesOpen} onOpenChange={setNotesOpen}>
                 <DialogContent className="sm:max-w-md">

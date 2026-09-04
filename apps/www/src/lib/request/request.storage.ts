@@ -1,4 +1,11 @@
-import type {CustomizationOption} from '@/lib/catalog/types';
+import type {
+    CatalogMedia,
+    CustomizationOption,
+} from '@/lib/catalog/types';
+import {
+    parseBuilderState,
+    type CustomizationBuilderState,
+} from '@/lib/customization-builder';
 
 export const REQUEST_STORAGE_KEY = 'pakfactory.request.v1';
 
@@ -27,9 +34,15 @@ export type RequestReferenceImage = {
 export type RequestLine = {
     id: string;
     productSlug: string;
+    /** Snapshotted at add-to-request so client UI does not need a sync catalog. */
+    productTitle?: string;
+    productMedia?: CatalogMedia[];
+    availableCustomizations?: CustomizationOption[];
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
+    /** Guided / workspace answers for PROD-2344 Customization Builder. */
+    customizationBuilder?: CustomizationBuilderState;
     notes?: string;
     referenceImages?: RequestReferenceImage[];
     addedAt: string;
@@ -37,9 +50,13 @@ export type RequestLine = {
 
 export type AddLineInput = {
     productSlug: string;
+    productTitle?: string;
+    productMedia?: CatalogMedia[];
+    availableCustomizations?: CustomizationOption[];
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
+    customizationBuilder?: CustomizationBuilderState;
     notes?: string;
     referenceImages?: RequestReferenceImage[];
 };
@@ -143,13 +160,19 @@ let cachedState: RequestState = EMPTY_STATE;
 function isRequestLine(value: unknown): value is RequestLine {
     if (!value || typeof value !== 'object') return false;
     const line = value as RequestLine;
-    return (
-        typeof line.id === 'string' &&
-        typeof line.productSlug === 'string' &&
-        Array.isArray(line.quantities) &&
-        typeof line.contents === 'string' &&
-        Array.isArray(line.customizations)
-    );
+    if (
+        typeof line.id !== 'string' ||
+        typeof line.productSlug !== 'string' ||
+        !Array.isArray(line.quantities) ||
+        typeof line.contents !== 'string' ||
+        !Array.isArray(line.customizations)
+    ) {
+        return false;
+    }
+    if (line.customizationBuilder !== undefined) {
+        line.customizationBuilder = parseBuilderState(line.customizationBuilder);
+    }
+    return true;
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -349,9 +372,19 @@ export function createRequestLine(input: AddLineInput): RequestLine {
     return {
         id,
         productSlug: input.productSlug,
+        ...(input.productTitle?.trim()
+            ? {productTitle: input.productTitle.trim()}
+            : {}),
+        ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
+        ...(input.availableCustomizations?.length
+            ? {availableCustomizations: input.availableCustomizations}
+            : {}),
         quantities: [...input.quantities].filter((n) => n > 0).sort((a, b) => a - b),
         contents: input.contents.trim(),
         customizations: input.customizations,
+        ...(input.customizationBuilder
+            ? {customizationBuilder: input.customizationBuilder}
+            : {}),
         ...(input.notes?.trim() ? {notes: input.notes.trim()} : {}),
         ...(input.referenceImages?.length
             ? {referenceImages: input.referenceImages}
@@ -389,6 +422,7 @@ export type UpdateLinePatch = Partial<
         | 'notes'
         | 'referenceImages'
         | 'customizations'
+        | 'customizationBuilder'
         | 'quantities'
     >
 >;
@@ -415,6 +449,9 @@ export function updateRequestLine(
                 : {}),
             ...(patch.customizations !== undefined
                 ? {customizations: patch.customizations}
+                : {}),
+            ...(patch.customizationBuilder !== undefined
+                ? {customizationBuilder: patch.customizationBuilder}
                 : {}),
         };
         if (patch.notes !== undefined) {

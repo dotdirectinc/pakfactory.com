@@ -7,6 +7,7 @@ export const metadata: Metadata = {
     description: 'Browse packaging product lines and styles.',
 };
 
-export default function ProductsIndexPage() {
-    return <ProductCatalogView lines={listLines()} />;
+export default async function ProductsIndexPage() {
+    const lines = await listLines();
+    return <ProductCatalogView lines={lines} />;
 }

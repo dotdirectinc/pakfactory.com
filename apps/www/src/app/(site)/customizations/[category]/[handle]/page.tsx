@@ -14,7 +14,8 @@ export const revalidate = 60;
 type PageParams = {category: string; handle: string};
 
 export async function generateStaticParams(): Promise<PageParams[]> {
-    return listCustomizationCategories().map((item) => ({
+    const items = await listCustomizationCategories();
+    return items.map((item) => ({
         category: item.categoryValue,
         handle: item.slug,
     }));
@@ -26,7 +27,7 @@ export async function generateMetadata({
     params: Promise<PageParams>;
 }): Promise<Metadata> {
     const {category, handle} = await params;
-    const item = getCustomizationCategory(category, handle);
+    const item = await getCustomizationCategory(category, handle);
     if (!item) {
         notFound();
     }
@@ -39,14 +40,12 @@ export default async function CustomizationDetailPage({
     params: Promise<PageParams>;
 }) {
     const {category, handle} = await params;
-    const item = getCustomizationCategory(category, handle);
+    const item = await getCustomizationCategory(category, handle);
     if (!item) {
         notFound();
     }
 
-    const categoryLabel =
-        item.categoryLabel ??
-        (item.categoryValue === 'material' ? 'Material' : 'Finish');
+    const categoryLabel = item.categoryLabel ?? item.categoryValue;
 
     return (
         <>
