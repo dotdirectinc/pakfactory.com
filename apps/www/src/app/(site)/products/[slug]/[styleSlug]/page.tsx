@@ -3,6 +3,8 @@ import {notFound} from 'next/navigation';
 import {ProductStyleView} from '@/components/product/product-catalog-view';
 import {getStyle, listLines} from '@/lib/catalog/catalog';
 
+export const revalidate = 60;
+
 type PageProps = {
     params: Promise<{slug: string; styleSlug: string}>;
 };

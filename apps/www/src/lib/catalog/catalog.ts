@@ -21,7 +21,7 @@ import type {
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
 import type {CustomizationCardData} from '@/components/customization/customization-card';
-import {getSanityClient} from '@/lib/sanity/client';
+import {getPublishedSanityClient} from '@/lib/sanity/client';
 import {isSanityConfigured} from '@/lib/sanity/env';
 
 function normalizeSlug(slug: string): string {
@@ -31,8 +31,7 @@ function normalizeSlug(slug: string): string {
 async function fetchSanityProducts(): Promise<Product[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const client = await getSanityClient();
-        const docs = await client.fetch<CatalogProductDoc[]>(
+        const docs = await getPublishedSanityClient().fetch<CatalogProductDoc[]>(
             CATALOG_PRODUCTS_QUERY,
         );
         return (docs ?? [])
@@ -49,10 +48,9 @@ async function fetchSanityProducts(): Promise<Product[]> {
 async function fetchSanityLines(): Promise<ProductLine[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const client = await getSanityClient();
-        const docs = await client.fetch<CatalogProductLineDoc[]>(
-            CATALOG_PRODUCT_LINES_QUERY,
-        );
+        const docs = await getPublishedSanityClient().fetch<
+            CatalogProductLineDoc[]
+        >(CATALOG_PRODUCT_LINES_QUERY);
         return (docs ?? [])
             .map(mapSanityProductLine)
             .filter((item): item is ProductLine => item != null)
@@ -70,8 +68,7 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
 async function fetchSanityProduct(slug: string): Promise<Product | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const client = await getSanityClient();
-        const doc = await client.fetch<CatalogProductDoc | null>(
+        const doc = await getPublishedSanityClient().fetch<CatalogProductDoc | null>(
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
@@ -89,10 +86,9 @@ async function fetchSanityCustomizationLibrary(): Promise<
 > {
     if (!isSanityConfigured()) return [];
     try {
-        const client = await getSanityClient();
-        const docs = await client.fetch<CatalogLibraryOptionDoc[]>(
-            CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
-        );
+        const docs = await getPublishedSanityClient().fetch<
+            CatalogLibraryOptionDoc[]
+        >(CATALOG_CUSTOMIZATION_LIBRARY_QUERY);
         return (docs ?? [])
             .map(mapSanityLibraryOption)
             .filter((item): item is CustomizationCardData => item != null);
