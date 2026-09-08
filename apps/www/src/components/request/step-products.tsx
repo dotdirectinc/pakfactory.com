@@ -1,14 +1,18 @@
 'use client';
 
-import Link from 'next/link';
-import {Button} from '@pakfactory/ui/components/button';
+import {ProductRequestCard} from '@/components/request/product-request-card';
+import {RequestAddProducts} from '@/components/request/request-add-products';
 import {REQUEST_COPY} from '@/lib/copy/request';
-import type {RequestLine} from '@/lib/request/request.storage';
-import {productHref, WWW_ROUTES} from '@/lib/www-routes';
+import type {
+    RequestLine,
+    UpdateLinePatch,
+} from '@/lib/request/request.storage';
 
 type StepProductsProps = {
     lines: RequestLine[];
+    draftId: string;
     onRemove: (lineId: string) => void;
+    onUpdate: (lineId: string, patch: UpdateLinePatch) => void;
     sectionRef?: React.Ref<HTMLElement>;
     /** Skip outer section + title (services-entry products upsell). */
     embedded?: boolean;
@@ -16,7 +20,9 @@ type StepProductsProps = {
 
 export function StepProducts({
     lines,
+    draftId,
     onRemove,
+    onUpdate,
     sectionRef,
     embedded = false,
 }: StepProductsProps) {
@@ -27,68 +33,34 @@ export function StepProducts({
                     <h2 className="text-2xl font-semibold tracking-tight">
                         {REQUEST_COPY.productsTitle}
                     </h2>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {REQUEST_COPY.productsSubtitle}
                     </p>
                 </div>
             )}
 
             {lines.length === 0 ? (
-                <div className="rounded-md border border-dashed border-border p-6">
+                <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
                         {REQUEST_COPY.noProductsYet}
                     </p>
-                    <Button asChild className="mt-4" variant="outline">
-                        <Link href={WWW_ROUTES.products}>
-                            {REQUEST_COPY.addProductsCta}
-                        </Link>
-                    </Button>
+                    <RequestAddProducts variant="empty" />
                 </div>
             ) : (
-                <ul className="space-y-3">
-                    {lines.map((line) => {
-                        const title = line.productTitle ?? line.productSlug;
-                        return (
-                            <li
+                <>
+                    <ul className="space-y-3">
+                        {lines.map((line) => (
+                            <ProductRequestCard
                                 key={line.id}
-                                className="flex items-start justify-between gap-4 rounded-md border border-border p-4"
-                            >
-                                <div className="min-w-0">
-                                    <p className="font-semibold">
-                                        <Link
-                                            href={productHref(line.productSlug)}
-                                            className="hover:underline"
-                                        >
-                                            {title}
-                                        </Link>
-                                    </p>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        {line.quantities
-                                            .map((n) => n.toLocaleString('en-US'))
-                                            .join(', ')}{' '}
-                                        units
-                                        {line.contents ? ` · ${line.contents}` : ''}
-                                    </p>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onRemove(line.id)}
-                                >
-                                    {REQUEST_COPY.removeLine}
-                                </Button>
-                            </li>
-                        );
-                    })}
-                    <li>
-                        <Button asChild variant="outline" size="sm">
-                            <Link href={WWW_ROUTES.products}>
-                                {REQUEST_COPY.browseProducts}
-                            </Link>
-                        </Button>
-                    </li>
-                </ul>
+                                line={line}
+                                draftId={draftId}
+                                onRemove={onRemove}
+                                onUpdate={onUpdate}
+                            />
+                        ))}
+                    </ul>
+                    <RequestAddProducts variant="more" className="mt-4" />
+                </>
             )}
         </>
     );

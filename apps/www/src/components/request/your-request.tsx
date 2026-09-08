@@ -1,14 +1,14 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import Link from 'next/link';
-import {Plus, X} from 'lucide-react';
+import {X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {RequestAddProducts} from '@/components/request/request-add-products';
 import {RequestDraftList} from '@/components/request/request-draft-list';
-import {RequestLineCard} from '@/components/request/request-line-card';
+import {ProductRequestCard} from '@/components/request/product-request-card';
 import {StartRequestButton} from '@/components/request/start-request-button';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
@@ -66,7 +66,7 @@ function SelectedPoolRailLine({line, onDeselect}: SelectedPoolRailLineProps) {
 }
 
 export function YourRequest() {
-    const {lines, removeLine, updateLine} = useRequest();
+    const {lines, draft, removeLine, updateLine} = useRequest();
     const [selected, setSelected] = useState<Set<string>>(() => new Set());
     const seenIdsRef = useRef<Set<string>>(new Set());
 
@@ -130,15 +130,11 @@ export function YourRequest() {
             <PageDielineSection innerClassName="pb-24 pt-8">
                 {lines.length === 0 ? (
                     <div>
-                        <div className="rounded-xl border border-dashed border-border p-8">
-                            <p className="text-sm text-muted-foreground">
+                        <div className="rounded-xl border border-dashed border-border px-4 py-8">
+                            <p className="mb-4 text-sm text-muted-foreground">
                                 {REQUEST_COPY.nothingAddedYet}
                             </p>
-                            <Button asChild className="mt-4">
-                                <Link href={WWW_ROUTES.products}>
-                                    {REQUEST_COPY.browseProducts}
-                                </Link>
-                            </Button>
+                            <RequestAddProducts variant="empty" />
                         </div>
                         <RequestDraftList />
                     </div>
@@ -164,13 +160,14 @@ export function YourRequest() {
                                 </Button>
                             </div>
 
-                            <ul>
-                                {lines.map((line, index) => (
-                                    <RequestLineCard
+                            <ul className="space-y-3">
+                                {lines.map((line) => (
+                                    <ProductRequestCard
                                         key={line.id}
                                         line={line}
+                                        draftId={draft.id}
+                                        selectable
                                         selected={selected.has(line.id)}
-                                        isLast={index === lines.length - 1}
                                         onSelectedChange={(nextSelected) =>
                                             setLineSelected(
                                                 line.id,
@@ -183,17 +180,10 @@ export function YourRequest() {
                                 ))}
                             </ul>
 
-                            <Link
-                                href={WWW_ROUTES.products}
-                                className="group mt-4 flex items-center gap-3.5 rounded-md border border-dashed border-border p-3.5 transition-colors hover:border-foreground/50 hover:bg-muted/40"
-                            >
-                                <span className="flex size-16 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-muted-foreground transition-colors group-hover:border-foreground/50 group-hover:bg-muted group-hover:text-foreground">
-                                    <Plus className="size-6" aria-hidden />
-                                </span>
-                                <span className="text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-                                    {REQUEST_COPY.addMoreProducts}
-                                </span>
-                            </Link>
+                            <RequestAddProducts
+                                variant="more"
+                                className="mt-4"
+                            />
 
                             <RequestDraftList />
                         </div>

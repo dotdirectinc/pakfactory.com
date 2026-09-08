@@ -36,6 +36,8 @@ export type RequestLine = {
     productSlug: string;
     /** Snapshotted at add-to-request so client UI does not need a sync catalog. */
     productTitle?: string;
+    /** Catalog product-line title (e.g. "Rigid Box") for request card meta. */
+    productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
     quantities: number[];
@@ -51,6 +53,7 @@ export type RequestLine = {
 export type AddLineInput = {
     productSlug: string;
     productTitle?: string;
+    productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
     quantities: number[];
@@ -400,6 +403,9 @@ export function createRequestLine(input: AddLineInput): RequestLine {
         productSlug: input.productSlug,
         ...(input.productTitle?.trim()
             ? {productTitle: input.productTitle.trim()}
+            : {}),
+        ...(input.productLineTitle?.trim()
+            ? {productLineTitle: input.productLineTitle.trim()}
             : {}),
         ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
         ...(input.availableCustomizations?.length
