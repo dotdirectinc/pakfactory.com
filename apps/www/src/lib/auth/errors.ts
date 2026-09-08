@@ -51,10 +51,21 @@ export function mapAuthError(err: unknown): MappedAuthError {
     };
   }
 
+  // Names Google and the reset as possibilities WITHOUT claiming either applies.
+  // Supabase returns one error for a wrong password, an unknown address, and an
+  // account that has no password at all — and we cannot tell them apart without
+  // a lookup, which would itself be the enumeration oracle rule 1 forbids. The
+  // "no password" case is real and was previously a trap: an account created
+  // through Google reports a mismatch, which reads as a forgotten password
+  // rather than one that was never set. Verified 2026-09-08 on staging — the
+  // reset sets `encrypted_password` and password sign-in then works, though NO
+  // `email` identity row is created, so `providers` cannot be used to detect it.
+  // This wording renders identically for every failure, so it leaks nothing.
   if (has("invalid login credentials", "invalid_credentials", "invalid_grant")) {
     return {
       kind: "invalid_credentials",
-      message: "That email and password don't match. Check both and try again.",
+      message:
+        "That email and password don't match. If you signed up with Google, use Continue with Google — or reset your password to set one.",
     };
   }
 
