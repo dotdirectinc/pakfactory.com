@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getUser, safeNext } from "@pakfactory/supabase/session";
 import { AdminLoginPageView } from "@/components/login/admin-login-page-view";
 import { isAdminDevBypassEnabled } from "@/lib/auth/dev-bypass";
+import { isAdminPasswordLoginEnabled } from "@/lib/auth/password-login";
 import { isSupabaseConfigured } from "@/lib/auth/supabase-configured";
 import { getInternalAccountAdapter } from "@/lib/adapters";
 import { ADMIN_LOGIN_ERRORS } from "@/lib/copy/login";
@@ -40,5 +41,11 @@ export default async function AdminLoginPage({
     notice = ADMIN_LOGIN_ERRORS.supabase_not_configured;
   }
 
-  return <AdminLoginPageView next={destination} notice={notice} />;
+  return (
+    <AdminLoginPageView
+      next={destination}
+      notice={notice}
+      passwordEnabled={isAdminPasswordLoginEnabled()}
+    />
+  );
 }

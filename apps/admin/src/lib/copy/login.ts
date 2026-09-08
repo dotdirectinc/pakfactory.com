@@ -1,12 +1,34 @@
+import type { LoginCopy } from "@pakfactory/auth-ui/login-copy";
+
 /**
- * Admin sign-in is Google-only, so this no longer satisfies the shared
- * `LoginCopy` shape — the email, password and forgot-password strings it
- * requires have nothing to render.
+ * Satisfies the shared `LoginCopy` shape because the password form can still
+ * render — behind `ADMIN_LOGIN=true`. With the flag off, only `title`,
+ * `subtitle`, `continueWithGoogle` and `accessNote` are used; the email and
+ * password strings have nothing to render but stay so that flipping the flag is
+ * a deployment change and not a code change.
+ *
+ * There is deliberately no `forgotPassword`/`signUp` HREF anywhere in admin —
+ * `lib/www-links.ts` was deleted with the cross-link that put admin's login into
+ * the CUSTOMER app, and it is not coming back with the form. `LoginForm` renders
+ * those links only when given hrefs, so it renders none.
  */
-export const ADMIN_LOGIN_COPY = {
+export const ADMIN_LOGIN_COPY: LoginCopy & {
+  accessNote: string;
+  testimonialQuote: string;
+  testimonialAttribution: string;
+} = {
   title: "PakFactory Admin",
   subtitle: "Sign in to your account",
   continueWithGoogle: "Continue with Google",
+  or: "or",
+  emailLabel: "Email",
+  emailPlaceholder: "you@example.com",
+  passwordLabel: "Password",
+  forgotPassword: "Forgot password?",
+  signIn: "Sign in",
+  signingIn: "Signing in…",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
   accessNote:
     "Admin access is granted per account. If your PakFactory Google account is not recognised, contact your manager.",
   testimonialQuote:
