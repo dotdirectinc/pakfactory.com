@@ -7,7 +7,7 @@ import {newId, type RequestReferenceImage} from '@/lib/request/request.storage';
 
 /**
  * Direct-to-S3 upload for the builder's reference images, shared by the two
- * places that pick files (`contents-field`, `request-line-card`).
+ * places that pick files (`contents-field`, `product-request-card`).
  *
  * ── The flow, and why it is three hops ─────────────────────────────────────
  *   1. presign  — a server action, because the HMAC secret cannot reach the browser

@@ -65,6 +65,7 @@ export function BriefBuilder({
         builderLines,
         draft,
         updateDraft,
+        updateLine,
         removeLine,
         ensureBuilder,
         discardDraft,
@@ -352,7 +353,9 @@ export function BriefBuilder({
                 {showProducts ? (
                     <StepProducts
                         lines={builderLines}
+                        draftId={draft.id}
                         onRemove={removeLine}
+                        onUpdate={updateLine}
                         embedded
                     />
                 ) : null}
@@ -360,7 +363,9 @@ export function BriefBuilder({
         ) : showProducts ? (
             <StepProducts
                 lines={builderLines}
+                draftId={draft.id}
                 onRemove={removeLine}
+                onUpdate={updateLine}
                 sectionRef={productsRef}
             />
         ) : null;
