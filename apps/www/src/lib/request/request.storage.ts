@@ -527,7 +527,11 @@ export function updateRequestDraft(patch: Partial<RequestDraft>): RequestDraft {
 }
 
 export function expandRequestProducts(): void {
-    updateRequestDraft({productsExpanded: true});
+    const current = getRequestStateSnapshot();
+    updateRequestDraft({
+        productsExpanded: true,
+        builderLineIds: current.lines.map((line) => line.id),
+    });
 }
 
 /** Clears everything the buyer typed. Product lines in the pool survive. */
@@ -578,7 +582,9 @@ export function startExpressDraft(): void {
             productsExpanded: false,
             entryKind: 'express',
             servicesEnabled: false,
-            builderLineIds: null,
+            // Empty scope — pool lines stay in storage but stay off the brief
+            // until the buyer chooses Include (expandRequestProducts).
+            builderLineIds: [],
         },
     });
 }

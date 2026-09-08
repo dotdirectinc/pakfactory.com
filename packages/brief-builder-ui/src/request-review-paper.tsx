@@ -280,19 +280,7 @@ function ReviewSummaryBody({
         </>
       ) : null}
 
-      {lines.length === 0 ? (
-        showContactBlock ? (
-          <p
-            className={cn(
-              d.body,
-              "text-muted-foreground",
-              compact ? "mt-0" : d.sectionTopMargin,
-            )}
-          >
-            {copy.noProductsAdded}
-          </p>
-        ) : null
-      ) : (
+      {lines.length === 0 ? null : (
         <table
           className={cn(
             "w-full border-collapse text-left",

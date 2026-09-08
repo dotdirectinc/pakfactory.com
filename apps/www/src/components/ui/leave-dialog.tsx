@@ -1,15 +1,18 @@
 'use client';
 
 import {Loader2} from 'lucide-react';
-import {Button} from '@pakfactory/ui/components/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@pakfactory/ui/components/dialog';
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@pakfactory/ui/components/alert-dialog';
+import {Button, buttonVariants} from '@pakfactory/ui/components/button';
+import {cn} from '@pakfactory/ui/lib/utils';
 
 type LeaveDialogProps = {
     open: boolean;
@@ -40,56 +43,48 @@ export function LeaveDialog({
     const showSave = Boolean(saveLabel && onSave);
 
     return (
-        <Dialog
+        <AlertDialog
             open={open}
             onOpenChange={(next) => {
                 if (next) return;
-                // Escape, overlay click and the close affordance must never
-                // discard. Hold the dialog open while a leave is in flight so
-                // its buttons keep carrying the pending state.
+                // Escape and overlay must never discard. Hold the dialog open
+                // while a leave is in flight so buttons keep pending state.
                 if (pending) return;
                 onCancel();
             }}
         >
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
-                {/* Keeping the destructive action out of the primary's cluster
-                    costs a wrapper, but stops a stray click from discarding. */}
-                <DialogFooter className="sm:justify-between">
-                    <Button
-                        type="button"
-                        variant="link"
-                        disabled={pending}
-                        onClick={onDiscard}
-                        // The negative margins cancel the button's padding to
-                        // align the label with the header text, and must track
-                        // the primitive's has-[>svg] step or the label shifts
-                        // when the spinner mounts.
-                        className="-ml-4 text-destructive hover:text-destructive focus-visible:ring-destructive/20 has-[>svg]:-ml-3"
-                    >
-                        {pending ? (
-                            <Loader2 className="size-4 animate-spin" aria-hidden />
-                        ) : null}
-                        {discardLabel}
-                    </Button>
-                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                        <Button
-                            type="button"
-                            variant="link"
+            <AlertDialogContent className="gap-6 sm:max-w-md">
+                <AlertDialogHeader className="items-center text-center sm:text-center">
+                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogDescription>{description}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="flex flex-col gap-4">
+                    <AlertDialogFooter className="sm:justify-center">
+                        <AlertDialogCancel
                             disabled={pending}
-                            onClick={onCancel}
-                            className="text-foreground hover:text-foreground"
+                            className={cn(
+                                buttonVariants({variant: 'secondary'}),
+                                'mt-0 sm:flex-1',
+                            )}
+                            onClick={(e) => {
+                                if (pending) {
+                                    e.preventDefault();
+                                    return;
+                                }
+                                onCancel();
+                            }}
                         >
                             {cancelLabel}
-                        </Button>
+                        </AlertDialogCancel>
                         {showSave ? (
-                            <Button
-                                type="button"
+                            <AlertDialogAction
                                 disabled={pending}
-                                onClick={onSave}
+                                className={cn(buttonVariants(), 'sm:flex-1')}
+                                onClick={(e) => {
+                                    // Keep open while navigation runs (pending).
+                                    e.preventDefault();
+                                    onSave?.();
+                                }}
                             >
                                 {pending ? (
                                     <Loader2
@@ -98,11 +93,26 @@ export function LeaveDialog({
                                     />
                                 ) : null}
                                 {saveLabel}
-                            </Button>
+                            </AlertDialogAction>
                         ) : null}
-                    </div>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    </AlertDialogFooter>
+                    <Button
+                        type="button"
+                        variant="link"
+                        disabled={pending}
+                        onClick={onDiscard}
+                        className="mx-auto text-destructive hover:text-destructive focus-visible:ring-destructive/20"
+                    >
+                        {pending ? (
+                            <Loader2
+                                className="size-4 animate-spin"
+                                aria-hidden
+                            />
+                        ) : null}
+                        {discardLabel}
+                    </Button>
+                </div>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }

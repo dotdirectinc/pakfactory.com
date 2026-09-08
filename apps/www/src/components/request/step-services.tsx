@@ -9,6 +9,11 @@ type StepServicesProps = {
     onToggleEnabled: (enabled: boolean) => void;
     onToggleService: (id: string) => void;
     sectionRef?: React.Ref<HTMLElement>;
+    /**
+     * When false, the enable control is owned elsewhere (e.g. ServicesUpsellToggle
+     * under Products). Default true for services-entry.
+     */
+    showEnableToggle?: boolean;
 };
 
 export function StepServices({
@@ -17,6 +22,7 @@ export function StepServices({
     onToggleEnabled,
     onToggleService,
     sectionRef,
+    showEnableToggle = true,
 }: StepServicesProps) {
     return (
         <section
@@ -31,25 +37,27 @@ export function StepServices({
                         {REQUEST_COPY.servicesHeading}
                     </h2>
                     {REQUEST_COPY.servicesDesc ? (
-                        <p className="mt-1.5 text-sm text-muted-foreground">
+                        <p className="mt-2 text-sm text-muted-foreground">
                             {REQUEST_COPY.servicesDesc}
                         </p>
                     ) : null}
                 </div>
-                <button
-                    type="button"
-                    role="switch"
-                    aria-checked={servicesEnabled}
-                    onClick={() => onToggleEnabled(!servicesEnabled)}
-                    className={cn(
-                        'rounded-full px-4 py-2 text-xs font-medium',
-                        servicesEnabled
-                            ? 'bg-foreground text-background'
-                            : 'border border-border bg-background text-foreground',
-                    )}
-                >
-                    {servicesEnabled ? 'On' : 'Off'}
-                </button>
+                {showEnableToggle ? (
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={servicesEnabled}
+                        onClick={() => onToggleEnabled(!servicesEnabled)}
+                        className={cn(
+                            'rounded-full px-4 py-2 text-xs font-medium',
+                            servicesEnabled
+                                ? 'bg-foreground text-background'
+                                : 'border border-border bg-background text-foreground',
+                        )}
+                    >
+                        {servicesEnabled ? 'On' : 'Off'}
+                    </button>
+                ) : null}
             </div>
 
             {servicesEnabled ? (

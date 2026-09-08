@@ -39,7 +39,7 @@ export function DestructiveConfirmDialog({
 }: DestructiveConfirmDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="gap-6 rounded-2xl sm:max-w-md">
+            <AlertDialogContent className="gap-6 sm:max-w-md">
                 <AlertDialogHeader className="items-center text-center sm:text-center">
                     <TriangleAlert
                         className="size-10 text-destructive"
