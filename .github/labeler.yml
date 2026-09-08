@@ -1,5 +1,16 @@
 # Path -> label map for actions/labeler@v5.
 # PRs get an app:* / pkg:* label per area touched, so PR history is filterable by app.
+#
+# 🔴 Keep this in step with `apps/*` and `packages/*`. It was written before
+# apps/admin and seven packages existed, so every admin PR merged unlabelled —
+# #422 and #424 among them — which quietly defeats the filtering this file is for.
+# An area with no entry here fails silently: nothing errors, the label is simply
+# never applied.
+#
+# ⚠️ The workflow runs on `pull_request_target`, so the config is read from the
+# BASE branch. A change here only affects PRs opened against a branch that
+# already carries it — it must reach www-new-release and admin before PRs into
+# those pick it up.
 'app:blog':
   - changed-files:
       - any-glob-to-any-file: 'apps/blog/**'
@@ -9,6 +20,9 @@
 'app:studio':
   - changed-files:
       - any-glob-to-any-file: 'apps/studio/**'
+'app:admin':
+  - changed-files:
+      - any-glob-to-any-file: 'apps/admin/**'
 'pkg:ui':
   - changed-files:
       - any-glob-to-any-file: 'packages/ui/**'
@@ -18,6 +32,27 @@
 'pkg:seo':
   - changed-files:
       - any-glob-to-any-file: 'packages/seo/**'
+'pkg:domain':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/domain/**'
+'pkg:supabase':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/supabase/**'
+'pkg:auth-ui':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/auth-ui/**'
+'pkg:components':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/components/**'
+'pkg:brief-builder-ui':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/brief-builder-ui/**'
+'pkg:redirects':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/redirects/**'
+'pkg:sitemap':
+  - changed-files:
+      - any-glob-to-any-file: 'packages/sitemap/**'
 'functions':
   - changed-files:
       - any-glob-to-any-file: 'functions/**'

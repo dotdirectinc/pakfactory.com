@@ -1,4 +1,11 @@
-import type {CustomizationOption} from '@/lib/catalog/types';
+import type {
+    CatalogMedia,
+    CustomizationOption,
+} from '@/lib/catalog/types';
+import {
+    parseBuilderState,
+    type CustomizationBuilderState,
+} from '@/lib/customization-builder';
 
 export const REQUEST_STORAGE_KEY = 'pakfactory.request.v1';
 
@@ -27,9 +34,15 @@ export type RequestReferenceImage = {
 export type RequestLine = {
     id: string;
     productSlug: string;
+    /** Snapshotted at add-to-request so client UI does not need a sync catalog. */
+    productTitle?: string;
+    productMedia?: CatalogMedia[];
+    availableCustomizations?: CustomizationOption[];
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
+    /** Guided / workspace answers for PROD-2344 Customization Builder. */
+    customizationBuilder?: CustomizationBuilderState;
     notes?: string;
     referenceImages?: RequestReferenceImage[];
     addedAt: string;
@@ -37,9 +50,13 @@ export type RequestLine = {
 
 export type AddLineInput = {
     productSlug: string;
+    productTitle?: string;
+    productMedia?: CatalogMedia[];
+    availableCustomizations?: CustomizationOption[];
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
+    customizationBuilder?: CustomizationBuilderState;
     notes?: string;
     referenceImages?: RequestReferenceImage[];
 };
@@ -94,6 +111,11 @@ export type RequestDraft = {
     artworkNames: string[];
     /** Request-level uploads (the requirements-step dropzone). */
     referenceImages?: RequestReferenceImage[];
+    /**
+     * When set, the Request Builder (and submit) only includes these pool line
+     * ids. `null` means all lines (express / legacy / services).
+     */
+    builderLineIds: string[] | null;
     submittedAt: string | null;
     ref: string | null;
 };
@@ -126,6 +148,7 @@ export const EMPTY_DRAFT: RequestDraft = {
     productsExpanded: false,
     entryKind: 'products',
     artworkNames: [],
+    builderLineIds: null,
     submittedAt: null,
     ref: null,
 };
@@ -143,13 +166,19 @@ let cachedState: RequestState = EMPTY_STATE;
 function isRequestLine(value: unknown): value is RequestLine {
     if (!value || typeof value !== 'object') return false;
     const line = value as RequestLine;
-    return (
-        typeof line.id === 'string' &&
-        typeof line.productSlug === 'string' &&
-        Array.isArray(line.quantities) &&
-        typeof line.contents === 'string' &&
-        Array.isArray(line.customizations)
-    );
+    if (
+        typeof line.id !== 'string' ||
+        typeof line.productSlug !== 'string' ||
+        !Array.isArray(line.quantities) ||
+        typeof line.contents !== 'string' ||
+        !Array.isArray(line.customizations)
+    ) {
+        return false;
+    }
+    if (line.customizationBuilder !== undefined) {
+        line.customizationBuilder = parseBuilderState(line.customizationBuilder);
+    }
+    return true;
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -246,12 +275,32 @@ function parseDraft(value: unknown): RequestDraft {
         artworkNames: Array.isArray(d.artworkNames)
             ? d.artworkNames.filter((s): s is string => typeof s === 'string')
             : [],
+        builderLineIds: parseBuilderLineIds(
+            (d as {builderLineIds?: unknown}).builderLineIds,
+        ),
         submittedAt:
             typeof d.submittedAt === 'string' || d.submittedAt === null
                 ? d.submittedAt
                 : null,
         ref: typeof d.ref === 'string' || d.ref === null ? d.ref : null,
     };
+}
+
+function parseBuilderLineIds(value: unknown): string[] | null {
+    if (value == null) return null;
+    if (!Array.isArray(value)) return null;
+    const ids = value.filter((id): id is string => typeof id === 'string' && id.length > 0);
+    return ids.length > 0 ? ids : null;
+}
+
+/** Pool lines in scope for the Request Builder / submit. */
+export function linesForBuilder(
+    lines: RequestLine[],
+    draft: RequestDraft,
+): RequestLine[] {
+    if (!draft.builderLineIds) return lines;
+    const idSet = new Set(draft.builderLineIds);
+    return lines.filter((line) => idSet.has(line.id));
 }
 
 function parseState(raw: string | null): RequestState {
@@ -349,9 +398,19 @@ export function createRequestLine(input: AddLineInput): RequestLine {
     return {
         id,
         productSlug: input.productSlug,
+        ...(input.productTitle?.trim()
+            ? {productTitle: input.productTitle.trim()}
+            : {}),
+        ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
+        ...(input.availableCustomizations?.length
+            ? {availableCustomizations: input.availableCustomizations}
+            : {}),
         quantities: [...input.quantities].filter((n) => n > 0).sort((a, b) => a - b),
         contents: input.contents.trim(),
         customizations: input.customizations,
+        ...(input.customizationBuilder
+            ? {customizationBuilder: input.customizationBuilder}
+            : {}),
         ...(input.notes?.trim() ? {notes: input.notes.trim()} : {}),
         ...(input.referenceImages?.length
             ? {referenceImages: input.referenceImages}
@@ -382,6 +441,19 @@ export function removeRequestLine(lineId: string): void {
     });
 }
 
+/** Empties the Your Request pool. Draft fields are left alone. */
+export function clearAllRequestLines(): void {
+    const current = getRequestStateSnapshot();
+    persist({
+        lines: [],
+        draft: {
+            ...current.draft,
+            productsExpanded: false,
+            builderLineIds: null,
+        },
+    });
+}
+
 export type UpdateLinePatch = Partial<
     Pick<
         RequestLine,
@@ -389,6 +461,7 @@ export type UpdateLinePatch = Partial<
         | 'notes'
         | 'referenceImages'
         | 'customizations'
+        | 'customizationBuilder'
         | 'quantities'
     >
 >;
@@ -415,6 +488,9 @@ export function updateRequestLine(
                 : {}),
             ...(patch.customizations !== undefined
                 ? {customizations: patch.customizations}
+                : {}),
+            ...(patch.customizationBuilder !== undefined
+                ? {customizationBuilder: patch.customizationBuilder}
                 : {}),
         };
         if (patch.notes !== undefined) {
@@ -491,10 +567,44 @@ export function startExpressDraft(): void {
         lines: current.lines,
         draft: {
             ...EMPTY_DRAFT,
+            id: newId('draft'),
             express: true,
             productsExpanded: false,
             entryKind: 'express',
             servicesEnabled: false,
+            builderLineIds: null,
+        },
+    });
+}
+
+/**
+ * Your Request → Request Builder: scope the draft to the selected pool lines.
+ * Unselected lines stay in `lines` (the pool).
+ */
+export function startRequestFromSelection(selectedIds: string[]): void {
+    const current = getRequestStateSnapshot();
+    const idSet = new Set(selectedIds);
+    const builderLineIds = current.lines
+        .filter((line) => idSet.has(line.id))
+        .map((line) => line.id);
+    if (builderLineIds.length === 0) return;
+
+    const base = current.draft.submittedAt
+        ? {...EMPTY_DRAFT, id: newId('draft')}
+        : {...current.draft};
+
+    persist({
+        lines: current.lines,
+        draft: {
+            ...base,
+            builderLineIds,
+            express: false,
+            entryKind: 'products',
+            productsExpanded: true,
+            servicesEnabled: base.servicesEnabled,
+            title: base.title || defaultDraftTitle(),
+            submittedAt: null,
+            ref: null,
         },
     });
 }
@@ -530,6 +640,7 @@ export function ensureBuilderDraft(
                 entryKind: 'services',
                 productsExpanded: false,
                 servicesEnabled: true,
+                builderLineIds: null,
                 title: base.title || defaultDraftTitle(),
                 submittedAt: null,
                 ref: null,

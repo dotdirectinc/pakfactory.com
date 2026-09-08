@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {Button} from '@pakfactory/ui/components/button';
-import {getProduct} from '@/lib/catalog/catalog';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestLine} from '@/lib/request/request.storage';
 import {productHref, WWW_ROUTES} from '@/lib/www-routes';
@@ -48,8 +47,7 @@ export function StepProducts({
             ) : (
                 <ul className="space-y-3">
                     {lines.map((line) => {
-                        const product = getProduct(line.productSlug);
-                        const title = product?.title ?? line.productSlug;
+                        const title = line.productTitle ?? line.productSlug;
                         return (
                             <li
                                 key={line.id}

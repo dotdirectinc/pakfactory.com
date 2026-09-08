@@ -62,7 +62,7 @@ export function BriefBuilder({
 }: BriefBuilderProps) {
     const router = useRouter();
     const {
-        lines,
+        builderLines,
         draft,
         updateDraft,
         removeLine,
@@ -136,16 +136,16 @@ export function BriefBuilder({
 
     const expressCold = isExpressCold(viewDraft);
     const submitted = Boolean(draft.submittedAt && draft.ref);
-    const showProducts = showProductsSection(viewDraft, lines);
-    const showServices = showServicesSection(viewDraft, lines);
+    const showProducts = showProductsSection(viewDraft, builderLines);
+    const showServices = showServicesSection(viewDraft, builderLines);
 
-    const itemsReady = isItemsReady(draft, lines);
+    const itemsReady = isItemsReady(draft, builderLines);
     const notesReady = isNotesReady(draft);
     const shippingReady = isShippingReady(draft);
     const contactReady = isContactReady(draft);
-    const contentsReady = isContentsReady(draft, lines);
-    const expressQtyReady = isExpressQuantityReady(draft, lines);
-    const canSubmit = canSubmitRequest(draft, lines);
+    const contentsReady = isContentsReady(draft, builderLines);
+    const expressQtyReady = isExpressQuantityReady(draft, builderLines);
+    const canSubmit = canSubmitRequest(draft, builderLines);
 
     const railRows: WizardRailRowData[] = useMemo(() => {
         const rows: WizardRailRowData[] = [];
@@ -351,7 +351,7 @@ export function BriefBuilder({
                 {productsUpsellToggle}
                 {showProducts ? (
                     <StepProducts
-                        lines={lines}
+                        lines={builderLines}
                         onRemove={removeLine}
                         embedded
                     />
@@ -359,7 +359,7 @@ export function BriefBuilder({
             </section>
         ) : showProducts ? (
             <StepProducts
-                lines={lines}
+                lines={builderLines}
                 onRemove={removeLine}
                 sectionRef={productsRef}
             />
@@ -555,7 +555,7 @@ export function BriefBuilder({
 
                         <StepReview
                             draft={draft}
-                            lines={lines}
+                            lines={builderLines}
                             submitHelper={submitHelper}
                             onSubmitted={onSubmitted}
                             onEditSection={scrollToSection}

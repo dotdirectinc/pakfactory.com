@@ -1,11 +1,28 @@
 export type ProductKind = 'standard' | 'inspiration';
 
-export type CustomizationCategory = 'material' | 'print' | 'finish';
+/** Category slug from Sanity `customizationCategory.slug` (not a fixed union). */
+export type CustomizationCategory = string;
 
 export type CustomizationOption = {
     id: string;
     label: string;
+    /** Sanity customizationCategory.slug */
     category: CustomizationCategory;
+    categoryTitle?: string;
+    categoryOrder?: number;
+    categoryDescription?: string;
+    typeId?: string;
+    typeSlug?: string;
+    typeTitle?: string;
+    typeDescription?: string;
+    cardinality?: 'one' | 'many';
+    slug?: string;
+    shortDescription?: string;
+    description?: string;
+    imageUrl?: string | null;
+    preselected?: boolean;
+    role?: 'configurable' | 'reference';
+    status?: string;
 };
 
 export type CatalogMedia = {
@@ -23,6 +40,15 @@ export type ProductStyleRef = {
     title: string;
 };
 
+export type ProductDimensionRange = {
+    lengthMin?: number;
+    lengthMax?: number;
+    widthMin?: number;
+    widthMax?: number;
+    depthMin?: number;
+    depthMax?: number;
+};
+
 export type Product = {
     title: string;
     slug: string;
@@ -35,6 +61,7 @@ export type Product = {
     availableCustomizations: CustomizationOption[];
     primarySolution?: string;
     moq?: number;
+    dimensionRange?: ProductDimensionRange;
 };
 
 export type ProductLine = {

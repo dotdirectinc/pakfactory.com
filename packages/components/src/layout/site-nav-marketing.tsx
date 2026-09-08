@@ -89,7 +89,7 @@ export function MarketingSiteNav({
           <Separator orientation="vertical" className="hidden !h-6 md:block" />
 
           {signIn || account || request ? (
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden items-center gap-4 md:flex">
               {request ? (
                 <Tooltip>
                   <TooltipTrigger asChild>

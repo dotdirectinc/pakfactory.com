@@ -7,16 +7,17 @@ import {useRequest} from '@/lib/request/request-provider';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 type StartRequestButtonProps = {
-    selectedCount: number;
+    selectedIds: string[];
     disabled?: boolean;
 };
 
 export function StartRequestButton({
-    selectedCount,
+    selectedIds,
     disabled = false,
 }: StartRequestButtonProps) {
     const router = useRouter();
-    const {ensureBuilder} = useRequest();
+    const {startFromSelection} = useRequest();
+    const selectedCount = selectedIds.length;
 
     const label =
         selectedCount > 0
@@ -27,13 +28,15 @@ export function StartRequestButton({
             : REQUEST_COPY.startYourRequest;
 
     function onStart() {
-        ensureBuilder({mode: 'products'});
+        if (selectedCount === 0) return;
+        startFromSelection(selectedIds);
         router.push(WWW_ROUTES.requestProducts);
     }
 
     return (
         <Button
             type="button"
+            size="lg"
             className="w-full"
             disabled={disabled || selectedCount === 0}
             onClick={onStart}

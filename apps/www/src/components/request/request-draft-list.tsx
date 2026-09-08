@@ -1,19 +1,15 @@
 'use client';
 
-import {REQUEST_COPY} from '@/lib/copy/request';
-
+/**
+ * Saved draft requests on Your Request.
+ * Renders nothing while there are no drafts (no empty-state heading).
+ */
 export function RequestDraftList() {
-    return (
-        <section className="mt-10" aria-labelledby="draft-requests-heading">
-            <h2
-                id="draft-requests-heading"
-                className="text-lg font-semibold tracking-tight"
-            >
-                {REQUEST_COPY.draftRequestsHeading}
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-                {REQUEST_COPY.draftRequestsEmpty}
-            </p>
-        </section>
-    );
+    const drafts: {id: string}[] = [];
+    if (drafts.length === 0) {
+        return null;
+    }
+
+    // Draft rows land with the save-draft story.
+    return null;
 }

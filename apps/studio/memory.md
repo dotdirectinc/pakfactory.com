@@ -37,6 +37,8 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 | Full blog seed | `pnpm --filter @pakfactory/studio run seed` |
 | Blog singleton pages | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` |
 
+**HTTP 431 on `:3333`:** Vite/Node rejects oversized cookies. `dev`/`start` set `NODE_OPTIONS=--max-http-header-size=128000`. If it still 431s, clear site data for `http://localhost:3333` (or use a private window) and restart Studio.
+
 **Agents do not run seeds** — humans only ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
 
 ## Presentation preview

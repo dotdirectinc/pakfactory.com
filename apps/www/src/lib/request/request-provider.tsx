@@ -10,13 +10,16 @@ import {
 } from 'react';
 import {
     addRequestLine,
+    clearAllRequestLines,
     discardRequestDraft,
     ensureBuilderDraft,
     expandRequestProducts,
     getRequestStateServerSnapshot,
     getRequestStateSnapshot,
+    linesForBuilder,
     removeRequestLine,
     startExpressDraft,
+    startRequestFromSelection,
     subscribeRequest,
     updateRequestDraft,
     updateRequestLine,
@@ -29,14 +32,19 @@ import {
 } from '@/lib/request/request.storage';
 
 type RequestContextValue = {
+    /** Full Your Request pool. */
     lines: RequestLine[];
+    /** Lines in scope for the Request Builder / submit. */
+    builderLines: RequestLine[];
     draft: RequestDraft;
     addLine: (input: AddLineInput) => RequestLine;
     removeLine: (lineId: string) => void;
+    clearAllLines: () => void;
     updateLine: (lineId: string, patch: UpdateLinePatch) => void;
     updateDraft: (patch: Partial<RequestDraft>) => void;
     expandProducts: () => void;
     startExpress: () => void;
+    startFromSelection: (selectedIds: string[]) => void;
     ensureBuilder: (opts?: {express?: boolean; mode?: RequestEntryKind}) => void;
     discardDraft: () => void;
 };
@@ -50,9 +58,17 @@ export function RequestProvider({children}: {children: ReactNode}) {
         getRequestStateServerSnapshot,
     );
 
+    const builderLines = useMemo(
+        () => linesForBuilder(state.lines, state.draft),
+        [state.lines, state.draft],
+    );
+
     const addLine = useCallback((input: AddLineInput) => addRequestLine(input), []);
     const removeLine = useCallback((lineId: string) => {
         removeRequestLine(lineId);
+    }, []);
+    const clearAllLines = useCallback(() => {
+        clearAllRequestLines();
     }, []);
     const updateLine = useCallback((lineId: string, patch: UpdateLinePatch) => {
         updateRequestLine(lineId, patch);
@@ -65,6 +81,9 @@ export function RequestProvider({children}: {children: ReactNode}) {
     }, []);
     const startExpress = useCallback(() => {
         startExpressDraft();
+    }, []);
+    const startFromSelection = useCallback((selectedIds: string[]) => {
+        startRequestFromSelection(selectedIds);
     }, []);
     const ensureBuilder = useCallback(
         (opts?: {express?: boolean; mode?: RequestEntryKind}) => {
@@ -79,25 +98,31 @@ export function RequestProvider({children}: {children: ReactNode}) {
     const value = useMemo(
         () => ({
             lines: state.lines,
+            builderLines,
             draft: state.draft,
             addLine,
             removeLine,
+            clearAllLines,
             updateLine,
             updateDraft,
             expandProducts,
             startExpress,
+            startFromSelection,
             ensureBuilder,
             discardDraft,
         }),
         [
             state.lines,
+            builderLines,
             state.draft,
             addLine,
             removeLine,
+            clearAllLines,
             updateLine,
             updateDraft,
             expandProducts,
             startExpress,
+            startFromSelection,
             ensureBuilder,
             discardDraft,
         ],

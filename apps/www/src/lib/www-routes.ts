@@ -38,7 +38,7 @@ export function productStyleHref(lineSlug: string, styleSlug: string): string {
 }
 
 export function customizationCategoryHref(
-    category: 'material' | 'finish',
+    category: string,
     slug: string,
 ): string {
     return `${WWW_ROUTES.customizations}/${category}/${slug}`;

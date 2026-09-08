@@ -16,17 +16,17 @@ export function MediaCardFrame({
 }: MediaCardFrameProps) {
     return (
         <div className={cn('group flex flex-col gap-0', className)}>
-            <div
-                className="relative aspect-square overflow-hidden rounded-2xl bg-muted"
-            >
-                <div
-                    className={cn(
-                        'absolute inset-0 origin-center transition-transform duration-300 ease-out',
-                        'group-hover:scale-[1.03]',
-                        'motion-reduce:transition-none motion-reduce:group-hover:scale-100',
-                    )}
-                >
-                    {media}
+            <div className="relative aspect-square rounded-2xl bg-muted">
+                <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                    <div
+                        className={cn(
+                            'absolute inset-0 origin-center transition-transform duration-300 ease-out',
+                            'group-hover:scale-[1.03]',
+                            'motion-reduce:transition-none motion-reduce:group-hover:scale-100',
+                        )}
+                    >
+                        {media}
+                    </div>
                 </div>
                 {bookmark ? (
                     <div className="absolute right-3 top-3 z-10">{bookmark}</div>

@@ -5,9 +5,17 @@ import {AddToRequestButton} from '@/components/product/add-to-request-button';
 import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
 import {QuantityPicker} from '@/components/product/quantity-picker';
+import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {showToastCard} from '@/components/ui/toast-card';
-import type {CustomizationOption, Product} from '@/lib/catalog/types';
+import type {Product} from '@/lib/catalog/types';
 import {REQUEST_COPY} from '@/lib/copy/request';
+import {
+    createEmptyBuilderState,
+    buildStepsFromCatalog,
+    seedFromCustomizations,
+    toRequestCustomizations,
+    type CustomizationBuilderState,
+} from '@/lib/customization-builder';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestReferenceImage} from '@/lib/request/request.storage';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -18,10 +26,12 @@ type ProductRequestRailProps = {
 
 export function ProductRequestRail({product}: ProductRequestRailProps) {
     const {addLine, draft} = useRequest();
-    const initialCustomizations = useMemo(
-        () => (product.kind === 'inspiration' ? product.availableCustomizations : []),
-        [product],
-    );
+    const initialBuilder = useMemo(() => {
+        if (product.kind === 'inspiration' && product.availableCustomizations.length) {
+            return seedFromCustomizations(product.availableCustomizations);
+        }
+        return createEmptyBuilderState();
+    }, [product]);
     const [volumes, setVolumes] = useState<number[]>([]);
     const [contents, setContents] = useState('');
     const [detailsOptIn, setDetailsOptIn] = useState(false);
@@ -29,7 +39,8 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
     const [referenceImages, setReferenceImages] = useState<RequestReferenceImage[]>(
         [],
     );
-    const [customizations] = useState<CustomizationOption[]>(initialCustomizations);
+    const [builderState, setBuilderState] =
+        useState<CustomizationBuilderState>(initialBuilder);
 
     const contentsReady = Boolean(contents.trim());
     const ready = volumes.length > 0 && contentsReady;
@@ -46,11 +57,20 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
 
     function handleAdd() {
         if (!ready) return;
+        const customizations = toRequestCustomizations(
+            builderState,
+            CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+            buildStepsFromCatalog(product.availableCustomizations),
+        );
         addLine({
             productSlug: product.slug,
+            productTitle: product.title,
+            productMedia: product.media,
+            availableCustomizations: product.availableCustomizations,
             quantities: volumes,
             contents,
             customizations,
+            customizationBuilder: builderState,
             ...(detailsOptIn && notes.trim() ? {notes} : {}),
             ...(detailsOptIn && referenceImages.length
                 ? {referenceImages}
@@ -76,6 +96,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
         setDetailsOptIn(false);
         setNotes('');
         setReferenceImages([]);
+        setBuilderState(createEmptyBuilderState());
     }
 
     return (
@@ -113,7 +134,12 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             </section>
 
             <section className="rounded-2xl bg-muted p-6">
-                <CustomizationEntry applied={customizations} />
+                <CustomizationEntry
+                    availableCustomizations={product.availableCustomizations}
+                    builderState={builderState}
+                    onBuilderStateChange={setBuilderState}
+                    productTitle={product.title}
+                />
             </section>
 
             <AddToRequestButton disabled={!ready} onClick={handleAdd} />

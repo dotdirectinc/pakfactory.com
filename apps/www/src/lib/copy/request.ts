@@ -19,6 +19,14 @@ export const REQUEST_COPY = {
     specialistCanPropose:
         'A specialist can propose materials and finishes with your request.',
     customizeItYourself: 'Customize it yourself',
+    sizeGroup: 'Size',
+    materialFinishGroup: 'Material & finish',
+    customizeRow: 'Customize',
+    revertToSpecialist: 'Actually, let a specialist suggest options',
+    dimensionsRow: 'Dimensions',
+    materialRow: 'Material',
+    printingMethodRow: 'Printing method',
+    finishRow: 'Finish',
 
     // BriefBuilder / wizard
     railHeading: 'The more you share, the faster we can quote.',
@@ -182,6 +190,14 @@ export const REQUEST_COPY = {
     selectedCountOne: '1 product selected',
     selectedCountMany: '{n} products selected',
     selectedCountNone: 'No products selected',
+    itemsHeading: 'Items ({n})',
+    clearAll: 'Clear all',
+    selectAll: 'Select all',
+    deselectAll: 'Deselect all',
+    addMoreProducts: 'Add more products',
+    selectedProductsHeading: 'Selected products',
+    selectedProductsSupporting: "The products we'll quote.",
+    prepareQuoteFootnote: "We'll prepare your quote.",
 } as const;
 
 export const SERVICE_OPTIONS = [

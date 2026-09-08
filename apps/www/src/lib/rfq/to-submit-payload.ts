@@ -8,8 +8,6 @@
  * validates - `submitRequest` already gates submission.
  */
 
-import {getProduct} from '@/lib/catalog/catalog';
-import type {CustomizationCategory as CatalogCategory} from '@/lib/catalog/types';
 import {digitsOnlySpend} from '@/lib/request/annual-spend';
 import type {
     RequestCustomization,
@@ -28,16 +26,18 @@ import type {
     SubmitRequestLine,
     SubmitRequestPayload,
 } from '@/lib/rfq/request-payload';
+import {CUSTOMIZATION_CATEGORIES} from '@/lib/rfq/request-payload';
 
 /**
- * The catalog names the print axis `print`; the contract names it
- * `print_method`. Explicit so a new catalog category fails typecheck here
- * rather than silently shipping an off-contract string.
+ * Known catalog → contract category map. The contract still uses a closed set;
+ * Sanity slugs outside it fall back to `service` so the payload stays valid.
  */
-const CATEGORY_MAP: Record<CatalogCategory, CustomizationCategory> = {
+const CATEGORY_MAP: Record<string, CustomizationCategory> = {
     material: 'material',
     print: 'print_method',
+    print_method: 'print_method',
     finish: 'finish',
+    service: 'service',
 };
 
 /**
@@ -155,9 +155,17 @@ function toRequirements(draft: RequestDraft): Requirements {
 function toCustomization(
     customization: RequestCustomization,
 ): CustomizationSelection {
+    const mapped = CATEGORY_MAP[customization.category];
+    const category: CustomizationCategory =
+        mapped ??
+        (CUSTOMIZATION_CATEGORIES.includes(
+            customization.category as CustomizationCategory,
+        )
+            ? (customization.category as CustomizationCategory)
+            : 'service');
     return {
         optionId: customization.id,
-        category: CATEGORY_MAP[customization.category],
+        category,
         label: customization.label,
         value: customization.id,
         valueLabel: customization.label,
@@ -165,14 +173,13 @@ function toCustomization(
 }
 
 function toCatalogLine(line: RequestLine): SubmitRequestLine {
-    const product = getProduct(line.productSlug);
     return {
         id: line.id,
         type: 'catalog',
         // The builder stores a slug; the contract wants the catalog id. The
         // slug is the stable catalog key today, so it stands in for both.
         productId: line.productSlug,
-        name: product?.title ?? line.productSlug,
+        name: line.productTitle ?? line.productSlug,
         contents: (line.contents ?? '').trim(),
         quantities: line.quantities,
         customizations: line.customizations.map(toCustomization),
