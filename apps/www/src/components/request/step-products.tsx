@@ -2,6 +2,7 @@
 
 import {ProductRequestCard} from '@/components/request/product-request-card';
 import {RequestAddProducts} from '@/components/request/request-add-products';
+import {ServicesUpsellToggle} from '@/components/request/services-upsell-toggle';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {
     RequestLine,
@@ -16,6 +17,9 @@ type StepProductsProps = {
     sectionRef?: React.Ref<HTMLElement>;
     /** Skip outer section + title (services-entry products upsell). */
     embedded?: boolean;
+    /** Products-entry services upsell under the list / add CTA. */
+    servicesEnabled?: boolean;
+    onServicesEnabledChange?: (enabled: boolean) => void;
 };
 
 export function StepProducts({
@@ -25,7 +29,14 @@ export function StepProducts({
     onUpdate,
     sectionRef,
     embedded = false,
+    servicesEnabled,
+    onServicesEnabledChange,
 }: StepProductsProps) {
+    const showServicesUpsell =
+        !embedded &&
+        servicesEnabled !== undefined &&
+        onServicesEnabledChange !== undefined;
+
     const body = (
         <>
             {embedded ? null : (
@@ -62,6 +73,16 @@ export function StepProducts({
                     <RequestAddProducts variant="more" className="mt-4" />
                 </>
             )}
+
+            {showServicesUpsell ? (
+                <ServicesUpsellToggle
+                    className="mt-6"
+                    checked={servicesEnabled}
+                    onCheckedChange={onServicesEnabledChange}
+                    title={REQUEST_COPY.servicesUpsellTitle}
+                    description={REQUEST_COPY.servicesUpsellSupporting}
+                />
+            ) : null}
         </>
     );
 
@@ -72,7 +93,7 @@ export function StepProducts({
             id="section-products"
             data-section="products"
             ref={sectionRef}
-            className="border-t border-border/60 py-16"
+            className="pb-16"
         >
             {body}
         </section>

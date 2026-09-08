@@ -4,6 +4,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {RequestAddProducts} from '@/components/request/request-add-products';
@@ -69,6 +70,13 @@ export function YourRequest() {
     const {lines, draft, removeLine, updateLine} = useRequest();
     const [selected, setSelected] = useState<Set<string>>(() => new Set());
     const seenIdsRef = useRef<Set<string>>(new Set());
+    // Server snapshot is always empty; wait for localStorage before choosing
+    // empty vs filled so the Add products fork does not flash on refresh.
+    const [hydrated, setHydrated] = useState(false);
+
+    useEffect(() => {
+        setHydrated(true);
+    }, []);
 
     const lineIds = useMemo(() => lines.map((line) => line.id), [lines]);
 
@@ -128,7 +136,36 @@ export function YourRequest() {
             />
 
             <PageDielineSection innerClassName="pb-24 pt-8">
-                {lines.length === 0 ? (
+                {!hydrated ? (
+                    <div
+                        className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]"
+                        aria-hidden
+                    >
+                        <div className="min-w-0">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <Skeleton className="h-7 w-28" />
+                                <Skeleton className="h-4 w-20" />
+                            </div>
+                            <div className="flex overflow-hidden rounded-xl border border-border">
+                                <Skeleton className="size-[115px] shrink-0 rounded-none" />
+                                <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+                                    <Skeleton className="h-5 w-3/4 max-w-md" />
+                                    <Skeleton className="h-4 w-40" />
+                                    <Skeleton className="mt-2 h-4 w-52" />
+                                </div>
+                            </div>
+                            <Skeleton className="mt-4 h-4 w-36" />
+                        </div>
+                        <aside className="hidden h-fit lg:block lg:sticky lg:top-24 lg:self-start">
+                            <div className="rounded-xl border border-border p-5">
+                                <Skeleton className="h-5 w-40" />
+                                <Skeleton className="mt-2 h-3 w-full" />
+                                <Skeleton className="mt-4 h-[120px] w-full rounded-lg" />
+                                <Skeleton className="mt-4 h-10 w-full" />
+                            </div>
+                        </aside>
+                    </div>
+                ) : lines.length === 0 ? (
                     <div>
                         <div className="rounded-xl border border-dashed border-border px-4 py-8">
                             <p className="mb-4 text-sm text-muted-foreground">
