@@ -1,5 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+// Cookie scoping — and why no `domain` is set — is documented in ./server.ts.
+
 /**
  * Supabase client for Client Components.
  *
