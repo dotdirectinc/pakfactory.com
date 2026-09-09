@@ -159,12 +159,21 @@ export const productStyle = defineType({
       options: {
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Future', value: 'future' },
-          { title: 'Deprecated', value: 'deprecated' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
         ],
         layout: 'radio',
       },
       initialValue: 'active',
+    }),
+    defineField({
+      name: 'customerFacing',
+      title: 'Customer facing',
+      type: 'boolean',
+      group: GROUPS.content,
+      description:
+        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+      initialValue: true,
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
     // cards within a Product Line's styles grid, and nothing has ever read it — no

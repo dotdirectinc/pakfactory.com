@@ -88,8 +88,8 @@ export const expertiseService = defineType({
       options: {
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Future', value: 'future' },
-          { title: 'Deprecated', value: 'deprecated' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
         ],
         layout: 'radio',
       },

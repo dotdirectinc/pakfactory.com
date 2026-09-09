@@ -107,12 +107,12 @@ export const expertiseStage = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'All six stages are active. Packaging Fulfillment is active, not future — 0 case studies is a content gap, not a retired service.',
+      description: 'All six stages are active. Packaging Fulfillment is active, not coming soon — 0 case studies is a content gap, not a retired service.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Future', value: 'future' },
-          { title: 'Deprecated', value: 'deprecated' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
         ],
         layout: 'radio',
       },
