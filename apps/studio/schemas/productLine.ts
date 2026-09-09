@@ -104,6 +104,34 @@ export const productLine = defineType({
       group: GROUPS.content,
       description: 'One-line summary for the catalog card and nav.',
     }),
+    // The only one of Line / Style / Product that had no Status. Same shape and
+    // vocabulary as the other two (D49) — one ladder, read the same way at every
+    // level of the product tree.
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: GROUPS.content,
+      description: 'Lifecycle — so a retired line can say so.',
+      options: {
+        list: [
+          { title: 'Active', value: 'active' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'active',
+    }),
+    defineField({
+      name: 'customerFacing',
+      title: 'Customer facing',
+      type: 'boolean',
+      group: GROUPS.content,
+      description:
+        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+      initialValue: true,
+    }),
 
     // ─── CATEGORIZATION (declarations + references out) ───────────────────────
     defineField({

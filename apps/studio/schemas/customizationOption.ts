@@ -92,13 +92,13 @@ export const customizationOption = defineType({
       title: 'Status',
       type: 'string',
       group: 'content',
-      description: 'Lifecycle: Active (offered now), Future (coming soon), or Deprecated (retired).',
+      description: 'Lifecycle: Active (offered now), Coming soon, or Discontinued (retired).',
       options: {
         layout: 'radio',
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Future', value: 'future' },
-          { title: 'Deprecated', value: 'deprecated' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
         ],
       },
       initialValue: 'active',
