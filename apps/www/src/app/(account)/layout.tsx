@@ -1,4 +1,6 @@
 import type {ReactNode} from 'react';
+import {headers} from 'next/headers';
+import {PATHNAME_HEADER} from '@/proxy';
 import {AccountShell} from '@/components/account/account-shell';
 import {
     accountAvatarUrl,
@@ -25,7 +27,16 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 export default async function AccountRouteLayout({children}: {children: ReactNode}) {
     // Redirects to /login?next=… so signing in resumes here rather than dumping
     // the buyer on a landing page.
-    const user = await requireUser(WWW_ROUTES.account);
+    // 🔴 The page that was asked for, not the account root.
+    //
+    // This hard-coded `WWW_ROUTES.account`, so a buyer following the receipt's
+    // "Track your request" link with an expired session signed in and landed on
+    // the account index — having to hunt for the request they had just clicked.
+    // Set by the proxy (`PATHNAME_HEADER`), because a Server Component layout
+    // cannot otherwise see the path. The account root is the fallback for a
+    // request that bypassed the proxy, not a guess at the route.
+    const requested = (await headers()).get(PATHNAME_HEADER) ?? WWW_ROUTES.account;
+    const user = await requireUser(requested);
 
     return (
         <AccountShell

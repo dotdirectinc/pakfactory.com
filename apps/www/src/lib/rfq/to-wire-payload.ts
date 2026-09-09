@@ -63,6 +63,8 @@ export type WireSubmission = {
     lines: {
         id: string;
         productSlug: string;
+        title?: string;
+        productType?: string;
         contents: string;
         quantities: number[];
         moq?: number;
@@ -191,6 +193,18 @@ export function toWireSubmission(
             productSlug: line.productSlug,
             contents: (line.contents ?? '').trim(),
             quantities: line.quantities,
+            // 🔴 What the buyer SAW, snapshotted at add-to-request. Without it the
+            // server only ever received a slug, so the confirmation receipt, the
+            // admin app and the buyer portal all rendered
+            // `folding-carton-straight-tuck-end` at people (PROD-2446).
+            //
+            // Sent rather than resolved server-side on purpose: the server has no
+            // Sanity connection, and resolving at send time would let a later
+            // product rename silently retitle an old receipt.
+            ...(trimmed(line.productTitle) ? {title: line.productTitle!.trim()} : {}),
+            ...(trimmed(line.productLineTitle)
+                ? {productType: line.productLineTitle!.trim()}
+                : {}),
             customizations: line.customizations.map(toWireCustomization),
             ...(trimmed(line.notes) ? {notes: line.notes!.trim()} : {}),
             attachments: toWireAttachments(line.referenceImages),
