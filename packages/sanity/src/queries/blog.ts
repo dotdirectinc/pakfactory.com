@@ -338,7 +338,7 @@ const PAGE_BUILDER_BLOCKS_PROJECTION = /* groq */ `{
     "categorySlug": category->slug.current,
     "categoryTitle": category->title,
     "categoryDescription": pt::text(category->description),
-    "categoryShortDescription": category->shortDescription,
+    "categoryShortDescription": coalesce(category->summary, category->shortDescription),
     "posts": *[
       _type == "post"
   && (!defined(language) || language == $language)
@@ -663,7 +663,7 @@ export const BLOG_CATEGORY_BY_SLUG_QUERY = /* groq */ `*[_type == "blogCategory"
   allowFollow,
   noImageIndex,
   "ogImageUrl": ogImage.asset->url,
-  "bannerImageUrl": bannerImage.asset->url
+  "bannerImageUrl": coalesce(heroImage.asset->url, bannerImage.asset->url)
 }`;
 
 const CATEGORY_POST_FILTER = /* groq */ `_type == "post"
