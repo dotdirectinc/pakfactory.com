@@ -1,0 +1,21 @@
+{
+  "name": "@pakfactory/geo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./countries": "./src/countries.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "i18n-iso-countries": "^7.14.0",
+    "iso-3166-2": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/iso-3166-2": "^1.0.4",
+    "typescript": "^5.7.3"
+  }
+}

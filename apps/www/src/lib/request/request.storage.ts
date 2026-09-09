@@ -36,6 +36,8 @@ export type RequestLine = {
     productSlug: string;
     /** Snapshotted at add-to-request so client UI does not need a sync catalog. */
     productTitle?: string;
+    /** Catalog product-line title (e.g. "Rigid Box") for request card meta. */
+    productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
     quantities: number[];
@@ -51,6 +53,7 @@ export type RequestLine = {
 export type AddLineInput = {
     productSlug: string;
     productTitle?: string;
+    productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
     quantities: number[];
@@ -65,10 +68,15 @@ export type ShippingAddress = {
     id?: string;
     label?: string;
     line1?: string;
+    line2?: string;
     city?: string;
     region?: string;
     country?: string;
     postalCode?: string;
+    /** ISO 3166-1 alpha-2 when chosen from the country list. */
+    countryCode?: string;
+    /** ISO 3166-2 when chosen from the region list. */
+    regionCode?: string;
 };
 
 export type RequestEntryKind = 'express' | 'products' | 'services';
@@ -217,10 +225,13 @@ function parseShipping(value: unknown): ShippingAddress | null {
         ...(typeof a.id === 'string' ? {id: a.id} : {}),
         ...(typeof a.label === 'string' ? {label: a.label} : {}),
         ...(typeof a.line1 === 'string' ? {line1: a.line1} : {}),
+        ...(typeof a.line2 === 'string' ? {line2: a.line2} : {}),
         ...(typeof a.city === 'string' ? {city: a.city} : {}),
         ...(typeof a.region === 'string' ? {region: a.region} : {}),
         ...(typeof a.country === 'string' ? {country: a.country} : {}),
         ...(typeof a.postalCode === 'string' ? {postalCode: a.postalCode} : {}),
+        ...(typeof a.countryCode === 'string' ? {countryCode: a.countryCode} : {}),
+        ...(typeof a.regionCode === 'string' ? {regionCode: a.regionCode} : {}),
     };
 }
 
@@ -401,6 +412,9 @@ export function createRequestLine(input: AddLineInput): RequestLine {
         ...(input.productTitle?.trim()
             ? {productTitle: input.productTitle.trim()}
             : {}),
+        ...(input.productLineTitle?.trim()
+            ? {productLineTitle: input.productLineTitle.trim()}
+            : {}),
         ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
         ...(input.availableCustomizations?.length
             ? {availableCustomizations: input.availableCustomizations}
@@ -521,7 +535,11 @@ export function updateRequestDraft(patch: Partial<RequestDraft>): RequestDraft {
 }
 
 export function expandRequestProducts(): void {
-    updateRequestDraft({productsExpanded: true});
+    const current = getRequestStateSnapshot();
+    updateRequestDraft({
+        productsExpanded: true,
+        builderLineIds: current.lines.map((line) => line.id),
+    });
 }
 
 /** Clears everything the buyer typed. Product lines in the pool survive. */
@@ -572,7 +590,9 @@ export function startExpressDraft(): void {
             productsExpanded: false,
             entryKind: 'express',
             servicesEnabled: false,
-            builderLineIds: null,
+            // Empty scope — pool lines stay in storage but stay off the brief
+            // until the buyer chooses Include (expandRequestProducts).
+            builderLineIds: [],
         },
     });
 }

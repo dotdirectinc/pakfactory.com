@@ -1,14 +1,15 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import Link from 'next/link';
-import {Plus, X} from 'lucide-react';
+import {X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {RequestAddProducts} from '@/components/request/request-add-products';
 import {RequestDraftList} from '@/components/request/request-draft-list';
-import {RequestLineCard} from '@/components/request/request-line-card';
+import {ProductRequestCard} from '@/components/request/product-request-card';
 import {StartRequestButton} from '@/components/request/start-request-button';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
@@ -66,9 +67,16 @@ function SelectedPoolRailLine({line, onDeselect}: SelectedPoolRailLineProps) {
 }
 
 export function YourRequest() {
-    const {lines, removeLine, updateLine} = useRequest();
+    const {lines, draft, removeLine, updateLine} = useRequest();
     const [selected, setSelected] = useState<Set<string>>(() => new Set());
     const seenIdsRef = useRef<Set<string>>(new Set());
+    // Server snapshot is always empty; wait for localStorage before choosing
+    // empty vs filled so the Add products fork does not flash on refresh.
+    const [hydrated, setHydrated] = useState(false);
+
+    useEffect(() => {
+        setHydrated(true);
+    }, []);
 
     const lineIds = useMemo(() => lines.map((line) => line.id), [lines]);
 
@@ -128,17 +136,42 @@ export function YourRequest() {
             />
 
             <PageDielineSection innerClassName="pb-24 pt-8">
-                {lines.length === 0 ? (
+                {!hydrated ? (
+                    <div
+                        className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]"
+                        aria-hidden
+                    >
+                        <div className="min-w-0">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <Skeleton className="h-7 w-28" />
+                                <Skeleton className="h-4 w-20" />
+                            </div>
+                            <div className="flex overflow-hidden rounded-xl border border-border">
+                                <Skeleton className="size-[115px] shrink-0 rounded-none" />
+                                <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
+                                    <Skeleton className="h-5 w-3/4 max-w-md" />
+                                    <Skeleton className="h-4 w-40" />
+                                    <Skeleton className="mt-2 h-4 w-52" />
+                                </div>
+                            </div>
+                            <Skeleton className="mt-4 h-4 w-36" />
+                        </div>
+                        <aside className="hidden h-fit lg:block lg:sticky lg:top-24 lg:self-start">
+                            <div className="rounded-xl border border-border p-5">
+                                <Skeleton className="h-5 w-40" />
+                                <Skeleton className="mt-2 h-3 w-full" />
+                                <Skeleton className="mt-4 h-[120px] w-full rounded-lg" />
+                                <Skeleton className="mt-4 h-10 w-full" />
+                            </div>
+                        </aside>
+                    </div>
+                ) : lines.length === 0 ? (
                     <div>
-                        <div className="rounded-xl border border-dashed border-border p-8">
-                            <p className="text-sm text-muted-foreground">
+                        <div className="rounded-xl border border-dashed border-border px-4 py-8">
+                            <p className="mb-4 text-sm text-muted-foreground">
                                 {REQUEST_COPY.nothingAddedYet}
                             </p>
-                            <Button asChild className="mt-4">
-                                <Link href={WWW_ROUTES.products}>
-                                    {REQUEST_COPY.browseProducts}
-                                </Link>
-                            </Button>
+                            <RequestAddProducts variant="empty" />
                         </div>
                         <RequestDraftList />
                     </div>
@@ -164,13 +197,14 @@ export function YourRequest() {
                                 </Button>
                             </div>
 
-                            <ul>
-                                {lines.map((line, index) => (
-                                    <RequestLineCard
+                            <ul className="space-y-3">
+                                {lines.map((line) => (
+                                    <ProductRequestCard
                                         key={line.id}
                                         line={line}
+                                        draftId={draft.id}
+                                        selectable
                                         selected={selected.has(line.id)}
-                                        isLast={index === lines.length - 1}
                                         onSelectedChange={(nextSelected) =>
                                             setLineSelected(
                                                 line.id,
@@ -183,17 +217,10 @@ export function YourRequest() {
                                 ))}
                             </ul>
 
-                            <Link
-                                href={WWW_ROUTES.products}
-                                className="group mt-4 flex items-center gap-3.5 rounded-md border border-dashed border-border p-3.5 transition-colors hover:border-foreground/50 hover:bg-muted/40"
-                            >
-                                <span className="flex size-16 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-muted-foreground transition-colors group-hover:border-foreground/50 group-hover:bg-muted group-hover:text-foreground">
-                                    <Plus className="size-6" aria-hidden />
-                                </span>
-                                <span className="text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-                                    {REQUEST_COPY.addMoreProducts}
-                                </span>
-                            </Link>
+                            <RequestAddProducts
+                                variant="more"
+                                className="mt-4"
+                            />
 
                             <RequestDraftList />
                         </div>

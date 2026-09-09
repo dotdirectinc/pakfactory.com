@@ -59,7 +59,37 @@ export async function verifyEmail(_prev: ActionState, form: FormData): Promise<A
   if (error) return { error: mapAuthError(error).message, email };
 
   // verifyOtp establishes the session, so the buyer lands signed in.
+  await claimGuestRequests(supabase);
   redirect("/account");
+}
+
+/**
+ * Attach any RFQs this buyer submitted as a guest to their new account.
+ *
+ * A guest submits with `customer_id = null` — submission has no sign-in gate
+ * (ADR-0012 D1) — and their confirmation receipt invites them to register with
+ * the same address. Without this they register and see an empty Requests page,
+ * which makes that invitation a lie.
+ *
+ * 🔴 The RPC takes NO ARGUMENTS on purpose. It reads the address from
+ * `auth.users` for `auth.uid()`, so this side cannot name an address even by
+ * mistake. That matters because the receipt's link is
+ * `/sign-up?email=<address>` — a URL anyone can type, with an input we merely
+ * disable. If the claim keyed off that parameter it would be an RFQ-takeover
+ * vector; keying it off the verified session means an attacker would need the
+ * victim's inbox, at which point they already have the receipt.
+ *
+ * Failure is logged and swallowed. The buyer IS verified and signed in at this
+ * point; blocking that on a claim would trade a working account for a missing
+ * link, and the claim can be re-run on any later sign-in.
+ */
+async function claimGuestRequests(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<void> {
+  const { error } = await supabase.rpc("claim_rfqs_for_current_user");
+  if (error) {
+    console.error("[verifyEmail] could not claim guest requests", error.message);
+  }
 }
 
 export async function resendCode(_prev: ActionState, form: FormData): Promise<ActionState> {

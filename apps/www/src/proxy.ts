@@ -212,12 +212,36 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
  * If the Supabase env is absent this is a no-op returning a plain `next()`, so
  * the case-study surface behaves exactly as it did before auth existed.
  */
+/**
+ * Carry the requested path forward as a request header.
+ *
+ * A Server Component layout cannot see the pathname — Next exposes no reliable
+ * way to read it there, and `x-invoke-path` is a Next internal that is simply
+ * absent (verified: a guest hitting /account/requests/<id> redirected to
+ * `?next=/account`). The `(account)` gate therefore had to hard-code the account
+ * root, so a buyer following the receipt's "Track your request" link with an
+ * expired session signed in and landed on the index, hunting for the request
+ * they had just clicked.
+ *
+ * Built from `req.headers` AFTER any cookie mutation, so a refreshed session
+ * token set by `setAll` below is preserved — dropping it would sign the buyer
+ * out on the next request, which is the failure this file's ordering comment
+ * exists to prevent.
+ */
+export const PATHNAME_HEADER = "x-pf-pathname";
+
+function nextWithPathname(req: NextRequest): NextResponse {
+  const headers = new Headers(req.headers);
+  headers.set(PATHNAME_HEADER, req.nextUrl.pathname);
+  return NextResponse.next({ request: { headers } });
+}
+
 async function withSession(req: NextRequest): Promise<NextResponse> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.next();
+  if (!url || !key) return nextWithPathname(req);
 
-  let res = NextResponse.next({ request: req });
+  let res = nextWithPathname(req);
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -228,7 +252,7 @@ async function withSession(req: NextRequest): Promise<NextResponse> {
         // Write to the REQUEST too, so a Server Component rendering later in this
         // same pass reads the refreshed token rather than the one it arrived with.
         for (const { name, value } of cookiesToSet) req.cookies.set(name, value);
-        res = NextResponse.next({ request: req });
+        res = nextWithPathname(req);
         for (const { name, value, options } of cookiesToSet) {
           res.cookies.set(name, value, options);
         }

@@ -29,10 +29,15 @@ import type {
  *  backend's Zod schemas are server-side only and www does not depend on zod. */
 export type WireAddress = {
     line1?: string;
+    line2?: string;
     city?: string;
     region?: string;
     country?: string;
     postalCode?: string;
+    /** ISO 3166-1 alpha-2 when chosen from the country list. */
+    countryCode?: string;
+    /** ISO 3166-2 when chosen from the region list. */
+    regionCode?: string;
 };
 
 export type WireSubmission = {
@@ -58,6 +63,8 @@ export type WireSubmission = {
     lines: {
         id: string;
         productSlug: string;
+        title?: string;
+        productType?: string;
         contents: string;
         quantities: number[];
         moq?: number;
@@ -87,10 +94,17 @@ function toWireAddress(address: ShippingAddress | null): WireAddress | null {
     if (!address) return null;
     const next: WireAddress = {
         ...(trimmed(address.line1) ? {line1: address.line1!.trim()} : {}),
+        ...(trimmed(address.line2) ? {line2: address.line2!.trim()} : {}),
         ...(trimmed(address.city) ? {city: address.city!.trim()} : {}),
         ...(trimmed(address.region) ? {region: address.region!.trim()} : {}),
         ...(trimmed(address.country) ? {country: address.country!.trim()} : {}),
         ...(trimmed(address.postalCode) ? {postalCode: address.postalCode!.trim()} : {}),
+        ...(trimmed(address.countryCode)
+            ? {countryCode: address.countryCode!.trim().toUpperCase()}
+            : {}),
+        ...(trimmed(address.regionCode)
+            ? {regionCode: address.regionCode!.trim().toUpperCase()}
+            : {}),
     };
     return Object.keys(next).length ? next : null;
 }
@@ -179,6 +193,18 @@ export function toWireSubmission(
             productSlug: line.productSlug,
             contents: (line.contents ?? '').trim(),
             quantities: line.quantities,
+            // 🔴 What the buyer SAW, snapshotted at add-to-request. Without it the
+            // server only ever received a slug, so the confirmation receipt, the
+            // admin app and the buyer portal all rendered
+            // `folding-carton-straight-tuck-end` at people (PROD-2446).
+            //
+            // Sent rather than resolved server-side on purpose: the server has no
+            // Sanity connection, and resolving at send time would let a later
+            // product rename silently retitle an old receipt.
+            ...(trimmed(line.productTitle) ? {title: line.productTitle!.trim()} : {}),
+            ...(trimmed(line.productLineTitle)
+                ? {productType: line.productLineTitle!.trim()}
+                : {}),
             customizations: line.customizations.map(toWireCustomization),
             ...(trimmed(line.notes) ? {notes: line.notes!.trim()} : {}),
             attachments: toWireAttachments(line.referenceImages),

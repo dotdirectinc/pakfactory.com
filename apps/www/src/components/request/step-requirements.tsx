@@ -30,6 +30,8 @@ type StepRequirementsProps = {
     onPatch: (patch: Partial<RequestDraft>) => void;
     sectionRef?: React.Ref<HTMLElement>;
     className?: string;
+    /** Optional strip above fields (e.g. include saved pool products). */
+    poolBanner?: React.ReactNode;
 };
 
 export function StepRequirements({
@@ -38,6 +40,7 @@ export function StepRequirements({
     onPatch,
     sectionRef,
     className,
+    poolBanner,
 }: StepRequirementsProps) {
     // 🔴 Local state, then committed to the draft on change. The upload hook
     // needs a React setter — uploads finish out of order and each result is
@@ -109,6 +112,8 @@ export function StepRequirements({
             </div>
 
             <div className="space-y-6">
+                {poolBanner}
+
                 <BriefAssistUpload onFill={onAssistFill} />
 
                 {expressCold ? (

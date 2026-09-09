@@ -22,10 +22,15 @@ const repoRoot = join(appDir, "../..");
  * only: signup failed with "Your project's URL and Key are required to create a
  * Supabase client!" while Sanity kept working.
  *
+ * Load order: root first (shared secrets), then app dir again so
+ * `apps/www/.env.local` can still supply www-only vars (e.g. Places) after the
+ * root force-reload.
+ *
  * Local dev only — on Vercel the platform populates process.env directly and no
  * .env.local exists.
  */
 loadEnvConfig(repoRoot, undefined, undefined, true);
+loadEnvConfig(appDir, undefined, undefined, true);
 
 /**
  * Non-production origins must never be indexed (PROD-2404, extends PROD-2207).
@@ -82,7 +87,7 @@ const nextConfig: NextConfig = {
       "node_modules/@img/sharp-linux-x64/**/*",
     ],
   },
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "@pakfactory/geo", "next-sanity"],
   turbopack: {
     resolveAlias: workspaceCssAliases,
   },

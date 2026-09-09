@@ -9,6 +9,7 @@ import {pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-sect
 import {cn} from '@pakfactory/ui/lib/utils';
 import Logo from '@/components/layout/logo';
 import {BriefBuilderRail} from '@/components/request/brief-builder-rail';
+import {ExpressPoolBanner} from '@/components/request/express-pool-banner';
 import {StepProducts} from '@/components/request/step-products';
 import {StepRequirements} from '@/components/request/step-requirements';
 import {StepReview} from '@/components/request/step-review';
@@ -62,9 +63,11 @@ export function BriefBuilder({
 }: BriefBuilderProps) {
     const router = useRouter();
     const {
+        lines,
         builderLines,
         draft,
         updateDraft,
+        updateLine,
         removeLine,
         ensureBuilder,
         discardDraft,
@@ -154,13 +157,13 @@ export function BriefBuilder({
         const productsRow: WizardRailRowData = {
             key: 'products',
             title: REQUEST_COPY.productsTitle,
-            subtitle: REQUEST_COPY.productsSubtitle,
+            subtitle: REQUEST_COPY.productsRailSubtitle,
             complete: itemsReady,
         };
         const servicesRow: WizardRailRowData = {
             key: 'services',
             title: REQUEST_COPY.servicesTitle,
-            subtitle: REQUEST_COPY.servicesSubtitle,
+            subtitle: REQUEST_COPY.servicesRailSubtitle,
             complete: draft.services.length > 0 || !draft.servicesEnabled,
         };
 
@@ -181,20 +184,20 @@ export function BriefBuilder({
         rows.push({
             key: 'requirements',
             title: REQUEST_COPY.requirementsTitle,
-            subtitle: REQUEST_COPY.requirementsSubtitle,
+            subtitle: REQUEST_COPY.requirementsRailSubtitle,
             complete:
                 notesReady && shippingReady && contentsReady && expressQtyReady,
         });
         rows.push({
             key: 'information',
             title: REQUEST_COPY.yourInformationTitle,
-            subtitle: REQUEST_COPY.yourInformationSubtitle,
+            subtitle: REQUEST_COPY.yourInformationRailSubtitle,
             complete: contactReady,
         });
         rows.push({
             key: 'review',
             title: REQUEST_COPY.reviewTitle,
-            subtitle: REQUEST_COPY.reviewSubtitle,
+            subtitle: REQUEST_COPY.reviewRailSubtitle,
             complete: canSubmit,
         });
         return rows;
@@ -284,7 +287,11 @@ export function BriefBuilder({
     function handleClose() {
         // Express keeps no named draft, so there is nothing to offer to save.
         // Input still persists on every keystroke, so leaving is lossless.
-        if (isExpress || isDraftEmpty(draft)) {
+        // Builder products count as work even when form fields are still empty.
+        if (
+            isExpress ||
+            (isDraftEmpty(draft) && builderLines.length === 0)
+        ) {
             leave();
             return;
         }
@@ -352,7 +359,9 @@ export function BriefBuilder({
                 {showProducts ? (
                     <StepProducts
                         lines={builderLines}
+                        draftId={draft.id}
                         onRemove={removeLine}
+                        onUpdate={updateLine}
                         embedded
                     />
                 ) : null}
@@ -360,26 +369,51 @@ export function BriefBuilder({
         ) : showProducts ? (
             <StepProducts
                 lines={builderLines}
+                draftId={draft.id}
                 onRemove={removeLine}
+                onUpdate={updateLine}
                 sectionRef={productsRef}
+                servicesEnabled={draft.servicesEnabled}
+                onServicesEnabledChange={(servicesEnabled) =>
+                    updateDraft({
+                        servicesEnabled,
+                        ...(servicesEnabled ? {} : {services: []}),
+                    })
+                }
             />
         ) : null;
 
     const servicesBlock =
-        viewDraft.entryKind === 'products' || showServices ? (
-        <StepServices
-            services={draft.services}
-            servicesEnabled={draft.servicesEnabled}
-            onToggleEnabled={(servicesEnabled) =>
-                updateDraft({
-                    servicesEnabled,
-                    ...(servicesEnabled ? {} : {services: []}),
-                })
-            }
-            onToggleService={toggleService}
-            sectionRef={servicesRef}
-        />
-    ) : null;
+        viewDraft.entryKind === 'products' ? (
+            draft.servicesEnabled ? (
+                <StepServices
+                    services={draft.services}
+                    servicesEnabled={draft.servicesEnabled}
+                    onToggleEnabled={(servicesEnabled) =>
+                        updateDraft({
+                            servicesEnabled,
+                            ...(servicesEnabled ? {} : {services: []}),
+                        })
+                    }
+                    onToggleService={toggleService}
+                    sectionRef={servicesRef}
+                    showEnableToggle={false}
+                />
+            ) : null
+        ) : showServices ? (
+            <StepServices
+                services={draft.services}
+                servicesEnabled={draft.servicesEnabled}
+                onToggleEnabled={(servicesEnabled) =>
+                    updateDraft({
+                        servicesEnabled,
+                        ...(servicesEnabled ? {} : {services: []}),
+                    })
+                }
+                onToggleService={toggleService}
+                sectionRef={servicesRef}
+            />
+        ) : null;
 
     if (submitted && draft.ref) {
         return (
@@ -520,7 +554,7 @@ export function BriefBuilder({
                             className={cn(
                                 'mx-auto w-full max-w-[760px] px-6 sm:px-10',
                                 hasLeadingSections
-                                    ? 'py-10 sm:py-12'
+                                    ? 'pt-6 pb-10 sm:pb-12'
                                     : 'pb-10 pt-8 sm:pb-12',
                             )}
                         >
@@ -545,6 +579,15 @@ export function BriefBuilder({
                                 }
                                 onPatch={updateDraft}
                                 sectionRef={requirementsRef}
+                                poolBanner={
+                                    viewDraft.entryKind === 'express' &&
+                                    !viewDraft.productsExpanded &&
+                                    lines.length > 0 ? (
+                                        <ExpressPoolBanner
+                                            count={lines.length}
+                                        />
+                                    ) : null
+                                }
                             />
                             <StepYourInformation
                                 draft={draft}
