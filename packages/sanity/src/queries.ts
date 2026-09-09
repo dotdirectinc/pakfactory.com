@@ -321,7 +321,7 @@ export const PRODUCTS_FOR_PAGE_AND_COLLECTION_QUERY = /* groq */ `*[
 ] | order(title asc) {
   _id,
   title,
-  "name": coalesce(cardName, title),
+  "name": title,
   "description": cardDescription,
   "handle": handle.current,
   "thumbUrl": media[0].asset->url,
@@ -391,7 +391,7 @@ export const ALL_PRODUCT_PAGES_WITH_PRODUCTS_QUERY = /* groq */ `*[_type == "pro
     "sku": handle.current,
     "pageSlug": ^.slug.current,
     "collectionSlug": primaryCollection->slug.current,
-    "name": coalesce(cardName, title),
+    "name": title,
     "description": cardDescription,
     "thumbUrl": media[0].asset->url,
     "thumbAlt": coalesce(media[0].alt, title)

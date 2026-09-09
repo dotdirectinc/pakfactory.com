@@ -33,7 +33,7 @@ type ProductRow = {
 }
 
 const QUERY = `
-  *[_type == "product" && $styleId in productStyleCategories[]._ref]
+  *[_type == "product" && $styleId in productStyle[]._ref]
   | order(title asc) {
     _id,
     title,

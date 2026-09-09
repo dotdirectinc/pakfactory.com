@@ -19,7 +19,7 @@ type CapabilityData = {
 const INHERITED_QUERY = `
   coalesce(
     *[_id in [$productId, $draftId]][0]
-      .productStyleCategories[]->.defaultCapabilities[]->{
+      .productStyle[]->.defaultCapabilities[]->{
         _id,
         title,
         "category": type->category->title,
@@ -171,7 +171,7 @@ export const ProductRelatedCapabilitiesView: UserViewComponent = ({ documentId }
         />
       </div>
 
-      {/* Inherited — from productStyleCategories.defaultCapabilities */}
+      {/* Inherited — from productStyle.defaultCapabilities */}
       <div>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', opacity: 0.45, marginBottom: '0.5rem' }}>
           Inherited from style ({data.inherited.length})

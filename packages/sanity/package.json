@@ -15,7 +15,8 @@
     "./resolve-document-href": "./src/resolve-document-href.ts",
     "./social-platforms": "./src/social-platforms.ts",
     "./algolia/post-record": "./src/algolia/post-record.ts",
-    "./stamp-published-at": "./src/stamp-published-at.ts"
+    "./stamp-published-at": "./src/stamp-published-at.ts",
+    "./fact-labels": "./src/fact-labels.ts"
   },
   "scripts": {
     "lint": "eslint src",

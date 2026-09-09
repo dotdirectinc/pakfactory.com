@@ -11,7 +11,7 @@ const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(headline, title, internalTitle),
+  "title": coalesce(headline, title),
   "slug": slug.current,
   solutionType
 }`;
@@ -150,11 +150,24 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
   "ogImageUrl": ogImage.asset->url
 }`;
 
-/** All taxonomy options for the listing page filter UI — single round-trip. */
+/**
+ * All taxonomy options for the listing page filter UI — single round-trip.
+ *
+ * ⚠️ NOT CURRENTLY EXECUTED. It is exported from `queries.ts` and imported by nothing:
+ * `case-study-listing-grid.tsx` derives its filter options from the studies it already
+ * has (`deriveOptions(studies, "expertiseAreas")`). Kept because the listing rebuild
+ * wants it; verify a consumer exists before trusting anything it returns.
+ *
+ * `expertiseAreas` sorts by `title`, not by `expertiseStage.order`. That field is
+ * deprecated and its stored numbers are the OLD, WRONG sequence, never migrated — the
+ * real end-to-end order (Design → Prototyping → Managed Manufacturing → Strategy →
+ * Logistics → Fulfillment) lands on the Expertise landing page in PROD-2292. Point this
+ * at that array when it ships; do not restore `order asc`.
+ */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title, internalTitle) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
-  "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(order asc) ${TAXONOMY_ITEM}
+  "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(title asc) ${TAXONOMY_ITEM}
 }`;
 
 // ─── TypeScript types (mirrors GROQ projections above) ───────────────────────

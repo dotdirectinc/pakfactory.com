@@ -17,7 +17,7 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
  * Declaring is not inheriting: the Line declares WHICH properties its products
  * state (`properties`), never their values — each product still states its own.
  * The styles grid is derived from Styles pointing here; the Line only sets the
- * order (`styleOrder`), never gates membership.
+ * order (`styles`), never gates membership.
  *
  * Deferred: `sections` (page-builder) until the shared section inventory exists
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
@@ -144,8 +144,10 @@ export const productLine = defineType({
       ],
     }),
     defineField({
-      name: 'styleOrder',
-      title: 'Style order',
+      // Renamed from `styleOrder` (D33): an array is ordered by definition, so
+      // `*Order` named the mechanism rather than the thing. 0 populated at the rename.
+      name: 'styles',
+      title: 'Styles',
       type: 'array',
       group: GROUPS.categorization,
       description: 'Display order for the styles grid. Never a gate — unlisted styles append alphabetically.',

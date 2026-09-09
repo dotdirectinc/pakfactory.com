@@ -93,8 +93,8 @@ const productTemplates: Template[] = [
     ],
     value: ({ categoryId, styleId }: { categoryId: string; styleId: string }) => ({
       kind: 'standard',
-      productCategories: [{ _type: 'reference', _ref: categoryId }],
-      productStyleCategories: [{ _type: 'reference', _ref: styleId }],
+      productLine: { _type: 'reference', _ref: categoryId },
+      productStyle: [{ _type: 'reference', _ref: styleId }],
     }),
   },
   // The 'product-industry' template was removed in PROD-2284: it pre-filled the

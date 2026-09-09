@@ -5,7 +5,6 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { deprecateField } from '../lib/schema-guards'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 
@@ -24,7 +23,7 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * product count is unbounded, so product display order derives from a query, not
  * a maintained array (⚠️ the entity spec still lists productOrder; flagged for
  * Eric — this follows the ticket + the model's derive-don't-maintain rule).
- * `order` is deprecated: the styles grid order lives on the Line (`styleOrder`).
+ * `order` is deprecated: the styles grid order lives on the Line (`styles`).
  */
 export const productStyle = defineType({
   name: 'productStyle',
@@ -84,7 +83,10 @@ export const productStyle = defineType({
       description: 'Landing-page hero: badge, headline (the H1 — not a name), supporting copy and image.',
       options: { collapsible: true, collapsed: false },
       fields: [
-        defineField({ name: 'title', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
+        // Renamed from `hero.title` (D33). The field was *labelled* "Badge label" but
+        // *named* `title`, so it collided with the document's own title in every
+        // projection. 0 populated at the rename.
+        defineField({ name: 'label', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
         defineField({ name: 'headline', title: 'Headline', type: 'string', description: 'The page H1 (e.g. "Magnetic Closure Rigid Boxes"). Leave blank to use the site default.' }),
         defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the headline.' }),
         defineField(taggedImageField({
@@ -93,14 +95,16 @@ export const productStyle = defineType({
           type: 'image',
           mediaTags: [MEDIA_TAG.product],
           options: { hotspot: true },
-          description: 'Primary hero visual. Also the card image when no banner image is set.',
+          description: 'Primary hero visual. Also used as the card image when Card image is empty.',
           fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
         })),
       ],
     }),
     defineField(taggedImageField({
-      name: 'bannerImage',
-      title: 'Banner image',
+      // Renamed from `bannerImage` (D33) — a banner is a shape, not a meaning. Matches
+      // the name Product Line and Case Study already use. 0 populated at the rename.
+      name: 'cardImage',
+      title: 'Card image',
       type: 'image',
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
@@ -162,14 +166,15 @@ export const productStyle = defineType({
       },
       initialValue: 'active',
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: GROUPS.content,
-      // Retiring (§4.3): the styles-grid order lives on the Line (`styleOrder`).
-      ...deprecateField('The styles-grid order lives on the Product Line (styleOrder). Do not use.'),
-    }),
+    // `order` was REMOVED here on 2026-09-01. It set the display order of the style
+    // cards within a Product Line's styles grid, and nothing has ever read it — no
+    // GROQ query, no desk pane, and `/products` is served by Magento, not this app.
+    // Its successor `productLine.styles` is deployed and is explicitly "never a gate —
+    // unlisted styles append alphabetically", so an empty array is defined behaviour
+    // rather than a missing replacement. It was set on 8 mock styles across 3 lines;
+    // for two of those three the curated order and the alphabetical fallback are
+    // IDENTICAL, so the entire loss is the sequence of three Folding Carton styles.
+    // Recorded in ADR-017; re-apply to `productLine.styles` when real styles land.
 
     // ─── CATEGORIZATION ───────────────────────────────────────────────────────
     defineField({
@@ -205,12 +210,12 @@ export const productStyle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', bannerImage: 'bannerImage' },
-    prepare({ title, display, line, heroImage, bannerImage }) {
+    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
+    prepare({ title, display, line, heroImage, cardImage }) {
       return {
         title: display || title || 'Untitled style',
         subtitle: line ? `Style of ${line}` : 'Product Style',
-        media: bannerImage ?? heroImage,
+        media: cardImage ?? heroImage,
       }
     },
   },
