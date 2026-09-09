@@ -87,6 +87,73 @@ Unset, or anything but exactly `true`, and `/login` is Google-only. Set `true` t
 - **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. It does **not** check the email domain; the row is the gate, and a fallback that refused a provisioned account for its domain would defeat the point.
 - There is deliberately **no forgot-password or sign-up link** in either mode. Those pointed into the customer app (`lib/www-links.ts`, deleted) and are how staff ended up in the buyer flows. `NEXT_PUBLIC_WWW_URL` is not read by admin.
 
+## Customer attachments
+
+Files a buyer uploaded, on the request detail page. Everything uploadable is
+browser-viewable — png, jpeg, webp, gif, pdf — so images render as thumbnails
+with a lightbox, and a pdf gets a button rather than an embedded viewer.
+
+Two mechanisms, deliberately different:
+
+| | path | disposition |
+|---|---|---|
+| **View** | `GET /api/attachments/<rfqId>/<attachmentId>` (route handler) | `inline` |
+| **Download** | `resolveAttachmentUrl` (server action, minted on click) | `attachment` |
+
+### Why viewing needs a route handler
+
+ADR-0013 D3 keeps presigned permits **out of the DOM**: one rendered into the
+page is copyable, valid for anyone holding it, and expires after 300s while the
+rep is still reading. An `<img src>` needs a url, so the naive way to add
+previews is to mint a permit per file on load — which is exactly what D3 rules
+out.
+
+The route handler preserves it. What lands in the DOM is a **same-origin path**,
+worthless without the admin session cookie. It authorises on every hit, mints a
+fresh permit and 302s to it, so nothing is copyable and nothing goes stale while
+the page sits open.
+
+It answers **404** — never a redirect to `/login` — because the browser would
+follow a redirect and render login HTML inside an `<img>`. A signed-out request,
+a stranger's `rfqId` and a mismatched pair are all one answer.
+
+### The gate
+
+`authorizeAttachment` ([`src/lib/attachments/authorize.ts`](src/lib/attachments/authorize.ts))
+is the single implementation, shared by both callers. The backend's
+`/api/request/attachments/resolve` authorises the **service** (HMAC), not the
+person — it trusts this BFF to have checked already, so a leaked
+`SERVICE_SHARED_SECRET` would otherwise read every customer's artwork.
+
+1. `requireInternalUser` — session + enabled internal account.
+2. `getById(rfqId, zohoUserId)` — the same RLS path the page uses; null refuses.
+3. The attachment must belong to that request.
+
+`resolveFromBackend` ([`src/lib/attachments/backend-resolve.ts`](src/lib/attachments/backend-resolve.ts))
+does the signing and authorises nobody. It is shared so the two paths cannot
+drift on the signature — a signature subtly different in one of two places fails
+as a 401 nobody can read.
+
+### When downloads or previews fail
+
+Both need `BACKEND_API_BASE_URL` and `SERVICE_SHARED_SECRET`. Without them the
+file list still renders and only view/download fail; the log now names **which**
+variable is missing.
+
+The failure `reason` is coarse on purpose (`not_configured`, `unreachable`,
+`unauthorized`, `not_found`, `backend_error`) — it is for our logs and for
+choosing a status code, never for a message shown to a rep, since "not found"
+would confirm which of the two ids was wrong.
+
+⚠️ A **503 from the backend** is not an admin problem: it means the signature was
+accepted and the API box itself failed to reach S3 or the database. On 2026-09-08
+that was the box having no AWS credentials at all (no IAM instance profile), and
+the reason was only visible in the box's own journal:
+
+```
+sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attachment url"
+```
+
 ## Troubleshooting
 
 ### Login page error: Supabase URL and Key required
