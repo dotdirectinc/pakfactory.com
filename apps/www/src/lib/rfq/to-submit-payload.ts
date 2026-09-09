@@ -100,19 +100,28 @@ function toAddress(address: ShippingAddress | null): Address | undefined {
     if (!address) return undefined;
     const hasAny = Boolean(
         trimmed(address.line1) ||
+            trimmed(address.line2) ||
             trimmed(address.city) ||
             trimmed(address.region) ||
             trimmed(address.country) ||
-            trimmed(address.postalCode),
+            trimmed(address.postalCode) ||
+            trimmed(address.countryCode),
     );
     if (!hasAny) return undefined;
 
+    const countryCode = trimmed(address.countryCode)?.toUpperCase();
+    const regionCode = trimmed(address.regionCode)?.toUpperCase();
     return {
         line1: (address.line1 ?? '').trim(),
+        ...(trimmed(address.line2) ? {line2: address.line2!.trim()} : {}),
         city: (address.city ?? '').trim(),
         state: trimmed(address.region),
         postalCode: trimmed(address.postalCode),
-        country: (address.country ?? '').trim(),
+        // Prefer ISO alpha-2 when the picker set a code; else keep the label
+        // (legacy drafts / “Other…” free text).
+        country: countryCode || (address.country ?? '').trim(),
+        ...(countryCode ? {countryCode} : {}),
+        ...(regionCode ? {regionCode} : {}),
     };
 }
 
@@ -134,7 +143,9 @@ function toContact(draft: RequestDraft): Contact {
         annualSpend: spend,
         annualSpendCurrency: spend ? ASSUMED_CURRENCY : undefined,
         address: toAddress(draft.companyAddress),
-        country: trimmed(draft.companyAddress?.country),
+        country:
+            trimmed(draft.companyAddress?.countryCode)?.toUpperCase() ||
+            trimmed(draft.companyAddress?.country),
     };
 }
 
@@ -250,16 +261,18 @@ export function toSubmitPayload(
         });
     }
 
-    const countries = [
-        draft.shippingAddress?.country,
-        draft.companyAddress?.country,
-    ].filter((value): value is string => Boolean(trimmed(value)));
-    const nonIsoCountries = countries.filter((value) => value.trim().length !== 2);
-    if (nonIsoCountries.length > 0) {
+    const addressesWithoutIso = [
+        draft.shippingAddress,
+        draft.companyAddress,
+    ].filter((address) => {
+        if (!address || !trimmed(address.country)) return false;
+        return !trimmed(address.countryCode);
+    });
+    if (addressesWithoutIso.length > 0) {
         gaps.push({
-            field: 'shippingAddress.country / companyAddress.country',
-            value: nonIsoCountries,
-            reason: 'The builder stores display names ("Canada"); Address.country expects ISO-3166 alpha-2 ("CA"). Needs a country picker with codes, or a server-side lookup.',
+            field: 'shippingAddress.countryCode / companyAddress.countryCode',
+            value: addressesWithoutIso.map((a) => a?.country),
+            reason: 'Country was entered as free text (“Other…”) without an ISO code. Address.country falls back to the display label; CRM may need a lookup.',
         });
     }
 

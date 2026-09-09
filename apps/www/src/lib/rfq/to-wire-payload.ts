@@ -29,10 +29,15 @@ import type {
  *  backend's Zod schemas are server-side only and www does not depend on zod. */
 export type WireAddress = {
     line1?: string;
+    line2?: string;
     city?: string;
     region?: string;
     country?: string;
     postalCode?: string;
+    /** ISO 3166-1 alpha-2 when chosen from the country list. */
+    countryCode?: string;
+    /** ISO 3166-2 when chosen from the region list. */
+    regionCode?: string;
 };
 
 export type WireSubmission = {
@@ -87,10 +92,17 @@ function toWireAddress(address: ShippingAddress | null): WireAddress | null {
     if (!address) return null;
     const next: WireAddress = {
         ...(trimmed(address.line1) ? {line1: address.line1!.trim()} : {}),
+        ...(trimmed(address.line2) ? {line2: address.line2!.trim()} : {}),
         ...(trimmed(address.city) ? {city: address.city!.trim()} : {}),
         ...(trimmed(address.region) ? {region: address.region!.trim()} : {}),
         ...(trimmed(address.country) ? {country: address.country!.trim()} : {}),
         ...(trimmed(address.postalCode) ? {postalCode: address.postalCode!.trim()} : {}),
+        ...(trimmed(address.countryCode)
+            ? {countryCode: address.countryCode!.trim().toUpperCase()}
+            : {}),
+        ...(trimmed(address.regionCode)
+            ? {regionCode: address.regionCode!.trim().toUpperCase()}
+            : {}),
     };
     return Object.keys(next).length ? next : null;
 }

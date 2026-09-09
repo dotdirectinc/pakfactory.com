@@ -18,6 +18,7 @@
     "@pakfactory/brief-builder-ui": "workspace:*",
     "@pakfactory/components": "workspace:*",
     "@pakfactory/domain": "workspace:*",
+    "@pakfactory/geo": "workspace:*",
     "@pakfactory/redirects": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",
