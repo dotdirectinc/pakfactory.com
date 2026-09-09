@@ -6,16 +6,32 @@ import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 import { resolveAttachmentUrl } from "@/lib/attachments/resolve-attachment";
 
 /**
- * The customer's files, downloadable.
+ * The customer's files — viewable in place, and downloadable.
  *
- * ── Why there is no href until you click ────────────────────────────────────
- * A download URL here is a short-lived presigned GET, and rendering one into the
- * page would mean minting a permit for every file whether or not anyone opens it,
- * then watching it expire while the rep reads the rest of the request. Worse, it
- * would sit in the DOM — copyable, and valid for anyone holding it (ADR-0013 D3).
+ * ── Two different mechanisms, on purpose ────────────────────────────────────
+ * VIEW goes through `/api/attachments/<rfqId>/<attachmentId>`, a same-origin path
+ * that authorises on every hit and redirects to a fresh inline permit. That is
+ * what lets a url live in the DOM at all: it is worthless without the admin
+ * session cookie, and it cannot go stale while the page sits open.
  *
- * So the permit is minted on click, used immediately, and never stored.
+ * DOWNLOAD still mints on click through the server action and navigates
+ * immediately, because a download needs the permit in the browser's hands and
+ * there is nothing to gain from holding one before the rep asks (ADR-0013 D3).
+ *
+ * Everything the buyer can upload is browser-viewable — png, jpeg, webp, gif,
+ * pdf (`ALLOWED_CONTENT_TYPES`) — so the only split here is images, which get a
+ * thumbnail, versus pdf, which gets a button rather than an embedded viewer: a
+ * 25MB spec sheet in an iframe on a list of eight files is not a page anyone
+ * wants to load.
  */
+
+function isImage(contentType: string): boolean {
+  return contentType.startsWith("image/");
+}
+
+function previewHref(rfqId: string, attachmentId: string): string {
+  return `/api/attachments/${encodeURIComponent(rfqId)}/${encodeURIComponent(attachmentId)}`;
+}
 
 function formatBytes(bytes: number | null): string | null {
   if (bytes === null || !Number.isFinite(bytes) || bytes <= 0) return null;
@@ -38,6 +54,8 @@ export function RequestAttachments({
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [brokenIds, setBrokenIds] = useState<string[]>([]);
+  const [lightbox, setLightbox] = useState<RequestAttachment | null>(null);
 
   async function download(attachmentId: string) {
     setBusyId(attachmentId);
@@ -68,36 +86,134 @@ export function RequestAttachments({
   }
 
   return (
-    <ul className="flex flex-col gap-2">
-      {attachments.map((file) => {
-        const size = formatBytes(file.bytes);
-        const busy = busyId === file.id;
-        return (
-          <li key={file.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <button
-              type="button"
-              onClick={() => void download(file.id)}
-              disabled={busy}
-              className="text-sm font-medium underline underline-offset-4 hover:no-underline disabled:opacity-60"
-            >
-              {file.name}
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {[file.kind, size].filter(Boolean).join(" · ")}
-            </span>
-            {busy ? (
-              <span className="text-xs text-muted-foreground">
-                {ADMIN_REQUESTS_COPY.attachmentOpening}
-              </span>
-            ) : null}
-            {errorId === file.id ? (
-              <span className="text-xs text-destructive">
-                {ADMIN_REQUESTS_COPY.attachmentError}
-              </span>
-            ) : null}
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      <ul className="flex flex-col gap-4">
+        {attachments.map((file) => {
+          const size = formatBytes(file.bytes);
+          const busy = busyId === file.id;
+          const image = isImage(file.contentType);
+          // A preview that 404s means the permit could not be minted — the file
+          // row still has to work, so fall back to the name and the buttons
+          // rather than leaving a broken image in the page.
+          const broken = brokenIds.includes(file.id);
+
+          return (
+            <li key={file.id} className="flex items-start gap-3">
+              {image && !broken ? (
+                <button
+                  type="button"
+                  onClick={() => setLightbox(file)}
+                  className="shrink-0 overflow-hidden rounded-sm border bg-muted"
+                  aria-label={`${ADMIN_REQUESTS_COPY.attachmentView} ${file.name}`}
+                >
+                  {/* A plain <img>, not next/image: the source is a redirect to
+                      a signed, time-limited S3 url, and the optimizer would have
+                      to fetch and cache it — the one thing a short-lived permit
+                      must not allow. */}
+                  <img
+                    src={previewHref(rfqId, file.id)}
+                    alt={file.name}
+                    loading="lazy"
+                    onError={() =>
+                      setBrokenIds((prev) =>
+                        prev.includes(file.id) ? prev : [...prev, file.id],
+                      )
+                    }
+                    className="h-20 w-20 object-cover"
+                  />
+                </button>
+              ) : (
+                <span
+                  aria-hidden
+                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-sm border bg-muted text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
+                >
+                  {file.contentType === "application/pdf" ? "PDF" : "FILE"}
+                </span>
+              )}
+
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="truncate text-sm font-medium">{file.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {[file.kind, size].filter(Boolean).join(" · ")}
+                </span>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {image && !broken ? (
+                    <button
+                      type="button"
+                      onClick={() => setLightbox(file)}
+                      className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+                    >
+                      {ADMIN_REQUESTS_COPY.attachmentView}
+                    </button>
+                  ) : (
+                    // Not an image, or its preview failed: open the inline permit
+                    // in a tab and let the browser's own viewer handle it.
+                    <a
+                      href={previewHref(rfqId, file.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-medium underline underline-offset-4 hover:no-underline"
+                    >
+                      {ADMIN_REQUESTS_COPY.attachmentOpen}
+                    </a>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => void download(file.id)}
+                    disabled={busy}
+                    className="text-sm font-medium underline underline-offset-4 hover:no-underline disabled:opacity-60"
+                  >
+                    {ADMIN_REQUESTS_COPY.attachmentDownload}
+                  </button>
+
+                  {busy ? (
+                    <span className="text-xs text-muted-foreground">
+                      {ADMIN_REQUESTS_COPY.attachmentOpening}
+                    </span>
+                  ) : null}
+                  {errorId === file.id ? (
+                    <span className="text-xs text-destructive">
+                      {ADMIN_REQUESTS_COPY.attachmentError}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {lightbox ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.name}
+          onClick={() => setLightbox(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setLightbox(null);
+          }}
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/80 p-6"
+        >
+          {/* Plain <img>, for the same reason as the thumbnail above. */}
+          <img
+            src={previewHref(rfqId, lightbox.id)}
+            alt={lightbox.name}
+            className="max-h-[80vh] max-w-full object-contain"
+          />
+          <p className="text-sm text-white">{lightbox.name}</p>
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="text-sm font-medium text-white underline underline-offset-4"
+          >
+            {ADMIN_REQUESTS_COPY.attachmentClose}
+          </button>
+        </div>
+      ) : null}
+    </>
   );
 }
