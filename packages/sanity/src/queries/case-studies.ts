@@ -158,6 +158,11 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
  * has (`deriveOptions(studies, "expertiseAreas")`). Kept because the listing rebuild
  * wants it; verify a consumer exists before trusting anything it returns.
  *
+ * `status != "discontinued"` was `!= "deprecated"` until D49 (PROD-2449) collapsed the
+ * two status vocabularies into one. The literal had to move with the schema: a filter
+ * naming a value the field no longer offers is not an error, it is a filter that
+ * matches everything — it would have silently re-admitted retired stages.
+ *
  * `expertiseAreas` sorts by `title`, not by `expertiseStage.order`. That field is
  * deprecated and its stored numbers are the OLD, WRONG sequence, never migrated — the
  * real end-to-end order (Design → Prototyping → Managed Manufacturing → Strategy →
@@ -167,7 +172,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
   "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
-  "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(title asc) ${TAXONOMY_ITEM}
+  "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
 }`;
 
 // ─── TypeScript types (mirrors GROQ projections above) ───────────────────────

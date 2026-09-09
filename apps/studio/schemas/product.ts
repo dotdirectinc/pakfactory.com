@@ -99,6 +99,51 @@ export const product = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'customerFacing',
+      title: 'Customer facing',
+      type: 'boolean',
+      group: GROUPS.content,
+      description:
+        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how a standard product that exists purely as a preset\'s `basedOn` target stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+      initialValue: true,
+      // WARNING, never an error. A customer-facing product under a hidden line or
+      // style is the one rule a human can break silently: nothing in the Studio shows
+      // an ancestor's visibility while you edit the child, and the result is a page
+      // whose whole path above it is unreachable. Everything else about the scaffold
+      // pattern is enforced structurally.
+      //
+      // Warning and not error because the state is legitimate mid-edit — you unhide a
+      // line and its products one save at a time — and because an error here would
+      // block publishing a product over the state of a DIFFERENT document.
+      //
+      // Reads the PUBLISHED ancestors deliberately: a strong reference resolves
+      // against the published dataset, so published visibility is what decides
+      // whether a route can exist. An unpublished draft edit is not yet that fact.
+      validation: (Rule) =>
+        Rule.custom(async (value, context) => {
+          if (value === false) return true
+          const doc = context.document as
+            | { kind?: string; productLine?: { _ref?: string }; productStyle?: { _ref?: string }[] }
+            | undefined
+          // Only a standard product has a line/style ancestry; both are hidden on presets.
+          if (doc?.kind !== 'standard') return true
+          const refs = [doc.productLine?._ref, ...(doc.productStyle ?? []).map((r) => r?._ref)].filter(
+            (r): r is string => Boolean(r),
+          )
+          if (refs.length === 0) return true
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+          const hidden = await client.fetch<{ title?: string }[]>(
+            `*[_id in $refs && customerFacing == false]{title}`,
+            { refs },
+          )
+          if (hidden.length === 0) return true
+          const names = hidden.map((h) => h.title ?? 'untitled').join(', ')
+          return `This product is customer facing, but ${names} ${
+            hidden.length === 1 ? 'is not' : 'are not'
+          }. The product page would sit under a path with no reachable route above it.`
+        }).warning(),
+    }),
+    defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
