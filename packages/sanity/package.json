@@ -35,7 +35,8 @@
     "migrate:product-normalize": "tsx scripts/migrate-product-normalize.ts",
     "migrate:page-consolidation": "tsx scripts/migrate-page-consolidation.ts",
     "migrate:customization-cleanup": "tsx scripts/migrate-customization-cleanup.ts",
-    "migrate:customization-properties-backfill": "tsx scripts/migrate-customization-properties-backfill.ts"
+    "migrate:customization-properties-backfill": "tsx scripts/migrate-customization-properties-backfill.ts",
+    "migrate:casestudy-rename-fields": "tsx scripts/migrate-casestudy-rename-fields.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0"

@@ -20,6 +20,7 @@ import { solution } from './solution'
 import { expertiseStage } from './expertiseStage'
 import { expertiseService } from './expertiseService'
 import { client } from './client'
+import { testimonial } from './testimonial'
 import { caseStudy } from './caseStudy'
 import { faq } from './faq'
 import { helpCategory } from './helpCategory'
@@ -80,6 +81,7 @@ export const schemaTypes = [
   expertiseStage,
   expertiseService,
   client,
+  testimonial,
   caseStudy,
 
 
