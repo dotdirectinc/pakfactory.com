@@ -71,8 +71,12 @@ export type Address = {
     city: string;
     state?: string;
     postalCode?: string;
-    /** ISO-3166 alpha-2. */
+    /** ISO-3166 alpha-2 when known; else display label. */
     country: string;
+    /** ISO 3166-1 alpha-2 when chosen from the country list. */
+    countryCode?: string;
+    /** ISO 3166-2 when chosen from the region list. */
+    regionCode?: string;
     phone?: string;
 };
 

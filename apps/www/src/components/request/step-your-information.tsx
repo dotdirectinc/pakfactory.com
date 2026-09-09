@@ -10,6 +10,7 @@ import {
     SelectValue,
 } from '@pakfactory/ui/components/select';
 import {AnnualSpendField} from '@/components/request/annual-spend-field';
+import {AddressFormFields} from '@/components/request/address-form-fields';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft, ShippingAddress} from '@/lib/request/request.storage';
 import {normalizeAddress} from '@/lib/request/shipping-address';
@@ -163,40 +164,19 @@ export function StepYourInformation({
                     <p className="mb-4 text-xs text-muted-foreground">
                         {REQUEST_COPY.companyAddressHelp}
                     </p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <Input
-                            className={FIELD_CLASS}
-                            placeholder="Street"
-                            value={draft.companyAddress?.line1 ?? ''}
-                            onChange={(e) =>
-                                patchOffice({line1: e.target.value})
-                            }
-                        />
-                        <Input
-                            className={FIELD_CLASS}
-                            placeholder="City"
-                            value={draft.companyAddress?.city ?? ''}
-                            onChange={(e) =>
-                                patchOffice({city: e.target.value})
-                            }
-                        />
-                        <Input
-                            className={FIELD_CLASS}
-                            placeholder="Region"
-                            value={draft.companyAddress?.region ?? ''}
-                            onChange={(e) =>
-                                patchOffice({region: e.target.value})
-                            }
-                        />
-                        <Input
-                            className={FIELD_CLASS}
-                            placeholder="Country"
-                            value={draft.companyAddress?.country ?? ''}
-                            onChange={(e) =>
-                                patchOffice({country: e.target.value})
-                            }
-                        />
-                    </div>
+                    <AddressFormFields
+                        value={{
+                            line1: draft.companyAddress?.line1,
+                            line2: draft.companyAddress?.line2,
+                            city: draft.companyAddress?.city,
+                            region: draft.companyAddress?.region,
+                            country: draft.companyAddress?.country,
+                            postalCode: draft.companyAddress?.postalCode,
+                            countryCode: draft.companyAddress?.countryCode,
+                            regionCode: draft.companyAddress?.regionCode,
+                        }}
+                        onPatch={patchOffice}
+                    />
                 </div>
 
                 <AnnualSpendField

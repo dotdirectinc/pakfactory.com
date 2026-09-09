@@ -7,6 +7,7 @@ export function formatAddressLines(
   const lines: string[] = [];
   if (String(address.label ?? "").trim()) lines.push(address.label!.trim());
   if (String(address.line1 ?? "").trim()) lines.push(address.line1!.trim());
+  if (String(address.line2 ?? "").trim()) lines.push(address.line2!.trim());
   const cityRegion = [address.city, address.region, address.postalCode]
     .map((part) => String(part ?? "").trim())
     .filter(Boolean)

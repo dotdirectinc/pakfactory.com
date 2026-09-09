@@ -26,16 +26,28 @@ export function hasShippingLocation(
     return Boolean(city && country);
 }
 
+/**
+ * Merge/coerce an address for draft UI state.
+ *
+ * Free-text fields are **not** trimmed here — this runs on every keystroke via
+ * ship-to / company-office patches, and trimming would eat spaces mid-type.
+ * Trim at wire/submit instead (`to-wire-payload` / `to-submit-payload`).
+ */
 export function normalizeAddress(
     partial: Partial<ShippingAddress> = {},
 ): ShippingAddress {
+    const countryCode = partial.countryCode?.trim().toUpperCase() || undefined;
+    const regionCode = partial.regionCode?.trim().toUpperCase() || undefined;
     return {
         id: partial.id ?? makeShippingId(),
-        label: String(partial.label ?? '').trim(),
-        line1: String(partial.line1 ?? '').trim(),
-        city: String(partial.city ?? '').trim(),
-        region: String(partial.region ?? '').trim(),
-        country: String(partial.country ?? '').trim(),
-        postalCode: String(partial.postalCode ?? '').trim(),
+        label: String(partial.label ?? ''),
+        line1: String(partial.line1 ?? ''),
+        line2: String(partial.line2 ?? ''),
+        city: String(partial.city ?? ''),
+        region: String(partial.region ?? ''),
+        country: String(partial.country ?? ''),
+        postalCode: String(partial.postalCode ?? ''),
+        ...(countryCode ? {countryCode} : {}),
+        ...(regionCode ? {regionCode} : {}),
     };
 }

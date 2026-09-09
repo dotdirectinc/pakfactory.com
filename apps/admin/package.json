@@ -15,6 +15,7 @@
     "@pakfactory/auth-ui": "workspace:*",
     "@pakfactory/brief-builder-ui": "workspace:*",
     "@pakfactory/domain": "workspace:*",
+    "@pakfactory/geo": "workspace:*",
     "@pakfactory/supabase": "workspace:*",
     "@pakfactory/ui": "workspace:*",
     "lucide-react": "^0.468.0",

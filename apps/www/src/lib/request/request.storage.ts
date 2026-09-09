@@ -68,10 +68,15 @@ export type ShippingAddress = {
     id?: string;
     label?: string;
     line1?: string;
+    line2?: string;
     city?: string;
     region?: string;
     country?: string;
     postalCode?: string;
+    /** ISO 3166-1 alpha-2 when chosen from the country list. */
+    countryCode?: string;
+    /** ISO 3166-2 when chosen from the region list. */
+    regionCode?: string;
 };
 
 export type RequestEntryKind = 'express' | 'products' | 'services';
@@ -220,10 +225,13 @@ function parseShipping(value: unknown): ShippingAddress | null {
         ...(typeof a.id === 'string' ? {id: a.id} : {}),
         ...(typeof a.label === 'string' ? {label: a.label} : {}),
         ...(typeof a.line1 === 'string' ? {line1: a.line1} : {}),
+        ...(typeof a.line2 === 'string' ? {line2: a.line2} : {}),
         ...(typeof a.city === 'string' ? {city: a.city} : {}),
         ...(typeof a.region === 'string' ? {region: a.region} : {}),
         ...(typeof a.country === 'string' ? {country: a.country} : {}),
         ...(typeof a.postalCode === 'string' ? {postalCode: a.postalCode} : {}),
+        ...(typeof a.countryCode === 'string' ? {countryCode: a.countryCode} : {}),
+        ...(typeof a.regionCode === 'string' ? {regionCode: a.regionCode} : {}),
     };
 }
 
