@@ -8,29 +8,50 @@ const appDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(appDir, "../..");
 
 /**
- * `forceReload` is load-bearing, not defensive.
+ * Merge the ROOT `.env.local` with this app's own. Both calls are needed, and so
+ * is the restore loop — dropping it breaks local dev in a way that looks like a
+ * Supabase misconfiguration.
  *
- * @next/env caches on its FIRST call and later calls for a different directory
- * are no-ops — they return the cached result and assign nothing. Next loads
- * `apps/www/.env.local` before evaluating this config, so a plain
- * `loadEnvConfig(repoRoot)` silently returns that cached app-dir result and every
- * root-only variable stays undefined. It even reports having loaded `.env.local`,
- * which is what makes it so hard to spot.
+ * TWO separate @next/env behaviours are in play, and they pull opposite ways:
  *
- * That was invisible while every www variable also existed in the app-level file.
- * It surfaced the moment NEXT_PUBLIC_SUPABASE_URL was added to the repo root
- * only: signup failed with "Your project's URL and Key are required to create a
- * Supabase client!" while Sanity kept working.
+ *   1. WITHOUT `forceReload`, @next/env caches on its FIRST call and later calls
+ *      for a different directory are no-ops. Next has already loaded
+ *      `apps/www/.env.local` by the time this config is evaluated, so a plain
+ *      `loadEnvConfig(repoRoot)` returns that cached app-dir result and assigns
+ *      nothing. It even reports having loaded `.env.local`, which is what makes
+ *      it so hard to spot.
  *
- * Load order: root first (shared secrets), then app dir again so
- * `apps/www/.env.local` can still supply www-only vars (e.g. Places) after the
- * root force-reload.
+ *   2. WITH `forceReload`, each call first RESETS `process.env` to the snapshot
+ *      taken before the very first load, then applies only the target
+ *      directory's files. The reset is unconditional — verified against
+ *      @next/env 16.2.4 by force-loading a directory containing no `.env` files
+ *      at all, which still cleared everything the previous call had set.
+ *
+ * So two force-reloads do not compose: the second silently discards the first,
+ * and only keys that happen to exist in BOTH files survive. That is the bug this
+ * loop fixes. It presented as signup failing with "Your project's URL and Key
+ * are required to create a Supabase client!" while Sanity kept working — Sanity
+ * is in both files, Supabase is root-only.
+ *
+ * It is not only Supabase: `SERVICE_SHARED_SECRET`, `BACKEND_API_BASE_URL`,
+ * `WWW_ORIGIN_PROXY_SECRET` and `GOOGLE_PLACES_API_KEY` are all root-only too,
+ * so the backend API calls, the origin lockdown and Places autocomplete were
+ * silently unconfigured in dev by the same mechanism.
+ *
+ * PRECEDENCE: the app file wins. Only keys the app-dir pass left undefined are
+ * restored from the root snapshot. That matches what `scripts/env/switch-env.mjs`
+ * documents and warns about — a duplicate key in an app's own `.env.local` shadows the
+ * root value, which is why `pnpm env:staging` can appear not to take effect.
  *
  * Local dev only — on Vercel the platform populates process.env directly and no
- * .env.local exists.
+ * .env.local exists, so both calls are no-ops there.
  */
 loadEnvConfig(repoRoot, undefined, undefined, true);
+const rootEnv = { ...process.env };
 loadEnvConfig(appDir, undefined, undefined, true);
+for (const [key, value] of Object.entries(rootEnv)) {
+  if (process.env[key] === undefined) process.env[key] = value;
+}
 
 /**
  * Non-production origins must never be indexed (PROD-2404, extends PROD-2207).
