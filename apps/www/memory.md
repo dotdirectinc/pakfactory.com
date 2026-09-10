@@ -1,5 +1,7 @@
 # `@pakfactory/www` — ops memory
 
+> **Ops only — not policy canon.** Binding contracts: [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md) · [`DESIGN.md`](../../DESIGN.md) (UI).
+
 Human and agent runbook for the www rebuild. Binding contracts live in [`CLAUDE.md`](./CLAUDE.md).
 
 ## Vercel

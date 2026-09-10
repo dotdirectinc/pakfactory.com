@@ -1,5 +1,7 @@
 # Blog app — working memory
 
+> **Ops / history only — not policy canon.** Binding rules: [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md) · [`DESIGN.md`](../../DESIGN.md) (UI) · [`docs/ai-agent-docs.md`](../../docs/ai-agent-docs.md) · [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md).
+
 Last updated: 2026-07-28.
 
 **AI / Jira binding rules:** [`docs/blog-3-jira-conventions.md`](../../docs/blog-3-jira-conventions.md) · [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).

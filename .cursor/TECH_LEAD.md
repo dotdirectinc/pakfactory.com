@@ -25,11 +25,12 @@ Summary for day-to-day work:
 
 | Do | Don’t |
 |----|--------|
-| Fix layout and one-off styling in **app or block code** (e.g. `apps/www/src/components/shadcn-studio/blocks/…`, pages) with existing tokens and `className`. | Edit **`packages/ui/src/components`** primitives except a **confirmed bug** you were asked to fix. |
-| Add **new** shadcn-style primitives only when needed (**additive** files, e.g. from CLI). | Change **`packages/ui/src/globals.css`** or **`apps/www/src/app/globals.css`** for new features (no new tokens, no `@theme` drive-by tweaks). |
-| Keep shell changes explicit. | Change root **`layout.tsx`**, global shell, or navbar blocks unless the task explicitly asks. |
+| Read **[`DESIGN.md`](../DESIGN.md)** before designing/building/planning UI; use token **names** from `@pakfactory/ui`. | Edit **`packages/ui/src/components`** primitives except a **confirmed bug** you were asked to fix. |
+| Fix layout/styling in **app or feature code** with existing tokens and `className`. | Drive-by change **`packages/ui/src/globals.css`** for a single feature (token evolution is a design-system / ADR act). |
+| Add an app token in the app’s `globals.css` **only when ui lacks it**; if a second app needs it, move to `@pakfactory/ui` ([`AGENTS.md`](../AGENTS.md)). | Invent a parallel palette or copy unrelated design-system hex (e.g. Vercel blue). |
+| Add **new** shadcn-style primitives only when needed (**additive**). | Change root **`layout.tsx`**, global shell, or navbar unless the task explicitly asks. |
 
-If **`AGENTS.md`** exists at the repository root, treat it as the **canonical** engineering and MCP defaults and **do not contradict** it: **[`AGENTS.md`](../AGENTS.md)**.
+Canonical engineering defaults: **[`AGENTS.md`](../AGENTS.md)**. Doc map: **[`docs/ai-agent-docs.md`](../docs/ai-agent-docs.md)**.
 
 ---
 

@@ -13,7 +13,9 @@ Do not contradict `AGENTS.md`. Blog 3.0 ticket → code map: **[docs/blog-3-jira
 
 ## Preserve shared UI primitives (no preemptive changes)
 
-- **Do not edit** existing components under [`packages/ui/src/components`](packages/ui/src/components) (e.g. button, badge, dropdown-menu) except when fixing a confirmed bug you were explicitly asked to fix.
-- **CSS cascade:** follow **[AGENTS.md](../../AGENTS.md)** § UI and design system — `@pakfactory/ui/globals.css`, then the app’s `globals.css`, then component `className`. Spacing is **8pt** (see AGENTS.md). App CSS may add a token only when ui does not define it; do not drive-by edit `packages/ui/src/globals.css` for a single feature.
-- **Allowed exception:** **add** new primitive files only when required (e.g. `navigation-menu.tsx` from the shadcn CLI)—additive files only; leave existing primitive source unchanged.
-- **Do not change** global shell layout (e.g. root `layout.tsx`, existing navbar blocks) unless the task explicitly asks for it.
+- **UI design/build/plan:** read **[DESIGN.md](../../DESIGN.md)** first (composition + token names); values live in `@pakfactory/ui/globals.css`.
+- **Do not edit** existing components under [`packages/ui/src/components`](packages/ui/src/components) except when fixing a confirmed bug you were explicitly asked to fix.
+- **CSS cascade:** follow **[AGENTS.md](../../AGENTS.md)** § UI and design system — `@pakfactory/ui/globals.css`, then the app’s `globals.css`, then component `className`. Spacing is **8pt**. App CSS may add a token only when ui does not define it; do not drive-by edit `packages/ui/src/globals.css` for a single feature.
+- **Allowed exception:** **add** new primitive files only when required (e.g. from the shadcn CLI)—additive only.
+- **Do not change** global shell layout (root `layout.tsx`, navbar) unless the task explicitly asks.
+- **Doc map:** [`docs/ai-agent-docs.md`](../../docs/ai-agent-docs.md) — keep Cursor digests thin; do not restate AGENTS.

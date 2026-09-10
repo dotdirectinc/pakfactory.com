@@ -57,6 +57,8 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 
 ## UI and design system (preserve primitives)
 
+**Component design / build / plan:** read **[`DESIGN.md`](DESIGN.md)** first (composition + token names). Exact values live in [`packages/ui/src/globals.css`](packages/ui/src/globals.css). Doc map: [`docs/ai-agent-docs.md`](docs/ai-agent-docs.md).
+
 These rules align with [`.cursor/rules/workspace-instructions.mdc`](.cursor/rules/workspace-instructions.mdc):
 
 - **Do not edit** existing files under `packages/ui/src/components` except when fixing a **confirmed** bug you were asked to fix.
@@ -130,7 +132,7 @@ Shipped prerequisites are documented in **[`docs/blog-3-jira-conventions.md`](do
 | **JSON-LD** ([PROD-1487](https://dotdirect.atlassian.net/browse/PROD-1487))         | Use **`@pakfactory/seo`** only — see [`packages/seo/CLAUDE.md`](packages/seo/CLAUDE.md)                                                                   |
 | **AI IDE config** ([PROD-1516](https://dotdirect.atlassian.net/browse/PROD-1516))   | This file + [`CLAUDE.md`](CLAUDE.md) + [`.cursor/rules/`](.cursor/rules/) + [`.claude/skills/`](.claude/skills/)                                          |
 | **Listing robots** ([PROD-1495](https://dotdirect.atlassian.net/browse/PROD-1495))  | `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` — unfiltered paginated listings **index, follow** (self-canonical); filtered / odd-`perPage` listings **noindex, follow**; posts **index, follow**                         |
-| **Deploy & URLs** ([PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496))   | Blog app at deployment **root** (no URL `/blog` prefix); `NEXT_PUBLIC_SITE_URL` = blog origin; Vercel ops in [`apps/blog/memory.md`](apps/blog/memory.md) |
+| **Deploy & URLs** ([PROD-1496](https://dotdirect.atlassian.net/browse/PROD-1496))   | App routes are flat (no `app/blog/` folder). `NEXT_PUBLIC_SITE_URL` = **origin only**; public absolute URLs via `absoluteUrl()` + optional `NEXT_PUBLIC_BLOG_BASE_PATH` (production may serve under `/blog`). Detail: [`apps/blog/CLAUDE.md`](apps/blog/CLAUDE.md). Ops: [`apps/blog/memory.md`](apps/blog/memory.md) |
 
 Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.net/browse/PROD-1480).
 
@@ -148,7 +150,7 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — r
 | **ADR-003 — Redirect strategy**      | 404-triggered cached map + tag-revalidated webhook; auto-create on slug change via a Studio document action. Build-time `redirects()` rejected (needs redeploy); Edge Config + middleware deferred (no hot-path cost vs. always-on middleware).  | [`docs/adr/0003-redirect-strategy.md`](docs/adr/0003-redirect-strategy.md)               |
 | **ADR-004 — Media library**          | **`sanity-plugin-media`** for project-scoped library + asset-level alt/caption written onto `sanity.imageAsset`; blog GROQ coalesces per-use over asset-level. Native Media Library (Enterprise / cross-project) is the documented upgrade path. | [`docs/adr/0004-media-library-strategy.md`](docs/adr/0004-media-library-strategy.md)     |
 | **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
-| **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, brand tokens, and **8pt spacing** (`--spacing-grid-unit`) centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens.                                                                 | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
+| **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, brand tokens, and **8pt spacing** (`--spacing-grid-unit`) centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens for features. Agent UI guide: [`DESIGN.md`](DESIGN.md). | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
 | **ADR-013 — Shared core vs feature composition** | Extract shared UI as controlled, props-only `ui/` primitives; features own data/URL wiring in `modules/` controllers. Never import one feature's component into another, and never fork a feature component — extract the shared core. | [`docs/adr/0013-shared-core-vs-feature-composition.md`](docs/adr/0013-shared-core-vs-feature-composition.md) |
 
 > ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) and **ADR-014 (Sanity naming — singular types/titles/desk labels; `_type` renames are content migrations)** are listed in the register linked above.

@@ -1,5 +1,7 @@
 # `@pakfactory/studio` — ops memory
 
+> **Ops only — not policy canon.** Binding contracts: [`CLAUDE.md`](./CLAUDE.md) · [`AGENTS.md`](../../AGENTS.md).
+
 Human and agent runbook for Sanity Studio. Binding contracts: [`CLAUDE.md`](./CLAUDE.md).
 
 ## Environment
