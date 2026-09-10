@@ -9,6 +9,9 @@ import {isSanityConfigured} from '@/lib/sanity/env';
 import {HOME_PAGE_QUERY} from '@pakfactory/sanity/queries';
 import {Button} from '@pakfactory/ui/components/button';
 
+/** ISR floor — keep literal for Next.js (PROD-2456). */
+export const revalidate = 60;
+
 type HomeDoc = {
     title: string;
     heroHeadline?: string;

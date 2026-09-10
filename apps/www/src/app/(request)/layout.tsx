@@ -2,6 +2,7 @@ import type {ReactNode} from 'react';
 import {accountIdentity, type AccountIdentity} from '@pakfactory/supabase/session';
 import {createClient} from '@pakfactory/supabase/server';
 import {RequestRoot} from '@/lib/request/request-root';
+import './request.css';
 
 /**
  * Isolated wizard chrome — no site nav (POC BriefBuilder / Request Builder).

@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useId, useRef, useState} from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {ImagePlus, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
@@ -15,7 +16,6 @@ import {
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {CustomizationBuilder} from '@/components/customization-builder/customization-builder';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {DestructiveConfirmDialog} from '@/components/common/destructive-confirm-dialog';
 import {MAX_REF_IMAGES} from '@/components/product/contents-field';
@@ -41,6 +41,14 @@ import type {
     UpdateLinePatch,
 } from '@/lib/request/request.storage';
 import {productHref} from '@/lib/www-routes';
+
+const CustomizationBuilder = dynamic(
+    () =>
+        import('@/components/customization-builder/customization-builder').then(
+            (mod) => mod.CustomizationBuilder,
+        ),
+    {ssr: false},
+);
 
 const TEXTAREA_CLASS =
     'min-h-[8.5rem] w-full min-w-0 rounded-sm border border-input bg-background px-3 py-2 text-base outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm';

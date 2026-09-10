@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { BLOG_GLOBAL_SETTINGS_QUERY } from "@pakfactory/sanity/queries";
 import { submitIndexNowUrls } from "@pakfactory/sanity/indexnow";
@@ -11,31 +11,39 @@ import {
   isSanityConfigured,
 } from "@/lib/sanity/env";
 import { absoluteUrl } from "@/lib/site";
+import {
+  WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
+  WWW_CATALOG_LINES_CACHE_TAG,
+  WWW_CATALOG_PRODUCTS_CACHE_TAG,
+  WWW_FOOTER_CACHE_TAG,
+  WWW_GLOBAL_SETTINGS_CACHE_TAG,
+  wwwProductTag,
+} from "@/lib/www-cache";
 
 const INDEXNOW_HOST = "pakfactory.com";
 
 /**
- * Sanity webhook → on-demand revalidation for apps/www (case studies).
+ * Sanity webhook → on-demand revalidation for apps/www.
  *
  * Configure a webhook targeting this route (`/api/revalidate` on the www
  * origin, e.g. `https://pakfactory-com-www.vercel.app/api/revalidate?secret=<secret>`)
  * with the shared secret sent as `Authorization: Bearer <secret>` or `?secret=<secret>`,
- * filtered to every type a case-studies page renders:
+ * filtered to types that case studies or the catalog render:
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "productLine", "expertiseStage", "customizationOption"
+ *     "solution", "productLine", "expertiseStage", "customizationOption",
+ *     "product", "productStyle", "customizationCategory", "customizationType",
+ *     "blogNavigation", "settings"
  *   ]
  *
- * `caseStudy` = the studies; `listingPage` = the case-studies listing settings doc
- * (id `caseStudiesPage`, consolidated onto the shared listingPage type in PROD-2292);
- * `client` = card/detail client name+logo+industry; the four taxonomies =
- * products / expertise / customization / industry chips shown on cards + detail.
+ * Case studies: the listing always revalidates. A slugged `caseStudy` edit
+ * revalidates that detail page; anything else in the case-study set sweeps
+ * every detail page.
  *
- * Behaviour: the listing always revalidates. A slugged `caseStudy` edit revalidates
- * just that detail page; anything else (page settings, client, taxonomy, a slugless
- * caseStudy, or no body) sweeps every detail page — any of them could reference the
- * changed doc, and we can't know which without a query.
+ * Catalog: matching cache tags are busted (`revalidateTag`) and product /
+ * customization paths are refreshed. `revalidatePath` alone does not invalidate
+ * `unstable_cache` tags.
  *
  * A slugged `caseStudy` publish/update/unpublish (PROD-2172) also pings IndexNow
  * with that study's canonical URL.
@@ -52,6 +60,18 @@ const CASE_STUDY_TYPES = new Set([
   "productLine",
   "expertiseStage",
   "customizationOption",
+]);
+
+const CATALOG_PRODUCT_TYPES = new Set([
+  "product",
+  "productLine",
+  "productStyle",
+]);
+
+const CATALOG_CUSTOMIZATION_TYPES = new Set([
+  "customizationOption",
+  "customizationCategory",
+  "customizationType",
 ]);
 
 export async function POST(request: Request) {
@@ -103,21 +123,68 @@ export async function POST(request: Request) {
   }
 
   const revalidated: string[] = [];
+  const tags = new Set<string>();
 
-  // The listing always reflects any of these changes (cards, filters, page SEO).
-  revalidatePath("/case-studies");
-  revalidated.push("/case-studies");
+  const touchesCaseStudies = !type || CASE_STUDY_TYPES.has(type);
+  if (touchesCaseStudies) {
+    // The listing always reflects any of these changes (cards, filters, page SEO).
+    revalidatePath("/case-studies");
+    revalidated.push("/case-studies");
 
-  if (type === "caseStudy" && slug) {
-    // A specific study changed → only its own detail page needs a targeted refresh.
-    revalidatePath(`/case-studies/${slug}`);
-    revalidated.push(`/case-studies/${slug}`);
-  } else {
-    // Page settings, a referenced client/taxonomy, a slugless caseStudy, or an
-    // unknown/empty payload → any detail page could be affected. Sweep them all.
-    revalidatePath("/case-studies/[slug]", "page");
-    revalidated.push("/case-studies/[slug]");
+    if (type === "caseStudy" && slug) {
+      revalidatePath(`/case-studies/${slug}`);
+      revalidated.push(`/case-studies/${slug}`);
+    } else if (touchesCaseStudies) {
+      revalidatePath("/case-studies/[slug]", "page");
+      revalidated.push("/case-studies/[slug]");
+    }
   }
+
+  const touchesProducts =
+    !type || CATALOG_PRODUCT_TYPES.has(type) || type === "customizationOption";
+  if (touchesProducts) {
+    tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);
+    tags.add(WWW_CATALOG_LINES_CACHE_TAG);
+    revalidatePath("/products");
+    revalidated.push("/products");
+    if (type === "product" && slug) {
+      tags.add(wwwProductTag(slug));
+      revalidatePath(`/products/${slug}`);
+      revalidated.push(`/products/${slug}`);
+    } else {
+      revalidatePath("/products/[slug]", "page");
+      revalidatePath("/products/[slug]/[styleSlug]", "page");
+      revalidated.push("/products/[slug]", "/products/[slug]/[styleSlug]");
+    }
+  }
+
+  const touchesCustomizations =
+    !type || CATALOG_CUSTOMIZATION_TYPES.has(type);
+  if (touchesCustomizations) {
+    tags.add(WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG);
+    // Product PDP embeds available customizations.
+    tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);
+    tags.add(WWW_CATALOG_LINES_CACHE_TAG);
+    revalidatePath("/customizations");
+    revalidated.push("/customizations");
+    revalidatePath("/customizations/[category]", "page");
+    revalidatePath("/customizations/[category]/[handle]", "page");
+    revalidated.push(
+      "/customizations/[category]",
+      "/customizations/[category]/[handle]",
+    );
+  }
+
+  if (!type || type === "blogNavigation") {
+    tags.add(WWW_FOOTER_CACHE_TAG);
+  }
+
+  if (!type || type === "settings") {
+    tags.add(WWW_GLOBAL_SETTINGS_CACHE_TAG);
+  }
+
+  // Next 16: revalidateTag takes (tag, profile). "max" requests a full revalidate.
+  for (const tag of tags) revalidateTag(tag, "max");
 
   // PROD-2172 — ping IndexNow on case-study publish/update/unpublish. Covers
   // unpublish too: Sanity's delete webhook payload still carries the doc's last
@@ -160,12 +227,21 @@ export async function POST(request: Request) {
     }
   }
 
+  const tracked =
+    !type ||
+    CASE_STUDY_TYPES.has(type) ||
+    CATALOG_PRODUCT_TYPES.has(type) ||
+    CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === "blogNavigation" ||
+    type === "settings";
+
   return NextResponse.json({
     revalidated: true,
     type: type ?? "unknown",
     slug: slug ?? null,
-    tracked: CASE_STUDY_TYPES.has(type ?? "") || !type,
+    tracked,
     paths: revalidated,
+    tags: [...tags],
     indexNowSubmitted,
     ...(indexNowSkipped ? { indexNowSkipped } : {}),
     ...(publishedAtStamp ? { publishedAtStamp } : {}),

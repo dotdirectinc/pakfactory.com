@@ -1,0 +1,2 @@
+/* Scoped to (request) routes — keep catalog/home free of wizard CSS (PROD-2456). */
+@import "@pakfactory/brief-builder-ui/tailwind-sources.css";

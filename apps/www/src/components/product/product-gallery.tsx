@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import {PackageIcon} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {SanityImage} from '@/components/ui/sanity-image';
 import type {CatalogMedia} from '@/lib/catalog/types';
 
 type ProductGalleryProps = {
@@ -31,17 +32,20 @@ export function ProductGallery({media, productTitle}: ProductGalleryProps) {
                                     aria-pressed={selected}
                                     onClick={() => setActiveIndex(index)}
                                     className={cn(
-                                        'aspect-square w-full shrink-0 cursor-pointer overflow-hidden rounded-sm bg-background outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
+                                        'relative aspect-square w-full shrink-0 cursor-pointer overflow-hidden rounded-sm bg-background outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
                                         selected
                                             ? 'shadow-md'
                                             : 'border border-border opacity-60 hover:opacity-100',
                                     )}
                                 >
                                     {item.src ? (
-                                        <img
+                                        <SanityImage
                                             src={item.src}
                                             alt=""
-                                            className="h-full w-full object-cover"
+                                            square
+                                            fill
+                                            sizes="64px"
+                                            className="object-cover"
                                         />
                                     ) : (
                                         <span className="flex h-full items-center justify-center">
@@ -59,10 +63,14 @@ export function ProductGallery({media, productTitle}: ProductGalleryProps) {
             ) : null}
             <div className="relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-brand-offwhite">
                 {active?.src ? (
-                    <img
+                    <SanityImage
                         src={active.src}
                         alt={active.alt}
-                        className="absolute inset-0 size-full object-cover"
+                        square
+                        fill
+                        priority={activeIndex === 0}
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover"
                     />
                 ) : (
                     <span className="absolute inset-0 flex items-center justify-center">

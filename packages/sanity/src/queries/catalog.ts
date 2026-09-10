@@ -75,13 +75,34 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   }
 `;
 
+/**
+ * Card/list projection — no availableCustomizations tree (PROD-2456).
+ * PDP still uses {@link CATALOG_PRODUCT_FIELDS}.
+ */
+export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  sku,
+  kind,
+  status,
+  description,
+  moq,
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
+  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
+`;
+
 /** Active (or unset status) products for catalog index / params. */
 export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
   (status == "active" || !defined(status))
 ] | order(title asc) {
-  ${CATALOG_PRODUCT_FIELDS}
+  ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
@@ -110,7 +131,7 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
     productLine._ref == ^._id ||
     basedOn->productLine._ref == ^._id
   ) && defined(slug.current) && (status == "active" || !defined(status))] | order(title asc) {
-    ${CATALOG_PRODUCT_FIELDS}
+    ${CATALOG_PRODUCT_CARD_FIELDS}
   }
 }`;
 
@@ -121,6 +142,24 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   status == "active" &&
   defined(slug.current)
 ] | order(title asc) {
+  _id,
+  title,
+  "slug": slug.current,
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "category": type->category->${CATEGORY_PROJ}
+}`;
+
+/** Single library option by category + handle slugs (PROD-2456). */
+export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  role == "reference" &&
+  status == "active" &&
+  slug.current == $handle &&
+  type->category->slug.current == $category
+][0]{
   _id,
   title,
   "slug": slug.current,

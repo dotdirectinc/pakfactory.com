@@ -1,6 +1,8 @@
 import 'server-only';
 
+import {unstable_cache} from 'next/cache';
 import {
+    CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
     CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
     CATALOG_PRODUCT_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
@@ -23,6 +25,13 @@ import type {
 import type {CustomizationCardData} from '@/components/customization/customization-card';
 import {getPublishedSanityClient} from '@/lib/sanity/client';
 import {isSanityConfigured} from '@/lib/sanity/env';
+import {
+    WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
+    WWW_CATALOG_LINES_CACHE_TAG,
+    WWW_CATALOG_PRODUCTS_CACHE_TAG,
+    WWW_CONTENT_REVALIDATE_SECONDS,
+    wwwProductTag,
+} from '@/lib/www-cache';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -100,18 +109,57 @@ async function fetchSanityCustomizationLibrary(): Promise<
     }
 }
 
+const getCachedProducts = unstable_cache(
+    fetchSanityProducts,
+    [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+const getCachedLines = unstable_cache(
+    fetchSanityLines,
+    [WWW_CATALOG_LINES_CACHE_TAG],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_LINES_CACHE_TAG],
+    },
+);
+
+const getCachedCustomizationLibrary = unstable_cache(
+    fetchSanityCustomizationLibrary,
+    [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    },
+);
+
+function getCachedProductBySlug(slug: string) {
+    const key = normalizeSlug(slug);
+    return unstable_cache(
+        () => fetchSanityProduct(key),
+        [wwwProductTag(key)],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG, wwwProductTag(key)],
+        },
+    )();
+}
+
 export async function listLines(): Promise<ProductLine[]> {
-    return fetchSanityLines();
+    return getCachedLines();
 }
 
 export async function listProducts(): Promise<Product[]> {
-    return fetchSanityProducts();
+    return getCachedProducts();
 }
 
 export async function listCustomizationCategories(): Promise<
     CustomizationCardData[]
 > {
-    return fetchSanityCustomizationLibrary();
+    return getCachedCustomizationLibrary();
 }
 
 export async function getCustomizationCategory(
@@ -120,17 +168,40 @@ export async function getCustomizationCategory(
 ): Promise<CustomizationCardData | null> {
     const categoryKey = normalizeSlug(category);
     const handleKey = normalizeSlug(handle);
-    const items = await listCustomizationCategories();
-    return (
-        items.find(
-            (item) =>
-                item.categoryValue === categoryKey && item.slug === handleKey,
-        ) ?? null
+    if (!isSanityConfigured()) return null;
+
+    const getCached = unstable_cache(
+        async () => {
+            try {
+                const doc = await getPublishedSanityClient().fetch<
+                    CatalogLibraryOptionDoc | null
+                >(CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY, {
+                    category: categoryKey,
+                    handle: handleKey,
+                });
+                return doc ? mapSanityLibraryOption(doc) : null;
+            } catch (err) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.error(
+                        '[catalog] Sanity customization by handle failed:',
+                        err,
+                    );
+                }
+                return null;
+            }
+        },
+        [`www-customization:${categoryKey}:${handleKey}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+        },
     );
+
+    return getCached();
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
-    return fetchSanityProduct(slug);
+    return getCachedProductBySlug(slug);
 }
 
 export async function getByProductsSegment(
