@@ -40,6 +40,7 @@ yarn.lock
 
 .claude/training/*
 docs/*
+!docs/ai-agent-docs.md
 
 apps/studio/backup
 backups/

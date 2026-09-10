@@ -22,20 +22,23 @@ The monorepo ships **versioned** AI assistant context so **Claude Code**, **Curs
 
 **Hierarchy**
 
-1. **[`AGENTS.md`](./AGENTS.md)** — canonical stack, domain rules, MCP expectations, ADR summary skeleton, JIRA defaults, and verification checklist.
-2. **[`CLAUDE.md`](./CLAUDE.md)** — Claude Code entry point; references `AGENTS.md` and registers in-repo **skills** under [`.claude/skills/`](./.claude/skills/).
-3. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor rules (`.mdc`); [`pakfactory-stack.mdc`](./.cursor/rules/pakfactory-stack.mdc) reinforces `AGENTS.md` for every session.
-4. **[`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md)** — www rebuild overrides (routes, auth, RFQ, staging).
-5. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog-only overrides (routes, Sanity query patterns, AEO/GEO targets).
-6. **[`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md)** — Studio schema and content-model conventions.
-7. **[`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md)** — admin back office scope and local dev (newer apps may use `AGENTS.md` until they graduate to `CLAUDE.md`).
-8. **`apps/*/.cursor/rules/*.mdc`** — per-app Cursor rules when editing files under each app.
-9. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — maps completed Jira tickets (PROD-1480, PROD-1516, etc.) to binding code patterns.
+1. **[`AGENTS.md`](./AGENTS.md)** — canonical stack, domain rules, MCP, ADRs, JIRA, verification.
+2. **[`DESIGN.md`](./DESIGN.md)** — read before designing, building, or planning UI components (Pak tokens + composition).
+3. **[`ENGINEERING.md`](./ENGINEERING.md)** — React/Next scaffold, RSC, state scope, memo, component placement.
+4. **[`docs/ai-agent-docs.md`](./docs/ai-agent-docs.md)** — map of MD/MDC layers (what to read when; keep digests thin).
+5. **[`CLAUDE.md`](./CLAUDE.md)** — Claude Code entry; skills under [`.claude/skills/`](./.claude/skills/).
+6. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor digests; always-on rules reinforce `AGENTS.md` / `DESIGN.md` / `ENGINEERING.md`.
+7. **[`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md)** — www rebuild.
+8. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog routes, Sanity, AEO/GEO.
+9. **[`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md)** — Studio schemas.
+10. **[`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md)** — admin back office.
+11. **`apps/*/.cursor/rules/*.mdc`** — per-app Cursor digests.
+12. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — Jira ticket → code map.
 
 **Per tool**
 
-- **Claude Code:** reads root **`CLAUDE.md`** automatically; skills live in **`.claude/skills/<name>/SKILL.md`** (active skills are listed in `CLAUDE.md`).
-- **Cursor:** loads **`.cursor/rules/*.mdc`**; workspace policy remains in [`workspace-instructions.mdc`](./.cursor/rules/workspace-instructions.mdc).
+- **Claude Code:** reads root **`CLAUDE.md`**; skills in **`.claude/skills/<name>/SKILL.md`**.
+- **Cursor:** loads **`.cursor/rules/*.mdc`**; see [`workspace-instructions.mdc`](./.cursor/rules/workspace-instructions.mdc).
 
 **Verification prompts** (expect refusal or correction per [`AGENTS.md`](./AGENTS.md))
 
@@ -46,8 +49,10 @@ After `git pull`, ask your assistant:
 | “Add a cart button to the blog post page.” | Refuse cart UX; suggest quote / RFQ / contact CTA — not Shopify. |
 | “Install this dependency: `npm install foo`.” | Correct to **`pnpm add`** (scoped with `--filter` when adding to one app). |
 | “Update `packages/ui/src/components/button.tsx` for a new variant.” | Push back — primitives unchanged unless fixing an assigned bug; style in app code. |
-| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; URLs via `getSiteUrl()` with `/blog` prefix per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
+| “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; absolute URLs via **`absoluteUrl()`** (origin = `NEXT_PUBLIC_SITE_URL`; optional `NEXT_PUBLIC_BLOG_BASE_PATH`) per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
 | “Should page 2 of a category archive be indexed?” | Unfiltered paginated listings are **`index, follow`** with a self-canonical; filters / odd `perPage` still **`noindex, follow`** via `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` (PROD-1495). |
+| “Design a new CTA band.” | Follow **[`DESIGN.md`](./DESIGN.md)** + `@pakfactory/ui` tokens/primitives — not a third-party design-system palette. |
+| “Where does a new Sanity page-builder row component go?” | Follow **[`ENGINEERING.md`](./ENGINEERING.md)** — `components/blocks/` + matching Studio `schemas/blocks/`; “block” wording until ADR-015. |
 | “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
 | “Run `pnpm seed:blog-dev` to fix the homepage.” | Refuse autonomous seed/content writes; may edit schemas or tell the human which command to run manually ([`AGENTS.md`](./AGENTS.md) § Sanity content — agent guardrails). |
 

@@ -194,11 +194,6 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
             )}
           </DetailSection>
 
-          <RequestDetailTimeline
-            activities={request.activities}
-            versions={request.versions}
-          />
-
           {/* Always rendered, unlike the old names-only block which hid itself
               when empty. A rep needs to know a request has NO files as much as
               which ones it has — an absent section reads as "not loaded yet". */}
@@ -208,6 +203,11 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
               attachments={request.attachments}
             />
           </DetailSection>
+
+          <RequestDetailTimeline
+            activities={request.activities}
+            versions={request.versions}
+          />
 
           {draft.servicesEnabled ? (
             <DetailSection title={ADMIN_REQUESTS_COPY.sectionServices}>
@@ -236,16 +236,14 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
             "relative hidden min-h-0 flex-col xl:flex xl:self-stretch",
             PREVIEW_BREAKOUT,
           )}
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[#f2f2f2]" />
-        </aside>
+        />
         </div>
       </div>
     </div>
 
     <div
       className={cn(
-        "fixed top-[68px] right-0 z-10 hidden h-[calc(100dvh-68px)] flex-col overflow-hidden bg-[#f2f2f2] xl:flex",
+        "fixed top-[68px] right-0 z-10 hidden h-[calc(100dvh-68px)] flex-col overflow-visible xl:flex",
         PREVIEW_PANEL_WIDTH,
       )}
     >

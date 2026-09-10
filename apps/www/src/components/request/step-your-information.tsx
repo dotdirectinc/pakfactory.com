@@ -1,5 +1,8 @@
 'use client';
 
+import {useState} from 'react';
+import {Check, Pencil} from 'lucide-react';
+import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
 import {
@@ -12,6 +15,7 @@ import {
 import {AnnualSpendField} from '@/components/request/annual-spend-field';
 import {AddressFormFields} from '@/components/request/address-form-fields';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
+import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft, ShippingAddress} from '@/lib/request/request.storage';
 import {normalizeAddress} from '@/lib/request/shipping-address';
 
@@ -55,6 +59,35 @@ export function StepYourInformation({
     onPatch,
     sectionRef,
 }: StepYourInformationProps) {
+    const {viewer} = useRequest();
+    const [editing, setEditing] = useState(false);
+
+    /**
+     * Collapse only when the account actually answered the required fields.
+     *
+     * A summary card is a claim that this step is DONE. An email/password
+     * account supplies an address and nothing else, so collapsing on
+     * `viewer` alone would hide two empty required name fields behind a card
+     * that reads as complete — and the buyer would meet the error at submit,
+     * one step further on, with no idea which section it came from.
+     */
+    const collapsed =
+        Boolean(viewer) &&
+        !editing &&
+        draft.contactFirstName.trim().length > 0 &&
+        draft.contactLastName.trim().length > 0;
+
+    const officeLine = [
+        draft.companyAddress?.line1,
+        draft.companyAddress?.city,
+        draft.companyAddress?.region,
+        draft.companyAddress?.postalCode,
+        draft.companyAddress?.country,
+    ]
+        .map((part) => part?.trim())
+        .filter(Boolean)
+        .join(' · ');
+
     function patchOffice(next: Partial<ShippingAddress>) {
         onPatch({
             companyAddress: normalizeAddress({
@@ -63,6 +96,15 @@ export function StepYourInformation({
             }),
         });
     }
+
+    const fullName =
+        `${draft.contactFirstName} ${draft.contactLastName}`.trim() ||
+        viewer?.email ||
+        '';
+    const initials =
+        `${draft.contactFirstName.charAt(0)}${draft.contactLastName.charAt(0)}`
+            .trim()
+            .toUpperCase() || (viewer?.email ?? '?').charAt(0).toUpperCase();
 
     return (
         <section
@@ -75,14 +117,68 @@ export function StepYourInformation({
                 <h2 className="text-2xl font-semibold tracking-tight">
                     {REQUEST_COPY.contactHeading}
                 </h2>
-                {REQUEST_COPY.contactDesc ? (
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                        {REQUEST_COPY.contactDesc}
-                    </p>
-                ) : null}
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                    {collapsed
+                        ? REQUEST_COPY.contactDesc
+                        : REQUEST_COPY.contactDescEditing}
+                </p>
             </div>
 
+            {collapsed ? (
+                <div>
+                    <div className="flex items-center gap-3.5 rounded-md border border-border bg-muted/40 p-4">
+                        <span
+                            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[13px] font-semibold text-primary"
+                            aria-hidden
+                        >
+                            {initials}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-foreground">
+                                {fullName}
+                            </p>
+                            <p className="truncate text-[13px] text-muted-foreground">
+                                {[draft.contactEmail, draft.contactCompany]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </p>
+                            {officeLine ? (
+                                <p className="truncate text-[13px] text-muted-foreground">
+                                    {officeLine}
+                                </p>
+                            ) : null}
+                        </div>
+                        <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto shrink-0 gap-1.5 px-0 text-[12.5px] font-medium"
+                            onClick={() => setEditing(true)}
+                        >
+                            <Pencil className="size-3.5" aria-hidden />
+                            {REQUEST_COPY.contactEdit}
+                        </Button>
+                    </div>
+                    <p className="mt-2.5 px-0.5 text-[12.5px] text-muted-foreground">
+                        {REQUEST_COPY.contactReplyNote}
+                    </p>
+                </div>
+            ) : (
             <div className="space-y-3">
+                {viewer ? (
+                    <div className="rounded-md border border-border bg-muted/40 px-4 py-3">
+                        <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
+                            <Check
+                                className="size-4 text-emerald-600"
+                                aria-hidden
+                            />
+                            {REQUEST_COPY.contactSignedInAs} {viewer.email}
+                        </p>
+                        <p className="mt-0.5 pl-[22px] text-[12.5px] text-muted-foreground">
+                            {REQUEST_COPY.contactPrefilledNote}
+                        </p>
+                    </div>
+                ) : null}
                 <div className="grid gap-3 sm:grid-cols-2">
                     <LabeledInput
                         label={REQUEST_COPY.firstName}
@@ -109,6 +205,25 @@ export function StepYourInformation({
                         value={draft.contactEmail}
                         onChange={(e) =>
                             onPatch({contactEmail: e.target.value})
+                        }
+                        /*
+                         * Locked to the account address for a signed-in buyer.
+                         * `readOnly`, NOT `disabled`: a disabled input is skipped
+                         * by form serialisation and is not reachable by keyboard
+                         * or announced by a screen reader, so the one field the
+                         * quote is sent to would become invisible to anyone not
+                         * using a mouse. readOnly keeps it focusable, copyable
+                         * and announced, and still refuses edits.
+                         */
+                        readOnly={Boolean(viewer)}
+                        aria-readonly={Boolean(viewer) || undefined}
+                        title={
+                            viewer ? REQUEST_COPY.contactEmailLocked : undefined
+                        }
+                        className={
+                            viewer
+                                ? `${FIELD_CLASS} cursor-not-allowed bg-muted/60 text-muted-foreground`
+                                : FIELD_CLASS
                         }
                     />
                     <LabeledInput
@@ -185,6 +300,7 @@ export function StepYourInformation({
                     onChange={(annualSpend) => onPatch({annualSpend})}
                 />
             </div>
+            )}
         </section>
     );
 }

@@ -6,16 +6,14 @@ alwaysApply: false
 
 # www app (`@pakfactory/www`)
 
-When editing **`apps/www/`**, follow [`apps/www/CLAUDE.md`](../../CLAUDE.md), repo [`AGENTS.md`](../../../../AGENTS.md), and [`memory.md`](../../memory.md) for ops.
+Follow [`apps/www/CLAUDE.md`](../../CLAUDE.md), [`AGENTS.md`](../../../../AGENTS.md), [`DESIGN.md`](../../../../DESIGN.md) (UI), [`memory.md`](../../memory.md) (ops only).
 
 **Quick rules:**
 
-- **Not e-commerce:** no cart/checkout unless explicitly requested — use quote / RFQ / contact CTAs.
-- **PR base:** `www-new-release` (rebuild trunk).
-- **Auth:** Supabase via `@pakfactory/supabase`; login UI via `@pakfactory/auth-ui` (www owns wiring).
-- **Sanity:** queries from `@pakfactory/sanity/queries` only; revalidate via `/api/revalidate`.
-- **JSON-LD:** `@pakfactory/seo` only — never inline schema.org objects.
-- **UI primitives:** do not edit `packages/ui/src/components` for features; style in app code.
-- **ADR-005:** `app/` is routing-only; do not add new `app/_components/` folders (case-studies migration deferred).
-- **Staging:** non-production is `noindex`; `staging.pakfactory.com` is Vercel-auth-gated preview.
-- **Local dev:** port **3003** (`pnpm dev:www`).
+- **Not e-commerce:** quote / RFQ / contact CTAs — no cart/checkout unless requested.
+- **PR base:** `www-new-release`.
+- **Auth / Sanity / SEO:** Supabase + `@pakfactory/sanity/queries` + `@pakfactory/seo` only — see CLAUDE.md.
+- **UI:** DESIGN.md + do not edit `packages/ui` primitives for features.
+- **ADR-005:** routing-only `app/`; no new `app/_components/` (case-studies deferred).
+- **Staging:** non-production `noindex`; `staging.pakfactory.com` is Vercel-auth-gated.
+- **Local:** port **3003** (`pnpm dev:www`).

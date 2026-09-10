@@ -74,14 +74,19 @@ export async function verifyEmail(_prev: ActionState, form: FormData): Promise<A
  * 🔴 The RPC takes NO ARGUMENTS on purpose. It reads the address from
  * `auth.users` for `auth.uid()`, so this side cannot name an address even by
  * mistake. That matters because the receipt's link is
- * `/sign-up?email=<address>` — a URL anyone can type, with an input we merely
- * disable. If the claim keyed off that parameter it would be an RFQ-takeover
+ * `/sign-up?email=<address>` — a URL anyone can type, prefilling a field the
+ * buyer may edit. If the claim keyed off that parameter it would be an RFQ-takeover
  * vector; keying it off the verified session means an attacker would need the
  * victim's inbox, at which point they already have the receipt.
  *
  * Failure is logged and swallowed. The buyer IS verified and signed in at this
  * point; blocking that on a claim would trade a working account for a missing
- * link, and the claim can be re-run on any later sign-in.
+ * link.
+ *
+ * ⚠️ Nothing re-runs this. It is called here and nowhere else, so a swallowed
+ * failure leaves the RFQ unclaimed until someone repairs it by hand — signing
+ * in again does NOT retry. Worth wiring to sign-in before this carries real
+ * volume.
  */
 async function claimGuestRequests(
   supabase: Awaited<ReturnType<typeof createClient>>,
