@@ -4,17 +4,19 @@ export const SIGN_UP_COPY = {
     signUp: 'Sign up',
     haveAccount: 'Have an account?',
     signIn: 'Sign in',
+    /** Under the locked field: says why it cannot be typed in. */
+    emailLockedHint: 'This is the address your request was sent to.',
+    useDifferentEmail: 'Use a different address',
     /**
-     * Shown only once the buyer edits an address that arrived prefilled from a
-     * confirmation receipt.
+     * Shown once the buyer deliberately unlocks the field.
      *
-     * Editing is allowed on purpose. Disabling the field would look like a
-     * control and be none: the claim keys on the VERIFIED session email, never
-     * on this value, so a locked input protects nothing and blocks the honest
-     * cases — a typo at submission, or wanting the request under a work
-     * address. What it does cost is the link to the request, silently. Saying
-     * so is the fix.
+     * The lock is NOT a security control — the claim keys on the verified
+     * session email, so this value grants nothing either way. It is here
+     * because this link only ever arrives inside a receipt that was delivered
+     * to that address, so it is provably the buyer's; changing it silently
+     * costs them the request, and the failure is invisible until they land on
+     * an empty Requests page with no idea why.
      */
-    emailChangedWarning: (original: string) =>
-        `Your request was submitted with ${original}. If you create your account with a different address we can't attach that request to it — sign up with ${original} instead to keep them linked.`,
+    emailUnlockedWarning: (original: string) =>
+        `An account under a different address won't be linked to the request you just submitted. Sign up with ${original} to keep them together.`,
 } as const;
