@@ -34,13 +34,9 @@ export const guide = defineType({
         'The H1. Name the task, not the format — "How to Design Packaging", never "Packaging Guide" (nobody searches the word "guide").',
       validation: (Rule) => Rule.required(),
     }),
-    defineField({
-      name: 'displayTitle',
-      title: 'Display title',
-      type: 'string',
-      group: GROUPS.content,
-      description: 'Optional front-end override when the H1 should read differently from the title.',
-    }),
+    // No separate H1 field: a guide's Title *is* its heading, as the field
+    // above says. The empty `displayTitle` that used to sit here was removed
+    // with the rest of them — a second place to write the same sentence.
     defineField({
       name: 'slug',
       title: 'Slug',
@@ -161,10 +157,10 @@ export const guide = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', status: 'status', media: 'mainImage' },
-    prepare({ title, display, status, media }) {
+    select: { title: 'title', status: 'status', media: 'mainImage' },
+    prepare({ title, status, media }) {
       return {
-        title: display || title || 'Untitled guide',
+        title: title || 'Untitled guide',
         subtitle: status ? status[0].toUpperCase() + status.slice(1) : '',
         media,
       }

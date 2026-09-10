@@ -36,15 +36,28 @@ export const productLine = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Rigid Boxes". Required, always presentable; renders wherever Display title is empty.',
+      description: 'The canonical name — "Rigid Boxes". Required, always presentable; renders wherever H1 and Short name are empty.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere. Whichever string the
+    // card or nav renders is the one that must go in the breadcrumb markup.
     defineField({
-      name: 'displayTitle',
-      title: 'Display title',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional front-end override for H1 / nav / card / breadcrumb. Empty is the normal case — and whichever string renders is the one that must go in the breadcrumb markup.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -246,7 +259,7 @@ export const productLine = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', media: 'heroMedia' },
+    select: { title: 'title', display: 'shortName', media: 'heroMedia' },
     prepare({ title, display, media }) {
       return { title: display || title || 'Untitled line', subtitle: 'Product Line', media }
     },

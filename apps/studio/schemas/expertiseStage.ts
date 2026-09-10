@@ -35,12 +35,14 @@ export const expertiseStage = defineType({
       description: 'Canonical name — e.g. "Packaging Design".',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
+    // Title / H1, the same convention as Line / Style / Solution / Product. No
+    // Short name here — the stage names are already short enough for a card.
     defineField({
-      name: 'displayTitle',
-      title: 'Display title',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional front-end override.',
+      description: 'The heading on this page. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',

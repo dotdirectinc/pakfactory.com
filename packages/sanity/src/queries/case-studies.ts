@@ -9,9 +9,26 @@
 
 const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
+/**
+ * ⚠️ This resolves the label from the solution's H1, which is marketing copy —
+ * an *Apparel & Fashion* client reads as "Custom Apparel & Fashion Packaging" on
+ * the card, in the meta card and in the JSON-LD `articleSection`. It should be
+ * `coalesce(shortName, title)`; `shortName` now exists for exactly this, and
+ * PROD-2460 makes that fix a deliberate change of its own.
+ *
+ * `h1` and `headline` are BOTH listed on purpose (PROD-2458). `h1` is the new
+ * key and `headline` the deprecated one it was copied from, so this reads the
+ * same string whether or not the migration has run on a given dataset. Naming
+ * only `h1` would have made the deploy order load-bearing: production has `h1`
+ * on 0 of 36 solutions until the migration runs, so shipping the code first
+ * would have dropped straight through to `title` and silently relabelled 28 of
+ * 29 live case studies — PROD-2460's outcome, arriving by accident.
+ *
+ * Drop `headline` when PROD-2459 unsets it, or when PROD-2460 rewrites this.
+ */
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(headline, title),
+  "title": coalesce(h1, headline, title),
   "slug": slug.current,
   solutionType
 }`;
@@ -170,7 +187,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
  * at that array when it ships; do not restore `order asc`.
  */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(h1, headline, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
 }`;
