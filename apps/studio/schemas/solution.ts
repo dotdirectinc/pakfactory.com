@@ -7,7 +7,6 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
@@ -98,9 +97,9 @@ export const solution = defineType({
       group: GROUPS.content,
       description: 'Page H1 — hero copy, the main heading visitors see (not a name; that is Title).',
     }),
-    // PROD-2454 — `subheadline` becomes `shortDescription`, matching Line,
-    // Style, Product and the existing `blogCategory` pair. (`page.subheadline`
-    // is a different field on a different type and is not in scope.)
+    // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
+    // and the existing `blogCategory` pair. (`page.subheadline` is a different
+    // field on a different type and was left alone.)
     defineField({
       name: 'shortDescription',
       title: 'Short description',
@@ -108,15 +107,6 @@ export const solution = defineType({
       rows: 2,
       group: GROUPS.content,
       description: 'One-line summary of this solution, for the solution card, listings and the nav.',
-    }),
-    defineField({
-      name: 'subheadline',
-      title: 'Subheadline',
-      type: 'text',
-      rows: 2,
-      group: GROUPS.content,
-      description: 'Superseded by Short description.',
-      ...deprecateField('Renamed to `shortDescription` (PROD-2454). Read-only until the migration has run on production and the field is removed.'),
     }),
     taggedImageField({
       name: 'heroImage',
@@ -135,8 +125,8 @@ export const solution = defineType({
         }),
       ],
     }),
-    // PROD-2454 — `intro` becomes `description`. Stays portable text; the
-    // existing 17 values carry link annotations that plain text would drop.
+    // Renamed from `intro` (PROD-2454). Portable text, so the link
+    // annotations the original values carried survived the move.
     defineField({
       name: 'description',
       title: 'Description',
@@ -144,26 +134,6 @@ export const solution = defineType({
       group: GROUPS.content,
       description:
         'The full description of this solution — the packaging problem it addresses and how we solve it. Renders on the solution page.',
-      of: [
-        {
-          type: 'block',
-          styles: [{ title: 'Normal', value: 'normal' }],
-          marks: {
-            decorators: [
-              { title: 'Strong', value: 'strong' },
-              { title: 'Emphasis', value: 'em' },
-            ],
-          },
-        },
-      ],
-    }),
-    defineField({
-      name: 'intro',
-      title: 'Intro / problem framing',
-      type: 'array',
-      group: GROUPS.content,
-      description: 'Superseded by Description.',
-      ...deprecateField('Renamed to `description` (PROD-2454). Read-only until the migration has run on production and the field is removed.'),
       of: [
         {
           type: 'block',
