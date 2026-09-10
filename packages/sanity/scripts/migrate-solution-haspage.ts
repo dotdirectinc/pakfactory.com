@@ -77,7 +77,7 @@ const WITH_PAGES = [
   'Beauty & Cosmetics',
   'Beer',
   'Beverage',
-  'Candle & Home Fragrance',
+  'Candles & Home Fragrance',
   'Candy & Chocolate',
   'Cannabis, CBD & Vape',
   'Coffee',
@@ -108,13 +108,15 @@ if (WITH_PAGES.length !== EXPECTED)
   fail(`The list holds ${WITH_PAGES.length} names, expected ${EXPECTED}. Reconcile against Notion first.`)
 
 /**
- * Where Sanity's title differs from Notion's. Keep this tiny and explicit — a
- * fuzzy matcher here would quietly pair the wrong documents, and a Solution
- * silently missing its page is not a failure anyone would notice for months.
+ * Where Sanity's title differs from Notion's. Currently empty — the one
+ * divergence ("Candle" vs "Candles & Home Fragrance") was fixed in Notion on
+ * 2026-09-10, so both sides now agree on every name.
+ *
+ * Keep any future entry explicit. A fuzzy matcher here would quietly pair the
+ * wrong documents, and a Solution silently missing its page is not a failure
+ * anyone would notice for months.
  */
-const ALIASES: Record<string, string> = {
-  'Candle & Home Fragrance': 'Candles & Home Fragrance',
-}
+const ALIASES: Record<string, string> = {}
 
 const sanityTitle = (notionName: string) => ALIASES[notionName] ?? notionName
 
