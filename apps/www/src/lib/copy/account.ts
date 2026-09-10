@@ -2,13 +2,11 @@ export const ACCOUNT_COPY = {
     signOut: 'Sign out',
     welcomeBack: 'Welcome back,',
     accountMenu: 'Account menu',
-    requestsTitle: 'Quote Requests',
+    requestsTitle: 'Your Requests',
     requestsEmpty:
-        'You have not submitted any quote requests yet. Start a quote request to get a quote from our packaging specialists.',
+        'You have not submitted any requests yet. Start a quote request to get a quote from our packaging specialists.',
     startARequest: 'Start a quote request',
-    requestsGuestNote:
-        'Requests submitted without signing in are not listed here — check the confirmation email we sent you for the reference.',
-    backToRequests: '← All requests',
+    backToRequests: '← Your requests',
     submittedOn: (date: string) => `Submitted ${date}`,
     itemsHeading: 'Items',
     filesHeading: 'Files you attached',

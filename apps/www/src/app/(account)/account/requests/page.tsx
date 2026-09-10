@@ -6,7 +6,7 @@ import {WWW_ROUTES, accountRequestHref} from '@/lib/www-routes';
 import {listBuyerRequests} from '@/lib/account/buyer-requests';
 
 export const metadata = {
-    title: 'Requests',
+    title: 'Your Requests',
     robots: {index: false, follow: false},
 };
 
@@ -39,13 +39,6 @@ export default async function AccountRequestsPage() {
                 <>
                     <p className="text-muted-foreground">
                         {ACCOUNT_COPY.requestsEmpty}
-                    </p>
-                    {/* 🔴 Says why an earlier request may be absent. A buyer who
-                        submitted while signed out sees an empty list, and
-                        without this reads it as lost data rather than as the
-                        deliberate boundary it is. */}
-                    <p className="text-sm text-muted-foreground">
-                        {ACCOUNT_COPY.requestsGuestNote}
                     </p>
                     <div>
                         <Button asChild className="rounded-sm">

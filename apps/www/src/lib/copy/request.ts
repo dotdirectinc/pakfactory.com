@@ -1,7 +1,7 @@
 export const REQUEST_COPY = {
     addToRequest: 'Add to request',
-    addedToYourRequest: 'Added to your request',
-    viewYourRequest: 'View your request',
+    addedToYourRequest: 'Added to quote request',
+    viewYourRequest: 'View quote request',
     contentsLabel: 'What are you putting in the packaging?',
     contentsHelp: 'The product that goes inside — bottles, jars, kits…',
     contentsPlaceholder: 'e.g. 750ml spirit bottles, skincare jars…',
@@ -131,7 +131,7 @@ export const REQUEST_COPY = {
     quoteRequestedBody:
         'Thanks. We’ll follow up within one business day.',
     keepBrowsing: 'Keep browsing products',
-    backToYourRequest: 'Back to Your Request',
+    backToYourRequest: 'Back to Quote Request',
 
     submitSuccessTitle: 'Request submitted',
     submitSuccessBody:
@@ -178,26 +178,26 @@ export const REQUEST_COPY = {
         'You’ve started a request with 1 product. Continue with it?',
     expressPoolBannerMany:
         'You’ve started a request with {n} products. Continue with them?',
-    expressPoolBannerCta: 'Go to your request',
+    expressPoolBannerCta: 'Go to quote request',
 
-    startBuilder: 'Continue your request',
+    startBuilder: 'Continue quote request',
     startExpress: 'Get a quote',
     entryExpress: 'Requirements Only Quote (Express)',
     entryProducts: 'Product Only Quote',
     entryServices: 'Service Only Quote',
-    continueRequest: 'Continue your request',
+    continueRequest: 'Continue quote request',
     productsUpsellTitle: 'Products',
     productsUpsellSubtitle: '',
-    yourRequestHeading: 'Your Request',
+    yourRequestHeading: 'Quote Request',
     yourRequestStub:
         'Start a new request or continue one in progress.',
     yourRequestSupporting:
         'Your added products. Select the ones you want quoted.',
     nothingAddedYet: 'Nothing added yet.',
-    startYourRequest: 'Start your request',
-    startYourRequestCount: 'Start your request ({n})',
+    startYourRequest: 'Start quote request',
+    startYourRequestCount: 'Start quote request ({n})',
     customizeLine: 'Customize',
-    customizeUnavailable: 'Customization from Your Request is coming soon.',
+    customizeUnavailable: 'Customization from Quote Request is coming soon.',
     additionalNotesAction: 'Additional Notes',
     referenceImagesAction: 'Reference Images',
     notesAndImagesAction: 'Notes & images',
