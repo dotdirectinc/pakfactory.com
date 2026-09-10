@@ -42,8 +42,11 @@ export const ADMIN_REQUESTS_COPY = {
   customizationsLabel: "Customizations",
   productSlugLabel: "Product",
   timelineCommentPlaceholder: "Leave a comment...",
+  timelineCommentFuture: "Future feature",
   timelinePost: "Post",
   timelineStaffOnly: "Only you and other staff can see comments.",
   timelineEmpty: "No activity yet.",
   timelineVersionLabel: (n: number) => `Version ${n}`,
+  paperPagesNav: "Document pages",
+  paperPageLabel: (page: number, total: number) => `Page ${page} of ${total}`,
 } as const;

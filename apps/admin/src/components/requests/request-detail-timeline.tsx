@@ -74,6 +74,11 @@ export function RequestDetailTimeline({
       </div>
 
       <div className="overflow-hidden rounded-md border border-border bg-muted/20">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+          <Badge variant="secondary" className="rounded-md">
+            {ADMIN_REQUESTS_COPY.timelineCommentFuture}
+          </Badge>
+        </div>
         <div className="flex gap-3 border-b border-border p-4">
           <div
             aria-hidden
