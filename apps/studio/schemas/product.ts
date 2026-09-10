@@ -6,6 +6,7 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -48,12 +49,34 @@ export const product = defineType({
       description: 'Short canonical name (e.g. "Matte Magnetic Gift Box").',
       validation: (Rule) => Rule.required(),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere.
     defineField({
-      name: 'headline',
-      title: 'Headline',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional longer H1 for the product page.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'headline',
+      title: 'Headline (legacy)',
+      type: 'string',
+      group: GROUPS.content,
+      description: 'Superseded by H1.',
+      ...deprecateField(
+        'Renamed to `h1` (PROD-2458). Read-only until the migration has run on production and the field is removed.',
+      ),
     }),
     defineField({
       name: 'slug',
