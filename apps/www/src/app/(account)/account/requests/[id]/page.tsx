@@ -67,6 +67,10 @@ export default async function AccountRequestDetailPage({
                 promise progress tracking that does not exist. */}
 
             <dl className="flex flex-col gap-3">
+                <Row
+                    label={ACCOUNT_COPY.fieldContactEmail}
+                    value={request.contactEmail}
+                />
                 <Row label={ACCOUNT_COPY.fieldContents} value={request.packagingContents} />
                 <Row label={ACCOUNT_COPY.fieldQuantity} value={quantities} />
                 <Row label={ACCOUNT_COPY.fieldTimeline} value={request.timeline} />

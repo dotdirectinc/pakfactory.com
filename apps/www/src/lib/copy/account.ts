@@ -12,6 +12,9 @@ export const ACCOUNT_COPY = {
     submittedOn: (date: string) => `Submitted ${date}`,
     itemsHeading: 'Items',
     filesHeading: 'Files you attached',
+    /** Named "Contact email", not "Your email": for a request raised on a
+     *  colleague's behalf it is deliberately not the reader's own address. */
+    fieldContactEmail: 'Contact email',
     fieldContents: 'Contents',
     fieldQuantity: 'Quantity',
     fieldTimeline: 'Timeline',

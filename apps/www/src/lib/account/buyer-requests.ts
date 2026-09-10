@@ -11,12 +11,17 @@ import {createClient} from '@pakfactory/supabase/server';
  *
  * ── Why a guest sees nothing, and why that is correct ───────────────────────
  * Submission has no sign-in gate (ADR-0012 D1), so a guest's RFQ has
- * `customer_id = null` and matches no policy. That is the decision of
- * 2026-09-04: a guest's confirmation email is their record, and history belongs
- * to an account. There is no claim flow on purpose — auto-claiming by email
- * would let anyone take another person's requests by registering it.
+ * `customer_id = null` and matches no policy until it is claimed.
  *
- * So an empty list here means "you submitted while signed out", not "we lost it".
+ * There IS a claim flow now (PROD-2446): `claim_rfqs_for_current_user` runs on
+ * email verification and attaches rows whose `contact_email` matches the
+ * VERIFIED address. It is safe for the reason the old comment here feared it
+ * would not be — it reads the address from `auth.users` for `auth.uid()` rather
+ * than from anything the caller passes, and it only touches rows where
+ * `customer_id is null`, so no request already belonging to someone can move.
+ *
+ * So an empty list means "you submitted while signed out and have not verified
+ * that address", not "we lost it".
  */
 
 export type BuyerRequestSummary = {
@@ -29,6 +34,15 @@ export type BuyerRequestSummary = {
 };
 
 export type BuyerRequestDetail = BuyerRequestSummary & {
+    /**
+     * Where correspondence for this request goes — NOT necessarily the address
+     * of the account reading this page. `customer_id` comes from the session
+     * while the contact address is typed into the builder, so a buyer can raise
+     * a request on a colleague's behalf. Shown because the two silently
+     * diverging is confusing precisely when it matters: it decides who received
+     * the confirmation and who any follow-up reaches.
+     */
+    contactEmail: string;
     notes: string;
     packagingContents: string;
     quantities: number[];
@@ -46,12 +60,13 @@ export type BuyerRequestDetail = BuyerRequestSummary & {
     }[];
 };
 
-const COLUMNS = 'id, reference, payload, submitted_at';
+const COLUMNS = 'id, reference, contact_email, payload, submitted_at';
 
 type Row = {
     id: string;
     reference: string;
     submitted_at: string;
+    contact_email: string | null;
     payload: unknown;
 };
 
@@ -74,6 +89,7 @@ type Stored = {
         referenceImages?: unknown;
         attachments?: {name?: string}[];
     }[];
+    contact?: {email?: string};
     metadata?: {entryKind?: string};
 };
 
@@ -115,6 +131,10 @@ function toDetail(row: Row): BuyerRequestDetail {
     const address = s.shipTo;
     return {
         ...toSummary(row),
+        // The COLUMN is authoritative: it is what the receipt was sent to and
+        // what `claim_rfqs_for_current_user` matches on. The payload copy is
+        // whatever the buyer typed, kept only as a fallback for older rows.
+        contactEmail: row.contact_email ?? s.contact?.email ?? '',
         notes: s.requirements?.notes ?? '',
         packagingContents: s.requirements?.packagingContents ?? '',
         quantities: expressQuantities(s),
