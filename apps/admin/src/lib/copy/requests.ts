@@ -34,6 +34,13 @@ export const ADMIN_REQUESTS_COPY = {
   shipToLabel: "Ship to",
   nameLabel: "Name",
   emailLabel: "Email",
+  /** The ACCOUNT that submitted it — not necessarily the contact address above. */
+  submittedByLabel: "Submitted by (account)",
+  accountGuest: "Guest — no account",
+  /** `customer_id` is set but the customer row did not come back: the lookup
+   *  failed, or `customers_select_assigned_internal` did not admit it (which is
+   *  what happens while the lead is unassigned). */
+  accountUnresolved: "Registered — account not visible",
   phoneLabel: "Phone",
   companyLabel: "Company",
   industryLabel: "Industry",

@@ -108,6 +108,19 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
                 label={ADMIN_REQUESTS_COPY.emailLabel}
                 value={draft.contactEmail || ADMIN_REQUESTS_COPY.emptyValue}
               />
+              {/* Sits next to Email on purpose: the pair is the point. The
+                  contact address is typed into the builder, the account comes
+                  from the session, and reading them together is the only way to
+                  see that a request was raised on someone else's behalf. */}
+              <DetailField
+                label={ADMIN_REQUESTS_COPY.submittedByLabel}
+                value={
+                  request.ownerId
+                    ? (request.submittedByEmail ??
+                      ADMIN_REQUESTS_COPY.accountUnresolved)
+                    : ADMIN_REQUESTS_COPY.accountGuest
+                }
+              />
               <DetailField
                 label={ADMIN_REQUESTS_COPY.phoneLabel}
                 value={draft.contactPhone || ADMIN_REQUESTS_COPY.emptyValue}

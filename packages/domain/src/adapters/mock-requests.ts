@@ -5,6 +5,7 @@ const FIXTURES: Request[] = [
   {
     id: "req_mock_001",
     ownerId: "buyer-uuid-1",
+    submittedByEmail: "buyer.one@example.com",
     zohoLeadId: "zoho-lead-101",
     submittedAt: "2026-08-20T14:30:00.000Z",
     createdAt: "2026-08-20T14:30:00.000Z",
@@ -144,6 +145,7 @@ const FIXTURES: Request[] = [
   {
     id: "req_mock_002",
     ownerId: "buyer-uuid-2",
+    submittedByEmail: "procurement@example.com",
     zohoLeadId: "zoho-lead-202",
     submittedAt: "2026-08-22T09:15:00.000Z",
     createdAt: "2026-08-22T09:15:00.000Z",

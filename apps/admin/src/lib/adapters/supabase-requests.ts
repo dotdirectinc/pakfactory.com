@@ -93,7 +93,45 @@ export function createSupabaseRequestReadAdapter(): RequestReadAdapter {
         );
       }
 
-      return toRequest(data as RfqRow, (files as RfqAttachmentRow[] | null) ?? null);
+      // Third query, SAME session-scoped client. `public.customers` carries
+      // `customers_select_assigned_internal` (migration 20260910164500), which
+      // admits a customer row only while that customer owns a request assigned
+      // to this caller — so RLS draws the boundary here exactly as it does
+      // above, and there is still no `.eq()` in this file doing security work.
+      //
+      // 🔴 NOT a PostgREST embed. `rfq.customer_id` references `auth.users(id)`,
+      // not `public.customers(id)`, so no foreign key exists for PostgREST to
+      // resolve and `.select("customers(email)")` would error rather than join.
+      //
+      // Degrades to null on failure, like the attachment index above: knowing
+      // which account submitted a request is useful context for a rep, never a
+      // reason to fail a page they are trying to work. Null is also the honest
+      // answer while the lead is unassigned, since the policy grants through the
+      // assignment.
+      const customerId = (data as RfqRow).customer_id;
+      let submittedByEmail: string | null = null;
+
+      if (customerId) {
+        const { data: customer, error: customerError } = await supabase
+          .from("customers")
+          .select("email")
+          .eq("id", customerId)
+          .maybeSingle();
+
+        if (customerError) {
+          console.error(
+            `[supabase-requests] customer lookup failed for ${id}: ${customerError.message}`,
+          );
+        } else {
+          submittedByEmail = (customer as { email: string } | null)?.email ?? null;
+        }
+      }
+
+      return toRequest(
+        data as RfqRow,
+        (files as RfqAttachmentRow[] | null) ?? null,
+        submittedByEmail,
+      );
     },
   };
 }
