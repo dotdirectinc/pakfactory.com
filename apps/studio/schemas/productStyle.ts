@@ -67,13 +67,37 @@ export const productStyle = defineType({
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
+    // Renamed from `description` (PROD-2454) — that key held *short* copy
+    // here, which is why the same word meant two things across the model.
     defineField({
-      name: 'description',
-      title: 'Description',
+      name: 'shortDescription',
+      title: 'Short description',
       type: 'text',
       group: GROUPS.content,
       rows: 3,
-      description: 'Card and listing copy.',
+      description: 'One-line summary for the style card, listings and the nav.',
+    }),
+    // The `description` key was freed by PROD-2455 and reused for the
+    // long-form field, matching Line and Solution. Starts empty everywhere.
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'array',
+      group: GROUPS.content,
+      description:
+        'The full description of this style — what it is, how it is constructed and what it suits. Renders on the style landing page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'hero',

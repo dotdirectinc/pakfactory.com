@@ -6,17 +6,42 @@ import { fileURLToPath } from "node:url";
 const appDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(appDir, "../..");
 
-const { combinedEnv, loadedEnvFiles } = loadEnvConfig(repoRoot);
+/**
+ * Merge the ROOT `.env.local` with this app's own. Turbo does not inject `.env`
+ * files into tasks, so without this the root file is never read at all.
+ *
+ * `forceReload` (the 4th argument) is load-bearing in BOTH calls, for two
+ * different reasons:
+ *
+ *   1. WITHOUT it, @next/env caches on its FIRST call and later calls for a
+ *      different directory are no-ops. Next has already loaded
+ *      `apps/blog/.env.local` by the time this config is evaluated, so a plain
+ *      `loadEnvConfig(repoRoot)` returns that CACHED app-dir result — and it
+ *      still reports having loaded `.env.local`, so it looks like it worked.
+ *      Every root-only variable stays undefined.
+ *
+ *   2. WITH it, each call first RESETS `process.env` to the pre-load snapshot
+ *      and then applies only the target directory. The reset is unconditional —
+ *      force-loading a directory with no `.env` files at all still clears
+ *      everything the previous call set (verified against @next/env 16.2.4).
+ *
+ * So the two calls do not compose on their own: the second discards the first,
+ * and only keys present in BOTH files survive. The restore loop is what makes
+ * them compose. Same fix as `apps/www` and `apps/admin`; keep the three in step.
+ *
+ * PRECEDENCE: the app file wins, root fills the gaps. That matches what
+ * `scripts/env/switch-env.mjs` documents and warns about — a duplicate key in an
+ * app's own `.env.local` shadows the root value, which is why `pnpm env:staging`
+ * can appear not to take effect.
+ */
+const { loadedEnvFiles } = loadEnvConfig(repoRoot, undefined, undefined, true);
+const fromRoot = { ...process.env };
 
-// Ensure server/runtime sees vars (Turbo does not inject .env files into tasks).
-for (const [key, value] of Object.entries(combinedEnv)) {
-  if (typeof value === "string" && process.env[key] === undefined) {
-    process.env[key] = value;
-  }
+loadEnvConfig(appDir, undefined, undefined, true);
+
+for (const [key, value] of Object.entries(fromRoot)) {
+  if (process.env[key] === undefined) process.env[key] = value;
 }
-
-// Optional apps/blog/.env.local overrides (port, etc.)
-loadEnvConfig(appDir);
 
 if (process.env.NODE_ENV === "development") {
   const envFile = loadedEnvFiles[0] ?? join(repoRoot, ".env.local");

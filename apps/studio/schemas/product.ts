@@ -151,13 +151,38 @@ export const product = defineType({
       description: 'The PDP gallery — first image is the card and the hero.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
+    // Renamed from `description` (PROD-2454) — the field was already
+    // *labelled* "Short description" but *named* `description`; the name now
+    // says what the label always said.
     defineField({
-      name: 'description',
+      name: 'shortDescription',
       title: 'Short description',
       type: 'text',
       group: GROUPS.content,
       rows: 3,
-      description: 'Used in product cards and listing pages.',
+      description: 'One-line summary for the product card, listings and search results.',
+    }),
+    // The `description` key was freed by PROD-2455 and reused for the
+    // long-form field, matching Line and Solution. Starts empty everywhere.
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'array',
+      group: GROUPS.content,
+      description:
+        'The full description of this product — what it is, how it is built and what it suits. Renders on the product page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'benefits',

@@ -55,12 +55,16 @@ export const productLine = defineType({
       description: 'The /products/<slug> segment. Unique across Product Line AND Product — both sit one segment under /products/.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
+    // Renamed from `intro` (PROD-2454): one concept, one name across
+    // Line / Style / Solution / Product. Portable text, so the link
+    // annotations the original values carried survived the move.
     defineField({
-      name: 'intro',
-      title: 'Intro',
+      name: 'description',
+      title: 'Description',
       type: 'array',
       group: GROUPS.content,
-      description: 'Short, evergreen framing — no countable facts (they belong on products).',
+      description:
+        'The full description of this line — what it covers and who it is for. Renders on the line landing page. Keep it evergreen: no countable facts, those belong on the products.',
       of: [
         {
           type: 'block',
@@ -96,9 +100,11 @@ export const productLine = defineType({
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
     }),
+    // Renamed from `cardSummary` (PROD-2454), matching Style, Solution,
+    // Product and the existing `blogCategory` pair.
     defineField({
-      name: 'cardSummary',
-      title: 'Card summary',
+      name: 'shortDescription',
+      title: 'Short description',
       type: 'text',
       rows: 2,
       group: GROUPS.content,

@@ -97,13 +97,16 @@ export const solution = defineType({
       group: GROUPS.content,
       description: 'Page H1 — hero copy, the main heading visitors see (not a name; that is Title).',
     }),
+    // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
+    // and the existing `blogCategory` pair. (`page.subheadline` is a different
+    // field on a different type and was left alone.)
     defineField({
-      name: 'subheadline',
-      title: 'Subheadline',
+      name: 'shortDescription',
+      title: 'Short description',
       type: 'text',
       rows: 2,
       group: GROUPS.content,
-      description: 'Supporting line below the headline.',
+      description: 'One-line summary of this solution, for the solution card, listings and the nav.',
     }),
     taggedImageField({
       name: 'heroImage',
@@ -122,12 +125,15 @@ export const solution = defineType({
         }),
       ],
     }),
+    // Renamed from `intro` (PROD-2454). Portable text, so the link
+    // annotations the original values carried survived the move.
     defineField({
-      name: 'intro',
-      title: 'Intro / problem framing',
+      name: 'description',
+      title: 'Description',
       type: 'array',
       group: GROUPS.content,
-      description: 'Short framing paragraph — the packaging problem this solution addresses.',
+      description:
+        'The full description of this solution — the packaging problem it addresses and how we solve it. Renders on the solution page.',
       of: [
         {
           type: 'block',
