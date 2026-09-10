@@ -6,6 +6,7 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -151,13 +152,29 @@ export const product = defineType({
       description: 'The PDP gallery — first image is the card and the hero.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
+    // PROD-2454 — the field was already *labelled* "Short description" but
+    // *named* `description`; the name now says what the label always said.
+    //
+    // The long-form `description` (portable text, as on Line and Solution) is
+    // deliberately NOT added yet: the key is still occupied by the deprecated
+    // field below, and §4.3 forbids removing a populated field in the same
+    // change that stops using it. It lands in the follow-up removal ticket.
     defineField({
-      name: 'description',
+      name: 'shortDescription',
       title: 'Short description',
       type: 'text',
       group: GROUPS.content,
       rows: 3,
-      description: 'Used in product cards and listing pages.',
+      description: 'One-line summary for the product card, listings and search results.',
+    }),
+    defineField({
+      name: 'description',
+      title: 'Short description (legacy)',
+      type: 'text',
+      group: GROUPS.content,
+      rows: 3,
+      description: 'Superseded by Short description.',
+      ...deprecateField('Renamed to `shortDescription` (PROD-2454). Read-only until the migration has run on production and the field is removed — the `description` key is then reused for the long-form field.'),
     }),
     defineField({
       name: 'benefits',
