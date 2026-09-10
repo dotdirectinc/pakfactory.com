@@ -22,7 +22,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
 
-export function SignUpForm() {
+export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
     const [serverError, setServerError] = useState<string>();
     const [pending, startTransition] = useTransition();
     const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +33,7 @@ export function SignUpForm() {
         formState: {errors},
     } = useForm<AuthCredentials>({
         resolver: zodResolver(authCredentialsSchema),
-        defaultValues: {email: '', password: ''},
+        defaultValues: {email: prefillEmail ?? '', password: ''},
     });
 
     function onSubmit(data: AuthCredentials) {
@@ -54,6 +54,14 @@ export function SignUpForm() {
 
     const email = watch('email');
     const password = watch('password');
+
+    // The buyer arrived from a receipt and has edited the address it was filed
+    // under. Compared case-insensitively because the server lowercases before
+    // it ever reaches Supabase (`emailOf` in lib/auth/actions.ts), so a stray
+    // capital is not a different address and must not raise this.
+    const emailChanged =
+        !!prefillEmail &&
+        email.trim().toLowerCase() !== prefillEmail.toLowerCase();
     const canSubmit =
         email.trim().length > 0 && password.trim().length > 0;
 
@@ -105,6 +113,14 @@ export function SignUpForm() {
                     {errors.email ? (
                         <p className="text-xs text-destructive" role="alert">
                             {errors.email.message}
+                        </p>
+                    ) : null}
+                    {prefillEmail && emailChanged ? (
+                        <p
+                            className="rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
+                            role="status"
+                        >
+                            {SIGN_UP_COPY.emailChangedWarning(prefillEmail)}
                         </p>
                     ) : null}
                 </div>
