@@ -6,15 +6,13 @@ alwaysApply: false
 
 # Admin app (`@pakfactory/admin`)
 
-When editing **`apps/admin/`**, follow [`apps/admin/AGENTS.md`](../../AGENTS.md) and repo [`AGENTS.md`](../../../../AGENTS.md).
+Follow [`apps/admin/AGENTS.md`](../../AGENTS.md), [`AGENTS.md`](../../../../AGENTS.md), [`DESIGN.md`](../../../../DESIGN.md) (UI).
 
 **Quick rules:**
 
-- **Scope:** internal staff sign-in + read-only buyer request views (PROD-2405). Not content editing (Studio) or buyer marketing (www).
+- **Scope:** staff sign-in + read-only buyer requests (PROD-2405) — not Studio or www marketing.
 - **PR base:** `www-new-release`.
-- **Auth:** real Supabase; mock internal-account + request reads until PROD-2414/2415 (`ADMIN_DATA_SOURCE=mock` default).
-- **Dev bypass:** `ADMIN_DEV_BYPASS` — local only, never production or shared preview deploys.
-- **Packages:** `@pakfactory/domain`, `@pakfactory/supabase`, `@pakfactory/auth-ui`, `@pakfactory/ui` — no Sanity.
-- **Env:** Supabase in root `.env.local`; admin overrides in `apps/admin/.env.local` — see [`.env.example`](../../.env.example).
-- **Local dev:** `pnpm dev:admin` → port **4000**.
-- **Cookie collisions:** admin and www share `localhost` Supabase cookies — see AGENTS.md troubleshooting for HTTP 431 recovery.
+- **Data:** real Supabase auth; mock reads until PROD-2414/2415 (`ADMIN_DATA_SOURCE=mock`).
+- **Dev bypass:** `ADMIN_DEV_BYPASS` — local only, never production/shared preview.
+- **Packages:** domain / supabase / auth-ui / ui — no Sanity.
+- **Local:** `pnpm dev:admin` → **4000**; cookie collisions with www on localhost — see admin AGENTS troubleshooting.

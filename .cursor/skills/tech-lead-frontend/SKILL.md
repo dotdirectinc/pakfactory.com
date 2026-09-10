@@ -38,6 +38,8 @@ Typical libraries to resolve as needed (non-exhaustive): **Next.js**, **React**,
 
 - Human-oriented Cursor defaults: [`.cursor/TECH_LEAD.md`](../../TECH_LEAD.md).
 - Binding UI policy: [`workspace-instructions.mdc`](../../rules/workspace-instructions.mdc).
+- Practice front door: [`ENGINEERING.md`](../../../ENGINEERING.md) (RSC, state, memo, scaffold).
+- Look / tokens: [`DESIGN.md`](../../../DESIGN.md).
 
 Summary for implementation (do not contradict those rules):
 
@@ -46,6 +48,7 @@ Summary for implementation (do not contradict those rules):
 - Do **not** change `packages/ui/src/globals.css` or `apps/www/src/app/globals.css` for new features (no new tokens or drive-by `@theme` edits); use existing tokens and `className` in app/block code.
 - Do **not** change root shell (`layout.tsx`, global navbar) unless the task explicitly asks.
 - **Spacing:** 8pt grid per [`AGENTS.md`](../../../AGENTS.md) § UI and design system.
+- **Scaffold (blog):** layer folders + ADR-013 props-only `ui/` / `modules/` controllers — see ENGINEERING.md; until ADR-015, page-builder wording is **“block”**.
 
 ---
 
@@ -54,7 +57,10 @@ Summary for implementation (do not contradict those rules):
 **Architecture and composition**
 
 - Prefer **composing** existing primitives and blocks over forking copies into app code.
-- Clarify **Server vs Client** boundaries (what runs on the server vs in the browser); use Context7 for current Next.js/React patterns when unsure.
+- Clarify **Server vs Client** boundaries per ENGINEERING.md (RSC default; `'use client'` at the interactive leaf); use Context7 for current Next.js/React patterns when unsure.
+- Prefer **URL state** for filters/sort/pagination; local state for ephemeral UI; feature Context only when justified (www `RequestProvider` pattern for value stability).
+- Do **not** default to `useMemo`/`useCallback`; stabilize Context provider values when the value is an object/functions. React Compiler is not enabled here.
+- Reject cross-feature component imports and feature forks — extract props-only `ui/` (ADR-013).
 
 **Accessibility**
 

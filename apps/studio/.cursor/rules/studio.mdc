@@ -6,14 +6,13 @@ alwaysApply: false
 
 # Studio app (`@pakfactory/studio`)
 
-When editing **`apps/studio/`**, follow [`apps/studio/CLAUDE.md`](../../CLAUDE.md) and repo [`AGENTS.md`](../../../../AGENTS.md) § Sanity content — agent guardrails.
+Follow [`apps/studio/CLAUDE.md`](../../CLAUDE.md), [`AGENTS.md`](../../../../AGENTS.md) § Sanity guardrails, [`DESIGN.md`](../../../../DESIGN.md) when UI-adjacent Studio previews matter.
 
 **Quick rules:**
 
-- **Schemas in git only** — use `defineType` / `defineField` / `defineArrayMember`.
-- **SEO/Social:** always `lib/seo-fields.ts` (`seoFields` + `socialFields`) — never per-schema `metaTitle` duplicates.
-- **ADR-014:** singular type names, titles, and desk labels.
-- **Never seed or write documents** — no `seed:*` scripts, no MCP create/patch/publish (humans only).
-- **Blocks:** page-builder types in `schemas/blocks/`; register in `schemas/blocks/index.ts`.
-- **Env:** `apps/studio/.env.local` (not root); preview URLs → www **3003**, blog **3004**.
-- **Local dev:** `pnpm dev:studio` → port **3333**.
+- **Schemas in git only** — `defineType` / `defineField` / `defineArrayMember`.
+- **SEO/Social:** `lib/seo-fields.ts` only; robots = `allowIndex` / `allowFollow` / `noImageIndex`.
+- **ADR-014:** singular types/titles/desk labels.
+- **Never** seed or write documents (humans only).
+- **Blocks:** `schemas/blocks/` + register in `index.ts`.
+- **Env:** `apps/studio/.env.local`; previews www **3003**, blog **3004**; `pnpm dev:studio` → **3333**.
