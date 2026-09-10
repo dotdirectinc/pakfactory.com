@@ -73,10 +73,23 @@ function needsTwoPages(draft: RequestDraft, lines: RequestLine[]): boolean {
   return overflowScore(draft, lines) > 4;
 }
 
+/**
+ * Always at least one page — both returns below are literal arrays with a page
+ * in them, and a request with nothing to show still renders an empty sheet
+ * rather than no sheet.
+ *
+ * The NON-EMPTY tuple type is what says so to the compiler. Under
+ * `noUncheckedIndexedAccess` a plain `RequestReviewPageSlice[]` makes
+ * `pageSlices[0]` possibly-undefined, which broke the admin production build
+ * (`Type 'RequestReviewPageSlice | undefined' is not assignable`). Stating the
+ * invariant here fixes it at the source, where the guarantee actually holds —
+ * a `!` at the call site would assert the same thing without anything backing
+ * it, and would keep asserting it if a future branch returned [].
+ */
 function buildPageSlices(
   draft: RequestDraft,
   lines: RequestLine[],
-): RequestReviewPageSlice[] {
+): [RequestReviewPageSlice, ...RequestReviewPageSlice[]] {
   if (!needsTwoPages(draft, lines)) {
     return [
       {
