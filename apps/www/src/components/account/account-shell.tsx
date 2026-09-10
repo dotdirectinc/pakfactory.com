@@ -4,7 +4,7 @@ import type {ReactNode} from 'react';
 import Link from 'next/link';
 import {AccountMenu} from '@/components/account/account-menu';
 import {TypewriterText} from '@/components/account/typewriter-text';
-import {LogoMark} from '@/components/layout/logo-mark';
+import Logo from '@/components/layout/logo';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -29,8 +29,14 @@ export function AccountShell({
                     aria-label="PakFactory home"
                     className="shrink-0"
                 >
-                    <LogoMark className="size-7" label="PakFactory" />
+                    <Logo />
                 </Link>
+                <span
+                    className="hidden text-muted-foreground sm:inline"
+                    aria-hidden
+                >
+                    |
+                </span>
                 <span className="hidden min-w-0 truncate text-sm font-medium sm:inline">
                     {ACCOUNT_COPY.welcomeBack}{' '}
                     <TypewriterText text={displayName} />
