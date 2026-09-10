@@ -9,9 +9,17 @@
 
 const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
+/**
+ * ⚠️ This resolves the label from the solution's H1, which is marketing copy —
+ * an *Apparel & Fashion* client reads as "Custom Apparel & Fashion Packaging" on
+ * the card, in the meta card and in the JSON-LD `articleSection`. It should be
+ * `coalesce(shortName, title)`; `shortName` now exists for exactly this. Left as
+ * a straight `headline` → `h1` swap here so PROD-2458 changes nothing visible —
+ * PROD-2460 makes the fix a deliberate change of its own.
+ */
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(headline, title),
+  "title": coalesce(h1, title),
   "slug": slug.current,
   solutionType
 }`;
@@ -170,7 +178,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
  * at that array when it ships; do not restore `order asc`.
  */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(h1, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
 }`;

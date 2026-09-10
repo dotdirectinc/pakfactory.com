@@ -41,12 +41,24 @@ export const productStyle = defineType({
       description: 'The canonical name — "Magnetic Closure Boxes". Required, always presentable.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere.
     defineField({
-      name: 'displayTitle',
-      title: 'Display title',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional front-end override. Empty is the normal case.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -104,15 +116,17 @@ export const productStyle = defineType({
       title: 'Hero',
       type: 'object',
       group: GROUPS.content,
-      description: 'Landing-page hero: badge, headline (the H1 — not a name), supporting copy and image.',
+      description: 'Landing-page hero: badge, supporting copy and image. The heading is the top-level H1, not a field in here.',
       options: { collapsible: true, collapsed: false },
       fields: [
         // Renamed from `hero.title` (D33). The field was *labelled* "Badge label" but
         // *named* `title`, so it collided with the document's own title in every
         // projection. 0 populated at the rename.
         defineField({ name: 'label', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
-        defineField({ name: 'headline', title: 'Headline', type: 'string', description: 'The page H1 (e.g. "Magnetic Closure Rigid Boxes"). Leave blank to use the site default.' }),
-        defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the headline.' }),
+        // `hero.headline` removed: it was a third name on a type that already had
+        // `title` and `displayTitle`, and it was the H1 all along. Promoted to the
+        // top-level `h1` above. 0 populated at the move, so nothing was lost.
+        defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the heading.' }),
         defineField(taggedImageField({
           name: 'image',
           title: 'Hero image',
@@ -243,7 +257,7 @@ export const productStyle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
+    select: { title: 'title', display: 'shortName', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
     prepare({ title, display, line, heroImage, cardImage }) {
       return {
         title: display || title || 'Untitled style',

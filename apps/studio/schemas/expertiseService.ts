@@ -37,13 +37,9 @@ export const expertiseService = defineType({
       description: "The service's name.",
       validation: (Rule) => Rule.required(),
     }),
-    defineField({
-      name: 'displayTitle',
-      title: 'Display title',
-      type: 'string',
-      group: GROUPS.content,
-      description: 'Optional front-end override.',
-    }),
+    // No H1 or Short name here: this type has no page at launch. Its empty
+    // `displayTitle` was removed with the rest of them; add the pair when the
+    // service pages are actually built.
     defineField({
       name: 'stage',
       title: 'Stage',
@@ -120,10 +116,10 @@ export const expertiseService = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', stage: 'stage.title', hasPage: 'hasPage' },
-    prepare({ title, display, stage, hasPage }) {
+    select: { title: 'title', stage: 'stage.title', hasPage: 'hasPage' },
+    prepare({ title, stage, hasPage }) {
       return {
-        title: display || title || 'Untitled service',
+        title: title || 'Untitled service',
         subtitle: [stage, hasPage ? 'Has page' : 'Term only'].filter(Boolean).join(' · '),
       }
     },
