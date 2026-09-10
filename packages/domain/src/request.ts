@@ -113,6 +113,21 @@ export type RequestAttachment = {
 export type Request = {
   id: string;
   ownerId: string;
+  /**
+   * Email of the ACCOUNT that submitted the request, when there is one and the
+   * caller may see it.
+   *
+   * Deliberately separate from `draft.contactEmail`. Ownership comes from the
+   * session (`rfq.customer_id`); the contact address is typed into the builder.
+   * A buyer can raise a request on a colleague's behalf, so the two differ —
+   * RFQ-2026-00021 was owned by one account and addressed to another, and
+   * nothing in admin could show it.
+   *
+   * Null means one of three things, and they are not distinguishable here on
+   * purpose: a guest submitted it (`ownerId` empty), the lookup failed, or RLS
+   * hid the customer row. Read it with `ownerId` to tell guest from unresolved.
+   */
+  submittedByEmail: string | null;
   zohoLeadId?: string | null;
   draft: RequestDraft;
   lines: RequestLine[];

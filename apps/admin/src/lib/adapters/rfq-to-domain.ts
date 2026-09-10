@@ -180,6 +180,7 @@ function toLines(row: RfqRow, s: StoredSubmission): RequestLine[] {
 export function toRequest(
   row: RfqRow,
   attachmentRows: RfqAttachmentRow[] | null = null,
+  submittedByEmail: string | null = null,
 ): Request {
   const s = asSubmission(row.payload);
   return {
@@ -189,6 +190,10 @@ export function toRequest(
     // empty string says "nobody owns this account-side", which is true, and is
     // preferable to inventing an id the buyer portal would then fail to match.
     ownerId: row.customer_id ?? "",
+    // Resolved by the adapter, not from the payload: the account's address is a
+    // fact about `public.customers`, and the payload only ever held what the
+    // buyer typed into the contact field.
+    submittedByEmail,
     zohoLeadId: row.crm_lead_id,
     draft: toDraft(row, s),
     lines: toLines(row, s),
