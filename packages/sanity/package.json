@@ -37,7 +37,8 @@
     "migrate:customization-cleanup": "tsx scripts/migrate-customization-cleanup.ts",
     "migrate:customization-properties-backfill": "tsx scripts/migrate-customization-properties-backfill.ts",
     "migrate:description-naming": "tsx scripts/migrate-description-naming.ts",
-    "migrate:description-cleanup": "tsx scripts/migrate-description-naming-cleanup.ts"
+    "migrate:description-cleanup": "tsx scripts/migrate-description-naming-cleanup.ts",
+    "migrate:solution-haspage": "tsx scripts/migrate-solution-haspage.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0"
