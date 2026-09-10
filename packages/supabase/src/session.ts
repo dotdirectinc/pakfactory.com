@@ -64,3 +64,58 @@ export function safeNext(
   if (!value) return fallback;
   return value.startsWith("/") && !value.startsWith("//") ? value : fallback;
 }
+
+/** What a signed-in buyer's account can contribute to a form. */
+export type AccountIdentity = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  /** `google`, `email`, … — from app_metadata, which the user cannot edit. */
+  provider: string;
+};
+
+/**
+ * Split a display name into first / last.
+ *
+ * FIRST TOKEN, then everything else — so "Mary Jane Watson" gives
+ * "Mary" + "Jane Watson" rather than dropping a name part. A single-token name
+ * yields an empty last name, which the form then asks for; guessing a surname
+ * is worse than leaving a required field visibly empty.
+ */
+function splitName(full: string): { firstName: string; lastName: string } {
+  const [first = "", ...rest] = full.trim().split(/\s+/).filter(Boolean);
+  return { firstName: first, lastName: rest.join(" ") };
+}
+
+/**
+ * What we can prefill from the account, and nothing more.
+ *
+ * 🔴 There is NO `given_name` / `family_name` to read. Verified against the
+ * staging auth schema 2026-09-10: Google identities here carry only
+ * `full_name` / `name` (plus avatar, iss, sub, …), so the first/last split has
+ * to come from splitting the display name. Reading `given_name` would look
+ * correct and silently return undefined for every user.
+ *
+ * The provider difference is data, not policy: `signUp({ email, password })`
+ * stores no metadata at all, so an email/password account normally has only an
+ * address. This returns whatever the account actually holds rather than
+ * branching on provider — which produces "name + email for Google, email only
+ * for email/password" without hard-coding a rule that goes stale the day we
+ * start collecting a name at sign-up.
+ */
+export function accountIdentity(user: User): AccountIdentity {
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
+
+  const displayName = [metadata.full_name, metadata.name].find(
+    (value): value is string =>
+      typeof value === "string" && value.trim().length > 0,
+  );
+
+  return {
+    email: user.email ?? "",
+    ...splitName(displayName ?? ""),
+    provider:
+      typeof appMetadata.provider === "string" ? appMetadata.provider : "email",
+  };
+}
