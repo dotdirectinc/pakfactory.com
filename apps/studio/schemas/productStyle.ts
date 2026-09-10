@@ -7,7 +7,6 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Product Style — a construction within a line (Magnetic Closure, Straight Tuck
@@ -68,14 +67,8 @@ export const productStyle = defineType({
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
-    // PROD-2454 — `description` held *short* copy here, which is why the same
-    // word meant two different things across the model. It becomes
-    // `shortDescription`.
-    //
-    // The long-form `description` (portable text, as on Line and Solution) is
-    // deliberately NOT added yet: the key is still occupied by the deprecated
-    // field below, and §4.3 forbids removing a populated field in the same
-    // change that stops using it. It lands in the follow-up removal ticket.
+    // Renamed from `description` (PROD-2454) — that key held *short* copy
+    // here, which is why the same word meant two things across the model.
     defineField({
       name: 'shortDescription',
       title: 'Short description',
@@ -84,14 +77,27 @@ export const productStyle = defineType({
       rows: 3,
       description: 'One-line summary for the style card, listings and the nav.',
     }),
+    // The `description` key was freed by PROD-2455 and reused for the
+    // long-form field, matching Line and Solution. Starts empty everywhere.
     defineField({
       name: 'description',
-      title: 'Description (legacy)',
-      type: 'text',
+      title: 'Description',
+      type: 'array',
       group: GROUPS.content,
-      rows: 3,
-      description: 'Superseded by Short description.',
-      ...deprecateField('Renamed to `shortDescription` (PROD-2454). Read-only until the migration has run on production and the field is removed — the `description` key is then reused for the long-form field.'),
+      description:
+        'The full description of this style — what it is, how it is constructed and what it suits. Renders on the style landing page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'hero',

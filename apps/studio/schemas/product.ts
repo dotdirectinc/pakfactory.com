@@ -6,7 +6,6 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
-import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -152,13 +151,9 @@ export const product = defineType({
       description: 'The PDP gallery — first image is the card and the hero.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
-    // PROD-2454 — the field was already *labelled* "Short description" but
-    // *named* `description`; the name now says what the label always said.
-    //
-    // The long-form `description` (portable text, as on Line and Solution) is
-    // deliberately NOT added yet: the key is still occupied by the deprecated
-    // field below, and §4.3 forbids removing a populated field in the same
-    // change that stops using it. It lands in the follow-up removal ticket.
+    // Renamed from `description` (PROD-2454) — the field was already
+    // *labelled* "Short description" but *named* `description`; the name now
+    // says what the label always said.
     defineField({
       name: 'shortDescription',
       title: 'Short description',
@@ -167,14 +162,27 @@ export const product = defineType({
       rows: 3,
       description: 'One-line summary for the product card, listings and search results.',
     }),
+    // The `description` key was freed by PROD-2455 and reused for the
+    // long-form field, matching Line and Solution. Starts empty everywhere.
     defineField({
       name: 'description',
-      title: 'Short description (legacy)',
-      type: 'text',
+      title: 'Description',
+      type: 'array',
       group: GROUPS.content,
-      rows: 3,
-      description: 'Superseded by Short description.',
-      ...deprecateField('Renamed to `shortDescription` (PROD-2454). Read-only until the migration has run on production and the field is removed — the `description` key is then reused for the long-form field.'),
+      description:
+        'The full description of this product — what it is, how it is built and what it suits. Renders on the product page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'benefits',
