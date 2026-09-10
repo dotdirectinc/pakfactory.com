@@ -14,6 +14,7 @@ Do not contradict `AGENTS.md`. Blog 3.0 ticket → code map: **[docs/blog-3-jira
 ## Preserve shared UI primitives (no preemptive changes)
 
 - **UI design/build/plan:** read **[DESIGN.md](../../DESIGN.md)** first (composition + token names); values live in `@pakfactory/ui/globals.css`.
+- **Scaffold / RSC / state:** read **[ENGINEERING.md](../../ENGINEERING.md)**; ADR index (domain + Applies to) at **[docs/adr/README.md](../../docs/adr/README.md)**.
 - **Do not edit** existing components under [`packages/ui/src/components`](packages/ui/src/components) except when fixing a confirmed bug you were explicitly asked to fix.
 - **CSS cascade:** follow **[AGENTS.md](../../AGENTS.md)** § UI and design system — `@pakfactory/ui/globals.css`, then the app’s `globals.css`, then component `className`. Spacing is **8pt**. App CSS may add a token only when ui does not define it; do not drive-by edit `packages/ui/src/globals.css` for a single feature.
 - **Allowed exception:** **add** new primitive files only when required (e.g. from the shadcn CLI)—additive only.

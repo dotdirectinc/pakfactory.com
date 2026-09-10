@@ -24,15 +24,16 @@ The monorepo ships **versioned** AI assistant context so **Claude Code**, **Curs
 
 1. **[`AGENTS.md`](./AGENTS.md)** — canonical stack, domain rules, MCP, ADRs, JIRA, verification.
 2. **[`DESIGN.md`](./DESIGN.md)** — read before designing, building, or planning UI components (Pak tokens + composition).
-3. **[`docs/ai-agent-docs.md`](./docs/ai-agent-docs.md)** — map of MD/MDC layers (what to read when; keep digests thin).
-4. **[`CLAUDE.md`](./CLAUDE.md)** — Claude Code entry; skills under [`.claude/skills/`](./.claude/skills/).
-5. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor digests; always-on rules reinforce `AGENTS.md` / `DESIGN.md`.
-6. **[`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md)** — www rebuild.
-7. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog routes, Sanity, AEO/GEO.
-8. **[`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md)** — Studio schemas.
-9. **[`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md)** — admin back office.
-10. **`apps/*/.cursor/rules/*.mdc`** — per-app Cursor digests.
-11. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — Jira ticket → code map.
+3. **[`ENGINEERING.md`](./ENGINEERING.md)** — React/Next scaffold, RSC, state scope, memo, component placement.
+4. **[`docs/ai-agent-docs.md`](./docs/ai-agent-docs.md)** — map of MD/MDC layers (what to read when; keep digests thin).
+5. **[`CLAUDE.md`](./CLAUDE.md)** — Claude Code entry; skills under [`.claude/skills/`](./.claude/skills/).
+6. **[`.cursor/rules/`](./.cursor/rules/)** — Cursor digests; always-on rules reinforce `AGENTS.md` / `DESIGN.md` / `ENGINEERING.md`.
+7. **[`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md)** — www rebuild.
+8. **[`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md)** — blog routes, Sanity, AEO/GEO.
+9. **[`apps/studio/CLAUDE.md`](./apps/studio/CLAUDE.md)** — Studio schemas.
+10. **[`apps/admin/AGENTS.md`](./apps/admin/AGENTS.md)** — admin back office.
+11. **`apps/*/.cursor/rules/*.mdc`** — per-app Cursor digests.
+12. **[`docs/blog-3-jira-conventions.md`](./docs/blog-3-jira-conventions.md)** — Jira ticket → code map.
 
 **Per tool**
 
@@ -51,6 +52,7 @@ After `git pull`, ask your assistant:
 | “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; absolute URLs via **`absoluteUrl()`** (origin = `NEXT_PUBLIC_SITE_URL`; optional `NEXT_PUBLIC_BLOG_BASE_PATH`) per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
 | “Should page 2 of a category archive be indexed?” | Unfiltered paginated listings are **`index, follow`** with a self-canonical; filters / odd `perPage` still **`noindex, follow`** via `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` (PROD-1495). |
 | “Design a new CTA band.” | Follow **[`DESIGN.md`](./DESIGN.md)** + `@pakfactory/ui` tokens/primitives — not a third-party design-system palette. |
+| “Where does a new Sanity page-builder row component go?” | Follow **[`ENGINEERING.md`](./ENGINEERING.md)** — `components/blocks/` + matching Studio `schemas/blocks/`; “block” wording until ADR-015. |
 | “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
 | “Run `pnpm seed:blog-dev` to fix the homepage.” | Refuse autonomous seed/content writes; may edit schemas or tell the human which command to run manually ([`AGENTS.md`](./AGENTS.md) § Sanity content — agent guardrails). |
 

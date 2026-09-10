@@ -4,7 +4,7 @@
 
 Structure inspired by Sparkbites-style design-language refs; **values are PakFactory’s, not Vercel’s.** Token values live in [`packages/ui/src/globals.css`](packages/ui/src/globals.css) — use **token names** here; read hex/sizes from CSS.
 
-Also read: [`AGENTS.md`](AGENTS.md) § UI and design system · [ADR-006](docs/adr/0006-design-system-and-tokens.md) · app [`CLAUDE.md`](apps/blog/CLAUDE.md) / [`www/CLAUDE.md`](apps/www/CLAUDE.md) for gutters · [ADR-008](docs/adr/0008-component-archetype-grouping.md) / [ADR-013](docs/adr/0013-shared-core-vs-feature-composition.md) for placement.
+Also read: [`AGENTS.md`](AGENTS.md) § UI and design system · [`ENGINEERING.md`](ENGINEERING.md) for RSC/scaffold · [ADR-006](docs/adr/0006-design-system-and-tokens.md) · app [`CLAUDE.md`](apps/blog/CLAUDE.md) / [`www/CLAUDE.md`](apps/www/CLAUDE.md) for gutters · [ADR-008](docs/adr/0008-component-archetype-grouping.md) / [ADR-013](docs/adr/0013-shared-core-vs-feature-composition.md) for placement.
 
 ---
 

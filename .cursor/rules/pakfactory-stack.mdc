@@ -11,7 +11,7 @@ Read [`AGENTS.md`](../../AGENTS.md) at the repository root for full stack, domai
 
 - **pnpm 9.x** only; Next 16 / React 19 / Tailwind 4 / Sanity 5 / Node ≥ 20.19.
 - **Not a Shopify storefront** — quote / RFQ CTAs, not carts/checkout.
-- **UI:** [`DESIGN.md`](../../DESIGN.md) for component design/build/plan; do not edit existing `packages/ui` primitives for features.
+- **UI:** [`DESIGN.md`](../../DESIGN.md) for look; [`ENGINEERING.md`](../../ENGINEERING.md) for RSC/scaffold; do not edit existing `packages/ui` primitives for features.
 - **ADR-013:** props-only shared `ui/` + feature wiring in `modules/` — no cross-feature imports/forks.
 - **Studio SEO:** `apps/studio/lib/seo-fields.ts` only; robots = `allowIndex` / `allowFollow` / `noImageIndex`.
 - **Sanity:** schemas in git only — agents never create/patch/publish/seed documents.

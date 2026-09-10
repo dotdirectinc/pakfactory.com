@@ -26,6 +26,7 @@ Summary for day-to-day work:
 | Do | Don’t |
 |----|--------|
 | Read **[`DESIGN.md`](../DESIGN.md)** before designing/building/planning UI; use token **names** from `@pakfactory/ui`. | Edit **`packages/ui/src/components`** primitives except a **confirmed bug** you were asked to fix. |
+| Read **[`ENGINEERING.md`](../ENGINEERING.md)** before scaffolding React/Next (RSC, state, placement). | Merge or rewrite Accepted ADRs; use [`docs/adr/README.md`](../docs/adr/README.md) domain + Applies to index. |
 | Fix layout/styling in **app or feature code** with existing tokens and `className`. | Drive-by change **`packages/ui/src/globals.css`** for a single feature (token evolution is a design-system / ADR act). |
 | Add an app token in the app’s `globals.css` **only when ui lacks it**; if a second app needs it, move to `@pakfactory/ui` ([`AGENTS.md`](../AGENTS.md)). | Invent a parallel palette or copy unrelated design-system hex (e.g. Vercel blue). |
 | Add **new** shadcn-style primitives only when needed (**additive**). | Change root **`layout.tsx`**, global shell, or navbar unless the task explicitly asks. |

@@ -57,7 +57,7 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 
 ## UI and design system (preserve primitives)
 
-**Component design / build / plan:** read **[`DESIGN.md`](DESIGN.md)** first (composition + token names). Exact values live in [`packages/ui/src/globals.css`](packages/ui/src/globals.css). Doc map: [`docs/ai-agent-docs.md`](docs/ai-agent-docs.md).
+**Component design / build / plan:** read **[`DESIGN.md`](DESIGN.md)** first (composition + token names). Exact values live in [`packages/ui/src/globals.css`](packages/ui/src/globals.css). **React / Next scaffold, RSC, state, memo:** read **[`ENGINEERING.md`](ENGINEERING.md)**. Doc map: [`docs/ai-agent-docs.md`](docs/ai-agent-docs.md).
 
 These rules align with [`.cursor/rules/workspace-instructions.mdc`](.cursor/rules/workspace-instructions.mdc):
 
@@ -138,7 +138,7 @@ Epic: [PROD-1480 — Blog 3.0 Tech Prerequisites](https://dotdirect.atlassian.ne
 
 ## ADR summary
 
-The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — read it for any "why was this chosen?" question. Foundational platform decisions that predate the register are summarized below; numbered ADRs link out.
+The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — indexed by **decision domain** plus **Applies to** (`all` \| `blog` \| `www` \| `studio` \| `admin`). Read it for any "why was this chosen?" question. Current scaffold practice is summarized in [`ENGINEERING.md`](ENGINEERING.md) (does not replace individual ADRs). Foundational platform decisions that predate the register are summarized below; numbered ADRs link out.
 
 | ADR                                  | Decision                                                                                                                                                                                                                                         | Link                                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |

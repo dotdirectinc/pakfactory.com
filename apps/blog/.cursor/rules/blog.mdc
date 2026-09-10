@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Blog app (`@pakfactory/blog`)
 
-Follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), [`AGENTS.md`](../../../../AGENTS.md), [`DESIGN.md`](../../../../DESIGN.md) (UI), [`docs/blog-3-jira-conventions.md`](../../../../docs/blog-3-jira-conventions.md).
+Follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), [`AGENTS.md`](../../../../AGENTS.md), [`DESIGN.md`](../../../../DESIGN.md) (UI), [`ENGINEERING.md`](../../../../ENGINEERING.md) (scaffold), [`docs/blog-3-jira-conventions.md`](../../../../docs/blog-3-jira-conventions.md).
 
 **Quick rules:**
 
@@ -14,7 +14,7 @@ Follow [`apps/blog/CLAUDE.md`](../../CLAUDE.md), [`AGENTS.md`](../../../../AGENT
 - **Robots (PROD-1495):** posts always index; unfiltered listings (including page ≥2) → **index, follow**; filters / odd `perPage` → **noindex, follow** (`getListingRobotsFromSearchParams`).
 - **Sanity:** queries from `@pakfactory/sanity/queries` only; agents never write documents/seeds.
 - **AEO/GEO:** `generateMetadata` + JSON-LD via `@pakfactory/seo` only.
-- **Components:** ADR-008/011/013 under `src/components/{blocks,layout,views,modules,ui,post}/`; ADR-007 inline single-route views.
+- **Components:** [`ENGINEERING.md`](../../../../ENGINEERING.md) — `src/components/{blocks,layout,views,modules,ui,post}/`; ADR-007 inline single-route views; “block” until ADR-015.
 - **UI:** tokens + primitives per DESIGN.md; dieline gutters per blog CLAUDE; prefer `Card` / `Button` / `Badge` / `Input`.
 
 **Skills:** seo-content-writer, on-page-seo-auditor, geo-content-optimizer, seo-structured-data (root `CLAUDE.md`).

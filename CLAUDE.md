@@ -4,14 +4,14 @@ Read [`AGENTS.md`](./AGENTS.md) first. It is the **canonical** source for stack,
 
 **Before building, read the ADRs.** Decisions are tool-agnostic and live in the register at [`docs/adr/README.md`](docs/adr/README.md) (e.g. ADR-005 component organization, ADR-006 design tokens, ADR-014 Sanity naming) — the _same_ canon Cursor follows. See `AGENTS.md` § "Decision compliance".
 
-**Before designing, building, or planning UI components, read [`DESIGN.md`](./DESIGN.md).** Token values: [`packages/ui/src/globals.css`](packages/ui/src/globals.css). Doc map: [`docs/ai-agent-docs.md`](docs/ai-agent-docs.md).
+**Before designing, building, or planning UI components, read [`DESIGN.md`](./DESIGN.md).** Token values: [`packages/ui/src/globals.css`](packages/ui/src/globals.css). **Before scaffolding React/Next features (RSC, state, placement), read [`ENGINEERING.md`](./ENGINEERING.md).** Doc map: [`docs/ai-agent-docs.md`](docs/ai-agent-docs.md).
 
 ## Inheritance
 
 - **Commit-scope mode (in-repo):**
     - @.claude/rules/commit-mode.md — toggle between `one-app-per-commit` and `mix-commiter`. Active mode: `.claude/commit-mode` / `./.claude/commit-mode.sh`.
 - **Dataset scripts:** @.claude/rules/dataset-script-placement-and-flags.md
-- **Component organization:** [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md) (and ADR-008/011/013).
+- **Component organization:** [`ENGINEERING.md`](./ENGINEERING.md) (practice); ADR trail 005 → 008 → 011 → 013 + 007 in [`docs/adr/README.md`](docs/adr/README.md).
 - Optional **parent management-root** rules (`../.claude/rules/*`) may exist outside this clone — if those paths are missing, ignore them; in-repo rules above still apply.
 - Inherits from **user-global** `~/.claude/CLAUDE.md` (if present) and this repository’s [`AGENTS.md`](./AGENTS.md).
 - For work under **`apps/www`**, also read [`apps/www/CLAUDE.md`](./apps/www/CLAUDE.md).
@@ -41,6 +41,7 @@ Invoke by name when the task matches. Cursor twins for some skills live under [`
 - Version-sensitive APIs: Context7 MCP (`resolve-library-id` → `query-docs`) per `AGENTS.md`.
 - Package manager: **pnpm** only.
 - Styling: `AGENTS.md` § UI + **`DESIGN.md`** — ui CSS → app CSS → `className`; 8pt spacing.
+- Scaffold / RSC / state: **`ENGINEERING.md`**.
 
 ## JIRA workflow
 

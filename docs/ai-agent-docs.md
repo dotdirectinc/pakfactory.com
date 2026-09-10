@@ -7,7 +7,8 @@ How markdown and Cursor rules are organized so **Cursor and Claude** share one h
 | Task | Read first |
 | --- | --- |
 | Any change | [`AGENTS.md`](../AGENTS.md) → relevant [`docs/adr/`](adr/README.md) |
-| Design / build / plan UI | [`DESIGN.md`](../DESIGN.md) → [`packages/ui/src/globals.css`](../packages/ui/src/globals.css) |
+| Design / build / plan UI look | [`DESIGN.md`](../DESIGN.md) → [`packages/ui/src/globals.css`](../packages/ui/src/globals.css) |
+| Scaffold / RSC / state / placement | [`ENGINEERING.md`](../ENGINEERING.md) → [`docs/adr/README.md`](adr/README.md) |
 | Blog | [`apps/blog/CLAUDE.md`](../apps/blog/CLAUDE.md) |
 | www rebuild | [`apps/www/CLAUDE.md`](../apps/www/CLAUDE.md) |
 | Studio schema | [`apps/studio/CLAUDE.md`](../apps/studio/CLAUDE.md) |
@@ -20,12 +21,13 @@ How markdown and Cursor rules are organized so **Cursor and Claude** share one h
 | --- | --- | --- |
 | Canon | `AGENTS.md`, Accepted `docs/adr/*` | Full — source of truth |
 | UI compose | `DESIGN.md` | Token **names** + composition; values → CSS |
+| Engineering practice | `ENGINEERING.md` | RSC, state, memo, scaffold checklist; ADRs keep *why* |
 | Tokens | `packages/ui/src/globals.css` | Implementation SoT |
 | App contract | `apps/*/CLAUDE.md` or `apps/admin/AGENTS.md` | App detail only |
 | Map | this file | Index only |
 | Cursor digests | `.cursor/rules/*.mdc`, `apps/*/.cursor/rules/*.mdc` | **Thin pointers** — never fork AGENTS |
 | Claude entry | `CLAUDE.md`, `.claude/rules/*` | Tool-only |
-| Skills | `.claude/skills/*`, `.cursor/skills/*` | Point to AGENTS / DESIGN / app CLAUDE |
+| Skills | `.claude/skills/*`, `.cursor/skills/*` | Point to AGENTS / DESIGN / ENGINEERING / app CLAUDE |
 | Ops | `apps/*/memory.md` | Never override canon |
 
 ## Cursor rules allowlist (`.cursor/rules/`)
@@ -46,7 +48,7 @@ App digests: `apps/<app>/.cursor/rules/<app>.mdc` — `alwaysApply: false`, `glo
 
 1. One source of truth per fact.
 2. Digests: link or one-line reminder only.
-3. Skills must not contradict AGENTS / DESIGN.
+3. Skills must not contradict AGENTS / DESIGN / ENGINEERING.
 4. `memory.md` = ops/history banner at top; defer to CLAUDE / AGENTS / DESIGN.
 5. Branching / PR bases: **[`AGENTS.md`](../AGENTS.md)** § JIRA defaults only (no separate `docs/branching.md`).
 
