@@ -108,19 +108,17 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
                 label={ADMIN_REQUESTS_COPY.emailLabel}
                 value={draft.contactEmail || ADMIN_REQUESTS_COPY.emptyValue}
               />
-              {/* Sits next to Email on purpose: the pair is the point. The
-                  contact address is typed into the builder, the account comes
-                  from the session, and reading them together is the only way to
-                  see that a request was raised on someone else's behalf. */}
-              <DetailField
-                label={ADMIN_REQUESTS_COPY.submittedByLabel}
-                value={
-                  request.ownerId
-                    ? (request.submittedByEmail ??
-                      ADMIN_REQUESTS_COPY.accountUnresolved)
-                    : ADMIN_REQUESTS_COPY.accountGuest
-                }
-              />
+              {/* "Submitted by (account)" is deliberately NOT rendered.
+                  Since #449 the builder locks the contact address to the
+                  signed-in account's, so for anything submitted after
+                  2026-09-10 the two are the same value and a second field would
+                  just repeat Email. Decided 2026-09-10.
+
+                  The data is still resolved — `request.submittedByEmail`, read
+                  through `customers_select_assigned_internal` — so restoring
+                  this is one block, not a re-plumb. Rows submitted BEFORE the
+                  lock can still disagree (RFQ-2026-00021 does), and for those
+                  Email alone no longer tells you which account owns it. */}
               <DetailField
                 label={ADMIN_REQUESTS_COPY.phoneLabel}
                 value={draft.contactPhone || ADMIN_REQUESTS_COPY.emptyValue}
