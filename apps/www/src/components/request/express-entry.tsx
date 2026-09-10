@@ -1,8 +1,16 @@
 'use client';
 
 import {useEffect, useRef} from 'react';
-import {BriefBuilder} from '@/components/request/brief-builder';
+import dynamic from 'next/dynamic';
 import {useRequest} from '@/lib/request/request-provider';
+
+const BriefBuilder = dynamic(
+    () =>
+        import('@/components/request/brief-builder').then(
+            (mod) => mod.BriefBuilder,
+        ),
+    {ssr: false},
+);
 
 /**
  * Get a quote (/request/general): always open express requirements-only.

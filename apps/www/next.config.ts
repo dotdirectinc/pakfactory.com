@@ -99,6 +99,9 @@ const nextConfig: NextConfig = {
   // are included in Vercel serverless functions (PROD-2206 `/api/wm` serve mode).
   outputFileTracingRoot: repoRoot,
   serverExternalPackages: ["sharp"],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "react-aria-components"],
+  },
   outputFileTracingIncludes: {
     "/api/wm": [
       "node_modules/sharp/**/*",

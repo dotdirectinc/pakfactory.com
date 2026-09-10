@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import {BriefBuilder} from '@/components/request/brief-builder';
+import {BriefBuilderLazy} from '@/components/request/brief-builder-lazy';
 
 export const metadata: Metadata = {
     title: 'Service quote',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function RequestServicesPage() {
-    return <BriefBuilder mode="services" />;
+    return <BriefBuilderLazy mode="services" />;
 }

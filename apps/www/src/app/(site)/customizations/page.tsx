@@ -6,6 +6,9 @@ import {
 } from '@/components/customization/customization-catalog-view';
 import {listCustomizationCategories} from '@/lib/catalog/catalog';
 
+/** ISR floor — keep literal for Next.js (PROD-2456). */
+export const revalidate = 60;
+
 export const metadata: Metadata = {
     title: 'Customization',
 };

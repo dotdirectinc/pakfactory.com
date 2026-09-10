@@ -8,6 +8,7 @@ import {
     type ProductCardData,
 } from '@/components/product/product-card';
 import {Icon} from '@/components/ui/icon';
+import {SanityImage} from '@/components/ui/sanity-image';
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
 
@@ -16,9 +17,16 @@ const TILE_GRID_CLASS =
 
 function TileMedia({src, alt}: {src?: string; alt: string}) {
     return (
-        <div className="flex aspect-square items-center justify-center bg-muted/40">
+        <div className="relative flex aspect-square items-center justify-center bg-muted/40">
             {src ? (
-                <img src={src} alt={alt} className="h-full w-full object-cover" />
+                <SanityImage
+                    src={src}
+                    alt={alt}
+                    square
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover"
+                />
             ) : (
                 <Icon
                     icon={Package}
