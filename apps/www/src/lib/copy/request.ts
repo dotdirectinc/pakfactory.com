@@ -96,7 +96,15 @@ export const REQUEST_COPY = {
     filesExpressDropTitle: 'Drop dielines, artwork, PDFs, or product photos',
 
     contactHeading: 'Your Information',
+    /** Signed in, collapsed to the summary card. */
     contactDesc: 'Confirm the contact details from your account.',
+    /** Signed out, or signed in and editing — the open form. */
+    contactDescEditing: 'Name and work email to start. The rest is optional.',
+    contactSignedInAs: 'Signed in as',
+    contactPrefilledNote: "Prefilled from your account. Edit anything that's changed.",
+    contactEmailLocked: 'From your account',
+    contactReplyNote: "We'll reply to this email.",
+    contactEdit: 'Edit',
     firstName: 'First name',
     lastName: 'Last name',
     workEmail: 'Email',
