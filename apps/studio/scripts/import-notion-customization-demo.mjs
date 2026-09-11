@@ -232,6 +232,23 @@ const PROPERTY_VALUE_MAP = {
 const TITLE_ALIASES = { 'CCNB (Clay-Coated News Back)': 'CCNB (Coated Chip Natural Back)' }
 
 /**
+ * A new option's `_id` is normally `cap-<slug>-r2304`. These are the exceptions, where
+ * that id is already taken by a DIFFERENT document.
+ *
+ * The 2023 seed used abbreviated ids — `cap-soft-touch-r2304` is "Soft Touch
+ * Lamination", `cap-matte-lam-r2304` is "Matte Lamination", `cap-sbs-r2304` is "SBS
+ * (Solid Bleached Sulfate)". So the new Notion row "Soft Touch" derives exactly the id
+ * that Soft Touch Lamination already holds, and a `createOrReplace` overwrites it
+ * rather than creating anything. It cost a document on development before the gate
+ * below existed: Soft Touch Lamination is referenced by 2 live case studies, so on
+ * production those two pages would have silently started saying "Soft Touch".
+ *
+ * They are also genuinely different things — the finish a customer picks, and the
+ * lamination that achieves it — so they coexist and the new one needs its own id.
+ */
+const ID_OVERRIDES = { 'Soft Touch': 'cap-soft-touch-finish-r2304' }
+
+/**
  * `achieves` (D47 §1) points FROM a technical option TO the simplified, customer-facing
  * option it can deliver. Notion stores the same relationship backwards, as
  * `Related Finishing` on the Surface Finish rows, so it is inverted here.
@@ -366,7 +383,12 @@ async function main() {
       errors.push(`Notion type "${nt}" has no entry in TYPE_PLAN — add one before importing.`)
       continue
     }
-    const existing = typeByTitle.get(plan.sanityTitle)
+    // Try the post-retitle name first. A lookup that only knows the old name fails on
+    // the second run — once "Pulls & Lifts" is "Opening & Access", the type looks
+    // missing and the import refuses. Same trap as TITLE_ALIASES above.
+    const existing =
+      (plan.retitleTo ? typeByTitle.get(plan.retitleTo) : undefined) ??
+      typeByTitle.get(plan.sanityTitle)
     if (existing) {
       typeIdFor.set(nt, existing._id)
       if (plan.retitleTo && existing.title !== plan.retitleTo) {
@@ -448,7 +470,10 @@ async function main() {
           }
         : null
 
-    const existing = optByTitle.get(TITLE_ALIASES[row.title] ?? row.title)
+    // Exact title first, alias second. Getting that order wrong breaks re-runs: once
+    // CCNB has been retitled to Notion's spelling, a lookup that only tries the alias
+    // finds nothing and the row is treated as new, creating a duplicate document.
+    const existing = optByTitle.get(row.title) ?? optByTitle.get(TITLE_ALIASES[row.title])
 
     if (existing) {
       // Patch, never replace — see the header. Only fields Notion has an opinion
@@ -472,7 +497,7 @@ async function main() {
     } else {
       const slug = slugify(row.title)
       creates.push({
-        _id: `cap-${slug}-r2304`,
+        _id: ID_OVERRIDES[row.title] ?? `cap-${slug}-r2304`, // == createIdFor(row.title)
         _type: 'customizationOption',
         title: row.title,
         slug: { _type: 'slug', current: slug },
@@ -520,11 +545,11 @@ async function main() {
   // ── 4. `achieves` on the existing technical options ───────────────────────
   const achievesPatches = []
   const achievesSkipped = []
-  const targetIdFor = (title) => {
-    const slug = slugify(title)
-    const existing = optByTitle.get(title)
-    return existing ? existing._id : `cap-${slug}-r2304`
-  }
+  // Must derive the id exactly the way the create path does, ID_OVERRIDES included —
+  // otherwise `achieves` points at `cap-soft-touch-r2304` (Soft Touch Lamination)
+  // instead of the new Soft Touch, and the relation becomes a self-reference.
+  const createIdFor = (title) => ID_OVERRIDES[title] ?? `cap-${slugify(title)}-r2304`
+  const targetIdFor = (title) => optByTitle.get(title)?._id ?? createIdFor(title)
   const achieves = new Map() // source option _id → Set of target option _id
   for (const row of rows) {
     if (!row.achievedBy?.length) continue
@@ -573,7 +598,24 @@ async function main() {
     deletes.push({ ...doc, draftId: draftIds.has(`drafts.${doc._id}`) ? `drafts.${doc._id}` : null })
   }
 
-  // ── 6. Slug uniqueness ────────────────────────────────────────────────────
+  // ── 6. Generated ids must be free ─────────────────────────────────────────
+  // The check that was missing. A `createOrReplace` whose `_id` already belongs to a
+  // different document does not create — it REPLACES, silently and with no warning.
+  // Comparing slugs is not enough: `soft-touch` and `soft-touch-lamination` are
+  // different slugs whose documents share an id, because the old seed abbreviated.
+  const existingById = new Map(options.map((o) => [o._id, o.title]))
+  for (const c of creates) {
+    const holder = existingById.get(c._id)
+    if (holder !== undefined && holder !== c.title) {
+      errors.push(
+        `"${c.title}" would be created at ${c._id}, which already belongs to ` +
+          `"${holder}" — a createOrReplace here would overwrite that document. ` +
+          `Add an entry to ID_OVERRIDES.`,
+      )
+    }
+  }
+
+  // ── 7. Slug uniqueness ────────────────────────────────────────────────────
   // The Studio's uniqueness rule is validation-only; the API accepts duplicates and
   // an editor discovers them later as an unsaveable document.
   // `options` is already one entry per published id, so a draft no longer looks like
@@ -619,7 +661,9 @@ async function main() {
   if (!typePropertyPatches.length) console.log(`   ℹ️  no type needs one — no row resolved a property value`)
 
   console.log(`\n4. achieves (Notion "Related Finishing", inverted)`)
-  achievesPatches.forEach((p) => console.log(`   ${apply ? '✏️ ' : '•'} ${p.title} achieves ${p.achieves.length}`))
+  achievesPatches.forEach((p) =>
+    console.log(`   ${apply ? '✏️ ' : '•'} ${p.title} → ${p.achieves.map((a) => a._ref).join(', ')}`),
+  )
   if (achievesSkipped.length) {
     console.log(`   ⚠️  ${plural(achievesSkipped.length, 'relation')} skipped, no Sanity option for the source:`)
     achievesSkipped.forEach((s) => console.log(`      · ${s}`))
@@ -638,6 +682,11 @@ async function main() {
     console.error(`\n    dataset=${DATASET}\n`)
     process.exit(1)
   }
+
+  // Predicted final count. Asserting this after the commit is what catches a silent
+  // overwrite — "no dangling references" does not, because an overwritten document
+  // still exists and still resolves; it just holds the wrong content now.
+  const expectedOptions = options.length - deletes.length + creates.length
 
   const writes =
     typeDocs.length +
@@ -685,15 +734,35 @@ async function main() {
   // success either way. That mistake has been made three times in this series.
   await tx.commit({ visibility: 'sync' })
 
+  // ⚠️ `count(refs[]->[!defined(_id)])` looks like a dangling-reference check and is
+  // NOT one — the filter's scope is not the dereferenced document, so `_id` is
+  // undefined for every entry and the count comes back equal to the total. It read
+  // "97 dangling" against an untouched production dataset. Subtracting what resolves
+  // from what is stored is unambiguous and was verified to agree on both datasets.
   const after = await client.fetch(`{
     "options": count(*[_type == "customizationOption" && !(_id in path("drafts.**"))]),
     "types": count(*[_type == "customizationType" && !(_id in path("drafts.**"))]),
-    "dangling": count(*[_type == "caseStudy"].capabilities[]->[!defined(_id)])
+    "capRefs": count(*[_type == "caseStudy"].capabilities[]._ref),
+    "capResolved": count(*[_type == "caseStudy"].capabilities[]->_id)
   }`)
+  const dangling = after.capRefs - after.capResolved
   console.log(`\n✅  Applied ${plural(writes, 'write')} in ${DATASET}.`)
-  console.log(`    options=${after.options} types=${after.types} dangling case-study references=${after.dangling}`)
-  if (after.dangling > 0) {
-    console.error(`\n❌  ${plural(after.dangling, 'case-study capability reference')} now dangling — investigate before deploying.\n`)
+  console.log(`    options=${after.options} (expected ${expectedOptions})  types=${after.types}`)
+  console.log(`    case-study capability references: ${after.capResolved}/${after.capRefs} resolve`)
+  let failed = false
+  if (dangling > 0) {
+    console.error(`\n❌  ${plural(dangling, 'case-study capability reference')} no longer resolves — investigate before deploying.`)
+    failed = true
+  }
+  if (after.options !== expectedOptions) {
+    console.error(
+      `\n❌  Expected ${expectedOptions} options, found ${after.options}. A create landed on ` +
+        `an existing document instead of making a new one — diff the titles before deploying.`,
+    )
+    failed = true
+  }
+  if (failed) {
+    console.error('')
     process.exit(1)
   }
   console.log('')
