@@ -1,0 +1,1246 @@
+{
+  "_readme": [
+    "Notion export: the `Demo`-checked rows of the four Customization databases.",
+    "Committed on purpose — `import-notion-customization-demo.mjs` reads this file, never Notion,",
+    "so the import is re-runnable by anyone with a Sanity token and no Notion access.",
+    "Regenerate by re-exporting the same columns from Notion; do not hand-edit copy here.",
+    "Only the columns the import actually consumes are present. Every image, Short Name,",
+    "SEO Page Title, FAQ and Color Range column was empty on all 113 rows and is omitted.",
+    "`Description` and `What is` are omitted deliberately: `What is` is a page heading, and",
+    "`Description` has no field on customizationOption (its designed home is glossaryTerm)."
+  ],
+  "exportedFrom": "Notion workspace `dotdirect` — Demo checkbox true",
+  "databases": [
+    {
+      "source": "Customization - Materials",
+      "notionDatabaseId": "34feb5db-19ec-8065-b0aa-fbdafd9722fc",
+      "category": "Material",
+      "rows": [
+        {
+          "title": "High-Impact Polystyrene (HIPS) Blister Plastic",
+          "notionType": "Blister Plastic",
+          "detailPage": true,
+          "whyUse": "Why Choose HIPS Plastic for Packaging Inserts?",
+          "benefits": "A cost-effective choice for durable, rigid, and opaque trays.\n\nGood impact strength and is less brittle than standard PS.\n\nVery easy to thermoform, capturing fine details.\n\nPopular material for cosmetic kits, electronic, and medical trays.",
+          "metaDescription": "Use HIPS plastic for custom packaging inserts. A low-cost, rigid, and durable opaque tray that offers reliable impact protection for your products.",
+          "filters": {}
+        },
+        {
+          "title": "Polyethylene Terephthalate (PET) Blister Plastic",
+          "notionType": "Blister Plastic",
+          "detailPage": true,
+          "whyUse": "Why Choose PET for Plastic Inserts?",
+          "benefits": "Exceptional clarity and a glass-like appearance.\n\nDemonstrate excellent strength and shatter resistance.\n\nFood-safe material with good barrier properties.\n\nWidely recyclable, supporting sustainability goals.",
+          "metaDescription": "Learn why PET is the most popular choice for clear thermoformed trays. Offering glass-like clarity with excellent strength and food-safe properties.",
+          "filters": {}
+        },
+        {
+          "title": "Polypropylene (PP) Blister Plastic",
+          "notionType": "Blister Plastic",
+          "detailPage": true,
+          "whyUse": "Why Choose Polypropylene (PP) for Plastic Trays or Inserts?",
+          "benefits": "Excellent heat resistance with a high melting point.\n\nHigh chemical resistance and excellent moisture barrier.\n\nVery durable, tough, and resistant to cracking or shattering.\n\nBest for microwaveable or hot-fill food trays and medical sterilization.",
+          "metaDescription": "Polypropylene (PP) is a durable, semi-rigid plastic with a high melting point and chemical resistance. Ideal for microwave meals or hot-fill food trays.",
+          "filters": {}
+        },
+        {
+          "title": "Black Chipboard (Pure Black Core)",
+          "notionType": "Chipboards",
+          "detailPage": true,
+          "whyUse": "Why Use Pure Black Core Chipboard for Packaging?",
+          "benefits": "Solid black core eliminates any visible grey edges.\n\nCreate the ultimate seamless, premium, all-black aesthetic.\n\nProvide a dramatic, high-contrast look when combined with speical finishes.\n\nIdeal for high-end electronics, premium spirits, or luxury gift boxes.",
+          "metaDescription": "Use pure black bore bhipboard for custom rigid boxes and inserts to get a premium, seamless, all-black look with solid black edges.",
+          "filters": {}
+        },
+        {
+          "title": "Standard Chipboard",
+          "notionType": "Chipboards",
+          "detailPage": true,
+          "whyUse": "Why Use Standard Chipboard for Packaging?",
+          "benefits": "Achieve the essential stiffness and sturdy structure for rigid boxes.\n\nMade from 100% recycled materials, aligning with sustainability goals.\n\nPerfect base for laminating or wrapping with custom-printed paper or fabric.\n\nAlso used for economical, uncoated rigid inserts or dividers where durability precedes.",
+          "metaDescription": "Standard chipboard (grey board) is the structural core of rigid boxes. Made from recycled fiber, it provides sturdiness and support beneath the outer wrap.",
+          "filters": {}
+        },
+        {
+          "title": "White-Lined Chipboard",
+          "notionType": "Chipboards",
+          "detailPage": true,
+          "whyUse": "Why Use White-Lined Chipboard for Packaging?",
+          "benefits": "Provide a clean, bright white interior finish for rigid boxes.\n\nEliminate the cost and labor of applying a separate interior paper liner.\n\nOffer a brighter, cleaner appearance than a standard grey interior.\n\nA cost-effective way to achieve a premium look and enhance unboxing.",
+          "metaDescription": "Use white-lined chipboard for custom rigid boxes to get a clean, white interior finish without the need for a separate white paper liner.",
+          "filters": {}
+        },
+        {
+          "title": "Kraft Corrugated Board",
+          "notionType": "Corrugated Board",
+          "detailPage": true,
+          "whyUse": "Why Choose Standard Kraft Corrugated Board for Packaging?",
+          "benefits": "Excellent strength, durability, and cushioning for product protection.\n\nA cost-effective and standard option for protective packaging.\n\nWith a natural brown color to offer a sustainable and rustic appeal\n\nA highly versatile material for boxes, structural inserts, and retail displays.",
+          "metaDescription": "Kraft corrugated board is the standard material for shipping boxes and cardboard cartons. Eco-friendly, durable, and low-cost for packaging and displays.",
+          "filters": {}
+        },
+        {
+          "title": "Litho-Laminated Corrugated Board",
+          "notionType": "Corrugated Board",
+          "detailPage": true,
+          "whyUse": "Why Choose Litho-Laminated Corrugated Board for Packaging?",
+          "benefits": "Delivers sharp, high-resolution graphics with vibrant and accurate colors.\n\nOffset printing captures fine details, gradients, and complex artwork.\n\nCoated art paper surface supports gloss, matte, and other finishing options.\n\nCombines premium presentation with the strength of corrugated construction.",
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "White Lined Corrugated Board",
+          "notionType": "Corrugated Board",
+          "detailPage": true,
+          "whyUse": "Why Choose White Lined Corrugated Board for Packaging?",
+          "benefits": "Smooth white surface supports clear, high-quality printing.\n\nCost-effective alternative to fully bleached white corrugated board.\n\nDurable corrugated construction provides reliable product protection.\n\nIdeal for shipping boxes with clean branding and simple graphics.",
+          "metaDescription": "White-lined corrugated board provides a clean, bright white surface. Ideal for high-quality, vibrant color printing on cardboard boxes and displays.",
+          "filters": {}
+        },
+        {
+          "title": "Coated Art Paper Wrap",
+          "notionType": "Exterior Wrap",
+          "detailPage": true,
+          "whyUse": "Why Use Coated Art Paper Wrap for Rigid Boxes?",
+          "benefits": "Delivers sharp, vibrant printing with excellent color accuracy and detail.\n\nSmooth coated surface provides a refined and premium appearance.\n\nCompatible with various finishes, including gloss, matte, and soft touch.\n\nVersatile option for a wide range of rigid box styles and applications.",
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Metallic Paper Wrap",
+          "notionType": "Exterior Wrap",
+          "detailPage": true,
+          "whyUse": "Why Use Metallic Wrap for Rigid Boxes?",
+          "benefits": "Creates a reflective, high-shine finish in shades such as gold, silver, copper, and rose gold.\n\nInstantly conveys a high-end, premium, and modern aesthetic.\n\nCreates a bold visual effect that helps packaging stand out on the retail shelf.\n\nProvides a distinctive specialty surface for luxury and statement packaging.",
+          "metaDescription": "Metallic wrap is a premium paper laminated with a metalized film or foil, creating a bright, reflective, mirror-like finish for rigid boxes.",
+          "filters": {}
+        },
+        {
+          "title": "Natural Brown Kraft Paper Wrap",
+          "notionType": "Exterior Wrap",
+          "detailPage": true,
+          "whyUse": "Why Use Natural Brown Kraft Paper Wrap for Rigid Boxes?",
+          "benefits": "Provide a natural, rustic, and eco-friendly aesthetic.\n\nThe uncoated surface delivers a raw, tactile texture.\n\nOffer high strength and tear resistance for a durable wrap.\n\nA cost-effective and recyclable wrapping material.",
+          "metaDescription": "Use natural brown kraft wrap for custom rigid boxes and inserts to get a strong, durable, and tear-resistant cover with a rustic, eco-friendly aesthetic.",
+          "filters": {}
+        },
+        {
+          "title": "Textured & Patterned Paper Wrap",
+          "notionType": "Exterior Wrap",
+          "detailPage": true,
+          "whyUse": "Why Use Textured & Patterned Wrap for Rigid Boxes?",
+          "benefits": "Creates a tactile experience that enhances customer engagement.\n\nAdds visual depth and premium appeal without relying on printed graphics.\n\nSupports luxury branding with sophisticated textures and patterns.\n\nHelps conceal minor scuffs, fingerprints, and surface imperfections.",
+          "metaDescription": "Textured paper wraps add a premium, tactile feel to custom rigid boxes, creating a sensory experience that encourages touch and conveys luxury.",
+          "filters": {}
+        },
+        {
+          "title": "Uncoated Artboard Paper Wrap",
+          "notionType": "Exterior Wrap",
+          "detailPage": true,
+          "whyUse": "Why Use Uncoated Artboard Paper Wrap for Rigid Boxes?",
+          "benefits": "Provide a premium, tactile, and non-reflective matte finish.\n\nCreate a sophisticated, minimalist, and understated aesthetic.\n\nResists fingerprints and glare better than gloss-coated papers.\n\nAn excellent surface for hot foil stamping, embossing, and debossing.",
+          "metaDescription": "Uncoated artboard wrap gives rigid boxes a premium, tactile, non-reflective matte finish. Perfect for an understated, minimalist and elegant aesthetic.",
+          "filters": {}
+        },
+        {
+          "title": "Cotton",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Use Cotton for Fabric Pouches and Bags?",
+          "benefits": "A soft, breathable, and lightweight fabric made of natural fiber.\n\nHighly sustainable material with excellent reusability and recyclability.\n\nCost-effective for versatile, all-purpose pouch applications.\n\nWashable and gets softer with use.",
+          "metaDescription": "Cotton fabric is a soft, breathable, and cost-effective, making it a top eco-friendly choice for packaging like reusable pouches and dust bags.",
+          "filters": {}
+        },
+        {
+          "title": "Flock Fabric",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Choose Flock Fabric for Pouches and Bags?",
+          "benefits": "Dense, plush, and velvet-like texture for enhanced tactile appeal.\n\nNon-abrasive surface protects delicate items from scratches.\n\nOffer a more structured and protective layer than a simple cloth.\n\nCreate a premium, high-end look and feel for luxury goods.",
+          "metaDescription": "Flock fabric offers a soft, non-abrasive, velvet-like texture, ideal for protecting delicate items like jewelry, eyewear, or electronics from scratches.",
+          "filters": {}
+        },
+        {
+          "title": "Linen",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Use Linen for Fabric Pouches and Bags?",
+          "benefits": "A highly durable and strong natural fiber.\n\nProvide a premium, elegant, and rustic aesthetic with a rough texture.\n\nAn eco-friendly and biodegradable material derived from the flax plant.\n\nLinen fabric is naturally breathable and anti-bacterial.",
+          "metaDescription": "Use linen fabric for eco-friendly and durable fabric pouches and bags. Its unique, rustic texture is perfect for your premium and artisanal goods.",
+          "filters": {}
+        },
+        {
+          "title": "Nylon",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Use Nylon for Fabric Pouches and Bags?",
+          "benefits": "Excellent durability with high tear and abrasion resistance.\n\nLightweight and soft while remaining extremely strong.\n\nProvide good water resistance to protect contents from moisture.\n\nWith a smooth, premium finish suitable for luxury goods and tech.",
+          "metaDescription": "Use nylon for fabric pouches and reusable bags. Lightweight yet highly durable, tear-resistant, and water-resistant bags with a smooth, premium finish.",
+          "filters": {}
+        },
+        {
+          "title": "Organza",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Choose Organza for Fabric Pouches and Bags?",
+          "benefits": "Sheer, translucent quality allows the product inside to be seen.\n\nProvide a delicate, elegant, and shimmering appearance.\n\nA very cost-effective and lightweight option for decorative gift packaging.\n\nAvailable in a vast range of colors.",
+          "metaDescription": "Use organza fabric for custom pouches to get a cost-effective, sheer, and elegant see-through bag, perfect for showcasing small gifts or jewelry.",
+          "filters": {}
+        },
+        {
+          "title": "Polyester",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Choose Polyester Fabric for Reusable Bags?",
+          "benefits": "Cost-effective and durable all-purpose synthetic fabric.\n\nResists wrinkling, shrinking, and stretching, holding its shape well.\n\nStrong and lightweight with good water and mildew resistance.\n\nAvailable in many colors for custom branding.",
+          "metaDescription": "Use polyester fabric for reusable bags to get a durable, low-cost, and versatile material that resists water, wrinkles, and shrinking for lasting use.",
+          "filters": {}
+        },
+        {
+          "title": "Satin",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Choose Satin for Fabric Pouches and Bags?",
+          "benefits": "Provide a high-gloss, lustrous shine that looks and feels luxurious.\n\nSmooth and soft surface ideal for protecting delicate items.\n\nInstantly communicate top quality and elegance for premium brands.\n\nDrape well and available in a wide range of deep, rich colors.",
+          "metaDescription": "Discover how the high-shine, smooth, and lustrous surface of satin fabric can create an elegant and luxurious pouch for your premium products.",
+          "filters": {}
+        },
+        {
+          "title": "Wool",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Use Wool Fabric or Wool Felt for Pouches and Bags?",
+          "benefits": "A durable and naturally elastic fiber for long-lasting use.\n\nProvide excellent natural cushioning and scratch protection.\n\nOffer a premium, soft, and warm tactile feel.\n\nConvey a rustic, organic, and artisanal aesthetic.",
+          "metaDescription": "Learn how wool fabric, especially wool felt, can be used to create thick, soft, and naturally cushioned pouches perfect for protecting high-end products.",
+          "filters": {}
+        },
+        {
+          "title": "Woven Polypropylene (WPP)",
+          "notionType": "Fabric",
+          "detailPage": true,
+          "whyUse": "Why Choose WPP Fabric for Reusable Bags?",
+          "benefits": "Provide exceptional strength and tear resistance for carrying bulky items.\n\nThe woven structure is highly durable and puncture-resistant.\n\nOften laminated, making it water-resistant and easy to wipe clean.\n\nA cost-effective choice for heavy-duty, long-lasting reusable bags.",
+          "metaDescription": "Use woven polypropylene (WPP) for reusable bags with excellent strength. Tear-resistant and waterproof woven fabric built to carry heavy items.",
+          "filters": {}
+        },
+        {
+          "title": "Ethylene Vinyl Acetate Foam (EVA Foam)",
+          "notionType": "Foam",
+          "detailPage": true,
+          "whyUse": "Why Use EVA Foam for Box Inserts?",
+          "benefits": "Dense, premium foam with a high-end feel and smooth surface.\n\nOffer excellent shock absorption with a firm, supportive structure.\n\nVery durable and non-abrasive, with excellent memory that returns to shape.\n\nCan be die-cut or laser-cut with extreme precision for intricate cavities.",
+          "metaDescription": "Use EVA foam for premium, high-end packaging box inserts. This dense, closed-cell memory foam offers firm support and can be laser-cut for a perfect fit.",
+          "filters": {}
+        },
+        {
+          "title": "Expanded Polyethylene Foam (EPE)",
+          "notionType": "Foam",
+          "detailPage": true,
+          "whyUse": "Why Use EPE Foam for Box Inserts?",
+          "benefits": "Durable, lightweight, and cost-effective foam insert option.\n\nExcellent all-purpose shock absorption for products requiring cushioning.\n\nSoft, non-abrasive surface that prevents scratching delicate finishes.\n\nClosed-cell structure provides resistance to moisture and liquids.",
+          "metaDescription": "EPE foam is a lightweight, semi-rigid, closed-cell insert, offering excellent shock absorption and a non-abrasive surface to protect delicate items.",
+          "filters": {}
+        },
+        {
+          "title": "Polyurethane Foam (PU Foam)",
+          "notionType": "Foam",
+          "detailPage": true,
+          "whyUse": "Why Use PU Foam for Box Inserts?",
+          "benefits": "Excellent shock absorption and vibration dampening.\n\nSoft, sponge-like structure ideal for cushioning delicate, scratch-sensitive items.\n\nVery lightweight to ensure minimal shipping costs.\n\nCan be easily fabricated into custom shapes or egg-crate designs.",
+          "metaDescription": "Use polyurethane (PU) foam inserts to protect delicate items. This soft and lightweight foam is ideal for shock absorption and vibration dampening.",
+          "filters": {}
+        },
+        {
+          "title": "High-Density Polyethylene (HDPE)",
+          "notionType": "Mailer Film",
+          "detailPage": true,
+          "whyUse": "Why Choose HDPE Plastic for Poly Mailer Bags?",
+          "benefits": "Stronger and more puncture-resistant compared to LDPE.\n\nStiff and crinkly to the touch with a milky appearance.\n\nOffer excellent moisture and chemical barrier properties.\n\nA durable and cost-effective option for shipping heavier or sharp items",
+          "metaDescription": "Use HDPE film for poly mailers with extra strength and durability. This rigid, puncture-resistant plastic is perfect for shipping heavy or sharp goods.",
+          "filters": {}
+        },
+        {
+          "title": "Linear Low-Density Polyethylene (LLDPE)",
+          "notionType": "Mailer Film",
+          "detailPage": true,
+          "whyUse": "Why Choose LLDPE for Poly Mailer Bags?",
+          "benefits": "Provide superior puncture and tear resistance.\n\nHigh strength allows downgauging (using thinner film) while remaining durable.\n\nA high-performance, low-cost choice with excellent flexibility and stretch.\n\nLightweight and water-resistant for secure shipping.",
+          "metaDescription": "Use LLDPE for custom poly mailers when durability is key. This tough, flexible film provides superior tear resistance and allows for thinner, lighter bags.",
+          "filters": {}
+        },
+        {
+          "title": "Low-Density Polyethylene (LDPE)",
+          "notionType": "Mailer Film",
+          "detailPage": true,
+          "whyUse": "Why Use LDPE for Poly Mailer Bags?",
+          "benefits": "Feature a soft, flexible, and stretchy texture.\n\nProvide good puncture and tear resistance due to its flexibility.\n\nLess \"crinkly\" and noisy than rigid HDPE films.\n\nA low-cost, lightweight, and waterproof material for all-purpose shipping.",
+          "metaDescription": "LDPE is a soft, flexible, and stretchy plastic film, offering good puncture and tear resistance for all-purpose, lightweight poly mailer bags at low cost.",
+          "filters": {}
+        },
+        {
+          "title": "Bamboo Pulp",
+          "notionType": "Molded Pulp",
+          "detailPage": true,
+          "whyUse": "Why Use Bamboo Pulp for Molded Pulp Packaging?",
+          "benefits": "Made from bamboo, a highly renewable and fast-growing resource.\n\nSuperior strength and durability with long and strong fibers.\n\nProvide greater rigidity and natural water resistance.\n\nA premium and tree-free alternative to wood pulp with a smooth finish.",
+          "metaDescription": "Bamboo fiber is a strong, highly renewable resource used to create molded pulp inserts that are more durable and water-resistant than wood pulp.",
+          "filters": {}
+        },
+        {
+          "title": "Recycled Paper Pulp",
+          "notionType": "Molded Pulp",
+          "detailPage": true,
+          "whyUse": "Why Use Recycled Pulp for Molded Pulp Packaging?",
+          "benefits": "Most common and cost-effective material for molded pulp inserts.\n\nHighly eco-friendly by reducing landfill waste.\n\nCreate a rustic, natural, and authentic look with a greyish-tan color.\n\nProvide reliable cushioning and bracing for a wide range of products.",
+          "metaDescription": "Learn how recycled paper (post-consumer waste) is used to create low-cost, eco-friendly molded pulp inserts with a rustic, natural texture.",
+          "filters": {}
+        },
+        {
+          "title": "Virgin Pulp (Wood Pulp)",
+          "notionType": "Molded Pulp",
+          "detailPage": true,
+          "whyUse": "Why Use Virgin Pulp for Molded Pulp Packaging?",
+          "benefits": "Provides a smooth, refined surface with a natural light cream appearance.\n\nLong, consistent fibers create strong and rigid molded pulp structures.\n\nCan be bleached for a brighter white appearance when desired.\n\nSuitable for premium molded pulp packaging and qualifying food-contact applications.",
+          "metaDescription": "Virgin pulp (wood pulp) creates strong, rigid molded inserts with a very smooth, clean white finish, often required for FDA food-contact compliance.",
+          "filters": {}
+        },
+        {
+          "title": "CCNB (Clay-Coated News Back)",
+          "notionType": "Paperboard",
+          "detailPage": true,
+          "whyUse": "Why Choose CCNB Paperboard for Packaging?",
+          "benefits": "Highly cost-effective and economical paperboard choice.\n\nMade from 100% recycled content, supporting sustainability goals.\n\nClay-coated white top surface allows high-quality, sharp printing.\n\nGood stiffness and performance for general-purpose packaging.",
+          "metaDescription": "CCNB paperboard is made from recycled pulp with a coated white top and a grey, uncoated back. A cost-effective material for folding carton packaging.",
+          "filters": {
+            "Filter - Material Source": [
+              "Recycled Fiber"
+            ],
+            "Filter - Physical Properties": [
+              "Coated",
+              "Unbleached"
+            ],
+            "Filter - Sustainability": [
+              "Recyclable",
+              "FSC® available",
+              "Recycled Content"
+            ]
+          }
+        },
+        {
+          "title": "Metallic Board",
+          "notionType": "Paperboard",
+          "detailPage": true,
+          "whyUse": "Why Use Metallic Board for Packaging?",
+          "benefits": "Create a bright, highly reflective, mirror-like metallic base for printing.\n\nAllow for a full spectrum of metallic colors by printing transparent inks on top.\n\nEnable high-contrast designs with opaque ink as a knockout base.\n\nProvide a high-impact, premium look that is more integrated than metallic ink.",
+          "metaDescription": "Learn how metalized paperboard is created to achieve a vibrant, reflective, full-color metallic look for high-imapct folding cartons.",
+          "filters": {
+            "Filter - Material Source": [
+              "Virgin Fiber"
+            ],
+            "Filter - Physical Properties": [
+              "Coated"
+            ],
+            "Filter - Aesthetic": [
+              "Special Effect"
+            ],
+            "Filter - Sustainability": [
+              "Recyclable",
+              "FSC® available"
+            ]
+          }
+        },
+        {
+          "title": "Natural Brown Kraft",
+          "notionType": "Paperboard",
+          "detailPage": true,
+          "whyUse": "Why Choose Natural Brown Kraft for Packaging?",
+          "benefits": "Made from eco-friendly, biodegradable virgin fiber.\n\nExcellent strength, stiffness, moisture, and tear resistance.\n\nNatural kraft color offers a rustic, organic aesthetic.\n\nUncoated surfaces encourage tactile engagement.",
+          "metaDescription": "Natural kraft paper is a virgin paperboard with uncoated surfaces, offering rustic, eco-friendly charm with high durability for folding cartons.",
+          "filters": {
+            "Filter - Material Source": [
+              "Virgin Fiber"
+            ],
+            "Filter - Physical Properties": [
+              "Uncoated",
+              "Unbleached"
+            ],
+            "Filter - Aesthetic": [
+              "Natural"
+            ],
+            "Filter - Sustainability": [
+              "Compostable",
+              "Recyclable",
+              "FSC® available"
+            ]
+          }
+        },
+        {
+          "title": "SBS (Solid Bleached Sulfate)",
+          "notionType": "Paperboard",
+          "detailPage": true,
+          "whyUse": "Why Choose SBS for Packaging?",
+          "benefits": "Premium bleached paperboard with bright white surface for high-impact graphics.\n\nSolid white core avoids dark or grey edges.\n\nIdeal for printing sharp and high-resolution images, easy to score and fold.\n\nWithout odor or taste, suitable for food and pharmaceutical products.",
+          "metaDescription": "Choose SBS paperboard in C1S/C2S for custom folding cartons. A premium, solid white material that provides a superior, clean surface for sharp printing.",
+          "filters": {
+            "Filter - Material Source": [
+              "Virgin Fiber"
+            ],
+            "Filter - Physical Properties": [
+              "Coated",
+              "Bleached"
+            ],
+            "Filter - Sustainability": [
+              "Recyclable",
+              "FSC® available"
+            ]
+          }
+        },
+        {
+          "title": "Textured & Patterned Specialty Board",
+          "notionType": "Paperboard",
+          "detailPage": true,
+          "whyUse": "Why Use Textured Paperboard for Packaging?",
+          "benefits": "Create a tactile and sensory experience that encourages touch.\n\nAdd a sophisticated visual element without relying on printed graphics.\n\nConvey a high-end, luxury, or nature-inspired aesthetic.\n\nTextured surface effectively hides minor scuffs or fingerprints.",
+          "metaDescription": "Discover how textured paperboards with special patterns like linen or leather can add a sophisticated, tactile dimension to folding cartons.",
+          "filters": {
+            "Filter - Material Source": [
+              "Virgin Fiber"
+            ],
+            "Filter - Physical Properties": [
+              "Uncoated"
+            ],
+            "Filter - Aesthetic": [
+              "Special Effect"
+            ],
+            "Filter - Sustainability": [
+              "Recyclable",
+              "FSC® available"
+            ]
+          }
+        },
+        {
+          "title": "White Kraft",
+          "notionType": "Paperboard",
+          "detailPage": true,
+          "whyUse": "Why Choose White Kraft for Packaging?",
+          "benefits": "Provides a clean white appearance throughout the board, including cut edges.\n\nStrong and durable construction supports demanding packaging applications.\n\nUncoated surface creates a natural, understated, and tactile aesthetic.\n\nMade from bleached virgin kraft fiber for a clean and consistent material.",
+          "metaDescription": "White Kraft paper provides the superior strength of kraft and the premium, clean look of a solid white paperboard. Perfect for high-end folding cartons.",
+          "filters": {
+            "Filter - Material Source": [
+              "Virgin Fiber"
+            ],
+            "Filter - Physical Properties": [
+              "Uncoated",
+              "Bleached"
+            ],
+            "Filter - Aesthetic": [
+              "Natural"
+            ],
+            "Filter - Sustainability": [
+              "Compostable",
+              "Recyclable",
+              "FSC® available"
+            ]
+          }
+        },
+        {
+          "title": "Kraft Paper Pouch Material",
+          "notionType": "Pouch Material",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Plastic Pouch Material",
+          "notionType": "Pouch Material",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Recyclable PE Pouch Material",
+          "notionType": "Pouch Material",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Biaxially Oriented Polypropylene (BOPP) Sticker Film",
+          "notionType": "Sticker Material",
+          "detailPage": true,
+          "whyUse": "Why Use BOPP Film for Stickers and Labels?",
+          "benefits": "Most cost-effective and versatile all-purpose label film.\n\nExcellent clarity and gloss finish offer a premium \"no-label\" look.\n\nProvide excellent durability, tear, moisture, and chemical resistance.\n\nBest for prime product labels on food, beverage, and cosmetic items.",
+          "metaDescription": "Need a durable, all-purpose label or sticker? BOPP is the most cost-effective industry standard, offering superior tear and water resistance.",
+          "filters": {}
+        },
+        {
+          "title": "Coated Sticker Paper",
+          "notionType": "Sticker Material",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Metallic Sticker Paper",
+          "notionType": "Sticker Material",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Polyester (PET) Sticker Film",
+          "notionType": "Sticker Material",
+          "detailPage": true,
+          "whyUse": "Why Use PET Film for Stickers and Labels?",
+          "benefits": "Offer superior durability, strength, and rigidity for long-lasting use.\n\nExcellent heat and chemical resistance compared to PP labels.\n\nDimensionally stable and will not shrink or stretch.\n\nProvide exceptional clarity for a premium look on luxury goods.",
+          "metaDescription": "Use Polyester (PET) film for durable, long-life labels. This rigid, heat-resistant film is perfect for tags on electronics, appliances, and premium goods.",
+          "filters": {}
+        },
+        {
+          "title": "Uncoated Sticker Paper",
+          "notionType": "Sticker Material",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Vinyl (PVC) Sticker Film",
+          "notionType": "Sticker Material",
+          "detailPage": true,
+          "whyUse": "Why Use Vinyl Film for Stickers and Labels?",
+          "benefits": "Excellent outdoor durability with superior UV, water, and weather resistance.\n\nHighly durable, flexible, and resistant to scuffs and abrasion.\n\nHighly conformable and adhere well to various surfaces.\n\nBest for outdoor decals, bumper stickers, and all-weather labels.",
+          "metaDescription": "Discover why Vinyl (PVC) film is the top choice for outdoor decals and labels, providing a tough, waterproof, and UV-resistant label that won't fade.",
+          "filters": {}
+        },
+        {
+          "title": "Aluminum",
+          "notionType": "Tin Box Material",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Tinplate",
+          "notionType": "Tin Box Material",
+          "detailPage": true,
+          "whyUse": "Why Use Tinplate for Tin Containers?",
+          "benefits": "Provide excellent durability and rigidity with a strong steel core.\n\nTin coating offers superior corrosion and rust resistance.\n\nCreate a strong barrier against light, moisture, and oxygen.\n\nProvide a premium, metallic surface that supports high-quality printing.",
+          "metaDescription": "Tinplate is a tin-coated steel material, offering a strong, durable, and corrosion-resistant solution for creating high-end, premium tin containers.",
+          "filters": {}
+        }
+      ]
+    },
+    {
+      "source": "Customization - Finishing",
+      "notionDatabaseId": "391eb5db-19ec-8018-af72-da2dd6635a72",
+      "category": "Finishes",
+      "rows": [
+        {
+          "title": "Blind Debossing",
+          "notionType": "Embossing & Debossing",
+          "detailPage": true,
+          "whyUse": "Why Use Blind Debossing on Packaging?",
+          "benefits": "Create a clean, subtle recessed impression without ink or foil.\n\nEmphasize elements like brand names and logos with a minimalist aesthetic.\n\nAdd an elegant tactile quality with depth that encourages interactions.\n\nA refined and understated way to achieve premium branding.",
+          "metaDescription": "Blind debossing creates a recessed image on packaging using only pressure, without ink or foil. A subtle, sophisticated effect to achieve premium branding.",
+          "filters": {
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Blind Embossing",
+          "notionType": "Embossing & Debossing",
+          "detailPage": true,
+          "whyUse": "Why Use Blind Embossing on Packaging?",
+          "benefits": "Create clean, subtle raised designs without ink or foil.\n\nHighlight elements like brand names and logos with a minimalist aesthetic.\n\nAdd elegant, sophisticated tactile details that encourage interactions.\n\nA refined and understated way to achieve premium branding.",
+          "metaDescription": "Use blind embossing to create 3D raised patterns, text, or logos on your packaging. Enhance tactile appeal and premium branding with subtle elegance.",
+          "filters": {
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Registered Debossing",
+          "notionType": "Embossing & Debossing",
+          "detailPage": true,
+          "whyUse": "Why is Precise Registration Important for Debossing?",
+          "benefits": "Ensures the debossed area perfectly aligns with the printing or foil.\n\nCreates a crisp, clean look reflecting a brand's attention to detail.\n\nAdds depth and emphasis to specific elements like brand name and logo.\n\nEnhances professional brand image and packaging appeal.",
+          "metaDescription": "Registered debossing precisely aligns indented impression with printing or foil, adding clean, professional depth to specific design elements like logos.",
+          "filters": {
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Registered Embossing",
+          "notionType": "Embossing & Debossing",
+          "detailPage": true,
+          "whyUse": "Why is Precise Registration Important for Embossing?",
+          "benefits": "Ensures the embossed area perfectly aligns with the printing or foil.\n\nCreates a crisp, clean look reflecting a brand's attention to detail.\n\nAdds emphasis to specific printed elements like brand name and logo with a raised effect.\n\nEnhances professional brand image and packaging appeal.",
+          "metaDescription": "Registered embossing precisely aligns a raised impression with printing or foil, adding a crisp, high-impact effect to specific design elements like logos.",
+          "filters": {
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Textured Embossing & Debossing",
+          "notionType": "Embossing & Debossing",
+          "detailPage": true,
+          "whyUse": "Why Use Textured Embossing on Packaging?",
+          "benefits": "Combine raised designs with intricate patterns and textures.\n\nAdd unique tactile and visual complexity to encourage interactions.\n\nSimulate special materials like leather or woodgrain to enhance perceived value.\n\nCreates a sophisticated, premium feel that elevates brand image.",
+          "metaDescription": "Discover how textured embossing uses patterned dies to create raised areas with a unique tactile finish. Elevating packaging luxury and brand image.",
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Textured"
+            ],
+            "Filter - Coverage": [
+              "Full Surface"
+            ]
+          }
+        },
+        {
+          "title": "Cold Foiling",
+          "notionType": "Foiling Technique",
+          "detailPage": true,
+          "whyUse": "Why Use Cold Foiling on Packaging?",
+          "benefits": "Achieve through inline cold foil printing, saving production steps.\n\nAllows for fine details, gradients, and halftones in the foil design.\n\nCold foil can be overprinted, varnished, or laminated for protection or unique color effects.\n\nA cost-effective and time-efficient foiling method without costly metal dies.",
+          "metaDescription": "Cold foiling applies metallic, holographic, or colored foil using UV-cured adhesive, allowing fine details, gradients, and overprinting on packaging.",
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Metallic"
+            ],
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Edge Foiling/Gilt Edging",
+          "notionType": "Foiling Technique",
+          "detailPage": true,
+          "whyUse": "Why Use Edge Foiling on Packaging?",
+          "benefits": "Add a striking metallic or holographic accent to the edges.\n\nHighlight the thickness and quality of the substrate used.\n\nCreate a premium, luxurious look to justify higher price points.\n\nDurable details that are resistant to scuffs and fading, for a long-lasting impact.",
+          "metaDescription": "Edge foiling or gliding applies metallic details to the thick edges of rigid boxes or cartons. Highlight premium quality with a luxurious, shiny accent.",
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Metallic"
+            ],
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Hot Foil Stamping",
+          "notionType": "Foiling Technique",
+          "detailPage": true,
+          "whyUse": "Why Use Hot Foil Stamping on Packaging?",
+          "benefits": "Create bright, opaque metallic, holographic, or pigmented details.\n\nHighlight brand logos, text, and artwork with eye-catching accents.\n\nEnhance the luxury, perceived quality, and value of your products.\n\nWorks well on a wide range of paper materials and some fabric surfaces.",
+          "metaDescription": "Want shiny, metallic details? Hot foil stamping offers a classic, high-impact way to add gold, silver, or colored foils to your packaging design or logo.",
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Metallic"
+            ],
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Internal Aqueous Lining",
+          "notionType": "Food-Safe Treatment",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {
+            "Filter - Coverage": [
+              "Full Surface"
+            ]
+          }
+        },
+        {
+          "title": "Internal PE Lining",
+          "notionType": "Food-Safe Treatment",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {
+            "Filter - Coverage": [
+              "Full Surface"
+            ]
+          }
+        },
+        {
+          "title": "Wax Coating",
+          "notionType": "Food-Safe Treatment",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {
+            "Filter - Coverage": [
+              "Full Surface"
+            ]
+          }
+        },
+        {
+          "title": "Paper Lamination",
+          "notionType": "Lamination",
+          "detailPage": true,
+          "whyUse": "Why Laminate Paper onto Foam or Plastic Inserts?",
+          "benefits": "Provide a printable surface directly on the insert for branding or info.\n\nConceal the raw foam or plastic material for enhanced aesthetics.\n\nAllows for custom colors, textures, or finishes on the insert.\n\nCreates a more premium and finished appearance inside the box.",
+          "metaDescription": "Paper lamination applies a custom paper sheet onto foam or plastic inserts, providing a printable surface and a premium, refined look inside the box.",
+          "filters": {
+            "Filter - Coverage": [
+              "Full Surface"
+            ]
+          }
+        },
+        {
+          "title": "Matte Spot UV",
+          "notionType": "Spot Coating",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Matte"
+            ],
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Spot Glitter",
+          "notionType": "Spot Coating",
+          "detailPage": true,
+          "whyUse": "Why Add Spot Glitter to Packaging?",
+          "benefits": "Create a high-impact, dazzling sparkle effect on targeted areas.\n\nAdd a noticeable, gritty texture that enhances sensory appeal.\n\nAdd a celebratory or lively feel to attract consumers.\n\nAvailable in a wide variety of glitter colors, sizes, and densities.",
+          "metaDescription": "Apply spot glitter to your packaging for targeted, high-impact sparkle. Highlight key areas on boxes or bags with a textured, eye-catching finish.",
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Glitter"
+            ],
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Spot UV / Spot Gloss",
+          "notionType": "Spot Coating",
+          "detailPage": true,
+          "whyUse": "Why Add Spot UV to Packaging?",
+          "benefits": "Create a striking high-gloss contrast against matte lamination or uncoated surfaces.\n\nHighlight and draw attention to key design elements like logos and brand names.\n\nAdd a subtle, premium tactile dimension that encourages touch.\n\nEnhance perceived value and sophistication for premium products.",
+          "metaDescription": "Use Spot UV coating to add high-gloss details to your packaging, making logos and texts pop with a premium, tactile finish on matte surfaces.",
+          "filters": {
+            "Filter - Finish/Effect": [
+              "Gloss"
+            ],
+            "Filter - Coverage": [
+              "Spot Effect"
+            ]
+          }
+        },
+        {
+          "title": "Flocking",
+          "notionType": "Surface Coating",
+          "detailPage": true,
+          "whyUse": "Why Add Flocking to Your Packaging Inserts?",
+          "benefits": "Create a plush, velvet-like texture for a rich and tactile unboxing experience.\n\nProvide a non-abrasive surface for protecting delicate items from scratches.\n\nEnhance the perceived value and luxury of the products and the brand.\n\nCan be applied precisely to complex shapes and cavities.",
+          "metaDescription": "Add flocking on custom plastic trays or foam inserts for a premium soft, velvet-like finish that protects your jewelry, cosmetics, or fragile products in style.",
+          "filters": {
+            "Filter - Coverage": [
+              "Full Surface"
+            ]
+          }
+        },
+        {
+          "title": "Gloss",
+          "notionType": "Surface Finish",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {},
+          "achievedBy": [
+            "Gloss Lamination",
+            "UV Coating",
+            "AQ Coating (Aqueous)",
+            "Varnish Coating"
+          ]
+        },
+        {
+          "title": "Matte",
+          "notionType": "Surface Finish",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {},
+          "achievedBy": [
+            "Matte Lamination",
+            "UV Coating",
+            "AQ Coating (Aqueous)",
+            "Varnish Coating"
+          ]
+        },
+        {
+          "title": "Soft Touch",
+          "notionType": "Surface Finish",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {},
+          "achievedBy": [
+            "Soft Touch/Velvet Lamination",
+            "Soft Touch Coating"
+          ]
+        },
+        {
+          "title": "Uncoated / No Surface Finish",
+          "notionType": "Surface Finish",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Gloss (for non-paper)",
+          "notionType": "Surface Finish (non-paper)",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Matte (for non-paper)",
+          "notionType": "Surface Finish (non-paper)",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Soft Touch (for non-paper)",
+          "notionType": "Surface Finish (non-paper)",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        }
+      ]
+    },
+    {
+      "source": "Customization - Printing",
+      "notionDatabaseId": "392eb5db-19ec-8075-adb6-d725bae84354",
+      "category": "Printing",
+      "rows": [
+        {
+          "title": "CMYK Full Color",
+          "notionType": "Color System",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Hybrid Color (CMYK + Pantone)",
+          "notionType": "Color System",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Pantone Spot Color",
+          "notionType": "Color System",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Metallic Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": "Why Use Metallic Ink on Packaging?",
+          "benefits": "Creates a striking, shiny, metallic luster that catches the eye.\n\nImmediately signals luxury, premium quality, and high value.\n\nAvailable in various shades like gold, silver, bronze, copper, and more.",
+          "metaDescription": "Use metallic ink on your custom packaging for a shiny, reflective finish. Real metal flakes create a luxury look that instantly grabs attention.",
+          "filters": {}
+        },
+        {
+          "title": "Plastisol Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Solvent-Based Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": "Why Use Solvent-Based Ink for Packaging?",
+          "benefits": "Excellent adhesion on non-porous materials like plastics and metals.\n\nAchieve vibrant colors and crisp printing.\n\nHighly durable and weather-resistant for heavy-duty use.\n\nFast drying and facilitates high-volume printing.",
+          "metaDescription": "Use solvent-based ink for fast, durable printing on plastic pouches, poly mailers, labels, and metal tins where strong adhesion is essential.",
+          "filters": {}
+        },
+        {
+          "title": "Soy-Based Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": "Why Use Soy-Based Ink on Packaging?",
+          "benefits": "Derived from renewable and biodegradable resources.\n\nAchieve sharp printing and vibrant colors.\n\nSafer option for food contact packaging.\n\nEasy to remove during the paper recycling process.\n\nEnhance a brand's sustainable and eco-friendly image.",
+          "metaDescription": "Choose soy-based ink for eco-friendly printing on boxes and bags. Get vibrant colors, low VOC emissions, and better recyclability than oil-based inks.",
+          "filters": {}
+        },
+        {
+          "title": "Thermochromic Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": "Why Use Thermochromic Ink on Packaging?",
+          "benefits": "Creates an interactive effect through color change, like revealing hidden messages.\n\nAdds a unique novelty factor that highly engages consumers.\n\nIndicates if the product is properly stored or safe to consume.\n\nServes as a potential anti-counterfeiting or tamper-evident feature.",
+          "metaDescription": "Find out how thermochromic ink adds a surprising, temperature-activated color change effect to custom boxes or labels for interactive engagement.",
+          "filters": {}
+        },
+        {
+          "title": "UV Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": "Why Use UV Ink on Packaging?",
+          "benefits": "Delivers sharp details and vibrant colors with excellent durability.\n\nExcellent adhesion to a wide range of porous and non-porous materials.\n\nInstant drying and curing that allows for efficient production\n\nVOC-free printing and curing process make it an eco-friendly ink.",
+          "metaDescription": "Discover how UV ink allows for fast curing, high durability, and versatile printing on almost any packaging material, from paper to plastic and metal.",
+          "filters": {}
+        },
+        {
+          "title": "Water-Based Ink",
+          "notionType": "Ink",
+          "detailPage": true,
+          "whyUse": "Why Use Water-Based Ink on Packaging?",
+          "benefits": "Eco-friendly ink with low VOC emissions and reduced odor.\n\nGood adhesion and print quality on porous surfaces like paper.\n\nA non-toxic, safe option for food packaging and children's products.\n\nContributes to a positive, sustainable brand image.",
+          "metaDescription": "Water-based ink is a safe, low-VOC, and eco-friendly option for printing on packaging, ideal for food products and sustainable brands.",
+          "filters": {}
+        },
+        {
+          "title": "Digital Printing",
+          "notionType": "Printing Method",
+          "detailPage": true,
+          "whyUse": "Why Choose Digital Printing for Packaging?",
+          "benefits": "Extremely cost-effective for short print runs due to minimal setup effort.\n\nProvides fast turnaround times for prototypes, samples, and time-sensitive projects.\n\nAllows for Variable Data Printing (VDP), enabling complex personalization and serialization.\n\nEco-friendly with less waste, lower emissions, and fewer chemicals used.",
+          "metaDescription": "Use digital printing for short runs or highly personalized packaging. Benefit from no plate costs, fast turnarounds, and variable data on your packaging.",
+          "filters": {}
+        },
+        {
+          "title": "Flexographic Printing",
+          "notionType": "Printing Method",
+          "detailPage": true,
+          "whyUse": "Why Choose Flexographic Printing for Packaging?",
+          "benefits": "Highly efficient and cost-effective for medium to long print runs and large volumes.\n\nPrints well on diverse materials, including uneven and absorbent corrugated board.\n\nCompatible with various ink types, such as eco-friendly water-based options.\n\nSuitable for solid colors, line work, and basic graphics.",
+          "metaDescription": "Use flexographic printing for high-volume corrugated box and folding carton production. Benefit from high speeds and cost savings on larger runs.",
+          "filters": {}
+        },
+        {
+          "title": "Gravure Printing (Rotogravure)",
+          "notionType": "Printing Method",
+          "detailPage": true,
+          "whyUse": "Why Choose Gravure Printing for Packaging?",
+          "benefits": "Durable, engraved cylinders allow for millions of impressions without degradation.\n\nDelivers outstanding print quality and rich color densities at high speed.\n\nAchieves consistent results over extremely long runs.\n\nIdeal for mass production of flexible films, pouches, and labels.",
+          "metaDescription": "Gravure printing offers unmatched quality and speed for commercial high-volume packaging like flexible pouches, film labels, premium cartons, and liners.",
+          "filters": {}
+        },
+        {
+          "title": "Offset Printing (Lithography)",
+          "notionType": "Printing Method",
+          "detailPage": true,
+          "whyUse": "Why Choose Offset Printing for Packaging?",
+          "benefits": "Produces exceptionally high-quality images with sharp details and text.\n\nExcellent color consistency and cost-effective for medium to large volume production.\n\nVersatile printing on paper, paperboard, and liners for lamination.\n\nWide range of ink and coating options available for visual enhancement.",
+          "metaDescription": "Offset printing delivers superior image quality with sharp details and color consistency for paper, rigid box wraps, labels, bags, and corrugated displays.",
+          "filters": {}
+        },
+        {
+          "title": "Screen Printing (Silkscreen)",
+          "notionType": "Printing Method",
+          "detailPage": true,
+          "whyUse": "Why Choose Screen Printing for Packaging?",
+          "benefits": "Achieve excellent ink opacity and vibrant colors, ensuring visibility even on dark surfaces.\n\nIdeal for applying thick layers, such as high-build spot UV or tactile effects on logos and labels.\n\nDurable print results that are resistant to fading and scratching.\n\nSuitable for a wide variety of packaging materials.",
+          "metaDescription": "Silk screen printing offers excellent ink opacity and vibrancy. Perfect for bold graphics on boxes, bags, and displays, or for applying special effects.",
+          "filters": {}
+        }
+      ]
+    },
+    {
+      "source": "Customization - Additional Customization",
+      "notionDatabaseId": "392eb5db-19ec-8092-aea9-f2c87374f42e",
+      "category": "Additional Customization",
+      "rows": [
+        {
+          "title": "Child Resistant Closures (Rigid Boxes)",
+          "notionType": "Closures",
+          "detailPage": true,
+          "whyUse": "Why Use Child Resistant Closures for Rigid Boxes?",
+          "benefits": "Meets strict legal requirements for regulated industries.\n\nPrevents accidental access by children, ensuring product safety.\n\nBuilds brand credibility by showing a commitment to consumer safety.\n\nProvides a secure closure that enhances the product's premium feel.",
+          "metaDescription": "Child-resistant closures for rigid boxes provide certified safety, ensuring your products meet legal standards for regulated markets like cannabis.",
+          "filters": {}
+        },
+        {
+          "title": "Magnetic Closure",
+          "notionType": "Closures",
+          "detailPage": true,
+          "whyUse": "Why Use Magnetic Closures on Your Rigid Boxes?",
+          "benefits": "Creates a clean, seamless appearance with no external hardware.\n\nProvides a user-friendly closure that is easy to open and reseal.\n\nDelivers a premium unboxing experience with an audible \"snap.\"\n\nKeeps the box securely closed during handling.",
+          "metaDescription": "Create a premium feel with magnetic closures for custom rigid boxes. Learn how this seamless feature can elevate your brand's unboxing experience.",
+          "filters": {}
+        },
+        {
+          "title": "Standard Zipper",
+          "notionType": "Closures",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Tab Lock",
+          "notionType": "Closures",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Tin Tie",
+          "notionType": "Closures",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Velcro",
+          "notionType": "Closures",
+          "detailPage": true,
+          "whyUse": "Why Use a Velcro Closure for Your Packaging?",
+          "benefits": "Provides a strong, secure hold that is reliable for repeated use.\n\nOffers a unique and satisfying sound and feel during unboxing.\n\nAdds a functional, resealable closure to your custom boxes and bags.\n\nCost-effective alternative to magnetic closures or zippers.",
+          "metaDescription": "Use Velcro closures for a secure, resealable feature on reusable bags and rigid boxes. Explore unique closure options to make your packaging stand out.",
+          "filters": {}
+        },
+        {
+          "title": "Embedded LED Lighting",
+          "notionType": "Embellishments",
+          "detailPage": true,
+          "whyUse": "Why Add Embedded LED Lighting to Your Packaging?",
+          "benefits": "Generates an impactful \"reveal\" moment the instant the box is opened.\n\nSpotlights the product, making it the clear center of attention.\n\nDirectly signals a premium product and significant value.",
+          "metaDescription": "Discover how sensor-activated LED lighting built into a rigid box creates a stunning, illuminated reveal for your high-value luxury products.",
+          "filters": {}
+        },
+        {
+          "title": "Metal Plaque",
+          "notionType": "Embellishments",
+          "detailPage": true,
+          "whyUse": "Why Use Metal Plaques on Rigid Boxes?",
+          "benefits": "Adds a tangible sense of weight and premium quality to the box.\n\nCreates a durable, high-end branding element that stands out.\n\nSignals a message of luxury, heritage, and craftsmanship.\n\nAvailable in various materials and metallic sheen to match your branding.",
+          "metaDescription": "See how a custom-engraved metal plaque can be added to your rigid boxes to communicate a strong, lasting message of heritage and luxury.",
+          "filters": {}
+        },
+        {
+          "title": "Mirror",
+          "notionType": "Embellishments",
+          "detailPage": true,
+          "whyUse": "Why Add a Mirror to Your Packaging?",
+          "benefits": "Adds practical, on-the-go functionality for beauty and jewelry products.\n\nIncreases the perceived value and luxury of your brand.\n\nCreates a bright and engaging presentation when the box is opened.\n\nEncourages long-term use of the box as a reusable keepsake.",
+          "metaDescription": "A custom mirror inside a rigid box adds on-the-go functionality and a bright, premium feel for beauty products, turning the package into a keepsake.",
+          "filters": {}
+        },
+        {
+          "title": "Diecut Handle",
+          "notionType": "Handles",
+          "detailPage": true,
+          "whyUse": "Why Choose a Diecut Handle for Shopping Bags?",
+          "benefits": "Creates a clean, minimalist, and modern look for your bags.\n\nA cost-effective option that requires no additional materials.\n\nProvides a comfortable grip when properly reinforced.\n\nDie-cut into unique shapes and stand out from standard bags.",
+          "metaDescription": "A diecut handle gives paper shopping bags a clean, modern look by integrating the handle directly into the bag's design for a minimalist aesthetic.",
+          "filters": {}
+        },
+        {
+          "title": "Grosgrain Ribbon Handle",
+          "notionType": "Handles",
+          "detailPage": true,
+          "whyUse": "Why Choose a Grosgrain Ribbon Handle?",
+          "benefits": "The ribbed texture provides a classic, professional appearance.\n\nMore durable and robust than smoother satin ribbon options.\n\nThe coarse surface offers an understated and sophisticated look.\n\nAvailable in a wide variety of colors to match your branding.",
+          "metaDescription": "The distinct ribbed texture of a grosgrain ribbon handle offers a durable, sophisticated, and professional handle option for luxury packaging.",
+          "filters": {}
+        },
+        {
+          "title": "Metal Handle",
+          "notionType": "Handles",
+          "detailPage": true,
+          "whyUse": "Why Add a Metal Handle to Your Packaging?",
+          "benefits": "Offers maximum durability and a very secure carrying grip.\n\nAdds a unique vintage, industrial, or high-end mechanical look.\n\nGreatly increases the perceived value and keepsake quality of the box.\n\nA robust handle option for heavy-duty packaging needs.",
+          "metaDescription": "Metal handles for rigid and tin boxes provide exceptional strength and a distinct vintage look, turning your package into a durable keepsake case.",
+          "filters": {}
+        },
+        {
+          "title": "Twisted Paper Handle",
+          "notionType": "Handles",
+          "detailPage": true,
+          "whyUse": "Why Choose a Twisted Paper Handle for Shopping Bags?",
+          "benefits": "More durable and stronger than standard flat paper handles.\n\nThe twisted cord is comfortable to hold, even with heavier items.\n\nProvides a premium and professional look for custom paper bags.\n\nAn eco-friendly, fully recyclable handle option for sustainable brands.",
+          "metaDescription": "Learn why the strong, cord-like construction of a twisted paper handle makes it the popular choice for durable and professional retail bags.",
+          "filters": {}
+        },
+        {
+          "title": "Ribbon Lift",
+          "notionType": "Opening & Access",
+          "detailPage": true,
+          "whyUse": "Why Use a Ribbon Lift in Packaging?",
+          "benefits": "Allows for the easy and safe removal of tightly fitted products.\n\nPrevents damage to the contents that can occur from prying them out.\n\nAdds a user-friendly, elegant, and thoughtful detail to the design.\n\nCreates a more luxurious and interactive unboxing experience.",
+          "metaDescription": "Learn how a simple ribbon lift glued to the bottom of a rigid box provides an elegant solution for safely lifting out tightly fitted contents.",
+          "filters": {}
+        },
+        {
+          "title": "Ribbon Pull",
+          "notionType": "Opening & Access",
+          "detailPage": true,
+          "whyUse": "Why Use a Ribbon Pull on Packaging?",
+          "benefits": "Provides a functional grip to lift open a hinged lid with minimal effort.\n\nAdds a subtle, elegant, and user-friendly detail to the design.\n\nA cost-effective way to improve the unboxing experience.\n\nFully customizable with different ribbon materials, colors, and widths.",
+          "metaDescription": "A ribbon pull is a small, elegant tab added to the edge of a hinged lid on a custom box, making it much easier to lift open with a simple pull.",
+          "filters": {}
+        },
+        {
+          "title": "Ribbon Pull Tab",
+          "notionType": "Opening & Access",
+          "detailPage": true,
+          "whyUse": "Why Use Ribbon Pull Tabs on Packaging?",
+          "benefits": "Functions as an elegant and effective handle for pulling drawer boxes.\n\nAdds a soft, premium touch to the unboxing interaction.\n\nOffers a wide range of color options to align with your branding.\n\nA classic and cost-effective solution for improving usability.",
+          "metaDescription": "A ribbon pull tab adds a classic, functional loop to drawer-style boxes and cartons, making them easy to pull open with an elegant, cost-effective touch.",
+          "filters": {}
+        },
+        {
+          "title": "Tear Notch",
+          "notionType": "Opening & Access",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Tear Strip",
+          "notionType": "Opening & Access",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Bubble Lining",
+          "notionType": "Reinforcement & Utility",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Degassing Valve",
+          "notionType": "Reinforcement & Utility",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Hang Hole",
+          "notionType": "Reinforcement & Utility",
+          "detailPage": false,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Metal Corner Protectors",
+          "notionType": "Reinforcement & Utility",
+          "detailPage": true,
+          "whyUse": "Why Use Metal Corner Protectors on Rigid Boxes?",
+          "benefits": "Protects corners from bumps, dents, and everyday wear.\n\nGreatly enhances the durability and lifespan of the box.\n\nAdds a premium, vintage, or industrial design element.\n\nIncreases the perceived value and keepsake quality of the packaging.",
+          "metaDescription": "Decorative metal corner protectors safeguard rigid boxes from dents and damage. Add a touch of premium, vintage style while ensuring lasting durability.",
+          "filters": {}
+        },
+        {
+          "title": "Paper Wallet",
+          "notionType": "Reinforcement & Utility",
+          "detailPage": true,
+          "whyUse": "Why Add a Paper Wallet to Your Packaging?",
+          "benefits": "Functions as a dedicated \"pouch\" to securely hold booklets or manuals.\n\nConsolidates multiple documents and cards into one organized spot.\n\nDelivers a professional and impressive presentation for kits.\n\nCan be fully branded to act as a standalone marketing piece.",
+          "metaDescription": "Organize documents with a custom paper wallet for packaging boxes. Neatly hold booklets, cards, user manuals, or marketing materials.",
+          "filters": {}
+        },
+        {
+          "title": "Diecut Window",
+          "notionType": "Windows",
+          "detailPage": true,
+          "whyUse": "Why Use a Diecut Window on Packaging?",
+          "benefits": "Allows customers to directly see and touch the product inside.\n\nCreates unique storytelling with custom-shaped cut-outs.\n\nShowcases product materials, colors, or textures effectively.\n\nA plastic-free window option for eco-friendly packaging goals.",
+          "metaDescription": "Create a custom diecut window to let customers see and touch your product. Explore shaped cut-outs to make your packaging interactive and unique.",
+          "filters": {}
+        },
+        {
+          "title": "Pouch Window",
+          "notionType": "Windows",
+          "detailPage": true,
+          "whyUse": null,
+          "benefits": null,
+          "metaDescription": null,
+          "filters": {}
+        },
+        {
+          "title": "Window Patching",
+          "notionType": "Windows",
+          "detailPage": true,
+          "whyUse": "Why Use Window Patching on Packaging?",
+          "benefits": "Allows customers to see the product without opening the package.\n\nProtects contents from dust, dirt, and damage during handling.\n\nBuilds consumer trust by showing the actual product's color and quality.\n\nCreates a premium, retail-ready presentation that can boost sales.",
+          "metaDescription": "Add a clear window patch to your packaging to showcase the product inside, build customer trust, and maintain a high-end, protective presentation.",
+          "filters": {}
+        }
+      ]
+    }
+  ]
+}
