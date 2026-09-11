@@ -4,6 +4,7 @@ import {ArrowRightIcon, PackageIcon} from 'lucide-react';
 
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 import {
     fetchProductCatalog,
     solutionTypeLabel,
@@ -52,15 +53,17 @@ function ProductCard({product}: {product: ProductCatalogItem}) {
             className="group flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl  transition-shadow hover:shadow-md bg-[#ececec]"
         >
             {/* Image */}
-            <div className="relative aspect-square w-full shrink-0 flex items-center justify-center overflow-hidden">
+            <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-muted">
                 {product.thumbUrl ? (
-                    <img
-                        src={product.thumbUrl}
-                        alt={product.thumbAlt ?? product.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                    <MediaSettleZoom>
+                        <img
+                            src={product.thumbUrl}
+                            alt={product.thumbAlt ?? product.name}
+                            className="size-full object-cover"
+                        />
+                    </MediaSettleZoom>
                 ) : (
-                    <PackageIcon className="text-muted-foreground size-12 opacity-40" />
+                    <PackageIcon className="absolute inset-0 m-auto size-12 text-muted-foreground opacity-40" />
                 )}
             </div>
 

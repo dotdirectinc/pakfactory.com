@@ -1,113 +1,33 @@
-import Link from 'next/link';
-import {Package} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {ProductCatalogCard} from '@/components/product/product-catalog-card';
 import {
     ProductCard,
     type ProductCardData,
 } from '@/components/product/product-card';
-import {Icon} from '@/components/ui/icon';
-import {SanityImage} from '@/components/ui/sanity-image';
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
 
 const TILE_GRID_CLASS =
-    'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
+    'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:gap-8';
 
-function TileMedia({src, alt}: {src?: string; alt: string}) {
-    return (
-        <div className="relative flex aspect-square items-center justify-center bg-muted/40">
-            {src ? (
-                <SanityImage
-                    src={src}
-                    alt={alt}
-                    square
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover"
-                />
-            ) : (
-                <Icon
-                    icon={Package}
-                    className="size-8 text-muted-foreground/50"
-                />
-            )}
-        </div>
-    );
-}
+const PRODUCT_GRID_CLASS =
+    'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
 
 function toProductCardData(
     product: Product,
     line: ProductLine,
-    style?: ProductStyleRef,
 ): ProductCardData {
-    const productImage = product.media[0]?.src ?? null;
-    const styleImage = style?.imageUrl ?? product.productStyle.imageUrl ?? null;
     return {
         title: product.title,
         href: productHref(product.slug),
         sku: product.sku,
         eyebrowLabel: product.productStyle.title ?? line.title,
-        imageUrl: productImage ?? styleImage,
-        imageAlt:
-            product.media[0]?.alt ??
-            style?.imageAlt ??
-            product.productStyle.imageAlt ??
-            product.title,
+        imageUrl: product.media[0]?.src ?? null,
+        imageAlt: product.media[0]?.alt ?? product.title,
         moq: product.moq,
     };
-}
-
-function LineTile({line}: {line: ProductLine}) {
-    return (
-        <Link
-            href={productHref(line.slug)}
-            className="group flex flex-col overflow-hidden rounded-xl bg-muted transition-shadow hover:shadow-md"
-        >
-            <TileMedia
-                src={line.imageUrl ?? undefined}
-                alt={line.imageAlt ?? line.title}
-            />
-            <div className="flex flex-col gap-1 p-4">
-                <p className="text-sm font-semibold">{line.title}</p>
-                <p className="line-clamp-2 text-xs text-muted-foreground">
-                    {line.description}
-                </p>
-            </div>
-        </Link>
-    );
-}
-
-function StyleTile({
-    line,
-    style,
-}: {
-    line: ProductLine;
-    style: ProductStyleRef;
-}) {
-    const productsInStyle = line.products.filter(
-        (product) => product.productStyle.slug === style.slug,
-    );
-    const count = productsInStyle.length;
-    const firstProductImage = productsInStyle.find(
-        (product) => product.media[0]?.src,
-    )?.media[0]?.src;
-    const imageSrc = style.imageUrl ?? firstProductImage ?? undefined;
-    return (
-        <Link
-            href={productStyleHref(line.slug, style.slug)}
-            className="group flex flex-col overflow-hidden rounded-xl bg-muted transition-shadow hover:shadow-md"
-        >
-            <TileMedia alt={style.imageAlt ?? style.title} src={imageSrc} />
-            <div className="flex flex-col gap-1 p-4">
-                <p className="text-sm font-semibold">{style.title}</p>
-                <p className="text-xs text-muted-foreground">
-                    {count} {count === 1 ? 'product' : 'products'}
-                </p>
-            </div>
-        </Link>
-    );
 }
 
 export function ProductCatalogView({lines}: {lines: ProductLine[]}) {
@@ -126,7 +46,14 @@ export function ProductCatalogView({lines}: {lines: ProductLine[]}) {
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>
                     {lines.map((line) => (
-                        <LineTile key={line.slug} line={line} />
+                        <ProductCatalogCard
+                            key={line.slug}
+                            href={productHref(line.slug)}
+                            title={line.title}
+                            description={line.description || undefined}
+                            imageSrc={line.imageUrl}
+                            imageAlt={line.imageAlt ?? line.title}
+                        />
                     ))}
                 </div>
             </PageDielineSection>
@@ -150,9 +77,25 @@ export function ProductLineView({line}: {line: ProductLine}) {
             />
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>
-                    {line.styles.map((style) => (
-                        <StyleTile key={style.slug} line={line} style={style} />
-                    ))}
+                    {line.styles.map((style) => {
+                        const firstProductImage = line.products.find(
+                            (product) =>
+                                product.productStyle.slug === style.slug &&
+                                product.media[0]?.src,
+                        )?.media[0]?.src;
+                        return (
+                            <ProductCatalogCard
+                                key={style.slug}
+                                href={productStyleHref(line.slug, style.slug)}
+                                title={style.title}
+                                description={
+                                    style.shortDescription || undefined
+                                }
+                                imageSrc={style.imageUrl ?? firstProductImage}
+                                imageAlt={style.imageAlt ?? style.title}
+                            />
+                        );
+                    })}
                 </div>
             </PageDielineSection>
         </>
@@ -184,11 +127,11 @@ export function ProductStyleView({
                 description={style.description}
             />
             <PageDielineSection innerClassName="pb-24 pt-8">
-                <div className={TILE_GRID_CLASS}>
+                <div className={PRODUCT_GRID_CLASS}>
                     {products.map((product) => (
                         <ProductCard
                             key={product.slug}
-                            data={toProductCardData(product, line, style)}
+                            data={toProductCardData(product, line)}
                         />
                     ))}
                 </div>

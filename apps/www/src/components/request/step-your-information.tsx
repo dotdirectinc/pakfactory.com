@@ -17,6 +17,7 @@ import {AddressPickerBlock} from '@/components/request/address-picker-block';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestDraft} from '@/lib/request/request.storage';
+import {isContactReady} from '@/lib/request/validation';
 
 const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
@@ -62,19 +63,12 @@ export function StepYourInformation({
     const [editing, setEditing] = useState(false);
 
     /**
-     * Collapse only when the account actually answered the required fields.
-     *
-     * A summary card is a claim that this step is DONE. An email/password
-     * account supplies an address and nothing else, so collapsing on
-     * `viewer` alone would hide two empty required name fields behind a card
-     * that reads as complete — and the buyer would meet the error at submit,
-     * one step further on, with no idea which section it came from.
+     * Collapse only when the contact step is fully ready (names, email, and
+     * company office). Collapsing earlier hides required company address behind
+     * a card that reads as complete.
      */
     const collapsed =
-        Boolean(viewer) &&
-        !editing &&
-        draft.contactFirstName.trim().length > 0 &&
-        draft.contactLastName.trim().length > 0;
+        Boolean(viewer) && !editing && isContactReady(draft);
 
     const officeLine = [
         draft.companyAddress?.line1,

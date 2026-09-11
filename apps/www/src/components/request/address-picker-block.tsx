@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {MapPin, Pencil} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {
@@ -60,9 +60,14 @@ export function AddressPickerBlock({
     const [loginOpen, setLoginOpen] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [editDraft, setEditDraft] = useState<ShippingAddress>(emptyAddressDraft);
+    const [editing, setEditing] = useState(() => !hasShippingLocation(value));
 
     const locationReady = hasShippingLocation(value);
-    const showSummary = Boolean(viewer) && locationReady;
+    const showSummary = Boolean(viewer) && locationReady && !editing;
+
+    useEffect(() => {
+        if (!locationReady) setEditing(true);
+    }, [locationReady]);
 
     function patch(next: Partial<ShippingAddress>) {
         onChange(
@@ -85,6 +90,7 @@ export function AddressPickerBlock({
     function saveAddress() {
         if (!hasShippingLocation(editDraft)) return;
         onChange(normalizeAddress(editDraft));
+        setEditing(false);
         setPickerOpen(false);
     }
 

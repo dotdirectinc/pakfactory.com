@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import {PackageIcon} from 'lucide-react';
 
+import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -38,19 +39,20 @@ function ProductCollectionListCard({
             href={href}
             className="group flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl bg-muted/60 "
         >
-            <div className="relative flex aspect-square w-full shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#ececec]">
+            <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-xl bg-muted">
                 {collection.thumbUrl ? (
-                    <SanityImage
-                        src={collection.thumbUrl}
-                        alt={collection.thumbAlt ?? displayName}
-                        applyWatermark={false}
-                        width={480}
-                        height={480}
-                        sizes="(max-width: 640px) 50vw, 240px"
-                        className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
+                    <MediaSettleZoom>
+                        <SanityImage
+                            src={collection.thumbUrl}
+                            alt={collection.thumbAlt ?? displayName}
+                            applyWatermark={false}
+                            fill
+                            sizes="(max-width: 640px) 50vw, 240px"
+                            className="object-contain"
+                        />
+                    </MediaSettleZoom>
                 ) : (
-                    <PackageIcon className="text-muted-foreground size-12 opacity-40" />
+                    <PackageIcon className="absolute inset-0 m-auto size-12 text-muted-foreground opacity-40" />
                 )}
             </div>
 

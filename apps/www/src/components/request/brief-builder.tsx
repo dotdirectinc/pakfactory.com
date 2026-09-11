@@ -574,7 +574,6 @@ export function BriefBuilder({
                 open={leaveOpen}
                 title={REQUEST_COPY.leaveTitle}
                 description={REQUEST_COPY.leaveBody}
-                cancelLabel={REQUEST_COPY.leaveCancel}
                 onCancel={() => setLeaveOpen(false)}
                 discardLabel={REQUEST_COPY.leaveDiscard}
                 onDiscard={discardAndLeave}
