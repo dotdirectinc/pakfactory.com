@@ -15,14 +15,9 @@ export default async function AdminRequestsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {ADMIN_REQUESTS_COPY.listTitle}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {ADMIN_REQUESTS_COPY.listSubtitle(account.zohoUserId)}
-        </p>
-      </div>
+      <h1 className="text-[clamp(2rem,5vw,3rem)] font-medium leading-none tracking-tight text-foreground">
+        {ADMIN_REQUESTS_COPY.listTitle}
+      </h1>
 
       <RequestList requests={requests} />
     </div>

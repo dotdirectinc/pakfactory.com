@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from 'react';
 
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
+import {Textarea} from '@pakfactory/ui/components/textarea';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {QuantityPicker} from '@/components/product/quantity-picker';
 import {
@@ -20,9 +21,7 @@ import {ShippingToAddress} from '@/components/request/shipping-to-address';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {RequestDraft} from '@/lib/request/request.storage';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
-const TEXTAREA_CLASS =
-    'min-h-28 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 type StepRequirementsProps = {
     draft: RequestDraft;
@@ -165,13 +164,29 @@ export function StepRequirements({
                     </>
                 ) : null}
 
-                <div>
-                    <Label className="mb-1 block text-xs font-medium">
-                        {REQUEST_COPY.notesLabel}
-                        <span className="ml-0.5 text-amber-600">*</span>
-                    </Label>
-                    <textarea
-                        className={TEXTAREA_CLASS}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-baseline justify-between gap-3">
+                        <Label className="text-xs font-medium">
+                            {REQUEST_COPY.notesLabel}
+                            <span className="ml-0.5 text-amber-600">*</span>
+                        </Label>
+                        <button
+                            type="button"
+                            className="shrink-0 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                            onClick={() => {
+                                document
+                                    .getElementById('section-requirements-files')
+                                    ?.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start',
+                                    });
+                            }}
+                        >
+                            {REQUEST_COPY.preferUploadDocument}
+                        </button>
+                    </div>
+                    <Textarea
+                        className="min-h-28 rounded-sm bg-background text-sm"
                         placeholder={REQUEST_COPY.notesPlaceholder}
                         value={draft.notes}
                         onChange={(e) => onPatch({notes: e.target.value})}

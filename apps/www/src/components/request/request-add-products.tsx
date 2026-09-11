@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {ChevronDown} from 'lucide-react';
+import {Plus} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {
     DropdownMenu,
@@ -15,6 +15,8 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 type RequestAddProductsProps = {
     variant: 'empty' | 'more';
+    /** Dropdown menu alignment. Default start (Your Request). */
+    align?: 'start' | 'center';
     className?: string;
 };
 
@@ -37,23 +39,27 @@ const ADD_PATHS = [
  */
 export function RequestAddProducts({
     variant,
+    align = 'start',
     className,
 }: RequestAddProductsProps) {
     if (variant === 'more') {
         return (
-            <div className={cn('flex justify-start', className)}>
-                <DropdownMenu>
+            <div className={cn('w-full', className)}>
+                <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                         <Button
                             type="button"
-                            variant="link"
-                            className="h-auto justify-start gap-1 p-0 text-sm font-medium has-[>svg]:px-0"
+                            variant="ghost"
+                            className="h-auto w-full justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-4 text-sm font-medium text-muted-foreground hover:bg-muted/30 has-[>svg]:px-4"
                         >
+                            <Plus className="size-4" aria-hidden />
                             {REQUEST_COPY.addMoreProducts}
-                            <ChevronDown className="size-4 opacity-70" aria-hidden />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="min-w-56">
+                    <DropdownMenuContent
+                        align={align}
+                        className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                    >
                         {ADD_PATHS.map((path) => (
                             <DropdownMenuItem key={path.href} asChild>
                                 <Link

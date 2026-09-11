@@ -2,7 +2,7 @@
 
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
-import {Columns2, Package, Share2} from 'lucide-react';
+import {Columns2, Package} from 'lucide-react';
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
 import {Icon} from '@/components/ui/icon';
@@ -10,7 +10,6 @@ import {IconActionRow} from '@/components/ui/icon-action-row';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {
-    sharePageUrl,
     stubBookmarkAction,
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
@@ -77,14 +76,6 @@ export function ProductCard({data}: ProductCardProps) {
                     <IconActionRow
                         className="absolute top-0 right-0"
                         actions={[
-                            {
-                                id: 'share',
-                                label: 'Share',
-                                ariaLabel: 'Share',
-                                icon: Share2,
-                                onClick: (event) =>
-                                    sharePageUrl(event, data.href),
-                            },
                             {
                                 id: 'compare',
                                 label: 'Compare',

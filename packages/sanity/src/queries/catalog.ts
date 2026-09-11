@@ -48,7 +48,8 @@ const LINE_REF_PROJ = /* groq */ `{
 const STYLE_REF_PROJ = /* groq */ `{
   _id,
   title,
-  "slug": slug.current
+  "slug": slug.current,
+  "description": coalesce(hero.description, description)
 }`;
 
 /** Shared product projection used by by-slug and list queries. */
@@ -125,7 +126,8 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
     _id,
     title,
-    "slug": slug.current
+    "slug": slug.current,
+    "description": coalesce(hero.description, description)
   },
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
@@ -214,6 +216,7 @@ export type CatalogStyleRefDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  description?: string | null;
 };
 
 export type CatalogProductDoc = {

@@ -12,6 +12,7 @@ import {
 import {CustomizationGuidedView} from '@/components/customization-builder/customization-guided-view';
 import {CustomizationWorkspaceView} from '@/components/customization-builder/customization-workspace-view';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
 import {
     buildStepsFromCatalog,
@@ -41,6 +42,8 @@ export type CustomizationBuilderProps = {
     productTitle?: string;
     /** When opening, focus this step (e.g. from overview summary row). */
     initialStepKey?: BuilderStepKey;
+    /** Sanity product dimensionRange in mm (L/W/D). */
+    dimensionRange?: ProductDimensionRange;
 };
 
 function restoreTypeId(
@@ -79,6 +82,7 @@ export function CustomizationBuilder({
     onChange,
     productTitle,
     initialStepKey,
+    dimensionRange,
 }: CustomizationBuilderProps) {
     const steps = useMemo(
         () => buildStepsFromCatalog(availableCustomizations),
@@ -89,7 +93,6 @@ export function CustomizationBuilder({
     const [activeKey, setActiveKey] = useState<BuilderStepKey>('dimensions');
     const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
     const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
-    const [guidedJustFinished, setGuidedJustFinished] = useState(false);
 
     function selectCategory(key: BuilderStepKey) {
         const step = steps.find((item) => item.key === key);
@@ -132,7 +135,6 @@ export function CustomizationBuilder({
         if (!open) return;
         const enterGuided = shouldEnterGuided(value);
         setMode(enterGuided ? 'guided' : 'workspace');
-        setGuidedJustFinished(false);
         const focus =
             (initialStepKey
                 ? steps.find((step) => step.key === initialStepKey)
@@ -206,8 +208,7 @@ export function CustomizationBuilder({
 
     function finishGuided(state: CustomizationBuilderState = value) {
         onChange(markGuidedComplete(state, steps));
-        setMode('workspace');
-        setGuidedJustFinished(true);
+        onOpenChange(false);
     }
 
     function handleSkip() {
@@ -276,6 +277,7 @@ export function CustomizationBuilder({
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
                             state={value}
+                            dimensionRange={dimensionRange}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}
@@ -295,7 +297,7 @@ export function CustomizationBuilder({
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
                             state={value}
-                            showFinishedBanner={guidedJustFinished}
+                            dimensionRange={dimensionRange}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}

@@ -166,7 +166,7 @@ export function ProductStyleView({
             />
             <PageHeadingSection
                 title={style.title}
-                description={`${style.title} styles in ${line.title}.`}
+                description={style.description}
             />
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>

@@ -17,7 +17,7 @@ import {FORGOT_PASSWORD_COPY} from '@/lib/copy/forgot-password';
 import {LOGIN_COPY} from '@/lib/copy/login';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 export function ForgotPasswordForm() {
     const [pending, startTransition] = useTransition();

@@ -4,12 +4,9 @@ export const CUSTOMIZATION_BUILDER_COPY = {
         'Answer one step at a time — or choose “Need consultation” and a specialist will advise.',
     workspaceIntro:
         'Review or change any option. Everything stays editable.',
-    guidedFinished:
-        'You’re set — tweak anything below, or close when you’re ready.',
     stepOf: 'Step {current} of {total}',
     back: 'Back',
     next: 'Next',
-    done: 'Done',
     skipNotSure: 'Need consultation',
     notSureHelper: 'We’ll keep this Ready — a specialist will advise.',
     specialistToAdvise: 'Specialist to advise',

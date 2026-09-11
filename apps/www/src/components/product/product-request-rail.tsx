@@ -68,6 +68,9 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             productLineTitle: product.productLine.title,
             productMedia: product.media,
             availableCustomizations: product.availableCustomizations,
+            ...(product.dimensionRange
+                ? {dimensionRange: product.dimensionRange}
+                : {}),
             quantities: volumes,
             contents,
             customizations,
@@ -140,6 +143,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
                     builderState={builderState}
                     onBuilderStateChange={setBuilderState}
                     productTitle={product.title}
+                    dimensionRange={product.dimensionRange}
                 />
             </section>
 

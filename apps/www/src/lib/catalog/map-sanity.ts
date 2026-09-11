@@ -87,7 +87,12 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         doc.kind === 'inspiration' ? 'inspiration' : 'standard';
 
     const productLine: ProductLineRef = {slug: lineSlug, title: lineTitle};
-    const productStyle: ProductStyleRef = {slug: styleSlug, title: styleTitle};
+    const styleDescription = doc.productStyle?.description?.trim();
+    const productStyle: ProductStyleRef = {
+        slug: styleSlug,
+        title: styleTitle,
+        ...(styleDescription ? {description: styleDescription} : {}),
+    };
 
     const availableCustomizations = (doc.availableCustomizations ?? [])
         .map(mapAvailableCustomization)
@@ -150,7 +155,12 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
             const styleSlug = style.slug?.trim();
             const title = style.title?.trim();
             if (!styleSlug || !title) return null;
-            return {slug: styleSlug, title};
+            const description = style.description?.trim();
+            return {
+                slug: styleSlug,
+                title,
+                ...(description ? {description} : {}),
+            };
         })
         .filter((item): item is ProductStyleRef => item != null);
 

@@ -28,9 +28,34 @@ export type BuyerRequestSummary = {
     id: string;
     reference: string;
     submittedAt: string;
+    /** Buyer-editable Brief Builder name (e.g. "Draft request - Sep 11, 2026"). */
+    title: string;
     /** What they asked for, in one line — enough to tell two requests apart. */
     summary: string;
     itemCount: number;
+};
+
+/** Geography from the wire `shipTo` — same fields the builder collected. */
+export type BuyerRequestShipTo = {
+    line1: string;
+    line2: string;
+    city: string;
+    region: string;
+    country: string;
+    postalCode: string;
+};
+
+export type BuyerRequestLine = {
+    id: string;
+    productSlug: string;
+    /** Snapshotted product title at submit (`lines[].title`). */
+    title: string;
+    /** Product line / type title (`lines[].productType`). */
+    productType: string;
+    contents: string;
+    quantities: number[];
+    customizations: string[];
+    notes: string;
 };
 
 export type BuyerRequestDetail = BuyerRequestSummary & {
@@ -47,17 +72,15 @@ export type BuyerRequestDetail = BuyerRequestSummary & {
     packagingContents: string;
     quantities: number[];
     timeline: string;
-    shipTo: string;
+    /** Structured ship-to; empty strings when a field was not provided. */
+    shipTo: BuyerRequestShipTo;
+    /** One-line middot fallback for list/compact displays. */
+    shipToSummary: string;
+    services: string[];
     /** Names only. ADR-0013 D3 forbids an S3 URL, and a buyer has no authorised
      *  route to the bytes — the serving route is staff-only (PROD-2434). */
     fileNames: string[];
-    lines: {
-        id: string;
-        productSlug: string;
-        contents: string;
-        quantities: number[];
-        customizations: string[];
-    }[];
+    lines: BuyerRequestLine[];
 };
 
 const COLUMNS = 'id, reference, contact_email, payload, submitted_at';
@@ -70,6 +93,15 @@ type Row = {
     payload: unknown;
 };
 
+type StoredAddress = {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    postalCode?: string;
+};
+
 type Stored = {
     requirements?: {
         notes?: string;
@@ -78,23 +110,31 @@ type Stored = {
         expressQuantity?: number;
         expressQuantities?: number[];
     };
-    shipTo?: {city?: string; region?: string; country?: string} | null;
+    shipTo?: StoredAddress | null;
     attachments?: {name?: string}[];
     lines?: {
         id?: string;
         productSlug?: string;
+        title?: string;
+        productType?: string;
         contents?: string;
         quantities?: number[];
         customizations?: {label?: string}[];
+        notes?: string;
         referenceImages?: unknown;
         attachments?: {name?: string}[];
     }[];
+    services?: string[];
     contact?: {email?: string};
-    metadata?: {entryKind?: string};
+    metadata?: {entryKind?: string; title?: string};
 };
 
 const asStored = (payload: unknown): Stored =>
     payload && typeof payload === 'object' ? (payload as Stored) : {};
+
+function trimmed(value: string | undefined | null): string {
+    return String(value ?? '').trim();
+}
 
 /** Both spellings are accepted server-side, so both are read — taking only the
  *  singular would drop every tier after the first. */
@@ -107,18 +147,56 @@ function expressQuantities(s: Stored): number[] {
     return [...new Set([...one, ...many])];
 }
 
+function toShipTo(address: StoredAddress | null | undefined): BuyerRequestShipTo {
+    return {
+        line1: trimmed(address?.line1),
+        line2: trimmed(address?.line2),
+        city: trimmed(address?.city),
+        region: trimmed(address?.region),
+        country: trimmed(address?.country),
+        postalCode: trimmed(address?.postalCode),
+    };
+}
+
+function shipToSummary(address: BuyerRequestShipTo): string {
+    const cityRegion = [address.city, address.region]
+        .filter(Boolean)
+        .join(', ');
+    return [address.line1, cityRegion, address.country]
+        .filter(Boolean)
+        .join(' · ');
+}
+
+function hasShipTo(address: BuyerRequestShipTo): boolean {
+    return Object.values(address).some(Boolean);
+}
+
+function fallbackRequestTitle(submittedAt: string): string {
+    return `Request - ${new Date(submittedAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    })}`;
+}
+
 function toSummary(row: Row): BuyerRequestSummary {
     const s = asStored(row.payload);
     const lines = s.lines ?? [];
     const summary =
         lines.length > 0
-            ? lines.map((l) => l.productSlug ?? '').filter(Boolean).join(', ')
-            : (s.requirements?.packagingContents ?? '').trim();
+            ? lines
+                  .map((l) => trimmed(l.title) || trimmed(l.productSlug))
+                  .filter(Boolean)
+                  .join(', ')
+            : trimmed(s.requirements?.packagingContents);
+
+    const storedTitle = trimmed(s.metadata?.title);
 
     return {
         id: row.id,
         reference: row.reference,
         submittedAt: row.submitted_at,
+        title: storedTitle || fallbackRequestTitle(row.submitted_at),
         // Never empty: a row with neither is still a real request the buyer sent,
         // and a blank line reads as a rendering fault.
         summary: summary || 'Packaging request',
@@ -128,7 +206,7 @@ function toSummary(row: Row): BuyerRequestSummary {
 
 function toDetail(row: Row): BuyerRequestDetail {
     const s = asStored(row.payload);
-    const address = s.shipTo;
+    const shipTo = toShipTo(s.shipTo);
     return {
         ...toSummary(row),
         // The COLUMN is authoritative: it is what the receipt was sent to and
@@ -139,10 +217,13 @@ function toDetail(row: Row): BuyerRequestDetail {
         packagingContents: s.requirements?.packagingContents ?? '',
         quantities: expressQuantities(s),
         timeline: s.requirements?.timeline ?? '',
-        shipTo: [address?.city, address?.region, address?.country]
-            .map((p) => p?.trim())
-            .filter(Boolean)
-            .join(', '),
+        shipTo,
+        shipToSummary: hasShipTo(shipTo)
+            ? shipToSummary(shipTo)
+            : '',
+        services: Array.isArray(s.services)
+            ? s.services.filter((id): id is string => Boolean(trimmed(id)))
+            : [],
         // Request-level and per-line files, flattened — the buyer does not think
         // of them as belonging to one or the other.
         fileNames: [
@@ -154,11 +235,14 @@ function toDetail(row: Row): BuyerRequestDetail {
         lines: (s.lines ?? []).map((l, i) => ({
             id: l.id ?? `line-${i}`,
             productSlug: l.productSlug ?? '',
+            title: trimmed(l.title),
+            productType: trimmed(l.productType),
             contents: l.contents ?? '',
             quantities: l.quantities ?? [],
             customizations: (l.customizations ?? [])
                 .map((c) => c.label)
                 .filter((v): v is string => Boolean(v)),
+            notes: trimmed(l.notes),
         })),
     };
 }

@@ -20,7 +20,7 @@ import {signUp} from '@/lib/auth/actions';
 import {SIGN_UP_COPY} from '@/lib/copy/sign-up';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
     const [serverError, setServerError] = useState<string>();

@@ -1,7 +1,7 @@
 'use client';
 
 import {BuilderThreeColumn} from '@/components/customization-builder/builder-three-column';
-import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {
     BuilderOption,
     BuilderStep,
@@ -16,7 +16,7 @@ type CustomizationWorkspaceViewProps = {
     activeTypeId: string | null;
     activeOptionId: string | null;
     state: CustomizationBuilderState;
-    showFinishedBanner?: boolean;
+    dimensionRange?: ProductDimensionRange;
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -32,7 +32,7 @@ export function CustomizationWorkspaceView({
     activeTypeId,
     activeOptionId,
     state,
-    showFinishedBanner = false,
+    dimensionRange,
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -48,6 +48,7 @@ export function CustomizationWorkspaceView({
             activeTypeId={activeTypeId}
             activeOptionId={activeOptionId}
             state={state}
+            dimensionRange={dimensionRange}
             onSelectCategory={onSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}
@@ -55,13 +56,6 @@ export function CustomizationWorkspaceView({
             onAnswerChange={onAnswerChange}
             onClearCategory={onClearCategory}
             onEntryNoteChange={onEntryNoteChange}
-            header={
-                showFinishedBanner ? (
-                    <p className="border-b border-border px-5 py-3 text-sm text-muted-foreground">
-                        {CUSTOMIZATION_BUILDER_COPY.guidedFinished}
-                    </p>
-                ) : null
-            }
         />
     );
 }

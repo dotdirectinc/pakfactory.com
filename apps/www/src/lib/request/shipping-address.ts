@@ -26,6 +26,18 @@ export function hasShippingLocation(
     return Boolean(city && country);
 }
 
+/** One-line middot summary for address cards (line1 · city, region · country). */
+export function formatAddressSummaryLine(address: ShippingAddress): string {
+    const cityRegion = [address.city, address.region]
+        .map((part) => String(part ?? '').trim())
+        .filter(Boolean)
+        .join(', ');
+    return [address.line1, cityRegion, address.country]
+        .map((part) => String(part ?? '').trim())
+        .filter(Boolean)
+        .join(' · ');
+}
+
 /**
  * Merge/coerce an address for draft UI state.
  *
