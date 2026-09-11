@@ -7,7 +7,6 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
@@ -102,16 +101,6 @@ export const solution = defineType({
       description:
         'Does this term have a landing page? An editorial judgement — business focus, profitability, demand, search value. Authored, never derived. A term can exist for tagging without earning a page.',
       initialValue: false,
-    }),
-    defineField({
-      name: 'headline',
-      title: 'Headline (legacy)',
-      type: 'string',
-      group: GROUPS.content,
-      description: 'Superseded by H1.',
-      ...deprecateField(
-        'Renamed to `h1` (PROD-2458). Read-only until the migration has run on production and the field is removed.',
-      ),
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
     // and the existing `blogCategory` pair. (`page.subheadline` is a different

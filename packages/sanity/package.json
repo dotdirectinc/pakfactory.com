@@ -40,7 +40,8 @@
     "migrate:description-cleanup": "tsx scripts/migrate-description-naming-cleanup.ts",
     "migrate:solution-haspage": "tsx scripts/migrate-solution-haspage.ts",
     "migrate:solution-cleanup": "tsx scripts/migrate-solution-remove-usecase-leftovers.ts",
-    "migrate:name-convention": "tsx scripts/migrate-name-convention.ts"
+    "migrate:name-convention": "tsx scripts/migrate-name-convention.ts",
+    "migrate:name-convention-cleanup": "tsx scripts/migrate-name-convention-cleanup.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.20.0"

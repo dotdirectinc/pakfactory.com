@@ -38,7 +38,6 @@ type CollectionMetaRow = {
         title: string;
         slug: string | null;
         heroTitle?: string | null;
-        heroHeadline?: string | null;
         heroDescription?: string | null;
         bannerUrl?: string | null;
         bannerAlt?: string | null;
@@ -163,7 +162,11 @@ export default async function ProductCollectionPage({
     const heroDescription =
         meta?.collection?.heroDescription?.trim() || fallbackDescription;
 
-    const heroTitle = meta?.collection?.heroHeadline?.trim() || displayTitle;
+    // Was `meta?.collection?.heroHeadline?.trim() || displayTitle`. The query no
+    // longer projects heroHeadline (PROD-2459 — the underlying field is gone), and
+    // it resolved null regardless: PRODUCT_COLLECTION_META_FOR_PATH_QUERY filters
+    // on retired types and never matches. Identical output, one fewer ghost.
+    const heroTitle = displayTitle;
 
     const breadcrumbData: {label: string; href?: string}[] = [
         {label: 'Products', href: '/products'},
