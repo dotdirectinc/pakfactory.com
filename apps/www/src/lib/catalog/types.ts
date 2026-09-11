@@ -39,6 +39,7 @@ export type ProductStyleRef = {
     slug: string;
     title: string;
     description?: string;
+    shortDescription?: string;
     imageUrl?: string | null;
     imageAlt?: string;
 };

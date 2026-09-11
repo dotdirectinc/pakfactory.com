@@ -63,7 +63,8 @@ const STYLE_REF_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  "description": coalesce(hero.description, description),
+  shortDescription,
+  "description": coalesce(hero.description, pt::text(description)),
   ${STYLE_CARD_IMAGE}
 }`;
 
@@ -75,7 +76,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   sku,
   kind,
   status,
-  description,
+  "description": coalesce(shortDescription, pt::text(description)),
   moq,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
@@ -102,7 +103,7 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   sku,
   kind,
   status,
-  description,
+  "description": coalesce(shortDescription, pt::text(description)),
   moq,
   media[]{
     ...,
@@ -143,7 +144,8 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
     _id,
     title,
     "slug": slug.current,
-    "description": coalesce(hero.description, description),
+    shortDescription,
+    "description": coalesce(hero.description, pt::text(description)),
     ${STYLE_CARD_IMAGE}
   },
   "products": *[_type == "product" && (
@@ -236,6 +238,7 @@ export type CatalogStyleRefDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  shortDescription?: string | null;
   description?: string | null;
   cardImage?: unknown | null;
 };
