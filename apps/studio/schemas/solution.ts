@@ -7,6 +7,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
+import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
@@ -54,12 +55,24 @@ export const solution = defineType({
         'The canonical name — required and always presentable. Replaces the old Studio-only internalTitle.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere.
     defineField({
-      name: 'displayTitle',
-      title: 'Display title',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional front-end override. Empty is the normal case.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'solutionType',
@@ -92,18 +105,24 @@ export const solution = defineType({
     }),
     defineField({
       name: 'headline',
-      title: 'Headline',
+      title: 'Headline (legacy)',
       type: 'string',
       group: GROUPS.content,
-      description: 'Page H1 — hero copy, the main heading visitors see (not a name; that is Title).',
+      description: 'Superseded by H1.',
+      ...deprecateField(
+        'Renamed to `h1` (PROD-2458). Read-only until the migration has run on production and the field is removed.',
+      ),
     }),
+    // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
+    // and the existing `blogCategory` pair. (`page.subheadline` is a different
+    // field on a different type and was left alone.)
     defineField({
-      name: 'subheadline',
-      title: 'Subheadline',
+      name: 'shortDescription',
+      title: 'Short description',
       type: 'text',
       rows: 2,
       group: GROUPS.content,
-      description: 'Supporting line below the headline.',
+      description: 'One-line summary of this solution, for the solution card, listings and the nav.',
     }),
     taggedImageField({
       name: 'heroImage',
@@ -122,12 +141,15 @@ export const solution = defineType({
         }),
       ],
     }),
+    // Renamed from `intro` (PROD-2454). Portable text, so the link
+    // annotations the original values carried survived the move.
     defineField({
-      name: 'intro',
-      title: 'Intro / problem framing',
+      name: 'description',
+      title: 'Description',
       type: 'array',
       group: GROUPS.content,
-      description: 'Short framing paragraph — the packaging problem this solution addresses.',
+      description:
+        'The full description of this solution — the packaging problem it addresses and how we solve it. Renders on the solution page.',
       of: [
         {
           type: 'block',
@@ -195,7 +217,7 @@ export const solution = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Defaults to Headline if left blank. Target 50–60 chars.',
+      description: 'Defaults to H1 if left blank. Target 50–60 chars.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({

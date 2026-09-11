@@ -6,6 +6,7 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { deprecateField } from '../lib/schema-guards'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -48,12 +49,34 @@ export const product = defineType({
       description: 'Short canonical name (e.g. "Matte Magnetic Gift Box").',
       validation: (Rule) => Rule.required(),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere.
     defineField({
-      name: 'headline',
-      title: 'Headline',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional longer H1 for the product page.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'headline',
+      title: 'Headline (legacy)',
+      type: 'string',
+      group: GROUPS.content,
+      description: 'Superseded by H1.',
+      ...deprecateField(
+        'Renamed to `h1` (PROD-2458). Read-only until the migration has run on production and the field is removed.',
+      ),
     }),
     defineField({
       name: 'slug',
@@ -99,6 +122,51 @@ export const product = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'customerFacing',
+      title: 'Customer facing',
+      type: 'boolean',
+      group: GROUPS.content,
+      description:
+        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how a standard product that exists purely as a preset\'s `basedOn` target stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+      initialValue: true,
+      // WARNING, never an error. A customer-facing product under a hidden line or
+      // style is the one rule a human can break silently: nothing in the Studio shows
+      // an ancestor's visibility while you edit the child, and the result is a page
+      // whose whole path above it is unreachable. Everything else about the scaffold
+      // pattern is enforced structurally.
+      //
+      // Warning and not error because the state is legitimate mid-edit — you unhide a
+      // line and its products one save at a time — and because an error here would
+      // block publishing a product over the state of a DIFFERENT document.
+      //
+      // Reads the PUBLISHED ancestors deliberately: a strong reference resolves
+      // against the published dataset, so published visibility is what decides
+      // whether a route can exist. An unpublished draft edit is not yet that fact.
+      validation: (Rule) =>
+        Rule.custom(async (value, context) => {
+          if (value === false) return true
+          const doc = context.document as
+            | { kind?: string; productLine?: { _ref?: string }; productStyle?: { _ref?: string }[] }
+            | undefined
+          // Only a standard product has a line/style ancestry; both are hidden on presets.
+          if (doc?.kind !== 'standard') return true
+          const refs = [doc.productLine?._ref, ...(doc.productStyle ?? []).map((r) => r?._ref)].filter(
+            (r): r is string => Boolean(r),
+          )
+          if (refs.length === 0) return true
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+          const hidden = await client.fetch<{ title?: string }[]>(
+            `*[_id in $refs && customerFacing == false]{title}`,
+            { refs },
+          )
+          if (hidden.length === 0) return true
+          const names = hidden.map((h) => h.title ?? 'untitled').join(', ')
+          return `This product is customer facing, but ${names} ${
+            hidden.length === 1 ? 'is not' : 'are not'
+          }. The product page would sit under a path with no reachable route above it.`
+        }).warning(),
+    }),
+    defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
@@ -106,13 +174,38 @@ export const product = defineType({
       description: 'The PDP gallery — first image is the card and the hero.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
+    // Renamed from `description` (PROD-2454) — the field was already
+    // *labelled* "Short description" but *named* `description`; the name now
+    // says what the label always said.
     defineField({
-      name: 'description',
+      name: 'shortDescription',
       title: 'Short description',
       type: 'text',
       group: GROUPS.content,
       rows: 3,
-      description: 'Used in product cards and listing pages.',
+      description: 'One-line summary for the product card, listings and search results.',
+    }),
+    // The `description` key was freed by PROD-2455 and reused for the
+    // long-form field, matching Line and Solution. Starts empty everywhere.
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'array',
+      group: GROUPS.content,
+      description:
+        'The full description of this product — what it is, how it is built and what it suits. Renders on the product page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'benefits',
