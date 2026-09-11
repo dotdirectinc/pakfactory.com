@@ -36,15 +36,28 @@ export const productLine = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Rigid Boxes". Required, always presentable; renders wherever Display title is empty.',
+      description: 'The canonical name — "Rigid Boxes". Required, always presentable; renders wherever H1 and Short name are empty.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere. Whichever string the
+    // card or nav renders is the one that must go in the breadcrumb markup.
     defineField({
-      name: 'displayTitle',
-      title: 'Display title',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional front-end override for H1 / nav / card / breadcrumb. Empty is the normal case — and whichever string renders is the one that must go in the breadcrumb markup.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -55,12 +68,16 @@ export const productLine = defineType({
       description: 'The /products/<slug> segment. Unique across Product Line AND Product — both sit one segment under /products/.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
+    // Renamed from `intro` (PROD-2454): one concept, one name across
+    // Line / Style / Solution / Product. Portable text, so the link
+    // annotations the original values carried survived the move.
     defineField({
-      name: 'intro',
-      title: 'Intro',
+      name: 'description',
+      title: 'Description',
       type: 'array',
       group: GROUPS.content,
-      description: 'Short, evergreen framing — no countable facts (they belong on products).',
+      description:
+        'The full description of this line — what it covers and who it is for. Renders on the line landing page. Keep it evergreen: no countable facts, those belong on the products.',
       of: [
         {
           type: 'block',
@@ -96,13 +113,43 @@ export const productLine = defineType({
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
     }),
+    // Renamed from `cardSummary` (PROD-2454), matching Style, Solution,
+    // Product and the existing `blogCategory` pair.
     defineField({
-      name: 'cardSummary',
-      title: 'Card summary',
+      name: 'shortDescription',
+      title: 'Short description',
       type: 'text',
       rows: 2,
       group: GROUPS.content,
       description: 'One-line summary for the catalog card and nav.',
+    }),
+    // The only one of Line / Style / Product that had no Status. Same shape and
+    // vocabulary as the other two (D49) — one ladder, read the same way at every
+    // level of the product tree.
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: GROUPS.content,
+      description: 'Lifecycle — so a retired line can say so.',
+      options: {
+        list: [
+          { title: 'Active', value: 'active' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'active',
+    }),
+    defineField({
+      name: 'customerFacing',
+      title: 'Customer facing',
+      type: 'boolean',
+      group: GROUPS.content,
+      description:
+        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+      initialValue: true,
     }),
 
     // ─── CATEGORIZATION (declarations + references out) ───────────────────────
@@ -212,7 +259,7 @@ export const productLine = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', media: 'heroMedia' },
+    select: { title: 'title', display: 'shortName', media: 'heroMedia' },
     prepare({ title, display, media }) {
       return { title: display || title || 'Untitled line', subtitle: 'Product Line', media }
     },

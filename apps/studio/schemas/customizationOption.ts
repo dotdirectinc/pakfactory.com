@@ -25,6 +25,29 @@ export const customizationOption = defineType({
       description: 'The customization option name shown to customers (e.g. "Matte Lamination").',
       validation: (Rule) => Rule.required(),
     }),
+    // A configurator swatch cannot carry "High-Impact Polystyrene (HIPS) Blister
+    // Plastic", but Title has to stay unambiguous — the content team uses it to
+    // tell Matte Lamination from Leather Lamination. Short name is the
+    // customer-facing label; empty falls back to Title, so leaving it alone is
+    // always correct.
+    //
+    // NO `h1` here, unlike Line / Style / Solution / Product. The six options
+    // that earn a page (`role: reference`) are the six with the SHORTEST titles
+    // in the set — UV Coating, Matte Lamination — so there is no heading to
+    // override; the long names are all `configurable`, which by the rule below
+    // have no URL at all. Revisit when the capability routing model is settled.
+    //
+    // Not surfaced in `preview` yet — that block reads three deleted fields and
+    // is wrong on all 33 documents (PROD-2462), so it gets fixed as a whole
+    // rather than half-patched here.
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: 'content',
+      description:
+        'A shorter, customer-facing version of the Title — for the configurator swatch, chips and listings, where the full technical name will not fit. Leave empty to use the Title.',
+    }),
     defineField({
       name: 'slug',
       title: 'Slug',
@@ -92,13 +115,13 @@ export const customizationOption = defineType({
       title: 'Status',
       type: 'string',
       group: 'content',
-      description: 'Lifecycle: Active (offered now), Future (coming soon), or Deprecated (retired).',
+      description: 'Lifecycle: Active (offered now), Coming soon, or Discontinued (retired).',
       options: {
         layout: 'radio',
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Future', value: 'future' },
-          { title: 'Deprecated', value: 'deprecated' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
         ],
       },
       initialValue: 'active',

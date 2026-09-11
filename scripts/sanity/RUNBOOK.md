@@ -17,6 +17,19 @@ Project: `8293wrxp` · Datasets: `production` / `development`
 | `pnpm sanity:diff` | Compare prod vs dev — counts per type + missing/modified docs |
 | `pnpm sanity:sync-prod-to-dev` | Backup prod + overwrite dev with it |
 
+> ⚠️ **The backup, restore and sync commands need Node ≥ 22.12.** They shell out to
+> `npx sanity@latest`, which no longer runs on the repo's pinned Node 20 — `nvm use 22` first.
+>
+> **`pnpm` is installed per Node version**, so it usually does not exist under 22. Call the script
+> directly instead of going through pnpm:
+>
+> ```bash
+> nvm use 22 && node scripts/sanity/backup.mjs production
+> ```
+>
+> The token comes from `.env.local` (`SANITY_BACKUP_TOKEN`, or any of `SANITY_AUTH_TOKEN` /
+> `SANITY_API_WRITE_TOKEN` / `SANITY_API_READ_TOKEN`) — nothing to export by hand.
+
 ---
 
 ## GitHub Actions secrets (required before workflow runs)

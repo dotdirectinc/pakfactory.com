@@ -41,12 +41,17 @@ export type RequestReviewPaperProps = {
   style?: CSSProperties;
 };
 
+/** POC letter elevation — bypass monorepo --shadow-2xl theme remap (same-name self-ref). */
+const PAPER_ELEVATION_CLASS =
+  "shadow-[0_25px_50px_-12px_rgb(0_0_0_/_0.25)] ring-1 ring-black/5";
+
 function paperDensityClasses(density: RequestReviewPaperDensity = "default") {
   const isTight = density === "tight";
   return {
+    // Default matches POC ProjectWizardV2: px-10 py-12 sm:px-14
     innerPadding: isTight
       ? "px-4 py-4 sm:px-6 sm:py-6"
-      : "px-4 py-6 sm:px-10 sm:py-12 lg:px-14",
+      : "px-10 py-12 sm:px-14",
     letterheadBottomPad: isTight ? "pb-3" : "pb-4",
     letterheadTitle: isTight ? "text-[14px]" : "text-[15px]",
     letterheadMeta: isTight ? "text-[11.5px]" : "text-[12.5px]",
@@ -55,6 +60,7 @@ function paperDensityClasses(density: RequestReviewPaperDensity = "default") {
     secondary: isTight ? "text-[11.5px]" : "text-[12.5px]",
     disclaimer: isTight ? "text-[11px]" : "text-[12px]",
     sectionTopMargin: isTight ? "mt-4" : "mt-5",
+    contactBottomPad: isTight ? "pb-4" : "pb-5",
     tableRowPad: isTight ? "py-2" : "py-3",
     briefTopPad: isTight ? "pt-3" : "pt-4",
     disclaimerPad: isTight ? "px-3 py-2" : "px-4 py-3",
@@ -77,7 +83,7 @@ function PaperEditLink({
       type="button"
       variant="link"
       onClick={onClick}
-      className="h-auto p-0 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+      className="h-auto shrink-0 p-0 text-[11px] font-medium text-muted-foreground hover:text-foreground"
     >
       {copy.paperEdit}
     </Button>
@@ -123,14 +129,14 @@ function ReviewLetterhead({
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground">
           {copy.reviewPaperBadge}
         </p>
-        <p className={cn("mt-1 text-muted-foreground", d.letterheadMeta)}>
+        <p className={cn("mt-0.5 text-muted-foreground", d.letterheadMeta)}>
           {documentDate}
         </p>
-        <p className="mt-1 text-[11px] uppercase tracking-[0.08em] text-muted-foreground/70">
+        <p className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-muted-foreground/70">
           {copy.refLabel} {displayRef}
         </p>
         {pageLabel ? (
-          <p className="mt-1 text-[10px] text-muted-foreground/70">{pageLabel}</p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground/70">{pageLabel}</p>
         ) : null}
       </div>
     </div>
@@ -180,104 +186,92 @@ function ReviewSummaryBody({
   return (
     <>
       {showContactBlock ? (
-        <>
-          <div
-            className={cn(
-              "grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2",
-              compact ? "mt-0" : d.sectionTopMargin,
-            )}
-          >
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <p
-                  className={cn(
-                    d.sectionLabel,
-                    "font-semibold uppercase tracking-[0.06em] text-muted-foreground",
-                  )}
-                >
-                  {copy.preparedFor}
-                </p>
-                {showEdit ? (
-                  <PaperEditLink
-                    copy={copy}
-                    onClick={() => onEditSection!("information")}
-                  />
-                ) : null}
-              </div>
-              <p className={cn("mt-1 font-medium", d.body)}>{toName}</p>
-              {draft.contactCompany ? (
-                <p className={cn(d.body, "text-muted-foreground")}>
-                  {draft.contactCompany}
-                </p>
-              ) : null}
-              <p className={cn(d.body, "text-muted-foreground")}>
-                {draft.contactEmail || "—"}
+        <div
+          className={cn(
+            "grid grid-cols-1 gap-x-10 gap-y-4 border-b border-dashed border-[#E9E9E7] sm:grid-cols-2",
+            compact ? "mt-0 pb-4" : cn(d.sectionTopMargin, d.contactBottomPad),
+          )}
+        >
+          <div className="min-w-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <p
+                className={cn(
+                  d.sectionLabel,
+                  "min-w-0 font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+                )}
+              >
+                {copy.preparedFor}
               </p>
-              {draft.contactPhone ? (
-                <p className={cn(d.body, "text-muted-foreground")}>
-                  {draft.contactPhone}
-                </p>
-              ) : null}
-              {officeLines.length ? (
-                <p className={cn(d.body, "text-muted-foreground")}>
-                  {officeLines.join(" · ")}
-                </p>
+              {showEdit ? (
+                <PaperEditLink
+                  copy={copy}
+                  onClick={() => onEditSection!("information")}
+                />
               ) : null}
             </div>
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <p
-                  className={cn(
-                    d.sectionLabel,
-                    "font-semibold uppercase tracking-[0.06em] text-muted-foreground",
-                  )}
-                >
-                  {copy.shippedToAddress}
-                </p>
-                {showEdit ? (
-                  <PaperEditLink
-                    copy={copy}
-                    onClick={() => onEditSection!("requirements")}
-                  />
-                ) : null}
-              </div>
-              {shippingLines.length ? (
-                shippingLines.map((line, index) => (
-                  <p
-                    key={`${line}-${index}`}
-                    className={cn(
-                      d.body,
-                      "text-muted-foreground first:mt-1",
-                    )}
-                  >
-                    {line}
-                  </p>
-                ))
-              ) : (
-                <p className={cn("mt-1 text-muted-foreground", d.body)}>
-                  {copy.regionToConfirm}
-                </p>
-              )}
-              {spendDisplay ? (
-                <p className={cn("mt-2 text-muted-foreground", d.body)}>
-                  {copy.budgetOnPaper} {spendDisplay}
-                </p>
-              ) : null}
-              {draft.contactIndustry ? (
-                <p className={cn(d.body, "text-muted-foreground")}>
-                  {draft.contactIndustry}
-                </p>
-              ) : null}
-            </div>
+            <p className={cn("mt-1 font-medium", d.body)}>{toName}</p>
+            {draft.contactCompany ? (
+              <p className={cn(d.body, "text-muted-foreground")}>
+                {draft.contactCompany}
+              </p>
+            ) : null}
+            <p className={cn(d.body, "text-muted-foreground")}>
+              {draft.contactEmail || "—"}
+            </p>
+            {draft.contactPhone ? (
+              <p className={cn(d.body, "text-muted-foreground")}>
+                {draft.contactPhone}
+              </p>
+            ) : null}
+            {officeLines.length ? (
+              <p className={cn(d.body, "text-muted-foreground")}>
+                {officeLines.join(" · ")}
+              </p>
+            ) : null}
           </div>
-          <div
-            className={cn(
-              "border-b border-dashed border-[#E9E9E7]",
-              d.sectionTopMargin,
+          <div className="min-w-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <p
+                className={cn(
+                  d.sectionLabel,
+                  "min-w-0 font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+                )}
+              >
+                {copy.shippedToAddress}
+              </p>
+              {showEdit ? (
+                <PaperEditLink
+                  copy={copy}
+                  onClick={() => onEditSection!("requirements")}
+                />
+              ) : null}
+            </div>
+            {shippingLines.length ? (
+              shippingLines.map((line, index) => (
+                <p
+                  key={`${line}-${index}`}
+                  className={cn(d.body, "text-muted-foreground first:mt-1")}
+                >
+                  {line}
+                </p>
+              ))
+            ) : (
+              <p className={cn("mt-1 text-muted-foreground", d.body)}>
+                {copy.regionToConfirm}
+              </p>
             )}
-            aria-hidden
-          />
-        </>
+            {spendDisplay ? (
+              <p className={cn("mt-2 text-muted-foreground", d.body)}>
+                {copy.budgetOnPaper} {spendDisplay}
+              </p>
+            ) : null}
+            {draft.contactIndustry ? (
+              <p className={cn(d.body, "text-muted-foreground")}>
+                {draft.contactIndustry}
+              </p>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       {lines.length === 0 ? null : (
@@ -337,7 +331,7 @@ function ReviewSummaryBody({
               return (
                 <tr
                   key={line.id}
-                  className="border-b border-dashed border-[#E9E9E7] align-top last:border-b-0"
+                  className="border-b border-dashed border-[#F1F1EF] align-top last:border-b-0"
                 >
                   <td className={cn(d.tableRowPad, "pr-3 font-medium")}>
                     {qty}
@@ -363,11 +357,11 @@ function ReviewSummaryBody({
           d.briefTopPad,
         )}
       >
-        <div className="flex items-center justify-between gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
           <p
             className={cn(
               d.sectionLabel,
-              "font-semibold uppercase tracking-[0.06em] text-muted-foreground",
+              "min-w-0 font-semibold uppercase tracking-[0.06em] text-muted-foreground",
             )}
           >
             {copy.paperBrief}
@@ -482,7 +476,8 @@ export function RequestReviewPaper({
     <div
       ref={paperRef}
       className={cn(
-        "relative z-0 mx-auto w-full rounded-md bg-white text-foreground shadow-2xl ring-1 ring-black/5",
+        "relative z-0 mx-auto w-full rounded-md bg-white text-foreground",
+        PAPER_ELEVATION_CLASS,
         className,
       )}
       style={style}
@@ -542,10 +537,10 @@ export function RequestReviewSheetHeader({
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-foreground">
           {copy.reviewPaperBadge}
         </p>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-0.5 text-[12.5px] text-muted-foreground">
           {documentDate}
         </p>
-        <p className="mt-1 text-[11px] uppercase tracking-[0.08em] text-muted-foreground/70">
+        <p className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-muted-foreground/70">
           {copy.refLabel} {displayRef}
         </p>
       </div>

@@ -3,6 +3,7 @@
 import {Button} from '@pakfactory/ui/components/button';
 import {BuilderThreeColumn} from '@/components/customization-builder/builder-three-column';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
     firstUnresolvedStepIndex,
     getAnswer,
@@ -20,6 +21,7 @@ type CustomizationGuidedViewProps = {
     activeTypeId: string | null;
     activeOptionId: string | null;
     state: CustomizationBuilderState;
+    dimensionRange?: ProductDimensionRange;
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -39,6 +41,7 @@ export function CustomizationGuidedView({
     activeTypeId,
     activeOptionId,
     state,
+    dimensionRange,
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -75,6 +78,7 @@ export function CustomizationGuidedView({
             state={state}
             numberedRail
             maxReachableIndex={maxReachableIndex}
+            dimensionRange={dimensionRange}
             onSelectCategory={handleSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}
@@ -109,7 +113,7 @@ export function CustomizationGuidedView({
                                 disabled={!canAdvance}
                                 onClick={onDone}
                             >
-                                {CUSTOMIZATION_BUILDER_COPY.done}
+                                {CUSTOMIZATION_BUILDER_COPY.save}
                             </Button>
                         ) : (
                             <Button

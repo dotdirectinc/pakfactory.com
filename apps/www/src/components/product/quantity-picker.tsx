@@ -100,7 +100,7 @@ export function QuantityPicker({
                 <div
                     className={cn(
                         'flex min-h-11 h-auto w-full items-center gap-2 rounded-sm border border-input bg-background px-3 py-1.5',
-                        open && 'ring-2 ring-ring ring-offset-1',
+                        open && 'border-primary',
                     )}
                     onClick={() => setOpen((isOpen) => !isOpen)}
                 >

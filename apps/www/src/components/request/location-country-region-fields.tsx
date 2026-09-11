@@ -29,8 +29,7 @@ import type {ShippingAddress} from '@/lib/request/request.storage';
 
 const TRIGGER_CLASS =
     'flex h-11 w-full items-center justify-between rounded-sm border border-input bg-background px-3 text-sm';
-const INPUT_CLASS =
-    'h-11 rounded-sm border border-input bg-background text-sm';
+const INPUT_CLASS = 'h-11 rounded-sm bg-background text-sm';
 const MENU_CONTENT_CLASS =
     'overscroll-contain w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]';
 

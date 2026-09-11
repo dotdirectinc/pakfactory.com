@@ -6,6 +6,7 @@ import {ImagePlus, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
+import {Textarea} from '@pakfactory/ui/components/textarea';
 import {
     Tabs,
     TabsContent,
@@ -20,9 +21,6 @@ import {
 import type {RequestReferenceImage} from '@/lib/request/request.storage';
 
 export const MAX_REF_IMAGES = 5;
-
-const TEXTAREA_CLASS =
-    'min-h-[8.5rem] w-full min-w-0 rounded-sm border border-input bg-background px-3 py-2 text-base outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm';
 
 type DetailsOptInTab = 'no' | 'yes';
 
@@ -148,10 +146,10 @@ export function ContentsField({
                         >
                             {REQUEST_COPY.additionalNotesLabel}
                         </Label>
-                        <textarea
+                        <Textarea
                             id={`${id}-notes`}
                             rows={6}
-                            className={TEXTAREA_CLASS}
+                            className="min-h-[8.5rem] rounded-sm bg-background"
                             placeholder={REQUEST_COPY.additionalNotesPlaceholder}
                             value={notes}
                             onChange={(event) => onNotesChange(event.target.value)}

@@ -1,13 +1,16 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import dynamic from 'next/dynamic';
 import {Check, ChevronRight} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {CustomizationBuilder} from '@/components/customization-builder/customization-builder';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {REQUEST_COPY} from '@/lib/copy/request';
-import type {CustomizationOption} from '@/lib/catalog/types';
+import type {
+    CustomizationOption,
+    ProductDimensionRange,
+} from '@/lib/catalog/types';
 import {
     buildStepsFromCatalog,
     createEmptyBuilderState,
@@ -19,11 +22,20 @@ import {
     type CustomizationBuilderState,
 } from '@/lib/customization-builder';
 
+const CustomizationBuilder = dynamic(
+    () =>
+        import('@/components/customization-builder/customization-builder').then(
+            (mod) => mod.CustomizationBuilder,
+        ),
+    {ssr: false},
+);
+
 type CustomizationEntryProps = {
     availableCustomizations: CustomizationOption[];
     builderState: CustomizationBuilderState;
     onBuilderStateChange: (next: CustomizationBuilderState) => void;
     productTitle?: string;
+    dimensionRange?: ProductDimensionRange;
 };
 
 type SummaryRowProps = {
@@ -96,6 +108,7 @@ export function CustomizationEntry({
     builderState,
     onBuilderStateChange,
     productTitle,
+    dimensionRange,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
     const [initialStepKey, setInitialStepKey] = useState<
@@ -186,6 +199,7 @@ export function CustomizationEntry({
                 onChange={onBuilderStateChange}
                 productTitle={productTitle}
                 initialStepKey={initialStepKey}
+                dimensionRange={dimensionRange}
             />
         </div>
     );

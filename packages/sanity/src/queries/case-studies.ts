@@ -9,9 +9,20 @@
 
 const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
+/**
+ * ⚠️ This resolves the label from the solution's H1, which is marketing copy —
+ * an *Apparel & Fashion* client reads as "Custom Apparel & Fashion Packaging" on
+ * the card, in the meta card and in the JSON-LD `articleSection`. It should be
+ * `coalesce(shortName, title)`; `shortName` now exists for exactly this, and
+ * PROD-2460 makes that fix a deliberate change of its own.
+ *
+ * `headline` was listed here alongside `h1` for the span of the migration, so
+ * the deploy order could not matter while production still had `h1` unpopulated
+ * (PROD-2458). PROD-2459 unset the old key, so the arm is dead and gone.
+ */
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
-  "title": coalesce(headline, title),
+  "title": coalesce(h1, title),
   "slug": slug.current,
   solutionType
 }`;
@@ -158,6 +169,11 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
  * has (`deriveOptions(studies, "expertiseAreas")`). Kept because the listing rebuild
  * wants it; verify a consumer exists before trusting anything it returns.
  *
+ * `status != "discontinued"` was `!= "deprecated"` until D49 (PROD-2449) collapsed the
+ * two status vocabularies into one. The literal had to move with the schema: a filter
+ * naming a value the field no longer offers is not an error, it is a filter that
+ * matches everything — it would have silently re-admitted retired stages.
+ *
  * `expertiseAreas` sorts by `title`, not by `expertiseStage.order`. That field is
  * deprecated and its stored numbers are the OLD, WRONG sequence, never migrated — the
  * real end-to-end order (Design → Prototyping → Managed Manufacturing → Strategy →
@@ -165,9 +181,9 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
  * at that array when it ships; do not restore `order asc`.
  */
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(headline, title) asc) ${SOLUTION_TAXONOMY_ITEM},
+  "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(h1, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   "products": *[_type == "productLine"] | order(title asc) ${TAXONOMY_ITEM},
-  "expertiseAreas": *[_type == "expertiseStage" && status != "deprecated"] | order(title asc) ${TAXONOMY_ITEM}
+  "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
 }`;
 
 // ─── TypeScript types (mirrors GROQ projections above) ───────────────────────

@@ -207,7 +207,7 @@ export function StepReview({
                     sectionRef.current = node;
                 }
             }}
-            className="w-full bg-[#f2f2f2] px-6 pb-8 pt-16 sm:px-10 lg:-ml-10 lg:w-[calc(100%+2.5rem)] lg:pb-24 lg:pt-40 lg:pl-20"
+            className="w-full bg-[#f2f2f2] px-6 pb-8 pt-16 sm:px-10 lg:pb-24 lg:pt-40"
         >
             <div className="mx-auto w-full max-w-[820px]">
                 <div className="mb-8 text-center text-foreground">

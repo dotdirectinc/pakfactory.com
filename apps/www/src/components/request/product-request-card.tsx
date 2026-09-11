@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useId, useRef, useState} from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {ImagePlus, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
@@ -14,8 +15,8 @@ import {
 } from '@pakfactory/ui/components/dialog';
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
+import {Textarea} from '@pakfactory/ui/components/textarea';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {CustomizationBuilder} from '@/components/customization-builder/customization-builder';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import {DestructiveConfirmDialog} from '@/components/common/destructive-confirm-dialog';
 import {MAX_REF_IMAGES} from '@/components/product/contents-field';
@@ -42,8 +43,13 @@ import type {
 } from '@/lib/request/request.storage';
 import {productHref} from '@/lib/www-routes';
 
-const TEXTAREA_CLASS =
-    'min-h-[8.5rem] w-full min-w-0 rounded-sm border border-input bg-background px-3 py-2 text-base outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm';
+const CustomizationBuilder = dynamic(
+    () =>
+        import('@/components/customization-builder/customization-builder').then(
+            (mod) => mod.CustomizationBuilder,
+        ),
+    {ssr: false},
+);
 
 const LINK_ACTION_CLASS =
     'h-auto p-0 text-xs font-medium underline underline-offset-4';
@@ -375,6 +381,7 @@ export function ProductRequestCard({
                 value={builderDraft}
                 onChange={setBuilderDraft}
                 productTitle={title}
+                dimensionRange={line.dimensionRange}
             />
 
             <Dialog open={qtyOpen} onOpenChange={setQtyOpen}>
@@ -441,10 +448,10 @@ export function ProductRequestCard({
                             >
                                 {REQUEST_COPY.additionalNotesLabel}
                             </Label>
-                            <textarea
+                            <Textarea
                                 id={`${fieldId}-notes`}
                                 rows={6}
-                                className={TEXTAREA_CLASS}
+                                className="min-h-[8.5rem] rounded-sm bg-background"
                                 placeholder={
                                     REQUEST_COPY.additionalNotesPlaceholder
                                 }

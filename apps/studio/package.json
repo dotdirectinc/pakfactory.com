@@ -11,6 +11,7 @@
     "seed:blog-dev": "node scripts/seed-blog-dev.mjs",
     "seed:blog-singleton-pages": "node scripts/seed-blog-singleton-pages.mjs",
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
+    "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
     "cleanup:blogsettings-defaults": "node scripts/unset-legacy-blogsettings-defaults.mjs",
     "cleanup:sitemap-hints": "node scripts/unset-sitemap-hint-fields.mjs",
     "cleanup:ai-crawler-fields": "node scripts/unset-ai-crawler-fields.mjs",

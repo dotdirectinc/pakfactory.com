@@ -1,6 +1,7 @@
 import type {
     CatalogMedia,
     CustomizationOption,
+    ProductDimensionRange,
 } from '@/lib/catalog/types';
 import {
     parseBuilderState,
@@ -40,6 +41,8 @@ export type RequestLine = {
     productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
+    /** Product dimensionRange in mm from Sanity (snapshotted at add). */
+    dimensionRange?: ProductDimensionRange;
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
@@ -56,6 +59,7 @@ export type AddLineInput = {
     productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
+    dimensionRange?: ProductDimensionRange;
     quantities: number[];
     contents: string;
     customizations: RequestCustomization[];
@@ -186,6 +190,11 @@ function isRequestLine(value: unknown): value is RequestLine {
     if (line.customizationBuilder !== undefined) {
         line.customizationBuilder = parseBuilderState(line.customizationBuilder);
     }
+    if (line.dimensionRange !== undefined) {
+        const parsed = parseDimensionRange(line.dimensionRange);
+        if (parsed) line.dimensionRange = parsed;
+        else delete line.dimensionRange;
+    }
     return true;
 }
 
@@ -195,6 +204,26 @@ function asString(value: unknown, fallback = ''): string {
 
 function asBool(value: unknown, fallback = false): boolean {
     return typeof value === 'boolean' ? value : fallback;
+}
+
+function parseDimensionRange(value: unknown): ProductDimensionRange | undefined {
+    if (!value || typeof value !== 'object') return undefined;
+    const raw = value as Record<string, unknown>;
+    const next: ProductDimensionRange = {};
+    for (const key of [
+        'lengthMin',
+        'lengthMax',
+        'widthMin',
+        'widthMax',
+        'depthMin',
+        'depthMax',
+    ] as const) {
+        const n = raw[key];
+        if (typeof n === 'number' && Number.isFinite(n)) {
+            next[key] = n;
+        }
+    }
+    return Object.keys(next).length > 0 ? next : undefined;
 }
 
 function parseExpressQuantities(value: unknown, legacy?: unknown): number[] {
@@ -418,6 +447,9 @@ export function createRequestLine(input: AddLineInput): RequestLine {
         ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
         ...(input.availableCustomizations?.length
             ? {availableCustomizations: input.availableCustomizations}
+            : {}),
+        ...(input.dimensionRange
+            ? {dimensionRange: input.dimensionRange}
             : {}),
         quantities: [...input.quantities].filter((n) => n > 0).sort((a, b) => a - b),
         contents: input.contents.trim(),

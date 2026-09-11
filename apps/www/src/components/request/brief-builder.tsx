@@ -1,15 +1,21 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState, useTransition} from 'react';
-import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Loader2, Pencil, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
-import {pageDielineOuterClass} from '@pakfactory/ui/components/page-dieline-section';
+import {
+    Collapsible,
+    CollapsibleContent,
+} from '@pakfactory/ui/components/collapsible';
 import {cn} from '@pakfactory/ui/lib/utils';
 import Logo from '@/components/layout/logo';
-import {BriefBuilderRail} from '@/components/request/brief-builder-rail';
 import {ExpressPoolBanner} from '@/components/request/express-pool-banner';
+import {RequestWizardChrome} from '@/components/request/request-wizard-chrome';
+import {
+    scrollToRequestWizardSection,
+    useRequestWizardScrollSpy,
+} from '@/components/request/request-wizard-scroll';
 import {StepProducts} from '@/components/request/step-products';
 import {StepRequirements} from '@/components/request/step-requirements';
 import {StepReview} from '@/components/request/step-review';
@@ -38,8 +44,6 @@ import {
     showServicesSection,
 } from '@/lib/request/validation';
 import {WWW_ROUTES} from '@/lib/www-routes';
-
-const SECTION_TOP_OFFSET = 108;
 
 type BriefBuilderProps = {
     mode?: 'builder' | 'express' | 'products' | 'services';
@@ -138,7 +142,13 @@ export function BriefBuilder({
     }, [deferStart, entryKind, ensureBuilder]);
 
     const expressCold = isExpressCold(viewDraft);
-    const submitted = Boolean(draft.submittedAt && draft.ref);
+    const locked = Boolean(draft.submittedAt && draft.ref);
+    const submittedRef = draft.ref;
+
+    useEffect(() => {
+        if (locked) setShowSubmitSuccess(true);
+    }, [locked]);
+
     const showProducts = showProductsSection(viewDraft, builderLines);
     const showServices = showServicesSection(viewDraft, builderLines);
 
@@ -164,7 +174,7 @@ export function BriefBuilder({
             key: 'services',
             title: REQUEST_COPY.servicesTitle,
             subtitle: REQUEST_COPY.servicesRailSubtitle,
-            complete: draft.services.length > 0 || !draft.servicesEnabled,
+            complete: draft.servicesEnabled && draft.services.length > 0,
         };
 
         if (servicesFirst) {
@@ -173,8 +183,8 @@ export function BriefBuilder({
             rows.push(productsRow);
         } else if (viewDraft.entryKind === 'products') {
             rows.push(productsRow);
-            // Services upsell: only show rail row when enabled (POC collapse).
-            if (draft.servicesEnabled) rows.push(servicesRow);
+            // Services upsell: always in rail; row height collapses when disabled.
+            rows.push(servicesRow);
         } else {
             // express expanded into full rail
             if (showProducts) rows.push(productsRow);
@@ -232,31 +242,10 @@ export function BriefBuilder({
     };
 
     function scrollToSection(key: string) {
-        const el = sectionRefs[key]?.current;
-        if (!el) return;
-        const top =
-            el.getBoundingClientRect().top + window.scrollY - SECTION_TOP_OFFSET;
-        window.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
-        setActiveKey(key);
+        scrollToRequestWizardSection(sectionRefs, key, setActiveKey);
     }
 
-    useEffect(() => {
-        function onScroll() {
-            const line = SECTION_TOP_OFFSET;
-            let current = railRows[0]?.key ?? 'requirements';
-            for (const row of railRows) {
-                const el = sectionRefs[row.key]?.current;
-                if (!el) continue;
-                if (el.getBoundingClientRect().top <= line + 8) {
-                    current = row.key;
-                }
-            }
-            setActiveKey(current);
-        }
-        window.addEventListener('scroll', onScroll, {passive: true});
-        onScroll();
-        return () => window.removeEventListener('scroll', onScroll);
-    }, [railRows]);
+    useRequestWizardScrollSpy(railRows, sectionRefs, setActiveKey);
 
     function onSubmitted(ref: string) {
         updateDraft({
@@ -273,18 +262,17 @@ export function BriefBuilder({
         updateDraft({services: next, servicesEnabled: true});
     }
 
-    const closeHref =
-        draft.express || draft.entryKind === 'express'
-            ? WWW_ROUTES.products
-            : WWW_ROUTES.request;
+    // Derived from the route, not the draft, so the header is right on the
+    // first paint. Express is a plain RFQ form: no draft title to name.
+    const isExpress = entryKind === 'express';
 
     function leave() {
         startLeaving(() => {
-            router.push(closeHref);
+            router.push(WWW_ROUTES.home);
         });
     }
 
-    function handleClose() {
+    function requestLeave() {
         // Express keeps no named draft, so there is nothing to offer to save.
         // Input still persists on every keystroke, so leaving is lossless.
         // Builder products count as work even when form fields are still empty.
@@ -309,9 +297,14 @@ export function BriefBuilder({
         leave();
     }
 
-    // Derived from the route, not the draft, so the header is right on the
-    // first paint. Express is a plain RFQ form: no draft title to name.
-    const isExpress = entryKind === 'express';
+    function keepBrowsingAfterSubmit() {
+        router.push(WWW_ROUTES.products);
+    }
+
+    function backToRequestAfterSubmit() {
+        router.push(WWW_ROUTES.request);
+    }
+
     const title = draft.title || (hydrated ? defaultDraftTitle() : '');
     const hasLeadingSections =
         showProducts || showServices || viewDraft.entryKind === 'services';
@@ -385,21 +378,23 @@ export function BriefBuilder({
 
     const servicesBlock =
         viewDraft.entryKind === 'products' ? (
-            draft.servicesEnabled ? (
-                <StepServices
-                    services={draft.services}
-                    servicesEnabled={draft.servicesEnabled}
-                    onToggleEnabled={(servicesEnabled) =>
-                        updateDraft({
-                            servicesEnabled,
-                            ...(servicesEnabled ? {} : {services: []}),
-                        })
-                    }
-                    onToggleService={toggleService}
-                    sectionRef={servicesRef}
-                    showEnableToggle={false}
-                />
-            ) : null
+            <Collapsible open={draft.servicesEnabled}>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up-fast data-[state=open]:animate-collapsible-down-fast">
+                    <StepServices
+                        services={draft.services}
+                        servicesEnabled={draft.servicesEnabled}
+                        onToggleEnabled={(servicesEnabled) =>
+                            updateDraft({
+                                servicesEnabled,
+                                ...(servicesEnabled ? {} : {services: []}),
+                            })
+                        }
+                        onToggleService={toggleService}
+                        sectionRef={servicesRef}
+                        showEnableToggle={false}
+                    />
+                </CollapsibleContent>
+            </Collapsible>
         ) : showServices ? (
             <StepServices
                 services={draft.services}
@@ -415,59 +410,23 @@ export function BriefBuilder({
             />
         ) : null;
 
-    if (submitted && draft.ref) {
-        return (
-            <div className="flex min-h-screen flex-col bg-background">
-                <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
-                    <Logo />
-                    <span className="text-border" aria-hidden>
-                        |
-                    </span>
-                    <span className="text-sm font-medium">
-                        {isExpress ? REQUEST_COPY.expressHeading : title}
-                    </span>
-                </header>
-                <main className="mx-auto flex w-full max-w-[760px] flex-1 flex-col items-start justify-center px-6 py-20 sm:px-10">
-                    <h1 className="text-3xl font-semibold tracking-tight">
-                        {REQUEST_COPY.quoteRequested}
-                    </h1>
-                    <p className="mt-3 text-muted-foreground">
-                        {REQUEST_COPY.quoteRequestedBody}
-                    </p>
-                    <p className="mt-4 text-sm font-medium">
-                        {REQUEST_COPY.yourRefPrefix} {draft.ref}
-                    </p>
-                    <div className="mt-8 flex flex-wrap gap-3">
-                        {draft.entryKind !== 'express' ? (
-                            <Button asChild variant="outline">
-                                <Link href={WWW_ROUTES.request}>
-                                    {REQUEST_COPY.backToYourRequest}
-                                </Link>
-                            </Button>
-                        ) : null}
-                        <Button asChild>
-                            <Link href={WWW_ROUTES.products}>
-                                {REQUEST_COPY.keepBrowsing}
-                            </Link>
-                        </Button>
-                    </div>
-                </main>
-                <MessageDialog
-                    open={showSubmitSuccess}
-                    title={REQUEST_COPY.submitSuccessTitle}
-                    description={`${REQUEST_COPY.submitSuccessBody} ${REQUEST_COPY.yourRefPrefix} ${draft.ref}`}
-                    actionLabel={REQUEST_COPY.submitSuccessAction}
-                    onAction={() => setShowSubmitSuccess(false)}
-                />
-            </div>
-        );
-    }
-
     return (
         <div className="flex min-h-screen flex-col bg-background text-foreground">
+            <div
+                className="flex min-h-screen flex-1 flex-col"
+                {...(locked ? {inert: true} : {})}
+            >
             <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
                 <div className="flex min-w-0 items-center gap-2">
-                    <Logo />
+                    <button
+                        type="button"
+                        className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={REQUEST_COPY.logoBackAria}
+                        disabled={leaving || locked}
+                        onClick={requestLeave}
+                    >
+                        <Logo />
+                    </button>
                     <span className="text-border" aria-hidden>
                         |
                     </span>
@@ -519,8 +478,8 @@ export function BriefBuilder({
                         variant="ghost"
                         size="sm"
                         className="h-8 gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-                        disabled={leaving}
-                        onClick={handleClose}
+                        disabled={leaving || locked}
+                        onClick={requestLeave}
                     >
                         {leaving ? (
                             <Loader2
@@ -535,78 +494,81 @@ export function BriefBuilder({
                 </div>
             </header>
 
-            <div
-                className={cn(
-                    pageDielineOuterClass(),
-                    'mx-auto flex w-full max-w-[var(--layout-max)] flex-1 items-stretch',
-                )}
+            <RequestWizardChrome
+                rows={railRows}
+                activeKey={activeKey}
+                onSelect={scrollToSection}
+                refNumber={draft.ref}
+                servicesEnabled={draft.servicesEnabled}
             >
-                <BriefBuilderRail
-                    rows={railRows}
-                    activeKey={activeKey}
-                    onSelect={scrollToSection}
-                    refNumber={draft.ref}
-                />
+                <div
+                    className={cn(
+                        'mx-auto w-full max-w-[760px] px-6 sm:px-10',
+                        hasLeadingSections
+                            ? 'pt-6 pb-10 sm:pb-12'
+                            : 'pb-10 pt-8 sm:pb-12',
+                    )}
+                >
+                    {viewDraft.entryKind === 'services' ? (
+                        <>
+                            {servicesBlock}
+                            {productsBlock}
+                        </>
+                    ) : (
+                        <>
+                            {productsBlock}
+                            {servicesBlock}
+                        </>
+                    )}
 
-                <div className="flex min-w-0 flex-1 flex-col">
-                    <main className="flex min-h-[calc(100dvh-68px)] flex-1 flex-col lg:border-l lg:border-r lg:border-dashed lg:border-border lg:pl-10">
-                        <div
-                            className={cn(
-                                'mx-auto w-full max-w-[760px] px-6 sm:px-10',
-                                hasLeadingSections
-                                    ? 'pt-6 pb-10 sm:pb-12'
-                                    : 'pb-10 pt-8 sm:pb-12',
-                            )}
-                        >
-                            {viewDraft.entryKind === 'services' ? (
-                                <>
-                                    {servicesBlock}
-                                    {productsBlock}
-                                </>
-                            ) : (
-                                <>
-                                    {productsBlock}
-                                    {servicesBlock}
-                                </>
-                            )}
-
-                            <StepRequirements
-                                draft={draft}
-                                expressCold={
-                                    expressCold ||
-                                    (viewDraft.entryKind === 'express' &&
-                                        !showProducts)
-                                }
-                                onPatch={updateDraft}
-                                sectionRef={requirementsRef}
-                                poolBanner={
-                                    viewDraft.entryKind === 'express' &&
-                                    !viewDraft.productsExpanded &&
-                                    lines.length > 0 ? (
-                                        <ExpressPoolBanner
-                                            count={lines.length}
-                                        />
-                                    ) : null
-                                }
-                            />
-                            <StepYourInformation
-                                draft={draft}
-                                onPatch={updateDraft}
-                                sectionRef={informationRef}
-                            />
-                        </div>
-
-                        <StepReview
-                            draft={draft}
-                            lines={builderLines}
-                            submitHelper={submitHelper}
-                            onSubmitted={onSubmitted}
-                            onEditSection={scrollToSection}
-                            sectionRef={reviewRef}
-                        />
-                    </main>
+                    <StepRequirements
+                        draft={draft}
+                        expressCold={
+                            expressCold ||
+                            (viewDraft.entryKind === 'express' && !showProducts)
+                        }
+                        onPatch={updateDraft}
+                        sectionRef={requirementsRef}
+                        poolBanner={
+                            viewDraft.entryKind === 'express' &&
+                            !viewDraft.productsExpanded &&
+                            lines.length > 0 ? (
+                                <ExpressPoolBanner count={lines.length} />
+                            ) : null
+                        }
+                    />
+                    <StepYourInformation
+                        draft={draft}
+                        onPatch={updateDraft}
+                        sectionRef={informationRef}
+                    />
                 </div>
+
+                <StepReview
+                    draft={draft}
+                    lines={builderLines}
+                    submitHelper={submitHelper}
+                    onSubmitted={onSubmitted}
+                    onEditSection={scrollToSection}
+                    sectionRef={reviewRef}
+                />
+            </RequestWizardChrome>
             </div>
+
+            <MessageDialog
+                open={Boolean(locked && showSubmitSuccess && submittedRef)}
+                title={REQUEST_COPY.submitSuccessTitle}
+                description={`${REQUEST_COPY.submitSuccessBody} ${REQUEST_COPY.yourRefPrefix} ${submittedRef}`}
+                actionLabel={REQUEST_COPY.keepBrowsing}
+                onAction={keepBrowsingAfterSubmit}
+                onDismiss={keepBrowsingAfterSubmit}
+                {...(isExpress
+                    ? {}
+                    : {
+                          secondaryLabel: REQUEST_COPY.backToYourRequest,
+                          onSecondary: backToRequestAfterSubmit,
+                      })}
+            />
 
             <LeaveDialog
                 open={leaveOpen}

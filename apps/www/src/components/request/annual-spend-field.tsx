@@ -11,7 +11,7 @@ import {
     formatSpendLabel,
 } from '@/lib/request/annual-spend';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 type AnnualSpendFieldProps = {
     value?: string;

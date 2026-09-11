@@ -42,7 +42,7 @@ export function SiteNavRequestSlot({
             request={{
                 href: WWW_ROUTES.request,
                 count: lines.length,
-                label: 'Your request',
+                label: 'Quote request',
             }}
         />
     );

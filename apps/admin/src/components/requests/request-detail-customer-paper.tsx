@@ -1,22 +1,20 @@
 "use client";
 
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   RequestReviewPaper,
   type RequestReviewPageSlice,
 } from "@pakfactory/brief-builder-ui/request-review-paper";
 import { DEFAULT_REQUEST_REVIEW_COPY } from "@pakfactory/brief-builder-ui/request-review-copy";
 import type { RequestDraft, RequestLine } from "@pakfactory/domain/request";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@pakfactory/ui/components/carousel";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
-
-/** Letter aspect only — do not put overflow-hidden here; it clips the paper shadow. */
-const LETTER_PAPER_CLASS = "aspect-[8.5/11] w-full max-w-full shrink-0";
 
 /**
  * Omnidirectional soft shadow for the admin viewer.
@@ -26,17 +24,20 @@ const LETTER_PAPER_CLASS = "aspect-[8.5/11] w-full max-w-full shrink-0";
 const VIEWER_PAPER_SHADOW_CLASS =
   "!shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_8px_28px_rgba(0,0,0,0.14),0_2px_6px_rgba(0,0,0,0.06)]";
 
-const LETTER_ASPECT = 11 / 8.5;
+/** Fixed letter frame — full grey height minus shadow gutter only. */
+const LETTER_FIT_CLASS =
+  "aspect-[8.5/11] h-auto max-h-[calc(100dvh-68px-3rem)] w-[min(43rem,calc((100dvh-68px-3rem)*8.5/11))] shrink-0";
 
+/** Thumbs sit just right of the centered letter (red-box zone). */
+const THUMBS_BESIDE_PAPER_CLASS =
+  "absolute top-1/2 z-10 flex -translate-y-1/2 flex-col gap-2 left-[calc(50%+min(43rem,(100dvh-68px-3rem)*8.5/11)/2+1rem)]";
+
+/** Thumb sheet fills the fixed button box. */
+const LETTER_THUMB_CLASS = "h-full w-full overflow-hidden shadow-none ring-0";
+
+const LETTER_ASPECT = 11 / 8.5;
 const THUMB_WIDTH_PX = 72;
 const THUMB_SCALE = THUMB_WIDTH_PX / 688;
-/** Thumb column + nav horizontal padding (`px-1` + `pr-2`) + stage `gap-4`. */
-const THUMB_RAIL_BUDGET_PX = THUMB_WIDTH_PX + 12 + 16;
-
-const PAGE_GAP_PX = 16;
-const PEEK_FRACTION = 1 / 3;
-/** Outside the overflow mask — room for soft shadow; does not shrink the letter. */
-const OUTER_GUTTER_PX = 24;
 
 type RequestDetailCustomerPaperStackProps = {
   draft: RequestDraft;
@@ -142,7 +143,7 @@ function CustomerPaperSheet({
       productTitle={humanizeProductSlug}
       pageSlice={pageSlice}
       density="tight"
-      className={cn(LETTER_PAPER_CLASS, VIEWER_PAPER_SHADOW_CLASS, className)}
+      className={cn(VIEWER_PAPER_SHADOW_CLASS, className)}
     />
   );
 }
@@ -172,132 +173,30 @@ function PaperThumbnail({
       aria-label={label}
       aria-current={selected ? "page" : undefined}
       className={cn(
-        "shrink-0 rounded-xs bg-background shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        // Always ring-2 + offset so selection never changes layout size.
+        "shrink-0 rounded-xs bg-background shadow-sm ring-2 ring-offset-2 ring-offset-[#f2f2f2] transition-shadow focus-visible:outline-none focus-visible:ring-ring",
         selected
-          ? "ring-2 ring-border ring-offset-2 ring-offset-[#f2f2f2]"
-          : "ring-1 ring-border hover:ring-muted-foreground/40",
+          ? "ring-border"
+          : "ring-transparent hover:ring-muted-foreground/40",
       )}
       style={{ width: THUMB_WIDTH_PX, height: thumbHeight }}
     >
       <div
         aria-hidden
-        className="pointer-events-none origin-top-left rounded-xs"
+        className="pointer-events-none origin-top-left overflow-hidden rounded-xs"
         style={{
           width: 688,
+          height: Math.round(688 * LETTER_ASPECT),
           transform: `scale(${THUMB_SCALE})`,
         }}
       >
         <CustomerPaperSheet
           {...props}
           pageSlice={pageSlice}
-          className="shadow-none ring-0"
+          className={LETTER_THUMB_CLASS}
         />
       </div>
     </button>
-  );
-}
-
-function PaperPeekCarousel({
-  props,
-  pageSlices,
-  activeIndex,
-  onActiveIndexChange,
-  availableWidth,
-  availableHeight,
-}: {
-  props: RequestDetailCustomerPaperStackProps;
-  pageSlices: RequestReviewPageSlice[];
-  activeIndex: number;
-  onActiveIndexChange: (index: number) => void;
-  availableWidth: number;
-  availableHeight: number;
-}) {
-  const pageCount = pageSlices.length;
-  const safeIndex = Math.min(activeIndex, pageCount - 1);
-
-  // Outer gutter is outside the mask — fit one full page + peek into the mask budget.
-  const maskWidthBudget = Math.max(0, availableWidth - OUTER_GUTTER_PX * 2);
-  const maskHeightBudget = Math.max(0, availableHeight - OUTER_GUTTER_PX * 2);
-  const widthFromHeight =
-    maskHeightBudget > 0
-      ? (maskHeightBudget - PAGE_GAP_PX) /
-        (LETTER_ASPECT * (1 + PEEK_FRACTION))
-      : 0;
-  const pageWidth =
-    maskWidthBudget > 0 && widthFromHeight > 0
-      ? Math.min(maskWidthBudget, widthFromHeight)
-      : maskWidthBudget;
-  const pageHeight = pageWidth * LETTER_ASPECT;
-  const step = pageHeight + PAGE_GAP_PX;
-  const maskContentHeight =
-    pageHeight > 0
-      ? pageHeight * (1 + PEEK_FRACTION) + PAGE_GAP_PX
-      : 0;
-  const trackHeight =
-    pageCount > 0 && pageHeight > 0
-      ? pageCount * pageHeight + (pageCount - 1) * PAGE_GAP_PX
-      : 0;
-  const maxTranslate = Math.max(0, trackHeight - maskContentHeight);
-  const translateY =
-    pageHeight > 0 ? -Math.min(safeIndex * step, maxTranslate) : 0;
-  const ready = pageWidth > 0 && maskContentHeight > 0;
-
-  return (
-    <div
-      className={cn(
-        "flex shrink-0 flex-col items-start justify-start overflow-visible",
-        !ready && "invisible",
-      )}
-      aria-hidden={!ready}
-      style={{ padding: OUTER_GUTTER_PX }}
-    >
-      {/* Clip page bodies for peek; overflow-clip-margin lets box-shadow paint into the gutter. */}
-      <div
-        className="relative"
-        style={{
-          width: ready ? pageWidth : 0,
-          height: ready ? maskContentHeight : 0,
-          overflow: "clip",
-          overflowClipMargin: OUTER_GUTTER_PX,
-        }}
-      >
-        <div
-          className="flex flex-col transition-transform duration-300 ease-out will-change-transform"
-          style={{
-            width: ready ? pageWidth : undefined,
-            gap: PAGE_GAP_PX,
-            transform: `translateY(${translateY}px)`,
-          }}
-        >
-          {pageSlices.map((pageSlice, index) => {
-            const isActive = index === safeIndex;
-
-            return (
-              <button
-                key={`${pageSlice.pageLabel ?? "page"}-${index}`}
-                type="button"
-                disabled={isActive || !ready}
-                aria-label={ADMIN_REQUESTS_COPY.paperPageLabel(
-                  index + 1,
-                  pageCount,
-                )}
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => {
-                  if (!isActive) onActiveIndexChange(index);
-                }}
-                className={cn(
-                  "w-full shrink-0 text-left",
-                  isActive ? "cursor-default" : "cursor-pointer",
-                )}
-                style={{ width: ready ? pageWidth : undefined }}
-              >
-                <CustomerPaperSheet {...props} pageSlice={pageSlice} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -307,96 +206,87 @@ export function RequestDetailCustomerPaperStack({
 }: RequestDetailCustomerPaperStackProps & { className?: string }) {
   const { draft, lines } = props;
   const pageSlices = buildPageSlices(draft, lines);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const safeIndex = Math.min(activeIndex, pageSlices.length - 1);
   const multiPage = pageSlices.length > 1;
-  const hostRef = useRef<HTMLDivElement>(null);
-  const [hostSize, setHostSize] = useState({ width: 0, height: 0 });
+  const [api, setApi] = useState<CarouselApi>();
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  useLayoutEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-
-    const syncSize = () => {
-      const rect = el.getBoundingClientRect();
-      setHostSize({ width: rect.width, height: rect.height });
-    };
-
-    syncSize();
-
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      setHostSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
+  const onSelect = useCallback((carouselApi: CarouselApi) => {
+    if (!carouselApi) return;
+    setActiveIndex(carouselApi.selectedScrollSnap());
   }, []);
 
-  const carouselAvailableWidth = Math.max(
-    0,
-    Math.min(hostSize.width, multiPage ? 48 * 16 : 43 * 16) -
-      (multiPage ? THUMB_RAIL_BUDGET_PX : 0),
-  );
-  const hostMeasured = hostSize.width > 0 && hostSize.height > 0;
+  useEffect(() => {
+    if (!api) return;
+    onSelect(api);
+    api.on("reInit", onSelect);
+    api.on("select", onSelect);
+    return () => {
+      api.off("reInit", onSelect);
+      api.off("select", onSelect);
+    };
+  }, [api, onSelect]);
 
   return (
     <div
-      ref={hostRef}
       className={cn(
-        "flex h-full min-h-[min(70vh,800px)] w-full flex-col bg-[#f2f2f2] xl:min-h-0 xl:bg-transparent",
+        "relative flex h-full min-h-[min(70vh,800px)] w-full overflow-hidden xl:min-h-0",
         className,
       )}
     >
-      {/* Full-width gray stage — spans the preview column; height hugs paper/thumbs (+ gutter). */}
-      <div
-        className={cn(
-          "flex w-full items-start justify-center self-start bg-[#f2f2f2]",
-          multiPage ? "gap-4" : null,
-          multiPage && !hostMeasured && "invisible",
-        )}
-        aria-hidden={multiPage && !hostMeasured ? true : undefined}
-      >
-        {multiPage ? (
-          <PaperPeekCarousel
-            props={props}
-            pageSlices={pageSlices}
-            activeIndex={safeIndex}
-            onActiveIndexChange={setActiveIndex}
-            availableWidth={carouselAvailableWidth}
-            availableHeight={hostSize.height}
-          />
-        ) : (
-          <div className="flex w-full flex-col items-center px-4 py-6 sm:px-6">
-            <div className="flex w-full flex-col items-center p-3">
-              <CustomerPaperSheet {...props} pageSlice={pageSlices[0]} />
-            </div>
+      {multiPage ? (
+        <>
+          <div className="absolute inset-0 min-h-0 min-w-0 [&_[data-slot=carousel-content]]:h-full">
+            <Carousel
+              orientation="vertical"
+              className="h-full w-full"
+              setApi={setApi}
+              opts={{ loop: false, align: "center" }}
+            >
+              <CarouselContent className="-mt-0 h-full">
+                {pageSlices.map((pageSlice, index) => (
+                  <CarouselItem
+                    key={`${pageSlice.pageLabel ?? "page"}-${index}`}
+                    className="basis-full pt-0"
+                  >
+                    <div className="flex h-full w-full items-center justify-center p-6">
+                      <CustomerPaperSheet
+                        {...props}
+                        pageSlice={pageSlice}
+                        className={LETTER_FIT_CLASS}
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
           </div>
-        )}
 
-        {multiPage ? (
           <nav
             aria-label={ADMIN_REQUESTS_COPY.paperPagesNav}
-            className="flex shrink-0 flex-col gap-2 overflow-visible px-1 pb-4 pr-2"
-            style={{ paddingTop: OUTER_GUTTER_PX }}
+            className={THUMBS_BESIDE_PAPER_CLASS}
           >
             {pageSlices.map((pageSlice, index) => (
               <PaperThumbnail
-                key={`${pageSlice.pageLabel ?? "page"}-${index}`}
+                key={`thumb-${pageSlice.pageLabel ?? "page"}-${index}`}
                 props={props}
                 pageSlice={pageSlice}
                 pageNumber={index + 1}
                 pageCount={pageSlices.length}
-                selected={index === safeIndex}
-                onSelect={() => setActiveIndex(index)}
+                selected={index === activeIndex}
+                onSelect={() => api?.scrollTo(index)}
               />
             ))}
           </nav>
-        ) : null}
-      </div>
+        </>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center p-6">
+          <CustomerPaperSheet
+            {...props}
+            pageSlice={pageSlices[0]}
+            className={LETTER_FIT_CLASS}
+          />
+        </div>
+      )}
     </div>
   );
 }

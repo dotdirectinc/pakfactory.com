@@ -3,8 +3,10 @@ import type { FaviconAsset } from "@pakfactory/sanity/favicon";
 import { BLOG_GLOBAL_SETTINGS_QUERY } from "@pakfactory/sanity/queries";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
-
-const WWW_GLOBAL_SETTINGS_CACHE_TAG = "www-global-settings";
+import {
+  WWW_CONTENT_REVALIDATE_SECONDS,
+  WWW_GLOBAL_SETTINGS_CACHE_TAG,
+} from "@/lib/www-cache";
 
 export type WwwGlobalSettings = {
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
@@ -34,7 +36,10 @@ async function loadWwwGlobalSettings(): Promise<WwwGlobalSettings | null> {
 const getCachedWwwGlobalSettings = unstable_cache(
   loadWwwGlobalSettings,
   [WWW_GLOBAL_SETTINGS_CACHE_TAG],
-  { revalidate: 300, tags: [WWW_GLOBAL_SETTINGS_CACHE_TAG] },
+  {
+    revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+    tags: [WWW_GLOBAL_SETTINGS_CACHE_TAG],
+  },
 );
 
 /** Global Settings singleton — GTM container ID for production analytics inject. */

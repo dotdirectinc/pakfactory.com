@@ -7,6 +7,17 @@
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
+/** Card thumbnail: style uses cardImage → hero.image; line uses cardImage → heroMedia. */
+const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, hero.image){
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
+const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, heroMedia){
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
 const CATEGORY_PROJ = /* groq */ `{
   _id,
   title,
@@ -30,6 +41,9 @@ const OPTION_PROJ = /* groq */ `{
   "slug": slug.current,
   status,
   role,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -48,7 +62,9 @@ const LINE_REF_PROJ = /* groq */ `{
 const STYLE_REF_PROJ = /* groq */ `{
   _id,
   title,
-  "slug": slug.current
+  "slug": slug.current,
+  "description": coalesce(hero.description, description),
+  ${STYLE_CARD_IMAGE}
 }`;
 
 /** Shared product projection used by by-slug and list queries. */
@@ -75,13 +91,34 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   }
 `;
 
+/**
+ * Card/list projection — no availableCustomizations tree (PROD-2456).
+ * PDP still uses {@link CATALOG_PRODUCT_FIELDS}.
+ */
+export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  sku,
+  kind,
+  status,
+  description,
+  moq,
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
+  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
+`;
+
 /** Active (or unset status) products for catalog index / params. */
 export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
   (status == "active" || !defined(status))
 ] | order(title asc) {
-  ${CATALOG_PRODUCT_FIELDS}
+  ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
@@ -101,16 +138,19 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   "slug": slug.current,
   cardSummary,
   "description": coalesce(cardSummary, pt::text(intro)),
+  ${LINE_CARD_IMAGE},
   "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
     _id,
     title,
-    "slug": slug.current
+    "slug": slug.current,
+    "description": coalesce(hero.description, description),
+    ${STYLE_CARD_IMAGE}
   },
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
     basedOn->productLine._ref == ^._id
   ) && defined(slug.current) && (status == "active" || !defined(status))] | order(title asc) {
-    ${CATALOG_PRODUCT_FIELDS}
+    ${CATALOG_PRODUCT_CARD_FIELDS}
   }
 }`;
 
@@ -121,6 +161,24 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   status == "active" &&
   defined(slug.current)
 ] | order(title asc) {
+  _id,
+  title,
+  "slug": slug.current,
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "category": type->category->${CATEGORY_PROJ}
+}`;
+
+/** Single library option by category + handle slugs (PROD-2456). */
+export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  role == "reference" &&
+  status == "active" &&
+  slug.current == $handle &&
+  type->category->slug.current == $category
+][0]{
   _id,
   title,
   "slug": slug.current,
@@ -154,6 +212,9 @@ export type CatalogOptionDoc = {
   slug: string | null;
   status?: string | null;
   role?: 'configurable' | 'reference' | null;
+  metaDescription?: string | null;
+  glossaryPlain?: string | null;
+  benefitsPlain?: string | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
 };
@@ -175,6 +236,8 @@ export type CatalogStyleRefDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  description?: string | null;
+  cardImage?: unknown | null;
 };
 
 export type CatalogProductDoc = {
@@ -207,6 +270,7 @@ export type CatalogProductLineDoc = {
   slug: string | null;
   cardSummary?: string | null;
   description?: string | null;
+  cardImage?: unknown | null;
   styles?: CatalogStyleRefDoc[] | null;
   products?: CatalogProductDoc[] | null;
 };

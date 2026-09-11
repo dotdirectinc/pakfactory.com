@@ -41,12 +41,24 @@ export const productStyle = defineType({
       description: 'The canonical name — "Magnetic Closure Boxes". Required, always presentable.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
+    // One naming convention across Line / Style / Solution / Product: Title is
+    // the canonical name, H1 is the page heading, Short name is the card and nav
+    // label. Both overrides fall back to Title when empty, so an editor who
+    // leaves them alone gets the right string everywhere.
     defineField({
-      name: 'displayTitle',
-      title: 'Display title',
+      name: 'h1',
+      title: 'H1',
       type: 'string',
       group: GROUPS.content,
-      description: 'Optional front-end override. Empty is the normal case.',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -67,28 +79,54 @@ export const productStyle = defineType({
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
+    // Renamed from `description` (PROD-2454) — that key held *short* copy
+    // here, which is why the same word meant two things across the model.
     defineField({
-      name: 'description',
-      title: 'Description',
+      name: 'shortDescription',
+      title: 'Short description',
       type: 'text',
       group: GROUPS.content,
       rows: 3,
-      description: 'Card and listing copy.',
+      description: 'One-line summary for the style card, listings and the nav.',
+    }),
+    // The `description` key was freed by PROD-2455 and reused for the
+    // long-form field, matching Line and Solution. Starts empty everywhere.
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'array',
+      group: GROUPS.content,
+      description:
+        'The full description of this style — what it is, how it is constructed and what it suits. Renders on the style landing page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
     }),
     defineField({
       name: 'hero',
       title: 'Hero',
       type: 'object',
       group: GROUPS.content,
-      description: 'Landing-page hero: badge, headline (the H1 — not a name), supporting copy and image.',
+      description: 'Landing-page hero: badge, supporting copy and image. The heading is the top-level H1, not a field in here.',
       options: { collapsible: true, collapsed: false },
       fields: [
         // Renamed from `hero.title` (D33). The field was *labelled* "Badge label" but
         // *named* `title`, so it collided with the document's own title in every
         // projection. 0 populated at the rename.
         defineField({ name: 'label', title: 'Badge label', type: 'string', description: 'Small label above the headline (e.g. "Folding Cartons").' }),
-        defineField({ name: 'headline', title: 'Headline', type: 'string', description: 'The page H1 (e.g. "Magnetic Closure Rigid Boxes"). Leave blank to use the site default.' }),
-        defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the headline.' }),
+        // `hero.headline` removed: it was a third name on a type that already had
+        // `title` and `displayTitle`, and it was the H1 all along. Promoted to the
+        // top-level `h1` above. 0 populated at the move, so nothing was lost.
+        defineField({ name: 'description', title: 'Description', type: 'text', rows: 4, description: 'Supporting copy below the heading.' }),
         defineField(taggedImageField({
           name: 'image',
           title: 'Hero image',
@@ -159,12 +197,21 @@ export const productStyle = defineType({
       options: {
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Future', value: 'future' },
-          { title: 'Deprecated', value: 'deprecated' },
+          { title: 'Coming soon', value: 'coming-soon' },
+          { title: 'Discontinued', value: 'discontinued' },
         ],
         layout: 'radio',
       },
       initialValue: 'active',
+    }),
+    defineField({
+      name: 'customerFacing',
+      title: 'Customer facing',
+      type: 'boolean',
+      group: GROUPS.content,
+      description:
+        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+      initialValue: true,
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
     // cards within a Product Line's styles grid, and nothing has ever read it — no
@@ -210,7 +257,7 @@ export const productStyle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'displayTitle', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
+    select: { title: 'title', display: 'shortName', line: 'productLine.title', heroImage: 'hero.image', cardImage: 'cardImage' },
     prepare({ title, display, line, heroImage, cardImage }) {
       return {
         title: display || title || 'Untitled style',

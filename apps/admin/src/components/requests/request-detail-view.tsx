@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import {
+  AdminAddProductComingSoon,
+  AdminRequestProductCard,
+} from "@/components/requests/admin-request-product-card";
 import { RequestDetailCustomerPaperStack } from "@/components/requests/request-detail-customer-paper";
 import { RequestAttachments } from "@/components/requests/request-attachments";
 import { RequestDetailHeader } from "@/components/requests/request-detail-header";
@@ -7,6 +11,7 @@ import type { Request, ShippingAddress } from "@pakfactory/domain/request";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { LogoMark } from "@/components/layout/logo-mark";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
+import { entryKindLabel } from "@/lib/request-entry-kind";
 
 /** Grid-cell breakout for the right preview column spacer. */
 const PREVIEW_BREAKOUT =
@@ -37,14 +42,23 @@ function formatAddress(address: ShippingAddress | null): string {
 function DetailField({
   label,
   value,
+  preserveWhitespace = false,
 }: {
   label: string;
   value: string;
+  preserveWhitespace?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="text-sm text-foreground">{value}</dd>
+      <dd
+        className={cn(
+          "text-sm text-foreground",
+          preserveWhitespace && "whitespace-pre-wrap break-words",
+        )}
+      >
+        {value}
+      </dd>
     </div>
   );
 }
@@ -92,11 +106,11 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
 
   return (
     <>
-    <div className="relative xl:-mx-8 xl:-mt-12 xl:w-[calc(100%+4rem)]">
-      <div className="relative mx-auto w-full max-w-[100rem] px-4 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:min-h-0 xl:items-stretch">
-        <div className="flex min-w-0 flex-col gap-6 pl-4 pt-4 xl:pl-6 xl:pt-6">
-        <RequestDetailHeader request={request} />
+      <div className="relative xl:-mx-8 xl:-mt-12 xl:w-[calc(100%+4rem)]">
+        <div className="relative mx-auto w-full max-w-[100rem] px-4 lg:px-8">
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:min-h-0 xl:items-stretch">
+            <div className="flex min-w-0 flex-col gap-6 pl-4 pt-4 xl:pl-6 xl:pt-6">
+              <RequestDetailHeader request={request} />
 
         <DetailSection title={ADMIN_REQUESTS_COPY.sectionContact}>
             <dl className="grid gap-4 sm:grid-cols-2">
@@ -138,128 +152,106 @@ export function RequestDetailView({ request }: RequestDetailViewProps) {
             </dl>
           </DetailSection>
 
-          <DetailSection title={ADMIN_REQUESTS_COPY.sectionRequirements}>
-            <dl className="grid gap-4">
-              <DetailField
-                label={ADMIN_REQUESTS_COPY.packagingContentsLabel}
-                value={draft.packagingContents || ADMIN_REQUESTS_COPY.emptyValue}
-              />
-              <DetailField
-                label={ADMIN_REQUESTS_COPY.briefLabel}
-                value={draft.notes || ADMIN_REQUESTS_COPY.emptyValue}
-              />
-              <DetailField
-                label={ADMIN_REQUESTS_COPY.timelineLabel}
-                value={draft.timeline || ADMIN_REQUESTS_COPY.emptyValue}
-              />
-              <DetailField
-                label={ADMIN_REQUESTS_COPY.shipToLabel}
-                value={formatAddress(draft.shippingAddress)}
-              />
-            </dl>
-          </DetailSection>
+              <DetailSection title={ADMIN_REQUESTS_COPY.sectionRequirements}>
+                <dl className="grid gap-4">
+                  <DetailField
+                    label={ADMIN_REQUESTS_COPY.requirementTypeLabel}
+                    value={entryKindLabel(draft.entryKind)}
+                  />
+                  <DetailField
+                    label={ADMIN_REQUESTS_COPY.packagingContentsLabel}
+                    value={
+                      draft.packagingContents || ADMIN_REQUESTS_COPY.emptyValue
+                    }
+                  />
+                  <DetailField
+                    label={ADMIN_REQUESTS_COPY.briefLabel}
+                    value={draft.notes || ADMIN_REQUESTS_COPY.emptyValue}
+                    preserveWhitespace
+                  />
+                  <DetailField
+                    label={ADMIN_REQUESTS_COPY.timelineLabel}
+                    value={draft.timeline || ADMIN_REQUESTS_COPY.emptyValue}
+                  />
+                  <DetailField
+                    label={ADMIN_REQUESTS_COPY.shipToLabel}
+                    value={formatAddress(draft.shippingAddress)}
+                  />
+                </dl>
+              </DetailSection>
 
-          <DetailSection title={ADMIN_REQUESTS_COPY.sectionProductLines}>
-            {lines.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {ADMIN_REQUESTS_COPY.emptyProductLines}
-              </p>
-            ) : (
-              <ul className="flex flex-col gap-4">
-                {lines.map((line) => (
-                  <li
-                    key={line.id}
-                    className="rounded-md border border-border p-4"
-                  >
-                    <dl className="grid gap-4 sm:grid-cols-2">
-                      <DetailField
-                        label={ADMIN_REQUESTS_COPY.productSlugLabel}
-                        value={line.productSlug}
-                      />
-                      <DetailField
-                        label={ADMIN_REQUESTS_COPY.quantitiesLabel}
-                        value={
-                          line.quantities.length > 0
-                            ? line.quantities.join(", ")
-                            : ADMIN_REQUESTS_COPY.emptyValue
-                        }
-                      />
-                      <DetailField
-                        label={ADMIN_REQUESTS_COPY.packagingContentsLabel}
-                        value={line.contents || ADMIN_REQUESTS_COPY.emptyValue}
-                      />
-                      <DetailField
-                        label={ADMIN_REQUESTS_COPY.customizationsLabel}
-                        value={
-                          line.customizations.length > 0
-                            ? line.customizations
-                                .map((customization) => customization.label)
-                                .join(", ")
-                            : ADMIN_REQUESTS_COPY.emptyValue
-                        }
-                      />
-                    </dl>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DetailSection>
+              <DetailSection title={ADMIN_REQUESTS_COPY.sectionProductLines}>
+                {lines.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {ADMIN_REQUESTS_COPY.emptyProductLines}
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-4">
+                    {lines.map((line) => (
+                      <li key={line.id}>
+                        <AdminRequestProductCard line={line} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <AdminAddProductComingSoon />
+              </DetailSection>
 
-          {/* Always rendered, unlike the old names-only block which hid itself
+              {/* Always rendered, unlike the old names-only block which hid itself
               when empty. A rep needs to know a request has NO files as much as
               which ones it has — an absent section reads as "not loaded yet". */}
-          <DetailSection title={ADMIN_REQUESTS_COPY.sectionArtwork}>
-            <RequestAttachments
-              rfqId={request.id}
-              attachments={request.attachments}
-            />
-          </DetailSection>
+              <DetailSection title={ADMIN_REQUESTS_COPY.sectionArtwork}>
+                <RequestAttachments
+                  rfqId={request.id}
+                  attachments={request.attachments}
+                />
+              </DetailSection>
 
-          <RequestDetailTimeline
-            activities={request.activities}
-            versions={request.versions}
-          />
+              <RequestDetailTimeline
+                activities={request.activities}
+                versions={request.versions}
+              />
 
-          {draft.servicesEnabled ? (
-            <DetailSection title={ADMIN_REQUESTS_COPY.sectionServices}>
-              {draft.services.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {ADMIN_REQUESTS_COPY.emptyServices}
-                </p>
-              ) : (
-                <ul className="list-inside list-disc text-sm text-foreground">
-                  {draft.services.map((service) => (
-                    <li key={service}>{service}</li>
-                  ))}
-                </ul>
+              {draft.servicesEnabled ? (
+                <DetailSection title={ADMIN_REQUESTS_COPY.sectionServices}>
+                  {draft.services.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {ADMIN_REQUESTS_COPY.emptyServices}
+                    </p>
+                  ) : (
+                    <ul className="list-inside list-disc text-sm text-foreground">
+                      {draft.services.map((service) => (
+                        <li key={service}>{service}</li>
+                      ))}
+                    </ul>
+                  )}
+                </DetailSection>
+              ) : null}
+            </div>
+
+            <aside className="relative flex min-h-0 flex-col xl:hidden">
+              {paperStack}
+            </aside>
+
+            <aside
+              aria-hidden
+              className={cn(
+                "relative hidden min-h-0 flex-col xl:flex xl:self-stretch",
+                PREVIEW_BREAKOUT,
               )}
-            </DetailSection>
-          ) : null}
-        </div>
-
-        <aside className="relative flex min-h-0 flex-col xl:hidden">
-          {paperStack}
-        </aside>
-
-        <aside
-          aria-hidden
-          className={cn(
-            "relative hidden min-h-0 flex-col xl:flex xl:self-stretch",
-            PREVIEW_BREAKOUT,
-          )}
-        />
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div
-      className={cn(
-        "fixed top-[68px] right-0 z-10 hidden h-[calc(100dvh-68px)] flex-col overflow-visible xl:flex",
-        PREVIEW_PANEL_WIDTH,
-      )}
-    >
-      {paperStack}
-    </div>
+      <div
+        className={cn(
+          "fixed top-[68px] right-0 z-10 hidden h-[calc(100dvh-68px)] flex-col overflow-hidden bg-[#f2f2f2] xl:flex",
+          PREVIEW_PANEL_WIDTH,
+        )}
+      >
+        {paperStack}
+      </div>
     </>
   );
 }

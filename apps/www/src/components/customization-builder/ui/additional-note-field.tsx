@@ -3,6 +3,7 @@
 import {useEffect, useState} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Label} from '@pakfactory/ui/components/label';
+import {Textarea} from '@pakfactory/ui/components/textarea';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 
@@ -56,13 +57,13 @@ export function AdditionalNoteField({
             <Label htmlFor={id} className="text-sm font-semibold text-foreground">
                 {CUSTOMIZATION_BUILDER_COPY.additionalNote}
             </Label>
-            <textarea
+            <Textarea
                 id={id}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
                 rows={3}
-                className="min-h-[72px] w-full resize-y rounded-md border border-border bg-muted/50 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="min-h-[72px] resize-y border-border bg-muted/50"
             />
         </div>
     );

@@ -20,16 +20,20 @@ import {signUp} from '@/lib/auth/actions';
 import {SIGN_UP_COPY} from '@/lib/copy/sign-up';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
     const [serverError, setServerError] = useState<string>();
     const [pending, startTransition] = useTransition();
     const [showPassword, setShowPassword] = useState(false);
+    // Locked by default when the buyer arrived from a receipt, and only ever
+    // unlocked by an explicit click — see `unlockEmail`.
+    const [emailUnlocked, setEmailUnlocked] = useState(false);
     const {
         register,
         handleSubmit,
         watch,
+        setValue,
         formState: {errors},
     } = useForm<AuthCredentials>({
         resolver: zodResolver(authCredentialsSchema),
@@ -59,9 +63,27 @@ export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
     // under. Compared case-insensitively because the server lowercases before
     // it ever reaches Supabase (`emailOf` in lib/auth/actions.ts), so a stray
     // capital is not a different address and must not raise this.
-    const emailChanged =
-        !!prefillEmail &&
-        email.trim().toLowerCase() !== prefillEmail.toLowerCase();
+    /**
+     * Locked, because this link only exists inside a receipt DELIVERED to that
+     * address — so it is provably the buyer's, and a typo cannot have brought
+     * them here. Changing it forfeits the claim, which
+     * `claim_rfqs_for_current_user` makes on the verified session email.
+     *
+     * `readOnly`, NOT `disabled`: a disabled input is skipped by keyboard
+     * navigation and is not submitted with the form. readOnly keeps it
+     * focusable and copyable.
+     *
+     * Only ever locked when a prefill actually arrived; a plain visit to
+     * /sign-up is a normal, fully editable form.
+     */
+    const emailLocked = Boolean(prefillEmail) && !emailUnlocked;
+
+    // Clears the field rather than handing over a populated one, so a buyer who
+    // asked for a different address has to type it deliberately.
+    const unlockEmail = () => {
+        setEmailUnlocked(true);
+        setValue('email', '', {shouldValidate: false});
+    };
     const canSubmit =
         email.trim().length > 0 && password.trim().length > 0;
 
@@ -107,7 +129,12 @@ export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
                         autoComplete="email"
                         placeholder={LOGIN_COPY.emailPlaceholder}
                         aria-invalid={!!errors.email}
-                        className={FIELD_CLASS}
+                        readOnly={emailLocked}
+                        aria-readonly={emailLocked || undefined}
+                        className={cn(
+                            FIELD_CLASS,
+                            emailLocked && 'bg-muted text-muted-foreground',
+                        )}
                         {...emailField}
                     />
                     {errors.email ? (
@@ -115,12 +142,26 @@ export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
                             {errors.email.message}
                         </p>
                     ) : null}
-                    {prefillEmail && emailChanged ? (
+                    {emailLocked ? (
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs text-muted-foreground">
+                                {SIGN_UP_COPY.emailLockedHint}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={unlockEmail}
+                                className="text-xs font-medium underline underline-offset-4"
+                            >
+                                {SIGN_UP_COPY.useDifferentEmail}
+                            </button>
+                        </div>
+                    ) : null}
+                    {prefillEmail && emailUnlocked ? (
                         <p
                             className="rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200"
                             role="status"
                         >
-                            {SIGN_UP_COPY.emailChangedWarning(prefillEmail)}
+                            {SIGN_UP_COPY.emailUnlockedWarning(prefillEmail)}
                         </p>
                     ) : null}
                 </div>

@@ -24,7 +24,9 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     if (!match) return {title: 'Product style'};
     return {
         title: `${match.style.title} · ${match.line.title}`,
-        description: `${match.style.title} packaging in ${match.line.title}.`,
+        description:
+            match.style.description ||
+            `${match.style.title} packaging in ${match.line.title}.`,
     };
 }
 
