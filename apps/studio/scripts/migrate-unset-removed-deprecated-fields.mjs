@@ -30,6 +30,9 @@
  *     "never a gate — unlisted styles append alphabetically"
  * All 69 values are written into ADR-017 before deletion.
  *
+ * `customizationCategory.order` (4) joined them on 2026-09-11 — the sixth and last
+ * of the family, removed at Eric's instruction once the branch audit surfaced it.
+ *
  * Everything else is references or mock copy:
  *   customizationOption.comparedAgainst  8 docs · 3 refs each, no prose
  *   product.whatIsBlock / whyChooseBlock / comparedAgainst · all 26 products are mock
@@ -87,6 +90,10 @@ const REMOVED = {
   // did sort by them (propertyValue ×2 workspaces, expertiseStage) and are
   // repointed to `title` in the same commit. Every value is recorded in ADR-017.
   customizationType: ['order'],
+  // Added 2026-09-11. The sixth `order`, missed by the 2026-09-01 sweep because
+  // Eric's removal plan never listed it — not because anything read it. Same
+  // evidence as the other five: no GROQ, no desk pane, no registry projection.
+  customizationCategory: ['order'],
   property: ['order'],
   propertyValue: ['order'],
   productStyle: ['order'],

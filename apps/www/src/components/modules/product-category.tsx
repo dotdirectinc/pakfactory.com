@@ -5,6 +5,7 @@ import {ArrowRightIcon, PackageIcon} from 'lucide-react';
 
 import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 
 export type ProductCard = {
     img: string;
@@ -55,28 +56,30 @@ const ProductCategory = ({
                                 href={card.productLink}
                                 className="group bg-muted/40 hover:bg-muted/60 flex h-full flex-col overflow-hidden rounded-xl border border-transparent transition-colors"
                             >
-                                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#ececec]">
+                                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
                                     {card.img ? (
-                                        <img
-                                            src={card.img}
-                                            alt=""
-                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        />
+                                        <MediaSettleZoom>
+                                            <img
+                                                src={card.img}
+                                                alt=""
+                                                className="size-full object-cover"
+                                            />
+                                        </MediaSettleZoom>
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center">
-                                            <PackageIcon className="text-muted-foreground size-12 opacity-40" />
+                                            <PackageIcon className="size-12 text-muted-foreground opacity-40" />
                                         </div>
                                     )}
                                     {typeof card.discountNumber === 'number' ? (
                                         <Badge
-                                            className="absolute top-3 left-3 font-semibold"
+                                            className="absolute top-3 left-3 z-10 font-semibold"
                                             variant="destructive"
                                         >
                                             {card.discountNumber}% off
                                         </Badge>
                                     ) : null}
                                     {card.newArrival ? (
-                                        <Badge className="absolute top-3 right-3 font-semibold">
+                                        <Badge className="absolute top-3 right-3 z-10 font-semibold">
                                             New
                                         </Badge>
                                     ) : null}

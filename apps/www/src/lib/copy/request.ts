@@ -170,7 +170,6 @@ export const REQUEST_COPY = {
     leaveBody: 'Save to continue later, or discard.',
     leaveSave: 'Save draft',
     leaveDiscard: 'Discard',
-    leaveCancel: 'Cancel',
 
     expressHeading: 'New request',
 

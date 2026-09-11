@@ -51,11 +51,11 @@ export function ProductCard({data}: ProductCardProps) {
                             alt={data.imageAlt ?? data.title}
                             applyWatermark
                             fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
                             className="object-cover"
                         />
                     ) : (
-                        <span className="flex size-full items-center justify-center bg-muted/40">
+                        <span className="flex size-full items-center justify-center">
                             <Icon
                                 icon={Package}
                                 className="size-8 text-muted-foreground/50"

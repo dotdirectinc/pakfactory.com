@@ -134,6 +134,8 @@ Primitives may use CSS `border` via shadcn patterns — **do not** mandate Verce
 | `--motion-slow` (500ms) | Text entrances |
 | `--motion-reveal` (700ms) | Section reveals / hero |
 
+**Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.92`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
+
 Detail: [`docs/plans/PROD-1947-motion-animation-spec.md`](docs/plans/PROD-1947-motion-animation-spec.md). Prefer intentional, sparse motion — not decorative noise.
 
 ---

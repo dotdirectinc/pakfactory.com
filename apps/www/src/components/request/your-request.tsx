@@ -15,6 +15,7 @@ import {REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
 import type {RequestLine} from '@/lib/request/request.storage';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
 
 type SelectedPoolRailLineProps = {
     line: RequestLine;
@@ -30,14 +31,16 @@ function SelectedPoolRailLine({line, onDeselect}: SelectedPoolRailLineProps) {
 
     return (
         <div className="flex items-center gap-3 py-2">
-            <span className="size-11 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
+            <span className="relative size-11 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
                 {thumb?.src ? (
                     // Catalog media URLs are static fixture assets.
-                    <img
-                        src={thumb.src}
-                        alt=""
-                        className="size-full object-cover"
-                    />
+                    <div className={productMediaLayerClass}>
+                        <img
+                            src={thumb.src}
+                            alt=""
+                            className="size-full object-contain"
+                        />
+                    </div>
                 ) : (
                     <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
                         —

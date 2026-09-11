@@ -32,21 +32,20 @@ export const customizationCategory = defineType({
       group: 'content',
       description: 'One sentence on what this category groups, for the content team.',
     }),
-    defineField({
-      name: 'order',
-      title: 'Display order',
-      type: 'number',
-      group: 'content',
-      description: 'Lower numbers appear first in the sidebar.',
-    }),
+    // `order` was REMOVED here on 2026-09-11, completing the sweep that took the
+    // other five on 2026-09-01 (ADR-017). It was left behind then only because
+    // Eric's removal plan never listed it, not because it was blocked: nothing
+    // read it — no GROQ query in `packages/sanity`, `apps/www` or `apps/blog`, no
+    // desk pane sorted by it, and the registry exporter's `order` comes from
+    // Postgres `sort_order`. Its only consumers were this file's own `orderings`
+    // block and the preview subtitle, both of which go with it.
+    //
+    // The visible consequence, stated so nobody reports it as a regression: the
+    // Categories list now sorts alphabetically, so *Additional Customization*
+    // heads the list instead of *Materials*. The four values are recorded in
+    // ADR-017 before deletion.
   ],
   preview: {
-    select: { title: 'title', order: 'order' },
-    prepare({ title, order }) {
-      return { title, subtitle: order !== undefined ? `Order: ${order}` : '' }
-    },
+    select: { title: 'title', subtitle: 'slug.current' },
   },
-  orderings: [
-    { title: 'Display order', name: 'orderAsc', by: [{ field: 'order', direction: 'asc' }] },
-  ],
 })

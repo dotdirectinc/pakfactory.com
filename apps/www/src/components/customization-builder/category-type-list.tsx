@@ -3,6 +3,7 @@
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {BuilderOption, BuilderType} from '@/lib/customization-builder';
+import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
 
 type CategoryTypeListProps = {
     kind: 'dimensions' | 'selection';
@@ -78,15 +79,21 @@ export function CategoryTypeList({
                                                       }
                                                       className="flex w-full items-start gap-3"
                                                   >
-                                                      <span className="size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                                                      <span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
                                                           {option.imageUrl ? (
-                                                              <img
-                                                                  src={
-                                                                      option.imageUrl
+                                                              <div
+                                                                  className={
+                                                                      productMediaLayerClass
                                                                   }
-                                                                  alt=""
-                                                                  className="size-full object-cover"
-                                                              />
+                                                              >
+                                                                  <img
+                                                                      src={
+                                                                          option.imageUrl
+                                                                      }
+                                                                      alt=""
+                                                                      className="size-full object-contain"
+                                                                  />
+                                                              </div>
                                                           ) : null}
                                                       </span>
                                                       <span className="min-w-0">

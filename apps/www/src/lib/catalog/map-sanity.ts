@@ -59,18 +59,24 @@ function mapStyleRef(
         slug: string | null;
         title: string;
         description?: string | null;
+        shortDescription?: string | null;
         cardImage?: unknown | null;
     },
 ): ProductStyleRef | null {
     const styleSlug = style.slug?.trim();
     const title = style.title?.trim();
     if (!styleSlug || !title) return null;
-    const description = style.description?.trim();
+    const description =
+        typeof style.description === 'string'
+            ? style.description.trim()
+            : undefined;
+    const shortDescription = style.shortDescription?.trim();
     const {imageUrl, imageAlt} = cardImageFromSanity(style.cardImage, title);
     return {
         slug: styleSlug,
         title,
         ...(description ? {description} : {}),
+        ...(shortDescription ? {shortDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
     };
 }
@@ -88,7 +94,13 @@ function preferStyleWithImage(
             ...(next.description && !existing.description
                 ? {description: next.description}
                 : {}),
+            ...(next.shortDescription && !existing.shortDescription
+                ? {shortDescription: next.shortDescription}
+                : {}),
         };
+    }
+    if (!existing.shortDescription && next.shortDescription) {
+        return {...existing, shortDescription: next.shortDescription};
     }
     return existing;
 }
@@ -161,6 +173,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         slug: styleSlug,
         title: styleTitle,
         description: doc.productStyle?.description,
+        shortDescription: doc.productStyle?.shortDescription,
         cardImage: doc.productStyle?.cardImage,
     });
     if (!productStyle) return null;
@@ -198,7 +211,8 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         slug,
         sku: doc.sku?.trim() || slug,
         kind,
-        description: doc.description?.trim() || '',
+        description:
+            typeof doc.description === 'string' ? doc.description.trim() : '',
         media: mediaFromSanity(doc.media, doc.title),
         productLine,
         productStyle,

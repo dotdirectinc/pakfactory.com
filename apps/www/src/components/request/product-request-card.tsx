@@ -42,6 +42,7 @@ import type {
     UpdateLinePatch,
 } from '@/lib/request/request.storage';
 import {productHref} from '@/lib/www-routes';
+import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
 
 const CustomizationBuilder = dynamic(
     () =>
@@ -249,14 +250,16 @@ export function ProductRequestCard({
     const card = (
         <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-background sm:flex-row sm:items-stretch">
             <div className="mx-auto aspect-square w-[115px] max-h-[115px] shrink-0 self-start bg-background p-4 sm:mx-0">
-                <div className="size-full overflow-hidden rounded-md bg-muted">
+                <div className="relative size-full overflow-hidden rounded-md bg-muted">
                     {thumb?.src ? (
                         // Catalog media URLs are static fixture assets.
-                        <img
-                            src={thumb.src}
-                            alt=""
-                            className="size-full object-cover"
-                        />
+                        <div className={productMediaLayerClass}>
+                            <img
+                                src={thumb.src}
+                                alt=""
+                                className="size-full object-contain"
+                            />
+                        </div>
                     ) : (
                         <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
                             —
