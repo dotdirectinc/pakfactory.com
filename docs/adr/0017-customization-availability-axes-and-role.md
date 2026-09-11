@@ -268,6 +268,16 @@ Eric's removal plan held five fields back — four "waiting for PROD-2292", one 
 
 `productStyle.order` — Rigid Boxes: Magnetic Closure, Neck Box, Telescoping Box · Folding Cartons: Straight Tuck End, Reverse Tuck End, Auto Bottom (123) · `[Test]` Mailer Boxes: Regular Slotted Container, Snap-Lock Mailer.
 
+### The sixth, removed 2026-09-11
+
+`customizationCategory.order` was **not in Eric's removal plan and was therefore never deprecated** — it survived the sweep above by omission, not by argument. The branch audit on 2026-09-11 surfaced it; Eric's instruction that day was to remove it.
+
+It had the same evidence as the other five and one difference: its only two consumers lived inside its own schema file — the `orderings` block (`orderAsc`) and a preview subtitle reading `Order: N`. Both are removed with it. No GROQ query, no desk pane, no registry projection ever read it.
+
+**The visible consequence:** the Studio's Categories list now sorts alphabetically, so *Additional Customization* heads it instead of *Materials*. The four categories were also renamed by hand on production the same day — `Material` → **Materials** and `Finishes` → **Finishing**, with slugs updated to match (`materials`, `finishing`) — closing the naming gap the content-model Conventions had recorded since August.
+
+`customizationCategory.order` — Materials 1, Finishing 2, Printing 3, Additional Customization 4. The sequence is the manufacturing order (substrate → print → finish → add-ons), which is *not* recoverable alphabetically. 🔴 **This is the clearest instance yet of the open question the 2026-09-01 removal raised:** taxonomy that reads in a meaningful, non-alphabetical sequence has no home in any current spec. Four values are trivial to retype; the design gap is not.
+
 ### 🔴 One open question this surfaces, for Eric
 
 If a listing filter's values must render in a meaningful order — *Matte → Gloss → Soft Touch*, not *Gloss → Matte → Soft Touch* — then `listingPage.filters` deriving values from content with no ordering is a gap, and the same is true of ordering Customization Types within a category. Neither has a home in any current spec. This is a design question, not a field to restore.
