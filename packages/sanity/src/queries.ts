@@ -347,7 +347,23 @@ export const PRODUCTS_FOR_PAGE_AND_COLLECTION_QUERY = /* groq */ `*[
   "thumbAlt": coalesce(media[0].alt, title)
 }`;
 
-/** Collection document for a path (via any product on that path); null if no products. */
+/**
+ * Collection document for a path (via any product on that path); null if no products.
+ *
+ * 🔴 THIS QUERY IS DEAD, and has been since before the name-convention work.
+ * `productCollection` and `productPage` are not in the deployed schema, and
+ * `product.primaryCollection` / `primaryLandingPage` are not fields on Product —
+ * production holds 0 of each, so the filter never matches and this returns null
+ * unconditionally. `apps/www/src/app/products/[pageSlug]/[collectionSlug]/page.tsx`
+ * still executes it, which is why the route renders from its fallbacks.
+ *
+ * `"heroHeadline": hero.headline` was dropped here (PROD-2459) because that key
+ * no longer exists anywhere — PROD-2458 promoted `productStyle.hero.headline` to
+ * a top-level `h1` — and a ghost reference to a field with no definition is the
+ * kind of thing a grep turns up and nobody can explain. Removing the line does
+ * not revive the query. The route wants rebuilding on Product Line / Style; that
+ * is its own ticket, not this one.
+ */
 export const PRODUCT_COLLECTION_META_FOR_PATH_QUERY = /* groq */ `*[
   _type == "product" &&
   primaryLandingPage->slug.current == $pageSlug &&
@@ -358,7 +374,6 @@ export const PRODUCT_COLLECTION_META_FOR_PATH_QUERY = /* groq */ `*[
     title,
     "slug": slug.current,
     "heroTitle": hero.title,
-    "heroHeadline": hero.headline,
     "heroDescription": hero.description,
     "bannerUrl": coalesce(bannerImage.asset->url, hero.image.asset->url),
     "bannerAlt": coalesce(bannerImage.alt, hero.image.alt, title)
