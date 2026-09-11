@@ -38,6 +38,7 @@ export type ProductLineRef = {
 export type ProductStyleRef = {
     slug: string;
     title: string;
+    description?: string;
 };
 
 export type ProductDimensionRange = {

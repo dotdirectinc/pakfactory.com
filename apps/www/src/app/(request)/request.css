@@ -1,2 +1,2 @@
-/* Scoped to (request) routes — keep catalog/home free of wizard CSS (PROD-2456). */
-@import "@pakfactory/brief-builder-ui/tailwind-sources.css";
+/* Request route layout. Brief Builder Tailwind @source lives in
+   apps/www/src/app/globals.css (must share the main Tailwind pipeline). */

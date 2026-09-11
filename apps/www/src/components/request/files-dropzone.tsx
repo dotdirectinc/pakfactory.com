@@ -33,7 +33,7 @@ export function FilesDropzone({
     rejected = [],
 }: FilesDropzoneProps) {
     return (
-        <div>
+        <div id="section-requirements-files">
             <p className="text-xs font-medium text-foreground">{linkLabel}</p>
             <label className="mt-2 flex cursor-pointer flex-col items-center gap-1 rounded-md border border-dashed border-border px-4 py-6 text-center text-muted-foreground hover:bg-muted/30">
                 <UploadCloud className="size-5" aria-hidden />

@@ -10,6 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@pakfactory/ui/components/dialog';
+import {cn} from '@pakfactory/ui/lib/utils';
 
 type MessageDialogProps = {
     open: boolean;
@@ -49,26 +50,42 @@ export function MessageDialog({
                 (onDismiss ?? onAction)();
             }}
         >
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
+            <DialogContent
+                className="gap-6 sm:max-w-md"
+                showCloseButton={false}
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onInteractOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+            >
+                <DialogHeader className="items-center text-center sm:text-center">
+                    <DialogTitle className="text-2xl font-semibold tracking-tight">
+                        {title}
+                    </DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
-                <DialogFooter>
+                <DialogFooter className="sm:justify-center">
                     {showSecondary ? (
                         <Button
                             type="button"
-                            variant="link"
+                            variant="secondary"
                             disabled={pending}
                             onClick={onSecondary}
-                            className="text-foreground hover:text-foreground"
+                            className="sm:flex-1"
                         >
                             {secondaryLabel}
                         </Button>
                     ) : null}
-                    <Button type="button" disabled={pending} onClick={onAction}>
+                    <Button
+                        type="button"
+                        disabled={pending}
+                        onClick={onAction}
+                        className={cn(showSecondary ? 'sm:flex-1' : 'sm:min-w-40')}
+                    >
                         {pending ? (
-                            <Loader2 className="size-4 animate-spin" aria-hidden />
+                            <Loader2
+                                className="size-4 animate-spin"
+                                aria-hidden
+                            />
                         ) : null}
                         {actionLabel}
                     </Button>

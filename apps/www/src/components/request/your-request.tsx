@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
@@ -68,8 +68,10 @@ function SelectedPoolRailLine({line, onDeselect}: SelectedPoolRailLineProps) {
 
 export function YourRequest() {
     const {lines, draft, removeLine, updateLine} = useRequest();
-    const [selected, setSelected] = useState<Set<string>>(() => new Set());
-    const seenIdsRef = useRef<Set<string>>(new Set());
+    // Selected = every current line unless explicitly deselected (default-on).
+    const [deselectedIds, setDeselectedIds] = useState<Set<string>>(
+        () => new Set(),
+    );
     // Server snapshot is always empty; wait for localStorage before choosing
     // empty vs filled so the Add products fork does not flash on refresh.
     const [hydrated, setHydrated] = useState(false);
@@ -81,20 +83,22 @@ export function YourRequest() {
     const lineIds = useMemo(() => lines.map((line) => line.id), [lines]);
 
     useEffect(() => {
-        setSelected((prev) => {
+        setDeselectedIds((prev) => {
             const known = new Set(lineIds);
-            const next = new Set(
-                [...prev].filter((id) => known.has(id)),
-            );
-            for (const id of lineIds) {
-                if (!seenIdsRef.current.has(id)) {
-                    next.add(id);
-                }
+            let changed = false;
+            const next = new Set<string>();
+            for (const id of prev) {
+                if (known.has(id)) next.add(id);
+                else changed = true;
             }
-            seenIdsRef.current = known;
-            return next;
+            return changed ? next : prev;
         });
     }, [lineIds]);
+
+    const selected = useMemo(
+        () => new Set(lineIds.filter((id) => !deselectedIds.has(id))),
+        [lineIds, deselectedIds],
+    );
 
     const selectedLines = useMemo(
         () => lines.filter((line) => selected.has(line.id)),
@@ -105,20 +109,20 @@ export function YourRequest() {
         lines.length > 0 && selectedCount === lines.length;
 
     function setLineSelected(lineId: string, nextSelected: boolean) {
-        setSelected((prev) => {
+        setDeselectedIds((prev) => {
             const copy = new Set(prev);
-            if (nextSelected) copy.add(lineId);
-            else copy.delete(lineId);
+            if (nextSelected) copy.delete(lineId);
+            else copy.add(lineId);
             return copy;
         });
     }
 
     function toggleSelectAll() {
         if (allSelected) {
-            setSelected(new Set());
+            setDeselectedIds(new Set(lineIds));
             return;
         }
-        setSelected(new Set(lineIds));
+        setDeselectedIds(new Set());
     }
 
     return (

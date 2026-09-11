@@ -35,6 +35,7 @@ export const REQUEST_COPY = {
     yourRefPrefix: 'Your ref# is',
     refPlaceholder: 'RFQ-#####',
     close: 'Close',
+    logoBackAria: 'Back to PakFactory',
     saveDraft: 'Save draft',
 
     productsTitle: 'Products',
@@ -83,15 +84,19 @@ export const REQUEST_COPY = {
     quantityPlaceholder: 'e.g. 500',
     quantityHelp: 'Quantities are in multiples of 100.',
     quantityError: 'Enter a quantity in multiples of 100.',
-    notesLabel: 'Brief',
+    notesLabel: 'Give us a Brief about your project',
     notesPlaceholder:
         'What you’re launching and what matters most across these items.',
+    preferUploadDocument: 'Do you prefer to upload a document instead?',
     timelineLabel: 'Deadline',
     timelinePlaceholder: 'e.g. Need samples by Sept. 15. Ship by mid-October.',
     annualSpendLabel: 'Yearly Packaging Spend',
-    shipToLabel: 'Where should we ship it?',
-    addFilesLabel: 'Add files',
-    additionalFilesLabel: 'Add files',
+    shipToLabel: 'Where should this ship to?',
+    shippingAddressFallbackLabel: 'Shipping address',
+    shippingAddressCancel: 'Cancel',
+    shippingAddressSave: 'Save',
+    addFilesLabel: 'Do you have additional files?',
+    additionalFilesLabel: 'Do you have additional files?',
     filesDropTitle: 'Drop artwork, dielines or product photos',
     filesExpressDropTitle: 'Drop dielines, artwork, PDFs, or product photos',
 
@@ -112,7 +117,6 @@ export const REQUEST_COPY = {
     company: 'Company',
     industry: 'Industry',
     companyOffice: 'Company Address',
-    companyAddressHelp: 'No company? Use your name.',
 
     reviewPaperBadge: 'Quote request',
     requestSummary: 'Request summary',
@@ -127,16 +131,12 @@ export const REQUEST_COPY = {
     submitHelperExpress:
         'Add what you\'re packaging, a quantity, your name, and shipping location to submit request.',
 
-    quoteRequested: 'Quote requested',
-    quoteRequestedBody:
-        'Thanks. We’ll follow up within one business day.',
     keepBrowsing: 'Keep browsing products',
     backToYourRequest: 'Back to Quote Request',
 
     submitSuccessTitle: 'Request submitted',
     submitSuccessBody:
         'Thanks. A packaging specialist will follow up within one business day.',
-    submitSuccessAction: 'Continue',
     submitErrorTitle: 'We couldn’t submit your request',
     submitErrorRetry: 'Try again',
     submitErrorClose: 'Close',
@@ -213,7 +213,7 @@ export const REQUEST_COPY = {
     clearAll: 'Clear all',
     selectAll: 'Select all',
     deselectAll: 'Deselect all',
-    addMoreProducts: 'Add more products',
+    addMoreProducts: 'Add another product',
     addProductsTitle: 'Products',
     addProductsSupporting: 'Standard packaging',
     addSolutionsTitle: 'Solutions',

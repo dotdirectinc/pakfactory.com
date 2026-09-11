@@ -70,7 +70,11 @@ export function StepProducts({
                             />
                         ))}
                     </ul>
-                    <RequestAddProducts variant="more" className="mt-4" />
+                    <RequestAddProducts
+                        variant="more"
+                        align="center"
+                        className="mt-4"
+                    />
                 </>
             )}
 

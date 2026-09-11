@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
-import type { Request, RequestEntryKind } from "@pakfactory/domain/request";
+import type { Request } from "@pakfactory/domain/request";
 import { Badge } from "@pakfactory/ui/components/badge";
+import { ComingSoonButton } from "@/components/requests/coming-soon-button";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 
 type RequestDetailHeaderProps = {
@@ -16,18 +17,6 @@ function formatSubmittedAt(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function entryKindLabel(entryKind: RequestEntryKind): string {
-  switch (entryKind) {
-    case "express":
-      return ADMIN_REQUESTS_COPY.entryKindExpress;
-    case "services":
-      return ADMIN_REQUESTS_COPY.entryKindServices;
-    case "products":
-    default:
-      return ADMIN_REQUESTS_COPY.entryKindProducts;
-  }
 }
 
 export function RequestDetailHeader({ request }: RequestDetailHeaderProps) {
@@ -48,9 +37,6 @@ export function RequestDetailHeader({ request }: RequestDetailHeaderProps) {
             <ChevronRight className="size-4" aria-hidden />
           </Link>
           <h1 className="text-xl font-semibold tracking-tight">{displayRef}</h1>
-          <Badge variant="secondary" className="rounded-md capitalize">
-            {entryKindLabel(draft.entryKind)}
-          </Badge>
           <Badge
             variant="secondary"
             className="gap-1.5 rounded-md bg-muted text-muted-foreground"
@@ -62,9 +48,7 @@ export function RequestDetailHeader({ request }: RequestDetailHeaderProps) {
             {ADMIN_REQUESTS_COPY.statusSubmitted}
           </Badge>
         </div>
-        <p className="shrink-0 text-sm text-muted-foreground">
-          {ADMIN_REQUESTS_COPY.viewOnlyNotice}
-        </p>
+        <ComingSoonButton label={ADMIN_REQUESTS_COPY.editAction} />
       </div>
       <p className="text-sm text-muted-foreground">
         {formatSubmittedAt(request.submittedAt)}

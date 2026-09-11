@@ -11,6 +11,7 @@ import {
 } from '@pakfactory/ui/components/select';
 import {AdditionalNoteField} from '@/components/customization-builder/ui/additional-note-field';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
     getDimensionsValue,
     patchFace,
@@ -18,6 +19,15 @@ import {
     type FaceMeasurements,
     type StepAnswer,
 } from '@/lib/customization-builder';
+import {
+    convertDimensionRangeToUnit,
+    convertDimensionsValue,
+    formatAxisRangeLabel,
+    isWithinRange,
+    parseMeasurementInput,
+    type AxisRange,
+    type LengthUnit,
+} from '@/lib/units/unit-converter';
 
 type CustomizationDimensionOptionProps = {
     answer: StepAnswer;
@@ -25,6 +35,13 @@ type CustomizationDimensionOptionProps = {
     entryNote: string;
     onChange: (answer: StepAnswer) => void;
     onEntryNoteChange: (note: string) => void;
+    dimensionRange?: ProductDimensionRange;
+};
+
+const FIELD_AXIS: Record<keyof FaceMeasurements, 'l' | 'w' | 'd'> = {
+    length: 'l',
+    width: 'w',
+    height: 'd',
 };
 
 export function CustomizationDimensionOption({
@@ -33,9 +50,14 @@ export function CustomizationDimensionOption({
     entryNote,
     onChange,
     onEntryNoteChange,
+    dimensionRange,
 }: CustomizationDimensionOptionProps) {
     const notSure = answer.status === 'not-sure';
     const dimensions = getDimensionsValue(answer);
+    const axesRange = convertDimensionRangeToUnit(
+        dimensionRange,
+        dimensions.unit,
+    );
 
     if (notSure) {
         return (
@@ -84,11 +106,29 @@ export function CustomizationDimensionOption({
         commitFace({...measurements, [field]: value});
     }
 
-    function patchUnit(unit: 'in' | 'mm') {
+    function patchUnit(unit: LengthUnit) {
         onChange({
             status: 'set',
-            dimensions: {...getDimensionsValue(answer), unit},
+            dimensions: convertDimensionsValue(
+                getDimensionsValue(answer),
+                unit,
+            ),
         });
+    }
+
+    function fieldError(
+        field: keyof FaceMeasurements,
+        value: string,
+    ): string | null {
+        if (!axesRange) return null;
+        const n = parseMeasurementInput(value);
+        if (n == null) return null;
+        const axis = FIELD_AXIS[field];
+        const range = axesRange[axis];
+        if (!range || (range.min == null && range.max == null)) return null;
+        if (isWithinRange(n, range.min, range.max)) return null;
+        const label = formatAxisRangeLabel(range, dimensions.unit);
+        return label ? `Enter a value within ${label}.` : 'Out of allowed range.';
     }
 
     return (
@@ -107,18 +147,27 @@ export function CustomizationDimensionOption({
                     id={`dim-${activeFace}-length`}
                     label={CUSTOMIZATION_BUILDER_COPY.length}
                     value={measurements.length}
+                    range={axesRange?.l}
+                    unit={dimensions.unit}
+                    error={fieldError('length', measurements.length)}
                     onChange={(value) => patchField('length', value)}
                 />
                 <Field
                     id={`dim-${activeFace}-width`}
                     label={CUSTOMIZATION_BUILDER_COPY.width}
                     value={measurements.width}
+                    range={axesRange?.w}
+                    unit={dimensions.unit}
+                    error={fieldError('width', measurements.width)}
                     onChange={(value) => patchField('width', value)}
                 />
                 <Field
                     id={`dim-${activeFace}-height`}
                     label={CUSTOMIZATION_BUILDER_COPY.height}
                     value={measurements.height}
+                    range={axesRange?.d}
+                    unit={dimensions.unit}
+                    error={fieldError('height', measurements.height)}
                     onChange={(value) => patchField('height', value)}
                 />
                 <div className="flex flex-col gap-1">
@@ -168,13 +217,24 @@ function Field({
     id,
     label,
     value,
+    range,
+    unit,
+    error,
     onChange,
 }: {
     id: string;
     label: string;
     value: string;
+    range?: AxisRange;
+    unit: LengthUnit;
+    error: string | null;
     onChange: (value: string) => void;
 }) {
+    const hint =
+        range && (range.min != null || range.max != null)
+            ? formatAxisRangeLabel(range, unit)
+            : null;
+
     return (
         <div className="flex flex-col gap-1">
             <Label htmlFor={id} className="text-sm font-medium">
@@ -184,9 +244,15 @@ function Field({
                 id={id}
                 inputMode="decimal"
                 value={value}
+                aria-invalid={error ? true : undefined}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder="0"
             />
+            {error ? (
+                <p className="text-xs text-destructive">{error}</p>
+            ) : hint ? (
+                <p className="text-xs text-muted-foreground">{hint}</p>
+            ) : null}
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Toaster } from "@pakfactory/ui/components/sonner";
 import {
   AdminAccountMenu,
   type AdminAccountMenuProps,
@@ -46,6 +47,7 @@ export function AdminShell({
       <main className="flex w-full flex-1 flex-col px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         {children}
       </main>
+      <Toaster richColors closeButton position="bottom-right" />
     </div>
   );
 }

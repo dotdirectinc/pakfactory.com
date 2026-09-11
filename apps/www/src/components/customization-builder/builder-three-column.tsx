@@ -7,6 +7,7 @@ import {CustomizationDimensionOption} from '@/components/customization-builder/c
 import {CustomizationFinishOption} from '@/components/customization-builder/customization-finish-option';
 import {CustomizationMaterialOption} from '@/components/customization-builder/customization-material-option';
 import {CustomizationPrintOption} from '@/components/customization-builder/customization-print-option';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
     dimensionEntryNoteKey,
     getAnswer,
@@ -28,6 +29,7 @@ type BuilderThreeColumnProps = {
     maxReachableIndex?: number;
     header?: ReactNode;
     footer?: ReactNode;
+    dimensionRange?: ProductDimensionRange;
     onSelectCategory: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -47,6 +49,7 @@ export function BuilderThreeColumn({
     maxReachableIndex,
     header,
     footer,
+    dimensionRange,
     onSelectCategory,
     onSelectConsultation,
     onSelectType,
@@ -120,6 +123,7 @@ export function BuilderThreeColumn({
                         <CustomizationDimensionOption
                             answer={answer}
                             face={face}
+                            dimensionRange={dimensionRange}
                             onChange={(next) => onAnswerChange(step.key, next)}
                             {...noteProps}
                         />

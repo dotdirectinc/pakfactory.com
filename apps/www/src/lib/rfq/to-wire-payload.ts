@@ -17,12 +17,13 @@
  * Pure and side-effect free. It does NOT validate — `submitRequest` gates, and
  * the server's typed 422s are the authority.
  */
-import type {
-    RequestCustomization,
-    RequestDraft,
-    RequestLine,
-    RequestReferenceImage,
-    ShippingAddress,
+import {
+    defaultDraftTitle,
+    type RequestCustomization,
+    type RequestDraft,
+    type RequestLine,
+    type RequestReferenceImage,
+    type ShippingAddress,
 } from '@/lib/request/request.storage';
 
 /** Mirrors the backend contract. Kept structural rather than imported: the
@@ -79,6 +80,8 @@ export type WireSubmission = {
         source: 'Request Builder';
         entryKind: 'express' | 'products' | 'services';
         submittedAt: string;
+        /** Buyer-editable Brief Builder name (e.g. "Draft request - Sep 11, 2026"). */
+        title?: string;
     };
 };
 
@@ -222,6 +225,7 @@ export function toWireSubmission(
             source: 'Request Builder',
             entryKind: draft.entryKind,
             submittedAt: new Date().toISOString(),
+            title: trimmed(draft.title) || defaultDraftTitle(),
         },
     };
 }

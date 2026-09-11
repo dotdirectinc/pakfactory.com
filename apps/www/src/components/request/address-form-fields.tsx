@@ -11,7 +11,7 @@ import {
 } from '@/components/request/location-country-region-fields';
 import type {ShippingAddress} from '@/lib/request/request.storage';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 export type AddressFormFieldsValue = Pick<
     ShippingAddress,

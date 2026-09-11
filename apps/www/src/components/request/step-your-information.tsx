@@ -13,13 +13,12 @@ import {
     SelectValue,
 } from '@pakfactory/ui/components/select';
 import {AnnualSpendField} from '@/components/request/annual-spend-field';
-import {AddressFormFields} from '@/components/request/address-form-fields';
+import {AddressPickerBlock} from '@/components/request/address-picker-block';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
 import {useRequest} from '@/lib/request/request-provider';
-import type {RequestDraft, ShippingAddress} from '@/lib/request/request.storage';
-import {normalizeAddress} from '@/lib/request/shipping-address';
+import type {RequestDraft} from '@/lib/request/request.storage';
 
-const FIELD_CLASS = 'h-11 rounded-sm border border-input bg-background text-sm';
+const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
 
 type StepYourInformationProps = {
     draft: RequestDraft;
@@ -86,16 +85,7 @@ export function StepYourInformation({
     ]
         .map((part) => part?.trim())
         .filter(Boolean)
-        .join(' · ');
-
-    function patchOffice(next: Partial<ShippingAddress>) {
-        onPatch({
-            companyAddress: normalizeAddress({
-                ...(draft.companyAddress ?? {}),
-                ...next,
-            }),
-        });
-    }
+        .join(', ');
 
     const fullName =
         `${draft.contactFirstName} ${draft.contactLastName}`.trim() ||
@@ -257,7 +247,7 @@ export function StepYourInformation({
                                 onPatch({contactIndustry: v})
                             }
                         >
-                            <SelectTrigger className="h-11 w-full rounded-sm border border-input bg-background text-sm data-[size=default]:h-11">
+                            <SelectTrigger className="h-11 w-full rounded-sm bg-background text-sm data-[size=default]:h-11">
                                 <SelectValue placeholder="Select an industry" />
                             </SelectTrigger>
                             <SelectContent>
@@ -271,28 +261,15 @@ export function StepYourInformation({
                     </div>
                 </div>
 
-                <div className="pt-4">
-                    <Label className="mb-1 block text-sm font-medium">
-                        {REQUEST_COPY.companyOffice}
-                        <span className="ml-0.5 text-amber-600">*</span>
-                    </Label>
-                    <p className="mb-4 text-xs text-muted-foreground">
-                        {REQUEST_COPY.companyAddressHelp}
-                    </p>
-                    <AddressFormFields
-                        value={{
-                            line1: draft.companyAddress?.line1,
-                            line2: draft.companyAddress?.line2,
-                            city: draft.companyAddress?.city,
-                            region: draft.companyAddress?.region,
-                            country: draft.companyAddress?.country,
-                            postalCode: draft.companyAddress?.postalCode,
-                            countryCode: draft.companyAddress?.countryCode,
-                            regionCode: draft.companyAddress?.regionCode,
-                        }}
-                        onPatch={patchOffice}
-                    />
-                </div>
+                <AddressPickerBlock
+                    className="pt-4"
+                    value={draft.companyAddress}
+                    onChange={(companyAddress) => onPatch({companyAddress})}
+                    title={REQUEST_COPY.companyOffice}
+                    required
+                    dialogTitle={REQUEST_COPY.companyOffice}
+                    fallbackLabel={REQUEST_COPY.companyOffice}
+                />
 
                 <AnnualSpendField
                     className="pt-4"
