@@ -32,6 +32,67 @@ function mediaFromSanity(
     });
 }
 
+/** First non-empty trimmed string — used for option detail copy fallbacks. */
+function firstNonEmpty(
+    ...candidates: Array<string | null | undefined>
+): string {
+    for (const value of candidates) {
+        const trimmed = value?.trim();
+        if (trimmed) return trimmed;
+    }
+    return '';
+}
+
+function cardImageFromSanity(
+    cardImage: unknown | null | undefined,
+    titleFallback: string,
+): {imageUrl: string | null; imageAlt: string} {
+    const imageUrl = cardImage ? (sanityImageBaseUrl(cardImage) ?? null) : null;
+    const imageAlt = cardImage
+        ? resolveImageAlt(cardImage, titleFallback)
+        : titleFallback;
+    return {imageUrl, imageAlt};
+}
+
+function mapStyleRef(
+    style: {
+        slug: string | null;
+        title: string;
+        description?: string | null;
+        cardImage?: unknown | null;
+    },
+): ProductStyleRef | null {
+    const styleSlug = style.slug?.trim();
+    const title = style.title?.trim();
+    if (!styleSlug || !title) return null;
+    const description = style.description?.trim();
+    const {imageUrl, imageAlt} = cardImageFromSanity(style.cardImage, title);
+    return {
+        slug: styleSlug,
+        title,
+        ...(description ? {description} : {}),
+        ...(imageUrl ? {imageUrl, imageAlt} : {}),
+    };
+}
+
+function preferStyleWithImage(
+    existing: ProductStyleRef | undefined,
+    next: ProductStyleRef,
+): ProductStyleRef {
+    if (!existing) return next;
+    if (!existing.imageUrl && next.imageUrl) {
+        return {
+            ...existing,
+            imageUrl: next.imageUrl,
+            ...(next.imageAlt ? {imageAlt: next.imageAlt} : {}),
+            ...(next.description && !existing.description
+                ? {description: next.description}
+                : {}),
+        };
+    }
+    return existing;
+}
+
 function mapAvailableCustomization(
     row: NonNullable<CatalogProductDoc['availableCustomizations']>[number],
 ): CustomizationOption | null {
@@ -47,6 +108,15 @@ function mapAvailableCustomization(
     if (!categorySlug) return null;
 
     const firstImage = Array.isArray(option.media) ? option.media[0] : null;
+
+    // No shortDescription on customizationOption yet — fall back through
+    // meta / glossary / benefits / type description for the detail panel.
+    const description = firstNonEmpty(
+        option.metaDescription,
+        option.glossaryPlain,
+        option.benefitsPlain,
+        type?.description,
+    );
 
     return {
         id: option._id,
@@ -64,7 +134,7 @@ function mapAvailableCustomization(
         cardinality: type?.cardinality === 'many' ? 'many' : 'one',
         imageUrl: firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null,
         shortDescription: '',
-        description: '',
+        description,
         preselected: Boolean(row.preselected),
         role: option.role ?? undefined,
         status: option.status ?? undefined,
@@ -87,12 +157,13 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         doc.kind === 'inspiration' ? 'inspiration' : 'standard';
 
     const productLine: ProductLineRef = {slug: lineSlug, title: lineTitle};
-    const styleDescription = doc.productStyle?.description?.trim();
-    const productStyle: ProductStyleRef = {
+    const productStyle = mapStyleRef({
         slug: styleSlug,
         title: styleTitle,
-        ...(styleDescription ? {description: styleDescription} : {}),
-    };
+        description: doc.productStyle?.description,
+        cardImage: doc.productStyle?.cardImage,
+    });
+    if (!productStyle) return null;
 
     const availableCustomizations = (doc.availableCustomizations ?? [])
         .map(mapAvailableCustomization)
@@ -151,29 +222,25 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         .filter((item): item is Product => item != null);
 
     const stylesFromField = (doc.styles ?? [])
-        .map((style): ProductStyleRef | null => {
-            const styleSlug = style.slug?.trim();
-            const title = style.title?.trim();
-            if (!styleSlug || !title) return null;
-            const description = style.description?.trim();
-            return {
-                slug: styleSlug,
-                title,
-                ...(description ? {description} : {}),
-            };
-        })
+        .map(mapStyleRef)
         .filter((item): item is ProductStyleRef => item != null);
 
     const stylesFromProducts = products.map((p) => p.productStyle);
     const stylesBySlug = new Map<string, ProductStyleRef>();
     for (const style of [...stylesFromField, ...stylesFromProducts]) {
-        if (!stylesBySlug.has(style.slug)) stylesBySlug.set(style.slug, style);
+        stylesBySlug.set(
+            style.slug,
+            preferStyleWithImage(stylesBySlug.get(style.slug), style),
+        );
     }
+
+    const {imageUrl, imageAlt} = cardImageFromSanity(doc.cardImage, doc.title);
 
     return {
         slug,
         title: doc.title,
         description: doc.description?.trim() || doc.cardSummary?.trim() || '',
+        ...(imageUrl ? {imageUrl, imageAlt} : {}),
         styles: [...stylesBySlug.values()],
         products,
     };

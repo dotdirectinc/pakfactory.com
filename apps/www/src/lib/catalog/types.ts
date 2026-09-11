@@ -39,6 +39,8 @@ export type ProductStyleRef = {
     slug: string;
     title: string;
     description?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
 };
 
 export type ProductDimensionRange = {
@@ -69,6 +71,8 @@ export type ProductLine = {
     slug: string;
     title: string;
     description: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
     styles: ProductStyleRef[];
     products: Product[];
 };

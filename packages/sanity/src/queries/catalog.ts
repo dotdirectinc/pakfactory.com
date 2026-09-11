@@ -7,6 +7,17 @@
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
+/** Card thumbnail: style uses cardImage → hero.image; line uses cardImage → heroMedia. */
+const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, hero.image){
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
+const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, heroMedia){
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
 const CATEGORY_PROJ = /* groq */ `{
   _id,
   title,
@@ -30,6 +41,9 @@ const OPTION_PROJ = /* groq */ `{
   "slug": slug.current,
   status,
   role,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -49,7 +63,8 @@ const STYLE_REF_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  "description": coalesce(hero.description, description)
+  "description": coalesce(hero.description, description),
+  ${STYLE_CARD_IMAGE}
 }`;
 
 /** Shared product projection used by by-slug and list queries. */
@@ -123,11 +138,13 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   "slug": slug.current,
   cardSummary,
   "description": coalesce(cardSummary, pt::text(intro)),
+  ${LINE_CARD_IMAGE},
   "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
     _id,
     title,
     "slug": slug.current,
-    "description": coalesce(hero.description, description)
+    "description": coalesce(hero.description, description),
+    ${STYLE_CARD_IMAGE}
   },
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
@@ -195,6 +212,9 @@ export type CatalogOptionDoc = {
   slug: string | null;
   status?: string | null;
   role?: 'configurable' | 'reference' | null;
+  metaDescription?: string | null;
+  glossaryPlain?: string | null;
+  benefitsPlain?: string | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
 };
@@ -217,6 +237,7 @@ export type CatalogStyleRefDoc = {
   title: string;
   slug: string | null;
   description?: string | null;
+  cardImage?: unknown | null;
 };
 
 export type CatalogProductDoc = {
@@ -249,6 +270,7 @@ export type CatalogProductLineDoc = {
   slug: string | null;
   cardSummary?: string | null;
   description?: string | null;
+  cardImage?: unknown | null;
   styles?: CatalogStyleRefDoc[] | null;
   products?: CatalogProductDoc[] | null;
 };

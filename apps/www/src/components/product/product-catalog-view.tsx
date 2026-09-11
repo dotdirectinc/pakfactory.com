@@ -40,14 +40,21 @@ function TileMedia({src, alt}: {src?: string; alt: string}) {
 function toProductCardData(
     product: Product,
     line: ProductLine,
+    style?: ProductStyleRef,
 ): ProductCardData {
+    const productImage = product.media[0]?.src ?? null;
+    const styleImage = style?.imageUrl ?? product.productStyle.imageUrl ?? null;
     return {
         title: product.title,
         href: productHref(product.slug),
         sku: product.sku,
         eyebrowLabel: product.productStyle.title ?? line.title,
-        imageUrl: product.media[0]?.src ?? null,
-        imageAlt: product.media[0]?.alt ?? product.title,
+        imageUrl: productImage ?? styleImage,
+        imageAlt:
+            product.media[0]?.alt ??
+            style?.imageAlt ??
+            product.productStyle.imageAlt ??
+            product.title,
         moq: product.moq,
     };
 }
@@ -58,7 +65,10 @@ function LineTile({line}: {line: ProductLine}) {
             href={productHref(line.slug)}
             className="group flex flex-col overflow-hidden rounded-xl bg-muted transition-shadow hover:shadow-md"
         >
-            <TileMedia alt={line.title} />
+            <TileMedia
+                src={line.imageUrl ?? undefined}
+                alt={line.imageAlt ?? line.title}
+            />
             <div className="flex flex-col gap-1 p-4">
                 <p className="text-sm font-semibold">{line.title}</p>
                 <p className="line-clamp-2 text-xs text-muted-foreground">
@@ -76,15 +86,20 @@ function StyleTile({
     line: ProductLine;
     style: ProductStyleRef;
 }) {
-    const count = line.products.filter(
+    const productsInStyle = line.products.filter(
         (product) => product.productStyle.slug === style.slug,
-    ).length;
+    );
+    const count = productsInStyle.length;
+    const firstProductImage = productsInStyle.find(
+        (product) => product.media[0]?.src,
+    )?.media[0]?.src;
+    const imageSrc = style.imageUrl ?? firstProductImage ?? undefined;
     return (
         <Link
             href={productStyleHref(line.slug, style.slug)}
             className="group flex flex-col overflow-hidden rounded-xl bg-muted transition-shadow hover:shadow-md"
         >
-            <TileMedia alt={style.title} />
+            <TileMedia alt={style.imageAlt ?? style.title} src={imageSrc} />
             <div className="flex flex-col gap-1 p-4">
                 <p className="text-sm font-semibold">{style.title}</p>
                 <p className="text-xs text-muted-foreground">
@@ -173,7 +188,7 @@ export function ProductStyleView({
                     {products.map((product) => (
                         <ProductCard
                             key={product.slug}
-                            data={toProductCardData(product, line)}
+                            data={toProductCardData(product, line, style)}
                         />
                     ))}
                 </div>
