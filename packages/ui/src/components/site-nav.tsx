@@ -148,7 +148,7 @@ export function SiteNav({
           ) : null}
 
           <Button
-            className="hidden h-10 rounded-full bg-primary px-6 text-base font-medium text-primary-foreground hover:bg-primary/90 sm:inline-flex"
+            className="hidden h-10 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:inline-flex"
             asChild
           >
             <Link href={cta.href}>{cta.label}</Link>

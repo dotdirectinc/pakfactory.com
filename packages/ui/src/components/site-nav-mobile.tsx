@@ -11,6 +11,8 @@ import type {
   SiteNavItem,
   SiteNavRequest,
 } from "@pakfactory/ui/components/site-nav";
+import {isSiteNavHrefActive} from "@pakfactory/ui/components/site-nav-links";
+import {cn} from "@pakfactory/ui/lib/utils";
 
 type SiteNavMobileProps = {
   items: SiteNavItem[];
@@ -58,12 +60,17 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
             <nav className="mb-4 space-y-1" aria-label="Mobile navigation">
               {items.map((item) => {
                 if (item.href) {
+                  const isActive = isSiteNavHrefActive(pathname, item.href);
                   return (
                     <Link
                       key={item.key}
                       href={item.href}
                       onClick={close}
-                      className="block py-2 text-sm font-medium text-foreground no-underline"
+                      aria-current={isActive ? "page" : undefined}
+                      className={cn(
+                        "block py-2 text-sm font-medium no-underline transition-colors hover:text-primary",
+                        isActive ? "text-primary" : "text-muted-foreground",
+                      )}
                     >
                       {item.label}
                     </Link>
@@ -73,7 +80,7 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
                 return (
                   <span
                     key={item.key}
-                    className="block py-2 text-sm font-medium text-foreground"
+                    className="block py-2 text-sm font-medium text-muted-foreground"
                     aria-disabled="true"
                   >
                     {item.label}
