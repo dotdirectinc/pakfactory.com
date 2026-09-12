@@ -16,5 +16,7 @@ export const WWW_CATALOG_PRODUCTS_CACHE_TAG = 'www-catalog-products';
 export const WWW_CATALOG_LINES_CACHE_TAG = 'www-catalog-lines';
 export const WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG =
     'www-catalog-customizations';
+export const WWW_SOLUTIONS_CACHE_TAG = 'www-solutions';
 
 export const wwwProductTag = (slug: string) => `www-product:${slug}`;
+export const wwwSolutionTag = (slug: string) => `www-solution:${slug}`;

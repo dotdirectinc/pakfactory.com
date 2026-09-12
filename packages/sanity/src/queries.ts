@@ -125,6 +125,19 @@ export {
     type CatalogTypeDoc,
 } from './queries/catalog';
 
+export {
+    SOLUTION_BY_SLUG_QUERY,
+    SOLUTION_LINE_PRODUCTS_QUERY,
+    SOLUTION_TAGGED_PRODUCTS_QUERY,
+    SOLUTION_PAGE_SLUGS_QUERY,
+    SOLUTIONS_WITH_PAGES_QUERY,
+    type SolutionBySlugDoc,
+    type SolutionFormatRefDoc,
+    type SolutionPageSlugDoc,
+    type SolutionRelatedRefDoc,
+    type SolutionWithPageDoc,
+} from './queries/solutions';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,

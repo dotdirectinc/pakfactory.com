@@ -17,7 +17,9 @@ import {
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
   WWW_FOOTER_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
+  WWW_SOLUTIONS_CACHE_TAG,
   wwwProductTag,
+  wwwSolutionTag,
 } from "@/lib/www-cache";
 
 const INDEXNOW_HOST = "pakfactory.com";
@@ -175,6 +177,27 @@ export async function POST(request: Request) {
     );
   }
 
+  // Solution LPs + nested line catalogs (product/line edits change filtered grids).
+  const touchesSolutions =
+    !type ||
+    type === "solution" ||
+    CATALOG_PRODUCT_TYPES.has(type);
+  if (touchesSolutions) {
+    tags.add(WWW_SOLUTIONS_CACHE_TAG);
+    revalidatePath("/solutions");
+    revalidated.push("/solutions");
+    if (type === "solution" && slug) {
+      tags.add(wwwSolutionTag(slug));
+      revalidatePath(`/solutions/${slug}`);
+      revalidatePath(`/solutions/${slug}/[lineSlug]`, "page");
+      revalidated.push(`/solutions/${slug}`, `/solutions/${slug}/[lineSlug]`);
+    } else {
+      revalidatePath("/solutions/[slug]", "page");
+      revalidatePath("/solutions/[slug]/[lineSlug]", "page");
+      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[lineSlug]");
+    }
+  }
+
   if (!type || type === "blogNavigation") {
     tags.add(WWW_FOOTER_CACHE_TAG);
   }
@@ -232,6 +255,7 @@ export async function POST(request: Request) {
     CASE_STUDY_TYPES.has(type) ||
     CATALOG_PRODUCT_TYPES.has(type) ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === "solution" ||
     type === "blogNavigation" ||
     type === "settings";
 
