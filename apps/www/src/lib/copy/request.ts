@@ -197,9 +197,17 @@ export const REQUEST_COPY = {
     startYourRequestCount: 'Start quote request ({n})',
     customizeLine: 'Customize',
     customizeUnavailable: 'Customization from Quote Request is coming soon.',
+    customizationRowLabel: 'Customization',
     additionalNotesAction: 'Additional Notes',
     referenceImagesAction: 'Reference Images',
     notesAndImagesAction: 'Notes & images',
+    notesAndImageRowLabel: 'Notes & Image',
+    contentsSummaryLabel: 'What are you putting in the packaging',
+    additionalNotesSummaryLabel: 'Additional Notes',
+    referenceImageSummaryLabel: 'Reference Image',
+    notAdded: 'Not added',
+    imagesCountOne: '1 image',
+    imagesCountMany: '{n} images',
     saveNotes: 'Save',
     saveImages: 'Save',
     draftRequestsHeading: 'Draft requests',
@@ -219,7 +227,6 @@ export const REQUEST_COPY = {
     addSolutionsSupporting: 'Inspiration / industry',
     selectedProductsHeading: 'Selected products',
     selectedProductsSupporting: "The products we'll quote.",
-    prepareQuoteFootnote: "We'll prepare your quote.",
 } as const;
 
 export const SERVICE_OPTIONS = [
