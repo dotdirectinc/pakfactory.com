@@ -138,6 +138,12 @@ export {
     type SolutionWithPageDoc,
 } from './queries/solutions';
 
+export {
+    WEBSITE_NAVIGATION_QUERY,
+    type WebsiteNavigationDoc,
+    type WebsiteNavLinkDoc,
+} from './queries/website-navigation';
+
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   title,
   description,

@@ -11,7 +11,8 @@ export const WWW_CONTENT_REVALIDATE_SECONDS = 300;
 export const WWW_CATALOG_REVALIDATE_SECONDS = 60;
 
 export const WWW_GLOBAL_SETTINGS_CACHE_TAG = 'www-global-settings';
-export const WWW_FOOTER_CACHE_TAG = 'www-footer';
+/** Header + footer chrome from Sanity `websiteNavigation`. */
+export const WWW_WEBSITE_NAVIGATION_CACHE_TAG = 'www-website-navigation';
 export const WWW_CATALOG_PRODUCTS_CACHE_TAG = 'www-catalog-products';
 export const WWW_CATALOG_LINES_CACHE_TAG = 'www-catalog-lines';
 export const WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG =

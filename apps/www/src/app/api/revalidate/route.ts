@@ -15,9 +15,9 @@ import {
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
-  WWW_FOOTER_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
+  WWW_WEBSITE_NAVIGATION_CACHE_TAG,
   wwwProductTag,
   wwwSolutionTag,
 } from "@/lib/www-cache";
@@ -36,7 +36,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "caseStudy", "listingPage", "client",
  *     "solution", "productLine", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
- *     "blogNavigation", "settings"
+ *     "websiteNavigation", "settings"
  *   ]
  *
  * Case studies: the listing always revalidates. A slugged `caseStudy` edit
@@ -198,8 +198,8 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!type || type === "blogNavigation") {
-    tags.add(WWW_FOOTER_CACHE_TAG);
+  if (!type || type === "websiteNavigation") {
+    tags.add(WWW_WEBSITE_NAVIGATION_CACHE_TAG);
   }
 
   if (!type || type === "settings") {
@@ -256,7 +256,7 @@ export async function POST(request: Request) {
     CATALOG_PRODUCT_TYPES.has(type) ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
     type === "solution" ||
-    type === "blogNavigation" ||
+    type === "websiteNavigation" ||
     type === "settings";
 
   return NextResponse.json({

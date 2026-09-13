@@ -45,6 +45,29 @@ Use **Server Components** by default. Do not add cart or checkout UX unless expl
 - `src/` = `app/`, `components/`, `lib/` only
 - `app/` is routing-only; importable components live under `src/components/`
 - **Known deferred violation:** `app/case-studies/_components/` and `app/case-studies/[slug]/_components/` — remediation deferred per [ADR-005](../../docs/adr/0005-component-organization.md); do not add new `_components/` folders elsewhere
+- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in `lib/` / modules — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles.
+
+## Composition: chrome vs structured routes vs Sections
+
+Do **not** collapse these layers:
+
+| Layer | Owns | www practice |
+| ----- | ---- | ------------ |
+| **Site chrome** | Global nav / footer | Layout + modules; Sanity `websiteNavigation` singleton (not `sections[]`) |
+| **Structured routes** | Catalog URL trees | Code owns breadcrumb, H1, primary grids/cards (`/products…`, `/solutions…`); optional `doc.sections` only as a body slot |
+| **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; presentation-free (D35); allowlisted per page type |
+| **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features |
+
+**Route gate (challenge before adding Sections):**
+
+- Chrome (nav/footer/breadcrumbs)? → **not** a section.
+- URL hierarchy / filters / RFQ rails? → **code skeleton**; do not replace with free page builder.
+- Editorial layout that editors must reorder? → **section** type + shared renderer, allowlist updated.
+- New visual band that is only “grey background / 3 columns”? → reject (presentation in CMS); keep in design system / code.
+
+www prefers **Sections** language for page composition ([ADR-015](../../docs/adr/0015-page-composition-sections-terminology.md) Proposed). Blog still uses **block** / `pageBuilder` until ADR-015 Accepted + PROD-2293 — do not rename blog fields in www PRs.
+
+**Blog:** no change required for www chrome or SectionRenderer work.
 
 ## Staging and deploy
 

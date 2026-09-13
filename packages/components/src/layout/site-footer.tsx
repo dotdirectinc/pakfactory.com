@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
@@ -81,7 +81,22 @@ type SiteFooterProps = {
   contactLabel?: string;
   social?: SocialLink[];
   aiLinks?: AiLink[];
+  /** Optional override for the bottom PAKFACTORY mark (e.g. animated). */
+  wordmark?: ReactNode;
 };
+
+function StaticWordmark() {
+  return (
+    <div
+      className="w-full overflow-hidden bg-[radial-gradient(circle,color-mix(in_srgb,var(--foreground)_12%,transparent)_1px,transparent_1px)] bg-[length:16px_16px] py-4 md:py-5"
+      aria-hidden="true"
+    >
+      <p className="mx-auto w-[98%] select-none text-center text-[clamp(4rem,14vw,14rem)] font-black leading-none tracking-tight text-primary">
+        PAKFACTORY
+      </p>
+    </div>
+  );
+}
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
   const className = "block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground";
@@ -112,6 +127,7 @@ export function SiteFooter({
   contactLabel = "Let's talk",
   social = [],
   aiLinks = [],
+  wordmark,
 }: SiteFooterProps) {
   const sectionRows = Math.max(1, ...columns.map((column) => column.length));
   const orderedSocial = [...social].sort(
@@ -213,6 +229,9 @@ export function SiteFooter({
           </div>
         </div>
       </PageDielineSection>
+
+      {/* Full-bleed wordmark — outside dashed max-width dieline */}
+      {wordmark ?? <StaticWordmark />}
     </footer>
   );
 }

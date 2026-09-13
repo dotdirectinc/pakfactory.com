@@ -15,5 +15,7 @@ Follow [`apps/www/CLAUDE.md`](../../CLAUDE.md), [`AGENTS.md`](../../../../AGENTS
 - **Auth / Sanity / SEO:** Supabase + `@pakfactory/sanity/queries` + `@pakfactory/seo` only — see CLAUDE.md.
 - **UI:** DESIGN.md + do not edit `packages/ui` primitives for features.
 - **ADR-005:** routing-only `app/`; no new `app/_components/` (case-studies deferred).
+- **Composition:** chrome ≠ sections ≠ catalog skeleton — see CLAUDE.md § Composition.
+- **Reuse:** ADR-013 props-only `ui/`; extract shared cards, don’t fork features.
 - **Staging:** non-production `noindex`; `staging.pakfactory.com` is Vercel-auth-gated.
 - **Local:** port **3003** (`pnpm dev:www`).
