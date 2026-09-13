@@ -117,6 +117,8 @@ Reconciliation folklore (“keys must be array index”, “memo always helps”
 
 Until [ADR-015](docs/adr/0015-page-composition-sections-terminology.md) is **Accepted**, blog code/docs use **“block”** ([ADR-012](docs/adr/0012-page-block-terminology.md)): `components/blocks/`, `BlockRenderer`, Studio “Page blocks”. Do not rename `pageBuilder` in the dataset casually.
 
+**www:** Studio already uses `sections` / `pageSectionsField`. Prefer **Sections** language for www rebuild work. Site chrome (nav/footer) is **not** a section — see [`apps/www/CLAUDE.md`](apps/www/CLAUDE.md) § Composition. Structured catalog routes keep a code-owned skeleton; sections are optional allowlisted body slots.
+
 ---
 
 ## 6. Data fetching (short)

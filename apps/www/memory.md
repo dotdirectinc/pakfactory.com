@@ -44,6 +44,20 @@ When adding a new env var, update **both** `.env.example` and `turbo.json` `@pak
 
 - Webhook target: `/api/revalidate`
 - Secret: `SANITY_REVALIDATE_SECRET` (Bearer or `?secret=`)
+- Include `_type == "websiteNavigation"` so header/footer chrome cache busts (`www-website-navigation`)
+
+## Website navigation singleton (chrome)
+
+Site header + footer read Sanity `websiteNavigation` (not page sections). Seed mirrors the hardcoded V5 chrome for parity.
+
+**Humans only** (agents must not run seeds — `AGENTS.md`):
+
+```bash
+pnpm seed:website-navigation              # write + attempt publish
+pnpm seed:website-navigation -- --dry-run # print payload only
+```
+
+Then confirm in Studio → Main Website → Navigation. If the doc is draft-only, publish it. Refresh local www (`pnpm dev:www`) and check header labels/hrefs + footer columns/social/AI.
 
 ## Auth emails
 
