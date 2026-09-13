@@ -1,9 +1,8 @@
 import type {Metadata} from 'next';
 import {SolutionCatalogView} from '@/components/solution/solution-views';
 import {listSolutionsWithPages} from '@/lib/solutions/solutions';
-import {WWW_CATALOG_REVALIDATE_SECONDS} from '@/lib/www-cache';
 
-export const revalidate = WWW_CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 60;
 
 export const metadata: Metadata = {
     title: 'Solutions',

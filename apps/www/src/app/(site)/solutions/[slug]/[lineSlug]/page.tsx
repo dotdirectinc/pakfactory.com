@@ -6,10 +6,9 @@ import {
     listSolutionPageSlugs,
 } from '@/lib/solutions/solutions';
 import {absoluteUrl} from '@/lib/site';
-import {WWW_CATALOG_REVALIDATE_SECONDS} from '@/lib/www-cache';
 import {solutionLineHref} from '@/lib/www-routes';
 
-export const revalidate = WWW_CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 60;
 
 type PageProps = {
     params: Promise<{slug: string; lineSlug: string}>;
