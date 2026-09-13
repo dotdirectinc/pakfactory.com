@@ -65,6 +65,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
         addLine({
             productSlug: product.slug,
             productTitle: product.title,
+            productSku: product.sku,
             productLineTitle: product.productLine.title,
             productMedia: product.media,
             availableCustomizations: product.availableCustomizations,

@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useId, useRef, useState} from 'react';
+import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {ImagePlus, X} from 'lucide-react';
@@ -53,7 +53,10 @@ const CustomizationBuilder = dynamic(
 );
 
 const LINK_ACTION_CLASS =
-    'h-auto p-0 text-xs font-medium underline underline-offset-4';
+    'h-auto p-0 text-xs font-medium text-primary underline underline-offset-4';
+
+const ROW_LABEL_CLASS =
+    'w-[120px] shrink-0 text-xs font-semibold text-foreground sm:w-[140px]';
 
 type ProductRequestCardProps = {
     line: RequestLine;
@@ -77,10 +80,8 @@ function resolveBuilderState(line: RequestLine): CustomizationBuilderState {
     return createEmptyBuilderState();
 }
 
-function formatQuantityUnits(quantities: number[]): string {
-    return quantities
-        .map((n) => `${n.toLocaleString('en-US')} ${REQUEST_COPY.unitsSuffix}`)
-        .join(', ');
+function formatQuantityList(quantities: number[]): string {
+    return quantities.map((n) => n.toLocaleString('en-US')).join(', ');
 }
 
 function humanizeCategorySlug(category: string): string {
@@ -129,6 +130,75 @@ function buildSpecRows(line: RequestLine): SpecRow[] {
     }
 
     return rows;
+}
+
+function buildNotesRows(line: RequestLine): SpecRow[] {
+    const rows: SpecRow[] = [];
+    const contents = line.contents?.trim() ?? '';
+    const notes = line.notes?.trim() ?? '';
+    const imageCount = line.referenceImages?.length ?? 0;
+
+    if (contents) {
+        rows.push({
+            key: 'contents',
+            label: REQUEST_COPY.contentsSummaryLabel,
+            value: contents,
+        });
+    }
+    if (notes) {
+        rows.push({
+            key: 'notes',
+            label: REQUEST_COPY.additionalNotesSummaryLabel,
+            value: notes,
+        });
+    }
+    if (imageCount === 1) {
+        rows.push({
+            key: 'images',
+            label: REQUEST_COPY.referenceImageSummaryLabel,
+            value: REQUEST_COPY.imagesCountOne,
+        });
+    } else if (imageCount > 1) {
+        rows.push({
+            key: 'images',
+            label: REQUEST_COPY.referenceImageSummaryLabel,
+            value: REQUEST_COPY.imagesCountMany.replace(
+                '{n}',
+                String(imageCount),
+            ),
+        });
+    }
+
+    return rows;
+}
+
+const SIDE_COL_CLASS = 'w-[88px] shrink-0 sm:w-[115px]';
+
+function DetailRow({
+    label,
+    children,
+    onEdit,
+}: {
+    label: string;
+    children: ReactNode;
+    onEdit: () => void;
+}) {
+    return (
+        <div className="flex items-start gap-4 border-t border-dashed border-border py-4">
+            <p className={ROW_LABEL_CLASS}>{label}</p>
+            <div className="min-w-0 flex-1 text-xs text-foreground">
+                {children}
+            </div>
+            <Button
+                type="button"
+                variant="link"
+                className={cn(LINK_ACTION_CLASS, 'shrink-0')}
+                onClick={onEdit}
+            >
+                {REQUEST_COPY.paperEdit}
+            </Button>
+        </div>
+    );
 }
 
 export function ProductRequestCard({
@@ -181,12 +251,9 @@ export function ProductRequestCard({
     }, [qtyOpen, line.quantities]);
 
     const room = MAX_REF_IMAGES - draftImages.length;
-    const qtyUnits = formatQuantityUnits(line.quantities);
-    const metaParts = [line.productLineTitle?.trim(), qtyUnits || null].filter(
-        Boolean,
-    );
-    const metaLine = metaParts.join(' · ');
+    const qtyList = formatQuantityList(line.quantities);
     const specRows = buildSpecRows(line);
+    const notesRows = buildNotesRows(line);
 
     function onPickFiles(event: React.ChangeEvent<HTMLInputElement>) {
         const picked = Array.from(event.target.files ?? []);
@@ -248,54 +315,123 @@ export function ProductRequestCard({
     }
 
     const card = (
-        <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-background sm:flex-row sm:items-stretch">
-            <div className="mx-auto aspect-square w-[115px] max-h-[115px] shrink-0 self-start bg-background p-4 sm:mx-0">
-                <div className="relative size-full overflow-hidden rounded-md bg-muted">
-                    {thumb?.src ? (
-                        // Catalog media URLs are static fixture assets.
-                        <div className={productMediaLayerClass}>
-                            <img
-                                src={thumb.src}
-                                alt=""
-                                className="size-full object-contain"
-                            />
-                        </div>
-                    ) : (
-                        <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                            —
-                        </span>
-                    )}
+        <div className="overflow-hidden rounded-xl border border-border bg-background p-4">
+            <div className="flex items-start gap-4">
+                <div className={SIDE_COL_CLASS}>
+                    <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
+                        {thumb?.src ? (
+                            // Catalog media URLs are static fixture assets.
+                            <div className={productMediaLayerClass}>
+                                <img
+                                    src={thumb.src}
+                                    alt=""
+                                    className="size-full object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                                —
+                            </span>
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            <div className="min-w-0 flex-1 p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="text-base font-semibold tracking-tight">
+                {/* Title + detail rows share this column so labels align with the title */}
+                <div className="min-w-0 flex-1">
+                    <div className="pb-4">
+                        {line.productSku?.trim() ? (
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                {line.productSku.trim().toUpperCase()}
+                            </p>
+                        ) : null}
+                        <p className="text-lg font-semibold tracking-tight">
                             <Link
                                 href={productHref(line.productSlug)}
-                                className="text-foreground no-underline hover:underline"
+                                className="text-foreground underline-offset-4 hover:underline"
                             >
                                 {title}
                             </Link>
                         </p>
-                        {metaLine || qtyUnits ? (
-                            <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground">
-                                {metaLine ? <span>{metaLine}</span> : null}
-                                {qtyUnits ? (
-                                    <Button
-                                        type="button"
-                                        variant="link"
-                                        className={LINK_ACTION_CLASS}
-                                        onClick={() => setQtyOpen(true)}
-                                    >
-                                        {REQUEST_COPY.paperEdit}
-                                    </Button>
-                                ) : null}
-                            </div>
-                        ) : null}
                     </div>
-                    {selectable ? (
+
+                    <DetailRow
+                        label={REQUEST_COPY.quantityLabel}
+                        onEdit={() => setQtyOpen(true)}
+                    >
+                        {qtyList || (
+                            <span className="text-muted-foreground">
+                                {REQUEST_COPY.notAdded}
+                            </span>
+                        )}
+                    </DetailRow>
+
+                    <DetailRow
+                        label={REQUEST_COPY.customizationRowLabel}
+                        onEdit={() => setCustomizeOpen(true)}
+                    >
+                        {specRows.length > 0 ? (
+                            <ul className="flex flex-col gap-1">
+                                {specRows.map((row) => (
+                                    <li key={row.key}>
+                                        <span className="text-muted-foreground">
+                                            {row.label}:{' '}
+                                        </span>
+                                        <span className="font-medium text-foreground">
+                                            {row.value}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <span className="text-muted-foreground">
+                                {REQUEST_COPY.notAdded}
+                            </span>
+                        )}
+                    </DetailRow>
+
+                    <DetailRow
+                        label={REQUEST_COPY.notesAndImageRowLabel}
+                        onEdit={() => setDetailsOpen(true)}
+                    >
+                        {notesRows.length > 0 ? (
+                            <ul className="flex flex-col gap-1">
+                                {notesRows.map((row) => (
+                                    <li key={row.key}>
+                                        <span className="text-muted-foreground">
+                                            {row.label}:{' '}
+                                        </span>
+                                        <span className="font-medium text-foreground">
+                                            {row.value}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <span className="text-muted-foreground">
+                                {REQUEST_COPY.notAdded}
+                            </span>
+                        )}
+                    </DetailRow>
+
+                    <div className="flex justify-end border-t border-dashed border-border py-4">
+                        <Button
+                            type="button"
+                            variant="link"
+                            className={cn(LINK_ACTION_CLASS, 'text-destructive')}
+                            onClick={() => setRemoveOpen(true)}
+                        >
+                            {REQUEST_COPY.removeLine}
+                        </Button>
+                    </div>
+                </div>
+
+                {selectable ? (
+                    <div
+                        className={cn(
+                            SIDE_COL_CLASS,
+                            'flex items-start justify-end',
+                        )}
+                    >
                         <Checkbox
                             id={fieldId}
                             checked={selected}
@@ -303,56 +439,10 @@ export function ProductRequestCard({
                                 onSelectedChange?.(value === true)
                             }
                             aria-label={`Select ${title}`}
-                            className="mt-1 shrink-0"
+                            className="mt-0.5"
                         />
-                    ) : null}
-                </div>
-
-                {specRows.length > 0 ? (
-                    <dl className="mt-4 flex flex-col gap-1 text-sm">
-                        {specRows.map((row) => (
-                            <div
-                                key={row.key}
-                                className="flex flex-wrap gap-x-2"
-                            >
-                                <dt className="text-muted-foreground">
-                                    {row.label}:
-                                </dt>
-                                <dd className="text-foreground">{row.value}</dd>
-                            </div>
-                        ))}
-                    </dl>
+                    </div>
                 ) : null}
-
-                <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <Button
-                        type="button"
-                        variant="link"
-                        className={LINK_ACTION_CLASS}
-                        onClick={() => setCustomizeOpen(true)}
-                    >
-                        {REQUEST_COPY.customizeLine}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="link"
-                        className={LINK_ACTION_CLASS}
-                        onClick={() => setDetailsOpen(true)}
-                    >
-                        {REQUEST_COPY.notesAndImagesAction}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="link"
-                        className={cn(
-                            LINK_ACTION_CLASS,
-                            'ml-auto text-destructive',
-                        )}
-                        onClick={() => setRemoveOpen(true)}
-                    >
-                        {REQUEST_COPY.removeLine}
-                    </Button>
-                </div>
             </div>
         </div>
     );
