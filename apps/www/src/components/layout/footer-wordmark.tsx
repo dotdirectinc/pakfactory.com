@@ -6,11 +6,8 @@ import {ScrollTrigger} from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Soft 8pt dotted grid (token-based). */
-const DOTTED_GRID_BG =
-  'bg-[radial-gradient(circle,color-mix(in_srgb,var(--foreground)_12%,transparent)_1px,transparent_1px)] bg-[length:16px_16px]';
-
-/** Giant PAKFACTORY mark — slides up on scroll and settles still clipped (peek). */
+/** Giant PAKFACTORY mark — slides up on scroll and settles still clipped (peek).
+ *  Dotted grid is owned by SiteFooter’s meta+wordmark section wrapper. */
 export function FooterWordmark() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
@@ -53,12 +50,12 @@ export function FooterWordmark() {
   return (
     <div
       ref={wrapperRef}
-      className={`w-full overflow-hidden py-4 md:py-5 ${DOTTED_GRID_BG}`}
+      className="relative z-10 w-full overflow-hidden py-4 md:py-5"
       aria-hidden="true"
     >
       <p
         ref={textRef}
-        className="mx-auto w-[98%] select-none text-center text-[clamp(4rem,14vw,14rem)] font-black leading-none tracking-tight text-primary will-change-transform"
+        className="mx-auto w-full select-none text-center text-[clamp(4rem,15vw,15rem)] font-black leading-none tracking-tight text-primary will-change-transform"
       >
         PAKFACTORY
       </p>

@@ -1,7 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
-import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import {
+  PageDielineSection,
+  pageDielineInnerClass,
+  pageDielineOuterClass,
+} from "@pakfactory/ui/components/page-dieline-section";
 import { AI_ENGINE_ICONS } from "@pakfactory/ui/icons/ai-brand-icon";
 import { EXTERNAL_LINK_REL, externalLinkAttributes } from "../commons/external-link";
 
@@ -73,6 +77,10 @@ const PLATFORM_ICONS: Record<SocialPlatform, React.ComponentType<{ className?: s
 // Fixed display order (matches the POC footer): Facebook → Instagram → LinkedIn → YouTube → Pinterest, X last.
 const PLATFORM_ORDER: SocialPlatform[] = ["facebook", "instagram", "linkedin", "youtube", "pinterest", "x"];
 
+/** Soft 8pt dotted grid (token-based) — shared by meta bar + wordmark section. */
+const DOTTED_GRID_BG =
+  "bg-[radial-gradient(circle,color-mix(in_srgb,var(--foreground)_12%,transparent)_1px,transparent_1px)] bg-[length:16px_16px]";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 type SiteFooterProps = {
@@ -87,11 +95,8 @@ type SiteFooterProps = {
 
 function StaticWordmark() {
   return (
-    <div
-      className="w-full overflow-hidden bg-[radial-gradient(circle,color-mix(in_srgb,var(--foreground)_12%,transparent)_1px,transparent_1px)] bg-[length:16px_16px] py-4 md:py-5"
-      aria-hidden="true"
-    >
-      <p className="mx-auto w-[98%] select-none text-center text-[clamp(4rem,14vw,14rem)] font-black leading-none tracking-tight text-primary">
+    <div className="relative z-10 w-full overflow-hidden py-4 md:py-5" aria-hidden="true">
+      <p className="mx-auto w-full select-none text-center text-[clamp(4rem,15vw,15rem)] font-black leading-none tracking-tight text-primary">
         PAKFACTORY
       </p>
     </div>
@@ -170,68 +175,84 @@ export function SiteFooter({
             </div>
           ))}
         </div>
+      </PageDielineSection>
 
-        {/* Bottom row 1 — copyright + social icons */}
-        <div className="border-t border-dashed border-foreground/10">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-8 md:px-8">
-            <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
-              © 2026 PakFactory
-            </p>
-            {orderedSocial.length > 0 && (
-              <div className="flex items-center gap-2.5">
-                {orderedSocial.map((link) => {
-                  const Icon = PLATFORM_ICONS[link.platform];
-                  return (
-                    <a
-                      key={link.platform}
-                      href={link.url}
-                      aria-label={PLATFORM_LABELS[link.platform]}
-                      target="_blank"
-                      rel={EXTERNAL_LINK_REL}
-                      className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary"
-                    >
-                      {Icon ? <Icon className="size-4" /> : <span className="text-sm">{PLATFORM_LABELS[link.platform]}</span>}
-                    </a>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+      {/* Full-bleed dotted band: full-width top rule, guides behind, meta + wordmark above */}
+      <div
+        className={`relative w-full border-t border-dashed border-border ${DOTTED_GRID_BG}`}
+      >
+        <div
+          className={pageDielineOuterClass(
+            "pointer-events-none absolute inset-0 z-0",
+          )}
+          aria-hidden
+        >
+          <div
+            className={pageDielineInnerClass("h-full px-0 md:px-0")}
+          />
         </div>
 
-        {/* Bottom row 2 — AI answer links + full rights */}
-        <div className="border-t border-dashed border-foreground/10">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-8 md:px-8">
-            <div className="flex flex-wrap items-center gap-6">
-              <p className="text-sm text-muted-foreground">See what AI says about PakFactory</p>
-              {aiLinks.length > 0 && (
-                <div className="flex h-4 items-center gap-3">
-                  {aiLinks.map((link) => {
-                    const Icon = AI_ENGINE_ICONS[link.engine];
-                    if (!Icon) return null;
-                    return (
-                      <a
-                        key={link.engine}
-                        href={link.url}
-                        aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
-                        target="_blank"
-                        rel={EXTERNAL_LINK_REL}
-                        className="text-foreground hover:opacity-80"
-                      >
-                        <Icon className="size-4" />
-                      </a>
-                    );
-                  })}
+        <div className={pageDielineOuterClass("relative z-10")}>
+          <div className="mx-auto flex w-full max-w-[var(--layout-max)] flex-wrap items-start justify-between gap-x-6 gap-y-4 px-4 py-6 md:px-8">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <p className="text-sm text-muted-foreground">See what AI says about PakFactory</p>
+                {aiLinks.length > 0 && (
+                  <div className="flex h-4 items-center gap-3">
+                    {aiLinks.map((link) => {
+                      const Icon = AI_ENGINE_ICONS[link.engine];
+                      if (!Icon) return null;
+                      return (
+                        <a
+                          key={link.engine}
+                          href={link.url}
+                          aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
+                          target="_blank"
+                          rel={EXTERNAL_LINK_REL}
+                          className="text-foreground hover:opacity-80"
+                        >
+                          <Icon className="size-4" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {orderedSocial.length > 0 && (
+                <div className="flex flex-wrap items-center gap-4">
+                  <p className="text-sm text-muted-foreground">Follow us on</p>
+                  <div className="flex items-center gap-2">
+                    {orderedSocial.map((link) => {
+                      const Icon = PLATFORM_ICONS[link.platform];
+                      return (
+                        <a
+                          key={link.platform}
+                          href={link.url}
+                          aria-label={PLATFORM_LABELS[link.platform]}
+                          target="_blank"
+                          rel={EXTERNAL_LINK_REL}
+                          className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary"
+                        >
+                          {Icon ? <Icon className="size-4" /> : <span className="text-sm">{PLATFORM_LABELS[link.platform]}</span>}
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">© 2026 PakFactory. All Rights Reserved</p>
+
+            <p className="text-sm text-muted-foreground">
+              © 2026 PakFactory. All Rights Reserved
+            </p>
           </div>
         </div>
-      </PageDielineSection>
 
-      {/* Full-bleed wordmark — outside dashed max-width dieline */}
-      {wordmark ?? <StaticWordmark />}
+        <div className="relative z-10">
+          {wordmark ?? <StaticWordmark />}
+        </div>
+      </div>
     </footer>
   );
 }
