@@ -63,6 +63,24 @@
  *   ...                                                                     --dataset production --confirm --yes-production
  *   ...                                                                     --dataset production --verify
  *
+ * ── ALSO IN THIS SCRIPT: the cardinality renames (PROD-2482) ────────────────
+ *
+ * Two fields were both called `cardinality` and counted different things:
+ *
+ *   customizationType.cardinality  →  customerSelects   (OPTIONS a customer picks)
+ *   property.cardinality           →  valuesPerItem     (VALUES one item holds)
+ *
+ * D45 accepted the shared name on condition everyone said "the Type's cardinality"
+ * out loud, forever. Renaming both retires that tax rather than paying it.
+ *
+ * Only the Type needs migrating. `property.cardinality` was required but UNSET on
+ * all 9 Properties (drafts included, verified against production), so it was
+ * renamed outright in the schema with no data step — Conventions §4.3 protects
+ * POPULATED fields, and there was nothing there.
+ *
+ * `customizationType.cardinality` is populated on all 37, so it is copied here and
+ * left in place, deprecated and read-only, until the rename is verified.
+ *
  * ⚠️ Run in the SAME deploy as the schema change.
  */
 
@@ -140,6 +158,8 @@ const publishedId = (id) => id.replace(/^drafts\./, '')
 async function main() {
   console.log('\n🔀  Split customizationOption.role → configuratorRole + hasPage (PROD-2482 / D55)')
   console.log(`    project=${PROJECT_ID} dataset=${DATASET} mode=${describeMode(args)}\n`)
+
+  await migrateTypeCardinality()
 
   const detailPage = loadDetailPageByTitle()
   const docs = await client.fetch(
@@ -240,6 +260,42 @@ async function main() {
   console.log(`    ${after} document(s) now carry both fields (${docs.length} incl. drafts, ${expected} published ids).`)
   console.log(`    \`role\` is untouched and still deployed — removal is a later sweep.`)
   console.log(`    Re-run with \`--verify\` to compare values rather than counts.\n`)
+}
+
+/**
+ * `customizationType.cardinality` → `customerSelects`. A straight copy on every Type
+ * that has not already been migrated. The old key is NOT unset — it stays deprecated
+ * and read-only until the rename is verified.
+ */
+async function migrateTypeCardinality() {
+  const types = await client.fetch(
+    `*[_type == "customizationType"]{ _id, title, cardinality, customerSelects } | order(title asc)`,
+  )
+  const missing = types.filter((t) => !t.cardinality && !t.customerSelects)
+  if (missing.length) {
+    console.error(`❌  ${missing.length} Type(s) carry neither \`cardinality\` nor \`customerSelects\`:`)
+    missing.forEach((t) => console.error(`     ${t._id}  ${t.title}`))
+    console.error('    Both are required in the schema, so the data diverged from it. Nothing written.')
+    process.exit(1)
+  }
+
+  const todo = types.filter((t) => (t.cardinality ?? t.customerSelects) !== t.customerSelects)
+  const many = types.filter((t) => (t.cardinality ?? t.customerSelects) === 'many')
+  console.log(`customizationType.cardinality → customerSelects: ${types.length} Type(s), ` +
+    `${many.length} are "many" (${many.map((t) => t.title).join(', ')}).`)
+
+  if (!todo.length) {
+    console.log('   ✅ already migrated — every Type carries customerSelects.\n')
+    return
+  }
+  if (!apply) {
+    console.log(`   • ${todo.length} Type(s) would be patched. DRY-RUN.\n`)
+    return
+  }
+  const tx = client.transaction()
+  todo.forEach((t) => tx.patch(t._id, (patch) => patch.set({ customerSelects: t.cardinality ?? t.customerSelects })))
+  await tx.commit({ visibility: 'sync' })
+  console.log(`   ✏️  patched ${todo.length} Type(s).\n`)
 }
 
 main().catch((e) => {

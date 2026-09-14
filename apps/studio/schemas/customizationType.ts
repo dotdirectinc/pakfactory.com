@@ -42,7 +42,7 @@ export const customizationType = defineType({
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
-    // D47 §4 / ADR-017 — `cardinality` must ship in the same PR as, or ahead of, any
+    // D47 §4 / ADR-017 — this must ship in the same PR as, or ahead of, any
     // `customizationType` target on `incompatibleWithCustomizations` (D43): naming a
     // whole Type as a clash only reads unambiguously once you know whether a customer
     // takes one Option from it or several.
@@ -51,8 +51,17 @@ export const customizationType = defineType({
     // blanket "Single Selection (Within Each Type)", but Finishing and Additional
     // Customization are mixed — Embossing & Debossing and Closures allow several while
     // Foiling and Windows do not — so the Category cannot answer it.
+    //
+    // Renamed from `cardinality` on 2026-09-14 (PROD-2482). It shared that name with
+    // `property.cardinality`, which counts something else entirely: this one counts
+    // OPTIONS a customer picks from this Type, that one counts VALUES one option or
+    // product holds for a property. D45 accepted the collision on condition that
+    // everyone said "the Type's cardinality" out loud, forever; renaming both retires
+    // that obligation instead of paying it indefinitely. The two are two hops apart
+    // and never appear on the same document, so the data was never ambiguous — only
+    // the conversation was.
     defineField({
-      name: 'cardinality',
+      name: 'customerSelects',
       title: 'How many can a customer choose?',
       type: 'string',
       group: 'content',
@@ -65,14 +74,37 @@ export const customizationType = defineType({
           { title: 'Several — any number of this type\'s options', value: 'many' },
         ],
       },
-      // `one` / `many`, matching `property.cardinality` — the two fields share a name
-      // and must share a vocabulary, or a query written from the handbook reads `one`
-      // and finds `single` (Eric's schema review, D48). The Studio labels are unchanged.
+      // `one` / `many` unchanged by the rename — D48 fixed that vocabulary for every
+      // field of this shape, and the rename is about the field's NAME, not its values.
       //
       // Defaults to `one`, which is what the diagram states for every Material and
-      // Printing type and for most of Finishing; `many` is the marked exception.
+      // Printing type and for most of Finishing; `many` is the marked exception, and
+      // the live data agrees — 32 of 37 are `one`.
       initialValue: 'one',
       validation: (Rule) => Rule.required(),
+    }),
+    // DEPRECATED by the rename above. Kept because it is populated on all 37 Types
+    // (drafts included), and Conventions §4.3 forbids removing a populated field in
+    // the change that stops using it. `migrate:split-customization-role` copies it to
+    // `customerSelects`; removal is a later sweep.
+    //
+    // Contrast `property.cardinality`, renamed outright in the same PR — that one was
+    // unset on all 9 documents, so there was nothing to deprecate toward.
+    defineField({
+      name: 'cardinality',
+      title: 'How many can a customer choose? (deprecated)',
+      type: 'string',
+      group: 'content',
+      readOnly: true,
+      description:
+        'DEPRECATED — renamed to "How many can a customer choose?" (`customerSelects`). Read-only; do not author. Scheduled for removal once the rename is verified.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'One', value: 'one' },
+          { title: 'Several', value: 'many' },
+        ],
+      },
     }),
     defineField({
       name: 'description',

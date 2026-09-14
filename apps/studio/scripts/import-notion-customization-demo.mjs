@@ -417,7 +417,8 @@ async function main() {
       title: plan.sanityTitle,
       slug: { _type: 'slug', current: slug },
       category: ref(cat._id),
-      cardinality: plan.create.cardinality,
+      cardinality: plan.create.cardinality, // deprecated by the rename, still written while deployed
+      customerSelects: plan.create.cardinality,
     })
   }
 
