@@ -1,5 +1,6 @@
 import {NextResponse} from 'next/server';
 import {createClient} from '@pakfactory/supabase/server';
+import {ensureCustomer} from '@/lib/auth/ensure-customer';
 
 /**
  * Exchange a link-style auth `?code=` for a session.
@@ -44,6 +45,10 @@ export async function GET(request: Request) {
         // already opened — including by a mail scanner before the buyer clicked.
         return NextResponse.redirect(`${origin}/login?error=link_expired`);
     }
+
+    // Google and link sign-ins both land here. Create the customer row on this
+    // site's first sign-in (PROD-2512 / ADR-0016 D2); logged, never blocking.
+    await ensureCustomer(supabase, 'auth/callback');
 
     return NextResponse.redirect(`${origin}${next}`);
 }

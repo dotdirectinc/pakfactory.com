@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@pakfactory/supabase/server";
 import { mapAuthError } from "./errors";
+import { ensureCustomer } from "./ensure-customer";
 import { safeNext } from "@pakfactory/supabase/session";
 
 /**
@@ -59,6 +60,7 @@ export async function verifyEmail(_prev: ActionState, form: FormData): Promise<A
   if (error) return { error: mapAuthError(error).message, email };
 
   // verifyOtp establishes the session, so the buyer lands signed in.
+  await ensureCustomer(supabase, "verifyEmail");
   await claimGuestRequests(supabase);
   redirect("/account");
 }
@@ -133,6 +135,10 @@ export async function signIn(_prev: ActionState, form: FormData): Promise<Action
     return { error: mapped.message, email };
   }
 
+  // A staff member signing in here for the first time gets their customer row
+  // now (PROD-2512); for everyone else it is an idempotent no-op.
+  await ensureCustomer(supabase, "signIn");
+
   // Resume wherever the gate interrupted them, not a fixed landing page.
   redirect(safeNext(String(form.get("next") ?? "") || undefined));
 }
@@ -183,6 +189,7 @@ export async function resetPassword(_prev: ActionState, form: FormData): Promise
   const updated = await supabase.auth.updateUser({ password });
   if (updated.error) return { error: mapAuthError(updated.error).message, email };
 
+  await ensureCustomer(supabase, "resetPassword");
   redirect("/account");
 }
 
