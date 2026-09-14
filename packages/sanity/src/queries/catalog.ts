@@ -172,7 +172,18 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   }
 }`;
 
-/** Reference-role options for the public customization library. */
+const PROPERTY_VALUE_PROJ = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "property": property->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}`;
+
+/** Reference-role options for the public customization library (PROD-1288 facets). */
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   role == "reference" &&
@@ -186,7 +197,23 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
     ...,
     "alt": ${IMAGE_ALT}
   },
-  "category": type->category->${CATEGORY_PROJ}
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[].property->{
+      _id,
+      title,
+      "slug": slug.current
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_PROJ},
+  "productLines": availableOnProducts[@->_type == "productLine"]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
 }`;
 
 /** Single library option by category + handle slugs (PROD-2456). */
@@ -204,7 +231,23 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
     ...,
     "alt": ${IMAGE_ALT}
   },
-  "category": type->category->${CATEGORY_PROJ}
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[].property->{
+      _id,
+      title,
+      "slug": slug.current
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_PROJ},
+  "productLines": availableOnProducts[@->_type == "productLine"]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
 }`;
 
 export type CatalogCategoryDoc = {
@@ -294,10 +337,33 @@ export type CatalogProductLineDoc = {
   products?: CatalogProductDoc[] | null;
 };
 
+export type CatalogPropertyRefDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+};
+
+export type CatalogPropertyValueDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  property: CatalogPropertyRefDoc | null;
+};
+
+export type CatalogLibraryTypeDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  declaredProperties?: (CatalogPropertyRefDoc | null)[] | null;
+};
+
 export type CatalogLibraryOptionDoc = {
   _id: string;
   title: string;
   slug: string | null;
   media?: unknown[] | null;
   category: CatalogCategoryDoc | null;
+  type?: CatalogLibraryTypeDoc | null;
+  properties?: (CatalogPropertyValueDoc | null)[] | null;
+  productLines?: (CatalogLineRefDoc | null)[] | null;
 };

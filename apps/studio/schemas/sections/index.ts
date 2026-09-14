@@ -3,6 +3,7 @@ import type { GroupName } from '../../lib/field-groups'
 import { contentSections } from './content-sections'
 import { rowSections } from './row-sections'
 import { conversionSections } from './conversion-sections'
+import { customizationsCatalog } from './customizations-catalog'
 
 /**
  * The website section inventory (PROD-2292 pt 2 · Section inventory proposal).
@@ -14,15 +15,30 @@ import { conversionSections } from './conversion-sections'
  *
  * ⚠️ Testimonials row is not here yet — its `testimonial` type is extracted in
  * PROD-2293; it joins the Proof group then.
+ *
+ * PROD-1288 adds `customizationsCatalog` (filterable library) alongside
+ * `customizationsRow` (catalogue strip) — do not conflate them.
  */
 
-export const websiteSections = [...contentSections, ...rowSections, ...conversionSections]
+export const websiteSections = [
+  ...contentSections,
+  ...rowSections,
+  customizationsCatalog,
+  ...conversionSections,
+]
 
 /** Section names grouped by family (also the insert-menu grouping). */
 const FAMILY = {
   content: ['richText', 'mediaFeature', 'stats', 'steps', 'faqSection'],
   proof: ['caseStudiesRow', 'logoWall'],
-  catalogue: ['productLinesRow', 'productStylesRow', 'productsRow', 'bundlesRow', 'customizationsRow'],
+  catalogue: [
+    'productLinesRow',
+    'productStylesRow',
+    'productsRow',
+    'bundlesRow',
+    'customizationsRow',
+    'customizationsCatalog',
+  ],
   market: ['solutionsRow', 'expertiseSequence', 'guidesRow', 'dielinesRow', 'glossaryStrip', 'postsRow'],
   conversion: ['quoteCta', 'newsletterCta', 'linkCards', 'contactForm'],
 } as const
