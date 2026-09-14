@@ -13,18 +13,20 @@ import {
     stubBookmarkAction,
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
+import type {CustomizationLibraryItem} from '@/lib/catalog/types';
 import {customizationCategoryHref} from '@/lib/www-routes';
 
-export type CustomizationCardData = {
-    _id: string;
-    title: string;
-    slug: string;
-    /** Sanity customizationCategory.slug */
-    categoryValue: string;
-    categoryLabel?: string;
-    imageUrl?: string | null;
-    imageAlt?: string | null;
-};
+/** Card fields used by the tile (library items are a superset). */
+export type CustomizationCardData = Pick<
+    CustomizationLibraryItem,
+    | '_id'
+    | 'title'
+    | 'slug'
+    | 'categoryValue'
+    | 'categoryLabel'
+    | 'imageUrl'
+    | 'imageAlt'
+>;
 
 type CustomizationCardProps = {
     item: CustomizationCardData;
@@ -36,6 +38,41 @@ export function CustomizationCard({item}: CustomizationCardProps) {
 
     return (
         <MediaCardFrame
+            className="h-full"
+            meta={
+                <div className="relative space-y-0.5 pr-12">
+                    <IconActionRow
+                        className="absolute top-0 right-0"
+                        actions={[
+                            {
+                                id: 'share',
+                                label: 'Share',
+                                ariaLabel: 'Share',
+                                icon: Share2,
+                                onClick: (event) => sharePageUrl(event, href),
+                            },
+                            {
+                                id: 'compare',
+                                label: 'Compare',
+                                ariaLabel: 'Compare',
+                                icon: Columns2,
+                                onClick: stubCompareAction,
+                            },
+                        ]}
+                    />
+                    <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {eyebrow}
+                    </span>
+                    <Link
+                        href={href}
+                        className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+                            {item.title}
+                        </h3>
+                    </Link>
+                </div>
+            }
             media={
                 <Link
                     href={href}
@@ -47,7 +84,7 @@ export function CustomizationCard({item}: CustomizationCardProps) {
                             alt={item.imageAlt ?? item.title}
                             applyWatermark={false}
                             fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 20vw"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 25vw"
                             className="object-cover"
                         />
                     ) : (
@@ -65,42 +102,6 @@ export function CustomizationCard({item}: CustomizationCardProps) {
                     onClick={stubBookmarkAction}
                     ariaLabel="Bookmark customization"
                 />
-            }
-            meta={
-                <div className="space-y-0.5">
-                    <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {eyebrow}
-                        </span>
-                        <IconActionRow
-                            actions={[
-                                {
-                                    id: 'share',
-                                    label: 'Share',
-                                    ariaLabel: 'Share',
-                                    icon: Share2,
-                                    onClick: (event) =>
-                                        sharePageUrl(event, href),
-                                },
-                                {
-                                    id: 'compare',
-                                    label: 'Compare',
-                                    ariaLabel: 'Compare',
-                                    icon: Columns2,
-                                    onClick: stubCompareAction,
-                                },
-                            ]}
-                        />
-                    </div>
-                    <Link
-                        href={href}
-                        className="block rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-foreground">
-                            {item.title}
-                        </h3>
-                    </Link>
-                </div>
             }
         />
     );

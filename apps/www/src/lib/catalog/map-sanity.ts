@@ -3,13 +3,13 @@ import {
     type CatalogProductDoc,
     type CatalogProductLineDoc,
 } from '@pakfactory/sanity/queries';
-import type {CustomizationCardData} from '@/components/customization/customization-card';
 import {
     resolveImageAlt,
     sanityImageBaseUrl,
 } from '@/lib/sanity/image';
 import type {
     CatalogMedia,
+    CustomizationLibraryItem,
     CustomizationOption,
     Product,
     ProductKind,
@@ -262,7 +262,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
 
 export function mapSanityLibraryOption(
     doc: CatalogLibraryOptionDoc,
-): CustomizationCardData | null {
+): CustomizationLibraryItem | null {
     const slug = doc.slug?.trim();
     const categorySlug = doc.category?.slug?.trim();
     if (!slug || !doc.title || !categorySlug) return null;
@@ -273,6 +273,32 @@ export function mapSanityLibraryOption(
         ? resolveImageAlt(firstImage, doc.title)
         : doc.title;
 
+    const productLines: ProductLineRef[] = [];
+    const seenLines = new Set<string>();
+    for (const line of doc.productLines ?? []) {
+        const lineSlug = line?.slug?.trim();
+        const lineTitle = line?.title?.trim();
+        if (!lineSlug || !lineTitle || seenLines.has(lineSlug)) continue;
+        seenLines.add(lineSlug);
+        productLines.push({slug: lineSlug, title: lineTitle});
+    }
+
+    const attrs: Record<string, string[]> = {};
+    const propertyTitles: Record<string, string> = {};
+    const valueTitles: Record<string, string> = {};
+    for (const value of doc.properties ?? []) {
+        const propSlug = value?.property?.slug?.trim();
+        const propTitle = value?.property?.title?.trim();
+        const valueSlug = value?.slug?.trim();
+        const valueTitle = value?.title?.trim();
+        if (!propSlug || !valueSlug) continue;
+        const list = attrs[propSlug] ?? [];
+        if (!list.includes(valueSlug)) list.push(valueSlug);
+        attrs[propSlug] = list;
+        if (propTitle) propertyTitles[propSlug] = propTitle;
+        if (valueTitle) valueTitles[valueSlug] = valueTitle;
+    }
+
     return {
         _id: doc._id,
         title: doc.title,
@@ -281,5 +307,9 @@ export function mapSanityLibraryOption(
         categoryLabel: doc.category?.title ?? categorySlug,
         imageUrl,
         imageAlt,
+        productLines,
+        attrs,
+        propertyTitles,
+        valueTitles,
     };
 }

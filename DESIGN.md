@@ -45,6 +45,8 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 
 **Philosophy:** one brand accent (forest green). Status / chart colors stay small and data-bound — not large decorative fills.
 
+**Inactive / disabled:** interactive text and chrome labels that are inactive, non-selected, or disabled use `text-muted-foreground` — never near-black `text-foreground`. Active / selected primary labels use `text-foreground`.
+
 ---
 
 ## 3. Typography Rules
@@ -62,6 +64,12 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 
 From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/content/footer), **`Badge`**, **`Input`**, and other existing shadcn-style primitives. Avoid raw bordered `div`s when a primitive fits.
 
+### Links
+
+- **Text links** (inline anchors or `Button variant="link"`) always use `underline underline-offset-4` at rest. Prefer the shared `link` button variant or the same classes on a Next.js `Link`.
+- **Arrow / chevron CTAs** use the arrow as the affordance — underline is not required.
+- **Filled / outline / ghost buttons** do not use underline for affordance. Nav and logo chrome may keep `no-underline`.
+
 ### CTAs (domain)
 
 - Primary actions: quote / RFQ / “Talk to packaging experts” — `Button` with primary (forest) styling.
@@ -76,6 +84,7 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 
 - Use existing focus/ring behavior from primitives (`--ring`).
 - Prefer color and elevation changes already in the design system over novel hover animations.
+- **Cursor:** interactive links (`a[href]`) and buttons use `cursor-pointer`. Disabled / non-interactive controls do not (`not-allowed` / `pointer-events-none`).
 
 ### Radius
 
