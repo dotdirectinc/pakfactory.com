@@ -146,5 +146,10 @@ export type RequestSummary = {
   submittedAt: string;
   contactEmail: string;
   contactCompany: string;
+  /** First + last from the submission contact, trimmed; may be empty. */
+  contactName: string;
+  contactIndustry: string;
+  timeline: string;
+  lineCount: number;
   entryKind: RequestEntryKind;
 };

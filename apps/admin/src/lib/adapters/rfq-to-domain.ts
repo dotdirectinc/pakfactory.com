@@ -112,6 +112,9 @@ function expressQuantities(r: StoredSubmission["requirements"]): number[] {
 
 export function toRequestSummary(row: RfqRow): RequestSummary {
   const s = asSubmission(row.payload);
+  const first = s.contact?.firstName?.trim() ?? "";
+  const last = s.contact?.lastName?.trim() ?? "";
+  const contactName = [first, last].filter(Boolean).join(" ");
   return {
     id: row.id,
     ref: row.reference,
@@ -120,6 +123,10 @@ export function toRequestSummary(row: RfqRow): RequestSummary {
     // payload copy is whatever the buyer typed.
     contactEmail: row.contact_email,
     contactCompany: s.contact?.company ?? "",
+    contactName,
+    contactIndustry: s.contact?.industry ?? "",
+    timeline: s.requirements?.timeline ?? "",
+    lineCount: s.lines?.length ?? 0,
     entryKind: s.metadata?.entryKind ?? "products",
   };
 }
