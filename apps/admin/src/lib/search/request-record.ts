@@ -51,13 +51,14 @@ export function toAdminRequestAlgoliaRecord(input: {
   if (!assignedOwnerCrmId) {
     throw new Error("assignedOwnerCrmId is required for admin_requests records");
   }
+  const contactName = input.contactName ?? summary.contactName ?? "";
   return {
     objectID: summary.id,
     assignedOwnerCrmId,
     ref: summary.ref?.trim() || summary.id,
     contactCompany: summary.contactCompany ?? "",
     contactEmail: summary.contactEmail ?? "",
-    contactName: input.contactName ?? "",
+    contactName,
     entryKind: summary.entryKind,
     submittedAt: summary.submittedAt,
     submittedAtTimestamp: Date.parse(summary.submittedAt) || 0,
@@ -66,8 +67,11 @@ export function toAdminRequestAlgoliaRecord(input: {
       summary.id,
       summary.contactCompany,
       summary.contactEmail,
+      summary.contactName,
+      summary.contactIndustry,
+      summary.timeline,
       summary.entryKind,
-      input.contactName,
+      contactName,
       input.searchBlob,
     ]
       .filter(Boolean)

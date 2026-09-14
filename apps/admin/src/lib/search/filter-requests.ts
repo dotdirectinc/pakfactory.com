@@ -9,6 +9,9 @@ function matchesQuery(summary: RequestSummary, query: string): boolean {
     summary.id,
     summary.contactCompany,
     summary.contactEmail,
+    summary.contactName,
+    summary.contactIndustry,
+    summary.timeline,
     summary.entryKind,
   ]
     .filter(Boolean)

@@ -88,6 +88,26 @@ Unset, or anything but exactly `true`, and `/login` is Google-only. Set `true` t
 - **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. It does **not** check the email domain; the row is the gate, and a fallback that refused a provisioned account for its domain would defeat the point.
 - There is deliberately **no forgot-password or sign-up link** in either mode. Those pointed into the customer app (`lib/www-links.ts`, deleted) and are how staff ended up in the buyer flows. `NEXT_PUBLIC_WWW_URL` is not read by admin.
 
+## Shell chrome
+
+Authenticated chrome is [`AdminShell`](src/components/layout/admin-shell.tsx): dark top bar + left sidebar + `rounded-t-xl` muted body (scroll in `<main>`).
+
+| Piece | File | Notes |
+| --- | --- | --- |
+| Top bar | [`admin-top-bar.tsx`](src/components/layout/admin-top-bar.tsx) | ~60px tall; logo + Dev Mode badge; search absolutely centered (`max-w-2xl`); account menu on the right |
+| Sidebar | [`admin-sidebar.tsx`](src/components/layout/admin-sidebar.tsx) | Primary nav (Requests today; Settings stub) |
+| Account menu | [`admin-account-menu.tsx`](src/components/account/admin-account-menu.tsx) | **Identity + Sign out only** — do not duplicate sidebar destinations |
+
+Global search open / dialog behavior stays under ADR-018 (below). Do not bake pixel heights or max-widths into ADRs; change chrome in these files.
+
+## Requests index
+
+`/requests` follows a Shopify Orders–style index: page title + All / local search strip + dense table in a white card ([`request-list.tsx`](src/components/requests/request-list.tsx)).
+
+List rows use **`RequestSummary`** from [`@pakfactory/domain/request`](../../packages/domain/src/request.ts) (`contactName`, `timeline`, `lineCount`, `contactIndustry`, plus ref / company / email / entryKind / submittedAt). When extending the summary, keep mock [`toSummary`](../../packages/domain/src/adapters/mock-requests.ts) and Supabase [`toRequestSummary`](src/lib/adapters/rfq-to-domain.ts) in sync.
+
+Do **not** invent RFQ workflow statuses, metrics sparklines, Export/Create, or bulk checkboxes until product asks.
+
 ## Global search (ADR-018)
 
 Shell search (`⌘K` / top-bar) is governed by [`docs/adr/0018-admin-search-foundation.md`](../../docs/adr/0018-admin-search-foundation.md): dual corpus (ops Supabase vs content Sanity), BFF `POST /api/search`, owner-scoped requests.

@@ -201,21 +201,159 @@ const FIXTURES: Request[] = [
       },
     ],
   },
+  {
+    id: "req_mock_003",
+    ownerId: "buyer-uuid-3",
+    submittedByEmail: "sam@northwind.example",
+    zohoLeadId: "zoho-lead-103",
+    submittedAt: "2026-09-02T16:05:00.000Z",
+    createdAt: "2026-09-02T16:05:00.000Z",
+    updatedAt: "2026-09-02T16:05:00.000Z",
+    attachments: [],
+    lines: [
+      {
+        id: "line_3_1",
+        productSlug: "corrugated-boxes",
+        quantities: [1000, 2500],
+        contents: "Hardware kits",
+        customizations: [
+          { id: "print-1c", label: "1-color print", category: "print" },
+        ],
+        addedAt: "2026-09-02T16:00:00.000Z",
+      },
+      {
+        id: "line_3_2",
+        productSlug: "tissue-paper",
+        quantities: [5000],
+        contents: "Brand tissue",
+        customizations: [],
+        addedAt: "2026-09-02T16:02:00.000Z",
+      },
+    ],
+    draft: {
+      notes: "Ship to two warehouses if possible.",
+      timeline: "4-6 weeks",
+      packagingContents: "Hardware kits",
+      expressQuantities: [],
+      annualSpend: "50k-100k",
+      shippingAddress: null,
+      companyAddress: null,
+      contactFirstName: "Sam",
+      contactLastName: "Rivera",
+      contactEmail: "sam@northwind.example",
+      contactPhone: "+1 647 555 0199",
+      contactCompany: "Northwind Goods",
+      contactIndustry: "Retail",
+      services: ["design", "fulfillment"],
+      servicesEnabled: true,
+      express: false,
+      productsExpanded: true,
+      entryKind: "services",
+      submittedAt: "2026-09-02T16:05:00.000Z",
+      ref: "RFQ-10044",
+    },
+    versions: [
+      {
+        number: 1,
+        label: "Version 1",
+        createdAt: "2026-09-02T16:05:00.000Z",
+        summary: "Initial submission",
+      },
+    ],
+    activities: [
+      {
+        id: "act_003_1",
+        kind: "submitted",
+        message: "Request submitted — RFQ-10044.",
+        occurredAt: "2026-09-02T16:05:00.000Z",
+        actorName: "Sam Rivera",
+        actorType: "buyer",
+      },
+    ],
+  },
+  {
+    id: "req_mock_004",
+    ownerId: "buyer-uuid-4",
+    submittedByEmail: "priya@lumen.example",
+    zohoLeadId: "zoho-lead-104",
+    submittedAt: "2026-09-08T11:20:00.000Z",
+    createdAt: "2026-09-08T11:20:00.000Z",
+    updatedAt: "2026-09-08T11:20:00.000Z",
+    attachments: [],
+    lines: [
+      {
+        id: "line_4_1",
+        productSlug: "rigid-boxes",
+        quantities: [500],
+        contents: "Candle gift sets",
+        customizations: [
+          { id: "finish-soft-touch", label: "Soft-touch coating", category: "finish" },
+        ],
+        addedAt: "2026-09-08T11:15:00.000Z",
+      },
+    ],
+    draft: {
+      notes: "",
+      timeline: "Q4 launch",
+      packagingContents: "Candle gift sets",
+      expressQuantities: [],
+      annualSpend: "under-50k",
+      shippingAddress: null,
+      companyAddress: null,
+      contactFirstName: "Priya",
+      contactLastName: "Nair",
+      contactEmail: "priya@lumen.example",
+      contactPhone: "",
+      contactCompany: "Lumen Home",
+      contactIndustry: "Home",
+      services: [],
+      servicesEnabled: false,
+      express: false,
+      productsExpanded: true,
+      entryKind: "products",
+      submittedAt: "2026-09-08T11:20:00.000Z",
+      ref: "RFQ-10045",
+    },
+    versions: [
+      {
+        number: 1,
+        label: "Version 1",
+        createdAt: "2026-09-08T11:20:00.000Z",
+        summary: "Initial submission",
+      },
+    ],
+    activities: [
+      {
+        id: "act_004_1",
+        kind: "submitted",
+        message: "Request submitted — RFQ-10045.",
+        occurredAt: "2026-09-08T11:20:00.000Z",
+        actorName: "Priya Nair",
+        actorType: "buyer",
+      },
+    ],
+  },
 ];
 
 /** Maps mock Zoho sales member ids to lead assignments for fixture data. */
 const SALES_MEMBER_LEADS: Record<string, string[]> = {
-  "zoho-user-sales-1": ["zoho-lead-101"],
+  "zoho-user-sales-1": ["zoho-lead-101", "zoho-lead-103", "zoho-lead-104"],
   "zoho-user-sales-2": ["zoho-lead-202"],
 };
 
 function toSummary(request: Request): RequestSummary {
+  const first = request.draft.contactFirstName.trim();
+  const last = request.draft.contactLastName.trim();
   return {
     id: request.id,
     ref: request.draft.ref,
     submittedAt: request.submittedAt,
     contactEmail: request.draft.contactEmail,
     contactCompany: request.draft.contactCompany,
+    contactName: [first, last].filter(Boolean).join(" "),
+    contactIndustry: request.draft.contactIndustry,
+    timeline: request.draft.timeline,
+    lineCount: request.lines.length,
     entryKind: request.draft.entryKind,
   };
 }

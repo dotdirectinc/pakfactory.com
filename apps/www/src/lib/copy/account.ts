@@ -3,6 +3,11 @@ export const ACCOUNT_COPY = {
     welcomeBack: 'Welcome back,',
     accountMenu: 'Account menu',
     requestsTitle: 'Your Requests',
+    listColRequest: 'Request',
+    listColSummary: 'Summary',
+    listColRfq: 'RFQ',
+    listColItems: 'Items',
+    listColStatus: 'Status',
     requestsEmpty:
         'You have not submitted any requests yet. Start a quote request to get a quote from our packaging specialists.',
     startARequest: 'Start a quote request',

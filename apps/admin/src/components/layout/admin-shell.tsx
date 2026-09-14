@@ -19,7 +19,7 @@ export function AdminShell({
     <AdminSearchProvider>
       <div className="flex h-dvh flex-col bg-foreground">
         <AdminTopBar devBypassActive={devBypassActive} account={account} />
-        <div className="flex min-h-0 flex-1 overflow-hidden rounded-tl-xl bg-muted">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-t-xl bg-muted">
           <AdminSidebar />
           <main className="min-w-0 flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-6">
             {children}

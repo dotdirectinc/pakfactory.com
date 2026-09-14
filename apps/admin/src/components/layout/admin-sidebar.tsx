@@ -20,7 +20,7 @@ export function AdminSidebar() {
 
   return (
     <aside className="hidden w-52 shrink-0 flex-col border-r border-border bg-muted/40 md:flex">
-      <nav aria-label="Primary" className="flex flex-col gap-0.5 p-2 pt-3">
+      <nav aria-label="Primary" className="flex flex-col gap-1 p-2 pt-3">
         {PRIMARY_NAV.map((item) => {
           const active = item.match(pathname);
           const Icon = item.icon;
@@ -29,7 +29,7 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                "flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors",
                 active
                   ? "bg-background font-medium text-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
@@ -45,7 +45,7 @@ export function AdminSidebar() {
 
       <div className="mt-auto border-t border-border p-2">
         <span
-          className="flex cursor-not-allowed items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground/60"
+          className="flex cursor-not-allowed items-center gap-2 rounded-md px-2 py-2 text-sm text-muted-foreground/60"
           aria-disabled="true"
           title="Coming soon"
         >
