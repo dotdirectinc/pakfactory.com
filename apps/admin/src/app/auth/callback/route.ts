@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@pakfactory/supabase/server";
 import { safeNext } from "@pakfactory/supabase/session";
 import { getInternalAccountAdapter } from "@/lib/adapters";
-import { INTERNAL_EMAIL_DOMAIN } from "@/lib/auth/internal-domain";
 
 /**
  * OAuth return, and the ONLY place an admin session is established.
@@ -16,16 +15,18 @@ import { INTERNAL_EMAIL_DOMAIN } from "@/lib/auth/internal-domain";
  * password path never had that gap: `signInInternal` checks membership and signs
  * out before returning. This closes it for OAuth.
  *
- * Two checks, and both are needed:
+ * ONE check: an enabled `internal_user` row (PROD-2512 / ADR-0016 D3). That row
+ * is what a person provisions, and it is the only thing that makes someone staff.
  *
- *   DOMAIN     — `hd` on the authorize request only asks Google to show company
- *                accounts. It is a hint the client sends, so it is not a control;
- *                the same callback answers a hand-crafted request without it.
- *   MEMBERSHIP — an enabled `internal_user` row. This is the real gate, and it is
- *                what Richard provisions per person (decided 2026-09-04).
+ * The email-domain check that used to sit beside it is gone, deliberately. Staff
+ * hold addresses on more than one domain (`dotdirect.ca` and `pakfactory.com`),
+ * and a domain test either refused real colleagues or had to grow a list that
+ * would drift from the rows that actually grant access. A domain was only ever
+ * "could be staff"; the row is "is staff", so the row is the gate.
  *
- * A colleague at the right domain with no row is refused, which is the point:
- * the domain says "could be staff", the row says "is staff".
+ * Every Google account in the project can reach this callback — customers of the
+ * www app share the same Supabase auth (ADR-0016 D1). That is safe because a
+ * session without a row is signed out here, before any admin cookie leaves.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -52,12 +53,11 @@ export async function GET(request: Request) {
 
   const email = data.user?.email?.trim().toLowerCase() ?? "";
 
-  // Refused for either reason with the SAME message. Telling a stranger "right
-  // domain, no account" confirms which addresses are staff; telling them "wrong
-  // domain" confirms the domain. Neither is worth the marginal clarity, and a
-  // real colleague is told to contact their manager either way.
+  // One generic message for every refusal: saying "no account for this address"
+  // would confirm which addresses are staff. A real colleague is told to contact
+  // their manager either way.
   const allowed =
-    email.endsWith(`@${INTERNAL_EMAIL_DOMAIN}`) &&
+    email.length > 0 &&
     Boolean(await getInternalAccountAdapter().getByEmail(email));
 
   if (!allowed) {

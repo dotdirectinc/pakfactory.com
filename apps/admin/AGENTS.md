@@ -4,8 +4,8 @@ Operational surface for www request data and internal staff login. Part of epic 
 
 ## What this app owns
 
-- Internal staff sign-in — **Google, restricted to `@dotdirect.ca`**, gated on an enabled `internal_user` row (decided 2026-09-04). Email + password renders only behind `ADMIN_LOGIN=true`; see [Sign-in](#sign-in).
-- Read-only views of buyer requests scoped to the signed-in sales member (PROD-2417+)
+- Internal staff sign-in — **Google**, gated on an enabled `internal_user` row, with no email-domain restriction (PROD-2512 / ADR-0016; staff use `dotdirect.ca` and `pakfactory.com`). Email + password renders only behind `ADMIN_LOGIN=true`; see [Sign-in](#sign-in).
+- Read-only views of buyer requests scoped to the signed-in sales member (PROD-2417+). `staff` accounts (no Zoho id) see no requests.
 - Operational data backed by the `pakfactory-web` Supabase project
 
 ## What this app does not own
@@ -66,18 +66,18 @@ Active only when `NODE_ENV=development`, `ADMIN_DEV_BYPASS=true`, and not `VERCE
 
 Without `ADMIN_DEV_BYPASS=true`, use real Supabase login: set `ADMIN_INTERNAL_ACCOUNT_ALLOWLIST` to `your-email@example.com:zoho-user-sales-1` and sign in on `/login`. Active `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` must be set in the repo root `.env.local` — run `pnpm env:staging` (or `pnpm env:prod`) if you only have `_STAGING` / `_PROD` suffixed keys.
 
-`/login` offers **Google only** unless you also set `ADMIN_LOGIN=true` — a local machine with no `@dotdirect.ca` Google session needs that flag to get an email + password form at all.
+`/login` offers **Google only** unless you also set `ADMIN_LOGIN=true` — a local machine with no staff Google session needs that flag to get an email + password form at all.
 
 ## Sign-in
 
-Google is the sign-in path. Two things are checked, and both are needed:
+Google is the sign-in path. **One thing is checked: an enabled `internal_user` row** (PROD-2512 / ADR-0016 D3). The row is what a person provisions, and it is the only thing that makes someone staff.
 
-| | |
-|---|---|
-| **domain** | `@dotdirect.ca`, from the single constant in [`src/lib/auth/internal-domain.ts`](src/lib/auth/internal-domain.ts). The `hd` parameter on the authorize request only asks Google to *show* company accounts — it is a hint the client sends, **not a control** — so the callback checks the returned email itself. |
-| **membership** | an enabled `internal_user` row. The real gate: a colleague at the right domain with no row is refused. |
+- **No email-domain check.** Staff hold addresses on `dotdirect.ca` and `pakfactory.com`; a domain test refused real colleagues or had to grow a list that drifts from the rows that grant access. The old `internal-domain.ts` constant is gone.
+- **No `hd` hint.** Google's hosted-domain hint takes one domain, so either value would hide the other domain's accounts. The authorize request sends `prompt=select_account` instead, so a personal Google session gets the account chooser rather than a silent sign-in.
+- **Roles** (`packages/domain` `InternalRole`): `sales` (scoped to a Zoho id; sees assigned requests) and `staff` (no RFQ scope; request views are empty). Spec-registry permissions are registry grants, not this role (ADR-0016 D4).
+- **Sessions:** admin and the customer site share one Supabase project but keep **host-only** cookies (`packages/supabase/src/server.ts` sets no cookie `domain`), so the two sign-ins stay separate per host. Separation is not authorization: every staff decision checks the row server-side.
 
-Both live in [`src/app/auth/callback/route.ts`](src/app/auth/callback/route.ts), the one place a session is established, and sign-out happens **before** the redirect so no admin cookie survives a refusal. Both failures return the same message on purpose — "right domain, no account" would confirm which addresses are staff.
+The check lives in [`src/app/auth/callback/route.ts`](src/app/auth/callback/route.ts), the one place a session is established, and sign-out happens **before** the redirect so no admin cookie survives a refusal. Every refusal returns the same message on purpose — "no account for this address" would confirm which addresses are staff.
 
 ### `ADMIN_LOGIN` — the email + password fallback
 
@@ -85,7 +85,7 @@ Unset, or anything but exactly `true`, and `/login` is Google-only. Set `true` t
 
 - **Server-side, not `NEXT_PUBLIC_`.** The page reads it and passes a boolean down; flipping it needs a redeploy, not a rebuild. Logic: [`src/lib/auth/password-login.ts`](src/lib/auth/password-login.ts).
 - **The flag closes the server action, not just the form.** `signInInternal` re-checks it before touching Supabase — a server action is a POST endpoint whether or not a form renders.
-- **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. It does **not** check the email domain; the row is the gate, and a fallback that refused a provisioned account for its domain would defeat the point.
+- **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. Like the callback, it does not check the email domain; the row is the gate.
 - There is deliberately **no forgot-password or sign-up link** in either mode. Those pointed into the customer app (`lib/www-links.ts`, deleted) and are how staff ended up in the buyer flows. `NEXT_PUBLIC_WWW_URL` is not read by admin.
 
 ## Shell chrome

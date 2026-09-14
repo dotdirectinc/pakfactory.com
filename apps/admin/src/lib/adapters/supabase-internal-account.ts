@@ -1,5 +1,8 @@
 import type { InternalAccountAdapter } from "@pakfactory/domain/adapters/internal-account";
-import type { InternalAccount } from "@pakfactory/domain/internal-account";
+import {
+  isInternalRole,
+  type InternalAccount,
+} from "@pakfactory/domain/internal-account";
 import { createClient } from "@pakfactory/supabase/server";
 
 /**
@@ -42,14 +45,17 @@ export function createSupabaseInternalAccountAdapter(): InternalAccountAdapter {
       // scoping REQUESTS does — so the check belongs here too.
       if (data.disabled_at) return null;
 
-      // An account with no Zoho mapping cannot be scoped to anything: every
-      // request lookup would return nothing. Refusing here produces a clear
-      // "not internal" redirect instead of an empty dashboard that looks broken.
-      if (!data.crm_owner_id) return null;
+      // An unknown role is refused rather than cast: a literal this code does
+      // not know cannot be given a scope, and guessing one is how access widens.
+      if (!isInternalRole(data.role)) return null;
 
+      // PROD-2512 / ADR-0016: the enabled row IS admission. A missing Zoho
+      // mapping used to refuse sign-in here, which locked out every `staff`
+      // account (the content team has no CRM id). It is now carried as null, and
+      // request reads scope on it — null yields no requests, never all of them.
       return {
-        role: data.role as InternalAccount["role"],
-        zohoUserId: data.crm_owner_id as string,
+        role: data.role,
+        zohoUserId: (data.crm_owner_id as string | null) || null,
       };
     },
   };

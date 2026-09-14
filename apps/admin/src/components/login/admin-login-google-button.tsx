@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { Button } from "@pakfactory/ui/components/button";
 import { createClient } from "@pakfactory/supabase/client";
-import { INTERNAL_EMAIL_DOMAIN } from "@/lib/auth/internal-domain";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -56,11 +55,15 @@ export function AdminLoginGoogleButton({
         provider: "google",
         options: {
           redirectTo: callback.toString(),
-          // `hd` asks Google to show only company accounts, so a colleague with
-          // a personal Google session is not silently signed in as the wrong
-          // person. It is a HINT, not a control — the callback verifies both the
-          // domain and internal_user membership, and that is what actually gates.
-          queryParams: { hd: INTERNAL_EMAIL_DOMAIN },
+          // No `hd` (PROD-2512). Google's hosted-domain hint takes ONE domain,
+          // and staff sign in from both `dotdirect.ca` and `pakfactory.com` —
+          // hinting either would hide the other's accounts from the picker. It
+          // was never a control anyway; the callback's internal_user check is.
+          //
+          // `select_account` keeps what `hd` was protecting: a colleague with a
+          // personal Google session is shown the account chooser instead of
+          // being signed straight in as the wrong person.
+          queryParams: { prompt: "select_account" },
         },
       });
 

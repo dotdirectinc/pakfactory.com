@@ -38,7 +38,7 @@ const ATTACHMENT_COLUMNS = "id, filename, kind, content_type, bytes";
 
 export function createSupabaseRequestReadAdapter(): RequestReadAdapter {
   return {
-    async listForSalesMember(zohoUserId: string): Promise<RequestSummary[]> {
+    async listForSalesMember(zohoUserId: string | null): Promise<RequestSummary[]> {
       if (!zohoUserId) return [];
 
       const supabase = await createClient();
@@ -52,7 +52,7 @@ export function createSupabaseRequestReadAdapter(): RequestReadAdapter {
       return (data as RfqRow[] | null)?.map(toRequestSummary) ?? [];
     },
 
-    async getById(id: string, zohoUserId: string): Promise<Request | null> {
+    async getById(id: string, zohoUserId: string | null): Promise<Request | null> {
       if (!id || !zohoUserId) return null;
 
       const supabase = await createClient();

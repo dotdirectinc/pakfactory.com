@@ -6,7 +6,10 @@ export interface InternalAccountAdapter {
 
 /**
  * Mock internal accounts until PROD-2415 lands the Supabase-backed model.
- * Allowlist format: comma-separated `email:zohoUserId` pairs.
+ *
+ * Allowlist format: comma-separated entries.
+ *   `email:zohoUserId` — a `sales` account scoped to that Zoho id
+ *   `email`            — a `staff` account (no RFQ scope, PROD-2512)
  */
 export function createMockInternalAccountAdapter(
   allowlist: string,
@@ -17,8 +20,13 @@ export function createMockInternalAccountAdapter(
     const trimmed = part.trim();
     if (!trimmed) continue;
     const [email, zohoUserId] = trimmed.split(":").map((s) => s.trim());
-    if (!email || !zohoUserId) continue;
-    entries.set(email.toLowerCase(), { role: "sales", zohoUserId });
+    if (!email) continue;
+    entries.set(
+      email.toLowerCase(),
+      zohoUserId
+        ? { role: "sales", zohoUserId }
+        : { role: "staff", zohoUserId: null },
+    );
   }
 
   return {

@@ -49,7 +49,10 @@ export async function POST(request: Request) {
     query,
     scope: scopeRaw,
     requests,
-    assignedOwnerCrmId: account.zohoUserId,
+    // A `staff` account has no Zoho id (PROD-2512). The empty string is the
+    // "no scope" value the Algolia path already refuses to query with, so the
+    // result is local-only and still scoped to nothing.
+    assignedOwnerCrmId: account.zohoUserId ?? "",
   });
 
   return NextResponse.json(result);
