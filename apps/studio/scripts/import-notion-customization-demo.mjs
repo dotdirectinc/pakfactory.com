@@ -417,7 +417,8 @@ async function main() {
       title: plan.sanityTitle,
       slug: { _type: 'slug', current: slug },
       category: ref(cat._id),
-      cardinality: plan.create.cardinality,
+      cardinality: plan.create.cardinality, // deprecated by the rename, still written while deployed
+      customerSelects: plan.create.cardinality,
     })
   }
 
@@ -478,7 +479,18 @@ async function main() {
     if (existing) {
       // Patch, never replace — see the header. Only fields Notion has an opinion
       // about, and `properties` is unioned so a richer existing list never shrinks.
-      const set = { title: row.title, type: ref(typeId), role: 'configurable', status: 'active' }
+      // D55 (PROD-2482) split `role`. Both keys are written while `role` is
+      // deprecated-but-deployed, so a re-run of this import cannot quietly revert
+      // an Option to the pre-split shape. `hasPage` comes from Notion's own
+      // `Detail Page` column — the value D54 said had nowhere to go.
+      const set = {
+        title: row.title,
+        type: ref(typeId),
+        role: 'configurable',
+        configuratorRole: 'configurable',
+        hasPage: Boolean(row.detailPage),
+        status: 'active',
+      }
       if (benefits) set.benefits = benefits
       if (row.metaDescription) set.metaDescription = row.metaDescription
       const merged = new Map(
@@ -503,7 +515,9 @@ async function main() {
         slug: { _type: 'slug', current: slug },
         type: ref(typeId),
         status: 'active',
-        role: 'configurable',
+        role: 'configurable', // deprecated by D55, still written while deployed
+        configuratorRole: 'configurable',
+        hasPage: Boolean(row.detailPage), // Notion `Detail Page`, per D55
         ...(benefits ? { benefits } : {}),
         ...(propertiesField.length ? { properties: propertiesField } : {}),
         ...(row.metaDescription ? { metaDescription: row.metaDescription } : {}),

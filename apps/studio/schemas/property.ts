@@ -34,20 +34,47 @@ export const property = defineType({
       group: 'content',
       description: 'One sentence on what this property captures, for the content team.',
     }),
+    // Renamed from `cardinality` on 2026-09-14 (PROD-2482). Two fields shared that
+    // name — this one and `customizationType.cardinality` — and D45 accepted the
+    // collision on condition everyone said "the Type's cardinality" out loud, in
+    // perpetuity. Renaming both retires that tax instead of paying it forever.
+    //
+    // A STRAIGHT RENAME, not a deprecation: `cardinality` was required but unset on
+    // all 9 Properties (drafts included), so there is no value to migrate and
+    // Conventions §4.3's "never remove a populated field" does not apply. Verified
+    // against production before the rename, not assumed from the schema.
+    //
+    // `valuesPerItem` over `valuesPerDocument`, the name it carried in the Studio
+    // label: "document" is CMS jargon that dodges the actual question — values per
+    // WHAT? Both `customizationOption` and `product` declare a `properties` field,
+    // so the holder cannot be named concretely; "item" is the plain word that
+    // covers both. The "per" is the load-bearing part: it stops the field being
+    // misread as "how many values are in this property's list" (Sustainability has
+    // 5) when it means "how many can one thing carry at once" (SBS carries 3).
     defineField({
-      name: 'cardinality',
-      title: 'Values per document',
+      name: 'valuesPerItem',
+      title: 'How many values can one option or product have?',
       type: 'string',
       group: 'content',
       description:
-        'Does a document hold ONE value of this property, or MANY? Shape is one; Structural Features are many. Intrinsic to the property, so it is never restated per line or per type.',
+        'Can one option or product carry several values of this property at once, or exactly one? ' +
+        'One — Color: a board is white, not white and brown. Many — Sustainability: a board can be ' +
+        'recyclable AND FSC certified. Intrinsic to the property, so it is never restated per line or per type.',
       options: {
         layout: 'radio',
         list: [
-          { title: 'One', value: 'one' },
-          { title: 'Many', value: 'many' },
+          { title: 'One — exactly one value per option or product', value: 'one' },
+          { title: 'Many — several values at once', value: 'many' },
         ],
       },
+      // Defaults to `one` because it FAILS LOUD, not because it is the common case —
+      // the live data splits roughly evenly. Once the values are enforced, a wrong
+      // `one` blocks a legitimate second value and the editor complains; a wrong
+      // `many` lets a second Colour onto a board silently. Same reasoning as the
+      // `configurable` default on customizationOption.
+      //
+      // ⚠️ `initialValue` never runs for API writes, so this does not backfill the
+      // 9 existing documents. They are unset and need authoring.
       initialValue: 'one',
       validation: (Rule) => Rule.required(),
     }),
@@ -60,11 +87,14 @@ export const property = defineType({
     // populates `catalogPage.filters` and the rest.
   ],
   preview: {
-    select: { title: 'title', cardinality: 'cardinality' },
-    prepare({ title, cardinality }) {
+    select: { title: 'title', valuesPerItem: 'valuesPerItem' },
+    prepare({ title, valuesPerItem }) {
       return {
         title,
-        subtitle: cardinality === 'many' ? 'Many values per document' : 'One value per document',
+        subtitle:
+          valuesPerItem === 'many'
+            ? 'Many values per option or product'
+            : 'One value per option or product',
       }
     },
   },
