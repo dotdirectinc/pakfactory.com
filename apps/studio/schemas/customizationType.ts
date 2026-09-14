@@ -23,6 +23,29 @@ export const customizationType = defineType({
       description: 'The customization type name (e.g. "Foil Stamping", "Window Patching").',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
+    // A configurator panel heading cannot carry "Surface Finish (non-paper)", but
+    // Title has to stay unambiguous — that parenthetical exists SO AN EDITOR CAN TELL
+    // IT FROM THE PAPER ONE. Short name is the customer-facing label; empty falls back
+    // to Title, so leaving it alone is always correct.
+    //
+    // Same field, same argument, as `customizationOption.shortName` one level down and
+    // `solution.shortName` beside it. A Type has no page, but it IS customer-visible:
+    // the configurator renders it as the heading a customer reads before picking an
+    // Option beneath it. That answers the "🟠 Open — the Type names" question the
+    // content-model handbook has carried since August.
+    //
+    // ⚠️ `Surface Finish (non-paper)` needs a separate look. ADR-017 §4 records that
+    // splitting Surface Finish by material family was a workaround for a constraint
+    // `worksOnCustomizations` now holds properly. A short name hides that split from
+    // customers; it does not resolve whether the two Types should be one.
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: 'content',
+      description:
+        'A shorter, customer-facing version of the Title — for the configurator panel heading and anywhere the full name will not fit. Leave empty to use the Title.',
+    }),
     defineField({
       name: 'slug',
       title: 'Slug',
