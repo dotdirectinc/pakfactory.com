@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { RequestSummary } from "@pakfactory/domain/request";
+import { Badge } from "@pakfactory/ui/components/badge";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
+import { entryKindLabel } from "@/lib/request-entry-kind";
 
 type RequestListProps = {
   requests: RequestSummary[];
@@ -16,21 +18,40 @@ export function RequestList({ requests }: RequestListProps) {
   }
 
   return (
-    <ul className="flex flex-col gap-4">
-      {requests.map((request) => (
-        <li key={request.id}>
+    <ul className="overflow-hidden rounded-lg border border-border bg-background">
+      {requests.map((request, index) => (
+        <li
+          key={request.id}
+          className={
+            index > 0 ? "border-t border-border" : undefined
+          }
+        >
           <Link
             href={`/requests/${request.id}`}
-            className="block rounded-md border bg-background p-4 transition-colors hover:bg-muted/50"
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 transition-colors hover:bg-muted/50"
           >
-            <p className="font-medium">{request.ref ?? request.id}</p>
-            <p className="text-sm text-muted-foreground">
-              {request.contactCompany} · {request.contactEmail}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {request.entryKind} · submitted{" "}
-              {new Date(request.submittedAt).toLocaleDateString()}
-            </p>
+            <span className="min-w-24 font-medium text-foreground">
+              {request.ref ?? request.id}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+              {request.contactCompany || ADMIN_REQUESTS_COPY.emptyValue}
+              {request.contactEmail
+                ? ` · ${request.contactEmail}`
+                : null}
+            </span>
+            <Badge
+              variant="secondary"
+              className="rounded-md font-normal text-muted-foreground"
+            >
+              {entryKindLabel(request.entryKind)}
+            </Badge>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {new Date(request.submittedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
           </Link>
         </li>
       ))}

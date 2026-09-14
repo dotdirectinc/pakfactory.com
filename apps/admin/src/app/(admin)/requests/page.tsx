@@ -14,11 +14,10 @@ export default async function AdminRequestsPage() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <h1 className="text-[clamp(2rem,5vw,3rem)] font-medium leading-none tracking-tight text-foreground">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">
         {ADMIN_REQUESTS_COPY.listTitle}
       </h1>
-
       <RequestList requests={requests} />
     </div>
   );

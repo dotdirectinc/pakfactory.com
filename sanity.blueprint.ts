@@ -12,6 +12,7 @@ dotenv.config({ path: path.join(repoRoot, ".env.local") });
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
 import { ALGOLIA_POST_PROJECTION } from "@pakfactory/sanity/algolia/post-record";
+import { ALGOLIA_CONTENT_PROJECTION } from "@pakfactory/sanity/algolia/content-indexes";
 
 const { ALGOLIA_APP_ID, ALGOLIA_WRITE_KEY } = process.env;
 
@@ -56,6 +57,26 @@ export default defineBlueprint({
         ALGOLIA_WRITE_KEY,
         SANITY_PROJECT_ID,
         SANITY_DATASET,
+      },
+    }),
+    // ADR-018 — content corpus for admin search (products / customizations / case studies).
+    // Blog posts stay on algolia-document-sync → index `posts`.
+    defineDocumentFunction({
+      name: "algolia-content-sync",
+      memory: 1,
+      timeout: 10,
+      src: "./functions/algolia-content-sync",
+      event: {
+        on: ["create", "update", "delete"],
+        filter:
+          "_type in ['product', 'customizationOption', 'caseStudy'] && defined(slug.current)",
+        projection: ALGOLIA_CONTENT_PROJECTION,
+      },
+      env: {
+        COMMENT:
+          "ALGOLIA_APP_ID and ALGOLIA_WRITE_KEY sync content_* indexes for admin search (ADR-018)",
+        ALGOLIA_APP_ID,
+        ALGOLIA_WRITE_KEY,
       },
     }),
     // PROD-2228 — stamp publishedAt on scheduled versions (when release gets

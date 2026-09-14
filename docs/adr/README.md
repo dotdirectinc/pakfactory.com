@@ -14,7 +14,7 @@ An ADR captures one decision: its context, the choice made, and the consequences
 | `blog` | `apps/blog` (and blog-facing Studio schemas) |
 | `www` | Marketing site rebuild / catalog (`apps/www`) |
 | `studio` | Sanity Studio schemas, desk, Studio `lib/` |
-| `admin` | `apps/admin` — reserved; **no ADRs yet** (do not invent empty sections) |
+| `admin` | `apps/admin` — back office; search foundation [ADR-018](0018-admin-search-foundation.md) |
 
 Primary index axis is **decision domain** (below). Surfaces are a **second column**, not a merge key. Do not glue Accepted ADR files into domain mega-docs.
 
@@ -29,6 +29,7 @@ Primary index axis is **decision domain** (below). Surfaces are a **second colum
 | **CMS / Studio contracts** | `studio` + consumers (`blog`, `www`) | [`apps/studio/CLAUDE.md`](../../apps/studio/CLAUDE.md) | 004, 014, 016 |
 | **Redirects** | `blog` | — | 003 |
 | **Product customization model** | `www` | — | 017 |
+| **Admin search** | `admin` (+ content sync) | [ADR-018](0018-admin-search-foundation.md) | 018 |
 | **Foundational (pre-register)** | `all` | [`AGENTS.md`](../../AGENTS.md) § ADR summary | Turborepo, Sanity, Next, `@pakfactory/ui`, pnpm — no fake 001/002 files |
 
 > **Terminology callout:** Until [ADR-015](0015-page-composition-sections-terminology.md) is **Accepted**, blog page-builder code and docs use **“block”** ([ADR-012](0012-page-block-terminology.md)). Do not rename `pageBuilder` → `sections` in the dataset without the gated follow-up ticket.
@@ -52,5 +53,6 @@ Primary index axis is **decision domain** (below). Surfaces are a **second colum
 | 015 | **Page-composition terminology** — "Sections" (not "block") platform-wide for the §2.4 tab set + shared sections framework (Foundations PROD-2286); supersedes ADR-012 terminology. Blog `pageBuilder`→`sections` field rename deferred to PROD-2293, gated on ratification. | **Proposed** (pending Eric) | → `all` when Accepted | [`0015-page-composition-sections-terminology.md`](0015-page-composition-sections-terminology.md) |
 | 016 | **`@sanity/presets` evaluation** — evaluated 1.0.6, not adopted as the base; hand-rolled `lib/` sets encode PakFactory contracts (settings-singleton SEO fallbacks, href resolver, media tags) a generic preset would strip at a migration cost §2.4 forbids. Revisit for greenfield leaf fields / stable release. | Accepted | `studio` | [`0016-sanity-presets-evaluation.md`](0016-sanity-presets-evaluation.md) |
 | 017 | **Customization availability & `role`** — `appliesTo` splits into four axis-scoped fields (`availableOnProducts`/`exceptProducts` · `worksOnCustomizations`/`incompatibleWithCustomizations`); `role` (`configurable`\|`reference`) on the Option, not the Type; a configurable Option has no URL. Content-model D47; supersedes D42–D44 availability and D46's "no flag". | Accepted | `www` | [`0017-customization-availability-axes-and-role.md`](0017-customization-availability-axes-and-role.md) |
+| 018 | **Admin search foundation** — dual Algolia corpora (ops `admin_*` vs content `posts` / `content_*`); BFF-only search; owner-forced ops filter; V1 types Requests + Sanity product / customizationOption / post / caseStudy; Shopify open + Mobbin body; extension rule for later types. | Accepted | `admin` (+ `studio` sync) | [`0018-admin-search-foundation.md`](0018-admin-search-foundation.md) |
 
 > Foundational platform decisions that predate this register (Turborepo monorepo, Sanity CMS, Next.js App Router, `@pakfactory/ui` shared primitives, pnpm) are summarized in [`AGENTS.md`](../../AGENTS.md) § "ADR summary".

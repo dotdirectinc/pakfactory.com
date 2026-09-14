@@ -1,9 +1,10 @@
 'use client';
 
-import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useId, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {ImagePlus, X} from 'lucide-react';
+import {RequestProductCard} from '@pakfactory/brief-builder-ui/request-product-card';
 import {Button} from '@pakfactory/ui/components/button';
 import {Checkbox} from '@pakfactory/ui/components/checkbox';
 import {
@@ -54,9 +55,6 @@ const CustomizationBuilder = dynamic(
 
 const LINK_ACTION_CLASS =
     'h-auto p-0 text-xs font-medium text-primary underline underline-offset-4';
-
-const ROW_LABEL_CLASS =
-    'w-[120px] shrink-0 text-xs font-semibold text-foreground sm:w-[140px]';
 
 type ProductRequestCardProps = {
     line: RequestLine;
@@ -172,35 +170,6 @@ function buildNotesRows(line: RequestLine): SpecRow[] {
     return rows;
 }
 
-const SIDE_COL_CLASS = 'w-[88px] shrink-0 sm:w-[115px]';
-
-function DetailRow({
-    label,
-    children,
-    onEdit,
-}: {
-    label: string;
-    children: ReactNode;
-    onEdit: () => void;
-}) {
-    return (
-        <div className="flex items-start gap-4 border-t border-dashed border-border py-4">
-            <p className={ROW_LABEL_CLASS}>{label}</p>
-            <div className="min-w-0 flex-1 text-xs text-foreground">
-                {children}
-            </div>
-            <Button
-                type="button"
-                variant="link"
-                className={cn(LINK_ACTION_CLASS, 'shrink-0')}
-                onClick={onEdit}
-            >
-                {REQUEST_COPY.paperEdit}
-            </Button>
-        </div>
-    );
-}
-
 export function ProductRequestCard({
     line,
     draftId,
@@ -314,124 +283,109 @@ export function ProductRequestCard({
         setCustomizeOpen(open);
     }
 
-    const card = (
-        <div className="overflow-hidden rounded-xl border border-border bg-background p-4">
-            <div className="flex items-start gap-4">
-                <div className={SIDE_COL_CLASS}>
-                    <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
-                        {thumb?.src ? (
-                            // Catalog media URLs are static fixture assets.
-                            <div className={productMediaLayerClass}>
-                                <img
-                                    src={thumb.src}
-                                    alt=""
-                                    className="size-full object-contain"
-                                />
-                            </div>
-                        ) : (
-                            <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                                —
-                            </span>
-                        )}
-                    </div>
-                </div>
+    function editAction(onEdit: () => void) {
+        return (
+            <Button
+                type="button"
+                variant="link"
+                className={cn(LINK_ACTION_CLASS, 'shrink-0')}
+                onClick={onEdit}
+            >
+                {REQUEST_COPY.paperEdit}
+            </Button>
+        );
+    }
 
-                {/* Title + detail rows share this column so labels align with the title */}
-                <div className="min-w-0 flex-1">
-                    <div className="pb-4">
-                        {line.productSku?.trim() ? (
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {line.productSku.trim().toUpperCase()}
-                            </p>
-                        ) : null}
-                        <p className="text-lg font-semibold tracking-tight">
-                            <Link
-                                href={productHref(line.productSlug)}
-                                className="text-foreground underline-offset-4 hover:underline"
-                            >
-                                {title}
-                            </Link>
-                        </p>
-                    </div>
-
-                    <DetailRow
-                        label={REQUEST_COPY.quantityLabel}
-                        onEdit={() => setQtyOpen(true)}
+    return (
+        <li>
+            <RequestProductCard
+                title={
+                    <Link
+                        href={productHref(line.productSlug)}
+                        className="text-foreground underline-offset-4 hover:underline"
                     >
-                        {qtyList || (
+                        {title}
+                    </Link>
+                }
+                eyebrow={
+                    line.productSku?.trim()
+                        ? line.productSku.trim().toUpperCase()
+                        : undefined
+                }
+                thumbSrc={thumb?.src ?? null}
+                thumbInnerClassName={productMediaLayerClass}
+                detailRows={[
+                    {
+                        key: 'quantity',
+                        label: REQUEST_COPY.quantityLabel,
+                        action: editAction(() => setQtyOpen(true)),
+                        children: qtyList || (
                             <span className="text-muted-foreground">
                                 {REQUEST_COPY.notAdded}
                             </span>
-                        )}
-                    </DetailRow>
-
-                    <DetailRow
-                        label={REQUEST_COPY.customizationRowLabel}
-                        onEdit={() => setCustomizeOpen(true)}
+                        ),
+                    },
+                    {
+                        key: 'customization',
+                        label: REQUEST_COPY.customizationRowLabel,
+                        action: editAction(() => setCustomizeOpen(true)),
+                        children:
+                            specRows.length > 0 ? (
+                                <ul className="flex flex-col gap-1">
+                                    {specRows.map((row) => (
+                                        <li key={row.key}>
+                                            <span className="text-muted-foreground">
+                                                {row.label}:{' '}
+                                            </span>
+                                            <span className="font-medium text-foreground">
+                                                {row.value}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <span className="text-muted-foreground">
+                                    {REQUEST_COPY.notAdded}
+                                </span>
+                            ),
+                    },
+                    {
+                        key: 'notes',
+                        label: REQUEST_COPY.notesAndImageRowLabel,
+                        action: editAction(() => setDetailsOpen(true)),
+                        children:
+                            notesRows.length > 0 ? (
+                                <ul className="flex flex-col gap-1">
+                                    {notesRows.map((row) => (
+                                        <li key={row.key}>
+                                            <span className="text-muted-foreground">
+                                                {row.label}:{' '}
+                                            </span>
+                                            <span className="font-medium text-foreground">
+                                                {row.value}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <span className="text-muted-foreground">
+                                    {REQUEST_COPY.notAdded}
+                                </span>
+                            ),
+                    },
+                ]}
+                footer={
+                    <Button
+                        type="button"
+                        variant="link"
+                        className={cn(LINK_ACTION_CLASS, 'text-destructive')}
+                        onClick={() => setRemoveOpen(true)}
                     >
-                        {specRows.length > 0 ? (
-                            <ul className="flex flex-col gap-1">
-                                {specRows.map((row) => (
-                                    <li key={row.key}>
-                                        <span className="text-muted-foreground">
-                                            {row.label}:{' '}
-                                        </span>
-                                        <span className="font-medium text-foreground">
-                                            {row.value}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <span className="text-muted-foreground">
-                                {REQUEST_COPY.notAdded}
-                            </span>
-                        )}
-                    </DetailRow>
-
-                    <DetailRow
-                        label={REQUEST_COPY.notesAndImageRowLabel}
-                        onEdit={() => setDetailsOpen(true)}
-                    >
-                        {notesRows.length > 0 ? (
-                            <ul className="flex flex-col gap-1">
-                                {notesRows.map((row) => (
-                                    <li key={row.key}>
-                                        <span className="text-muted-foreground">
-                                            {row.label}:{' '}
-                                        </span>
-                                        <span className="font-medium text-foreground">
-                                            {row.value}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <span className="text-muted-foreground">
-                                {REQUEST_COPY.notAdded}
-                            </span>
-                        )}
-                    </DetailRow>
-
-                    <div className="flex justify-end border-t border-dashed border-border py-4">
-                        <Button
-                            type="button"
-                            variant="link"
-                            className={cn(LINK_ACTION_CLASS, 'text-destructive')}
-                            onClick={() => setRemoveOpen(true)}
-                        >
-                            {REQUEST_COPY.removeLine}
-                        </Button>
-                    </div>
-                </div>
-
-                {selectable ? (
-                    <div
-                        className={cn(
-                            SIDE_COL_CLASS,
-                            'flex items-start justify-end',
-                        )}
-                    >
+                        {REQUEST_COPY.removeLine}
+                    </Button>
+                }
+                trailing={
+                    selectable ? (
                         <Checkbox
                             id={fieldId}
                             checked={selected}
@@ -441,15 +395,9 @@ export function ProductRequestCard({
                             aria-label={`Select ${title}`}
                             className="mt-0.5"
                         />
-                    </div>
-                ) : null}
-            </div>
-        </div>
-    );
-
-    return (
-        <li>
-            {card}
+                    ) : undefined
+                }
+            />
 
             <DestructiveConfirmDialog
                 open={removeOpen}
