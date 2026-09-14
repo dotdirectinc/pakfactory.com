@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import {Button} from '@pakfactory/ui/components/button';
-import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {AccountRequestList} from '@/components/account/account-request-list';
 import {ACCOUNT_COPY} from '@/lib/copy/account';
-import {WWW_ROUTES, accountRequestHref} from '@/lib/www-routes';
+import {WWW_ROUTES} from '@/lib/www-routes';
 import {listBuyerRequests} from '@/lib/account/buyer-requests';
 
 export const metadata = {
@@ -19,17 +19,14 @@ export default async function AccountRequestsPage() {
     const requests = await listBuyerRequests();
 
     return (
-        <div className="mx-auto flex max-w-2xl flex-col gap-8">
-            <PageHeadingSection
-                variant="compact"
-                title={ACCOUNT_COPY.requestsTitle}
-                className="px-0 sm:px-0 md:px-0"
-                innerClassName="border-x-0 px-0 pb-0 pt-0 md:px-0"
-            />
+        <div className="flex w-full flex-col gap-6">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                {ACCOUNT_COPY.requestsTitle}
+            </h1>
 
             {requests.length === 0 ? (
                 <>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                         {ACCOUNT_COPY.requestsEmpty}
                     </p>
                     <div>
@@ -41,28 +38,7 @@ export default async function AccountRequestsPage() {
                     </div>
                 </>
             ) : (
-                <ul className="flex flex-col gap-3">
-                    {requests.map((request) => (
-                        <li key={request.id}>
-                            <Link
-                                href={accountRequestHref(request.id)}
-                                className="flex flex-col gap-1 rounded-md border border-border bg-background p-4 transition-colors hover:bg-muted/40"
-                            >
-                                <span className="flex flex-wrap items-baseline justify-between gap-2">
-                                    <span className="min-w-0 font-medium text-foreground">
-                                        {request.title}
-                                    </span>
-                                    <span className="shrink-0 text-xs text-muted-foreground">
-                                        {request.reference}
-                                    </span>
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                    {request.summary}
-                                </span>
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
+                <AccountRequestList requests={requests} />
             )}
         </div>
     );

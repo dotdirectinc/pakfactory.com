@@ -12,7 +12,7 @@ PakFactory **marketing site rebuild** — consultative packaging sales (quote / 
 | ----------- | ----------- | ----- |
 | `(site)` | `/`, `/products`, `/solutions`, `/capabilities`, `/expertise`, `/contact`, `/about`, `/policies`, `/bundles`, `/request` | Marketing pages; Sanity-backed catalog |
 | `(auth)` | `/login`, `/sign-up`, `/forgot-password`, `/reset-password`, `/verify` | Buyer auth via Supabase |
-| `(account)` | `/account`, `/account/profile`, `/account/requests` | Authenticated buyer area |
+| `(account)` | `/account`, `/account/profile`, `/account/requests` | Authenticated buyer area — off-white header + white `rounded-t-xl` main ([`account-shell.tsx`](src/components/account/account-shell.tsx)); `/account/requests` is a data table ([`account-request-list.tsx`](src/components/account/account-request-list.tsx)) |
 | `(request)` | `/request/products`, `/request/general`, `/request/services` | RFQ flows |
 | `case-studies` | `/case-studies`, `/case-studies/[slug]` | Case study listing + detail; draft mode under `/case-studies/api/draft-mode/` |
 | API | `/api/revalidate`, `/api/wm`, `/api/dev/sanity-check` | Revalidate webhook, watermark, dev helpers |

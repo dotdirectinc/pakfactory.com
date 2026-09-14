@@ -22,8 +22,8 @@ export function AccountShell({
     avatarUrl?: string;
 }) {
     return (
-        <div className="flex min-h-screen flex-col bg-muted/30">
-            <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
+        <div className="flex h-dvh flex-col bg-muted">
+            <header className="z-20 flex h-16 shrink-0 items-center gap-2 bg-muted px-4 sm:gap-4 sm:px-6 lg:px-8">
                 <Link
                     href={WWW_ROUTES.home}
                     aria-label="PakFactory home"
@@ -32,17 +32,17 @@ export function AccountShell({
                     <Logo />
                 </Link>
                 <span
-                    className="hidden text-muted-foreground sm:inline"
+                    className="hidden h-4 w-px shrink-0 bg-border sm:block"
                     aria-hidden
-                >
-                    |
-                </span>
-                <span className="hidden min-w-0 truncate text-sm font-medium sm:inline">
-                    {ACCOUNT_COPY.welcomeBack}{' '}
+                />
+                <span className="min-w-0 truncate text-sm font-medium">
+                    <span className="hidden sm:inline">
+                        {ACCOUNT_COPY.welcomeBack}{' '}
+                    </span>
                     <TypewriterText text={displayName} />
                 </span>
 
-                <div className="ml-auto flex shrink-0 items-center gap-3">
+                <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-4">
                     <AccountMenu
                         displayName={displayName}
                         email={email}
@@ -51,9 +51,9 @@ export function AccountShell({
                 </div>
             </header>
 
-            <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-                {children}
-            </div>
+            <main className="min-h-0 flex-1 overflow-auto rounded-t-xl bg-background px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+                <div className="mx-auto w-full max-w-7xl">{children}</div>
+            </main>
         </div>
     );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Badge } from "@pakfactory/ui/components/badge";
 import {
   AdminAccountMenu,
   type AdminAccountMenuProps,
@@ -14,30 +15,37 @@ export function AdminTopBar({
   account: AdminAccountMenuProps;
 }) {
   return (
-    <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center gap-3 bg-foreground px-3 text-background sm:px-4">
-      <Link
-        href="/requests"
-        aria-label="PakFactory Admin home"
-        className="shrink-0"
-      >
-        <AdminLogo className="[&_img]:h-6 [&_img]:brightness-0 [&_img]:invert" />
-      </Link>
+    <header className="relative z-30 flex h-[60px] shrink-0 items-center gap-2 bg-foreground px-4 text-background sm:px-6 lg:px-8">
+      <div className="z-10 flex min-w-0 shrink-0 items-center gap-2">
+        <Link
+          href="/requests"
+          aria-label="PakFactory Admin home"
+          className="shrink-0"
+        >
+          <AdminLogo className="[&_img]:brightness-0 [&_img]:invert" />
+        </Link>
 
-      {devBypassActive ? (
-        <span className="hidden shrink-0 rounded-md bg-amber-400/90 px-2 py-0.5 text-xs font-medium text-amber-950 sm:inline">
-          Dev Mode
-        </span>
-      ) : null}
-
-      <div className="mx-auto hidden min-w-0 max-w-md flex-1 sm:block">
-        <AdminSearchTrigger />
+        {devBypassActive ? (
+          <Badge
+            variant="secondary"
+            className="hidden shrink-0 rounded-md border-0 bg-background/15 px-2 py-1 text-xs font-medium text-background sm:inline-flex"
+          >
+            Dev Mode
+          </Badge>
+        ) : null}
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 hidden -translate-y-1/2 justify-center px-4 sm:flex">
+        <div className="pointer-events-auto w-full max-w-2xl">
+          <AdminSearchTrigger />
+        </div>
+      </div>
+
+      <div className="z-10 ml-auto flex shrink-0 items-center gap-2">
         <div className="sm:hidden">
           <AdminSearchTrigger compact />
         </div>
-        <AdminAccountMenu {...account} size="sm" />
+        <AdminAccountMenu {...account} />
       </div>
     </header>
   );
