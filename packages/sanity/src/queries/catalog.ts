@@ -7,8 +7,18 @@
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
-/** Card thumbnail: style uses cardImage → hero.image; line uses cardImage → heroMedia. */
-const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, hero.image){
+/**
+ * Card thumbnail.
+ *
+ * Style: `image` is its only image since PROD-2511 renamed `cardImage` and
+ * dropped `hero` (a card is a render slot, not a field name). `cardImage` stays
+ * as a fallback for the one legacy value until it is unset; `hero.image` was
+ * empty on every style and is gone. The projection key stays `cardImage`
+ * because it names what the consumer renders, not the schema field.
+ *
+ * Line: unchanged, `cardImage` → `heroMedia`.
+ */
+const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(image, cardImage){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
@@ -59,12 +69,18 @@ const LINE_REF_PROJ = /* groq */ `{
   "description": coalesce(cardSummary, pt::text(intro))
 }`;
 
+/**
+ * `description` never reads `hero.description`: PROD-2511 removed it as placeholder
+ * copy, but the key survives on 83 styles because removing a field deletes no
+ * data. Authored copy only — the rich-text `description`, else `shortDescription`
+ * so the style page heading isn't blank before descriptions are filled.
+ */
 const STYLE_REF_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
   shortDescription,
-  "description": coalesce(hero.description, pt::text(description)),
+  "description": coalesce(pt::text(description), shortDescription),
   ${STYLE_CARD_IMAGE}
 }`;
 
@@ -145,7 +161,7 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
     title,
     "slug": slug.current,
     shortDescription,
-    "description": coalesce(hero.description, pt::text(description)),
+    "description": coalesce(pt::text(description), shortDescription),
     ${STYLE_CARD_IMAGE}
   },
   "products": *[_type == "product" && (
