@@ -1,12 +1,13 @@
-import type { RequestActivity, RequestVersion } from "@pakfactory/domain/request";
-import { Badge } from "@pakfactory/ui/components/badge";
-import { Button } from "@pakfactory/ui/components/button";
+"use client";
+
+import type { RequestActivity } from "@pakfactory/domain/request";
+import { toast } from "sonner";
 import { cn } from "@pakfactory/ui/lib/utils";
+import { ComingSoonButton } from "@/components/requests/coming-soon-button";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 
 type RequestDetailTimelineProps = {
   activities: RequestActivity[];
-  versions: RequestVersion[];
 };
 
 type ActivityGroup = {
@@ -51,34 +52,22 @@ function groupActivitiesByDate(
   }));
 }
 
+function showComingSoon() {
+  toast.message(ADMIN_REQUESTS_COPY.comingSoon);
+}
+
 export function RequestDetailTimeline({
   activities,
-  versions,
 }: RequestDetailTimelineProps) {
-  const latestVersion = versions.length
-    ? [...versions].sort((a, b) => b.number - a.number)[0]
-    : null;
   const groups = groupActivitiesByDate(activities);
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border bg-background p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-sm font-semibold tracking-tight">
-          {ADMIN_REQUESTS_COPY.sectionTimeline}
-        </h2>
-        {latestVersion ? (
-          <Badge variant="secondary" className="rounded-md">
-            {latestVersion.label}
-          </Badge>
-        ) : null}
-      </div>
+    <section className="flex flex-col gap-4 rounded-lg border border-border bg-background p-4">
+      <h2 className="text-sm font-semibold tracking-tight">
+        {ADMIN_REQUESTS_COPY.sectionTimeline}
+      </h2>
 
       <div className="overflow-hidden rounded-md border border-border bg-muted/20">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
-          <Badge variant="secondary" className="rounded-md">
-            {ADMIN_REQUESTS_COPY.timelineCommentFuture}
-          </Badge>
-        </div>
         <div className="flex gap-3 border-b border-border p-4">
           <div
             aria-hidden
@@ -86,15 +75,25 @@ export function RequestDetailTimeline({
           />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <textarea
-              disabled
+              readOnly
+              aria-disabled="true"
               placeholder={ADMIN_REQUESTS_COPY.timelineCommentPlaceholder}
               rows={2}
-              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground placeholder:text-muted-foreground opacity-70"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                showComingSoon();
+              }}
+              onFocus={(event) => {
+                event.currentTarget.blur();
+                showComingSoon();
+              }}
             />
             <div className="flex items-center justify-end">
-              <Button type="button" size="sm" disabled>
-                {ADMIN_REQUESTS_COPY.timelinePost}
-              </Button>
+              <ComingSoonButton
+                label={ADMIN_REQUESTS_COPY.timelinePost}
+                size="sm"
+              />
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@
   ],
   "exports": {
     "./tailwind-sources.css": "./src/tailwind-sources.css",
+    "./request-product-card": "./src/request-product-card.tsx",
     "./request-review-copy": "./src/request-review-copy.ts",
     "./request-review-paper": "./src/request-review-paper.tsx"
   },
