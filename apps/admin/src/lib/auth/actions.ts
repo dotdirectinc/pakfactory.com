@@ -32,11 +32,8 @@ const emailOf = (form: FormData) =>
  * cookie survives the refusal — the same property `/auth/callback` maintains for
  * the OAuth path.
  *
- * Unlike the callback this does NOT check the email domain. That is deliberate
- * and matches the behaviour this action had before it was removed: the domain is
- * a hint for the Google picker, the `internal_user` row is the gate, and a
- * fallback path that refused a provisioned account for its domain would defeat
- * the point of having a fallback.
+ * Neither this action nor the callback checks the email domain (PROD-2512 /
+ * ADR-0016): the `internal_user` row is the gate on both paths.
  */
 export async function signInInternal(
   _prev: ActionState,

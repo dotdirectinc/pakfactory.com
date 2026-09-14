@@ -360,13 +360,15 @@ function toSummary(request: Request): RequestSummary {
 
 export function createMockRequestReadAdapter(): RequestReadAdapter {
   return {
-    async listForSalesMember(zohoUserId: string): Promise<RequestSummary[]> {
+    async listForSalesMember(zohoUserId: string | null): Promise<RequestSummary[]> {
+      if (!zohoUserId) return [];
       const leadIds = SALES_MEMBER_LEADS[zohoUserId] ?? [];
       return FIXTURES.filter(
         (r) => r.zohoLeadId && leadIds.includes(r.zohoLeadId),
       ).map(toSummary);
     },
-    async getById(id: string, zohoUserId: string): Promise<Request | null> {
+    async getById(id: string, zohoUserId: string | null): Promise<Request | null> {
+      if (!zohoUserId) return null;
       const request = FIXTURES.find((r) => r.id === id);
       if (!request?.zohoLeadId) return null;
       const leadIds = SALES_MEMBER_LEADS[zohoUserId] ?? [];
