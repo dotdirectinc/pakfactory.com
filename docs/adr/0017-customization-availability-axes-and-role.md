@@ -268,6 +268,18 @@ Eric's removal plan held five fields back — four "waiting for PROD-2292", one 
 
 `productStyle.order` — Rigid Boxes: Magnetic Closure, Neck Box, Telescoping Box · Folding Cartons: Straight Tuck End, Reverse Tuck End, Auto Bottom (123) · `[Test]` Mailer Boxes: Regular Slotted Container, Snap-Lock Mailer.
 
+### Four more off `customizationType`, removed 2026-09-13 (PROD-2481)
+
+`media`, `metaTitle`, `metaDescription` and `ogImage`. Approved by Eric during a field-by-field audit of the Customization branch.
+
+All four described a surface that does not exist. **A Customization Type has never had a page** — only Options get one, and only when `role` is `reference`. The Type's own entity file states this twice, so the SEO trio was not an unbuilt layer waiting to be filled; it was three fields for a URL that is absent by design.
+
+`media` is the same finding by a different route. The argument for splitting a configurable Type by material family is that *"a document carries one image and one description — a matte board and a matte film pouch do not photograph the same."* That argument puts the image on the **Option**, which is where it is already authored. The Type has no surface that renders one.
+
+**Nothing read any of them.** `customizationType` appears **nowhere** in `packages/sanity/src`, `apps/www/src` or `apps/blog/src` — the type is referenced only by the Studio's own schema, structure and scripts. All four were unpopulated on all 36 published Types, so no values needed recording here, unlike the six `order` fields above.
+
+The now-empty `seo` and `social` field groups went with them.
+
 ### The sixth, removed 2026-09-11
 
 `customizationCategory.order` was **not in Eric's removal plan and was therefore never deprecated** — it survived the sweep above by omission, not by argument. The branch audit on 2026-09-11 surfaced it; Eric's instruction that day was to remove it.

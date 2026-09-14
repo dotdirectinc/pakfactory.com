@@ -89,7 +89,10 @@ const REMOVED = {
   // comes from Postgres `sort_order`, never from Sanity. Three Studio desk panes
   // did sort by them (propertyValue ×2 workspaces, expertiseStage) and are
   // repointed to `title` in the same commit. Every value is recorded in ADR-017.
-  customizationType: ['order'],
+  // PROD-2481, 2026-09-13: four dead fields on the Type — page SEO and social for a
+  // page it has never had, plus `media` that nothing renders. All unpopulated on all
+  // 36, so this is a straggler sweep, not a data change.
+  customizationType: ['order', 'media', 'metaTitle', 'metaDescription', 'ogImage'],
   // Added 2026-09-11. The sixth `order`, missed by the 2026-09-01 sweep because
   // Eric's removal plan never listed it — not because anything read it. Same
   // evidence as the other five: no GROQ, no desk pane, no registry projection.

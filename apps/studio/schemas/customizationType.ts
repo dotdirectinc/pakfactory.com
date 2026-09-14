@@ -1,16 +1,16 @@
 import { defineField, defineType } from 'sanity'
-import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 export const customizationType = defineType({
   name: 'customizationType',
   title: 'Customization Type',
   type: 'document',
+  // `seo` and `social` went with the four fields removed on 2026-09-13 (PROD-2481).
+  // A Customization Type has never had a page, so both tabs described a surface that
+  // does not exist.
   groups: [
     { name: 'content', title: 'Content', default: true },
     { name: 'specs', title: 'Specs' },
-    { name: 'seo', title: 'SEO' },
-    { name: 'social', title: 'Social' },
   ],
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
@@ -90,14 +90,13 @@ export const customizationType = defineType({
     // is a customization/capabilities listing. Keeping a read-only field against a
     // successor nobody has specified is how a deprecation becomes permanent. The 14
     // values are recorded in ADR-017 if the ordering is ever wanted back.
-    defineField({
-      name: 'media',
-      title: 'Media',
-      type: 'array',
-      group: 'content',
-      description: 'Illustrative images for this customization type.',
-      of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
-    }),
+    // `media` was REMOVED here on 2026-09-13 (PROD-2481). Unpopulated on all 36 Types
+    // and read by nothing — `customizationType` appears nowhere in packages/sanity/src,
+    // apps/www/src or apps/blog/src. The configurator's visual is the OPTION's swatch,
+    // which is also what the split-by-material-family argument turns on: "a document
+    // carries one image and one description — a matte board and a matte film pouch do
+    // not photograph the same." That puts the image on the Option, where it is already
+    // authored.
 
     // ─── SPECS ────────────────────────────────────────────────────────────────
     // The Type declares which properties and spec tables apply to the options
@@ -156,40 +155,11 @@ export const customizationType = defineType({
     // schema description on each table. migrate:customization-cleanup clears the
     // 9 orphaned values from the dataset.
 
-    // ─── SEO ──────────────────────────────────────────────────────────────────
-
-    defineField({
-      name: 'metaTitle',
-      title: 'Meta title',
-      type: 'string',
-      group: 'seo',
-      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
-      validation: (Rule) => Rule.max(60),
-    }),
-    defineField({
-      name: 'metaDescription',
-      title: 'Meta description',
-      type: 'text',
-      rows: 3,
-      group: 'seo',
-      description: 'The search-result snippet. Aim for ≤160 characters.',
-      validation: (Rule) => Rule.max(160),
-    }),
-
-    // ─── SOCIAL ───────────────────────────────────────────────────────────────
-
-    defineField(taggedImageField({
-      name: 'ogImage',
-      title: 'OG image',
-      type: 'image',
-      group: 'social',
-      mediaTags: ogMediaTags(MEDIA_TAG.customization),
-      options: { hotspot: true },
-      description: 'Open Graph / social-share image.',
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
-    })),
+    // ─── SEO / SOCIAL — both REMOVED on 2026-09-13 (PROD-2481) ────────────────
+    // `metaTitle`, `metaDescription` and `ogImage` described a page this type has
+    // never had. Only Options get pages, and only when `role` is `reference`; the
+    // Type has no URL by design, not by omission. All three were unpopulated on all
+    // 36 published Types, and nothing read them.
   ],
   preview: {
     select: { title: 'title', category: 'category.title' },
