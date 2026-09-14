@@ -1,15 +1,16 @@
-import {
-    ComingSoonPage,
-    comingSoonMetadata,
-} from '@/components/common/coming-soon-page';
+import type {Metadata} from 'next';
+import {SolutionCatalogView} from '@/components/solution/solution-views';
+import {listSolutionsWithPages} from '@/lib/solutions/solutions';
 
-export const metadata = comingSoonMetadata('Solutions');
+export const revalidate = 60;
 
-export default function SolutionsPage() {
-    return (
-        <ComingSoonPage
-            title="Solutions"
-            note="Reserved index for solution landing pages. Content is coming soon."
-        />
-    );
+export const metadata: Metadata = {
+    title: 'Solutions',
+    description:
+        'Browse industry and channel packaging solutions tailored to how you sell.',
+};
+
+export default async function SolutionsPage() {
+    const solutions = await listSolutionsWithPages();
+    return <SolutionCatalogView solutions={solutions} />;
 }

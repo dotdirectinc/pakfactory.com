@@ -48,6 +48,13 @@ export function solutionHref(slug: string): string {
     return `${WWW_ROUTES.solutions}/${slug}`;
 }
 
+export function solutionLineHref(
+    solutionSlug: string,
+    lineSlug: string,
+): string {
+    return `${WWW_ROUTES.solutions}/${solutionSlug}/${lineSlug}`;
+}
+
 export function policyHref(slug: string): string {
     return `${WWW_ROUTES.policies}/${slug}`;
 }

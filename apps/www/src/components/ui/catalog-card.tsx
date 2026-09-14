@@ -5,17 +5,17 @@ import {
 
 const SEE_ALL = 'See all';
 
-export type ProductCatalogCardProps = Omit<MediaTileCardProps, 'ctaLabel'> & {
+export type CatalogCardProps = Omit<MediaTileCardProps, 'ctaLabel'> & {
     ctaLabel?: string;
 };
 
 /**
- * Catalog navigation card for product lines and styles.
+ * Catalog navigation tile for lines, styles, formats, and similar entries.
  * Composes {@link MediaTileCard}; keep domain mapping at the call site.
  */
-export function ProductCatalogCard({
+export function CatalogCard({
     ctaLabel = SEE_ALL,
     ...props
-}: ProductCatalogCardProps) {
+}: CatalogCardProps) {
     return <MediaTileCard ctaLabel={ctaLabel} {...props} />;
 }

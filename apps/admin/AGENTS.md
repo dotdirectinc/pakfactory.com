@@ -26,8 +26,9 @@ Next.js 16, React 19, Tailwind 4, port **4000**. PR base: `www-new-release`.
 | `@pakfactory/supabase` | SSR Supabase client + session helpers |
 | `@pakfactory/auth-ui` | Shared login UI (props-only) |
 | `@pakfactory/ui` | Design tokens and primitives |
+| `@pakfactory/sanity` | Content search GROQ / Algolia record contracts (ADR-018) |
 
-Does **not** depend on `@pakfactory/components` or `@pakfactory/sanity`.
+Does **not** depend on `@pakfactory/components`.
 
 ## Mock-first data layer (wire-up later)
 
@@ -86,6 +87,17 @@ Unset, or anything but exactly `true`, and `/login` is Google-only. Set `true` t
 - **The flag closes the server action, not just the form.** `signInInternal` re-checks it before touching Supabase — a server action is a POST endpoint whether or not a form renders.
 - **The password path still requires an `internal_user` row.** www customers live in the *same* Supabase auth project, so without that check any buyer's password would open admin. It does **not** check the email domain; the row is the gate, and a fallback that refused a provisioned account for its domain would defeat the point.
 - There is deliberately **no forgot-password or sign-up link** in either mode. Those pointed into the customer app (`lib/www-links.ts`, deleted) and are how staff ended up in the buyer flows. `NEXT_PUBLIC_WWW_URL` is not read by admin.
+
+## Global search (ADR-018)
+
+Shell search (`⌘K` / top-bar) is governed by [`docs/adr/0018-admin-search-foundation.md`](../../docs/adr/0018-admin-search-foundation.md): dual corpus (ops Supabase vs content Sanity), BFF `POST /api/search`, owner-scoped requests.
+
+| Corpus | Indexes | Sync | Query |
+| --- | --- | --- | --- |
+| Ops | `admin_requests` | Human backfill `pnpm exec tsx scripts/algolia-backfill-requests.ts`; webhook TBD | Algolia + `assignedOwnerCrmId` filter, else adapter list filter |
+| Content | `posts` (reuse), `content_products`, `content_customizations`, `content_case_studies` | Sanity Functions `algolia-document-sync` + `algolia-content-sync`; studio configure/backfill scripts | Algolia first, GROQ fallback |
+
+Env: `ALGOLIA_APP_ID`, search via `ALGOLIA_SEARCH_KEY` or `NEXT_PUBLIC_ALGOLIA_API_KEY` (server-only in BFF), write `ALGOLIA_WRITE_KEY` for scripts/Functions. Optional `ADMIN_WWW_ORIGIN` / `ADMIN_BLOG_ORIGIN` for outbound content links. Customers / Specs remain stubs — see `lib/search/shelf.ts`.
 
 ## Customer attachments
 

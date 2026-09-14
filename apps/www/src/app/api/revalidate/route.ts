@@ -15,9 +15,11 @@ import {
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
-  WWW_FOOTER_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
+  WWW_SOLUTIONS_CACHE_TAG,
+  WWW_WEBSITE_NAVIGATION_CACHE_TAG,
   wwwProductTag,
+  wwwSolutionTag,
 } from "@/lib/www-cache";
 
 const INDEXNOW_HOST = "pakfactory.com";
@@ -34,7 +36,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "caseStudy", "listingPage", "client",
  *     "solution", "productLine", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
- *     "blogNavigation", "settings"
+ *     "websiteNavigation", "settings"
  *   ]
  *
  * Case studies: the listing always revalidates. A slugged `caseStudy` edit
@@ -175,8 +177,29 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!type || type === "blogNavigation") {
-    tags.add(WWW_FOOTER_CACHE_TAG);
+  // Solution LPs + nested line catalogs (product/line edits change filtered grids).
+  const touchesSolutions =
+    !type ||
+    type === "solution" ||
+    CATALOG_PRODUCT_TYPES.has(type);
+  if (touchesSolutions) {
+    tags.add(WWW_SOLUTIONS_CACHE_TAG);
+    revalidatePath("/solutions");
+    revalidated.push("/solutions");
+    if (type === "solution" && slug) {
+      tags.add(wwwSolutionTag(slug));
+      revalidatePath(`/solutions/${slug}`);
+      revalidatePath(`/solutions/${slug}/[lineSlug]`, "page");
+      revalidated.push(`/solutions/${slug}`, `/solutions/${slug}/[lineSlug]`);
+    } else {
+      revalidatePath("/solutions/[slug]", "page");
+      revalidatePath("/solutions/[slug]/[lineSlug]", "page");
+      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[lineSlug]");
+    }
+  }
+
+  if (!type || type === "websiteNavigation") {
+    tags.add(WWW_WEBSITE_NAVIGATION_CACHE_TAG);
   }
 
   if (!type || type === "settings") {
@@ -232,7 +255,8 @@ export async function POST(request: Request) {
     CASE_STUDY_TYPES.has(type) ||
     CATALOG_PRODUCT_TYPES.has(type) ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
-    type === "blogNavigation" ||
+    type === "solution" ||
+    type === "websiteNavigation" ||
     type === "settings";
 
   return NextResponse.json({

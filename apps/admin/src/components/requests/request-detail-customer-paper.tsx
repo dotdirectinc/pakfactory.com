@@ -28,6 +28,10 @@ const VIEWER_PAPER_SHADOW_CLASS =
 const LETTER_FIT_CLASS =
   "aspect-[8.5/11] h-auto max-h-[calc(100dvh-68px-3rem)] w-[min(43rem,calc((100dvh-68px-3rem)*8.5/11))] shrink-0";
 
+/** Letter frame sized for the Preview Sheet drawer. */
+const LETTER_DRAWER_FIT_CLASS =
+  "aspect-[8.5/11] h-auto max-h-[calc(100dvh-6rem)] w-[min(36rem,calc(100%-2rem))] shrink-0";
+
 /** Thumbs sit just right of the centered letter (red-box zone). */
 const THUMBS_BESIDE_PAPER_CLASS =
   "absolute top-1/2 z-10 flex -translate-y-1/2 flex-col gap-2 left-[calc(50%+min(43rem,(100dvh-68px-3rem)*8.5/11)/2+1rem)]";
@@ -45,6 +49,8 @@ type RequestDetailCustomerPaperStackProps = {
   displayRef: string;
   documentDate: string;
   logoSlot?: ReactNode;
+  /** `drawer` = Preview Sheet layout (relative thumbs, shorter letter). */
+  variant?: "panel" | "drawer";
 };
 
 function humanizeProductSlug(slug: string): string {
@@ -202,6 +208,7 @@ function PaperThumbnail({
 
 export function RequestDetailCustomerPaperStack({
   className,
+  variant = "panel",
   ...props
 }: RequestDetailCustomerPaperStackProps & { className?: string }) {
   const { draft, lines } = props;
@@ -209,6 +216,9 @@ export function RequestDetailCustomerPaperStack({
   const multiPage = pageSlices.length > 1;
   const [api, setApi] = useState<CarouselApi>();
   const [activeIndex, setActiveIndex] = useState(0);
+  const letterClass =
+    variant === "drawer" ? LETTER_DRAWER_FIT_CLASS : LETTER_FIT_CLASS;
+  const isDrawer = variant === "drawer";
 
   const onSelect = useCallback((carouselApi: CarouselApi) => {
     if (!carouselApi) return;
@@ -225,6 +235,26 @@ export function RequestDetailCustomerPaperStack({
       api.off("select", onSelect);
     };
   }, [api, onSelect]);
+
+  if (isDrawer) {
+    return (
+      <div
+        className={cn(
+          "flex w-full flex-col items-center gap-4",
+          className,
+        )}
+      >
+        {pageSlices.map((pageSlice, index) => (
+          <CustomerPaperSheet
+            key={`${pageSlice.pageLabel ?? "page"}-${index}`}
+            {...props}
+            pageSlice={pageSlice}
+            className={letterClass}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -252,7 +282,7 @@ export function RequestDetailCustomerPaperStack({
                       <CustomerPaperSheet
                         {...props}
                         pageSlice={pageSlice}
-                        className={LETTER_FIT_CLASS}
+                        className={letterClass}
                       />
                     </div>
                   </CarouselItem>
@@ -283,7 +313,7 @@ export function RequestDetailCustomerPaperStack({
           <CustomerPaperSheet
             {...props}
             pageSlice={pageSlices[0]}
-            className={LETTER_FIT_CLASS}
+            className={letterClass}
           />
         </div>
       )}

@@ -267,9 +267,6 @@ export function YourRequest() {
                                         selectedIds={[...selected]}
                                     />
                                 </div>
-                                <p className="mt-3 text-center text-[12.5px] text-muted-foreground">
-                                    {REQUEST_COPY.prepareQuoteFootnote}
-                                </p>
                             </div>
                         </aside>
                     </div>

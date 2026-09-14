@@ -1,7 +1,6 @@
 'use client';
 
 import {ProductRequestCard} from '@/components/request/product-request-card';
-import {RequestAddProducts} from '@/components/request/request-add-products';
 import {ServicesUpsellToggle} from '@/components/request/services-upsell-toggle';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {
@@ -17,7 +16,7 @@ type StepProductsProps = {
     sectionRef?: React.Ref<HTMLElement>;
     /** Skip outer section + title (services-entry products upsell). */
     embedded?: boolean;
-    /** Products-entry services upsell under the list / add CTA. */
+    /** Products-entry services upsell under the product list. */
     servicesEnabled?: boolean;
     onServicesEnabledChange?: (enabled: boolean) => void;
 };
@@ -51,31 +50,21 @@ export function StepProducts({
             )}
 
             {lines.length === 0 ? (
-                <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                        {REQUEST_COPY.noProductsYet}
-                    </p>
-                    <RequestAddProducts variant="empty" />
-                </div>
+                <p className="text-sm text-muted-foreground">
+                    {REQUEST_COPY.noProductsYet}
+                </p>
             ) : (
-                <>
-                    <ul className="space-y-3">
-                        {lines.map((line) => (
-                            <ProductRequestCard
-                                key={line.id}
-                                line={line}
-                                draftId={draftId}
-                                onRemove={onRemove}
-                                onUpdate={onUpdate}
-                            />
-                        ))}
-                    </ul>
-                    <RequestAddProducts
-                        variant="more"
-                        align="center"
-                        className="mt-4"
-                    />
-                </>
+                <ul className="space-y-3">
+                    {lines.map((line) => (
+                        <ProductRequestCard
+                            key={line.id}
+                            line={line}
+                            draftId={draftId}
+                            onRemove={onRemove}
+                            onUpdate={onUpdate}
+                        />
+                    ))}
+                </ul>
             )}
 
             {showServicesUpsell ? (

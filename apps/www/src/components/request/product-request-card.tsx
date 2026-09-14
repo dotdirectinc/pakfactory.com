@@ -4,6 +4,7 @@ import {useEffect, useId, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {ImagePlus, X} from 'lucide-react';
+import {RequestProductCard} from '@pakfactory/brief-builder-ui/request-product-card';
 import {Button} from '@pakfactory/ui/components/button';
 import {Checkbox} from '@pakfactory/ui/components/checkbox';
 import {
@@ -53,7 +54,7 @@ const CustomizationBuilder = dynamic(
 );
 
 const LINK_ACTION_CLASS =
-    'h-auto p-0 text-xs font-medium underline underline-offset-4';
+    'h-auto p-0 text-xs font-medium text-primary underline underline-offset-4';
 
 type ProductRequestCardProps = {
     line: RequestLine;
@@ -77,10 +78,8 @@ function resolveBuilderState(line: RequestLine): CustomizationBuilderState {
     return createEmptyBuilderState();
 }
 
-function formatQuantityUnits(quantities: number[]): string {
-    return quantities
-        .map((n) => `${n.toLocaleString('en-US')} ${REQUEST_COPY.unitsSuffix}`)
-        .join(', ');
+function formatQuantityList(quantities: number[]): string {
+    return quantities.map((n) => n.toLocaleString('en-US')).join(', ');
 }
 
 function humanizeCategorySlug(category: string): string {
@@ -125,6 +124,46 @@ function buildSpecRows(line: RequestLine): SpecRow[] {
             key: customization.id,
             label: resolveCategoryLabel(customization.category, available),
             value,
+        });
+    }
+
+    return rows;
+}
+
+function buildNotesRows(line: RequestLine): SpecRow[] {
+    const rows: SpecRow[] = [];
+    const contents = line.contents?.trim() ?? '';
+    const notes = line.notes?.trim() ?? '';
+    const imageCount = line.referenceImages?.length ?? 0;
+
+    if (contents) {
+        rows.push({
+            key: 'contents',
+            label: REQUEST_COPY.contentsSummaryLabel,
+            value: contents,
+        });
+    }
+    if (notes) {
+        rows.push({
+            key: 'notes',
+            label: REQUEST_COPY.additionalNotesSummaryLabel,
+            value: notes,
+        });
+    }
+    if (imageCount === 1) {
+        rows.push({
+            key: 'images',
+            label: REQUEST_COPY.referenceImageSummaryLabel,
+            value: REQUEST_COPY.imagesCountOne,
+        });
+    } else if (imageCount > 1) {
+        rows.push({
+            key: 'images',
+            label: REQUEST_COPY.referenceImageSummaryLabel,
+            value: REQUEST_COPY.imagesCountMany.replace(
+                '{n}',
+                String(imageCount),
+            ),
         });
     }
 
@@ -181,12 +220,9 @@ export function ProductRequestCard({
     }, [qtyOpen, line.quantities]);
 
     const room = MAX_REF_IMAGES - draftImages.length;
-    const qtyUnits = formatQuantityUnits(line.quantities);
-    const metaParts = [line.productLineTitle?.trim(), qtyUnits || null].filter(
-        Boolean,
-    );
-    const metaLine = metaParts.join(' · ');
+    const qtyList = formatQuantityList(line.quantities);
     const specRows = buildSpecRows(line);
+    const notesRows = buildNotesRows(line);
 
     function onPickFiles(event: React.ChangeEvent<HTMLInputElement>) {
         const picked = Array.from(event.target.files ?? []);
@@ -247,55 +283,109 @@ export function ProductRequestCard({
         setCustomizeOpen(open);
     }
 
-    const card = (
-        <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-background sm:flex-row sm:items-stretch">
-            <div className="mx-auto aspect-square w-[115px] max-h-[115px] shrink-0 self-start bg-background p-4 sm:mx-0">
-                <div className="relative size-full overflow-hidden rounded-md bg-muted">
-                    {thumb?.src ? (
-                        // Catalog media URLs are static fixture assets.
-                        <div className={productMediaLayerClass}>
-                            <img
-                                src={thumb.src}
-                                alt=""
-                                className="size-full object-contain"
-                            />
-                        </div>
-                    ) : (
-                        <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
-                            —
-                        </span>
-                    )}
-                </div>
-            </div>
+    function editAction(onEdit: () => void) {
+        return (
+            <Button
+                type="button"
+                variant="link"
+                className={cn(LINK_ACTION_CLASS, 'shrink-0')}
+                onClick={onEdit}
+            >
+                {REQUEST_COPY.paperEdit}
+            </Button>
+        );
+    }
 
-            <div className="min-w-0 flex-1 p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <p className="text-base font-semibold tracking-tight">
-                            <Link
-                                href={productHref(line.productSlug)}
-                                className="text-foreground no-underline hover:underline"
-                            >
-                                {title}
-                            </Link>
-                        </p>
-                        {metaLine || qtyUnits ? (
-                            <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground">
-                                {metaLine ? <span>{metaLine}</span> : null}
-                                {qtyUnits ? (
-                                    <Button
-                                        type="button"
-                                        variant="link"
-                                        className={LINK_ACTION_CLASS}
-                                        onClick={() => setQtyOpen(true)}
-                                    >
-                                        {REQUEST_COPY.paperEdit}
-                                    </Button>
-                                ) : null}
-                            </div>
-                        ) : null}
-                    </div>
-                    {selectable ? (
+    return (
+        <li>
+            <RequestProductCard
+                title={
+                    <Link
+                        href={productHref(line.productSlug)}
+                        className="text-foreground underline-offset-4 hover:underline"
+                    >
+                        {title}
+                    </Link>
+                }
+                eyebrow={
+                    line.productSku?.trim()
+                        ? line.productSku.trim().toUpperCase()
+                        : undefined
+                }
+                thumbSrc={thumb?.src ?? null}
+                thumbInnerClassName={productMediaLayerClass}
+                detailRows={[
+                    {
+                        key: 'quantity',
+                        label: REQUEST_COPY.quantityLabel,
+                        action: editAction(() => setQtyOpen(true)),
+                        children: qtyList || (
+                            <span className="text-muted-foreground">
+                                {REQUEST_COPY.notAdded}
+                            </span>
+                        ),
+                    },
+                    {
+                        key: 'customization',
+                        label: REQUEST_COPY.customizationRowLabel,
+                        action: editAction(() => setCustomizeOpen(true)),
+                        children:
+                            specRows.length > 0 ? (
+                                <ul className="flex flex-col gap-1">
+                                    {specRows.map((row) => (
+                                        <li key={row.key}>
+                                            <span className="text-muted-foreground">
+                                                {row.label}:{' '}
+                                            </span>
+                                            <span className="font-medium text-foreground">
+                                                {row.value}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <span className="text-muted-foreground">
+                                    {REQUEST_COPY.notAdded}
+                                </span>
+                            ),
+                    },
+                    {
+                        key: 'notes',
+                        label: REQUEST_COPY.notesAndImageRowLabel,
+                        action: editAction(() => setDetailsOpen(true)),
+                        children:
+                            notesRows.length > 0 ? (
+                                <ul className="flex flex-col gap-1">
+                                    {notesRows.map((row) => (
+                                        <li key={row.key}>
+                                            <span className="text-muted-foreground">
+                                                {row.label}:{' '}
+                                            </span>
+                                            <span className="font-medium text-foreground">
+                                                {row.value}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <span className="text-muted-foreground">
+                                    {REQUEST_COPY.notAdded}
+                                </span>
+                            ),
+                    },
+                ]}
+                footer={
+                    <Button
+                        type="button"
+                        variant="link"
+                        className={cn(LINK_ACTION_CLASS, 'text-destructive')}
+                        onClick={() => setRemoveOpen(true)}
+                    >
+                        {REQUEST_COPY.removeLine}
+                    </Button>
+                }
+                trailing={
+                    selectable ? (
                         <Checkbox
                             id={fieldId}
                             checked={selected}
@@ -303,63 +393,11 @@ export function ProductRequestCard({
                                 onSelectedChange?.(value === true)
                             }
                             aria-label={`Select ${title}`}
-                            className="mt-1 shrink-0"
+                            className="mt-0.5"
                         />
-                    ) : null}
-                </div>
-
-                {specRows.length > 0 ? (
-                    <dl className="mt-4 flex flex-col gap-1 text-sm">
-                        {specRows.map((row) => (
-                            <div
-                                key={row.key}
-                                className="flex flex-wrap gap-x-2"
-                            >
-                                <dt className="text-muted-foreground">
-                                    {row.label}:
-                                </dt>
-                                <dd className="text-foreground">{row.value}</dd>
-                            </div>
-                        ))}
-                    </dl>
-                ) : null}
-
-                <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <Button
-                        type="button"
-                        variant="link"
-                        className={LINK_ACTION_CLASS}
-                        onClick={() => setCustomizeOpen(true)}
-                    >
-                        {REQUEST_COPY.customizeLine}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="link"
-                        className={LINK_ACTION_CLASS}
-                        onClick={() => setDetailsOpen(true)}
-                    >
-                        {REQUEST_COPY.notesAndImagesAction}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="link"
-                        className={cn(
-                            LINK_ACTION_CLASS,
-                            'ml-auto text-destructive',
-                        )}
-                        onClick={() => setRemoveOpen(true)}
-                    >
-                        {REQUEST_COPY.removeLine}
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-
-    return (
-        <li>
-            {card}
+                    ) : undefined
+                }
+            />
 
             <DestructiveConfirmDialog
                 open={removeOpen}

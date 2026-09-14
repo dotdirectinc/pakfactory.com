@@ -1,7 +1,7 @@
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
-import {ProductCatalogCard} from '@/components/product/product-catalog-card';
+import {CatalogCard} from '@/components/ui/catalog-card';
 import {
     ProductCard,
     type ProductCardData,
@@ -46,7 +46,7 @@ export function ProductCatalogView({lines}: {lines: ProductLine[]}) {
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>
                     {lines.map((line) => (
-                        <ProductCatalogCard
+                        <CatalogCard
                             key={line.slug}
                             href={productHref(line.slug)}
                             title={line.title}
@@ -84,7 +84,7 @@ export function ProductLineView({line}: {line: ProductLine}) {
                                 product.media[0]?.src,
                         )?.media[0]?.src;
                         return (
-                            <ProductCatalogCard
+                            <CatalogCard
                                 key={style.slug}
                                 href={productStyleHref(line.slug, style.slug)}
                                 title={style.title}
