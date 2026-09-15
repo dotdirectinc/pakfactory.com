@@ -1,6 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
@@ -101,27 +101,27 @@ export const productLine = defineType({
         },
       ],
     }),
-    defineField({
-      name: 'heroMedia',
-      title: 'Hero image',
+    // One representative image, one gallery — the same pair on all three product-tree
+    // types. `featuredImage` names a ROLE (the image that stands for this document),
+    // where `cardImage` and `heroMedia` named render slots, which D33 forbids. It is
+    // also the name the shared `ogImage` description has always referred to.
+    defineField(taggedImageField({
+      name: 'featuredImage',
+      title: 'Featured image',
       type: 'image',
       group: GROUPS.content,
-      description: 'The product-line landing hero.',
+      mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
-    }),
+      description: 'The one image that represents this line — the landing hero, catalog cards, nav and the social fallback.',
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
+    })),
     defineField({
-      name: 'cardImage',
-      title: 'Card image',
-      type: 'image',
+      name: 'media',
+      title: 'Media',
+      type: 'array',
       group: GROUPS.content,
-      description: 'Thumbnail for the catalog grid and the nav.',
-      options: { hotspot: true },
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
+      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `cardSummary` (PROD-2454), matching Style, Solution,
     // Product and the existing `blogCategory` pair.
@@ -258,7 +258,7 @@ export const productLine = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'shortName', media: 'heroMedia' },
+    select: { title: 'title', display: 'shortName', media: 'featuredImage' },
     prepare({ title, display, media }) {
       return { title: display || title || 'Untitled line', subtitle: 'Product Line', media }
     },
