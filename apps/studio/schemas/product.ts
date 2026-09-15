@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
+import { DIMENSION_INPUTS, AXIS_LABEL, usesAxis, type DimensionAxis } from '@pakfactory/sanity/dimension-inputs'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
@@ -31,6 +32,23 @@ const SOURCE_OWNED_NOTE =
 const kindOf = (doc: unknown): string | undefined => (doc as { kind?: string } | undefined)?.kind
 const isStandard = (doc: unknown) => kindOf(doc) === 'standard'
 const isInspiration = (doc: unknown) => kindOf(doc) === 'inspiration'
+
+/**
+ * Min/max number pair per measurement axis, each shown only when the product's
+ * `dimensionInput` shape actually uses it — so a Cylinder shows Diameter and
+ * Height, and nothing else.
+ */
+const DIMENSION_AXIS_FIELDS = (['length', 'width', 'height', 'diameter', 'gusset', 'drop'] as DimensionAxis[])
+  .flatMap((axis) =>
+    (['Min', 'Max'] as const).map((bound) =>
+      defineField({
+        name: `${axis}${bound}`,
+        title: `${AXIS_LABEL[axis]} ${bound.toLowerCase()} (mm)`,
+        type: 'number',
+        hidden: ({ document }) => !usesAxis(document?.dimensionInput as string | undefined, axis),
+      }),
+    ),
+  )
 
 export const product = defineType({
   name: 'product',
@@ -155,12 +173,27 @@ export const product = defineType({
           }. The product page would sit under a path with no reachable route above it.`
         }).warning(),
     }),
+    // One representative image, one gallery — the same pair on Product Line and
+    // Product Style. `featuredImage` replaces the old positional rule, where the
+    // first gallery image silently doubled as the card: reordering a gallery is a
+    // presentation decision and should never change which image represents the
+    // product.
+    defineField(taggedImageField({
+      name: 'featuredImage',
+      title: 'Featured image',
+      type: 'image',
+      group: GROUPS.content,
+      mediaTags: [MEDIA_TAG.product],
+      options: { hotspot: true },
+      description: 'The one image that represents this product — cards, listings, nav and the social fallback. Not part of the gallery.',
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
+    })),
     defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
       group: GROUPS.content,
-      description: 'The PDP gallery — first image is the card and the hero.',
+      description: 'The PDP gallery. Order is presentation only — the card and social images come from Featured image.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `description` (PROD-2454) — the field was already
@@ -194,17 +227,6 @@ export const product = defineType({
             ],
           },
         },
-      ],
-    }),
-    defineField({
-      name: 'benefits',
-      title: 'Benefits',
-      type: 'object',
-      group: GROUPS.content,
-      description: 'Why choose this product (renamed from whyChooseBlock, D33). The definition lives on the Style/Glossary, not here.',
-      fields: [
-        defineField({ name: 'title', title: 'Title', type: 'string' }),
-        defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
       ],
     }),
 
@@ -307,22 +329,40 @@ export const product = defineType({
       title: 'Solutions',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Every solution this product serves — industries, channels, focus areas and use cases in one list.',
+      description:
+        'Every solution this product serves — industries, channels, focus areas and use cases in one list. POSITION IS MEANINGFUL: the first entry is the primary, and it names the breadcrumb parent. Drag to change which one leads. Required for inspiration presets.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
+      validation: (Rule) =>
+        Rule.unique().custom((val, context) => {
+          const list = Array.isArray(val) ? val : []
+          if (isInspiration(context.document) && list.length === 0)
+            return 'At least one solution is required for inspiration presets — the first names the breadcrumb parent.'
+          return true
+        }),
     }),
+    // DEPRECATED (PROD-2512) — `solutions[0]` is the primary now, the same
+    // positional rule `productStyle` already uses. This field was exactly
+    // `solutions[0]` on all 58 presets that carried it, and nothing outside the
+    // Studio ever read it, so the merge loses nothing.
+    //
+    // Kept read-only rather than deleted: Conventions §4.3 forbids removing a
+    // POPULATED field in the same change that stops using it. Removal is a
+    // follow-up once the source stops sending it.
+    //
+    // Why merge at all: two fields held one fact and nothing checked them against
+    // each other, so a stray edit could point the breadcrumb at a solution the
+    // product does not serve.
     defineField({
       name: 'primarySolution',
-      title: 'Primary solution',
+      title: 'Primary solution (deprecated)',
       type: 'reference',
       group: GROUPS.categorization,
       to: [{ type: 'solution' }],
+      readOnly: true,
       options: { disableNew: true },
-      description: 'The one solution this product leads with — it names the breadcrumb parent. Required for inspiration presets.',
-      validation: (Rule) =>
-        Rule.custom((val, context) => {
-          if (isInspiration(context.document) && !val) return 'Required for inspiration presets.'
-          return true
-        }),
+      description:
+        'DEPRECATED — the primary solution is now the first entry in Solutions above. Kept read-only so nothing is lost while the product data source stops sending it; it is not read anywhere.',
+      hidden: ({ value }) => !value,
     }),
     defineField({
       name: 'relatedProducts',
@@ -439,21 +479,38 @@ export const product = defineType({
         },
       ],
     }),
+    // The shape a customer measures this product in. It drives two things from one
+    // value: which min/max pairs appear on `dimensionRange` below, and how many
+    // input boxes the PDP renders. The map lives in @pakfactory/sanity so the
+    // front end reads the same list — a second copy is how "Gusset" ends up
+    // meaning two things.
+    //
+    // ⚠️ The shape is NOT derivable from its axes. Rectangular, Triangular,
+    // Hexagonal and Custom Shaped are all L×W×H — same boxes, different product,
+    // different page copy. So the shape is stored and the axes are read off it,
+    // never the reverse.
+    defineField({
+      name: 'dimensionInput',
+      title: 'Dimension input',
+      type: 'string',
+      group: GROUPS.specs,
+      description:
+        'How this product is measured. Decides which measurements appear below, and which boxes a customer fills in on the product page. "No Shape" means it takes no dimensions at all.',
+      options: { list: DIMENSION_INPUTS.map(({ value, title }) => ({ value, title })) },
+      initialValue: 'rectangular',
+    }),
     defineField({
       name: 'dimensionRange',
       title: 'Dimension range',
       type: 'object',
       group: GROUPS.specs,
-      description: `Min / max for length, width and depth, in millimetres — always. ${SOURCE_OWNED_NOTE}`,
+      description: `Min / max for each measurement this shape takes, in millimetres — always. Set Dimension input above first; only that shape's measurements are shown. ${SOURCE_OWNED_NOTE}`,
       options: { collapsible: true, collapsed: false },
-      fields: [
-        defineField({ name: 'lengthMin', title: 'Length min (mm)', type: 'number' }),
-        defineField({ name: 'lengthMax', title: 'Length max (mm)', type: 'number' }),
-        defineField({ name: 'widthMin', title: 'Width min (mm)', type: 'number' }),
-        defineField({ name: 'widthMax', title: 'Width max (mm)', type: 'number' }),
-        defineField({ name: 'depthMin', title: 'Depth min (mm)', type: 'number' }),
-        defineField({ name: 'depthMax', title: 'Depth max (mm)', type: 'number' }),
-      ],
+      // Only the axes the chosen shape uses. `hidden` is per-field rather than a
+      // filtered list because Sanity needs a stable field set: a value already
+      // stored on a now-hidden axis is preserved, not silently dropped.
+      fields: DIMENSION_AXIS_FIELDS,
+      hidden: ({ document }) => (document?.dimensionInput as string) === 'no-shape',
     }),
     defineField({
       name: 'moq',
