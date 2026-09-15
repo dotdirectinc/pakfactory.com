@@ -11,13 +11,23 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 /**
  * Product Line — the top level of the product tree (Rigid, Folding Carton,
  * Corrugated), a landing page built to rank and convert for one packaging format
- * (Entities/Product Line.md). Only `title` and `slug` were deployed; every other
- * field is a free build.
+ * (Entities/Product Line.md). The full type is deployed.
  *
  * Declaring is not inheriting: the Line declares WHICH properties its products
  * state (`properties`), never their values — each product still states its own.
- * The styles grid is derived from Styles pointing here; the Line only sets the
- * order (`styles`), never gates membership.
+ *
+ * The styles grid is DERIVED, not listed. Every Style carries a required
+ * `productLine` reference (97/97 in production), so membership is a query and the
+ * Line never gates it.
+ *
+ * ⚠️ Ordering that grid is an OPEN REQUIREMENT with no mechanism (PROD-2509).
+ * `styles` — an ordered reference array that set the display order — was removed
+ * unpopulated (0/15) because a strong reference held purely for presentation made
+ * every listed Style undeletable, and the "unlisted styles append alphabetically"
+ * fallback it promised was never built. Until a replacement lands, the grid sorts
+ * alphabetically, which is NOT the intent: a landing-page grid is a merchandising
+ * surface and should lead with the styles that convert. Do not read the current
+ * sort as a decision.
  *
  * Deferred: `sections` (page-builder) until the shared section inventory exists
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
@@ -189,17 +199,6 @@ export const productLine = defineType({
           },
         },
       ],
-    }),
-    defineField({
-      // Renamed from `styleOrder` (D33): an array is ordered by definition, so
-      // `*Order` named the mechanism rather than the thing. 0 populated at the rename.
-      name: 'styles',
-      title: 'Styles',
-      type: 'array',
-      group: GROUPS.categorization,
-      description: 'Display order for the styles grid. Never a gate — unlisted styles append alphabetically.',
-      of: [{ type: 'reference', to: [{ type: 'productStyle' }] }],
-      validation: (Rule) => Rule.unique(),
     }),
     defineField({
       name: 'expertise',

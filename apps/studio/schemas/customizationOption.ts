@@ -2,6 +2,7 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -23,7 +24,23 @@ export const customizationOption = defineType({
       type: 'string',
       group: 'content',
       description: 'The customization option name shown to customers (e.g. "Matte Lamination").',
-      validation: (Rule) => Rule.required(),
+      // `uniqueTaxonomyTitle` was missing here while Category and Type both had it
+      // (PROD-2462). Same type only, case- and punctuation-insensitive.
+      //
+      // Verified safe before adding, not assumed: all 126 titles reduce to 126
+      // DISTINCT comparison keys, so no existing document becomes unsaveable. The
+      // near-misses are legitimately different things and normalise apart — "Gloss"
+      // the customer-facing finish vs "Gloss Lamination" the process that achieves
+      // it, "Blind Embossing" vs "Blind Embossing & Debossing", "Spot UV" vs
+      // "Spot UV / Spot Gloss".
+      //
+      // The four titles that DO collide across types — Digital Printing, Gloss,
+      // Matte, Soft Touch, each shared with a customizationType or propertyValue —
+      // are untouched by this, because the rule scopes to `_type == $type`. That is
+      // deliberate: a Property Value named Gloss and an Option named Gloss are two
+      // terms in two lists, the same reasoning that scopes `propertyValue` titles to
+      // their parent Property.
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     // A configurator swatch cannot carry "High-Impact Polystyrene (HIPS) Blister
     // Plastic", but Title has to stay unambiguous — the content team uses it to
@@ -127,34 +144,96 @@ export const customizationOption = defineType({
       initialValue: 'active',
       validation: (Rule) => Rule.required(),
     }),
-    // D47 / ADR-017: `role` sits on the OPTION, not the Type. A Type is a taxonomy
-    // of what things are and can be mixed — Lamination holds a technical Matte
-    // Lamination and a customer-facing Leather Lamination. Holding the flag on the
-    // parent would make an Option inherit its own properties (inheritance-with-
-    // overrides, retired by D12/D30). Whether a Type is a configurator panel is a
-    // rollup: true if any of its Options is `configurable`.
+    // ─── D55 (PROD-2482): `role` SPLIT INTO TWO FIELDS ────────────────────────
+    // `role` answered two independent questions with one value: `configurable`
+    // meant "a customer picks this" AND "this has no URL"; `reference` meant the
+    // inverse of both. Across the 33 mock Options that held, so the assumption
+    // went unexamined. The Notion Demo import falsified it — `Detail Page` is
+    // checked on 102 of 113 rows, because the content team gives detail pages to
+    // things customers also pick (Magnetic Closure, Hot Foil Stamping, Spot UV,
+    // SBS). "Pickable AND has a page" is the MAJORITY of the catalogue and had no
+    // way to be recorded at all. D54 flagged that and left it open; D55 closes it.
+    //
+    // This is the same defect D47 fixed on `appliesTo`, which held two grids in
+    // one array: one field cannot carry two questions when their answers vary
+    // independently. Same shape, same fix.
+
     defineField({
-      name: 'role',
-      title: 'Role',
+      name: 'configuratorRole',
+      title: 'Configurator role',
       type: 'string',
       group: 'content',
       description:
         'Does a customer pick this in the configurator? Configurable: Matte, High-Barrier, SBS. ' +
         'Reference: VMPET Film, Matte Lamination — real materials and processes a customer never picks ' +
-        'directly, reached through the simplified option they achieve. This also decides whether the ' +
-        'document has a URL: reference options have library pages, configurable options do not.',
+        'directly, reached through the simplified option they achieve. This no longer decides whether ' +
+        'the document has a page; that is "Has a page".',
       options: {
         layout: 'radio',
         list: [
           { title: 'Configurable — a customer picks this in the configurator', value: 'configurable' },
-          { title: 'Reference — technical; it has a library page but never reaches the configurator', value: 'reference' },
+          { title: 'Reference — technical; never reaches the configurator', value: 'reference' },
         ],
       },
-      // Fails loud: a forgotten `reference` Option produces a warning nobody needed,
-      // which is visible. A forgotten `configurable` Option would go silent and hide
-      // a customer-facing choice.
+      // Named `configuratorRole`, not `role`. There is a PROPERTY DOCUMENT titled
+      // "Role" (ag-role-r2304, "Layer role in multi-layer flexible structures":
+      // Barrier Layer / Outer Layer / Sealant Layer). Once Pouch Layer is built, a
+      // single Option would show a field labelled "Role" = Reference beside a
+      // Properties list containing "Barrier Layer" — a value of the Property named
+      // Role. Two unrelated meanings on one screen. The original naming note
+      // (HANDOFF-D47) checked `kindOf` for a clash but not the Property list.
+      // Dormant today: 0 Options use those values, which is why it is cheap now.
+      //
+      // Fails loud, unchanged from `role`: a forgotten `reference` Option produces a
+      // warning nobody needed, which is visible. A forgotten `configurable` Option
+      // would go silent and hide a customer-facing choice.
       initialValue: 'configurable',
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'hasPage',
+      title: 'Has a page',
+      type: 'boolean',
+      group: 'content',
+      description:
+        'Does this option have a library page of its own? An editorial judgement — demand, search value, ' +
+        'whether there is enough to say. Authored, never derived. An option can be offered in the ' +
+        'configurator without earning a page, and can earn a page while also being pickable.',
+      // Named `hasPage` to match `solution.hasPage` and `expertiseService.hasPage`,
+      // which answer this exact question in the same words. One name per concept —
+      // `hasDetailPage` would be a second name for a settled one.
+      //
+      // Backfilled from the Notion `Detail Page` column for the 113 imported
+      // Options (the committed export, 102 true / 11 false), and from
+      // `role == 'reference'` for the 13 with no Notion counterpart. So this is
+      // authored data recovered, not a value invented at migration time.
+      //
+      // ⚠️ NOTHING READS THIS YET. Routing for capability pages is still open —
+      // see the TODO(capability) in `presentation/locations.ts`. D55 records the
+      // fact; wiring it to a URL is a separate piece of work.
+      initialValue: false,
+    }),
+    // DEPRECATED by D55 — kept because it is populated on all 126 Options, and
+    // Conventions §4.3 forbids removing a populated field in the change that stops
+    // using it. `migrate:split-customization-role` copies it to `configuratorRole`
+    // and derives `hasPage`; removal is a later sweep once both are verified.
+    defineField({
+      name: 'role',
+      title: 'Role (deprecated)',
+      type: 'string',
+      group: 'content',
+      readOnly: true,
+      description:
+        'DEPRECATED (D55) — replaced by "Configurator role" and "Has a page". It answered both questions ' +
+        'at once and could not express the commonest case: an option a customer picks that also has a ' +
+        'page. Read-only; do not author. Scheduled for removal once the split is verified.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'Configurable', value: 'configurable' },
+          { title: 'Reference', value: 'reference' },
+        ],
+      },
     }),
     defineField({
       name: 'media',
@@ -213,12 +292,12 @@ export const customizationOption = defineType({
       validation: (Rule) =>
         Rule.custom((value, context) => {
           const list = Array.isArray(value) ? value : []
-          const role = (context.document as { role?: string } | undefined)?.role
+          const role = (context.document as { configuratorRole?: string } | undefined)?.configuratorRole
           if (role === 'configurable' && list.length === 0) {
-            return 'Empty means offered nowhere, so this option never reaches the configurator. Scope it to at least one Product Line, Style, or Product — or set Role to Reference if it is technical and never picked directly.'
+            return 'Empty means offered nowhere, so this option never reaches the configurator. Scope it to at least one Product Line, Style, or Product — or set Configurator role to Reference if it is technical and never picked directly.'
           }
           if (role === 'reference' && list.length > 0) {
-            return 'A reference option is never picked in the configurator, so product availability has no effect. Clear it, or set Role to Configurable.'
+            return 'A reference option is never picked in the configurator, so product availability has no effect. Clear it, or set Configurator role to Configurable.'
           }
           return true
         }).warning(),
@@ -374,7 +453,7 @@ export const customizationOption = defineType({
         Rule.custom((value, context) => {
           const list = Array.isArray(value) ? value : []
           if (list.length === 0) return true
-          const role = (context.document as { role?: string } | undefined)?.role
+          const role = (context.document as { configuratorRole?: string } | undefined)?.configuratorRole
           if (role === 'configurable') {
             return 'Achieves is for technical options — it names the simplified option this one delivers. A configurable option is already the simplified end of that relationship, so it should be the target, not the source.'
           }
@@ -546,26 +625,63 @@ export const customizationOption = defineType({
     })),
   ],
 
+  // PROD-2462. This block read three fields deleted in PROD-2250 — `category`,
+  // `appliesTo` and `except`. A deleted field reads as undefined, and the old code
+  // turned "no targets" into the words "applies to all", so EVERY option claimed it
+  // applied to everything. The truth is the opposite: 118 of the 120 configurable
+  // options have no availability authored, which by that field's own description
+  // means offered NOWHERE. It was wrong on 33 documents when filed and on 126 after
+  // the Notion import.
+  //
+  // `category` is not restored — it was retired because `type->category` is the one
+  // stored path (PROD-2250), and a preview is not a reason to store a fact twice.
+  // The Type alone is enough to place a row.
   preview: {
     select: {
       title: 'title',
+      shortName: 'shortName',
       status: 'status',
-      category: 'category.title',
       type: 'type.title',
       media: 'media.0',
-      appliesTo: 'appliesTo',
-      except: 'except',
+      configuratorRole: 'configuratorRole',
+      availableOnProducts: 'availableOnProducts',
+      exceptProducts: 'exceptProducts',
+      hasPage: 'hasPage',
     },
-    prepare({ title, status, category, type, media, appliesTo, except }) {
-      // Answer "what does this apply to?" in the list without opening every ref.
-      const n = Array.isArray(appliesTo) ? appliesTo.length : 0
-      const exceptN = Array.isArray(except) ? except.length : 0
-      const scope = n === 0 ? 'all' : `${n} target${n === 1 ? '' : 's'}`
-      const applies = `applies to ${scope}${exceptN ? ` · except ${exceptN}` : ''}`
-      const base = [category, type].filter(Boolean).join(' → ')
-      const subtitle = base ? `${base} — ${applies}` : applies
+    prepare({
+      title,
+      shortName,
+      status,
+      type,
+      media,
+      configuratorRole,
+      availableOnProducts,
+      exceptProducts,
+      hasPage,
+    }) {
+      const avail = Array.isArray(availableOnProducts) ? availableOnProducts.length : 0
+      const exceptN = Array.isArray(exceptProducts) ? exceptProducts.length : 0
+
+      // A reference option is never picked in the configurator, so its empty
+      // availability is CORRECT and must not read as a gap — that is the distinction
+      // D47 introduced `role` to make, and flagging it here would rebuild the
+      // warning editors had learned to ignore.
+      const scope =
+        configuratorRole === 'reference'
+          ? 'reference'
+          : avail === 0
+            ? '⚠ offered nowhere'
+            : `${avail} target${avail === 1 ? '' : 's'}${exceptN ? ` · except ${exceptN}` : ''}`
+
+      const parts = [type, scope, hasPage ? 'has page' : null].filter(Boolean)
+      const subtitle = parts.join(' · ')
+
       return {
-        title,
+        // The full Title, not `shortName` — this is the editors' list, and the Title
+        // is the name written to keep them apart. A short name is appended only when
+        // it is set and actually differs, so an editor can sanity-check the customer
+        // label without it competing with the real name. Set on 0 of 126 today.
+        title: shortName && shortName !== title ? `${title}  ·  ${shortName}` : title,
         subtitle: status === 'active' ? subtitle : `[${status?.toUpperCase()}] ${subtitle}`,
         media,
       }
