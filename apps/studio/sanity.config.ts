@@ -34,6 +34,7 @@ import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
 import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
+import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
 const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
@@ -131,6 +132,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
+    ])
+  }
+  // Not a nicety. A Solution Style is a stored filter, and a stored filter can
+  // resolve to zero with the form still valid — this tab is the only thing that
+  // says so before the page publishes empty.
+  if (schemaType === 'solutionStyle') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(SolutionStyleMatchesView).title('Matching products'),
     ])
   }
   return S.document().views([S.view.form()])

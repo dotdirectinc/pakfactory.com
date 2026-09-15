@@ -172,7 +172,7 @@ export const propertyValue = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'What shows beside this value in the configurator — Caliper, Flute height, "Commonly used for". Only facts that are the SAME for every option belong here; a number that differs per option lives on the Option. Labels come from a fixed list. ⚠️ Column order on the page comes from that list, not this array — reordering rows here changes nothing on the page.',
+        'What shows beside this value in the configurator — Caliper, Thickness, "Commonly used for". Only facts that are the SAME for every option belong here; a number that differs per option lives on the Option. Labels come from a fixed list. ⚠️ Column order on the page comes from that list, not this array — reordering rows here changes nothing on the page.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -242,20 +242,21 @@ export const propertyValue = defineType({
           const dup = labels.find((l, i) => labels.indexOf(l) !== i)
           if (dup) return `Each label may appear once — "${dup}" is repeated.`
 
-          // Caliper guard (PROD-2287 · per-Option thickness decision): a point IS
-          // 1/1000", so `caliper` is definitional and gets retyped once per
-          // (board × thickness) document — the one number free to drift. Where the
-          // title starts with a point size (`12pt - SBS`), a caliper fact must
-          // equal size ÷ 1000. Fires only on such titles; silent with no caliper
-          // row. ⚠️ Order is load-bearing: `SBS 12pt` skips this (fail-open).
+          // Caliper guard (PROD-2287 · per-Option thickness decision): `caliper` is
+          // the point size itself (unit pt since 2026-09-15, content team workbook),
+          // so it is definitional and gets retyped once per (board × thickness)
+          // document — the one number free to drift. Where the title starts with a
+          // point size (`12pt - SBS`), a caliper fact must equal that size. Fires
+          // only on such titles; silent with no caliper row. ⚠️ Order is
+          // load-bearing: `SBS 12pt` skips this (fail-open).
           const title = ((context.document as { title?: string } | undefined)?.title ?? '').trim()
           const m = title.match(/^(\d+(?:\.\d+)?)\s*pt\b/i)
           if (m) {
             const caliper = list.find((f) => f?.label === 'caliper')
             if (caliper && typeof caliper.value === 'number') {
-              const expected = parseFloat(m[1]) / 1000
+              const expected = parseFloat(m[1])
               if (Math.abs(caliper.value - expected) > 1e-9) {
-                return `Caliper for ${m[1]}pt must be ${expected}" (point size ÷ 1000). A measured — rather than nominal — caliper is a different label, not a different number.`
+                return `Caliper for ${m[1]}pt must be ${expected} (the point size). A measured thickness is the Thickness label, not a different caliper.`
               }
             }
           }
