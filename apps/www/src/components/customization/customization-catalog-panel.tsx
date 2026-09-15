@@ -18,18 +18,18 @@ import {cn} from '@pakfactory/ui/lib/utils';
 
 import {CustomizationCatalogFilters} from '@/components/customization/customization-catalog-filters';
 import {CustomizationCatalogList} from '@/components/customization/customization-catalog-list';
+import {
+    CUSTOMIZATION_CATALOG_ALL_CATEGORY,
+    itemHasFacetValue,
+    matchesCustomizationItem,
+} from '@/lib/catalog/customization-catalog-filter';
 import type {
     CustomizationFacetDef,
-    CustomizationLibraryItem,
     CustomizationLibraryResult,
-} from '@/lib/catalog/types';
-import {
-    CUSTOMIZATION_PRODUCT_LINE_FACET_ID,
-    isSustainabilityProperty,
 } from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
-const ALL_CATEGORY = 'all';
+const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
 const PARAM_CATEGORY = 'category';
 const PARAM_Q = 'q';
 const PARAM_VISIBLE = 'visible';
@@ -64,41 +64,6 @@ function toggleValue(list: string[], value: string): string[] {
     return list.includes(value)
         ? list.filter((item) => item !== value)
         : [...list, value];
-}
-
-function matchesItem(
-    item: CustomizationLibraryItem,
-    category: string,
-    query: string,
-    selections: Record<string, string[]>,
-): boolean {
-    if (category !== ALL_CATEGORY && item.categoryValue !== category) {
-        return false;
-    }
-    const q = query.trim().toLowerCase();
-    if (q && !item.title.toLowerCase().includes(q)) return false;
-
-    for (const [facetId, selected] of Object.entries(selections)) {
-        if (!selected.length) continue;
-        if (facetId === CUSTOMIZATION_PRODUCT_LINE_FACET_ID) {
-            if (
-                !selected.some((slug) =>
-                    item.productLines.some((line) => line.slug === slug),
-                )
-            ) {
-                return false;
-            }
-            continue;
-        }
-        const values = item.attrs[facetId] ?? [];
-        // Sustainability: AND (“Matches all selected.”); other property facets: OR.
-        if (isSustainabilityProperty(facetId)) {
-            if (!selected.every((slug) => values.includes(slug))) return false;
-        } else if (!selected.some((slug) => values.includes(slug))) {
-            return false;
-        }
-    }
-    return true;
 }
 
 export function CustomizationCatalogPanel({
@@ -263,7 +228,7 @@ export function CustomizationCatalogPanel({
 
     const filtered = useMemo(() => {
         return library.items.filter((item) =>
-            matchesItem(item, category, query, selections),
+            matchesCustomizationItem(item, {category, query, selections}),
         );
     }, [library.items, category, query, selections]);
 
@@ -271,16 +236,15 @@ export function CustomizationCatalogPanel({
 
     const countForTab = useCallback(
         (tabValue: string) => {
-            const sharedOnly = Object.fromEntries(
-                Object.entries(selections).filter(([id]) =>
-                    sharedFacetIds.has(id),
-                ),
-            );
             return library.items.filter((item) =>
-                matchesItem(item, tabValue, query, sharedOnly),
+                matchesCustomizationItem(item, {
+                    category: tabValue,
+                    query,
+                    selections,
+                }),
             ).length;
         },
-        [library.items, query, selections, sharedFacetIds],
+        [library.items, query, selections],
     );
 
     const navRef = useRef<HTMLElement>(null);
@@ -334,27 +298,15 @@ export function CustomizationCatalogPanel({
         for (const facet of facets) {
             const counts: Record<string, number> = {};
             for (const opt of facet.options) {
-                const otherSelections = {...selections};
-                delete otherSelections[facet.id];
-                const withOption = {
-                    ...otherSelections,
-                    [facet.id]: [opt.value],
-                };
-                counts[opt.value] = library.items.filter((item) =>
-                    matchesItem(item, category, query, withOption),
+                // Distribution in the current result set (not OR-refinement size).
+                counts[opt.value] = filtered.filter((item) =>
+                    itemHasFacetValue(item, facet.id, opt.value),
                 ).length;
             }
             result[facet.id] = counts;
         }
         return result;
-    }, [
-        library.facetCatalog.shared,
-        categoryFacets,
-        selections,
-        library.items,
-        category,
-        query,
-    ]);
+    }, [library.facetCatalog.shared, categoryFacets, filtered]);
 
     function selectCategory(next: string) {
         // Clear category-specific facet selections when switching tabs.

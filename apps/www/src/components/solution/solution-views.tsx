@@ -25,14 +25,23 @@ const PRODUCT_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
 
 function toProductCardData(product: Product): ProductCardData {
+    const images = product.media
+        .filter((item): item is {src: string; alt: string} =>
+            Boolean(item.src),
+        )
+        .map((item) => ({
+            src: item.src as string,
+            alt: item.alt || product.title,
+        }));
     return {
         title: product.title,
         href: productHref(product.slug),
         sku: product.sku,
         eyebrowLabel:
             product.productStyle?.title ?? product.productLine?.title,
-        imageUrl: product.media[0]?.src ?? null,
-        imageAlt: product.media[0]?.alt ?? product.title,
+        imageUrl: images[0]?.src ?? product.media[0]?.src ?? null,
+        imageAlt: images[0]?.alt ?? product.media[0]?.alt ?? product.title,
+        images: images.length > 0 ? images : undefined,
         moq: product.moq,
     };
 }

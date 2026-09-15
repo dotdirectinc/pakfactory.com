@@ -267,11 +267,18 @@ export function mapSanityLibraryOption(
     const categorySlug = doc.category?.slug?.trim();
     if (!slug || !doc.title || !categorySlug) return null;
 
-    const firstImage = Array.isArray(doc.media) ? doc.media[0] : null;
-    const imageUrl = firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null;
-    const imageAlt = firstImage
-        ? resolveImageAlt(firstImage, doc.title)
-        : doc.title;
+    const mediaItems = Array.isArray(doc.media) ? doc.media : [];
+    const images = mediaItems
+        .map((item) => {
+            const src = sanityImageBaseUrl(item);
+            if (!src) return null;
+            return {
+                src,
+                alt: resolveImageAlt(item, doc.title),
+            };
+        })
+        .filter((item): item is {src: string; alt: string} => item !== null);
+    const first = images[0];
 
     const productLines: ProductLineRef[] = [];
     const seenLines = new Set<string>();
@@ -305,8 +312,9 @@ export function mapSanityLibraryOption(
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,
-        imageUrl,
-        imageAlt,
+        imageUrl: first?.src ?? null,
+        imageAlt: first?.alt ?? doc.title,
+        images: images.length > 0 ? images : undefined,
         productLines,
         attrs,
         propertyTitles,

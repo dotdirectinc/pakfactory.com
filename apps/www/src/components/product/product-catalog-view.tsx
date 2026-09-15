@@ -19,13 +19,22 @@ function toProductCardData(
     product: Product,
     line: ProductLine,
 ): ProductCardData {
+    const images = product.media
+        .filter((item): item is {src: string; alt: string} =>
+            Boolean(item.src),
+        )
+        .map((item) => ({
+            src: item.src as string,
+            alt: item.alt || product.title,
+        }));
     return {
         title: product.title,
         href: productHref(product.slug),
         sku: product.sku,
         eyebrowLabel: product.productStyle.title ?? line.title,
-        imageUrl: product.media[0]?.src ?? null,
-        imageAlt: product.media[0]?.alt ?? product.title,
+        imageUrl: images[0]?.src ?? product.media[0]?.src ?? null,
+        imageAlt: images[0]?.alt ?? product.media[0]?.alt ?? product.title,
+        images: images.length > 0 ? images : undefined,
         moq: product.moq,
     };
 }

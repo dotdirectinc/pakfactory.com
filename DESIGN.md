@@ -145,6 +145,8 @@ Primitives may use CSS `border` via shadcn patterns — **do not** mandate Verce
 
 **Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.92`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
 
+**Collapsible / accordion:** open/close height slide via `animate-collapsible-down` / `animate-collapsible-up` in [`packages/ui/src/globals.css`](packages/ui/src/globals.css) (`--motion-base`, 0.3s ease-out). Chevron rotates `180deg` with `duration-300 ease-out`; skip transform transition under `motion-reduce`. Apply classes on `CollapsibleContent` at the call site (`overflow-hidden` + data-state animations); do not invent bespoke height transitions.
+
 Detail: [`docs/plans/PROD-1947-motion-animation-spec.md`](docs/plans/PROD-1947-motion-animation-spec.md). Prefer intentional, sparse motion — not decorative noise.
 
 ---

@@ -6,8 +6,8 @@ import type {
 } from '@/lib/catalog/types';
 import {
     CUSTOMIZATION_PRODUCT_LINE_FACET_ID,
-    isSustainabilityProperty,
 } from '@/lib/catalog/types';
+import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
 
 function upsertOption(
     map: Map<string, CustomizationFacetOption>,

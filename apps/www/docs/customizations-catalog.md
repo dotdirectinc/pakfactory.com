@@ -21,6 +21,8 @@ Do **not** add `modules/catalog`. Use the F1a seam:
 | GROQ | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_CUSTOMIZATION_LIBRARY_QUERY` |
 | Mapper | [`src/lib/catalog/map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityLibraryOption` |
 | Facet assembly | [`src/lib/catalog/build-customization-library.ts`](../src/lib/catalog/build-customization-library.ts) |
+| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem` (parallel stem for a future `product-catalog-*`) |
+| Filter taxonomy (ops + product lines) | [`src/lib/catalog/customization-filter-taxonomy.ts`](../src/lib/catalog/customization-filter-taxonomy.ts) — driven by [`docs/customization-filter-taxonomy.md`](./customization-filter-taxonomy.md) |
 | API | [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) — **`listCustomizations()`** (ticket name `getCustomizations`) |
 | Alias | `listCustomizationCategories()` → `listCustomizations().items` |
 | Detail | `getCustomizationCategory(category, handle)` |
@@ -49,7 +51,7 @@ Folder: `src/components/customization/`
 | `customization-catalog-view.tsx` | `CustomizationCatalogView` | Chrome + Suspense + panel |
 | `customization-catalog-panel.tsx` | `CustomizationCatalogPanel` | Client: tabs, search, filters, View more, URL/local state |
 | `customization-catalog-filters.tsx` | `CustomizationCatalogFilters` | Left rail |
-| `customization-facet-group.tsx` | `CustomizationFacetGroup` | Checkbox rows + right-aligned tabular counts |
+| `customization-facet-group.tsx` | `CustomizationFacetGroup` | Checkbox rows + counts centered under the chevron column; previews 15 options with Show more / Show less; zero-count options disabled |
 | `customization-catalog-list.tsx` | `CustomizationCatalogList` | Equal-height 4-col grid |
 | `customization-card.tsx` | `CustomizationCard` | Tile |
 
@@ -58,11 +60,11 @@ Buyer copy: **customization**, never “capability”.
 ## Filter / URL responsibility
 
 - **Server:** one library fetch + facet catalog in `CustomizationLibraryResult`
-- **Client:** filter in memory; live counts; View more pagination
+- **Client:** filter in memory via `matchesCustomizationItem`; facet option counts = attribute frequency in the **current result set**; category tab counts use the same search + facet selections as the grid; View more pagination
 - **Route:** `urlSync` (default true) — `category`, `q`, `visible`, plus facet ids as comma-separated query params
 - **Section:** `urlSync={false}` — local React state only
-- **Sustainability:** multi-select is **AND**; Product Line and other facets remain **OR**
-- **UI chrome:** underline category tabs, pill search, accordion facet groups (mockup-aligned)
+- **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line and other properties = **OR** (see [`customization-filter-taxonomy.md`](./customization-filter-taxonomy.md))
+- **UI chrome:** underline category tabs, pill search, accordion facet groups (mockup-aligned); each facet group previews **15** options then **Show more** / **Show less** (auto-expands if a selected value is past the fold); option counts share a trailing column centered under the chevron; options with live count **0** are disabled (still uncheckable if already selected)
 
 ## Out of scope (this ticket)
 
