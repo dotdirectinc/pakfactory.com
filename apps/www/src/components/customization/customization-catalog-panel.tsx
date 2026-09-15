@@ -3,21 +3,29 @@
 import {
     useCallback,
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
     useTransition,
 } from 'react';
 import {usePathname, useRouter, useSearchParams} from 'next/navigation';
-import {Search} from 'lucide-react';
+import {ChevronDown, Search, SlidersHorizontal} from 'lucide-react';
 
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {CustomizationCatalogFilters} from '@/components/customization/customization-catalog-filters';
-import {CustomizationCatalogList} from '@/components/customization/customization-catalog-list';
+import {
+    CustomizationCatalogFilters,
+    CustomizationCatalogFiltersSkeleton,
+} from '@/components/customization/customization-catalog-filters';
+import {CustomizationCatalogFiltersDrawer} from '@/components/customization/customization-catalog-filters-drawer';
+import {
+    CustomizationCatalogList,
+    CustomizationCatalogListSkeleton,
+} from '@/components/customization/customization-catalog-list';
 import {
     CUSTOMIZATION_CATALOG_ALL_CATEGORY,
     itemHasFacetValue,
@@ -29,10 +37,15 @@ import type {
 } from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
+/** Auto-reveal this many PAGE_SIZE batches via scroll before showing Load more. */
+const AUTO_REVEAL_LIMIT = 2;
+/** Simulated delay so append skeletons are visible before revealing the next batch. */
+const APPEND_DELAY_MS = 400;
 const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
 const PARAM_CATEGORY = 'category';
 const PARAM_Q = 'q';
-const PARAM_VISIBLE = 'visible';
+/** Legacy load-more depth param — stripped on URL writes, never read. */
+const LEGACY_PARAM_VISIBLE = 'visible';
 
 export type CustomizationCatalogTab = {
     label: string;
@@ -74,7 +87,7 @@ export function CustomizationCatalogPanel({
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [, startTransition] = useTransition();
+    const [isPending, startTransition] = useTransition();
 
     const tabs: CustomizationCatalogTab[] = useMemo(
         () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
@@ -113,20 +126,11 @@ export function CustomizationCatalogPanel({
         }
         return next;
     });
-    const [localVisible, setLocalVisible] = useState(() => {
-        if (!urlSync) return PAGE_SIZE;
-        const n = Number(searchParams.get(PARAM_VISIBLE));
-        return Number.isFinite(n) && n >= PAGE_SIZE ? n : PAGE_SIZE;
-    });
+    const [localVisible, setLocalVisible] = useState(PAGE_SIZE);
 
     const category = urlSync ? readCategory() : localCategory;
     const query = urlSync ? (searchParams.get(PARAM_Q) ?? '') : localQuery;
-    const visible = urlSync
-        ? (() => {
-              const n = Number(searchParams.get(PARAM_VISIBLE));
-              return Number.isFinite(n) && n >= PAGE_SIZE ? n : PAGE_SIZE;
-          })()
-        : localVisible;
+    const visible = localVisible;
 
     const selections = useMemo(() => {
         if (!urlSync) return localSelections;
@@ -158,16 +162,26 @@ export function CustomizationCatalogPanel({
             selections?: Record<string, string[]>;
             clearFacetIds?: string[];
         }) => {
+            if (patch.visible !== undefined) setLocalVisible(patch.visible);
+
             if (!urlSync) {
                 if (patch.category !== undefined)
                     setLocalCategory(patch.category);
                 if (patch.q !== undefined) setLocalQuery(patch.q);
-                if (patch.visible !== undefined) setLocalVisible(patch.visible);
                 if (patch.selections) setLocalSelections(patch.selections);
                 return;
             }
 
+            const touchesUrl =
+                patch.category !== undefined ||
+                patch.q !== undefined ||
+                patch.selections !== undefined ||
+                (patch.clearFacetIds?.length ?? 0) > 0;
+            if (!touchesUrl) return;
+
             const params = new URLSearchParams(searchParams.toString());
+            params.delete(LEGACY_PARAM_VISIBLE);
+
             const nextCategory = patch.category ?? category;
             if (!nextCategory || nextCategory === ALL_CATEGORY) {
                 params.delete(PARAM_CATEGORY);
@@ -178,10 +192,6 @@ export function CustomizationCatalogPanel({
             const nextQ = patch.q ?? query;
             if (!nextQ.trim()) params.delete(PARAM_Q);
             else params.set(PARAM_Q, nextQ);
-
-            const nextVisible = patch.visible ?? visible;
-            if (nextVisible <= PAGE_SIZE) params.delete(PARAM_VISIBLE);
-            else params.set(PARAM_VISIBLE, String(nextVisible));
 
             const nextSelections = patch.selections ?? selections;
             const allFacetIds = new Set([
@@ -213,7 +223,6 @@ export function CustomizationCatalogPanel({
             searchParams,
             category,
             query,
-            visible,
             selections,
             library.facetCatalog,
             pathname,
@@ -233,6 +242,98 @@ export function CustomizationCatalogPanel({
     }, [library.items, category, query, selections]);
 
     const shown = filtered.slice(0, visible);
+
+    const [appendCount, setAppendCount] = useState(0);
+    const isAppending = appendCount > 0;
+    const appendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
+    const isAppendingRef = useRef(false);
+    const pendingVisibleRef = useRef<number | null>(null);
+
+    const clearAppend = useCallback(() => {
+        if (appendTimeoutRef.current) {
+            clearTimeout(appendTimeoutRef.current);
+            appendTimeoutRef.current = null;
+        }
+        isAppendingRef.current = false;
+        pendingVisibleRef.current = null;
+        setAppendCount(0);
+    }, []);
+
+    useEffect(() => () => clearAppend(), [clearAppend]);
+
+    useEffect(() => {
+        if (!isAppendingRef.current) return;
+        if (visible <= PAGE_SIZE) {
+            clearAppend();
+            return;
+        }
+        if (
+            pendingVisibleRef.current != null &&
+            visible >= pendingVisibleRef.current
+        ) {
+            clearAppend();
+        }
+    }, [visible, clearAppend]);
+
+    const hasMore = visible < filtered.length;
+    const autoLoadsDone = Math.max(
+        0,
+        Math.floor((visible - PAGE_SIZE) / PAGE_SIZE),
+    );
+    const canAutoReveal =
+        !isPending &&
+        !isAppending &&
+        hasMore &&
+        autoLoadsDone < AUTO_REVEAL_LIMIT;
+    const showLoadMore =
+        !isPending &&
+        !isAppending &&
+        hasMore &&
+        autoLoadsDone >= AUTO_REVEAL_LIMIT;
+
+    const revealNextBatch = useCallback(() => {
+        if (isAppendingRef.current) return;
+        if (visible >= filtered.length) return;
+
+        const count = Math.min(PAGE_SIZE, filtered.length - visible);
+        const nextVisible = visible + PAGE_SIZE;
+        isAppendingRef.current = true;
+        pendingVisibleRef.current = nextVisible;
+        setAppendCount(count);
+
+        appendTimeoutRef.current = setTimeout(() => {
+            appendTimeoutRef.current = null;
+            writeParams({visible: nextVisible});
+        }, APPEND_DELAY_MS);
+    }, [visible, filtered.length, writeParams]);
+
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const autoRevealLockedRef = useRef(false);
+
+    useEffect(() => {
+        autoRevealLockedRef.current = false;
+    }, [visible]);
+
+    useEffect(() => {
+        if (!canAutoReveal) return;
+        const el = sentinelRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                if (!entry?.isIntersecting) return;
+                if (autoRevealLockedRef.current) return;
+                autoRevealLockedRef.current = true;
+                revealNextBatch();
+            },
+            {rootMargin: '200px'},
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [canAutoReveal, revealNextBatch, visible]);
 
     const countForTab = useCallback(
         (tabValue: string) => {
@@ -255,6 +356,9 @@ export function CustomizationCatalogPanel({
         width: 0,
         ready: false,
     });
+    /** After first layout placement, enable slide transitions (hover / tab clicks). */
+    const [indicatorTransitionEnabled, setIndicatorTransitionEnabled] =
+        useState(false);
 
     const updateIndicator = useCallback(() => {
         const nav = navRef.current;
@@ -275,8 +379,8 @@ export function CustomizationCatalogPanel({
         });
     }, [category, hoveredTab]);
 
-    useEffect(() => {
-        const frame = requestAnimationFrame(() => updateIndicator());
+    useLayoutEffect(() => {
+        updateIndicator();
         const nav = navRef.current;
         const ro =
             typeof ResizeObserver !== 'undefined'
@@ -285,11 +389,16 @@ export function CustomizationCatalogPanel({
         if (nav && ro) ro.observe(nav);
         window.addEventListener('resize', updateIndicator);
         return () => {
-            cancelAnimationFrame(frame);
             ro?.disconnect();
             window.removeEventListener('resize', updateIndicator);
         };
     }, [updateIndicator, tabs]);
+
+    // Enable slide only after the first positioned frame has painted — otherwise
+    // deep links animate left from 0 (under All) to the seeded category.
+    useEffect(() => {
+        if (indicator.ready) setIndicatorTransitionEnabled(true);
+    }, [indicator.ready]);
 
     const countsByFacet = useMemo(() => {
         const facets = [...library.facetCatalog.shared, ...categoryFacets];
@@ -316,13 +425,17 @@ export function CustomizationCatalogPanel({
         }
         writeParams({
             category: next,
+            q: '',
             selections: nextSelections,
             visible: PAGE_SIZE,
             clearFacetIds: Object.keys(selections).filter(
                 (id) => !sharedFacetIds.has(id),
             ),
         });
-        if (!urlSync) setLocalSelections(nextSelections);
+        if (!urlSync) {
+            setLocalSelections(nextSelections);
+            setLocalQuery('');
+        }
     }
 
     function onToggle(facetId: string, value: string) {
@@ -331,8 +444,11 @@ export function CustomizationCatalogPanel({
             [facetId]: toggleValue(selections[facetId] ?? [], value),
         };
         if (next[facetId]?.length === 0) delete next[facetId];
-        writeParams({selections: next, visible: PAGE_SIZE});
-        if (!urlSync) setLocalSelections(next);
+        writeParams({selections: next, visible: PAGE_SIZE, q: ''});
+        if (!urlSync) {
+            setLocalSelections(next);
+            setLocalQuery('');
+        }
     }
 
     function onReset() {
@@ -347,13 +463,108 @@ export function CustomizationCatalogPanel({
             setLocalCategory(ALL_CATEGORY);
             setLocalQuery('');
             setLocalSelections({});
-            setLocalVisible(PAGE_SIZE);
         }
+    }
+
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const activeFilterCount = useMemo(
+        () =>
+            Object.values(selections).reduce(
+                (sum, values) => sum + values.length,
+                0,
+            ),
+        [selections],
+    );
+
+    function renderSearchField(className?: string) {
+        return (
+            <div className={cn('relative min-w-0 flex-1', className)}>
+                <Search
+                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden
+                />
+                <Input
+                    type="search"
+                    value={query}
+                    onChange={(event) => {
+                        const next = event.target.value;
+                        writeParams({q: next, visible: PAGE_SIZE});
+                        if (!urlSync) setLocalQuery(next);
+                    }}
+                    placeholder="Search customizations"
+                    aria-label="Search customizations"
+                    className="rounded-full py-2 pl-9"
+                />
+            </div>
+        );
     }
 
     return (
         <PageDielineSection innerClassName="pb-24 pt-8 flex flex-col gap-6">
-            <div className="-mx-4 border-y border-dashed border-border md:-mx-8">
+            {/* Mobile: sticky search + filters + category chips */}
+            <div className="-mx-4 border-b border-dashed border-border bg-background px-4 md:-mx-8 md:px-8 lg:hidden sticky top-0 z-30">
+                <div className="flex items-center gap-2 py-3">
+                    {renderSearchField()}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="relative size-10 shrink-0 rounded-full"
+                        aria-label={
+                            activeFilterCount > 0
+                                ? `Filters, ${activeFilterCount} active`
+                                : 'Filters'
+                        }
+                        onClick={() => setFiltersOpen(true)}
+                    >
+                        <SlidersHorizontal className="size-5" />
+                        {activeFilterCount > 0 ? (
+                            <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                                {activeFilterCount > 9
+                                    ? '9+'
+                                    : activeFilterCount}
+                            </span>
+                        ) : null}
+                    </Button>
+                </div>
+                <nav
+                    className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-3"
+                    aria-label="Customization categories"
+                >
+                    {tabs.map((tab) => {
+                        const isActive = category === tab.value;
+                        return (
+                            <button
+                                key={tab.value}
+                                type="button"
+                                onClick={() => selectCategory(tab.value)}
+                                className={cn(
+                                    'shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                                    isActive
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'border-border bg-background text-foreground',
+                                )}
+                                aria-pressed={isActive}
+                            >
+                                {tab.label}{' '}
+                                <span
+                                    className={cn(
+                                        'tabular-nums',
+                                        isActive
+                                            ? 'text-background/80'
+                                            : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {countForTab(tab.value)}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </nav>
+            </div>
+
+            {/* Desktop: sticky underline tabs + search */}
+            <div className="-mx-4 hidden border-y border-dashed border-border bg-background md:-mx-8 lg:sticky lg:top-0 lg:z-30 lg:block">
                 <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-4 md:px-8">
                     <nav
                         ref={navRef}
@@ -365,7 +576,8 @@ export function CustomizationCatalogPanel({
                             aria-hidden
                             className={cn(
                                 'pointer-events-none absolute bottom-0 z-10 h-0.5 bg-primary',
-                                'transition-[left,width,opacity] duration-300 ease-out',
+                                indicatorTransitionEnabled &&
+                                    'transition-[left,width,opacity] duration-300 ease-out',
                                 indicator.ready ? 'opacity-100' : 'opacity-0',
                             )}
                             style={{
@@ -407,58 +619,86 @@ export function CustomizationCatalogPanel({
                         })}
                     </nav>
                     <div className="relative flex w-full min-w-[14rem] items-center py-2 sm:ml-auto sm:w-64">
-                        <Search
-                            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                            aria-hidden
-                        />
-                        <Input
-                            type="search"
-                            value={query}
-                            onChange={(event) => {
-                                const next = event.target.value;
-                                writeParams({q: next, visible: PAGE_SIZE});
-                                if (!urlSync) setLocalQuery(next);
-                            }}
-                            placeholder="Search customizations"
-                            aria-label="Search customizations"
-                            className="rounded-full py-2 pl-9"
-                        />
+                        {renderSearchField()}
                     </div>
                 </div>
             </div>
 
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-                <CustomizationCatalogFilters
-                    resultCount={filtered.length}
-                    totalCount={library.items.length}
-                    sharedFacets={library.facetCatalog.shared}
-                    categoryFacets={categoryFacets}
-                    selections={selections}
-                    countsByFacet={countsByFacet}
-                    onToggle={onToggle}
-                    onReset={onReset}
-                    showCategoryHint={category === ALL_CATEGORY}
-                />
+            <CustomizationCatalogFiltersDrawer
+                open={filtersOpen}
+                onOpenChange={setFiltersOpen}
+                resultCount={filtered.length}
+                category={category}
+                categoryOptions={tabs}
+                categoryCounts={Object.fromEntries(
+                    tabs.map((tab) => [tab.value, countForTab(tab.value)]),
+                )}
+                onSelectCategory={selectCategory}
+                sharedFacets={library.facetCatalog.shared}
+                categoryFacets={categoryFacets}
+                selections={selections}
+                countsByFacet={countsByFacet}
+                onToggle={onToggle}
+                onReset={onReset}
+                showCategoryHint={category === ALL_CATEGORY}
+            />
 
-                <div className="flex min-w-0 flex-1 flex-col gap-6">
-                    <CustomizationCatalogList items={shown} />
-                    <div className="flex flex-col items-center gap-2">
-                        {visible < filtered.length ? (
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                {isPending ? (
+                    <CustomizationCatalogFiltersSkeleton
+                        categoryGroupCount={
+                            category === ALL_CATEGORY ? 0 : 3
+                        }
+                    />
+                ) : (
+                    <CustomizationCatalogFilters
+                        resultCount={filtered.length}
+                        totalCount={library.items.length}
+                        sharedFacets={library.facetCatalog.shared}
+                        categoryFacets={categoryFacets}
+                        selections={selections}
+                        countsByFacet={countsByFacet}
+                        onToggle={onToggle}
+                        onReset={onReset}
+                        showCategoryHint={category === ALL_CATEGORY}
+                    />
+                )}
+
+                <div
+                    className="flex min-w-0 flex-1 flex-col gap-6"
+                    aria-busy={isPending || isAppending}
+                >
+                    {isPending && !isAppending && visible <= PAGE_SIZE ? (
+                        <CustomizationCatalogListSkeleton />
+                    ) : (
+                        <>
+                            <CustomizationCatalogList items={shown} />
+                            {isAppending ? (
+                                <CustomizationCatalogListSkeleton
+                                    count={appendCount}
+                                />
+                            ) : null}
+                        </>
+                    )}
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                        {canAutoReveal ? (
+                            <div
+                                ref={sentinelRef}
+                                className="h-1 w-full"
+                                aria-hidden
+                            />
+                        ) : null}
+                        {showLoadMore ? (
                             <Button
                                 type="button"
-                                variant="secondary"
-                                onClick={() => {
-                                    const next = visible + PAGE_SIZE;
-                                    writeParams({visible: next});
-                                    if (!urlSync) setLocalVisible(next);
-                                }}
+                                variant="link"
+                                onClick={revealNextBatch}
+                                className="gap-1 text-primary"
                             >
-                                View more
+                                Load more
+                                <ChevronDown className="size-4" aria-hidden />
                             </Button>
                         ) : null}
-                        <p className="text-sm text-muted-foreground">
-                            Showing {shown.length} of {filtered.length}
-                        </p>
                     </div>
                 </div>
             </div>

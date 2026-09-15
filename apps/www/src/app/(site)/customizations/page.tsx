@@ -10,7 +10,18 @@ export const metadata: Metadata = {
     title: 'Customizations',
 };
 
-export default async function CustomizationsIndexPage() {
+export default async function CustomizationsIndexPage({
+    searchParams,
+}: {
+    searchParams: Promise<{category?: string}>;
+}) {
     const library = await listCustomizations();
-    return <CustomizationCatalogView library={library} urlSync />;
+    const {category} = await searchParams;
+    return (
+        <CustomizationCatalogView
+            library={library}
+            urlSync
+            initialCategory={category ?? null}
+        />
+    );
 }
