@@ -183,10 +183,14 @@ const PROPERTY_VALUE_PROJ = /* groq */ `{
   }
 }`;
 
-/** Reference-role options for the public customization library (PROD-1288 facets). */
+/**
+ * Public customization library (PROD-1288 facets).
+ * Gate is `hasPage` (D55 / PROD-2482) — not deprecated `role == "reference"`.
+ * Configurator pickability is `configuratorRole` and is orthogonal to library membership.
+ */
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  role == "reference" &&
+  hasPage == true &&
   status == "active" &&
   defined(slug.current)
 ] | order(title asc) {
@@ -216,10 +220,10 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   }
 }`;
 
-/** Single library option by category + handle slugs (PROD-2456). */
+/** Single library option by category + handle slugs (PROD-2456). Same `hasPage` gate as the library list. */
 export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  role == "reference" &&
+  hasPage == true &&
   status == "active" &&
   slug.current == $handle &&
   type->category->slug.current == $category

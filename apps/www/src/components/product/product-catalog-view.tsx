@@ -9,11 +9,17 @@ import {
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
 
+export {
+    ProductCardSkeleton,
+    ProductCatalogGridSkeleton,
+} from '@/components/product/product-card-skeleton';
+
 const TILE_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:gap-8';
 
 const PRODUCT_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
+
 
 function toProductCardData(
     product: Product,

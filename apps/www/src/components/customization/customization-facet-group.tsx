@@ -10,6 +10,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@pakfactory/ui/components/collapsible';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import type {CustomizationFacetOption} from '@/lib/catalog/types';
@@ -153,5 +154,33 @@ export function CustomizationFacetGroup({
                 ) : null}
             </CollapsibleContent>
         </Collapsible>
+    );
+}
+
+type CustomizationFacetGroupSkeletonProps = {
+    /** Placeholder checkbox rows under the title. */
+    rowCount?: number;
+};
+
+/** Loading placeholder matching {@link CustomizationFacetGroup} rhythm. */
+export function CustomizationFacetGroupSkeleton({
+    rowCount = 4,
+}: CustomizationFacetGroupSkeletonProps) {
+    return (
+        <div aria-hidden className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className={cn(FACET_TRAILING_COL, 'ml-auto h-4')} />
+            </div>
+            <ul className="flex flex-col gap-2 pt-1">
+                {Array.from({length: rowCount}, (_, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                        <Skeleton className="size-4 shrink-0 rounded-sm" />
+                        <Skeleton className="h-4 min-w-0 flex-1" />
+                        <Skeleton className={cn(FACET_TRAILING_COL, 'h-4')} />
+                    </li>
+                ))}
+            </ul>
+        </div>
     );
 }

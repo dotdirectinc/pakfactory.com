@@ -2,6 +2,8 @@ import {Suspense} from 'react';
 
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {CustomizationCatalogListSkeleton} from '@/components/customization/customization-catalog-list';
+import {CustomizationCatalogFiltersSkeleton} from '@/components/customization/customization-catalog-filters';
 import {CustomizationCatalogPanel} from '@/components/customization/customization-catalog-panel';
 import type {CustomizationLibraryResult} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -63,8 +65,20 @@ export function CustomizationCatalogView({
             ) : null}
             <Suspense
                 fallback={
-                    <div className="mx-auto w-full max-w-7xl px-4 py-16 text-sm text-muted-foreground sm:px-6 lg:px-8">
-                        Loading customizations…
+                    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                            <CustomizationCatalogFiltersSkeleton
+                                categoryGroupCount={
+                                    initialCategory &&
+                                    initialCategory !== 'all'
+                                        ? 3
+                                        : 0
+                                }
+                            />
+                            <div className="min-w-0 flex-1">
+                                <CustomizationCatalogListSkeleton />
+                            </div>
+                        </div>
                     </div>
                 }
             >
