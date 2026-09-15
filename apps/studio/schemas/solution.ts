@@ -19,11 +19,30 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  *   internalTitle → title — `migrate:solution-titles` copied all 30 values and
  *     they match `title` exactly; the old field is unset and gone.
  *   relevantCapabilities → relevantCustomizations — the old field was empty on
- *     all 30 docs, so removal was deletion of nothing.
+ *     all 30 docs, so removal was deletion of nothing. The successor is itself
+ *     gone as of PROD-2519 below; the rename is kept on the record because
+ *     renaming first and removing second is the order that stays legible.
  *
- * `sections` (page-builder) is intentionally deferred until the shared section
- * inventory exists (PROD-2292) — same call as Bundle; no section types to allow
- * yet.
+ * `sections` is wired to SECTION_ALLOW.marketPage. (This block used to say the
+ * field was deferred "until the shared section inventory exists" — it exists,
+ * and 19 section types are live on this type in the deployed schema.)
+ *
+ * PROD-2519 (2026-09-15) — four curated catalogue fields removed and one
+ * renamed, all empty on every document in both datasets, so §4.3 had nothing to
+ * protect and there was no migration:
+ *   heroImage → featuredImage — a field is named for its role, never its render
+ *     slot (D33), and it is now the same name on Line, Style and Product.
+ *   packagingFormats · relevantCustomizations · relatedProducts ·
+ *     relatedSolutions — removed.
+ *
+ * 🔴 Two of those promised a fallback that could not run. Their descriptions
+ * said the real lines and products "derive from the products tagged to it", but
+ * `product.solutions` is populated on the 58 inspiration presets and 0 of the
+ * 252 standard products — nothing else references Solution at all. So the
+ * derivation would have seen a fifth of the catalogue. They were removed knowing
+ * that. Pointing a Solution at its products is solutionStyle's job (PROD-2520);
+ * tagging standard products to solutions is the open prerequisite for showing
+ * them at all.
  */
 
 const SOLUTION_TYPES = [
@@ -114,13 +133,14 @@ export const solution = defineType({
       description: 'One-line summary of this solution, for the solution card, listings and the nav.',
     }),
     taggedImageField({
-      name: 'heroImage',
-      title: 'Hero image',
+      name: 'featuredImage',
+      title: 'Featured image',
       type: 'image',
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.solution],
       options: { hotspot: true },
-      description: 'The solution page hero.',
+      description:
+        'The one image that represents this solution — used wherever it is shown: the page hero, cards, listings and nav.',
       fields: [
         defineField({
           name: 'alt',
@@ -154,49 +174,20 @@ export const solution = defineType({
     }),
 
     // ─── CATEGORIZATION (references out + curated lists) ──────────────────────
-    defineField({
-      name: 'packagingFormats',
-      title: 'Packaging formats',
-      type: 'array',
-      group: GROUPS.categorization,
-      description:
-        'Curated featuring, not a fact — the product lines to highlight for this solution. The lines that genuinely serve it derive from the products tagged to it.',
-      of: [{ type: 'reference', to: [{ type: 'productLine' }], options: { disableNew: true } }],
-    }),
-    defineField({
-      name: 'relevantCustomizations',
-      title: 'Relevant customizations',
-      type: 'array',
-      group: GROUPS.categorization,
-      description: 'Customization categories most relevant to this solution (e.g. Finishing, Printing).',
-      of: [
-        { type: 'reference', to: [{ type: 'customizationCategory' }], options: { disableNew: true } },
-      ],
-    }),
-    defineField({
-      name: 'relatedProducts',
-      title: 'Related products',
-      type: 'array',
-      group: GROUPS.categorization,
-      description: 'Curated override — featured products for this page. Empty derives from tagged products.',
-      of: [{ type: 'reference', to: [{ type: 'product' }] }],
-    }),
+    // The two curated lists that survive. The four that went — packagingFormats,
+    // relevantCustomizations, relatedProducts, relatedSolutions — could all be
+    // derived or were never wanted; these two cannot be, so an editor has to say.
     defineField({
       name: 'relatedCaseStudies',
       title: 'Related case studies',
       type: 'array',
       group: GROUPS.categorization,
       description: 'Curated override — empty falls back to the most recent 3.',
-      of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
+      // disableNew so curating a solution can't create a blank Case Study from
+      // inside this form. The reference fields that had it were removed; this one
+      // had been the odd one out.
+      of: [{ type: 'reference', to: [{ type: 'caseStudy' }], options: { disableNew: true } }],
       validation: (Rule) => Rule.max(6),
-    }),
-    defineField({
-      name: 'relatedSolutions',
-      title: 'Related solutions',
-      type: 'array',
-      group: GROUPS.categorization,
-      description: 'See-also — sibling solutions (Coffee ↔ Tea, Retail ↔ Wholesale).',
-      of: [{ type: 'reference', to: [{ type: 'solution' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
@@ -230,7 +221,7 @@ export const solution = defineType({
       title: 'title',
       solutionType: 'solutionType',
       hasPage: 'hasPage',
-      media: 'heroImage',
+      media: 'featuredImage',
     },
     prepare({ title, solutionType, hasPage, media }) {
       const axis = SOLUTION_TYPE_TITLES[solutionType] ?? 'No type set'
