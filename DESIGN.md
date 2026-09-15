@@ -126,7 +126,7 @@ From [`AGENTS.md`](AGENTS.md):
 
 ### Blog dieline gutters
 
-Mobile **outer 16px** (`px-4`) + **inner 16px** (`px-4`) = **32px** viewport → content via [`page-dieline-section`](apps/blog/src/components/layout/page-dieline-section.tsx). Do not set mobile outer to `px-8`. Flush borders need `px-0 md:px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
+Mobile **outer 16px** (`px-4`) + **inner 48px** (`px-12`) = **64px** viewport → content; desktop **outer 32px** (`md:px-8`) + **inner 64px** (`sm:px-16`) via [`page-dieline-section`](packages/ui/src/components/page-dieline-section.tsx) (blog keeps a synced fork). Do not set mobile outer to `px-8`. Flush borders need `px-0 sm:px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
 
 ### Composition
 
@@ -224,7 +224,7 @@ CTA language:      Get a quote / Talk to packaging experts
 > Add a primary `Button` labeled “Get a quote”. Use primary/forest styling from the design system. Do not add cart icons or checkout copy.
 
 **3. Dieline section**  
-> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer+inner 16px; no `px-8` outer on mobile.
+> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer 16 + inner 48; desktop outer 32 + inner 64; no `px-8` outer on mobile.
 
 **4. Form field group**  
 > Label + description in `gap-1`; group to control `gap-2`; between fields `gap-4`. Use `Input` from `@pakfactory/ui`. Focus via existing ring tokens.

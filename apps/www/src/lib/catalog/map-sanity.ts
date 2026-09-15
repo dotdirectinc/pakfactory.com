@@ -12,9 +12,11 @@ import type {
     CustomizationLibraryItem,
     CustomizationOption,
     Product,
+    ProductFaq,
     ProductKind,
     ProductLine,
     ProductLineRef,
+    ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
 
@@ -206,6 +208,29 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
           }
         : undefined;
 
+    const properties: ProductProperty[] = [];
+    for (const row of doc.properties ?? []) {
+        const label = row?.label?.trim();
+        if (!label) continue;
+        const value = (row.values ?? [])
+            .map((v) => v?.trim())
+            .filter((v): v is string => Boolean(v))
+            .join(', ');
+        properties.push({label, value: value || 'N/A'});
+    }
+
+    const faqs: ProductFaq[] = [];
+    for (const row of doc.faqs ?? []) {
+        const question = row?.question?.trim();
+        const answerPlain = row?.answerPlain?.trim();
+        if (!question || !answerPlain) continue;
+        faqs.push({question, answerPlain});
+    }
+
+    const relatedProducts = (doc.relatedProducts ?? [])
+        .map(mapSanityProduct)
+        .filter((item): item is Product => item != null);
+
     return {
         title: doc.title,
         slug,
@@ -221,9 +246,15 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
             ? {primarySolution: doc.primarySolution}
             : {}),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
+        ...(typeof doc.leadTimeDays === 'number'
+            ? {leadTimeDays: doc.leadTimeDays}
+            : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
             ? {dimensionRange}
             : {}),
+        ...(properties.length > 0 ? {properties} : {}),
+        ...(faqs.length > 0 ? {faqs} : {}),
+        ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
     };
 }
 
