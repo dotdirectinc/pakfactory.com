@@ -32,6 +32,7 @@
     "migrate:schema-review-d48": "node scripts/migrate-schema-review-d48.mjs",
     "migrate:unset-removed-deprecated": "node scripts/migrate-unset-removed-deprecated-fields.mjs",
     "migrate:split-customization-role": "node scripts/migrate-split-customization-role.mjs",
+    "migrate:product-tree-featured-image": "node scripts/migrate-product-tree-featured-image.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"

@@ -16,7 +16,8 @@
     "./social-platforms": "./src/social-platforms.ts",
     "./algolia/post-record": "./src/algolia/post-record.ts",
     "./stamp-published-at": "./src/stamp-published-at.ts",
-    "./fact-labels": "./src/fact-labels.ts"
+    "./fact-labels": "./src/fact-labels.ts",
+    "./dimension-inputs": "./src/dimension-inputs.ts"
   },
   "scripts": {
     "lint": "eslint src",
