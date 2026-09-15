@@ -331,8 +331,8 @@ export function BriefBuilder({
                     }
                     className={
                         showProducts
-                            ? 'rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background'
-                            : 'rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground'
+                            ? 'rounded-md bg-foreground px-4 py-2 text-xs font-medium text-background'
+                            : 'rounded-md border border-border bg-background px-4 py-2 text-xs font-medium text-foreground'
                     }
                 >
                     {showProducts ? 'On' : 'Off'}
@@ -477,7 +477,7 @@ export function BriefBuilder({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-8 gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        className="gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
                         disabled={leaving || locked}
                         onClick={requestLeave}
                     >

@@ -41,16 +41,13 @@ export function BookmarkIconButton({
                 className={cn(
                     'peer',
                     mediaUtilityButtonClass,
-                    pressed && 'bg-background text-primary',
                     className,
                 )}
                 onClick={onClick}
             >
                 <Icon
                     icon={Bookmark}
-                    className={cn(
-                        pressed ? 'fill-primary text-primary' : 'opacity-80',
-                    )}
+                    className={cn(pressed && 'fill-white text-white')}
                 />
             </Button>
             <span className={mediaUtilityTooltipClass(tooltipSide)}>

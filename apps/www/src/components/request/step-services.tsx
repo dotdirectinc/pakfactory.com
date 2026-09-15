@@ -49,7 +49,7 @@ export function StepServices({
                         aria-checked={servicesEnabled}
                         onClick={() => onToggleEnabled(!servicesEnabled)}
                         className={cn(
-                            'rounded-full px-4 py-2 text-xs font-medium',
+                            'rounded-md px-4 py-2 text-xs font-medium',
                             servicesEnabled
                                 ? 'bg-foreground text-background'
                                 : 'border border-border bg-background text-foreground',

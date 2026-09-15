@@ -24,7 +24,7 @@ export function NotSureToggle({
                 aria-checked={checked}
                 onClick={() => onCheckedChange(!checked)}
                 className={cn(
-                    'inline-flex w-fit cursor-pointer items-center rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                    'inline-flex w-fit cursor-pointer items-center rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                     checked
                         ? 'border-foreground bg-foreground text-background'
                         : 'border-border bg-background text-foreground hover:bg-muted',

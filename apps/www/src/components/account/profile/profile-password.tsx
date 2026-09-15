@@ -26,7 +26,6 @@ export function ProfilePasswordSection() {
                         type="submit"
                         variant="outline"
                         size="sm"
-                        className="rounded-full"
                     >
                         {ACCOUNT_COPY.resetPassword}
                     </Button>

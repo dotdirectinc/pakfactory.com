@@ -50,7 +50,7 @@ export function RequestAddProducts({
                         <Button
                             type="button"
                             variant="ghost"
-                            className="h-auto w-full justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-4 text-sm font-medium text-muted-foreground hover:bg-muted/30 has-[>svg]:px-4"
+                            className="h-auto w-full justify-center gap-2 border border-dashed border-border px-4 py-4 text-sm font-medium text-muted-foreground hover:bg-muted/30 has-[>svg]:px-4"
                         >
                             <Plus className="size-4" aria-hidden />
                             {REQUEST_COPY.addMoreProducts}

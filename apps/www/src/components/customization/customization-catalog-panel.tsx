@@ -493,7 +493,7 @@ export function CustomizationCatalogPanel({
                     }}
                     placeholder="Search customizations"
                     aria-label="Search customizations"
-                    className="rounded-full py-2 pl-9"
+                    className="rounded-md py-2 pl-9"
                 />
             </div>
         );
@@ -509,7 +509,7 @@ export function CustomizationCatalogPanel({
                         type="button"
                         variant="outline"
                         size="icon"
-                        className="relative size-10 shrink-0 rounded-full"
+                        className="relative size-10 shrink-0"
                         aria-label={
                             activeFilterCount > 0
                                 ? `Filters, ${activeFilterCount} active`
@@ -539,7 +539,7 @@ export function CustomizationCatalogPanel({
                                 type="button"
                                 onClick={() => selectCategory(tab.value)}
                                 className={cn(
-                                    'shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                                    'shrink-0 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                                     isActive
                                         ? 'border-foreground bg-foreground text-background'
                                         : 'border-border bg-background text-foreground',

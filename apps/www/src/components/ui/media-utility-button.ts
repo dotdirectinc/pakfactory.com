@@ -1,11 +1,11 @@
 import {cn} from '@pakfactory/ui/lib/utils';
 
-/** Frosted white circle + dark icon for bookmark / compare on catalog media. */
+/** Black 40% circle + white icon for bookmark / compare on catalog media. */
 export const mediaUtilityButtonClass = cn(
     'size-9 rounded-full border-0 shadow-none',
-    'bg-background/80 text-foreground/80 backdrop-blur-sm',
+    'bg-black/40 text-white',
     'transition-[color,background-color,opacity] duration-300 ease-in-out',
-    'hover:bg-background hover:text-foreground',
+    'hover:bg-black/50 hover:text-white',
 );
 
 export type MediaUtilityTooltipSide = 'top' | 'bottom';

@@ -212,7 +212,8 @@ export function SignUpForm({prefillEmail}: {prefillEmail?: string}) {
 
                 <Button
                     type="submit"
-                    className="h-11 w-full rounded-sm"
+                    size="lg"
+                    className="w-full"
                     disabled={!canSubmit || pending}
                 >
                     {SIGN_UP_COPY.signUp}

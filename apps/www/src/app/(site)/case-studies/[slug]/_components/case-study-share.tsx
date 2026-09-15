@@ -153,7 +153,7 @@ export function CaseStudyShare({
                 <div className="px-6">
                   <a
                     href={primaryHref ?? "/contact"}
-                    className="inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-4 py-2 text-base font-medium leading-6 text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
+                    className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-base font-medium leading-6 text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
                   >
                     {primaryText}
                   </a>
@@ -164,7 +164,7 @@ export function CaseStudyShare({
           {secondaryText && (
             <a
               href={secondaryHref ?? "/solutions"}
-              className="inline-flex h-11 w-full items-center justify-center rounded-full border border-border bg-background px-6 text-base font-medium leading-6 text-foreground shadow-xs transition-colors hover:bg-muted"
+              className="inline-flex h-11 w-full items-center justify-center rounded-md border border-border bg-background px-6 text-base font-medium leading-6 text-foreground shadow-xs transition-colors hover:bg-muted"
             >
               {secondaryText}
             </a>

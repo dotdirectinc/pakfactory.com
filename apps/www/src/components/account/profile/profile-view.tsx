@@ -37,7 +37,7 @@ export function ProfileView({profile}: ProfileViewProps) {
             <ProfilePasswordSection />
 
             <div>
-                <Button asChild variant="outline" className="rounded-full">
+                <Button asChild variant="outline">
                     <Link href={WWW_ROUTES.login}>{ACCOUNT_COPY.signOut}</Link>
                 </Button>
             </div>
