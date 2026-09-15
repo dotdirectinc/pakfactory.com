@@ -15,9 +15,9 @@
  * The label is picked from this list, and each entry carries a `title` and (for
  * numbers) a `unit`, feeding three surfaces from one source:
  *
- *   Studio dropdown   Caliper (in)     title + unit
+ *   Studio dropdown   Caliper (pt)     title + unit
  *   Column header     CALIPER          title
- *   Cell              0.012"           value + symbol (falls back to unit)
+ *   Cell              12pt             value + symbol (falls back to unit)
  *
  * Column order on the page comes from THIS list, never the array order (editors
  * drag rows; two values won't agree). The front end walks the list and looks
@@ -29,7 +29,27 @@
  *
  * Escape hatch (D41): if this grows past ~30 entries or production wants units
  * editable without a deploy, `label` becomes a reference to a small document type
- * carrying `title` + `unit`. At 6 entries that trigger is a long way off.
+ * carrying `title` + `unit`. At 8 entries that trigger is a long way off.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * CONTENT TEAM LABELS (Richard, 2026-09-15, PROD-2505)
+ *
+ * The content team's Material Properties workbook states the facts beside each
+ * selectable value. Where it overlaps this list it wins; labels it does not cover
+ * stay; labels only it has are added. The spec registry seeds the same codes.
+ *
+ *   caliper        unit in → pt: the workbook gives caliper as the point size
+ *                  (4pt … 28pt); thickness is its own label now
+ *   thickness      NEW, mm — paperboard caliper values and chipboard thickness
+ *   basisWeight    title "Basis weight" → "Nominal weight" (workbook: Nominal Weight (GSM))
+ *   fluteHeight    title "Flute height" → "Thickness", unit mm → in (B-Flute 1/8")
+ *   flutesPerFoot  NEW text fact — "47 ft ± 3 ft" is a range, not one number
+ *
+ * The workbook's inch thickness and GSM on paperboard are marked "for internal ref,
+ * not show", so they are not labels here (the registry keeps them internally).
+ * Changing units was safe: no Property Value on production (0/32) or development
+ * (0/34) carried any fact on 2026-09-15.
+ * ─────────────────────────────────────────────────────────────────────────────
  *
  * Numbers and text use separate lists so a numeric label can't land on a text
  * fact (and vice versa); units only exist on numbers.
@@ -79,25 +99,29 @@ export type FactLabel = {
 
 /** Numeric facts — `factNumber`. Units are rendered from this list, never typed. */
 export const NUMBER_FACT_LABELS: readonly FactLabel[] = [
-  // ✅ In the prototype. 12pt → 0.012" — the number IS the value (D41's test).
-  { value: 'caliper', title: 'Caliper', unit: 'in', symbol: '"' },
+  // ✅ In the prototype. The point size — `12pt` → 12 (content team workbook, 2026-09-15).
+  { value: 'caliper', title: 'Caliper', unit: 'pt' },
+  // Content team workbook: the measured thickness beside a caliper or chipboard value.
+  { value: 'thickness', title: 'Thickness', unit: 'mm' },
   // ✅ In the prototype. Per-pairing, which is why the value must be per-pairing
   // too — see the header block. Cell reads `250gsm`, hugging.
-  { value: 'basisWeight', title: 'Basis weight', unit: 'gsm' },
-  // From D41's own worked examples: geometry / process ceilings, which are
-  // intrinsic to the value and so identical across every Option that offers it.
-  { value: 'fluteHeight', title: 'Flute height', unit: 'mm' },
+  { value: 'basisWeight', title: 'Nominal weight', unit: 'gsm' },
+  // From D41's own worked examples: geometry / process ceilings, intrinsic to the value.
+  // Content team workbook: a flute grade's thickness, in inches (B-Flute 1/8" → 0.125).
+  { value: 'fluteHeight', title: 'Thickness', unit: 'in', symbol: '"' },
   { value: 'filmThickness', title: 'Film thickness', unit: 'µm' },
   { value: 'maxColors', title: 'Max colors' }, // unitless — bare number
 ] as const
 
-/** Text facts — `factText`. No unit. */
+/** Text facts — `factText`. No unit: the text carries its own ("47 ft ± 3 ft"). */
 export const TEXT_FACT_LABELS: readonly FactLabel[] = [
   // ✅ In the prototype: "Commonly used for: light folding cartons".
   { value: 'commonlyUsedFor', title: 'Commonly used for' },
+  // Content team workbook: flutes per linear foot is a tolerance range, so it is text.
+  { value: 'flutesPerFoot', title: 'Flutes per linear foot' },
 ] as const
 
-/** Studio dropdown options: `Caliper (in)`, `Max colors`, `Commonly used for`. */
+/** Studio dropdown options: `Caliper (pt)`, `Max colors`, `Commonly used for`. */
 export function factLabelOptions(labels: readonly FactLabel[]) {
   return labels.map((l) => ({
     title: l.unit ? `${l.title} (${l.unit})` : l.title,
@@ -106,7 +130,7 @@ export function factLabelOptions(labels: readonly FactLabel[]) {
 }
 
 /**
- * Cell rendering: `0.012"` · `250gsm` · `4`. Number and unit HUG — every case in
+ * Cell rendering: `12pt` · `0.125"` · `250gsm` · `4`. Number and unit HUG — every case in
  * the prototype does, which is why D41 dropped the `tight` flag it had drafted.
  */
 export function formatFactValue(value: number, label?: FactLabel) {
