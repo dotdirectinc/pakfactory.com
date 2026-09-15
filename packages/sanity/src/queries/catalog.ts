@@ -94,6 +94,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   status,
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
+  leadTimeDays,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
   media[]{
@@ -110,7 +111,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
 
 /**
  * Card/list projection — no availableCustomizations tree (PROD-2456).
- * PDP still uses {@link CATALOG_PRODUCT_FIELDS}.
+ * PDP still uses {@link CATALOG_PRODUCT_FIELDS} (+ PDP extras on by-slug).
  */
 export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   _id,
@@ -121,12 +122,29 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   status,
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
+  leadTimeDays,
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
   "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
+`;
+
+/** PDP-only extras: specs properties, FAQs, curated related (PROD-1913). */
+export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
+  ${CATALOG_PRODUCT_FIELDS},
+  "properties": properties[defined(property)]{
+    "label": property->title,
+    "values": values[]->title
+  },
+  "faqs": faqs[]->{
+    question,
+    "answerPlain": pt::text(answer)
+  },
+  "relatedProducts": relatedProducts[]->{
+    ${CATALOG_PRODUCT_CARD_FIELDS}
+  }
 `;
 
 /** Active (or unset status) products for catalog index / params. */
@@ -143,7 +161,7 @@ export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   slug.current == $slug &&
   (status == "active" || !defined(status) || status == "coming-soon")
 ][0]{
-  ${CATALOG_PRODUCT_FIELDS}
+  ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
@@ -306,6 +324,16 @@ export type CatalogStyleRefDoc = {
   cardImage?: unknown | null;
 };
 
+export type CatalogProductPropertyDoc = {
+  label?: string | null;
+  values?: (string | null)[] | null;
+};
+
+export type CatalogProductFaqDoc = {
+  question?: string | null;
+  answerPlain?: string | null;
+};
+
 export type CatalogProductDoc = {
   _id: string;
   title: string;
@@ -315,6 +343,7 @@ export type CatalogProductDoc = {
   status?: string | null;
   description?: string | null;
   moq?: number | null;
+  leadTimeDays?: number | null;
   dimensionRange?: {
     lengthMin?: number | null;
     lengthMax?: number | null;
@@ -328,6 +357,10 @@ export type CatalogProductDoc = {
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
   availableCustomizations?: CatalogAvailableCustomizationDoc[] | null;
+  /** PDP by-slug only (PROD-1913). */
+  properties?: CatalogProductPropertyDoc[] | null;
+  faqs?: CatalogProductFaqDoc[] | null;
+  relatedProducts?: CatalogProductDoc[] | null;
 };
 
 export type CatalogProductLineDoc = {

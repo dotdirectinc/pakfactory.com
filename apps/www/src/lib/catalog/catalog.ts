@@ -83,13 +83,35 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
-        return doc ? mapSanityProduct(doc) : null;
+        if (!doc) return null;
+        const mapped = mapSanityProduct(doc);
+        if (!mapped) return null;
+        return enrichRelatedProducts(mapped);
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity product by slug failed:', err);
         }
         return null;
     }
+}
+
+const RELATED_PRODUCTS_CAP = 6;
+
+/** Curated related first; else same product-line siblings (PROD-1913). */
+async function enrichRelatedProducts(product: Product): Promise<Product> {
+    if (product.relatedProducts && product.relatedProducts.length > 0) {
+        return product;
+    }
+    const lineSlug = product.productLine.slug;
+    const siblings = (await listProducts())
+        .filter(
+            (item) =>
+                item.slug !== product.slug &&
+                item.productLine.slug === lineSlug,
+        )
+        .slice(0, RELATED_PRODUCTS_CAP);
+    if (siblings.length === 0) return product;
+    return {...product, relatedProducts: siblings};
 }
 
 async function fetchSanityCustomizationLibrary(): Promise<

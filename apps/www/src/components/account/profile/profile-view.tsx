@@ -22,7 +22,7 @@ export function ProfileView({profile}: ProfileViewProps) {
             <PageHeadingSection
                 variant="compact"
                 title={ACCOUNT_COPY.profileTitle}
-                className="px-0 sm:px-0 md:px-0"
+                className="px-0 sm:px-0"
                 innerClassName="border-x-0 px-0 pb-0 pt-0 md:px-0"
             />
 

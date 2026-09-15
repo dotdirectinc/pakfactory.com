@@ -53,6 +53,22 @@ export type ProductDimensionRange = {
     depthMax?: number;
 };
 
+export type ProductProperty = {
+    label: string;
+    value: string;
+};
+
+export type ProductFaq = {
+    question: string;
+    answerPlain: string;
+};
+
+export type ProductTestimonial = {
+    quote: string;
+    attributionName?: string;
+    attributionRole?: string;
+};
+
 export type Product = {
     title: string;
     slug: string;
@@ -65,7 +81,14 @@ export type Product = {
     availableCustomizations: CustomizationOption[];
     primarySolution?: string;
     moq?: number;
+    leadTimeDays?: number;
     dimensionRange?: ProductDimensionRange;
+    /** Spec rows from Sanity properties (PDP). */
+    properties?: ProductProperty[];
+    faqs?: ProductFaq[];
+    relatedProducts?: Product[];
+    /** Props-ready; empty until testimonial docs land (PROD-2293). */
+    testimonials?: ProductTestimonial[];
 };
 
 export type ProductLine = {
