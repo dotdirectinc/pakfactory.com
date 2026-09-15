@@ -151,7 +151,15 @@ jobs:
           EOF
 
       # ── Sync production → development ──────────────────────────────────────
+      # Pause switch. Set the repository variable SANITY_DEV_SYNC_PAUSED to `true`
+      # (Settings → Secrets and variables → Actions → Variables) to skip ONLY this
+      # step while development holds test data. The production export and the
+      # Drive backup above keep running. Unset, or any other value, syncs as before.
+      #
+      # Resuming does not merge: `import --replace` overwrites every development
+      # document whose _id also exists in production, and deletes nothing.
       - name: Sync production → development
+        if: vars.SANITY_DEV_SYNC_PAUSED != 'true'
         env:
           SANITY_AUTH_TOKEN: ${{ secrets.SANITY_WRITE_TOKEN }}
         run: |
@@ -159,6 +167,12 @@ jobs:
             --replace \
             -p 8293wrxp
           echo "✅ Development dataset updated from production backup."
+
+      # A skipped step still leaves the run green. Say so where people look.
+      - name: Development sync paused
+        if: vars.SANITY_DEV_SYNC_PAUSED == 'true'
+        run: |
+          echo "::warning title=Development sync paused::SANITY_DEV_SYNC_PAUSED=true — production was backed up, development was NOT refreshed."
 
       # ── Cleanup temp files ─────────────────────────────────────────────────
       - name: Cleanup

@@ -2,6 +2,7 @@ import { defineField, defineType } from 'sanity'
 import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
+import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -23,7 +24,23 @@ export const customizationOption = defineType({
       type: 'string',
       group: 'content',
       description: 'The customization option name shown to customers (e.g. "Matte Lamination").',
-      validation: (Rule) => Rule.required(),
+      // `uniqueTaxonomyTitle` was missing here while Category and Type both had it
+      // (PROD-2462). Same type only, case- and punctuation-insensitive.
+      //
+      // Verified safe before adding, not assumed: all 126 titles reduce to 126
+      // DISTINCT comparison keys, so no existing document becomes unsaveable. The
+      // near-misses are legitimately different things and normalise apart — "Gloss"
+      // the customer-facing finish vs "Gloss Lamination" the process that achieves
+      // it, "Blind Embossing" vs "Blind Embossing & Debossing", "Spot UV" vs
+      // "Spot UV / Spot Gloss".
+      //
+      // The four titles that DO collide across types — Digital Printing, Gloss,
+      // Matte, Soft Touch, each shared with a customizationType or propertyValue —
+      // are untouched by this, because the rule scopes to `_type == $type`. That is
+      // deliberate: a Property Value named Gloss and an Option named Gloss are two
+      // terms in two lists, the same reasoning that scopes `propertyValue` titles to
+      // their parent Property.
+      validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     // A configurator swatch cannot carry "High-Impact Polystyrene (HIPS) Blister
     // Plastic", but Title has to stay unambiguous — the content team uses it to
@@ -608,26 +625,63 @@ export const customizationOption = defineType({
     })),
   ],
 
+  // PROD-2462. This block read three fields deleted in PROD-2250 — `category`,
+  // `appliesTo` and `except`. A deleted field reads as undefined, and the old code
+  // turned "no targets" into the words "applies to all", so EVERY option claimed it
+  // applied to everything. The truth is the opposite: 118 of the 120 configurable
+  // options have no availability authored, which by that field's own description
+  // means offered NOWHERE. It was wrong on 33 documents when filed and on 126 after
+  // the Notion import.
+  //
+  // `category` is not restored — it was retired because `type->category` is the one
+  // stored path (PROD-2250), and a preview is not a reason to store a fact twice.
+  // The Type alone is enough to place a row.
   preview: {
     select: {
       title: 'title',
+      shortName: 'shortName',
       status: 'status',
-      category: 'category.title',
       type: 'type.title',
       media: 'media.0',
-      appliesTo: 'appliesTo',
-      except: 'except',
+      configuratorRole: 'configuratorRole',
+      availableOnProducts: 'availableOnProducts',
+      exceptProducts: 'exceptProducts',
+      hasPage: 'hasPage',
     },
-    prepare({ title, status, category, type, media, appliesTo, except }) {
-      // Answer "what does this apply to?" in the list without opening every ref.
-      const n = Array.isArray(appliesTo) ? appliesTo.length : 0
-      const exceptN = Array.isArray(except) ? except.length : 0
-      const scope = n === 0 ? 'all' : `${n} target${n === 1 ? '' : 's'}`
-      const applies = `applies to ${scope}${exceptN ? ` · except ${exceptN}` : ''}`
-      const base = [category, type].filter(Boolean).join(' → ')
-      const subtitle = base ? `${base} — ${applies}` : applies
+    prepare({
+      title,
+      shortName,
+      status,
+      type,
+      media,
+      configuratorRole,
+      availableOnProducts,
+      exceptProducts,
+      hasPage,
+    }) {
+      const avail = Array.isArray(availableOnProducts) ? availableOnProducts.length : 0
+      const exceptN = Array.isArray(exceptProducts) ? exceptProducts.length : 0
+
+      // A reference option is never picked in the configurator, so its empty
+      // availability is CORRECT and must not read as a gap — that is the distinction
+      // D47 introduced `role` to make, and flagging it here would rebuild the
+      // warning editors had learned to ignore.
+      const scope =
+        configuratorRole === 'reference'
+          ? 'reference'
+          : avail === 0
+            ? '⚠ offered nowhere'
+            : `${avail} target${avail === 1 ? '' : 's'}${exceptN ? ` · except ${exceptN}` : ''}`
+
+      const parts = [type, scope, hasPage ? 'has page' : null].filter(Boolean)
+      const subtitle = parts.join(' · ')
+
       return {
-        title,
+        // The full Title, not `shortName` — this is the editors' list, and the Title
+        // is the name written to keep them apart. A short name is appended only when
+        // it is set and actually differs, so an editor can sanity-check the customer
+        // label without it competing with the real name. Set on 0 of 126 today.
+        title: shortName && shortName !== title ? `${title}  ·  ${shortName}` : title,
         subtitle: status === 'active' ? subtitle : `[${status?.toUpperCase()}] ${subtitle}`,
         media,
       }
