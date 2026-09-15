@@ -203,14 +203,12 @@ export function AddressPickerBlock({
                         <Button
                             type="button"
                             variant="outline"
-                            className="rounded-sm"
                             onClick={() => setPickerOpen(false)}
                         >
                             {REQUEST_COPY.shippingAddressCancel}
                         </Button>
                         <Button
                             type="button"
-                            className="rounded-sm"
                             disabled={!hasShippingLocation(editDraft)}
                             onClick={saveAddress}
                         >

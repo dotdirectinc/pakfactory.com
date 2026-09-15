@@ -80,7 +80,8 @@ export function LoginGoogleButton({label, next}: LoginGoogleButtonProps) {
             <Button
                 type="button"
                 variant="outline"
-                className="h-11 w-full rounded-sm"
+                size="lg"
+                className="w-full"
                 onClick={onClick}
                 disabled={pending}
             >

@@ -147,7 +147,7 @@ export function SiteFooter({
             Let&apos;s collaborate and craft <br /> your vision
           </h2>
           <Button
-            className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             asChild
           >
             <a href={contactHref} {...externalLinkAttributes(contactHref)}>

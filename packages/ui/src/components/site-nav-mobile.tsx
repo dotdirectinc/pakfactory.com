@@ -105,7 +105,7 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
                   </Link>
                 </Button>
               ) : null}
-              <Button className="w-full rounded-full" asChild>
+              <Button size="lg" className="w-full" asChild>
                 <Link href={cta.href} onClick={close}>
                   {cta.label}
                 </Link>

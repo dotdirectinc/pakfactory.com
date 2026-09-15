@@ -113,7 +113,7 @@ export default function ProductList({
                             <Button
                                 variant="outline"
                                 size="lg"
-                                className="rounded-full border-emerald-800 bg-transparent text-emerald-900 shadow-none hover:bg-emerald-950/5 dark:border-emerald-600 dark:text-emerald-100 dark:hover:bg-emerald-950/20"
+                                className="border-emerald-800 bg-transparent text-emerald-900 shadow-none hover:bg-emerald-950/5 dark:border-emerald-600 dark:text-emerald-100 dark:hover:bg-emerald-950/20"
                                 asChild
                             >
                                 <Link href={cta.href}>{cta.label}</Link>

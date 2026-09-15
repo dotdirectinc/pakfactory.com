@@ -37,14 +37,12 @@ export function ProfileFormDialog({
                     <Button
                         type="button"
                         variant="outline"
-                        className="rounded-sm"
                         onClick={() => onOpenChange(false)}
                     >
                         {ACCOUNT_COPY.cancel}
                     </Button>
                     <Button
                         type="button"
-                        className="rounded-sm"
                         onClick={() => {
                             onSave();
                             onOpenChange(false);

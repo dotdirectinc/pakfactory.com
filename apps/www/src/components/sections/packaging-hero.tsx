@@ -47,7 +47,7 @@ export default function PackagingHero({
                 <Button
                   asChild
                   size="lg"
-                  className="rounded-full border-0 bg-[#C7F0A9] px-10 text-emerald-950 shadow-none hover:bg-[#bce79d] dark:bg-[#C7F0A9] dark:text-emerald-950 dark:hover:bg-[#bce79d]"
+                  className="border-0 bg-[#C7F0A9] px-10 text-emerald-950 shadow-none hover:bg-[#bce79d] dark:bg-[#C7F0A9] dark:text-emerald-950 dark:hover:bg-[#bce79d]"
                 >
                   <Link href={primaryCta.href}>{primaryCta.label}</Link>
                 </Button>

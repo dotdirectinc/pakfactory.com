@@ -102,7 +102,7 @@ function TagDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           <span className="flex items-center gap-1.5">
             {label}
@@ -331,7 +331,7 @@ export function CaseStudyListingGrid({
               <SheetTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground shadow-xs lg:hidden"
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground shadow-xs lg:hidden"
                 >
                   <SlidersHorizontal className="size-4" strokeWidth={1.75} />
                   Filter
@@ -378,14 +378,14 @@ export function CaseStudyListingGrid({
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-border bg-background text-base font-medium text-foreground transition-colors hover:bg-muted"
+                    className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-border bg-background text-base font-medium text-foreground transition-colors hover:bg-muted"
                   >
                     Clear
                   </button>
                   <SheetClose asChild>
                     <button
                       type="button"
-                      className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-primary text-base font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
+                      className="inline-flex h-11 flex-1 items-center justify-center rounded-md bg-primary text-base font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
                     >
                       Done
                     </button>
@@ -408,7 +408,7 @@ export function CaseStudyListingGrid({
                   setQuery(e.target.value);
                   goToPage(1);
                 }}
-                className="h-10 rounded-full border border-border bg-background pl-9 text-sm"
+                className="h-10 rounded-md border border-border bg-background pl-9 text-sm"
               />
             </div>
           </div>

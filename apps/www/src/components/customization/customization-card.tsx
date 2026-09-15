@@ -8,7 +8,6 @@ import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
 import {Icon} from '@/components/ui/icon';
 import {IconActionRow} from '@/components/ui/icon-action-row';
 import {MediaCardFrame} from '@/components/ui/media-card-frame';
-import {MediaCardGallery} from '@/components/ui/media-card-gallery';
 import {SanityImage} from '@/components/ui/sanity-image';
 import {stubBookmarkAction, stubCompareAction} from '@/lib/catalog-card-actions';
 import type {CustomizationLibraryItem} from '@/lib/catalog/types';
@@ -54,6 +53,10 @@ function resolveGallery(item: CustomizationCardData) {
     return [];
 }
 
+/**
+ * **Transactional card** — customization catalog tile (category eyebrow, bookmark / compare).
+ * Composes {@link MediaCardFrame}.
+ */
 export function CustomizationCard({item}: CustomizationCardProps) {
     const href = customizationCategoryHref(item.categoryValue, item.slug);
     const eyebrow = (item.categoryLabel ?? item.categoryValue).toUpperCase();
@@ -74,35 +77,32 @@ export function CustomizationCard({item}: CustomizationCardProps) {
         </span>
     );
 
-    const media =
-        gallery.length > 0 ? (
-            <MediaCardGallery
-                images={gallery}
-                link={
-                    <Link
-                        href={href}
-                        className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                    />
-                }
-                renderSlide={(image) => (
-                    <SanityImage
-                        src={image.src}
-                        alt={image.alt ?? item.title}
-                        applyWatermark={false}
-                        fill
-                        sizes="(max-width: 640px) 96px, (max-width: 1280px) 33vw, 25vw"
-                        className="object-cover"
-                    />
-                )}
-            />
-        ) : (
+    const hero = gallery[0];
+    const media = hero ? (
+        <div className="absolute inset-0">
             <Link
                 href={href}
                 className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-            >
-                {placeholder}
-            </Link>
-        );
+            />
+            <div className="pointer-events-none absolute inset-0 z-0">
+                <SanityImage
+                    src={hero.src}
+                    alt={hero.alt ?? item.title}
+                    applyWatermark={false}
+                    fill
+                    sizes="(max-width: 640px) 96px, (max-width: 1280px) 33vw, 25vw"
+                    className="object-cover"
+                />
+            </div>
+        </div>
+    ) : (
+        <Link
+            href={href}
+            className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+        >
+            {placeholder}
+        </Link>
+    );
 
     return (
         <MediaCardFrame

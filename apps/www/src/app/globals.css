@@ -5,7 +5,7 @@
 
 /*
   www-only overlay: 2026 --brand-* / --support-* aliases, the 2026 primary
-  green override, and the default Button (primary green pill, white label).
+  green override, and the default Button (primary green, white label).
   Do not copy this block into apps/blog or case-study CSS.
   If blog and case studies need the same tokens, move them into
   packages/ui/src/globals.css (ADR-006) so all apps inherit them.
@@ -87,13 +87,13 @@
 }
 
 /*
-  www-only: default Button (data-variant=default) — primary green pill, white
-  label (was forest + lemongrass).
+  www-only: default Button (data-variant=default) — primary green, white label
+  (was forest + lemongrass). Button uses --radius-control (6px); Card stays on rounded-xl.
   Do not copy into blog. If all apps need this, move into packages/ui (ADR-006).
-  Unlayered so it wins over the ui primitive’s bg-primary / rounded-md utilities.
+  Unlayered so it wins over the ui primitive’s bg-primary utilities.
+  Do not force pills here — radius comes from Button / --radius-control.
 */
 [data-slot="button"][data-variant="default"] {
-  border-radius: 9999px;
   background-color: var(--primary);
   color: var(--primary-foreground);
 }

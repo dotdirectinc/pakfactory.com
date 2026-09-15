@@ -79,6 +79,17 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 
 - Use cards for **interactive or content containers** (lists, pillars, forms), not decorative chrome around every section.
 - If removing border/shadow/background/radius does not hurt understanding, it should not be a card.
+- `@pakfactory/ui` **`Card`** remains the form / metrics / content surface primitive (header, title, description, footer).
+
+**www catalog tiles** use two named types — prefer these names in design and engineering talk:
+
+| Type | Job | Shared core | Includes | Excludes |
+| --- | --- | --- | --- | --- |
+| **General card** | Discovery / navigation | `MediaTileCard` (via `CatalogCard`) | Centered title, optional description, text CTA (“See all”), whole-card settle scale, brand mark on media hover | Bookmark / compare utilities, SKU eyebrow, left-aligned product meta |
+| **Transactional card** | Catalog item with utilities | `MediaCardFrame` | Media settle-zoom, brand mark, bookmark / compare overlays, eyebrow (SKU or category), left-aligned title | Centered blurb + “See all” CTA |
+
+- Feature tiles compose the cores: **ProductCard** / **CustomizationCard** → transactional; product lines / styles / formats → general (`CatalogCard`).
+- Settle scale is shared (`PRODUCT_MEDIA_SCALE` 0.98 → 1.0): general cards settle the **whole tile**; transactional cards settle **media only**. Do not invent a second scale or grow past 1.
 
 ### Focus & interaction
 
@@ -88,7 +99,9 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 
 ### Radius
 
-- Base radius: `--radius` (see CSS; Figma-aligned). Use `--radius-sm` … `--radius-xl` derived scales — do not invent one-off radii.
+- Box / card radius: `--radius` (14px, Figma rounded-box). `Card` uses `rounded-xl`.
+- Buttons: `--radius-control` (**6px**) — between Tailwind `xs` (2px) and our `sm` (~10px). Do not invent one-off radii on call sites.
+- Use `--radius-sm` … `--radius-xl` for elevated surfaces. Keep `rounded-full` for true circles only (avatars, radios, switches, badges). Never force pills on Buttons.
 
 ---
 
@@ -143,7 +156,7 @@ Primitives may use CSS `border` via shadcn patterns — **do not** mandate Verce
 | `--motion-slow` (500ms) | Text entrances |
 | `--motion-reveal` (700ms) | Section reveals / hero |
 
-**Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.92`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
+**Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.98`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
 
 **Collapsible / accordion:** open/close height slide via `animate-collapsible-down` / `animate-collapsible-up` in [`packages/ui/src/globals.css`](packages/ui/src/globals.css) (`--motion-base`, 0.3s ease-out). Chevron rotates `180deg` with `duration-300 ease-out`; skip transform transition under `motion-reduce`. Apply classes on `CollapsibleContent` at the call site (`overflow-hidden` + data-state animations); do not invent bespoke height transitions.
 
@@ -192,7 +205,7 @@ Primary CTA:       --primary (#2b5f2d in CSS) + --primary-foreground
 Muted:             --muted / --muted-foreground
 Cream band:        --brand-cream
 Border:            --border
-Radius:            --radius (+ sm/md/lg/xl)
+Radius:            --radius 14px cards; --radius-control 6px buttons; Card rounded-xl
 Layout max:        --layout-max (1280 / 1440@1600+)
 Spacing:           8pt grid (--spacing-grid-unit)
 Shadows:           --shadow-* / --shadow-primary-*

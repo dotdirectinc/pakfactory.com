@@ -10,7 +10,7 @@ export type CatalogCardProps = Omit<MediaTileCardProps, 'ctaLabel'> & {
 };
 
 /**
- * Catalog navigation tile for lines, styles, formats, and similar entries.
+ * **General card** — catalog navigation tile for lines, styles, formats, and similar entries.
  * Composes {@link MediaTileCard}; keep domain mapping at the call site.
  */
 export function CatalogCard({

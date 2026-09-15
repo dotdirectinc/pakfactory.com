@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 
 type MediaCardFrameProps = {
@@ -19,6 +20,11 @@ type MediaCardFrameProps = {
     metaClassName?: string;
 };
 
+/**
+ * **Transactional card** frame — media + meta layout with optional bookmark / compare
+ * utilities and brand-mark affordance. Product and customization tiles compose this.
+ * Media uses settle-zoom (`PRODUCT_MEDIA_SCALE`); utilities hover-reveal on desktop.
+ */
 export function MediaCardFrame({
     media,
     bookmark,
@@ -37,6 +43,21 @@ export function MediaCardFrame({
     );
 
     const hasUtilities = Boolean(bookmark || mediaActions);
+    const hoverReveal = cn(
+        'sm:opacity-0 sm:transition-opacity sm:duration-[var(--motion-fast)] sm:ease-out',
+        'sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
+        'motion-reduce:sm:opacity-100',
+        bookmarkPressed && 'sm:opacity-100',
+    );
+    const markReveal = cn(
+        'sm:translate-x-[-5px] sm:translate-y-[5px] sm:opacity-0',
+        'sm:transition-[opacity,translate] sm:duration-[var(--motion-slow)] sm:ease-in-out',
+        'sm:group-hover:translate-x-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100',
+        'sm:group-focus-within:translate-x-0 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100',
+        'motion-reduce:sm:translate-x-0 motion-reduce:sm:translate-y-0 motion-reduce:sm:opacity-100 motion-reduce:sm:transition-none',
+        bookmarkPressed &&
+            'sm:translate-x-0 sm:translate-y-0 sm:opacity-100',
+    );
 
     return (
         <div
@@ -58,17 +79,25 @@ export function MediaCardFrame({
                     )}
                 >
                     {mediaBody}
-                    {/* Desktop wash on hover so bottom utilities / scrubber stay legible */}
+                    {/* Desktop wash on hover so mark / utilities stay legible */}
                     <div
                         aria-hidden
                         className={cn(
-                            'pointer-events-none absolute inset-x-0 bottom-0 hidden h-1/3 bg-linear-to-t from-black/10 to-transparent sm:block',
-                            'sm:opacity-0 sm:transition-opacity sm:duration-150',
-                            'sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
-                            'motion-reduce:sm:opacity-100',
-                            bookmarkPressed && 'sm:opacity-100',
+                            'pointer-events-none absolute inset-0 hidden bg-black/2 sm:block',
+                            hoverReveal,
                         )}
                     />
+                </div>
+                {/* Detail affordance: brand mark eases in with overlay */}
+                <div
+                    aria-hidden
+                    className={cn(
+                        'pointer-events-none absolute z-30 hidden text-black/5 sm:block',
+                        'sm:right-3 sm:top-3',
+                        markReveal,
+                    )}
+                >
+                    <PakFactoryMarkIcon size={28} className="-rotate-15" />
                 </div>
                 {hasUtilities ? (
                     <div
@@ -76,10 +105,7 @@ export function MediaCardFrame({
                             // Desktop only: bottom-right cluster, hover reveal
                             'absolute z-30 hidden items-center gap-2 sm:flex',
                             'sm:right-3 sm:bottom-3',
-                            'sm:opacity-0 sm:transition-opacity sm:duration-150',
-                            'sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
-                            'motion-reduce:sm:opacity-100',
-                            bookmarkPressed && 'sm:opacity-100',
+                            hoverReveal,
                         )}
                     >
                         {bookmark}

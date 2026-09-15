@@ -53,12 +53,12 @@ const HeroHeader = ({ navigationData, className }: HeaderProps) => {
           className="grow max-md:hidden"
         />
 
-        <Button className="rounded-lg max-md:hidden" asChild>
+        <Button className="max-md:hidden" asChild>
           <a href="#">Login</a>
         </Button>
 
         <div className="flex gap-4 md:hidden">
-          <Button className="rounded-lg" asChild>
+          <Button asChild>
             <a href="#">Login</a>
           </Button>
 

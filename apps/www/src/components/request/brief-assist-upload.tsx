@@ -135,7 +135,7 @@ export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="h-9 gap-1.5 rounded-full px-4 text-xs shadow-none"
+                            className="gap-1.5 shadow-none"
                             onClick={() => inputRef.current?.click()}
                         >
                             <UploadCloud className="size-3.5" aria-hidden />
