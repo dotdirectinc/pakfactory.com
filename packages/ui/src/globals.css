@@ -8,6 +8,10 @@
     /* 1280px matches the POC / Figma inner block (1280 inside a 1440 artboard,
        80px gutters). See docs/pak-brand-token-migration.md §5. */
     --layout-max: 1280px;
+    /* Dieline gutters — outer = viewport → dashed edge; inner = dashed edge → content.
+       Mobile keeps content room (16+16); sm+ inner matches section py-20 (80px). */
+    --layout-gutter-outer: 1rem;
+    --layout-gutter-inner: 1rem;
     /* ── Pak brand palette (light) — neutral theme per approved blog-poc
        (warm cream → white migration, 2026-07-14, PROD-1947 design-token work).
        Previous warm values: bg #f4f1eb · secondary/muted/accent #ece8df ·
@@ -138,6 +142,20 @@
     --shadow-primary-2xl: 0 25px 50px -12px var(--opacity-primary-50);
 }
 
+@media (min-width: 640px) {
+    :root {
+        --layout-gutter-outer: 1.5rem;
+        /* Match section block padding sm:py-20 */
+        --layout-gutter-inner: 5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    :root {
+        --layout-gutter-outer: 2rem;
+    }
+}
+
 /* ── Wide-screen layout (from approved blog-poc) ─────────────────────────────
    On monitors 1600px and wider, expand the dieline content column from
    1280px to 1440px so the page doesn't sit in a sea of empty margin.
@@ -260,6 +278,10 @@
 
     /* Wider page shell than default Tailwind 7xl (80rem / 1280px) → 1400px at 16px root */
     --max-width-7xl: 87.5rem;
+
+    /* Dieline gutters → px-layout-gutter-outer / px-layout-gutter-inner / -mx-… */
+    --spacing-layout-gutter-outer: var(--layout-gutter-outer);
+    --spacing-layout-gutter-inner: var(--layout-gutter-inner);
 
     /* Explicit grid: p-grid-3, gap-grid-4, m-grid-2, etc. (multiples of --spacing-grid-unit) */
     --spacing-grid-0: 0;
