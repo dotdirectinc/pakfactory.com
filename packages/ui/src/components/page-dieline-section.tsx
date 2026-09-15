@@ -3,7 +3,7 @@ import { cn } from "@pakfactory/ui/lib/utils";
 
 /** Horizontal gutter outside the dashed dieline column (viewport → dieline edge). */
 export function pageDielineOuterClass(className?: string) {
-  return cn("w-full px-4 sm:px-6 md:px-8", className);
+  return cn("w-full px-layout-gutter-outer", className);
 }
 
 /**
@@ -12,7 +12,7 @@ export function pageDielineOuterClass(className?: string) {
  */
 export function pageFullBleedRowClass(className?: string) {
   return cn(
-    "relative -mx-4 w-[calc(100%+2rem)] max-w-none sm:-mx-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:w-[calc(100%+4rem)]",
+    "relative -mx-layout-gutter-outer w-[calc(100%+2*var(--layout-gutter-outer))] max-w-none",
     className,
   );
 }
@@ -22,18 +22,21 @@ export function pageFullBleedSectionContentClass(className?: string) {
   return pageDielineOuterClass(className);
 }
 
-/** Centered content column without dashed vertical guides; mobile outer 16 + inner 48 = 64px total. */
+/** Centered content column without dashed vertical guides; gutters via `--layout-gutter-inner`. */
 export function pageDielineContentClass(className?: string) {
-  return cn("mx-auto w-full max-w-[var(--layout-max)] px-12 sm:px-16", className);
+  return cn(
+    "mx-auto w-full max-w-[var(--layout-max)] px-layout-gutter-inner",
+    className,
+  );
 }
 
 /**
- * Centered column with dashed vertical guides; mobile outer 16 + inner 48 = 64px total including border.
- * Flush to the dieline: pass `px-0 sm:px-0` — bare `px-0` does not clear `sm:px-16`.
+ * Centered column with dashed vertical guides; gutters via `--layout-gutter-inner`.
+ * Flush to the dieline: pass `px-0` — twMerge clears `px-layout-gutter-inner`.
  */
 export function pageDielineInnerClass(className?: string) {
   return cn(
-    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-12 sm:px-16",
+    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-layout-gutter-inner",
     className,
   );
 }

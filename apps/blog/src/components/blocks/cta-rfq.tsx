@@ -46,7 +46,7 @@ export function CtaRfq({
         <section
             aria-labelledby="cta-rfq-heading"
             className={cn(
-                hasBorder && '-mx-12 px-12 sm:-mx-16 sm:px-16',
+                hasBorder && '-mx-layout-gutter-inner px-layout-gutter-inner',
                 borderTop && 'border-t border-dashed border-border',
                 borderBottom && 'border-b border-dashed border-border',
             )}
