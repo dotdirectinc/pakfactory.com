@@ -105,6 +105,8 @@ export type CustomizationLibraryItem = {
     categoryLabel?: string;
     imageUrl?: string | null;
     imageAlt?: string | null;
+    /** Full media list for card gallery (hero = images[0] / imageUrl). */
+    images?: {src: string; alt?: string}[];
     /** One-way from option.availableOnProducts → productLine. */
     productLines: ProductLineRef[];
     /** property.slug → propertyValue.slug[] */
@@ -129,13 +131,3 @@ export type CustomizationLibraryResult = {
 /** Stable facet id for Product Line (not a Sanity property). */
 export const CUSTOMIZATION_PRODUCT_LINE_FACET_ID = 'product-line';
 
-/** Match Sustainability property by slug (canonical) or title. */
-export function isSustainabilityProperty(
-    slug: string | null | undefined,
-    title?: string | null,
-): boolean {
-    const s = slug?.trim().toLowerCase() ?? '';
-    if (s === 'sustainability' || s.includes('sustainab')) return true;
-    const t = title?.trim().toLowerCase() ?? '';
-    return t === 'sustainability' || t.includes('sustainab');
-}
