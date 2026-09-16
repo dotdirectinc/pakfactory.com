@@ -1,6 +1,6 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageType } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
@@ -13,9 +13,34 @@ import { faqsField } from '../lib/faq-field'
  * Entities/Bundle.md. Public page at /bundles/{slug}.
  *
  * Deliberately omitted for launch (Entities/Bundle.md): no properties, no MOQ /
- * lead-time on the page (a customer opens each included product). The `sections`
- * (page-builder) field is deferred until the shared *Sections type lands (C5,
- * PROD-2321) — added then rather than coupling a bundle to the blog block types.
+ * lead-time on the page (a customer opens each included product). `sections` is
+ * wired to SECTION_ALLOW.productPage. (This block used to say the field was
+ * deferred "until the shared *Sections type lands" — it landed, and the field is
+ * live in the deployed schema.)
+ *
+ * No `canonicalUrl`, deliberately (Eric, 2026-09-15). A manual canonical earns its
+ * place where two URLs can structurally show the same content — Line, Style and
+ * Product have that, and solutionStyle has it because two collections can overlap.
+ * A bundle is one set at one flat URL whose slug is unique across bundles: there is
+ * no second path to the same page. One line to add if a duplicate ever appears.
+ *
+ * PROD-2521 (2026-09-15) — the type predates two naming decisions and was never
+ * swept, so it caught up while it still held ZERO documents and everything was
+ * free:
+ *   +h1, +shortName          — D52. `title` was doubling as the page heading.
+ *   +shortDescription        — D50. `description` was plain text doing the card
+ *     `description` → rich text   copy's job AND the page copy's job.
+ *   +featuredImage           — and `media` stops claiming its first image is the
+ *     hero. That positional rule came off Product in PROD-2516 for the reason it
+ *     comes off here: reordering a gallery is presentation, and it was silently
+ *     choosing which image represented the document.
+ *   includedProducts         — `note` dropped; the reference now FILTERS to
+ *     inspiration products, which the docs have always claimed and nothing
+ *     enforced. `quantity` stays: it is the fact that makes a bundle a bundle
+ *     rather than a list of references (1 box, 1 sleeve, 2 inserts).
+ *   sku                      — no longer required. It is issued by the product
+ *     data source, which has not shipped, so requiring it meant a bundle could not
+ *     be authored at all without inventing one.
  */
 export const bundle = defineType({
   name: 'bundle',
@@ -34,8 +59,27 @@ export const bundle = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The bundle name — the page H1 (e.g. "Candle Launch Kit").',
+      description: 'The canonical name — "Candle Launch Kit". Required, always presentable.',
       validation: (Rule) => Rule.required(),
+    }),
+    // One naming convention across the tree: Title is the canonical name, H1 is
+    // the page heading, Short name is the card and nav label. Both overrides fall
+    // back to Title, so an editor who leaves them alone gets the right string
+    // everywhere. Bundle predates this and was the last type without it.
+    defineField({
+      name: 'h1',
+      title: 'H1',
+      type: 'string',
+      group: 'content',
+      description: 'The heading on this page. Leave empty to use the Title.',
+    }),
+    defineField({
+      name: 'shortName',
+      title: 'Short name',
+      type: 'string',
+      group: 'content',
+      description:
+        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -65,19 +109,60 @@ export const bundle = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'shortDescription',
+      title: 'Short description',
+      type: 'text',
+      rows: 2,
+      group: 'content',
+      description: 'One-line summary for the bundle card, listings and the nav.',
+    }),
+    defineField({
       name: 'description',
       title: 'Description',
-      type: 'text',
+      type: 'array',
       group: 'content',
-      rows: 3,
-      description: 'Short intro shown on the bundle page and in cards.',
+      description:
+        'The full description of this bundle — what it is for and who it suits. Renders on the bundle page.',
+      of: [
+        {
+          type: 'block',
+          styles: [{ title: 'Normal', value: 'normal' }],
+          marks: {
+            decorators: [
+              { title: 'Strong', value: 'strong' },
+              { title: 'Emphasis', value: 'em' },
+            ],
+          },
+        },
+      ],
+    }),
+    taggedImageField({
+      name: 'featuredImage',
+      title: 'Featured image',
+      type: 'image',
+      group: 'content',
+      mediaTags: [MEDIA_TAG.product],
+      options: { hotspot: true },
+      description:
+        'The one image that represents this bundle — the page hero, cards, listings and the social fallback.',
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
     }),
     defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
       group: 'content',
-      description: 'Bundle images, in render order — first image = hero.',
+      // No positional rule here. `media` used to say "first image = hero", which
+      // let reordering a gallery change which image represented the bundle.
+      description:
+        'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
 
@@ -101,22 +186,26 @@ export const bundle = defineType({
               title: 'Product',
               type: 'reference',
               to: [{ type: 'product' }],
-              options: { disableNew: true },
-              description: 'An inspiration product included in the bundle.',
+              // The filter is the point. "Inspiration products only" has been in
+              // the handbook and in this schema's own prose since the type was
+              // designed, and nothing enforced it — the picker offered all 310.
+              // A bundle of a configurable product cannot be pre-configured,
+              // which is the whole promise of a bundle.
+              options: { disableNew: true, filter: 'kind == "inspiration"' },
+              description:
+                'An inspiration (preset) product included in the bundle. The picker shows only presets.',
               validation: (Rule) => Rule.required(),
             }),
+            // Kept when `note` went (Eric, 2026-09-15): quantity is the fact that
+            // makes a bundle a bundle rather than a list of references — a kit is
+            // 1 box, 1 sleeve, 2 inserts. Cheap to keep now at 0 documents;
+            // adding it back later is a §4.3 migration on populated data.
             defineField({
               name: 'quantity',
               title: 'Quantity',
               type: 'number',
               description: 'How many of this product the kit contains (e.g. 1 box, 2 inserts).',
               validation: (Rule) => Rule.required().integer().min(1),
-            }),
-            defineField({
-              name: 'note',
-              title: 'Note',
-              type: 'string',
-              description: 'Optional line about this part (e.g. "printed sleeve").',
             }),
           ],
           preview: {
@@ -145,11 +234,16 @@ export const bundle = defineType({
       title: 'SKU',
       type: 'string',
       group: 'specs',
-      description: 'Issued by the product data source, like any product.',
+      description:
+        'Issued by the product data source. Leave blank until the source assigns one.',
       // Source-owned: stays editable until the Registry ships, then flips to
       // readOnly (decision b, PROD-2295). No MOQ / lead time on a bundle page —
       // a customer opens each included product (Entities/Bundle.md).
-      validation: (Rule) => Rule.required(),
+      //
+      // NOT required (PROD-2521). The source that issues SKUs has not shipped, so
+      // requiring one meant a bundle could not be authored at all without somebody
+      // inventing a value — which is worse than a blank field, because an invented
+      // SKU looks issued. Becomes required again when the Registry does.
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
@@ -179,7 +273,7 @@ export const bundle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', status: 'status', count: 'includedProducts.length', media: 'media.0' },
+    select: { title: 'title', status: 'status', count: 'includedProducts.length', media: 'featuredImage' },
     prepare({ title, status, count, media }) {
       const parts = count ? `${count} product${count === 1 ? '' : 's'}` : 'No products'
       return {
