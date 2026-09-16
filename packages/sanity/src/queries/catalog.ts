@@ -92,7 +92,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   sku,
   kind,
   status,
-  "description": coalesce(shortDescription, pt::text(description)),
+  "description": coalesce(pt::text(description), shortDescription),
   moq,
   leadTimeDays,
   dimensionRange,

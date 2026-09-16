@@ -1,26 +1,49 @@
+'use client';
+
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {CarouselItem} from '@pakfactory/ui/components/carousel';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import type {ProductTestimonial} from '@/lib/catalog/types';
+import {
+    SECTION_CAROUSEL_ITEM_CLASS,
+    SectionCarousel,
+} from '@/components/ui/section-carousel';
+import {SectionHeading} from '@/components/ui/section-heading';
+import {StarRating} from '@/components/ui/star-rating';
+import {TestimonialCard} from '@/components/ui/testimonial-card';
+import {TestimonialSourceMark} from '@/components/ui/testimonial-source-mark';
+import type {
+    ProductTestimonial,
+    TestimonialsAggregate,
+} from '@/lib/catalog/types';
 import {
     sectionThemeShell,
     type SectionTheme,
 } from '@/lib/ui/section-theme';
 
+const DEFAULT_TITLE = 'Real feedback from our customers.';
+const DEFAULT_DESCRIPTION =
+    'Hear what our customers have to say about us after collaborating on their packaging!';
+
 type TestimonialsRowProps = {
-    heading?: string;
     items: ProductTestimonial[];
+    aggregate?: TestimonialsAggregate;
+    title?: string;
+    description?: string;
     className?: string;
     /** Section color band (not app dark/light mode). */
     theme?: SectionTheme;
 };
 
 /**
- * Buyer quote cards — future testimonials row (PROD-2293). No star ratings.
+ * Buyer reviews strip — SectionHeading + full-bleed carousel of TestimonialCards.
+ * TODO(PROD-2293): wire Sanity testimonials; drop mock fallbacks in PDP.
  */
 export function TestimonialsRow({
-    heading = 'What buyers say',
     items,
+    aggregate,
+    title = DEFAULT_TITLE,
+    description = DEFAULT_DESCRIPTION,
     className,
     theme = 'default',
 }: TestimonialsRowProps) {
@@ -32,44 +55,47 @@ export function TestimonialsRow({
         <section
             id="pdp-testimonials"
             data-section-theme={shell['data-section-theme']}
-            className={cn('scroll-mt-20', shell.bandClass, className)}
+            className={cn('scroll-mt-32 overflow-x-clip', shell.bandClass, className)}
         >
             <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-2xl font-semibold text-brand-blue sm:text-3xl">
-                        {heading}
-                    </h2>
-                </div>
-
-                <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+                <SectionCarousel
+                    prevLabel="Previous reviews"
+                    nextLabel="Next reviews"
+                    header={
+                        <SectionHeading
+                            eyebrow="Reviews"
+                            title={title}
+                            description={description}
+                            descriptionClassName="text-base leading-6"
+                        />
+                    }
+                    footerStart={
+                        aggregate ? (
+                            <div className="flex items-center gap-2">
+                                <TestimonialSourceMark
+                                    source={aggregate.source}
+                                    variant="icon"
+                                />
+                                <p className="text-sm font-medium text-foreground">
+                                    {aggregate.label}{' '}
+                                    <span className="tabular-nums">
+                                        {aggregate.score.toFixed(1)}
+                                    </span>
+                                </p>
+                                <StarRating value={aggregate.score} />
+                            </div>
+                        ) : undefined
+                    }
+                >
                     {items.map((item, index) => (
-                        <li
-                            key={`${item.attributionName ?? 'quote'}-${index}`}
-                            className={cn(
-                                'flex flex-col gap-4 rounded-lg border border-border bg-card p-6',
-                                shell.elevatedClass,
-                            )}
+                        <CarouselItem
+                            key={`${item.attributionName}-${index}`}
+                            className={SECTION_CAROUSEL_ITEM_CLASS}
                         >
-                            <blockquote className="text-sm leading-relaxed text-foreground">
-                                “{item.quote}”
-                            </blockquote>
-                            {(item.attributionName || item.attributionRole) && (
-                                <footer className="mt-auto flex flex-col gap-1">
-                                    {item.attributionName ? (
-                                        <cite className="text-sm font-semibold not-italic text-brand-blue">
-                                            {item.attributionName}
-                                        </cite>
-                                    ) : null}
-                                    {item.attributionRole ? (
-                                        <span className="text-xs text-muted-foreground">
-                                            {item.attributionRole}
-                                        </span>
-                                    ) : null}
-                                </footer>
-                            )}
-                        </li>
+                            <TestimonialCard item={item} />
+                        </CarouselItem>
                     ))}
-                </ul>
+                </SectionCarousel>
             </PageDielineSection>
         </section>
     );

@@ -134,36 +134,41 @@ export function MediaTileCard({
     const meta = (
         <div
             className={cn(
-                'flex w-full flex-col',
-                left
-                    ? 'items-start gap-4 px-8 pb-8 pt-4 text-left'
-                    : 'items-center gap-4 px-8 pb-8 pt-4',
+                'flex w-full flex-col gap-4 px-8 pb-8 pt-4',
+                left ? 'items-start text-left' : 'items-center',
             )}
         >
-            {eyebrowText ? (
-                <span
-                    className={cn(
-                        'w-full truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground',
-                        !left && 'text-center',
-                    )}
-                >
-                    {eyebrowText}
-                </span>
-            ) : null}
-
-            <p
+            <div
                 className={cn(
-                    'line-clamp-2 w-full font-medium leading-snug tracking-tight text-foreground',
-                    compact ? 'text-base' : 'text-xl',
-                    !left && 'text-center',
-                    left &&
-                        !description &&
-                        ctaLabel == null &&
-                        (compact ? 'min-h-10' : 'min-h-14'),
+                    'flex w-full flex-col gap-1',
+                    left ? 'items-start' : 'items-center',
                 )}
             >
-                {title}
-            </p>
+                {eyebrowText ? (
+                    <span
+                        className={cn(
+                            'w-full truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground',
+                            !left && 'text-center',
+                        )}
+                    >
+                        {eyebrowText}
+                    </span>
+                ) : null}
+
+                <p
+                    className={cn(
+                        'line-clamp-2 w-full font-medium leading-snug tracking-tight text-foreground',
+                        compact ? 'text-base' : 'text-xl',
+                        !left && 'text-center',
+                        left &&
+                            !description &&
+                            ctaLabel == null &&
+                            (compact ? 'min-h-10' : 'min-h-14'),
+                    )}
+                >
+                    {title}
+                </p>
+            </div>
 
             {description ? (
                 <p

@@ -1,9 +1,14 @@
+import Link from 'next/link';
 import {CircleDot} from 'lucide-react';
-
+import {Badge} from '@pakfactory/ui/components/badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import type {ProductSpecRow} from '@/components/product/build-product-spec-rows';
+import type {
+    ProductSpecChip,
+    ProductSpecRow,
+    ProductSpecValue,
+} from '@/components/product/build-product-spec-rows';
 import {Icon} from '@/components/ui/icon';
 import {SectionHeading} from '@/components/ui/section-heading';
 
@@ -13,6 +18,45 @@ type ProductSpecsProps = {
     rows: ProductSpecRow[];
     className?: string;
 };
+
+function SpecValueChips({items}: {items: ProductSpecChip[]}) {
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            {items.map((item) =>
+                item.href ? (
+                    <Badge
+                        key={`${item.label}-${item.href}`}
+                        asChild
+                        variant="outline"
+                        className="rounded-md border-border bg-background px-3 py-1 text-sm font-medium text-foreground hover:bg-background"
+                    >
+                        <Link href={item.href}>{item.label}</Link>
+                    </Badge>
+                ) : (
+                    <Badge
+                        key={item.label}
+                        variant="outline"
+                        className="rounded-md border-border bg-background px-3 py-1 text-sm font-medium text-foreground"
+                    >
+                        {item.label}
+                    </Badge>
+                ),
+            )}
+        </div>
+    );
+}
+
+function SpecValueCell({value}: {value: ProductSpecValue}) {
+    if (value.kind === 'chips') {
+        return <SpecValueChips items={value.items} />;
+    }
+
+    return (
+        <p className="text-sm leading-none text-foreground lg:text-base">
+            {value.text}
+        </p>
+    );
+}
 
 /**
  * Product-bound specs table (POC ProductSpecificationsSection / V5 mock).
@@ -27,8 +71,8 @@ export function ProductSpecs({
     if (rows.length === 0) return null;
 
     return (
-        <section id="pdp-specs" className={cn('scroll-mt-20', className)}>
-            <PageDielineSection innerClassName="border-b border-dashed border-border pt-16 pb-0 sm:pt-20">
+        <section id="pdp-specs" className={cn('scroll-mt-32', className)}>
+            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
                 <SectionHeading
                     eyebrow="Specifications"
                     title={heading}
@@ -44,7 +88,7 @@ export function ProductSpecs({
                                 return (
                                     <tr
                                         key={row.label}
-                                        className="border-b border-dashed border-border last:border-b-0"
+                                        className="border-b border-dashed border-border"
                                     >
                                         <th
                                             scope="row"
@@ -68,9 +112,11 @@ export function ProductSpecs({
                                             </div>
                                         </th>
                                         <td className="block w-full bg-muted/50 p-0 sm:table-cell sm:align-middle">
-                                            <p className="flex min-h-10 items-center py-6 pl-6 pr-layout-gutter-inner text-sm leading-none text-foreground sm:min-h-11 sm:pl-8 lg:text-base">
-                                                {row.value}
-                                            </p>
+                                            <div className="flex min-h-10 items-center py-6 pl-6 pr-layout-gutter-inner sm:min-h-11 sm:pl-8">
+                                                <SpecValueCell
+                                                    value={row.value}
+                                                />
+                                            </div>
                                         </td>
                                     </tr>
                                 );
