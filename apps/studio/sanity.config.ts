@@ -35,6 +35,14 @@ import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
 import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
 import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
+import { SolutionStylesView } from './components/SolutionStylesView'
+import {
+  CustomizationCategoryTypesView,
+  CustomizationOptionUsedByView,
+  CustomizationTypeOptionsView,
+  PropertyValueUsedByView,
+  PropertyValuesView,
+} from './components/customizationViews'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
 const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
@@ -134,6 +142,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
       S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
     ])
   }
+  // Solution Styles are listed flat in the Solutions workspace, so this tab is
+  // the only place a solution's own collections appear together — with the match
+  // count that says which of them would publish empty.
+  if (schemaType === 'solution') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(SolutionStylesView).title('Solution Styles'),
+    ])
+  }
   // Not a nicety. A Solution Style is a stored filter, and a stored filter can
   // resolve to zero with the form still valid — this tab is the only thing that
   // says so before the page publishes empty.
@@ -141,6 +158,39 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(SolutionStyleMatchesView).title('Matching products'),
+    ])
+  }
+  // Customization and Property trees — the reference that makes each of these
+  // relationships lives on the OTHER document, so the form cannot show any of
+  // them. See `createReferencedByView`.
+  if (schemaType === 'customizationCategory') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationCategoryTypesView).title('Types'),
+    ])
+  }
+  if (schemaType === 'customizationType') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationTypeOptionsView).title('Options'),
+    ])
+  }
+  if (schemaType === 'customizationOption') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationOptionUsedByView).title('Used by'),
+    ])
+  }
+  if (schemaType === 'property') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(PropertyValuesView).title('Values'),
+    ])
+  }
+  if (schemaType === 'propertyValue') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(PropertyValueUsedByView).title('Used by'),
     ])
   }
   return S.document().views([S.view.form()])
