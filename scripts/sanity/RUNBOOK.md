@@ -16,6 +16,8 @@ Project: `8293wrxp` · Datasets: `production` / `development`
 | `pnpm sanity:restore:prod` | Import a backup file into `production` (requires typing "yes") ⚠️ |
 | `pnpm sanity:diff` | Compare prod vs dev — counts per type + missing/modified docs |
 | `pnpm sanity:sync-prod-to-dev` | Backup prod + overwrite dev with it |
+| `pnpm studio:status` | Which Studio each app points at, and whether it matches the dataset |
+| `pnpm studio:local` / `:staging` / `:prod` | Point the apps at that Studio (see § Studio targets) |
 
 > ⚠️ **The backup, restore and sync commands need Node ≥ 22.12.** They shell out to
 > `npx sanity@latest`, which no longer runs on the repo's pinned Node 20 — `nvm use 22` first.
@@ -120,6 +122,91 @@ Clean up old local backups manually: `rm backups/sanity-*.tar.gz`
 
 ---
 
+## Studio targets — which Studio the apps point at
+
+There are **three** axes, and they only work pointed at the same place:
+
+| Axis | Direction | Variables |
+|---|---|---|
+| Dataset | which content | `NEXT_PUBLIC_SANITY_DATASET`, `SANITY_STUDIO_DATASET` |
+| Studio URL | apps → Studio, where an overlay click lands | `NEXT_PUBLIC_SANITY_STUDIO_URL` |
+| Preview URL | Studio → sites, what the Presentation pane shows | `SANITY_STUDIO_PREVIEW_URL_{BLOG,WWW,SITE}` |
+
+`NEXT_PUBLIC_SANITY_STUDIO_URL` is `stega.studioUrl` in each app's
+`lib/sanity/client.ts`, active only for the `drafts` perspective — i.e. exactly
+when someone is editing.
+
+**All three travel with the dataset.** A deployed Studio reads one dataset, baked
+in at build time, so the Studio URL *implies* a dataset — and so does every
+preview host. Two ways to get it wrong, and `studio:status` names both:
+
+- app dataset ≠ Studio URL's dataset → an overlay click opens a Studio that does
+  not contain the document; the editor sees "not found" for what is on screen.
+- Studio dataset ≠ preview host's dataset → the pane renders content the editor
+  is not editing, so no overlay can line up.
+
+**One deliberate exception.** The `prod` target's `SITE` preview points at
+`staging.pakfactory.com`, cross-dataset on purpose: production has no site root
+to preview. The apex root is Magento — `pakfactory.com/products` redirects home
+and `/capabilities` 404s — so the product / solution / customization routes exist
+only on staging. `status` prints that as `ℹ️ by design`, not a warning (decided
+2026-09-16; the deployed prod Studio already ships this in `.env.production`).
+
+| Command | Studio | Dataset | Previews (BLOG · WWW · SITE) |
+|---|---|---|---|
+| `pnpm studio:status` | — shows all three axes, and names any mismatch — |||
+| `pnpm studio:local` | `localhost:3333` | `development` | `:3003/` · `:3000/case-studies/` · `:3000/` |
+| `pnpm studio:staging` | `pakfactory-staging.sanity.studio` | `development` | `staging-blog…/blog/` · `staging…/case-studies/` · `staging…/` |
+| `pnpm studio:prod` | `pakfactory.sanity.studio` (needs `--yes`) | `production` | `pakfactory.com/blog/` · `…/case-studies/` · `staging…/` ℹ️ |
+
+Preview hosts must also be in the workspace's `allowOrigins` in
+`sanity.config.ts` or Presentation bounces the iframe. The staging hosts are
+listed there. **`staging-blog.pakfactory.com` sits behind Vercel Deployment
+Protection:** signed into the Vercel team it serves 200 with no
+`x-frame-options` and iframes fine; without a session it 302s to an SSO page
+carrying `x-frame-options: DENY`, so the pane goes blank rather than erroring.
+
+`studio:status` exits non-zero when the pair is incoherent or the apps disagree on
+the dataset, so it works in a pre-flight check. It writes only local
+`.env.local` files — it cannot reach a deployed app.
+
+### The deployed apps
+
+Their values live in **Vercel project settings, per environment**, and nothing in
+this repo changes them:
+
+```bash
+vercel env ls                                   # names + which environments
+vercel env pull .env.x --environment=preview     # values, except Sensitive ones
+```
+
+`NEXT_PUBLIC_SANITY_STUDIO_URL` is stored **Sensitive** on `pakfactory-blog`
+(Production and Preview each have their own entry), which means it can be
+replaced but **never read back** — not by the CLI, not in the dashboard. To learn
+what a deployment actually shipped, read the dataset off its asset URLs
+(`cdn.sanity.io/…/8293wrxp/<dataset>/…` in the served HTML) rather than trusting
+a settings page.
+
+Measured 2026-09-16:
+
+| Deployment | Dataset it reads |
+|---|---|
+| `pakfactory.com/blog` (Production) | `production` |
+| `staging-blog.pakfactory.com/blog` (Preview, `staging`) | `development` |
+| `staging.pakfactory.com` (www, `www-new-release`) | `development` |
+
+### staging-blog returns 404 at its root — by design, twice over
+
+1. The host is behind **Vercel Deployment Protection**: an unauthenticated request
+   302s to `vercel.com/sso-api`, which in a browser looks like the site is down.
+   Use `vercel curl <url>` (it carries your Vercel auth) rather than `curl`.
+2. Even authenticated, `/` is a **Next 404**: the blog is mounted under a
+   `basePath` of `/blog` (`NEXT_PUBLIC_BLOG_BASE_PATH`, see
+   `apps/blog/next.config.ts`). The working URL is
+   **https://staging-blog.pakfactory.com/blog**.
+
+---
+
 ## Environment mapping
 
 | Variable | `development` | `production` |
@@ -178,12 +265,34 @@ Testers need project membership at [manage.sanity.io](https://manage.sanity.io) 
 Members. Both datasets are `aclMode: public`, so reads are open, but logging in and
 publishing needs a seat — Editor is enough.
 
-### Presentation caveat
+### Presentation targets travel with the deploy
 
-`apps/studio/.env.production` points Presentation at the live apex
-(`https://pakfactory.com/blog/`, `/case-studies/`) for **both** studios. In the staging
-studio that tab shows the production site, which reads the `production` dataset — so
-overlays will not match the `development` content being edited. Use the form and
-structure tabs there, or give the staging deploy its own
-`SANITY_STUDIO_PREVIEW_URL_*` and add those origins to the `allowOrigins` arrays in
-`apps/studio/sanity.config.ts`.
+Each deploy bakes in its own `SANITY_STUDIO_PREVIEW_URL_*`, from `TARGETS` in
+`scripts/sanity/studio-targets.mjs` — the same table `pnpm studio:*` writes into
+`.env.local`, so a deployed Studio and a local one cannot disagree about which site
+a workspace previews:
+
+| Studio | BLOG | WWW | SITE |
+|---|---|---|---|
+| staging (`development`) | `staging-blog.pakfactory.com/blog/` | `staging.pakfactory.com/case-studies/` | `staging.pakfactory.com/` |
+| prod (`production`) | `pakfactory.com/blog/` | `pakfactory.com/case-studies/` | `staging.pakfactory.com/` (the exception above) |
+
+To change one, edit `TARGETS`, make sure the origin is in that workspace's
+`allowOrigins` in `apps/studio/sanity.config.ts` (Presentation refuses to frame
+anything else), and re-deploy.
+
+> **Why a script and not an env prefix on the deploy command.** `sanity build` runs
+> Vite in production mode, and Vite's precedence is
+> `shell env > .env.production > .env.local > .env`. So `apps/studio/.env.production`
+> — written for the production Studio — outranks `.env.local`. The deploy scripts
+> used to export only `SANITY_STUDIO_DATASET`, which is how the staging Studio
+> shipped with the development dataset **and** `https://pakfactory.com/blog/` as its
+> blog preview: the pane showed production content while the editor edited
+> development content, and `pnpm studio:staging` could not fix it because it writes
+> the file that loses. `scripts/sanity/studio-deploy.mjs` exports the whole target
+> instead, and shell env beats every `.env` file.
+
+Staging's blog host sits behind Vercel Deployment Protection. Signed into the Vercel
+team it serves 200 with no `x-frame-options` and iframes fine; without a session it
+302s to an SSO page carrying `x-frame-options: DENY`, so the pane renders **blank**
+rather than erroring.
