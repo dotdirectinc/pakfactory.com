@@ -16,6 +16,8 @@ Project: `8293wrxp` · Datasets: `production` / `development`
 | `pnpm sanity:restore:prod` | Import a backup file into `production` (requires typing "yes") ⚠️ |
 | `pnpm sanity:diff` | Compare prod vs dev — counts per type + missing/modified docs |
 | `pnpm sanity:sync-prod-to-dev` | Backup prod + overwrite dev with it |
+| `pnpm studio:status` | Which Studio each app points at, and whether it matches the dataset |
+| `pnpm studio:local` / `:staging` / `:prod` | Point the apps at that Studio (see § Studio targets) |
 
 > ⚠️ **The backup, restore and sync commands need Node ≥ 22.12.** They shell out to
 > `npx sanity@latest`, which no longer runs on the repo's pinned Node 20 — `nvm use 22` first.
@@ -117,6 +119,66 @@ Pruning runs automatically as part of the nightly workflow.
 
 The `backups/` directory at the repo root is gitignored. Files are not committed.  
 Clean up old local backups manually: `rm backups/sanity-*.tar.gz`
+
+---
+
+## Studio targets — which Studio the apps point at
+
+`NEXT_PUBLIC_SANITY_STUDIO_URL` is `stega.studioUrl` in each app's
+`lib/sanity/client.ts`. It is what makes a click on a Presentation overlay open the
+right field in the right Studio, and it is only active for the `drafts`
+perspective — i.e. exactly when someone is editing.
+
+**It travels with the dataset.** A deployed Studio reads one dataset, baked in at
+build time, so the Studio URL *implies* a dataset. If the app reads a different
+one, an overlay click opens a Studio that does not contain the document and the
+editor sees "not found" for the thing they are looking at.
+
+| Command | Points local apps at | Dataset |
+|---|---|---|
+| `pnpm studio:status` | — shows it, and names any mismatch | — |
+| `pnpm studio:local` | `localhost:3333` | `development` |
+| `pnpm studio:staging` | `pakfactory-staging.sanity.studio` | `development` |
+| `pnpm studio:prod` | `pakfactory.sanity.studio` (needs `--yes`) | `production` |
+
+`studio:status` exits non-zero when the pair is incoherent or the apps disagree on
+the dataset, so it works in a pre-flight check. It writes only local
+`.env.local` files — it cannot reach a deployed app.
+
+### The deployed apps
+
+Their values live in **Vercel project settings, per environment**, and nothing in
+this repo changes them:
+
+```bash
+vercel env ls                                   # names + which environments
+vercel env pull .env.x --environment=preview     # values, except Sensitive ones
+```
+
+`NEXT_PUBLIC_SANITY_STUDIO_URL` is stored **Sensitive** on `pakfactory-blog`
+(Production and Preview each have their own entry), which means it can be
+replaced but **never read back** — not by the CLI, not in the dashboard. To learn
+what a deployment actually shipped, read the dataset off its asset URLs
+(`cdn.sanity.io/…/8293wrxp/<dataset>/…` in the served HTML) rather than trusting
+a settings page.
+
+Measured 2026-09-16:
+
+| Deployment | Dataset it reads |
+|---|---|
+| `pakfactory.com/blog` (Production) | `production` |
+| `staging-blog.pakfactory.com/blog` (Preview, `staging`) | `development` |
+| `staging.pakfactory.com` (www, `www-new-release`) | `development` |
+
+### staging-blog returns 404 at its root — by design, twice over
+
+1. The host is behind **Vercel Deployment Protection**: an unauthenticated request
+   302s to `vercel.com/sso-api`, which in a browser looks like the site is down.
+   Use `vercel curl <url>` (it carries your Vercel auth) rather than `curl`.
+2. Even authenticated, `/` is a **Next 404**: the blog is mounted under a
+   `basePath` of `/blog` (`NEXT_PUBLIC_BLOG_BASE_PATH`, see
+   `apps/blog/next.config.ts`). The working URL is
+   **https://staging-blog.pakfactory.com/blog**.
 
 ---
 
