@@ -21,7 +21,7 @@ export function MediaCardSkeleton({className}: MediaCardSkeletonProps) {
             <div className="relative size-24 shrink-0 sm:aspect-square sm:size-auto sm:w-full">
                 <Skeleton className="absolute inset-0 rounded-2xl" />
             </div>
-            <div className="min-w-0 flex-1 space-y-2 sm:mt-4 sm:w-full">
+            <div className="min-w-0 flex-1 space-y-2 sm:mt-4 sm:w-full sm:px-3">
                 <Skeleton className="h-3 w-24" />
                 <Skeleton className="h-4 w-3/4 max-w-56" />
                 <Skeleton className="h-4 w-1/2 max-w-40" />
