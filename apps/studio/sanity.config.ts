@@ -33,7 +33,7 @@ import { RelatedPostsView } from './components/RelatedPostsView'
 import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
-import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
+import { ProductAvailableCustomizationsView } from './components/ProductAvailableCustomizationsView'
 import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
 import { SolutionStylesView } from './components/SolutionStylesView'
 import {
@@ -139,7 +139,7 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
-      S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
+      S.view.component(ProductAvailableCustomizationsView).title('Customization'),
     ])
   }
   // Solution Styles are listed flat in the Solutions workspace, so this tab is
