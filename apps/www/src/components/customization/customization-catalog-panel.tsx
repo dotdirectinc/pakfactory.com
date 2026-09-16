@@ -502,7 +502,7 @@ export function CustomizationCatalogPanel({
     return (
         <PageDielineSection innerClassName="pb-24 pt-8 flex flex-col gap-6">
             {/* Mobile: sticky search + filters + category chips */}
-            <div className="-mx-12 border-b border-dashed border-border bg-background px-12 sm:-mx-16 sm:px-16 lg:hidden sticky top-0 z-30">
+            <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                 <div className="flex items-center gap-2 py-3">
                     {renderSearchField()}
                     <Button
@@ -564,8 +564,8 @@ export function CustomizationCatalogPanel({
             </div>
 
             {/* Desktop: sticky underline tabs + search */}
-            <div className="-mx-12 hidden border-y border-dashed border-border bg-background sm:-mx-16 lg:sticky lg:top-0 lg:z-30 lg:block">
-                <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-12 sm:px-16">
+            <div className="-mx-layout-gutter-inner hidden border-y border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block">
+                <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
                     <nav
                         ref={navRef}
                         className="relative flex min-w-0 flex-1 flex-wrap items-stretch gap-x-6 gap-y-2"

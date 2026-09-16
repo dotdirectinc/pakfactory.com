@@ -126,7 +126,7 @@ From [`AGENTS.md`](AGENTS.md):
 
 ### Blog dieline gutters
 
-Mobile **outer 16px** (`px-4`) + **inner 48px** (`px-12`) = **64px** viewport → content; desktop **outer 32px** (`md:px-8`) + **inner 64px** (`sm:px-16`) via [`page-dieline-section`](packages/ui/src/components/page-dieline-section.tsx) (blog keeps a synced fork). Do not set mobile outer to `px-8`. Flush borders need `px-0 sm:px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
+Tokens in `@pakfactory/ui/globals.css`: `--layout-gutter-outer` / `--layout-gutter-inner` (utilities `px-layout-gutter-*`). Mobile **outer 16 + inner 16** = **32px** viewport → content; `sm+` inner **80px** (matches section `sm:py-20`); `md+` outer **32px**. Prefer [`page-dieline-section`](packages/ui/src/components/page-dieline-section.tsx) helpers (blog keeps a synced fork). Do not set mobile outer to `px-8`. Flush borders: `px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
 
 ### Composition
 
@@ -224,7 +224,7 @@ CTA language:      Get a quote / Talk to packaging experts
 > Add a primary `Button` labeled “Get a quote”. Use primary/forest styling from the design system. Do not add cart icons or checkout copy.
 
 **3. Dieline section**  
-> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer 16 + inner 48; desktop outer 32 + inner 64; no `px-8` outer on mobile.
+> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer+inner 16+16; sm+ inner 80 (matches `sm:py-20`); md+ outer 32; no `px-8` outer on mobile. Prefer `px-layout-gutter-*`.
 
 **4. Form field group**  
 > Label + description in `gap-1`; group to control `gap-2`; between fields `gap-4`. Use `Input` from `@pakfactory/ui`. Focus via existing ring tokens.

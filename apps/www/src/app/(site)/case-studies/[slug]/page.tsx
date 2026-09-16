@@ -210,7 +210,7 @@ export default async function CaseStudyPage({ params }: Props) {
             <div className="hidden flex-col gap-[42px] lg:flex">
               <div
                 aria-hidden="true"
-                className="-mx-12 border-t border-dashed border-border sm:-mx-16"
+                className="-mx-layout-gutter-inner border-t border-dashed border-border"
               />
               <CaseStudyShare
                 url={pageUrl}
