@@ -423,6 +423,14 @@ export default defineConfig([
           'http://localhost:3003',
           'https://origin.blog.pakfactory.com',
           'https://pakfactory.com',
+          // `pnpm studio:staging` points this workspace's preview at the staging
+          // blog, which is mounted under /blog. Appended, not substituted — the
+          // origins above still serve the local and production targets.
+          // NOTE: that host sits behind Vercel Deployment Protection. Signed into
+          // the Vercel team it serves 200 with no x-frame-options and iframes
+          // fine; without a session it 302s to an SSO page carrying
+          // `x-frame-options: DENY`, so the pane renders blank rather than erroring.
+          'https://staging-blog.pakfactory.com',
         ],
         resolve: { locations: makeBlogLocations(BLOG_BASE_PATH) },
       }),
@@ -465,6 +473,8 @@ export default defineConfig([
           // Magento may serve (or 301 to) the www host; keep both so Presentation
           // does not bounce the iframe off allowOrigins after a host redirect.
           'https://www.pakfactory.com',
+          // `pnpm studio:staging` previews case studies on the staging site.
+          'https://staging.pakfactory.com',
         ],
         resolve: { locations: websiteLocations },
       }),

@@ -124,22 +124,47 @@ Clean up old local backups manually: `rm backups/sanity-*.tar.gz`
 
 ## Studio targets — which Studio the apps point at
 
-`NEXT_PUBLIC_SANITY_STUDIO_URL` is `stega.studioUrl` in each app's
-`lib/sanity/client.ts`. It is what makes a click on a Presentation overlay open the
-right field in the right Studio, and it is only active for the `drafts`
-perspective — i.e. exactly when someone is editing.
+There are **three** axes, and they only work pointed at the same place:
 
-**It travels with the dataset.** A deployed Studio reads one dataset, baked in at
-build time, so the Studio URL *implies* a dataset. If the app reads a different
-one, an overlay click opens a Studio that does not contain the document and the
-editor sees "not found" for the thing they are looking at.
-
-| Command | Points local apps at | Dataset |
+| Axis | Direction | Variables |
 |---|---|---|
-| `pnpm studio:status` | — shows it, and names any mismatch | — |
-| `pnpm studio:local` | `localhost:3333` | `development` |
-| `pnpm studio:staging` | `pakfactory-staging.sanity.studio` | `development` |
-| `pnpm studio:prod` | `pakfactory.sanity.studio` (needs `--yes`) | `production` |
+| Dataset | which content | `NEXT_PUBLIC_SANITY_DATASET`, `SANITY_STUDIO_DATASET` |
+| Studio URL | apps → Studio, where an overlay click lands | `NEXT_PUBLIC_SANITY_STUDIO_URL` |
+| Preview URL | Studio → sites, what the Presentation pane shows | `SANITY_STUDIO_PREVIEW_URL_{BLOG,WWW,SITE}` |
+
+`NEXT_PUBLIC_SANITY_STUDIO_URL` is `stega.studioUrl` in each app's
+`lib/sanity/client.ts`, active only for the `drafts` perspective — i.e. exactly
+when someone is editing.
+
+**All three travel with the dataset.** A deployed Studio reads one dataset, baked
+in at build time, so the Studio URL *implies* a dataset — and so does every
+preview host. Two ways to get it wrong, and `studio:status` names both:
+
+- app dataset ≠ Studio URL's dataset → an overlay click opens a Studio that does
+  not contain the document; the editor sees "not found" for what is on screen.
+- Studio dataset ≠ preview host's dataset → the pane renders content the editor
+  is not editing, so no overlay can line up.
+
+**One deliberate exception.** The `prod` target's `SITE` preview points at
+`staging.pakfactory.com`, cross-dataset on purpose: production has no site root
+to preview. The apex root is Magento — `pakfactory.com/products` redirects home
+and `/capabilities` 404s — so the product / solution / customization routes exist
+only on staging. `status` prints that as `ℹ️ by design`, not a warning (decided
+2026-09-16; the deployed prod Studio already ships this in `.env.production`).
+
+| Command | Studio | Dataset | Previews (BLOG · WWW · SITE) |
+|---|---|---|---|
+| `pnpm studio:status` | — shows all three axes, and names any mismatch — |||
+| `pnpm studio:local` | `localhost:3333` | `development` | `:3003/` · `:3000/case-studies/` · `:3000/` |
+| `pnpm studio:staging` | `pakfactory-staging.sanity.studio` | `development` | `staging-blog…/blog/` · `staging…/case-studies/` · `staging…/` |
+| `pnpm studio:prod` | `pakfactory.sanity.studio` (needs `--yes`) | `production` | `pakfactory.com/blog/` · `…/case-studies/` · `staging…/` ℹ️ |
+
+Preview hosts must also be in the workspace's `allowOrigins` in
+`sanity.config.ts` or Presentation bounces the iframe. The staging hosts are
+listed there. **`staging-blog.pakfactory.com` sits behind Vercel Deployment
+Protection:** signed into the Vercel team it serves 200 with no
+`x-frame-options` and iframes fine; without a session it 302s to an SSO page
+carrying `x-frame-options: DENY`, so the pane goes blank rather than erroring.
 
 `studio:status` exits non-zero when the pair is incoherent or the apps disagree on
 the dataset, so it works in a pre-flight check. It writes only local
