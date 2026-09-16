@@ -63,10 +63,20 @@ export type ProductFaq = {
     answerPlain: string;
 };
 
+export type TestimonialSource = 'google' | 'trustpilot';
+
 export type ProductTestimonial = {
     quote: string;
-    attributionName?: string;
-    attributionRole?: string;
+    attributionName: string;
+    rating: number;
+    positives: string[];
+    source: TestimonialSource;
+};
+
+export type TestimonialsAggregate = {
+    source: 'google';
+    label: string;
+    score: number;
 };
 
 export type Product = {

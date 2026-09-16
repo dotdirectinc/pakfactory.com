@@ -55,13 +55,13 @@ export function FaqSection({
         <section
             id="pdp-faqs"
             data-section-theme={shell['data-section-theme']}
-            className={cn('scroll-mt-20', shell.bandClass, className)}
+            className={cn('scroll-mt-32', shell.bandClass, className)}
         >
             <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
                     <SectionHeading
                         align="center"
-                        eyebrow="Frequently asked questions"
+                        eyebrow="FAQs"
                         title={heading}
                         description={description}
                     />

@@ -13,6 +13,10 @@ import {CatalogCard} from '@/components/ui/catalog-card';
 import {CategorySegmentControl} from '@/components/ui/category-segment-control';
 import {SectionHeading} from '@/components/ui/section-heading';
 import {CUSTOMIZATION_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
+import {
+    sectionThemeShell,
+    type SectionTheme,
+} from '@/lib/ui/section-theme';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 type ProductCustomizationsMansoryPreviewProps = {
@@ -23,6 +27,11 @@ type ProductCustomizationsMansoryPreviewProps = {
     heading?: string;
     description?: string;
     className?: string;
+    /**
+     * Section color band (not app dark/light mode).
+     * `muted` = recessed `bg-muted` with elevated white cards.
+     */
+    theme?: SectionTheme;
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -66,7 +75,10 @@ export function ProductCustomizationsMansoryPreview({
     heading,
     description = 'Browse materials, print, and finish options for this style. To add choices to your request, customize in the product overview above.',
     className,
+    theme = 'default',
 }: ProductCustomizationsMansoryPreviewProps) {
+    const shell = sectionThemeShell(theme);
+
     const categories = useMemo(() => {
         const bySlug = new Map<string, {id: string; label: string}>();
         for (const item of items) {
@@ -107,11 +119,12 @@ export function ProductCustomizationsMansoryPreview({
     return (
         <section
             id="pdp-customizations"
-            className={cn('scroll-mt-20', className)}
+            data-section-theme={shell['data-section-theme']}
+            className={cn('scroll-mt-32', shell.bandClass, className)}
         >
             <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
                 <SectionHeading
-                    eyebrow="Materials & Finishes"
+                    eyebrow="Customization"
                     title={title}
                     description={description}
                     descriptionClassName="text-base leading-6"
@@ -120,6 +133,7 @@ export function ProductCustomizationsMansoryPreview({
                 {selectedCategory ? (
                     <div className="mt-8">
                         <CategorySegmentControl
+                            theme={theme}
                             items={categories}
                             value={selectedCategory}
                             onValueChange={setActiveCategory}
@@ -145,7 +159,7 @@ export function ProductCustomizationsMansoryPreview({
                                         title={item.label}
                                         align="left"
                                         size="sm"
-                                        surface="muted"
+                                        surface={shell.cardSurface}
                                         ctaLabel={CTA_LABEL}
                                         eyebrow={
                                             item.typeTitle ?? item.categoryTitle

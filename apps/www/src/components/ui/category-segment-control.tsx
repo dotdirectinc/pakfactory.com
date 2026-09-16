@@ -2,6 +2,8 @@
 
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import type {SectionTheme} from '@/lib/ui/section-theme';
+
 export type CategorySegmentItem = {
     id: string;
     label: string;
@@ -12,6 +14,11 @@ type CategorySegmentControlProps = {
     value: string;
     onValueChange: (id: string) => void;
     className?: string;
+    /**
+     * Section color band (not app dark/light mode).
+     * `muted` = elevated white track against a recessed band.
+     */
+    theme?: SectionTheme;
     'aria-label'?: string;
 };
 
@@ -24,6 +31,7 @@ export function CategorySegmentControl({
     value,
     onValueChange,
     className,
+    theme = 'default',
     'aria-label': ariaLabel = 'Categories',
 }: CategorySegmentControlProps) {
     if (items.length === 0) return null;
@@ -32,7 +40,8 @@ export function CategorySegmentControl({
         <nav
             aria-label={ariaLabel}
             className={cn(
-                'inline-flex max-w-full flex-wrap gap-1 rounded-full bg-muted p-1',
+                'inline-flex max-w-full flex-wrap gap-1 rounded-full p-1',
+                theme === 'muted' ? 'bg-background' : 'bg-muted',
                 className,
             )}
         >

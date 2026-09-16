@@ -92,7 +92,7 @@ export function ProductCustomizationsPreview({
         <section id="pdp-customizations" className={cn('scroll-mt-20', className)}>
             <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
                 <SectionHeading
-                    eyebrow="Materials & Finishes"
+                    eyebrow="Customization"
                     title={title}
                     description={description}
                     descriptionClassName="text-base leading-6"

@@ -6,6 +6,10 @@ import {mapCustomizationPreviewItems} from '@/components/product/map-customizati
 import {ProductCustomizationsMansoryPreview} from '@/components/product/product-customizations-mansory-preview';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {ProductRequestRail} from '@/components/product/product-request-rail';
+import {
+    AnchorNav,
+    type AnchorNavItem,
+} from '@/components/product/anchor-nav';
 import {ProductSpecs} from '@/components/product/product-specs';
 import {FaqSection} from '@/components/sections/faq-section';
 import {
@@ -13,6 +17,7 @@ import {
     type ProductsRowItem,
 } from '@/components/sections/products-row';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
+import {MOCK_PRODUCT_TESTIMONIALS, MOCK_TESTIMONIALS_AGGREGATE} from '@/lib/catalog/mock-testimonials';
 import type {Product} from '@/lib/catalog/types';
 import {
     productHref,
@@ -42,8 +47,30 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         product.availableCustomizations,
     );
     const relatedCards = (product.relatedProducts ?? []).map(toProductsRowItem);
-    const testimonials = product.testimonials ?? [];
+    const hasCmsTestimonials = Boolean(product.testimonials?.length);
+    const testimonials = hasCmsTestimonials
+        ? product.testimonials!
+        : MOCK_PRODUCT_TESTIMONIALS;
+    const testimonialsAggregate = hasCmsTestimonials
+        ? undefined
+        : MOCK_TESTIMONIALS_AGGREGATE;
     const faqs = product.faqs ?? [];
+
+    const navItems: AnchorNavItem[] = [
+        ...(specRows.length > 0
+            ? [{id: 'pdp-specs', label: 'Specifications'}]
+            : []),
+        ...(customizationItems.length > 0
+            ? [{id: 'pdp-customizations', label: 'Customization'}]
+            : []),
+        ...(relatedCards.length > 0
+            ? [{id: 'pdp-related', label: 'Related Products'}]
+            : []),
+        ...(testimonials.length > 0
+            ? [{id: 'pdp-testimonials', label: 'Reviews'}]
+            : []),
+        ...(faqs.length > 0 ? [{id: 'pdp-faqs', label: 'FAQs'}] : []),
+    ];
 
     return (
         <>
@@ -62,7 +89,7 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
             <PageDielineSection innerClassName="border-b border-dashed border-border">
                 <article
                     id="pdp-overview"
-                    className="scroll-mt-20 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+                    className="scroll-mt-32 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
                 >
                     <ProductGallery
                         media={product.media}
@@ -85,32 +112,31 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                                 {product.description}
                             </p>
                         ) : null}
-                        {style ? (
-                            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                                <span className="font-semibold text-brand-blue">
-                                    Style:{' '}
-                                </span>
-                                {style.title}
-                            </p>
-                        ) : null}
                         <ProductRequestRail product={product} />
                     </div>
                 </article>
             </PageDielineSection>
 
-            <ProductSpecs rows={specRows} />
-            <ProductCustomizationsMansoryPreview
-                styleTitle={style.title}
-                items={customizationItems}
-                productLineSlug={line.slug}
-            />
-            <ProductsRow theme="muted" products={relatedCards} />
-            <TestimonialsRow items={testimonials} />
-            <FaqSection
-                items={faqs}
-                footerHref={WWW_ROUTES.contact}
-                footerLabel="Let's chat"
-            />
+            <div className="relative">
+                <AnchorNav items={navItems} />
+                <ProductSpecs rows={specRows} />
+                <ProductCustomizationsMansoryPreview
+                    theme="muted"
+                    styleTitle={style.title}
+                    items={customizationItems}
+                    productLineSlug={line.slug}
+                />
+                <ProductsRow theme="muted" products={relatedCards} />
+                <TestimonialsRow
+                    items={testimonials}
+                    aggregate={testimonialsAggregate}
+                />
+                <FaqSection
+                    items={faqs}
+                    footerHref={WWW_ROUTES.contact}
+                    footerLabel="Let's chat"
+                />
+            </div>
         </>
     );
 }
