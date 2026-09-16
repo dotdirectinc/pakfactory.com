@@ -18,9 +18,10 @@ export const CustomizationCategoryTypesView = createReferencedByView({
       type: 'customizationType',
       filter: 'category._ref == $id',
       subtitle: '"/" + slug.current',
-      // string() is not decoration: GROQ returns null for number + string, so
-      // without it the badge silently vanishes rather than erroring.
-      badge: 'string(count(*[_type == "customizationOption" && type._ref == ^._id])) + " options"',
+      // Declared, not written as GROQ: a Type with unsaved edits arrives as its
+      // draft, and no Option references a draft id, so a hand-written count
+      // reads 0 for the one row being worked on. PROD-2526.
+      count: { type: 'customizationOption', ref: 'type._ref', one: 'option', many: 'options' },
     },
   ],
   empty: 'No customization types sit under this category yet.',
