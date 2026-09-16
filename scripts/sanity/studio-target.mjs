@@ -47,17 +47,60 @@ const TARGETS = {
     studioUrl: "http://localhost:3333",
     dataset: "development",
     label: "local Studio (pnpm dev:studio)",
+    // What the Studio's Presentation pane points AT. Local blog runs on :3003
+    // with no basePath; local www on :3000, where the case-studies enable route
+    // lives under /case-studies (PROD-2223) and the site root is the whole app.
+    previews: {
+      BLOG: "http://localhost:3003/",
+      WWW: "http://localhost:3000/case-studies/",
+      SITE: "http://localhost:3000/",
+    },
   },
   staging: {
     studioUrl: "https://pakfactory-staging.sanity.studio",
     dataset: "development",
     label: "staging Studio",
+    previews: {
+      // staging-blog is mounted under /blog (NEXT_PUBLIC_BLOG_BASE_PATH), so the
+      // base carries it — the bare host 404s.
+      BLOG: "https://staging-blog.pakfactory.com/blog/",
+      WWW: "https://staging.pakfactory.com/case-studies/",
+      SITE: "https://staging.pakfactory.com/",
+    },
   },
   prod: {
     studioUrl: "https://pakfactory.sanity.studio",
     dataset: "production",
     label: "production Studio",
+    previews: {
+      BLOG: "https://pakfactory.com/blog/",
+      WWW: "https://pakfactory.com/case-studies/",
+      // Deliberately staging, and NOT a mistake: production has no site root to
+      // preview. The apex root is Magento — pakfactory.com/products redirects
+      // home and /capabilities 404s — so the product / solution / customization
+      // routes exist only on staging. Decided 2026-09-16; matches what the
+      // deployed prod Studio already ships in apps/studio/.env.production.
+      SITE: "https://staging.pakfactory.com/",
+    },
+    // Flags the SITE row above as a known exception rather than a mismatch, so
+    // `status` explains it instead of crying wolf on every prod check.
+    siteCrossDataset:
+      "production Studio previews the staging site root — production has no site root of its own",
   },
+};
+
+/**
+ * Which dataset each preview host actually serves. Measured 2026-09-16 by reading
+ * the asset URLs out of the served HTML (`cdn.sanity.io/…/8293wrxp/<dataset>/…`),
+ * not read off a settings page — the Vercel values are stored Sensitive and
+ * cannot be read back. Re-measure if a deployment's env changes.
+ */
+const HOST_DATASET = {
+  "localhost:3003": "development",
+  "localhost:3000": "development",
+  "staging-blog.pakfactory.com": "development",
+  "staging.pakfactory.com": "development",
+  "pakfactory.com": "production",
 };
 
 /**
@@ -83,6 +126,12 @@ const APPS = [
     file: "apps/studio/.env.local",
     studioUrlVar: null,
     datasetVar: "SANITY_STUDIO_DATASET",
+    // The Studio does not point at a Studio — it points at the SITES it previews.
+    previewVars: {
+      BLOG: "SANITY_STUDIO_PREVIEW_URL_BLOG",
+      WWW: "SANITY_STUDIO_PREVIEW_URL_WWW",
+      SITE: "SANITY_STUDIO_PREVIEW_URL_SITE",
+    },
   },
 ];
 
@@ -92,17 +141,55 @@ const die = (m) => {
 };
 const hasFlag = (n) => process.argv.includes(`--${n}`);
 
-/** Read `VAR=value` (quoted or not) from an env file. */
+/**
+ * Match one `VAR=value` line: quoted or bare, with whatever follows the value on
+ * that line captured separately.
+ *
+ * The trailing group is not pedantry. `.env.local` files in this repo contain
+ * lines like `SANITY_STUDIO_PREVIEW_URL_WWW="https://…/"# a comment` — a comment
+ * jammed onto the value with no space. dotenv parses that fine (it stops at the
+ * closing quote), so the variable IS set. An anchored `…$` pattern does not match
+ * it, which made `status` report the variable as unset and, far worse, made a
+ * switch report success while leaving the old value in place.
+ */
+const varLine = (name) =>
+  new RegExp(`^(${name}=)(?:"([^"\\n]*)"|([^"\\n#]*))([^\\n]*)$`, "m");
+
+/** Read `VAR=value` (quoted or not, trailing comment tolerated). */
 function readVar(content, name) {
-  const m = content.match(new RegExp(`^${name}=("?)([^"\\n]*)\\1$`, "m"));
-  return m ? m[2] : null;
+  const m = content.match(varLine(name));
+  if (!m) return null;
+  const value = m[2] !== undefined ? m[2] : (m[3] ?? "").trim();
+  return value === "" ? null : value;
 }
 
-/** Replace `VAR=…` in place. Returns false when the key is absent. */
+/** Replace `VAR=…` in place, keeping any trailing comment. Null when absent. */
 function writeVar(content, name, value) {
-  const re = new RegExp(`^(${name}=)("?)([^"\\n]*)("?)$`, "m");
+  const re = varLine(name);
   if (!re.test(content)) return null;
-  return content.replace(re, `$1"${value}"`);
+  return content.replace(re, (_m, key, _q, _bare, trailing) => `${key}"${value}"${trailing}`);
+}
+
+/**
+ * Set `VAR=value`, appending the line when the key is absent. Unlike writeVar,
+ * this cannot fail: SANITY_STUDIO_PREVIEW_URL_SITE is new (PROD-2494) and is
+ * missing from every .env.local written before it existed.
+ */
+function upsertVar(content, name, value) {
+  const replaced = writeVar(content, name, value);
+  if (replaced !== null) return replaced;
+  const sep = content.endsWith("\n") ? "" : "\n";
+  return `${content}${sep}${name}="${value}"\n`;
+}
+
+/** Host (with port) of a preview base, for the HOST_DATASET lookup. */
+function hostOf(url) {
+  try {
+    const u = new URL(url);
+    return u.port ? `${u.hostname}:${u.port}` : u.hostname;
+  } catch {
+    return null;
+  }
 }
 
 /** Which target does this pair correspond to, if any? */
@@ -133,6 +220,36 @@ function cmdStatus() {
 
     const shown = app.studioUrlVar ? (studioUrl ?? "(unset)") : "— is the Studio —";
     console.log(`  ${app.name.padEnd(8)} ${shown.padEnd(46)} dataset: ${dataset ?? "(unset)"}`);
+
+    // The Studio → site direction. A Studio on one dataset previewing a site that
+    // renders another is the mismatch this section exists to name: the pane
+    // renders content the editor is not editing, and overlays cannot line up.
+    for (const [key, name] of Object.entries(app.previewVars ?? {})) {
+      const url = readVar(content, name);
+      if (!url) {
+        console.log(`           previews ${key.padEnd(4)} (unset — falls back to localhost)`);
+        continue;
+      }
+      const host = hostOf(url);
+      const hostDataset = host ? HOST_DATASET[host] : undefined;
+      // Identify the target by the Studio's DATASET, not by the URL alone:
+      // `prod` and `staging` deliberately share the same SITE url, so a
+      // url-only lookup finds `staging` first and misses prod's declared
+      // exception — which is how this read as a mismatch on every prod check.
+      const known = Object.values(TARGETS).find(
+        (t) => t.dataset === dataset && t.previews[key] === url,
+      );
+      const exception = key === "SITE" && known?.siteCrossDataset;
+      let note = "";
+      if (!hostDataset) note = "  ⚠️ unrecognised host";
+      else if (dataset && hostDataset !== dataset) {
+        note = exception
+          ? `  ℹ️  by design — ${known.siteCrossDataset}`
+          : `  ⚠️ that site renders "${hostDataset}", this Studio reads "${dataset}"`;
+        if (!exception) incoherent++;
+      }
+      console.log(`           previews ${key.padEnd(4)} ${url.padEnd(45)}${note}`);
+    }
 
     // The mismatch this script exists to catch: a Studio URL whose baked-in
     // dataset is not the one the app reads.
@@ -206,6 +323,13 @@ function cmdSwitch(key) {
         continue;
       }
       content = next;
+      touched = true;
+    }
+
+    // Which SITES this Studio previews — the third axis. Upserted, not replaced,
+    // because SITE is newer than most .env.local files.
+    for (const [key, name] of Object.entries(app.previewVars ?? {})) {
+      content = upsertVar(content, name, target.previews[key]);
       touched = true;
     }
 
