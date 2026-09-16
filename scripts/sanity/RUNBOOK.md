@@ -191,3 +191,61 @@ Measured 2026-09-16:
 | `NEXT_PUBLIC_SANITY_PROJECT_ID` | `8293wrxp` | `8293wrxp` |
 
 Switch using `pnpm sanity:switch:dev` or `pnpm sanity:switch:prod` — never edit `.env.local` manually.
+
+---
+
+## Deployed studios
+
+Two studios, one codebase. A deployed studio's dataset is **baked in at build time**
+(Vite inlines `SANITY_STUDIO_*`), so it cannot be switched from inside the Studio —
+the URL and the dataset are chosen together, by the deploy script.
+
+| URL | Dataset | Deploy with | Who it's for |
+|---|---|---|---|
+| [pakfactory.sanity.studio](https://pakfactory.sanity.studio) | `production` | `pnpm sanity:deploy:prod` | the content team — live content |
+| [pakfactory-staging.sanity.studio](https://pakfactory-staging.sanity.studio) | `development` | `pnpm sanity:deploy:staging` | testing schema + Studio changes |
+
+Each workspace title carries the dataset when it is not production (`Blog [DEVELOPMENT]`,
+`Products [DEVELOPMENT]`, …) — `datasetSuffix` in `apps/studio/sanity.config.ts`. That
+suffix is how you tell the two tabs apart; check it before publishing.
+
+> **"staging" here names the studio, not a backend environment.** The dataset behind
+> `pakfactory-staging` is `development`. This repo keeps `pnpm env:staging` (Supabase +
+> API) and `pnpm sanity:switch:*` (Sanity dataset) deliberately separate — see the
+> header of `scripts/env/switch-env.mjs`. The studio host borrows the *word* staging
+> because that is what the team calls the place it tests; it moves no backend anything.
+
+### Adding another one
+
+`sanity deploy` picks its target from `--url` (there is no `appId` pinned in
+`sanity.cli.ts`, on purpose — a pinned appId would outrank `--url`). The **first**
+deploy to a hostname that does not exist yet is interactive: it prints "Your project
+has not been assigned a studio hostname" and prompts for it, so do not pass `--yes`
+on a first run. Afterwards the host is found automatically and the script is
+non-interactive.
+
+Hostnames are a **single label** of letters, numbers and hyphens —
+`pakfactory-staging` ✅, `staging.pakfactory` ❌. A dot is rejected by the CLI, and
+Sanity's `*.sanity.studio` certificate only covers one label, so a nested hostname
+fails the TLS handshake even though DNS resolves it. Your own domain needs
+`sanity deploy --external`, where you host the built bundle yourself.
+
+After creating a studio, add its CORS origin (the CLI does not):
+
+```bash
+pnpm --filter @pakfactory/studio exec sanity cors add https://pakfactory-staging.sanity.studio --credentials
+```
+
+Testers need project membership at [manage.sanity.io](https://manage.sanity.io) →
+Members. Both datasets are `aclMode: public`, so reads are open, but logging in and
+publishing needs a seat — Editor is enough.
+
+### Presentation caveat
+
+`apps/studio/.env.production` points Presentation at the live apex
+(`https://pakfactory.com/blog/`, `/case-studies/`) for **both** studios. In the staging
+studio that tab shows the production site, which reads the `production` dataset — so
+overlays will not match the `development` content being edited. Use the form and
+structure tabs there, or give the staging deploy its own
+`SANITY_STUDIO_PREVIEW_URL_*` and add those origins to the `allowOrigins` arrays in
+`apps/studio/sanity.config.ts`.

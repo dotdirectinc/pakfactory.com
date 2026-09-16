@@ -10,7 +10,11 @@ import {
   useDeleteTranslationAction,
   useDuplicateWithTranslationsAction,
 } from '@sanity/document-internationalization'
-import { websiteLocations, makeBlogLocations } from './presentation/locations'
+import {
+  websiteLocations,
+  makeBlogLocations,
+  siteLocations,
+} from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import { publishCaseStudy } from './actions/publishCaseStudy'
@@ -80,6 +84,30 @@ const BLOG_PREVIEW_RAW =
 const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
   ? BLOG_PREVIEW_RAW
   : `${BLOG_PREVIEW_RAW}/`
+// SITE preview BASE — the www app at its ROOT, for the seven content workspaces
+// whose documents live outside /case-studies and /blog (PROD-2494). This is a
+// DIFFERENT surface from WWW_PREVIEW_BASE above: that one is path-scoped to
+// `/case-studies/` because nginx forwards only that prefix at the apex, and the
+// product / solution / customization routes are not reachable there at all.
+//
+// Default target is `staging.pakfactory.com`, which serves those routes and reads
+// the **development** dataset (verified: its asset URLs are
+// cdn.sanity.io/files/8293wrxp/development/...). That makes it the right pair for
+// the development-dataset Studio; a production-dataset Studio pointed here would
+// edit prod content against a site rendering dev content.
+//
+// Env-driven so a developer can aim it at their own localhost (PROD-2494 AC:
+// "no hard-coded host"). Trailing slash required, as for the other two bases.
+const SITE_PREVIEW_RAW =
+  process.env.SANITY_STUDIO_PREVIEW_URL_SITE || 'http://localhost:3000/'
+const SITE_PREVIEW_BASE = SITE_PREVIEW_RAW.endsWith('/')
+  ? SITE_PREVIEW_RAW
+  : `${SITE_PREVIEW_RAW}/`
+const SITE_ALLOW_ORIGINS = [
+  'http://localhost:3000',
+  'https://staging.pakfactory.com',
+]
+
 // basePath the blog app is mounted under on this origin ('/blog' in prod, '' local).
 // Location hrefs are resolved against the ORIGIN only (Presentation drops the base
 // path when building them), so they must be prefixed with this — see locations.ts.
@@ -339,6 +367,23 @@ const releasesAndScheduleDisabled = {
   scheduledDrafts: { enabled: false as const },
 }
 
+// Presentation for the seven content workspaces (PROD-2494). One factory rather
+// than seven copies: every workspace previews the same origin with the same
+// resolver map, and the only thing that varies is which documents you arrive
+// from. `enable` is RELATIVE so it resolves under the base path, matching the
+// blog and case-studies tools above.
+const sitePresentation = () =>
+  presentationTool({
+    name: 'presentation',
+    title: 'Presentation',
+    previewUrl: {
+      initial: SITE_PREVIEW_BASE,
+      previewMode: { enable: 'api/draft-mode/enable' },
+    },
+    allowOrigins: SITE_ALLOW_ORIGINS,
+    resolve: { locations: siteLocations },
+  })
+
 export default defineConfig([
   // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
   // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
@@ -441,6 +486,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: productsStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -459,6 +505,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: customizationStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -477,6 +524,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -495,6 +543,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: expertiseStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -513,6 +562,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -532,6 +582,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -551,6 +602,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: globalStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
