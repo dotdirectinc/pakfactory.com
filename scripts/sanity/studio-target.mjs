@@ -35,73 +35,9 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { TARGETS, HOST_DATASET, PREVIEW_VARS } from "./studio-targets.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
-
-/**
- * The three coherent pairings. A dataset is a property OF the Studio here, not a
- * separate choice — that is the whole point of pairing them in one command.
- */
-const TARGETS = {
-  local: {
-    studioUrl: "http://localhost:3333",
-    dataset: "development",
-    label: "local Studio (pnpm dev:studio)",
-    // What the Studio's Presentation pane points AT. Local blog runs on :3003
-    // with no basePath; local www on :3000, where the case-studies enable route
-    // lives under /case-studies (PROD-2223) and the site root is the whole app.
-    previews: {
-      BLOG: "http://localhost:3003/",
-      WWW: "http://localhost:3000/case-studies/",
-      SITE: "http://localhost:3000/",
-    },
-  },
-  staging: {
-    studioUrl: "https://pakfactory-staging.sanity.studio",
-    dataset: "development",
-    label: "staging Studio",
-    previews: {
-      // staging-blog is mounted under /blog (NEXT_PUBLIC_BLOG_BASE_PATH), so the
-      // base carries it — the bare host 404s.
-      BLOG: "https://staging-blog.pakfactory.com/blog/",
-      WWW: "https://staging.pakfactory.com/case-studies/",
-      SITE: "https://staging.pakfactory.com/",
-    },
-  },
-  prod: {
-    studioUrl: "https://pakfactory.sanity.studio",
-    dataset: "production",
-    label: "production Studio",
-    previews: {
-      BLOG: "https://pakfactory.com/blog/",
-      WWW: "https://pakfactory.com/case-studies/",
-      // Deliberately staging, and NOT a mistake: production has no site root to
-      // preview. The apex root is Magento — pakfactory.com/products redirects
-      // home and /capabilities 404s — so the product / solution / customization
-      // routes exist only on staging. Decided 2026-09-16; matches what the
-      // deployed prod Studio already ships in apps/studio/.env.production.
-      SITE: "https://staging.pakfactory.com/",
-    },
-    // Flags the SITE row above as a known exception rather than a mismatch, so
-    // `status` explains it instead of crying wolf on every prod check.
-    siteCrossDataset:
-      "production Studio previews the staging site root — production has no site root of its own",
-  },
-};
-
-/**
- * Which dataset each preview host actually serves. Measured 2026-09-16 by reading
- * the asset URLs out of the served HTML (`cdn.sanity.io/…/8293wrxp/<dataset>/…`),
- * not read off a settings page — the Vercel values are stored Sensitive and
- * cannot be read back. Re-measure if a deployment's env changes.
- */
-const HOST_DATASET = {
-  "localhost:3003": "development",
-  "localhost:3000": "development",
-  "staging-blog.pakfactory.com": "development",
-  "staging.pakfactory.com": "development",
-  "pakfactory.com": "production",
-};
 
 /**
  * Per app: which file, and which variable names live in it. The Studio app is
@@ -127,11 +63,9 @@ const APPS = [
     studioUrlVar: null,
     datasetVar: "SANITY_STUDIO_DATASET",
     // The Studio does not point at a Studio — it points at the SITES it previews.
-    previewVars: {
-      BLOG: "SANITY_STUDIO_PREVIEW_URL_BLOG",
-      WWW: "SANITY_STUDIO_PREVIEW_URL_WWW",
-      SITE: "SANITY_STUDIO_PREVIEW_URL_SITE",
-    },
+    // Names come from studio-targets.mjs so this file and the deploy script cannot
+    // spell them differently from `apps/studio/sanity.config.ts`, which reads them.
+    previewVars: PREVIEW_VARS,
   },
 ];
 
