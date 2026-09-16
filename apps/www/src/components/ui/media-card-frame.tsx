@@ -26,7 +26,7 @@ type MediaCardFrameProps = {
     className?: string;
     /** Classes for the media frame (default includes `rounded-2xl bg-muted`). */
     mediaClassName?: string;
-    /** Classes for the meta block (default adds `sm:mt-4` for vertical card spacing). */
+    /** Classes for the meta block (default adds `sm:mt-4 sm:px-3` for vertical spacing + radius alignment). */
     metaClassName?: string;
     /**
      * `elevated` — media well uses `bg-background` instead of `bg-muted`
@@ -141,7 +141,7 @@ export function MediaCardFrame({
             <div
                 className={cn(
                     'relative z-10 min-w-0 flex-1 sm:w-full',
-                    metaClassName ?? 'sm:mt-4',
+                    metaClassName ?? 'sm:mt-4 sm:px-3',
                 )}
             >
                 {meta}
