@@ -265,12 +265,34 @@ Testers need project membership at [manage.sanity.io](https://manage.sanity.io) 
 Members. Both datasets are `aclMode: public`, so reads are open, but logging in and
 publishing needs a seat — Editor is enough.
 
-### Presentation caveat
+### Presentation targets travel with the deploy
 
-`apps/studio/.env.production` points Presentation at the live apex
-(`https://pakfactory.com/blog/`, `/case-studies/`) for **both** studios. In the staging
-studio that tab shows the production site, which reads the `production` dataset — so
-overlays will not match the `development` content being edited. Use the form and
-structure tabs there, or give the staging deploy its own
-`SANITY_STUDIO_PREVIEW_URL_*` and add those origins to the `allowOrigins` arrays in
-`apps/studio/sanity.config.ts`.
+Each deploy bakes in its own `SANITY_STUDIO_PREVIEW_URL_*`, from `TARGETS` in
+`scripts/sanity/studio-targets.mjs` — the same table `pnpm studio:*` writes into
+`.env.local`, so a deployed Studio and a local one cannot disagree about which site
+a workspace previews:
+
+| Studio | BLOG | WWW | SITE |
+|---|---|---|---|
+| staging (`development`) | `staging-blog.pakfactory.com/blog/` | `staging.pakfactory.com/case-studies/` | `staging.pakfactory.com/` |
+| prod (`production`) | `pakfactory.com/blog/` | `pakfactory.com/case-studies/` | `staging.pakfactory.com/` (the exception above) |
+
+To change one, edit `TARGETS`, make sure the origin is in that workspace's
+`allowOrigins` in `apps/studio/sanity.config.ts` (Presentation refuses to frame
+anything else), and re-deploy.
+
+> **Why a script and not an env prefix on the deploy command.** `sanity build` runs
+> Vite in production mode, and Vite's precedence is
+> `shell env > .env.production > .env.local > .env`. So `apps/studio/.env.production`
+> — written for the production Studio — outranks `.env.local`. The deploy scripts
+> used to export only `SANITY_STUDIO_DATASET`, which is how the staging Studio
+> shipped with the development dataset **and** `https://pakfactory.com/blog/` as its
+> blog preview: the pane showed production content while the editor edited
+> development content, and `pnpm studio:staging` could not fix it because it writes
+> the file that loses. `scripts/sanity/studio-deploy.mjs` exports the whole target
+> instead, and shell env beats every `.env` file.
+
+Staging's blog host sits behind Vercel Deployment Protection. Signed into the Vercel
+team it serves 200 with no `x-frame-options` and iframes fine; without a session it
+302s to an SSO page carrying `x-frame-options: DENY`, so the pane renders **blank**
+rather than erroring.

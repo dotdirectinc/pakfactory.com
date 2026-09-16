@@ -61,28 +61,128 @@ After `git pull`, ask your assistant:
    pnpm install
    ```
 
-2. **Environment variables** — copy the example file and fill in your Sanity (and optional registry) values:
+2. **Environment variables** — copy the root example file and fill in your values:
 
    ```bash
    cp .env.example .env.local
    ```
 
-   Root `.env.example` documents every variable. At minimum for local development you typically need:
+   Then copy the per-app examples for whichever apps you run:
 
-   - `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SANITY_API_VERSION`
-   - `NEXT_PUBLIC_SANITY_STUDIO_URL` (e.g. `http://localhost:3333`)
-   - `SANITY_API_READ_TOKEN` — viewer token so draft content can load in dev on the Next apps
-   - For Studio: `SANITY_STUDIO_PREVIEW_URL` (e.g. `http://localhost:3000`) and matching `SANITY_STUDIO_*` project/dataset if you do not rely solely on `NEXT_PUBLIC_*` names
-   - `SANITY_API_WRITE_TOKEN` — **only** for scripts that write to the dataset (`pnpm run seed:demo`, migrations)
+   ```bash
+   cp apps/www/.env.example    apps/www/.env.local
+   cp apps/blog/.env.example   apps/blog/.env.local
+   cp apps/studio/.env.example apps/studio/.env.local
+   ```
 
-   **Where `.env.local` lives**
+   Each `.env.example` documents its own keys. See **Environment files** below
+   for which file a new variable belongs in.
 
-   - **`apps/www`** loads env from the **repository root** (see `apps/www/next.config.ts`).
-   - **`apps/studio`** reads **`apps/studio/.env.local`** when you run `pnpm dev:studio` (Vite does not use root `.env.local` automatically). Keep `SANITY_STUDIO_PROJECT_ID` and `SANITY_STUDIO_DATASET` in sync with root — e.g. `8293wrxp` + `development` after `pnpm seed`.
-   - **`apps/blog`** — root `.env.local` via `next.config.ts` (`loadEnvConfig`), plus **`apps/blog/.env.local`** for overrides (port, Sanity copy). See [`apps/blog/.env.example`](apps/blog/.env.example) and [`apps/blog/memory.md`](apps/blog/memory.md) (local dev / empty home troubleshooting).
-   - **`packages/sanity`** scripts load **repo root** `.env.local`.
+## Environment files
 
-   Optional (premium shadcn studio registry): `EMAIL` and `LICENSE_KEY` as in `.env.example`.
+### The one rule
+
+**A variable lives in exactly one place: the root file if two or more consumers
+need it, the app's own file if only that app does.** A key copied into both does
+not "override safely" — it silently shadows root, and that is the single most
+common cause of "I ran `pnpm env:staging` and nothing changed".
+
+### Which files exist
+
+| File | Committed? | Who reads it |
+|---|---|---|
+| `.env.example`, `apps/*/.env.example` | **yes** | nobody at runtime — the documented contract. Update these when you add a key. |
+| `.env.local` (root) | no | `apps/www` + `apps/blog` (merged, see below) · `scripts/**` · `sanity.blueprint.ts` · `scripts/test-gdrive-*` |
+| `apps/www/.env.local` | no | `apps/www` only — www-specific overrides |
+| `apps/blog/.env.local` | no | `apps/blog` only — blog-specific overrides |
+| `apps/studio/.env.local` | no | `apps/studio` only. **Inherits nothing from root** (Vite reads only its own directory, and only `SANITY_STUDIO_*` reaches the bundle) |
+| `apps/studio/.env.production` | **yes** | `sanity build` / `sanity deploy`. Public URLs only — **never** a secret. Fallbacks only; the deploy scripts override it. |
+| `.env` | — | **unused.** It is gitignored here, so it can be neither a committed default nor a personal override. Don't create one. |
+| `.env.local.bak-*` | no | backups written by `pnpm env:staging` / `env:prod`; pruned to the newest 5 |
+
+### Precedence
+
+For `apps/www` and `apps/blog`, `next.config.ts` merges two files — **the app
+file wins, root fills the gaps**:
+
+```
+shell env  >  apps/<app>/.env.local  >  root .env.local
+```
+
+For `apps/studio`, Vite decides, and the mode matters:
+
+```
+sanity dev    shell env  >  .env.development.local  >  .env.local  >  .env
+sanity build  shell env  >  .env.production         >  .env.local  >  .env
+```
+
+Note the second row: **`.env.production` outranks `.env.local`.** So editing
+`apps/studio/.env.local` does not change a *deployed* Studio — that is why
+`pnpm sanity:deploy:*` export their whole target from `TARGETS` in
+`scripts/sanity/studio-targets.mjs` (shell env beats every file).
+
+On Vercel there is no `.env.local` at all; values come from the project's
+environment variables, per environment.
+
+### Keys you must not "de-duplicate"
+
+Three cases look like redundancy and are not:
+
+- **`NEXT_PUBLIC_SANITY_STUDIO_URL` and `NEXT_PUBLIC_SANITY_DATASET`** in
+  `apps/www/.env.local` and `apps/blog/.env.local`. `pnpm studio:*` rewrites
+  these lines *in place* and **skips a key whose line is absent** — delete them
+  and the switch silently stops working for that app.
+- **`VAR`, `VAR_PROD`, `VAR_STAGING` triples** at root (`NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `BACKEND_API_BASE_URL`, `SERVICE_SHARED_SECRET`,
+  `WWW_ORIGIN_PROXY_SECRET`). `pnpm env:*` copies one canonical line into the
+  bare one; all three are required.
+- **Everything in `apps/studio/.env.local`.** The Studio cannot see root.
+
+And one key that must **not** be shared: **`NEXT_PUBLIC_SITE_URL`**. Both www
+and blog read that name but they are different origins, so it belongs in the app
+files. At root it would hand www the blog's origin and rewrite every canonical
+and OG URL.
+
+### Branches and worktrees
+
+`.env.local` is gitignored, so **one copy serves every branch** in the checkout.
+Do not prune it to what the current branch uses: the Supabase / `BACKEND_API` /
+`*_PROXY_SECRET` keys are unused on `staging` but load-bearing on
+`www-new-release` and `admin`. For the same reason `apps/admin/.env.local` is
+kept even though `apps/admin` only exists on the `admin` branch — it is the only
+copy of that config.
+
+Git **worktrees do not inherit it.** Copy the file in by hand when you create one.
+
+### Secrets
+
+Never commit a real value. Only `.env.example` and `apps/studio/.env.production`
+are committed, and the latter is public URLs only. Note that
+`.env.local.bak-*` was historically **not** matched by `.gitignore` — it is now,
+but check `git status` before any `git add -A` in this repo.
+
+Prefer a file path over an inline private key where the tool allows it
+(`GOOGLE_APPLICATION_CREDENTIALS=/path/to.json` rather than pasting
+`GDRIVE_SERVICE_ACCOUNT_JSON`).
+
+### Helper commands
+
+| Command | What it moves |
+|---|---|
+| `pnpm env:status` | shows the active backend env and **warns when an app file shadows root** |
+| `pnpm env:staging` / `env:prod` | the backend environment (Supabase + API + secrets), root file only |
+| `pnpm studio:status` | which Studio each app points at, and whether dataset + preview host agree |
+| `pnpm studio:local` / `:staging` / `:prod` | the Studio pairing (URL + dataset + preview targets) across all app files |
+| `pnpm sanity:switch:dev` / `:prod` | the Sanity dataset alone |
+
+These are deliberately separate: one command should not silently change two
+unrelated things. `pnpm env:status` is the first thing to run when a value looks
+like it is being ignored.
+
+Further reading: [`scripts/sanity/RUNBOOK.md`](scripts/sanity/RUNBOOK.md)
+(deployed studios, preview targets, dataset pairings) and
+[`apps/blog/memory.md`](apps/blog/memory.md) (blog local-dev troubleshooting —
+empty home page, draft content not loading).
 
 ## Run the project
 

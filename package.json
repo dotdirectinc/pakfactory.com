@@ -36,8 +36,8 @@
     "studio:local": "node scripts/sanity/studio-target.mjs local",
     "studio:staging": "node scripts/sanity/studio-target.mjs staging",
     "studio:prod": "node scripts/sanity/studio-target.mjs prod",
-    "sanity:deploy:prod": "SANITY_STUDIO_DATASET=production pnpm --filter @pakfactory/studio exec sanity deploy --url pakfactory",
-    "sanity:deploy:staging": "SANITY_STUDIO_DATASET=development pnpm --filter @pakfactory/studio exec sanity deploy --url pakfactory-staging"
+    "sanity:deploy:prod": "node scripts/sanity/studio-deploy.mjs prod",
+    "sanity:deploy:staging": "node scripts/sanity/studio-deploy.mjs staging"
   },
   "devDependencies": {
     "@pakfactory/sanity": "workspace:^",
