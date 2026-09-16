@@ -145,8 +145,8 @@
 @media (min-width: 640px) {
     :root {
         --layout-gutter-outer: 1.5rem;
-        /* Match section block padding sm:py-20 */
-        --layout-gutter-inner: 5rem;
+        /* sm+ inner 32px — matches DESIGN.md / gap-8 rhythm */
+        --layout-gutter-inner: 2rem;
     }
 }
 
@@ -391,4 +391,27 @@
 }
 @utility animate-collapsible-up-fast {
     animation: collapsible-up 0.18s ease-out;
+}
+
+@keyframes accordion-down {
+    from {
+        height: 0;
+    }
+    to {
+        height: var(--radix-accordion-content-height);
+    }
+}
+@keyframes accordion-up {
+    from {
+        height: var(--radix-accordion-content-height);
+    }
+    to {
+        height: 0;
+    }
+}
+@utility animate-accordion-down {
+    animation: accordion-down 0.3s ease-out;
+}
+@utility animate-accordion-up {
+    animation: accordion-up 0.3s ease-out;
 }

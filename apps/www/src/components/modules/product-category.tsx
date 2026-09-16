@@ -37,7 +37,7 @@ const ProductCategory = ({
                         </h2>
                         <Link
                             href={exploreAllHref}
-                            className="text-primary inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+                            className="text-primary inline-flex items-center gap-2 text-sm font-medium hover:underline"
                         >
                             Explore all products
                             <ArrowRightIcon className="size-4" />
@@ -72,20 +72,20 @@ const ProductCategory = ({
                                     )}
                                     {typeof card.discountNumber === 'number' ? (
                                         <Badge
-                                            className="absolute top-3 left-3 z-10 font-semibold"
+                                            className="absolute top-4 left-4 z-10 font-semibold"
                                             variant="destructive"
                                         >
                                             {card.discountNumber}% off
                                         </Badge>
                                     ) : null}
                                     {card.newArrival ? (
-                                        <Badge className="absolute top-3 right-3 z-10 font-semibold">
+                                        <Badge className="absolute top-4 right-4 z-10 font-semibold">
                                             New
                                         </Badge>
                                     ) : null}
                                 </div>
-                                <div className="flex flex-1 flex-col gap-3 p-4">
-                                    <div className="flex items-start gap-3">
+                                <div className="flex flex-1 flex-col gap-4 p-4">
+                                    <div className="flex items-start gap-4">
                                         <span className="text-muted-foreground mt-0.5 shrink-0">
                                             {card.icon}
                                         </span>

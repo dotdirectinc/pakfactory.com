@@ -44,7 +44,7 @@ export function CustomizationQuickView({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="max-h-[min(92vh,56rem)] w-[min(96vw,64rem)] max-w-none overflow-y-auto md:min-w-[42rem]"
+                className="max-h-[min(92vh,56rem)] w-[min(96vw,42rem)] max-w-none overflow-y-auto md:min-w-[64rem]"
                 aria-describedby={undefined}
             >
                 {item ? (

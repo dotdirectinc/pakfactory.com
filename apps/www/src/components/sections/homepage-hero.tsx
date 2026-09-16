@@ -105,7 +105,7 @@ const HomepageHero = ({
                 {description}
               </p>
 
-              <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap lg:justify-start">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap lg:justify-start">
                 <Button
                   asChild
                   size="lg"

@@ -79,29 +79,28 @@ export function CustomizationCard({item}: CustomizationCardProps) {
 
     const hero = gallery[0];
     const media = hero ? (
-        <div className="absolute inset-0">
-            <Link
-                href={href}
-                className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+        <div className="pointer-events-none absolute inset-0">
+            <SanityImage
+                src={hero.src}
+                alt={hero.alt ?? item.title}
+                applyWatermark={false}
+                fill
+                sizes="(max-width: 640px) 96px, (max-width: 1280px) 33vw, 25vw"
+                className="object-cover"
             />
-            <div className="pointer-events-none absolute inset-0 z-0">
-                <SanityImage
-                    src={hero.src}
-                    alt={hero.alt ?? item.title}
-                    applyWatermark={false}
-                    fill
-                    sizes="(max-width: 640px) 96px, (max-width: 1280px) 33vw, 25vw"
-                    className="object-cover"
-                />
-            </div>
         </div>
     ) : (
+        <div className="pointer-events-none absolute inset-0">
+            {placeholder}
+        </div>
+    );
+
+    const mediaOverlay = (
         <Link
             href={href}
             className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        >
-            {placeholder}
-        </Link>
+            aria-label={item.title}
+        />
     );
 
     return (
@@ -109,6 +108,7 @@ export function CustomizationCard({item}: CustomizationCardProps) {
             className="h-full"
             bookmarkPressed={saved}
             media={media}
+            mediaOverlay={mediaOverlay}
             bookmark={
                 <BookmarkIconButton
                     pressed={saved}

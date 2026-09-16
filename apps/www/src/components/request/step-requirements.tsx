@@ -104,7 +104,7 @@ export function StepRequirements({
                     {REQUEST_COPY.requirementsTitle}
                 </h2>
                 {REQUEST_COPY.requirementsSubtitle ? (
-                    <p className="mt-1.5 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {REQUEST_COPY.requirementsSubtitle}
                     </p>
                 ) : null}
@@ -165,7 +165,7 @@ export function StepRequirements({
                 ) : null}
 
                 <div className="flex flex-col gap-2">
-                    <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex items-baseline justify-between gap-4">
                         <Label className="text-xs font-medium">
                             {REQUEST_COPY.notesLabel}
                             <span className="ml-0.5 text-amber-600">*</span>

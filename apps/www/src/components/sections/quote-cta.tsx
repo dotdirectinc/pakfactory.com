@@ -4,12 +4,22 @@ import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {
+    sectionThemeShell,
+    type SectionTheme,
+} from '@/lib/ui/section-theme';
+
 type QuoteCtaProps = {
     heading?: string;
     body?: string;
     ctaLabel?: string;
     href: string;
     className?: string;
+    /**
+     * Section color band (not app dark/light mode).
+     * Defaults to `muted` for the conversion strip.
+     */
+    theme?: SectionTheme;
 };
 
 /**
@@ -21,11 +31,15 @@ export function QuoteCta({
     ctaLabel = 'Start a request',
     href,
     className,
+    theme = 'muted',
 }: QuoteCtaProps) {
+    const shell = sectionThemeShell(theme);
+
     return (
         <section
             id="pdp-quote-cta"
-            className={cn('scroll-mt-20 bg-muted', className)}
+            data-section-theme={shell['data-section-theme']}
+            className={cn('scroll-mt-20', shell.bandClass, className)}
         >
             <PageDielineSection innerClassName="py-16 sm:py-20">
                 <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">

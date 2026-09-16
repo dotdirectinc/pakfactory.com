@@ -16,6 +16,7 @@ PakFactory’s UI is **packaging-brand restraint**: clear hierarchy, a dieline c
 - Interactive accent is **forest green** (`--primary`), not blue and not purple gradients.
 - Warm **brand cream** (`--brand-cream`) appears for selected bands (e.g. newsletter); do not invent a second cream palette.
 - Atmosphere should feel engineered and trustworthy for B2B packaging buyers: RFQ / “Get a quote” CTAs, not cart chrome.
+- **Spacing:** an **8pt grid** with a preference for **breathing room** — see [Spacing (8pt — binding)](#spacing-8pt--binding). Not a 4pt-as-default system.
 
 Avoid AI-default looks that fight Pak tokens (purple-on-white, terracotta-on-cream newspaper layouts, glow stacks, emoji ornament).
 
@@ -67,7 +68,8 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 ### Links
 
 - **Text links** (inline anchors or `Button variant="link"`) always use `underline underline-offset-4` at rest. Prefer the shared `link` button variant or the same classes on a Next.js `Link`.
-- **Arrow / chevron CTAs** use the arrow as the affordance — underline is not required.
+- **Arrow / chevron CTAs** (text links like “See all”) use the chevron as the affordance — underline is not required.
+- **Circular directional controls** (carousel prev/next, accordion expand): shadcn **`Button` `size="icon-lg"`** (40px / `size-10`) with Lucide **`Chevron*`** (not `Arrow*`). Fill: `bg-foreground` + light icon. In www, wrap the glyph with [`Icon`](apps/www/src/components/ui/icon.tsx) `size="sm"`.
 - **Filled / outline / ghost buttons** do not use underline for affordance. Nav and logo chrome may keep `no-underline`.
 
 ### CTAs (domain)
@@ -117,16 +119,26 @@ Use `max-w-[var(--layout-max)]` / blog `PageDielineSection` helpers. Do not inve
 
 ### Spacing (8pt — binding)
 
-From [`AGENTS.md`](AGENTS.md):
+**Principle:** layout and component spacing snap to an **8-point grid** so rhythm stays consistent and surfaces keep **breathing room**. Challenged against a full 4pt grid — **8pt is primary**; 4px is exception-only, not a competing system.
 
-- Grid unit: `--spacing-grid-unit` (8px) → prefer `gap-2`/`p-2` (8), `gap-4` (16), `gap-6` (24) or `gap-grid-*` / `p-grid-*`.
-- `gap-1` / `p-1` (4px) only for tight pairs (label ↔ description, icon ↔ label).
-- **Do not** use fractional steps that yield 6/10/14px (`gap-1.5`, `gap-2.5`, `py-2.5`, `mt-1.5`, `space-y-1.5`).
+| Step | px | Typical Tailwind | Use |
+| --- | --- | --- | --- |
+| Tight pair only | 4 | `gap-1` / `p-1` | Label ↔ description, icon ↔ label |
+| Base unit | 8 | `gap-2` / `p-2` | Compact related controls |
+| Comfortable | 16 | `gap-4` / `p-4` | Card internals, field groups |
+| Airy | 24 | `gap-6` / `p-6` | Section stacks, roomy card padding |
+| Section / inset | 32 | `gap-8` / `p-8` / `px-8` | Band gaps, card meta inset |
+
+Token: `--spacing-grid-unit` (8px) in `@pakfactory/ui/globals.css`. Prefer `gap-grid-*` / `p-grid-*` when those utilities fit.
+
+- **Prefer the roomier even step** when a surface feels cramped at `lg+` (e.g. choose `px-8` / `gap-6` over `px-4` / `gap-4`).
+- **Card meta:** left- and center-aligned catalog tiles share the same airy inset (`px-8` / `pb-8` / internal `gap-4`) unless a density variant is explicitly documented.
+- **Do not** use off-grid / fractional steps that yield 6/10/12/14/20px (`gap-1.5`, `gap-2.5`, `gap-3`, `gap-5`, `top-3`, `py-2.5`, `mt-1.5`, `space-y-1.5`).
 - Form rhythm: label+description `gap-1` → control `gap-2` → between fields `gap-4`.
 
 ### Blog dieline gutters
 
-Tokens in `@pakfactory/ui/globals.css`: `--layout-gutter-outer` / `--layout-gutter-inner` (utilities `px-layout-gutter-*`). Mobile **outer 16 + inner 16** = **32px** viewport → content; `sm+` inner **80px** (matches section `sm:py-20`); `md+` outer **32px**. Prefer [`page-dieline-section`](packages/ui/src/components/page-dieline-section.tsx) helpers (blog keeps a synced fork). Do not set mobile outer to `px-8`. Flush borders: `px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
+Tokens in `@pakfactory/ui/globals.css`: `--layout-gutter-outer` / `--layout-gutter-inner` (utilities `px-layout-gutter-*`). Mobile **outer 16 + inner 16** = **32px** viewport → content; `sm+` inner **32px**; `md+` outer **32px** (matches `gap-8`). Prefer [`page-dieline-section`](packages/ui/src/components/page-dieline-section.tsx) helpers (blog keeps a synced fork). Do not set mobile outer to `px-8`. Flush borders: `px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
 
 ### Composition
 
@@ -224,7 +236,7 @@ CTA language:      Get a quote / Talk to packaging experts
 > Add a primary `Button` labeled “Get a quote”. Use primary/forest styling from the design system. Do not add cart icons or checkout copy.
 
 **3. Dieline section**  
-> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer+inner 16+16; sm+ inner 80 (matches `sm:py-20`); md+ outer 32; no `px-8` outer on mobile. Prefer `px-layout-gutter-*`.
+> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer+inner 16+16; sm+ inner 32; md+ outer 32 (matches `gap-8`); no `px-8` outer on mobile. Prefer `px-layout-gutter-*`.
 
 **4. Form field group**  
 > Label + description in `gap-1`; group to control `gap-2`; between fields `gap-4`. Use `Input` from `@pakfactory/ui`. Focus via existing ring tokens.

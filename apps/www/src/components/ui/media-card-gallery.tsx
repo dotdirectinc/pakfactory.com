@@ -84,7 +84,7 @@ export function MediaCardGallery({
                     >
                         <Icon icon={ChevronRight} className="size-5" />
                     </button>
-                    <div className="pointer-events-auto absolute bottom-3 left-3 flex items-center gap-1.5">
+                    <div className="pointer-events-auto absolute bottom-4 left-4 flex items-center gap-2">
                         {images.map((_, i) => (
                             <button
                                 key={i}

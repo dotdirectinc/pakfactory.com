@@ -99,7 +99,7 @@ export function QuantityPicker({
             <div ref={rootRef} className="relative">
                 <div
                     className={cn(
-                        'flex min-h-11 h-auto w-full items-center gap-2 rounded-sm border border-input bg-background px-3 py-1.5',
+                        'flex min-h-11 h-auto w-full items-center gap-2 rounded-sm border border-input bg-background px-3 py-2',
                         open && 'border-primary',
                     )}
                     onClick={() => setOpen((isOpen) => !isOpen)}
@@ -114,7 +114,7 @@ export function QuantityPicker({
                                 <Badge
                                     key={volume}
                                     variant="secondary"
-                                    className="gap-0.5 pr-0.5"
+                                    className="gap-1 pr-0.5"
                                 >
                                     {formatVolume(volume)}
                                     <Button
@@ -163,7 +163,7 @@ export function QuantityPicker({
                         aria-multiselectable="true"
                         className="absolute inset-x-0 z-40 mt-2 overflow-hidden rounded-xl border border-input bg-background shadow-lg"
                     >
-                        <div className="border-b border-input py-5 px-4 flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 border-b border-input px-4 py-6">
                             <p className="text-xs leading-snug text-muted-foreground">
                                 {description}
                             </p>

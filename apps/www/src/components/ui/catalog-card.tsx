@@ -6,7 +6,8 @@ import {
 const SEE_ALL = 'See all';
 
 export type CatalogCardProps = Omit<MediaTileCardProps, 'ctaLabel'> & {
-    ctaLabel?: string;
+    /** CTA label; pass `null` to hide. Default `See all`. */
+    ctaLabel?: string | null;
 };
 
 /**

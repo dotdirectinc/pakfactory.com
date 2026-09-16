@@ -68,7 +68,7 @@ export function StepServices({
                             <label
                                 key={svc.id}
                                 className={cn(
-                                    'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-3.5 text-sm font-medium',
+                                    'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-4 text-sm font-medium',
                                     on
                                         ? 'border-foreground bg-muted/40'
                                         : 'border-border bg-background hover:bg-muted/30',

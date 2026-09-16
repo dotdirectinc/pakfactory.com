@@ -36,7 +36,7 @@ export function WizardRailRow({
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                'group relative flex min-h-11 w-full gap-3 rounded-md px-2 pb-6 pt-2 text-left transition-colors hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-40',
+                'group relative flex min-h-11 w-full gap-4 rounded-md px-2 pb-6 pt-2 text-left transition-colors hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-40',
                 hasSubtitle ? 'items-start' : 'items-center',
             )}
         >

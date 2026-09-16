@@ -20,7 +20,7 @@ export function ProductGallery({media, productTitle}: ProductGalleryProps) {
     const showRail = items.length > 1;
 
     return (
-        <div className="flex items-start gap-5 self-start lg:sticky lg:top-8">
+        <div className="flex items-start gap-6 self-start lg:sticky lg:top-8">
             {showRail ? (
                 <div className="relative w-16 shrink-0">
                     <div className="flex flex-col gap-4">

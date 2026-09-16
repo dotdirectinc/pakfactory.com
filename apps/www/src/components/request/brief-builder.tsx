@@ -317,7 +317,7 @@ export function BriefBuilder({
                         {REQUEST_COPY.productsUpsellTitle}
                     </h2>
                     {REQUEST_COPY.productsUpsellSubtitle ? (
-                        <p className="mt-1.5 text-sm text-muted-foreground">
+                        <p className="mt-2 text-sm text-muted-foreground">
                             {REQUEST_COPY.productsUpsellSubtitle}
                         </p>
                     ) : null}
@@ -416,7 +416,7 @@ export function BriefBuilder({
                 className="flex min-h-screen flex-1 flex-col"
                 {...(locked ? {inert: true} : {})}
             >
-            <header className="sticky top-0 z-20 flex h-[68px] items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
+            <header className="sticky top-0 z-20 flex h-[68px] items-center gap-4 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
                 <div className="flex min-w-0 items-center gap-2">
                     <button
                         type="button"
@@ -453,7 +453,7 @@ export function BriefBuilder({
                             aria-hidden
                         />
                     ) : (
-                        <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="flex min-w-0 items-center gap-1">
                             <button
                                 type="button"
                                 className="min-w-0 truncate text-left text-sm font-medium hover:underline"
@@ -472,12 +472,12 @@ export function BriefBuilder({
                         </span>
                     )}
                 </div>
-                <div className="ml-auto flex shrink-0 items-center gap-3">
+                <div className="ml-auto flex shrink-0 items-center gap-4">
                     <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        className="gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
                         disabled={leaving || locked}
                         onClick={requestLeave}
                     >

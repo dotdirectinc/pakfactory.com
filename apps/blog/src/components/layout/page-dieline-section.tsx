@@ -3,7 +3,7 @@ import { cn } from "@pakfactory/ui/lib/utils";
 
 /**
  * Horizontal gutter outside the dashed dieline column.
- * Values from `--layout-gutter-outer` / `--layout-gutter-inner` (mobile 16+16; sm+ outer steps + inner 80 to match section py-20).
+ * Values from `--layout-gutter-outer` / `--layout-gutter-inner` (mobile 16+16; sm+ inner 32; md+ outer 32 / gap-8).
  */
 export function pageDielineOuterClass(className?: string) {
   return cn("w-full px-layout-gutter-outer", className);

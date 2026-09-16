@@ -46,7 +46,7 @@ export function CaseStudyCard({
           )}
         </div>
         <div className="flex flex-col gap-[14px]">
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-4">
             {clientName && (
               <p className="text-sm font-medium leading-5 text-muted-foreground">
                 {clientName}
@@ -56,7 +56,7 @@ export function CaseStudyCard({
               {title}
             </h3>
           </div>
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors group-hover:text-primary/80">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors group-hover:text-primary/80">
             Read Story
             <ArrowRight
               className="size-4 transition-transform duration-300 group-hover:translate-x-0.5"

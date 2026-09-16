@@ -79,35 +79,35 @@ export function ProductCard({data}: ProductCardProps) {
 
     const hero = gallery[0];
     const media = hero ? (
-        <div className="absolute inset-0">
-            <Link
-                href={data.href}
-                className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+        <div className="pointer-events-none absolute inset-0">
+            <SanityImage
+                src={hero.src}
+                alt={hero.alt ?? data.title}
+                applyWatermark
+                fill
+                sizes="(max-width: 640px) 96px, (max-width: 1280px) 50vw, 25vw"
+                className="object-cover"
             />
-            <div className="pointer-events-none absolute inset-0 z-0">
-                <SanityImage
-                    src={hero.src}
-                    alt={hero.alt ?? data.title}
-                    applyWatermark
-                    fill
-                    sizes="(max-width: 640px) 96px, (max-width: 1280px) 50vw, 25vw"
-                    className="object-cover"
-                />
-            </div>
         </div>
     ) : (
+        <div className="pointer-events-none absolute inset-0">
+            {placeholder}
+        </div>
+    );
+
+    const mediaOverlay = (
         <Link
             href={data.href}
             className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        >
-            {placeholder}
-        </Link>
+            aria-label={data.title}
+        />
     );
 
     return (
         <MediaCardFrame
             bookmarkPressed={saved}
             media={media}
+            mediaOverlay={mediaOverlay}
             bookmark={
                 <BookmarkIconButton
                     pressed={saved}

@@ -292,14 +292,14 @@ export function StepReview({
                 }}
                 aria-hidden={!peekVisible && !summaryOpen}
             >
-                <div className="mx-auto flex w-full max-w-[820px] items-center gap-3 px-4">
+                <div className="mx-auto flex w-full max-w-[820px] items-center gap-4 px-4">
                     <button
                         type="button"
                         onClick={() => setSummaryOpen(true)}
                         aria-expanded={summaryOpen}
                         className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
                     >
-                        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                        <span className="flex items-center gap-1 text-sm font-medium text-foreground">
                             {REQUEST_COPY.requestSummary}
                             <ChevronUp
                                 className="size-4 shrink-0 text-muted-foreground"

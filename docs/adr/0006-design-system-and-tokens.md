@@ -13,7 +13,7 @@ The blog needed a real visual foundation — the "dieline" layout system, typogr
 - **Layout:** `--layout-max` for the dieline content column — **live SoT is [`packages/ui/src/globals.css`](../../packages/ui/src/globals.css)** (`1280px` default; `1440px` at `min-width: 1600px`). The `PageDielineSection` layout primitive consumes `var(--layout-max)`. (Historical POC note used 1536px; prefer CSS over this ADR for the number.)
 - **Typography:** the Geist font stack — `--font-geist-sans` / `--font-sans`, plus serif and mono. `GeistSans.variable` is wired on `<html>` in `apps/blog/src/app/layout.tsx`.
 - **Brand:** background/foreground, radius (`--radius` — see live CSS), and the derived `--color-*` / `--radius-*` scales. Agent composition guide: **[`DESIGN.md`](../../DESIGN.md)**.
-- **Spacing:** 8px grid via `--spacing-grid-unit` (`p-grid-*` / `gap-grid-*`). Usage is binding — **[`AGENTS.md`](../../AGENTS.md)** § UI and design system.
+- **Spacing:** 8px grid via `--spacing-grid-unit` (`p-grid-*` / `gap-grid-*`). **8pt is primary** (multiples of 8); **4px is exception-only** for tight pairs (label ↔ description, icon ↔ label) — not a competing 4pt grid. Prefer the roomier even step when a surface feels cramped. Agent principle + scale: **[`DESIGN.md`](../../DESIGN.md)** § Spacing (8pt — binding). Usage is also binding in **[`AGENTS.md`](../../AGENTS.md)** § UI and design system.
 
 An app's own `globals.css` (e.g. `apps/blog/src/app/globals.css`) is just `@import "@pakfactory/ui/globals.css";` — apps do not define their own tokens.
 

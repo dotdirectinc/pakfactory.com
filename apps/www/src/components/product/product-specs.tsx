@@ -50,7 +50,7 @@ export function ProductSpecs({
                                             scope="row"
                                             className="block w-full p-0 text-left font-normal sm:table-cell sm:w-[38%] sm:align-middle lg:w-[35%]"
                                         >
-                                            <div className="flex items-center gap-4 py-5 pl-layout-gutter-inner pr-6 sm:py-6 lg:py-6">
+                                            <div className="flex items-center gap-4 py-6 pl-layout-gutter-inner pr-6">
                                                 <span
                                                     aria-hidden
                                                     className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground lg:size-11"
@@ -68,7 +68,7 @@ export function ProductSpecs({
                                             </div>
                                         </th>
                                         <td className="block w-full bg-muted/50 p-0 sm:table-cell sm:align-middle">
-                                            <p className="flex min-h-10 items-center pl-6 pr-layout-gutter-inner py-5 text-sm leading-none text-foreground sm:min-h-11 sm:pl-8 sm:py-6 lg:text-base">
+                                            <p className="flex min-h-10 items-center py-6 pl-6 pr-layout-gutter-inner text-sm leading-none text-foreground sm:min-h-11 sm:pl-8 lg:text-base">
                                                 {row.value}
                                             </p>
                                         </td>

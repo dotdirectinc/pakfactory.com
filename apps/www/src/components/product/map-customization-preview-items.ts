@@ -12,7 +12,7 @@ export type CustomizationPreviewItem = {
     imageAlt?: string;
 };
 
-const PREVIEW_LIMIT = 24;
+const PREVIEW_LIMIT = 40;
 
 /** Map catalog options → CDP-linked preview cards (PROD-1913). */
 export function mapCustomizationPreviewItems(

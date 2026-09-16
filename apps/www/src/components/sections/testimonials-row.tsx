@@ -2,11 +2,17 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import type {ProductTestimonial} from '@/lib/catalog/types';
+import {
+    sectionThemeShell,
+    type SectionTheme,
+} from '@/lib/ui/section-theme';
 
 type TestimonialsRowProps = {
     heading?: string;
     items: ProductTestimonial[];
     className?: string;
+    /** Section color band (not app dark/light mode). */
+    theme?: SectionTheme;
 };
 
 /**
@@ -16,11 +22,18 @@ export function TestimonialsRow({
     heading = 'What buyers say',
     items,
     className,
+    theme = 'default',
 }: TestimonialsRowProps) {
+    const shell = sectionThemeShell(theme);
+
     if (items.length === 0) return null;
 
     return (
-        <section id="pdp-testimonials" className={cn('scroll-mt-20', className)}>
+        <section
+            id="pdp-testimonials"
+            data-section-theme={shell['data-section-theme']}
+            className={cn('scroll-mt-20', shell.bandClass, className)}
+        >
             <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
                 <div className="flex flex-col gap-2">
                     <h2 className="text-2xl font-semibold text-brand-blue sm:text-3xl">
@@ -32,7 +45,10 @@ export function TestimonialsRow({
                     {items.map((item, index) => (
                         <li
                             key={`${item.attributionName ?? 'quote'}-${index}`}
-                            className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6"
+                            className={cn(
+                                'flex flex-col gap-4 rounded-lg border border-border bg-card p-6',
+                                shell.elevatedClass,
+                            )}
                         >
                             <blockquote className="text-sm leading-relaxed text-foreground">
                                 “{item.quote}”
