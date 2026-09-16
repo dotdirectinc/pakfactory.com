@@ -190,7 +190,7 @@ function CategoryPill({
                 selected
                     ? 'bg-foreground text-background hover:bg-foreground/90 hover:text-background'
                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-                mobile && 'rounded-full px-3.5 py-1.5 text-xs',
+                mobile && 'rounded-full px-4 py-2 text-xs',
             )}
             onClick={onSelect}
         >

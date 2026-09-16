@@ -3,14 +3,15 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
-import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
+import {ProductCustomizationsMansoryPreview} from '@/components/product/product-customizations-mansory-preview';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {ProductRequestRail} from '@/components/product/product-request-rail';
 import {ProductSpecs} from '@/components/product/product-specs';
-import type {ProductCardData} from '@/components/product/product-card';
 import {FaqSection} from '@/components/sections/faq-section';
-import {ProductsRow} from '@/components/sections/products-row';
-import {QuoteCta} from '@/components/sections/quote-cta';
+import {
+    ProductsRow,
+    type ProductsRowItem,
+} from '@/components/sections/products-row';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import type {Product} from '@/lib/catalog/types';
 import {
@@ -23,26 +24,14 @@ type ProductDetailViewProps = {
     product: Product;
 };
 
-function toProductCardData(product: Product): ProductCardData {
+function toProductsRowItem(product: Product): ProductsRowItem {
     const hero = product.media.find((item) => item.src);
     return {
         title: product.title,
         href: productHref(product.slug),
         sku: product.sku,
-        imageUrl: hero?.src ?? null,
+        imageSrc: hero?.src ?? null,
         imageAlt: hero?.alt ?? product.title,
-        images: product.media
-            .filter((item): item is {src: string; alt: string} =>
-                Boolean(item.src),
-            )
-            .map((item) => ({src: item.src, alt: item.alt})),
-        moq: product.moq,
-        leadTime:
-            typeof product.leadTimeDays === 'number'
-                ? product.leadTimeDays === 1
-                    ? '1 day'
-                    : `${product.leadTimeDays} days`
-                : undefined,
     };
 }
 
@@ -52,7 +41,7 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
     const customizationItems = mapCustomizationPreviewItems(
         product.availableCustomizations,
     );
-    const relatedCards = (product.relatedProducts ?? []).map(toProductCardData);
+    const relatedCards = (product.relatedProducts ?? []).map(toProductsRowItem);
     const testimonials = product.testimonials ?? [];
     const faqs = product.faqs ?? [];
 
@@ -110,21 +99,18 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
             </PageDielineSection>
 
             <ProductSpecs rows={specRows} />
-            <ProductCustomizationsPreview
+            <ProductCustomizationsMansoryPreview
                 styleTitle={style.title}
                 items={customizationItems}
+                productLineSlug={line.slug}
             />
-            <ProductsRow
-                heading="You might also like"
-                products={relatedCards}
-            />
+            <ProductsRow theme="muted" products={relatedCards} />
             <TestimonialsRow items={testimonials} />
             <FaqSection
                 items={faqs}
                 footerHref={WWW_ROUTES.contact}
-                footerLabel="Talk to a specialist"
+                footerLabel="Let's chat"
             />
-            <QuoteCta href={WWW_ROUTES.request} />
         </>
     );
 }

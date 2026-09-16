@@ -56,7 +56,7 @@ function ProductCollectionListCard({
                 )}
             </div>
 
-            <div className="flex shrink-0 flex-col gap-1.5 px-1 pt-4 pb-1">
+            <div className="flex shrink-0 flex-col gap-2 px-1 pt-4 pb-1">
                 <span className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
                     Collection
                 </span>
@@ -85,7 +85,7 @@ export default function ProductCollectionList({
         >
             <div className="mx-auto max-w-7xl px-6 py-14 md:py-16">
                 <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-                    <div className="max-w-3xl flex flex-col gap-3">
+                    <div className="max-w-3xl flex flex-col gap-4">
                         <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
                             {title} Types
                         </p>

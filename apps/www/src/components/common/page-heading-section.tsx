@@ -36,12 +36,7 @@ export function PageHeadingSection({
                 innerClassName,
             )}
         >
-            <div
-                className={cn(
-                    'flex max-w-full flex-col',
-                    isCompact ? 'gap-3' : 'gap-4',
-                )}
-            >
+            <div className="flex max-w-full flex-col gap-4">
                 {eyebrow ? (
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         {eyebrow}

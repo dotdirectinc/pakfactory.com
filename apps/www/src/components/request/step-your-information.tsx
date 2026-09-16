@@ -101,7 +101,7 @@ export function StepYourInformation({
                 <h2 className="text-2xl font-semibold tracking-tight">
                     {REQUEST_COPY.contactHeading}
                 </h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">
+                <p className="mt-2 text-sm text-muted-foreground">
                     {collapsed
                         ? REQUEST_COPY.contactDesc
                         : REQUEST_COPY.contactDescEditing}
@@ -110,7 +110,7 @@ export function StepYourInformation({
 
             {collapsed ? (
                 <div>
-                    <div className="flex items-center gap-3.5 rounded-md border border-border bg-muted/40 p-4">
+                    <div className="flex items-center gap-4 rounded-md border border-border bg-muted/40 p-4">
                         <span
                             className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[13px] font-semibold text-primary"
                             aria-hidden
@@ -136,7 +136,7 @@ export function StepYourInformation({
                             type="button"
                             variant="link"
                             size="sm"
-                            className="h-auto shrink-0 gap-1.5 px-0 text-[12.5px] font-medium"
+                            className="h-auto shrink-0 gap-1 px-0 text-[12.5px] font-medium"
                             onClick={() => setEditing(true)}
                         >
                             <Pencil className="size-3.5" aria-hidden />
@@ -151,7 +151,7 @@ export function StepYourInformation({
             <div className="space-y-3">
                 {viewer ? (
                     <div className="rounded-md border border-border bg-muted/40 px-4 py-3">
-                        <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
+                        <p className="flex items-center gap-1 text-[13px] font-medium text-foreground">
                             <Check
                                 className="size-4 text-emerald-600"
                                 aria-hidden
@@ -163,7 +163,7 @@ export function StepYourInformation({
                         </p>
                     </div>
                 ) : null}
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                     <LabeledInput
                         label={REQUEST_COPY.firstName}
                         required
@@ -181,7 +181,7 @@ export function StepYourInformation({
                         }
                     />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                     <LabeledInput
                         label={REQUEST_COPY.workEmail}
                         required
@@ -219,7 +219,7 @@ export function StepYourInformation({
                         }
                     />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                     <LabeledInput
                         label={REQUEST_COPY.company}
                         optional

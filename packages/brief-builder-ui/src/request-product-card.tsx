@@ -51,7 +51,7 @@ export function RequestProductCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-background p-4",
+        "overflow-hidden rounded-xl border border-border bg-background p-8",
         className,
       )}
     >

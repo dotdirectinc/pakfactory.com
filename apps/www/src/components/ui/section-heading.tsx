@@ -41,7 +41,7 @@ export function SectionHeading({
     const heading = (
         <div
             className={cn(
-                'flex flex-col gap-5',
+                'flex flex-col gap-6',
                 align === 'center' && 'items-center text-center',
             )}
         >

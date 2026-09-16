@@ -126,7 +126,7 @@ export function ContentsField({
                 }
                 className="gap-0"
             >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <p className="text-sm font-medium leading-snug text-foreground">
                         {REQUEST_COPY.additionalNotesOrImages}
                     </p>
@@ -228,7 +228,7 @@ export function ContentsField({
                             ) : null}
                         </div>
                         {rejected.length ? (
-                            <ul className="mt-1 flex flex-col gap-0.5">
+                            <ul className="mt-1 flex flex-col gap-1">
                                 {rejected.map((reason) => (
                                     <li
                                         key={reason}

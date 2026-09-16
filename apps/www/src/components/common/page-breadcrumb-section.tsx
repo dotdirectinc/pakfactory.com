@@ -38,7 +38,7 @@ export function PageBreadcrumbSection({
         <div className={pageDielineOuterClass(className)}>
             <PageDielineFullBleedSection
                 sectionClassName="bg-background"
-                innerClassName="border-b border-dashed border-border py-5"
+                innerClassName="border-b border-dashed border-border py-6"
             >
                 <Breadcrumb items={visible} />
             </PageDielineFullBleedSection>
