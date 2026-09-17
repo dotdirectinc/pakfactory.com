@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   insert,
   setIfMissing,
@@ -7,6 +7,20 @@ import {
   useFormValue,
   type ArrayOfObjectsInputProps,
 } from 'sanity'
+import {
+  group,
+  makeKeyGenerator,
+  HeaderAction,
+  LABEL,
+  Notice,
+  OPTION_PROJECTION,
+  RESET_BUTTON,
+  SearchBox,
+  Tick,
+  TypeHeader,
+  type OptionRow,
+  type TickState,
+} from './customizationTree'
 
 /**
  * The picker for `product.availableCustomizations`.
@@ -36,16 +50,11 @@ import {
  * deletes every out-of-scope entry silently. What it cannot edit it still
  * SHOWS, at the bottom, so the blindness is visible rather than a hole data
  * falls into. PROD-2529.
+ *
+ * The tree itself — grouping, the tick glyph, the collapsible Type header, the
+ * search box — lives in `./customizationTree`, shared with the Customization
+ * Option picker. PROD-2533.
  */
-
-type OptionRow = {
-  _id: string
-  title: string | null
-  typeId: string | null
-  typeTitle: string | null
-  categoryId: string | null
-  categoryTitle: string | null
-}
 
 /**
  * One Customization Type, as the scope notes need it. `decidedBy` is null on a
@@ -91,14 +100,7 @@ const UNIVERSE_QUERY = `{
     _type == "customizationOption"
     && !(_id in path("drafts.**"))
     && type->availabilityDecidedBy == "product"
-  ]{
-    _id,
-    title,
-    "typeId": type._ref,
-    "typeTitle": type->title,
-    "categoryId": type->category._ref,
-    "categoryTitle": type->category->title
-  },
+  ]{${OPTION_PROJECTION}},
   "types": *[
     _type == "customizationType"
     && !(_id in path("drafts.**"))
@@ -136,16 +138,7 @@ const BASE_QUERY = `coalesce(
   "optionIds": coalesce(availableCustomizations[].customization._ref, [])
 }`
 
-/**
- * Array members need a `_key`. Same generator the other custom inputs use
- * (`ChartDataInput`), prefixed per type so a collision across fields is
- * impossible to produce by accident.
- */
-let keySeq = 0
-function newKey(): string {
-  keySeq += 1
-  return `ac${Date.now().toString(36)}${keySeq.toString(36)}${Math.random().toString(36).slice(2, 6)}`
-}
+const newKey = makeKeyGenerator('ac')
 
 /**
  * On a Standard product an entry means "this is offered". On a preset it means
@@ -160,64 +153,6 @@ function entryFor(optionId: string, preselected: boolean): Record<string, unknow
     customization: { _type: 'reference', _ref: optionId },
     preselected,
   }
-}
-
-type TypeGroup = { id: string; title: string; options: OptionRow[] }
-type CategoryGroup = { id: string; title: string; types: TypeGroup[] }
-
-function group(rows: OptionRow[]): CategoryGroup[] {
-  const categories = new Map<string, Map<string, OptionRow[]>>()
-  for (const row of rows) {
-    const categoryKey = row.categoryId ?? '__none__'
-    const typeKey = row.typeId ?? '__none__'
-    let types = categories.get(categoryKey)
-    if (!types) {
-      types = new Map<string, OptionRow[]>()
-      categories.set(categoryKey, types)
-    }
-    const bucket = types.get(typeKey)
-    if (bucket) bucket.push(row)
-    else types.set(typeKey, [row])
-  }
-
-  const byTitle = (a: { title: string }, b: { title: string }) => a.title.localeCompare(b.title)
-  const out: CategoryGroup[] = []
-  for (const [categoryId, types] of categories) {
-    const typeGroups: TypeGroup[] = []
-    for (const [typeId, options] of types) {
-      options.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
-      typeGroups.push({
-        id: typeId,
-        title: options[0]?.typeTitle ?? 'Untitled type',
-        options,
-      })
-    }
-    typeGroups.sort(byTitle)
-    out.push({
-      id: categoryId,
-      title: typeGroups[0]?.options[0]?.categoryTitle ?? 'Untitled category',
-      types: typeGroups,
-    })
-  }
-  out.sort(byTitle)
-  return out
-}
-
-const LABEL: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.07em',
-  opacity: 0.45,
-}
-
-const RESET_BUTTON: CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  font: 'inherit',
-  color: 'inherit',
-  cursor: 'pointer',
 }
 
 /**
@@ -362,35 +297,30 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   }
   const universe = fetched.options
 
-  const notice = (text: string) => (
-    <div
-      style={{
-        padding: '0.7rem 0.8rem',
-        borderRadius: 4,
-        fontSize: 13,
-        background: 'var(--card-muted-bg-color, rgba(125,125,125,0.08))',
-      }}
-    >
-      {text}
-    </div>
-  )
-
   // A preset offers what the box it is based on offers — no more. Until that
   // box says what it offers, there is nothing legitimate to choose from here,
   // and an empty picker should say which document to go and fill in rather
   // than looking broken.
   if (isInspiration) {
     if (!baseId) {
-      return notice(
-        'This is an Inspiration preset, so what it can offer follows from the product it is based on. Set "Based on" (Categorization) first.',
+      return (
+        <Notice>
+          This is an Inspiration preset, so what it can offer follows from the product it is based
+          on. Set &quot;Based on&quot; (Categorization) first.
+        </Notice>
       )
     }
     if (base === null) {
       return <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>Loading options…</div>
     }
     if (base.optionIds.length === 0) {
-      return notice(
-        `${base.title || 'The product this is based on'} does not offer any customizations yet, so there is nothing for this preset to pre-select. Fill in its "Available customizations" first — a preset cannot offer what the box it is built from cannot be made with.`,
+      return (
+        <Notice>
+          {base.title || 'The product this is based on'} does not offer any customizations yet, so
+          there is nothing for this preset to pre-select. Fill in its &quot;Available
+          customizations&quot; first — a preset cannot offer what the box it is built from cannot be
+          made with.
+        </Notice>
       )
     }
   }
@@ -441,38 +371,16 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: '0.75rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.currentTarget.value)}
-          placeholder={`Search ${scoped.length} options…`}
-          style={{
-            flex: 1,
-            minWidth: 160,
-            font: 'inherit',
-            fontSize: 13,
-            padding: '0.4rem 0.6rem',
-            borderRadius: 4,
-            border: '1px solid var(--card-border-color, rgba(125,125,125,0.3))',
-            background: 'transparent',
-            color: 'inherit',
-          }}
-        />
-        <div style={{ fontSize: 12, opacity: 0.6, flexShrink: 0 }}>
-          {isInspiration
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder={`Search ${scoped.length} options…`}
+        summary={
+          isInspiration
             ? `${scoped.length} inherited · ${preselectedCount} pre-selected`
-            : `${selectedCount} of ${scoped.length} selected`}
-        </div>
-      </div>
+            : `${selectedCount} of ${scoped.length} selected`
+        }
+      />
 
       {isInspiration && base ? (
         <div style={{ fontSize: 12, opacity: 0.6, marginBottom: '0.75rem' }}>
@@ -514,69 +422,29 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
             const chosen = type.options.filter((o) => byOption.has(o._id)).length
             return (
               <div key={key} style={{ marginBottom: '0.4rem' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    borderBottom: '1px solid rgba(125,125,125,0.15)',
-                    padding: '0.35rem 0',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setCollapsed((p) => ({ ...p, [key]: !(p[key] !== false) }))}
-                    style={{ ...RESET_BUTTON, display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, textAlign: 'left' }}
-                  >
-                    <span style={{ fontSize: 10, opacity: 0.5, width: 10, flexShrink: 0 }}>
-                      {isCollapsed ? '▶' : '▼'}
-                    </span>
-                    <span style={{ fontWeight: 600, fontSize: 13 }}>{type.title}</span>
-                    <span style={{ fontSize: 11, opacity: 0.55 }}>
-                      {chosen} / {type.options.length}
-                    </span>
-                  </button>
-
-                  {/* An ACTION, never a checkbox. A checked box on the Type would
-                      promise a standing rule — "this product offers Paperboard" —
-                      that the data does not keep: the selection expands to
-                      individual options now, so an option added to this Type next
-                      month is not included. The moment someone "fixes" that by
-                      storing the Type, coarse enumeration is back and `except`
-                      carve-outs come with it. */}
-                  {readOnly ? null : (
-                    <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={() => selectAll(type.options)}
-                        disabled={chosen === type.options.length}
-                        style={{
-                          ...RESET_BUTTON,
-                          fontSize: 11,
-                          opacity: chosen === type.options.length ? 0.3 : 0.75,
-                          textDecoration: 'underline',
-                          cursor: chosen === type.options.length ? 'default' : 'pointer',
-                        }}
-                      >
-                        {isInspiration ? 'Pre-select all' : 'Select all'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => clearAll(type.options)}
-                        disabled={chosen === 0}
-                        style={{
-                          ...RESET_BUTTON,
-                          fontSize: 11,
-                          opacity: chosen === 0 ? 0.3 : 0.75,
-                          textDecoration: 'underline',
-                          cursor: chosen === 0 ? 'default' : 'pointer',
-                        }}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <TypeHeader
+                  title={type.title}
+                  chosen={chosen}
+                  total={type.options.length}
+                  collapsed={isCollapsed}
+                  onToggleCollapsed={() => setCollapsed((p) => ({ ...p, [key]: !(p[key] !== false) }))}
+                  actions={
+                    readOnly ? null : (
+                      <>
+                        <HeaderAction
+                          label={isInspiration ? 'Pre-select all' : 'Select all'}
+                          onClick={() => selectAll(type.options)}
+                          disabled={chosen === type.options.length}
+                        />
+                        <HeaderAction
+                          label="Clear"
+                          onClick={() => clearAll(type.options)}
+                          disabled={chosen === 0}
+                        />
+                      </>
+                    )
+                  }
+                />
 
                 {isCollapsed ? null : (
                   <ul style={{ listStyle: 'none', margin: 0, padding: '0.2rem 0 0 18px' }}>
@@ -588,6 +456,14 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                       // invites someone to try to untick it. Muted, so the tick
                       // reads as a statement rather than a control.
                       const inherited = isInspiration && state === 'available'
+                      const tick: TickState =
+                        state === 'off'
+                          ? 'off'
+                          : inherited
+                            ? 'muted'
+                            : state === 'preselected'
+                              ? 'accent'
+                              : 'on'
                       return (
                         <li key={option._id}>
                           <button
@@ -613,39 +489,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                               textAlign: 'left',
                             }}
                           >
-                            <span
-                              aria-hidden
-                              style={{
-                                width: 15,
-                                height: 15,
-                                flexShrink: 0,
-                                borderRadius: 3,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 10,
-                                lineHeight: 1,
-                                color:
-                                  state === 'off'
-                                    ? 'transparent'
-                                    : inherited
-                                      ? 'var(--card-muted-fg-color, rgba(125,125,125,0.9))'
-                                      : '#fff',
-                                border:
-                                  state === 'off' || inherited
-                                    ? '1px solid var(--card-border-color, rgba(125,125,125,0.45))'
-                                    : '1px solid transparent',
-                                background: inherited
-                                  ? 'transparent'
-                                  : state === 'preselected'
-                                    ? 'var(--card-badge-primary-dot-color, #2276fc)'
-                                    : state === 'available'
-                                      ? 'var(--card-badge-positive-dot-color, #3ab667)'
-                                      : 'transparent',
-                              }}
-                            >
-                              {state === 'preselected' ? '★' : state === 'available' ? '✓' : ''}
-                            </span>
+                            <Tick state={tick} glyph={state === 'preselected' ? '★' : '✓'} />
                             <span style={{ fontSize: 13, flex: 1, minWidth: 0 }}>
                               {option.title || 'Untitled'}
                             </span>
@@ -668,15 +512,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
       })}
 
       {unclassified.length > 0 ? (
-        <div
-          style={{
-            padding: '0.7rem 0.8rem',
-            marginBottom: '1rem',
-            borderRadius: 4,
-            fontSize: 13,
-            background: 'var(--card-muted-bg-color, rgba(125,125,125,0.08))',
-          }}
-        >
+        <Notice style={{ marginBottom: '1rem' }}>
           <strong>
             {unclassified.length} Customization {unclassified.length === 1 ? 'Type has' : 'Types have'} not
             said who decides their availability
@@ -686,19 +522,11 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           {unclassified.map((t) => t.categoryTitle).filter((c, i, a) => c && a.indexOf(c) === i).join(' · ') ||
             'uncategorized'}
           .
-        </div>
+        </Notice>
       ) : null}
 
       {outOfScope.length > 0 ? (
-        <div
-          style={{
-            marginTop: '1.25rem',
-            padding: '0.7rem 0.8rem',
-            borderRadius: 4,
-            fontSize: 12,
-            background: 'var(--card-muted-bg-color, rgba(125,125,125,0.08))',
-          }}
-        >
+        <Notice style={{ marginTop: '1.25rem', fontSize: 12 }}>
           <strong>
             {outOfScope.length} {outOfScope.length === 1 ? 'entry is' : 'entries are'} not editable here.
           </strong>{' '}
@@ -706,7 +534,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           rather than by the product, so this picker does not offer them. They are kept, not lost —
           nothing above will remove them. An entry pointing at a deleted option lands here too — and on
           a preset, so does anything the product it is based on does not itself offer.
-        </div>
+        </Notice>
       ) : null}
     </div>
   )
