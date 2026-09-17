@@ -25,12 +25,11 @@ import type {
     ProductStyleRef,
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
-import {draftMode} from 'next/headers';
-import type {SanityClient} from 'next-sanity';
 import {
-    getPublishedSanityClient,
-    getSanityClient,
-} from '@/lib/sanity/client';
+    draftAwareClient,
+    isDraftRequest,
+    readThrough,
+} from '@/lib/sanity/draft-aware';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
     WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
@@ -44,47 +43,10 @@ function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
 }
 
-/**
- * Is this request inside a Presentation / draft-mode session?
- *
- * `draftMode()` is a dynamic API: it THROWS when there is no request scope, and
- * `generateStaticParams` has none — `listLines()` is called from there on
- * /products/[slug]. So the throw is caught and treated as "not a draft", which
- * keeps static generation on the cached published path. Without the catch,
- * making this seam draft-aware would break the build.
- */
-async function isDraftRequest(): Promise<boolean> {
-    try {
-        return (await draftMode()).isEnabled;
-    } catch {
-        return false;
-    }
-}
-
-/**
- * The client this seam reads through.
- *
- * Draft mode needs the `drafts` perspective for two reasons, only one of which
- * is obvious. The first is content: unpublished edits must be visible. The
- * second is that `stega` is enabled ONLY on the drafts client
- * (`apps/www/src/lib/sanity/client.ts`), and stega encoding is what lets Sanity
- * Presentation map rendered output back to documents and fields. Without it the
- * pane renders but shows "No matching documents" and no click-to-edit overlays
- * — which is exactly what this seam did before, because every fetch used the
- * published client.
- *
- * Outside draft mode nothing changes: same published client, same CDN, no token.
- */
-async function catalogClient(): Promise<SanityClient> {
-    return (await isDraftRequest())
-        ? getSanityClient()
-        : getPublishedSanityClient();
-}
-
 async function fetchSanityProducts(): Promise<Product[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await (await catalogClient()).fetch<CatalogProductDoc[]>(
+        const docs = await (await draftAwareClient()).fetch<CatalogProductDoc[]>(
             CATALOG_PRODUCTS_QUERY,
         );
         return (docs ?? [])
@@ -101,7 +63,7 @@ async function fetchSanityProducts(): Promise<Product[]> {
 async function fetchSanityLines(): Promise<ProductLine[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await (await catalogClient()).fetch<
+        const docs = await (await draftAwareClient()).fetch<
             CatalogProductLineDoc[]
         >(CATALOG_PRODUCT_LINES_QUERY);
         return (docs ?? [])
@@ -121,7 +83,7 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
 async function fetchSanityProduct(slug: string): Promise<Product | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const doc = await (await catalogClient()).fetch<CatalogProductDoc | null>(
+        const doc = await (await draftAwareClient()).fetch<CatalogProductDoc | null>(
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
@@ -163,7 +125,7 @@ async function fetchSanityCustomizationLibrary(): Promise<
         return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
     }
     try {
-        const docs = await (await catalogClient()).fetch<
+        const docs = await (await draftAwareClient()).fetch<
             CatalogLibraryOptionDoc[]
         >(CATALOG_CUSTOMIZATION_LIBRARY_QUERY);
         const items = (docs ?? [])
@@ -226,18 +188,16 @@ function getCachedProductBySlug(slug: string) {
  * as before.
  */
 export async function listLines(): Promise<ProductLine[]> {
-    return (await isDraftRequest()) ? fetchSanityLines() : getCachedLines();
+    return readThrough(fetchSanityLines, getCachedLines);
 }
 
 export async function listProducts(): Promise<Product[]> {
-    return (await isDraftRequest()) ? fetchSanityProducts() : getCachedProducts();
+    return readThrough(fetchSanityProducts, getCachedProducts);
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */
 export async function listCustomizations(): Promise<CustomizationLibraryResult> {
-    return (await isDraftRequest())
-        ? fetchSanityCustomizationLibrary()
-        : getCachedCustomizationLibrary();
+    return readThrough(fetchSanityCustomizationLibrary, getCachedCustomizationLibrary);
 }
 
 /** @deprecated Prefer listCustomizations(); kept as thin alias for call sites. */
@@ -258,7 +218,7 @@ export async function getCustomizationCategory(
 
     const fetchUncached = async (): Promise<CustomizationLibraryItem | null> => {
         try {
-            const doc = await (await catalogClient()).fetch<
+            const doc = await (await draftAwareClient()).fetch<
                 CatalogLibraryOptionDoc | null
             >(CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY, {
                 category: categoryKey,
@@ -285,13 +245,14 @@ export async function getCustomizationCategory(
         },
     );
 
-    return (await isDraftRequest()) ? fetchUncached() : getCached();
+    return readThrough(fetchUncached, getCached);
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
-    return (await isDraftRequest())
-        ? fetchSanityProduct(normalizeSlug(slug))
-        : getCachedProductBySlug(slug);
+    return readThrough(
+        () => fetchSanityProduct(normalizeSlug(slug)),
+        () => getCachedProductBySlug(slug),
+    );
 }
 
 export async function getByProductsSegment(
