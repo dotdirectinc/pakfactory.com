@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Settings } from "lucide-react";
+import { FileText, Settings, SlidersHorizontal } from "lucide-react";
 import { cn } from "@pakfactory/ui/lib/utils";
 
 const PRIMARY_NAV = [
@@ -12,6 +12,14 @@ const PRIMARY_NAV = [
     icon: FileText,
     match: (path: string) =>
       path === "/requests" || path.startsWith("/requests/"),
+  },
+  // Shown to everyone; /spec itself 404s anyone without a registry grant, so a
+  // sales member who clicks it learns nothing about what lives there.
+  {
+    href: "/spec",
+    label: "Spec registry",
+    icon: SlidersHorizontal,
+    match: (path: string) => path === "/spec" || path.startsWith("/spec/"),
   },
 ] as const;
 
