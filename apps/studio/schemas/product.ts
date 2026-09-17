@@ -455,7 +455,7 @@ export const product = defineType({
       // bottom, rather than leaving it somewhere an editor cannot see it.
       // PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `What this product offers, each flagged pre-selected or not. A preset simply has some already flagged. Finishing and Printing are not chosen here — they follow from compatibility between customization options. ${SOURCE_OWNED_NOTE}`,
+      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Finishing and Printing are not chosen on either; they follow from compatibility between customization options. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits
