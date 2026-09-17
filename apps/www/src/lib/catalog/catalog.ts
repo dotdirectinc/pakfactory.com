@@ -30,7 +30,11 @@ import type {
     ProductStyleRef,
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
-import {getPublishedSanityClient} from '@/lib/sanity/client';
+import {
+    draftAwareClient,
+    isDraftRequest,
+    readThrough,
+} from '@/lib/sanity/draft-aware';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
     WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
@@ -47,7 +51,7 @@ function normalizeSlug(slug: string): string {
 async function fetchSanityProducts(): Promise<Product[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<CatalogProductDoc[]>(
+        const docs = await (await draftAwareClient()).fetch<CatalogProductDoc[]>(
             CATALOG_PRODUCTS_QUERY,
         );
         return (docs ?? [])
@@ -64,7 +68,7 @@ async function fetchSanityProducts(): Promise<Product[]> {
 async function fetchSanityLines(): Promise<ProductLine[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await draftAwareClient()).fetch<
             CatalogProductLineDoc[]
         >(CATALOG_PRODUCT_LINES_QUERY);
         return (docs ?? [])
@@ -84,7 +88,7 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
 async function fetchSanityProduct(slug: string): Promise<Product | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const doc = await getPublishedSanityClient().fetch<CatalogProductDoc | null>(
+        const doc = await (await draftAwareClient()).fetch<CatalogProductDoc | null>(
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
@@ -126,7 +130,7 @@ async function fetchSanityCustomizationLibrary(): Promise<
         return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
     }
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await draftAwareClient()).fetch<
             CatalogLibraryOptionDoc[]
         >(CATALOG_CUSTOMIZATION_LIBRARY_QUERY);
         const items = (docs ?? [])
@@ -180,17 +184,25 @@ function getCachedProductBySlug(slug: string) {
     )();
 }
 
+/**
+ * Draft reads MUST NOT go through `unstable_cache`. Two reasons: a cached draft
+ * is stale the moment the editor types again (so Presentation would show an old
+ * value and look broken), and the cache is shared across requests, so one
+ * editor's unpublished content could be served to somebody else. Draft mode is
+ * request-scoped and uncached by design; published reads keep the cache exactly
+ * as before.
+ */
 export async function listLines(): Promise<ProductLine[]> {
-    return getCachedLines();
+    return readThrough(fetchSanityLines, getCachedLines);
 }
 
 export async function listProducts(): Promise<Product[]> {
-    return getCachedProducts();
+    return readThrough(fetchSanityProducts, getCachedProducts);
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */
 export async function listCustomizations(): Promise<CustomizationLibraryResult> {
-    return getCachedCustomizationLibrary();
+    return readThrough(fetchSanityCustomizationLibrary, getCachedCustomizationLibrary);
 }
 
 /** @deprecated Prefer listCustomizations(); kept as thin alias for call sites. */
@@ -209,26 +221,28 @@ export async function getCustomizationCategory(
     const handleKey = normalizeSlug(handle);
     if (!isSanityConfigured()) return null;
 
-    const getCached = unstable_cache(
-        async () => {
-            try {
-                const doc = await getPublishedSanityClient().fetch<
-                    CatalogLibraryOptionDoc | null
-                >(CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY, {
-                    category: categoryKey,
-                    handle: handleKey,
-                });
-                return doc ? mapSanityLibraryOption(doc) : null;
-            } catch (err) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.error(
-                        '[catalog] Sanity customization by handle failed:',
-                        err,
-                    );
-                }
-                return null;
+    const fetchUncached = async (): Promise<CustomizationLibraryItem | null> => {
+        try {
+            const doc = await (await draftAwareClient()).fetch<
+                CatalogLibraryOptionDoc | null
+            >(CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY, {
+                category: categoryKey,
+                handle: handleKey,
+            });
+            return doc ? mapSanityLibraryOption(doc) : null;
+        } catch (err) {
+            if (process.env.NODE_ENV === 'development') {
+                console.error(
+                    '[catalog] Sanity customization by handle failed:',
+                    err,
+                );
             }
-        },
+            return null;
+        }
+    };
+
+    const getCached = unstable_cache(
+        fetchUncached,
         [`www-customization:${categoryKey}:${handleKey}`],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
@@ -236,7 +250,7 @@ export async function getCustomizationCategory(
         },
     );
 
-    return getCached();
+    return readThrough(fetchUncached, getCached);
 }
 
 export async function getCustomizationDetail(
@@ -281,7 +295,10 @@ export async function getCustomizationDetail(
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
-    return getCachedProductBySlug(slug);
+    return readThrough(
+        () => fetchSanityProduct(normalizeSlug(slug)),
+        () => getCachedProductBySlug(slug),
+    );
 }
 
 export async function getByProductsSegment(

@@ -10,7 +10,11 @@ import {
   useDeleteTranslationAction,
   useDuplicateWithTranslationsAction,
 } from '@sanity/document-internationalization'
-import { websiteLocations, makeBlogLocations } from './presentation/locations'
+import {
+  siteLocations,
+  makeBlogWorkspaceLocations,
+  caseStudiesWorkspaceLocations,
+} from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import { publishCaseStudy } from './actions/publishCaseStudy'
@@ -33,7 +37,16 @@ import { RelatedPostsView } from './components/RelatedPostsView'
 import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
-import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
+import { ProductAvailableCustomizationsView } from './components/ProductAvailableCustomizationsView'
+import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
+import { SolutionStylesView } from './components/SolutionStylesView'
+import {
+  CustomizationCategoryTypesView,
+  CustomizationOptionUsedByView,
+  CustomizationTypeOptionsView,
+  PropertyValueUsedByView,
+  PropertyValuesView,
+} from './components/customizationViews'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
 const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
@@ -71,6 +84,57 @@ const BLOG_PREVIEW_RAW =
 const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
   ? BLOG_PREVIEW_RAW
   : `${BLOG_PREVIEW_RAW}/`
+// SITE preview BASE — the www app at its ROOT, for the seven content workspaces
+// whose documents live outside /case-studies and /blog (PROD-2494). This is a
+// DIFFERENT surface from WWW_PREVIEW_BASE above: that one is path-scoped to
+// `/case-studies/` because nginx forwards only that prefix at the apex, and the
+// product / solution / customization routes are not reachable there at all.
+//
+// Today the only wired target is `staging.pakfactory.com`, which serves those
+// routes and reads the **development** dataset (verified: its asset URLs are
+// cdn.sanity.io/files/8293wrxp/development/...), so it pairs with the staging
+// Studio. The production Studio has no site target until those workspaces are
+// released — see the release switch below and TARGETS in
+// scripts/sanity/studio-targets.mjs.
+//
+// Presence of this variable is the RELEASE SWITCH for the seven site-root
+// workspaces. No fallback on purpose: when it is unset, those workspaces get no
+// Presentation tab at all.
+//
+// Why availability follows configuration rather than a dataset check: the
+// site-root surfaces are unreleased, and their routes exist only on staging. QA
+// previews them from the staging Studio, where Studio and site share the
+// `development` dataset. A production-dataset Studio cannot preview them — the
+// preview secret is a document in the Studio's OWN dataset, so it fails with
+// "Invalid secret" (verified 2026-09-17). Wiring the target is therefore the
+// same act as releasing the surface: set SITE for the prod target in
+// scripts/sanity/studio-targets.mjs and the tab appears.
+//
+// Local dev: `pnpm studio:local` writes it into apps/studio/.env.local.
+const SITE_PREVIEW_RAW = process.env.SANITY_STUDIO_PREVIEW_URL_SITE
+const SITE_PREVIEW_BASE = !SITE_PREVIEW_RAW
+  ? ''
+  : SITE_PREVIEW_RAW.endsWith('/')
+    ? SITE_PREVIEW_RAW
+    : `${SITE_PREVIEW_RAW}/`
+// Derived from the wired target rather than hardcoded: one fewer place to edit
+// at release, and an unwired Studio carries no stray origin. Local dev keeps
+// :3003 (apps/www's dev port) so `pnpm studio:local` works without extra setup.
+const SITE_ALLOW_ORIGINS = SITE_PREVIEW_BASE
+  ? [new URL(SITE_PREVIEW_BASE).origin, 'http://localhost:3003']
+  : []
+
+// Path the www app's case-study surface is mounted under on this origin
+// ('/case-studies' everywhere today; '' if it ever moves to an origin root).
+// Used to build the draft-mode enable path — see the note on `previewMode` below.
+const WWW_BASE_PATH = (() => {
+  try {
+    return new URL(WWW_PREVIEW_BASE).pathname.replace(/\/+$/, '')
+  } catch {
+    return ''
+  }
+})()
+
 // basePath the blog app is mounted under on this origin ('/blog' in prod, '' local).
 // Location hrefs are resolved against the ORIGIN only (Presentation drops the base
 // path when building them), so they must be prefixed with this — see locations.ts.
@@ -130,7 +194,58 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
-      S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
+      S.view.component(ProductAvailableCustomizationsView).title('Customization'),
+    ])
+  }
+  // Solution Styles are listed flat in the Solutions workspace, so this tab is
+  // the only place a solution's own collections appear together — with the match
+  // count that says which of them would publish empty.
+  if (schemaType === 'solution') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(SolutionStylesView).title('Solution Styles'),
+    ])
+  }
+  // Not a nicety. A Solution Style is a stored filter, and a stored filter can
+  // resolve to zero with the form still valid — this tab is the only thing that
+  // says so before the page publishes empty.
+  if (schemaType === 'solutionStyle') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(SolutionStyleMatchesView).title('Matching products'),
+    ])
+  }
+  // Customization and Property trees — the reference that makes each of these
+  // relationships lives on the OTHER document, so the form cannot show any of
+  // them. See `createReferencedByView`.
+  if (schemaType === 'customizationCategory') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationCategoryTypesView).title('Types'),
+    ])
+  }
+  if (schemaType === 'customizationType') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationTypeOptionsView).title('Options'),
+    ])
+  }
+  if (schemaType === 'customizationOption') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationOptionUsedByView).title('Used by'),
+    ])
+  }
+  if (schemaType === 'property') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(PropertyValuesView).title('Values'),
+    ])
+  }
+  if (schemaType === 'propertyValue') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(PropertyValueUsedByView).title('Used by'),
     ])
   }
   return S.document().views([S.view.form()])
@@ -279,6 +394,44 @@ const releasesAndScheduleDisabled = {
   scheduledDrafts: { enabled: false as const },
 }
 
+// Presentation for the seven content workspaces (PROD-2494). One factory rather
+// than seven copies: every workspace previews the same origin with the same
+// resolver map, and the only thing that varies is which documents you arrive
+// from. `enable` is RELATIVE so it resolves under the base path, matching the
+// blog and case-studies tools above.
+const sitePresentation = () =>
+  presentationTool({
+    name: 'presentation',
+    title: 'Presentation',
+    previewUrl: {
+      initial: SITE_PREVIEW_BASE,
+      // ABSOLUTE, with a leading slash — and that slash is the whole fix.
+      //
+      // Presentation resolves a RELATIVE `enable` against the iframe's CURRENT
+      // pathname, not against `initial`. From /products/custom-book-style-…,
+      // `new URL('api/draft-mode/enable', …)` drops the last segment and yields
+      // **/products/api/draft-mode/enable**, which 404s. The iframe then renders
+      // that 404 page, draft mode never engages, and Presentation reports
+      // "Unable to connect to visual editing" with "No matching documents" —
+      // three symptoms, one missing slash. Observed on staging 2026-09-17.
+      //
+      // The site-root surface is served from the origin root, so the route is at
+      // /api/draft-mode/enable for every depth of page. An absolute path is both
+      // correct and depth-proof here.
+      //
+      // The blog and case-studies tools below now derive theirs the same way,
+      // from their own base paths (this commit).
+      previewMode: { enable: '/api/draft-mode/enable' },
+    },
+    allowOrigins: SITE_ALLOW_ORIGINS,
+    resolve: { locations: siteLocations },
+  })
+
+// Empty when no site-root preview target is wired — see SITE_PREVIEW_RAW above.
+// Spread into the seven site-root workspaces so an unreleased surface simply has
+// no Presentation tab, rather than one that always errors.
+const sitePresentationPlugins = SITE_PREVIEW_RAW ? [sitePresentation()] : []
+
 export default defineConfig([
   // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
   // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
@@ -308,18 +461,42 @@ export default defineConfig([
         title: 'Presentation',
         previewUrl: {
           // `initial` (not the deprecated `origin`) so the base path survives:
-          // origin is host-only. `enable` is RELATIVE (no leading slash) so it
-          // resolves under the base's path → `${base}api/draft-mode/enable`
-          // (a leading slash would drop `/blog`). PROD-2223.
+          // origin is host-only.
           initial: BLOG_PREVIEW_BASE,
-          previewMode: { enable: 'api/draft-mode/enable' },
+          // ABSOLUTE, built from this surface's base path. A RELATIVE `enable`
+          // is resolved by Presentation against the iframe's CURRENT pathname,
+          // not against `initial`, so it only lands correctly when the previewed
+          // page sits exactly one segment under the base:
+          //
+          //   /blog/my-post     → /blog/api/draft-mode/enable          ✅
+          //   /blog/topics/foo  → /blog/topics/api/draft-mode/enable   ❌ 404
+          //
+          // The depth-2 case silently 404s: the iframe renders that 404 page,
+          // draft mode never engages, and Presentation reports "Unable to
+          // connect" with "No matching documents". Diagnosed on the site-root
+          // tool (PROD-2494) and fixed the same way here.
+          //
+          // Derived rather than hardcoded so it follows the env-driven base:
+          // '' locally → /api/draft-mode/enable, '/blog' in prod →
+          // /blog/api/draft-mode/enable. Both verified to exist (401, not 404).
+          previewMode: {
+            enable: `${BLOG_BASE_PATH}/api/draft-mode/enable`,
+          },
         },
         allowOrigins: [
           'http://localhost:3004',
           'https://origin.blog.pakfactory.com',
           'https://pakfactory.com',
+          // `pnpm studio:staging` points this workspace's preview at the staging
+          // blog, which is mounted under /blog. Appended, not substituted — the
+          // origins above still serve the local and production targets.
+          // NOTE: that host sits behind Vercel Deployment Protection. Signed into
+          // the Vercel team it serves 200 with no x-frame-options and iframes
+          // fine; without a session it 302s to an SSO page carrying
+          // `x-frame-options: DENY`, so the pane renders blank rather than erroring.
+          'https://staging-blog.pakfactory.com',
         ],
-        resolve: { locations: makeBlogLocations(BLOG_BASE_PATH) },
+        resolve: { locations: makeBlogWorkspaceLocations(BLOG_BASE_PATH) },
       }),
       colorInput(),
       media(),
@@ -346,12 +523,14 @@ export default defineConfig([
         name: 'presentation',
         title: 'Presentation',
         previewUrl: {
-          // `initial` (not `origin`) so the `/case-studies/` path survives; a
-          // relative `enable` (no leading slash) resolves under it →
-          // `…/case-studies/api/draft-mode/enable` (a leading slash would drop the
-          // path and hit Magento at the apex root). PROD-2223.
+          // `initial` (not `origin`) so the `/case-studies/` path survives.
           initial: WWW_PREVIEW_BASE,
-          previewMode: { enable: 'api/draft-mode/enable' },
+          // Same fix as the blog tool above; see that note. `/case-studies` is
+          // also where nginx forwards at the apex, so the route must stay under
+          // it (PROD-2223) — deriving from the base keeps both facts in one place.
+          previewMode: {
+            enable: `${WWW_BASE_PATH}/api/draft-mode/enable`,
+          },
         },
         allowOrigins: [
           'http://localhost:3003',
@@ -360,8 +539,10 @@ export default defineConfig([
           // Magento may serve (or 301 to) the www host; keep both so Presentation
           // does not bounce the iframe off allowOrigins after a host redirect.
           'https://www.pakfactory.com',
+          // `pnpm studio:staging` previews case studies on the staging site.
+          'https://staging.pakfactory.com',
         ],
-        resolve: { locations: websiteLocations },
+        resolve: { locations: caseStudiesWorkspaceLocations },
       }),
       colorInput(),
       media(),
@@ -381,6 +562,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: productsStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -399,6 +581,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: customizationStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -417,6 +600,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -435,6 +619,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: expertiseStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -453,6 +638,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -472,6 +658,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -491,6 +678,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: globalStructure, defaultDocumentNode }),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),

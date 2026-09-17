@@ -97,7 +97,17 @@ const TARGETS: Record<string, string> = {
   'sol-retail-shelf-packaging': 'Retail Shelf Packaging',
 }
 
-const AUTHORED_FIELDS = ['shortDescription', 'description', 'headline', 'heroImage', 'sections'] as const
+// `heroImage` stays alongside `featuredImage` (renamed in PROD-2519): this guard
+// exists to refuse deleting a document someone authored, so it must look under
+// every key that content could have been written to, not only the current one.
+const AUTHORED_FIELDS = [
+  'shortDescription',
+  'description',
+  'headline',
+  'heroImage',
+  'featuredImage',
+  'sections',
+] as const
 
 type Row = {
   _id: string
