@@ -106,6 +106,44 @@ export const customizationType = defineType({
       initialValue: 'one',
       validation: (Rule) => Rule.required(),
     }),
+    // PROD-2532 — this replaces a hard-coded list of two category slugs that used to
+    // live in `components/AvailableCustomizationsInput.tsx`. That list matched on
+    // `type->category->slug.current`, so renaming or deleting a Category made a whole
+    // group vanish from the product picker with no error and nothing to notice.
+    //
+    // ❌ DO NOT move this to Customization Category, and do not add a second copy
+    // there. It is the obvious simplification — 4 documents instead of 36 — and it is
+    // the reason this field exists at all: Finishing holds ONE product-decided Type
+    // (Food-Safe Treatment) and seven material-decided ones, so a Category-level answer
+    // cannot be given without splitting Finishing in two. A flag on both levels is
+    // inheritance-with-overrides, retired from this branch by D12, D30 and D47 §2 —
+    // the same argument that moved `role` off the Type and onto the Option.
+    //
+    // NO `initialValue`, unlike `customerSelects` above, and that is deliberate. No
+    // default is safe in both directions: default `customization` and a forgotten Type
+    // is INVISIBLE — its options silently never reach any product's picker, which is
+    // precisely the bug this field removes. Required with no default makes the author
+    // choose. The Studio rule binds the form only, so the picker also counts unanswered
+    // Types on screen rather than dropping them in silence.
+    defineField({
+      name: 'availabilityDecidedBy',
+      title: 'Who decides whether a product offers these options?',
+      type: 'string',
+      group: 'content',
+      description:
+        'Product — each product lists which of these options it offers, under "Available customizations" on the product. Another Customization — availability follows from what it goes on, so the material decides rather than the product. Materials and Additional Customization are product-decided; most of Finishing and all of Printing are decided by the material.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'Product — each product lists which of these it offers', value: 'product' },
+          {
+            title: 'Another Customization — the material or finish it goes on decides',
+            value: 'customization',
+          },
+        ],
+      },
+      validation: (Rule) => Rule.required(),
+    }),
     // DEPRECATED by the rename above. Kept because it is populated on all 37 Types
     // (drafts included), and Conventions §4.3 forbids removing a populated field in
     // the change that stops using it. `migrate:split-customization-role` copies it to
