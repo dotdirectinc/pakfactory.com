@@ -270,8 +270,8 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
 
       <div style={{ fontSize: 12, opacity: 0.6, marginBottom: '0.75rem' }}>
         Compatibility reads both ways, so it only has to be recorded once. A muted tick is an option
-        that already names <em>this</em> one in its own list — it counts the same, and the row links
-        straight to it if you want to remove it.
+        that already names <em>this</em> one in its own list — it counts the same, and its name is a
+        link if you want to go and remove it.
       </div>
 
       {groups.length === 0 ? (
@@ -360,17 +360,11 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
                       if (inbound) {
                         return (
                           <li key={option._id}>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                router.navigateIntent('edit', {
-                                  id: option._id,
-                                  type: 'customizationOption',
-                                })
-                              }
-                              title={`Recorded on ${option.title || 'that option'}. Open it to remove.`}
-                              style={{ ...RESET_BUTTON, ...ROW, cursor: 'pointer' }}
-                            >
+                            {/* Not a button. The row states a fact it cannot change;
+                                only the name is actionable, so only the name is a
+                                control. A whole row that looks clickable and mostly
+                                is not is the ambiguity this is avoiding. */}
+                            <div style={{ ...ROW, cursor: 'default' }}>
                               <Tick state="muted" />
                               <span style={{ fontSize: 13, flex: 1, minWidth: 0 }}>
                                 {option.title || 'Untitled'}
@@ -378,16 +372,33 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
                               <span
                                 style={{
                                   fontSize: 10,
-                                  opacity: 0.45,
+                                  opacity: 0.5,
                                   flexShrink: 0,
                                   textTransform: 'uppercase',
                                   letterSpacing: '0.05em',
-                                  textDecoration: 'underline',
                                 }}
                               >
-                                Open to untick
+                                From{' '}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    router.navigateIntent('edit', {
+                                      id: option._id,
+                                      type: 'customizationOption',
+                                    })
+                                  }
+                                  title={`Recorded on ${option.title || 'that option'}. Open it to remove.`}
+                                  style={{
+                                    ...RESET_BUTTON,
+                                    textDecoration: 'underline',
+                                    letterSpacing: 'inherit',
+                                    textTransform: 'inherit',
+                                  }}
+                                >
+                                  {option.title || 'Untitled'}
+                                </button>
                               </span>
-                            </button>
+                            </div>
                           </li>
                         )
                       }
