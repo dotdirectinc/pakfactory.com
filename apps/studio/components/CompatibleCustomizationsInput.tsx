@@ -246,9 +246,11 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
         onChange={setSearch}
         placeholder={`Search ${selectable.length} options…`}
         summary={
-          inboundCount > 0
-            ? `${storedCount} chosen here · ${inboundCount} from the other side`
-            : `${storedCount} of ${selectable.length} chosen`
+          // The total stays in both shapes. Dropping it when something arrives
+          // from the other side made the one case that needs the most context
+          // the one that showed the least.
+          `${storedCount} of ${selectable.length} chosen` +
+          (inboundCount > 0 ? ` · ${inboundCount} from elsewhere` : '')
         }
       />
 
@@ -273,6 +275,10 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
             const isCollapsed = term ? false : collapsed[key] !== false
             const pickable = type.options.filter((o) => !isGreyed(o))
             const chosen = pickable.filter((o) => outbound.has(o._id)).length
+            // Ticks this type shows that are NOT stored here. Counted separately
+            // rather than folded into `chosen`, because Select all and Clear act
+            // on what this document owns and the fraction has to match them.
+            const elsewhere = pickable.filter((o) => !outbound.has(o._id) && inboundFrom.has(o._id)).length
             const isOwnExclusiveType = ownTypeIsExclusive && type.id === ownTypeId
             return (
               <div key={key} style={{ marginBottom: '0.4rem' }}>
@@ -280,6 +286,7 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
                   title={type.title}
                   chosen={chosen}
                   total={pickable.length}
+                  note={elsewhere > 0 ? `${elsewhere} from elsewhere` : undefined}
                   collapsed={isCollapsed}
                   onToggleCollapsed={() => setCollapsed((p) => ({ ...p, [key]: !(p[key] !== false) }))}
                   actions={
