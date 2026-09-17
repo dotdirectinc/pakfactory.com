@@ -258,6 +258,7 @@ export function TypeHeader({
   title,
   chosen,
   total,
+  note,
   collapsed,
   onToggleCollapsed,
   actions,
@@ -265,6 +266,10 @@ export function TypeHeader({
   title: string
   chosen: number
   total: number
+  /** A breakdown of `chosen`, never a remainder. `1 / 7 · 1 from elsewhere` reads
+   *  as a total and where part of it lives; `0 / 7 · 1 from elsewhere` made the
+   *  reader add the two up to answer the only question the header is asked. */
+  note?: string
   collapsed: boolean
   onToggleCollapsed: () => void
   actions?: ReactNode
@@ -298,6 +303,7 @@ export function TypeHeader({
         <span style={{ fontWeight: 600, fontSize: 13 }}>{title}</span>
         <span style={{ fontSize: 11, opacity: 0.55 }}>
           {chosen} / {total}
+          {note ? ` · ${note}` : ''}
         </span>
       </button>
       {actions ? <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>{actions}</div> : null}

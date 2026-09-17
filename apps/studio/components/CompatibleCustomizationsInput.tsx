@@ -253,6 +253,12 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
   const compatibleCount = selectable.filter(
     (o) => outbound.has(o._id) || inboundFrom.has(o._id),
   ).length
+  // A breakdown of that total, not a separate one: how many of the ticks on
+  // screen are recorded on the other document, which is also exactly the set
+  // Clear cannot reach.
+  const elsewhereCount = selectable.filter(
+    (o) => !outbound.has(o._id) && inboundFrom.has(o._id),
+  ).length
 
   // An entry pointing at something this picker does not offer: a `reference`
   // Option (validation warns), or one that has been deleted. Shown, not hidden —
@@ -265,7 +271,10 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
         value={search}
         onChange={setSearch}
         placeholder={`Search ${selectable.length} options…`}
-        summary={`${compatibleCount} of ${selectable.length} compatible`}
+        summary={
+          `${compatibleCount} of ${selectable.length} compatible` +
+          (elsewhereCount > 0 ? ` · ${elsewhereCount} from elsewhere` : '')
+        }
       />
 
       <div style={{ fontSize: 12, opacity: 0.6, marginBottom: '0.75rem' }}>
@@ -295,6 +304,7 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
             // counted. The fraction matches the rows in both cases.
             const chosen = pickable.filter((o) => outbound.has(o._id) || inboundFrom.has(o._id)).length
             const clearable = pickable.filter((o) => outbound.has(o._id)).length
+            const elsewhere = chosen - clearable
             const isOwnExclusiveType = ownTypeIsExclusive && type.id === ownTypeId
             return (
               <div key={key} style={{ marginBottom: '0.4rem' }}>
@@ -302,6 +312,7 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
                   title={type.title}
                   chosen={chosen}
                   total={pickable.length}
+                  note={elsewhere > 0 ? `${elsewhere} from elsewhere` : undefined}
                   collapsed={isCollapsed}
                   onToggleCollapsed={() => setCollapsed((p) => ({ ...p, [key]: !(p[key] !== false) }))}
                   actions={
