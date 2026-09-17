@@ -7,6 +7,7 @@ import type {
 import {
     CUSTOMIZATION_PRODUCT_LINE_FACET_ID,
 } from '@/lib/catalog/types';
+import {compareCategorySlugs} from '@/lib/catalog/customization-category-policy';
 import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
 
 function upsertOption(
@@ -127,7 +128,7 @@ export function buildCustomizationLibraryResult(
 
     const tabs = [...tabMap.entries()]
         .map(([value, label]) => ({value, label}))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => compareCategorySlugs(a.value, b.value));
 
     return {items, tabs, facetCatalog: {shared, byCategory}};
 }

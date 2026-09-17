@@ -12,7 +12,12 @@ import {
 import {CustomizationGuidedView} from '@/components/customization-builder/customization-guided-view';
 import {CustomizationWorkspaceView} from '@/components/customization-builder/customization-workspace-view';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
-import type {ProductDimensionRange} from '@/lib/catalog/types';
+import {
+    filterOfferBySelections,
+    fromOfferOption,
+    resolveOffer,
+} from '@/lib/catalog/customization-availability';
+import type {CustomizationOption, ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
 import {
     buildStepsFromCatalog,
@@ -74,6 +79,20 @@ function restoreOptionId(
     return null;
 }
 
+function selectionAnswersFromState(state: CustomizationBuilderState) {
+    const out: Record<string, {optionId?: string; typeId?: string}> = {};
+    for (const [key, answer] of Object.entries(state.answers)) {
+        if (!answer || answer.status !== 'set' || !('selection' in answer)) {
+            continue;
+        }
+        out[key] = {
+            optionId: answer.selection.optionId,
+            typeId: answer.selection.typeId,
+        };
+    }
+    return out;
+}
+
 export function CustomizationBuilder({
     open,
     onOpenChange,
@@ -84,10 +103,36 @@ export function CustomizationBuilder({
     initialStepKey,
     dimensionRange,
 }: CustomizationBuilderProps) {
+    const filteredCustomizations = useMemo(() => {
+        const asOptions = availableCustomizations as CustomizationOption[];
+        const offer = resolveOffer(asOptions);
+        const {offer: filtered} = filterOfferBySelections(
+            offer,
+            selectionAnswersFromState(value),
+        );
+        return filtered.map(fromOfferOption);
+    }, [availableCustomizations, value.answers]);
+
     const steps = useMemo(
-        () => buildStepsFromCatalog(availableCustomizations),
-        [availableCustomizations],
+        () => buildStepsFromCatalog(filteredCustomizations),
+        [filteredCustomizations],
     );
+
+    // Clear derived answers that became invalid after a material change.
+    useEffect(() => {
+        const asOptions = availableCustomizations as CustomizationOption[];
+        const offer = resolveOffer(asOptions);
+        const {invalidAnswerKeys} = filterOfferBySelections(
+            offer,
+            selectionAnswersFromState(value),
+        );
+        if (invalidAnswerKeys.length === 0) return;
+        let next = value;
+        for (const key of invalidAnswerKeys) {
+            next = clearStep(next, key);
+        }
+        if (next !== value) onChange(next);
+    }, [availableCustomizations, value.answers]);
 
     const [mode, setMode] = useState<BuilderMode>('guided');
     const [activeKey, setActiveKey] = useState<BuilderStepKey>('dimensions');

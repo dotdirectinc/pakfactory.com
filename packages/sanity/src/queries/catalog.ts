@@ -32,7 +32,6 @@ const CATEGORY_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  order,
   description
 }`;
 
@@ -40,25 +39,44 @@ const TYPE_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
+  customerSelects,
   cardinality,
   description,
   "category": category->${CATEGORY_PROJ}
 }`;
+
+const COMPAT_REF_IDS = /* groq */ `coalesce(worksOnCustomizations[]._ref, [])`;
+const INCOMPAT_REF_IDS = /* groq */ `coalesce(incompatibleWithCustomizations[]._ref, [])`;
 
 const OPTION_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
   status,
+  configuratorRole,
   role,
+  hasPage,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  "worksOnIds": ${COMPAT_REF_IDS},
+  "incompatibleIds": ${INCOMPAT_REF_IDS},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
   "type": type->${TYPE_PROJ}
+}`;
+
+/** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
+const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
+  _type == "product" &&
+  (status == "active" || !defined(status)) &&
+  ^._id in availableCustomizations[].customization._ref
+].coalesce(productLine, basedOn->productLine)->{
+  _id,
+  title,
+  "slug": slug.current
 }`;
 
 const LINE_REF_PROJ = /* groq */ `{
@@ -255,11 +273,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_PROJ},
-  "productLines": availableOnProducts[@->_type == "productLine"]->{
-    _id,
-    title,
-    "slug": slug.current
-  }
+  ${PRODUCT_LINES_FROM_PRODUCTS}
 }`;
 
 /** Single library option by category + handle slugs (PROD-2456). Same `hasPage` gate as the library list. */
@@ -289,11 +303,7 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_PROJ},
-  "productLines": availableOnProducts[@->_type == "productLine"]->{
-    _id,
-    title,
-    "slug": slug.current
-  }
+  ${PRODUCT_LINES_FROM_PRODUCTS}
 }`;
 
 /**
@@ -332,11 +342,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
-  "productLines": availableOnProducts[@->_type == "productLine"]->{
-    _id,
-    title,
-    "slug": slug.current
-  },
+  ${PRODUCT_LINES_FROM_PRODUCTS},
   "faqs": faqs[]{
     "question": select(
       _type == "faqItem" => question,
@@ -349,10 +355,24 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   }
 }`;
 
+/**
+ * Active configurable options in derived categories (finishing / printing).
+ * Used by www to expand product offers via worksOn / incompatibleWith (PROD-2529).
+ */
+export const CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  status == "active" &&
+  coalesce(configuratorRole, role) == "configurable" &&
+  type->category->slug.current in $categorySlugs
+] | order(title asc) {
+  ${OPTION_PROJ}
+}`;
+
 export type CatalogCategoryDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  /** Retired on www (policy sortIndex); kept optional for older projections. */
   order?: number | null;
   description?: string | null;
 };
@@ -361,6 +381,8 @@ export type CatalogTypeDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  customerSelects?: 'one' | 'many' | null;
+  /** Deprecated — prefer customerSelects. */
   cardinality?: 'one' | 'many' | null;
   description?: string | null;
   category: CatalogCategoryDoc | null;
@@ -371,10 +393,15 @@ export type CatalogOptionDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
+  configuratorRole?: 'configurable' | 'reference' | null;
+  /** Deprecated — prefer configuratorRole. */
   role?: 'configurable' | 'reference' | null;
+  hasPage?: boolean | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
+  worksOnIds?: (string | null)[] | null;
+  incompatibleIds?: (string | null)[] | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
 };

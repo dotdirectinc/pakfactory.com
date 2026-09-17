@@ -1,4 +1,9 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
+import {compareCategorySlugs} from '@/lib/catalog/customization-category-policy';
+import {
+    fromOfferOption,
+    type OfferOption,
+} from '@/lib/catalog/customization-availability';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
@@ -160,6 +165,14 @@ function dimensionsStep(): BuilderStep {
 }
 
 /**
+ * Build guided/workspace steps from a resolved + expanded offer.
+ * Categories follow www category policy order (not Studio category.order).
+ */
+export function buildStepsFromOffer(offer: OfferOption[]): BuilderStep[] {
+    return buildStepsFromCatalog(offer.map(fromOfferOption));
+}
+
+/**
  * Build guided/workspace steps from the product's available customizations.
  * Categories/types/options come only from that set (Sanity option → type → category).
  */
@@ -171,7 +184,6 @@ export function buildStepsFromCatalog(
     type CategoryBucket = {
         slug: string;
         title: string;
-        order: number;
         description: string;
         types: Map<
             string,
@@ -193,10 +205,6 @@ export function buildStepsFromCatalog(
             bucket = {
                 slug: categorySlug,
                 title: item.categoryTitle?.trim() || categorySlug,
-                order:
-                    typeof item.categoryOrder === 'number'
-                        ? item.categoryOrder
-                        : Number.MAX_SAFE_INTEGER,
                 description: item.categoryDescription?.trim() || '',
                 types: new Map(),
             };
@@ -206,13 +214,17 @@ export function buildStepsFromCatalog(
         const typeId = item.typeId?.trim() || `fallback-${categorySlug}`;
         let typeBucket = bucket.types.get(typeId);
         if (!typeBucket) {
+            const customerSelects =
+                item.customerSelects === 'many' || item.cardinality === 'many'
+                    ? 'many'
+                    : 'one';
             typeBucket = {
                 type: {
                     id: typeId,
                     slug: item.typeSlug?.trim() || typeId,
                     title: item.typeTitle?.trim() || bucket.title,
                     categoryId: categorySlug,
-                    cardinality: item.cardinality === 'many' ? 'many' : 'one',
+                    cardinality: customerSelects,
                     description: item.typeDescription?.trim() || '',
                 },
                 options: [],
@@ -235,10 +247,9 @@ export function buildStepsFromCatalog(
         });
     }
 
-    const orderedCategories = [...categories.values()].sort((a, b) => {
-        if (a.order !== b.order) return a.order - b.order;
-        return a.title.localeCompare(b.title);
-    });
+    const orderedCategories = [...categories.values()].sort((a, b) =>
+        compareCategorySlugs(a.slug, b.slug),
+    );
 
     for (const category of orderedCategories) {
         const types: BuilderType[] = [];

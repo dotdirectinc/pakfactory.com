@@ -9,20 +9,29 @@ export type CustomizationOption = {
     /** Sanity customizationCategory.slug */
     category: CustomizationCategory;
     categoryTitle?: string;
+    /** @deprecated Prefer policy sortIndex via customization-category-policy. */
     categoryOrder?: number;
     categoryDescription?: string;
     typeId?: string;
     typeSlug?: string;
     typeTitle?: string;
     typeDescription?: string;
+    /** Prefer customerSelects; kept as mirror for builder. */
     cardinality?: 'one' | 'many';
+    customerSelects?: 'one' | 'many';
     slug?: string;
     shortDescription?: string;
     description?: string;
     imageUrl?: string | null;
     preselected?: boolean;
+    /** Prefer configuratorRole. */
     role?: 'configurable' | 'reference';
+    configuratorRole?: 'configurable' | 'reference';
     status?: string;
+    /** Option/type ids this finishing/printing works on (empty = unrestricted). */
+    worksOnIds?: string[];
+    /** Option/type ids this cannot combine with. */
+    incompatibleIds?: string[];
 };
 
 export type CatalogMedia = {
@@ -140,7 +149,7 @@ export type CustomizationLibraryItem = {
     imageAlt?: string | null;
     /** Full media list for card gallery (hero = images[0] / imageUrl). */
     images?: {src: string; alt?: string}[];
-    /** One-way from option.availableOnProducts → productLine. */
+    // One-way from products that list this option in availableCustomizations.
     productLines: ProductLineRef[];
     /** property.slug → propertyValue.slug[] */
     attrs: Record<string, string[]>;

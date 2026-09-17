@@ -16,6 +16,7 @@ export type {
 
 export {
     buildStepsFromCatalog,
+    buildStepsFromOffer,
     createEmptyBuilderState,
     emptyDimensions,
     emptyFace,
