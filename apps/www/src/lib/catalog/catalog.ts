@@ -261,10 +261,10 @@ export async function getCustomizationDetail(
     const handleKey = normalizeSlug(handle);
     if (!isSanityConfigured()) return null;
 
-    const getCached = unstable_cache(
-        async () => {
+    const fetchUncached =
+        async (): Promise<CustomizationDetailResult | null> => {
             try {
-                const doc = await getPublishedSanityClient().fetch<
+                const doc = await (await draftAwareClient()).fetch<
                     CatalogCustomizationDetailDoc | null
                 >(CATALOG_CUSTOMIZATION_DETAIL_QUERY, {
                     category: categoryKey,
@@ -283,7 +283,10 @@ export async function getCustomizationDetail(
                 }
                 return null;
             }
-        },
+        };
+
+    const getCached = unstable_cache(
+        fetchUncached,
         [`www-customization-detail:${categoryKey}:${handleKey}`],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
@@ -291,7 +294,7 @@ export async function getCustomizationDetail(
         },
     );
 
-    return getCached();
+    return readThrough(fetchUncached, getCached);
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
