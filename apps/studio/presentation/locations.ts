@@ -24,6 +24,43 @@ import {
  * why the resolvers are split by surface rather than combined.
  */
 
+// ── Shared "no location" states ─────────────────────────────────────────────
+// Defined up front because every resolver map below uses them. An explicit
+// message always beats an empty list, which a Presentation pane renders as
+// though it were still loading.
+
+/**
+ * A document that has no page on the site — by design, or not yet.
+ * `tone: 'caution'` renders it as an explicit state in the Presentation pane
+ * rather than an empty list, which reads as "still loading".
+ */
+const notOnSite = (message: string): DocumentLocationsState => ({
+  locations: [],
+  message,
+  tone: 'caution',
+})
+
+/** A document whose route exists but renders a Coming Soon stub on the target. */
+const reservedRoute = (path: string): DocumentLocationsState => ({
+  locations: [],
+  message: `${path} is reserved on the site but still renders a "coming soon" stub — nothing to preview yet.`,
+  tone: 'caution',
+})
+
+/** Blog-surface document: real page, different origin, different pane. */
+const onBlogSurface = (what: string): DocumentLocationsState => ({
+  locations: [],
+  message: `This ${what} is published on the blog — open it in the Blog workspace to preview it.`,
+  tone: 'caution',
+})
+
+/** Per-type blog settings documents shape a listing; they are not a page. */
+const blogSettings = (what: string): DocumentLocationsState => ({
+  locations: [],
+  message: `Settings for ${what} — they shape those pages rather than being one.`,
+  tone: 'caution',
+})
+
 // ── Blog surface (apps/blog) ─────────────────────────────────────────────────
 // Blog posts route flat at /{slug}; landing pages at /{slug}; home at /.
 //
@@ -131,35 +168,34 @@ export const websiteLocations: DocumentLocationResolvers = {
         ? { locations: [{ title: doc.title || 'Case Study', href: `/case-studies/${doc.slug}` }] }
         : { locations: [] },
   }),
-  caseStudiesPage: defineLocations({
-    select: { title: 'title' },
-    resolve: (doc) => ({
-      locations: [
-        {
-          title: doc?.title || 'Case Studies',
-          href: '/case-studies',
-        },
-      ],
-    }),
-  }),
-  product: defineLocations({
-    select: {
-      title: 'title',
-      handle: 'handle.current',
-      collectionSlug: 'primaryCollection->slug.current',
-      pageSlug: 'primaryLandingPage->slug.current',
-    },
+  // Was keyed on `caseStudiesPage`, a schema type that no longer exists: the
+  // listing was consolidated onto the shared `listingPage` type with a pinned
+  // `_id` (PROD-2292), so this resolver never matched a document. Keyed on the
+  // live type and discriminated by `_id`, which is how structure/index.ts
+  // addresses it — `listingPage` has no slug field at all.
+  listingPage: defineLocations({
+    select: { _id: '_id', title: 'title' },
     resolve: (doc) =>
-      doc?.handle && doc?.collectionSlug && doc?.pageSlug
+      doc?._id === 'caseStudiesPage'
         ? {
             locations: [
-              {
-                title: doc.title || 'Product',
-                href: `/products/${doc.pageSlug}/${doc.collectionSlug}/${doc.handle}`,
-              },
+              { title: doc.title || 'Case Studies', href: '/case-studies' },
             ],
           }
-        : { locations: [] },
+        : notOnSite(
+            'Only the Case Studies listing is previewable from this workspace.',
+          ),
+  }),
+  // Was selecting `handle` / `primaryCollection` / `primaryLandingPage` — all
+  // removed from the schema in the content-model rebuild, so it produced no
+  // location for any document. Products are not reachable under the
+  // `/case-studies/` base this workspace previews, so the honest answer is a
+  // message; the real product URLs live in `siteLocations` below, used by the
+  // Products workspace.
+  product: defineLocations({
+    select: { title: 'title' },
+    resolve: () =>
+      notOnSite('Products are previewed from the Products workspace.'),
   }),
   // TODO(capability): apps/www routes capability detail via customizationCategory
   // (CAPABILITY_BY_CATEGORY_AND_SLUG_QUERY), another schema/routing divergence.
@@ -194,38 +230,6 @@ export const websiteLocations: DocumentLocationResolvers = {
 // Every field is guarded. A resolver that cannot build a real URL returns a
 // `message` instead of a plausible-looking href, because a Presentation pane that
 // navigates to a 404 is worse than one that says why it cannot.
-
-/**
- * A document that has no page on the site — by design, or not yet.
- * `tone: 'caution'` renders it as an explicit state in the Presentation pane
- * rather than an empty list, which reads as "still loading".
- */
-const notOnSite = (message: string): DocumentLocationsState => ({
-  locations: [],
-  message,
-  tone: 'caution',
-})
-
-/** A document whose route exists but renders a Coming Soon stub on the target. */
-const reservedRoute = (path: string): DocumentLocationsState => ({
-  locations: [],
-  message: `${path} is reserved on the site but still renders a "coming soon" stub — nothing to preview yet.`,
-  tone: 'caution',
-})
-
-/** Blog-surface document: real page, different origin, different pane. */
-const onBlogSurface = (what: string): DocumentLocationsState => ({
-  locations: [],
-  message: `This ${what} is published on the blog — open it in the Blog workspace to preview it.`,
-  tone: 'caution',
-})
-
-/** Per-type blog settings documents shape a listing; they are not a page. */
-const blogSettings = (what: string): DocumentLocationsState => ({
-  locations: [],
-  message: `Settings for ${what} — they shape those pages rather than being one.`,
-  tone: 'caution',
-})
 
 export const siteLocations: DocumentLocationResolvers = {
   // ── Types with a real, content-driven page ────────────────────────────────
@@ -565,3 +569,50 @@ export const siteLocations: DocumentLocationResolvers = {
       notOnSite('Legacy type, being retired. Its documents are not rendered.'),
   }),
 }
+
+// ── Per-workspace composition ────────────────────────────────────────────────
+// Every workspace registers the FULL schema (a deliberate decision — see the
+// workspace comment in sanity.config.ts), so any document can be opened from
+// any workspace. Presentation then asks for its location, and a type the
+// workspace has no resolver for produced an empty pane.
+//
+// The fallback is a MESSAGE, never a borrowed href. It would be easy to spread
+// `siteLocations` into the other two maps, and it would be wrong: those tools
+// preview path-scoped bases (`/blog/`, `/case-studies/`) while Presentation
+// resolves location hrefs against the ORIGIN, so a `/products/…` href offered
+// from the Case Studies workspace would send the editor to the apex — which is
+// Magento, and 404s. A pane that explains beats a link that lies.
+
+/** Types with no resolver in `native` get an explicit cross-workspace note. */
+const withCrossWorkspaceFallback = (
+  native: DocumentLocationResolvers,
+  note: string,
+): DocumentLocationResolvers => {
+  const fallback: DocumentLocationResolvers = {}
+  // `siteLocations` is the full registry — every document type in the schema has
+  // an entry there, so its keys are the list to cover.
+  for (const type of Object.keys(siteLocations)) {
+    if (native[type]) continue
+    fallback[type] = defineLocations({
+      select: { title: 'title' },
+      resolve: () => notOnSite(note),
+    })
+  }
+  return { ...fallback, ...native }
+}
+
+/** Blog workspace: blog documents resolve; everything else says where to go. */
+export const makeBlogWorkspaceLocations = (
+  basePath: string,
+): DocumentLocationResolvers =>
+  withCrossWorkspaceFallback(
+    makeBlogLocations(basePath),
+    'This type is not previewed from the Blog workspace — open it in the workspace that owns it.',
+  )
+
+/** Case Studies workspace: case studies + the pinned listing; rest explained. */
+export const caseStudiesWorkspaceLocations: DocumentLocationResolvers =
+  withCrossWorkspaceFallback(
+    websiteLocations,
+    'This type is not previewed from the Case Studies workspace — open it in the workspace that owns it.',
+  )

@@ -17,7 +17,7 @@ type MediaCardFrameProps = {
     mediaOverlay?: ReactNode;
     meta: ReactNode;
     bookmark?: ReactNode;
-    /** Desktop hover actions (e.g. compare) clustered with bookmark on the media. */
+    /** Desktop hover actions (e.g. compare) on the media — far left; bookmark sits far right. */
     mediaActions?: ReactNode;
     /** When true, desktop utility cluster stays visible without hover. */
     bookmarkPressed?: boolean;
@@ -126,14 +126,15 @@ export function MediaCardFrame({
                     {hasUtilities ? (
                         <div
                             className={cn(
-                                // Desktop only: bottom-right cluster, hover reveal
-                                'absolute z-30 hidden items-center gap-2 sm:flex',
-                                'sm:right-4 sm:bottom-4',
+                                // Desktop only: full-width bottom row, hover reveal
+                                'absolute inset-x-4 bottom-4 z-30 hidden items-center justify-between sm:flex',
                                 hoverReveal,
                             )}
                         >
-                            {bookmark}
-                            {mediaActions}
+                            <div className="flex items-center">
+                                {mediaActions}
+                            </div>
+                            <div className="flex items-center">{bookmark}</div>
                         </div>
                     ) : null}
                 </div>

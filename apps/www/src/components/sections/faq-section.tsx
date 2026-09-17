@@ -30,6 +30,8 @@ type FaqSectionProps = {
     className?: string;
     /** Section color band (not app dark/light mode). */
     theme?: SectionTheme;
+    /** Anchor id for in-page nav (PDP default). */
+    sectionId?: string;
 };
 
 /**
@@ -44,6 +46,7 @@ export function FaqSection({
     footerLabel = "Let's chat",
     className,
     theme = 'default',
+    sectionId = 'pdp-faqs',
 }: FaqSectionProps) {
     const shell = sectionThemeShell(theme);
 
@@ -53,11 +56,11 @@ export function FaqSection({
 
     return (
         <section
-            id="pdp-faqs"
+            id={sectionId}
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32', shell.bandClass, className)}
         >
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection borderBottom paddingBlock="md">
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
                     <SectionHeading
                         align="center"

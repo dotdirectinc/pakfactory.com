@@ -95,7 +95,7 @@ Authenticated chrome is [`AdminShell`](src/components/layout/admin-shell.tsx): d
 | Piece | File | Notes |
 | --- | --- | --- |
 | Top bar | [`admin-top-bar.tsx`](src/components/layout/admin-top-bar.tsx) | ~60px tall; logo + Dev Mode badge; search absolutely centered (`max-w-2xl`); account menu on the right |
-| Sidebar | [`admin-sidebar.tsx`](src/components/layout/admin-sidebar.tsx) | Primary nav (Requests today; Settings stub) |
+| Sidebar | [`admin-sidebar.tsx`](src/components/layout/admin-sidebar.tsx) | Shopify-style nested groups (Leads → Requests; Customization Library → Property Controls; Settings stub) |
 | Account menu | [`admin-account-menu.tsx`](src/components/account/admin-account-menu.tsx) | **Identity + Sign out only** — do not duplicate sidebar destinations |
 
 Global search open / dialog behavior stays under ADR-018 (below). Do not bake pixel heights or max-widths into ADRs; change chrome in these files.
@@ -185,6 +185,18 @@ the reason was only visible in the box's own journal:
 ```
 sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attachment url"
 ```
+
+## Customization Library
+
+Staff gallery for shared configurator UI and draft build-spec logic (PROD-1299 / related).
+
+| Route | Role today |
+| --- | --- |
+| `/customization-library/property-controls` | React port of the draft HTML explorer (catalog Type panels, sandbox L1–L15, rules) |
+
+**Structure map:** [`docs/configurator-html-structure.md`](docs/configurator-html-structure.md) — HTML Category → “Option” row (`ui.kind` + `cond`) maps to Studio **Category → Type** (list choices ≈ Options); separate sandbox (`S` / L1–L15); DEPS reference only. The iframe Configurator Logic route is removed; Property Controls hosts the React port.
+
+Static HTML reference (kept for now): [`public/customization-logic-explorer.html`](public/customization-logic-explorer.html).
 
 ## Troubleshooting
 

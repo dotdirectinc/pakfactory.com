@@ -4,8 +4,8 @@
 @import "@pakfactory/brief-builder-ui/tailwind-sources.css";
 
 /*
-  www-only overlay: 2026 --brand-* / --support-* aliases, the 2026 primary
-  green override, and the default Button (primary green, white label).
+  www-only overlay: 2026 --brand-* / --support-* aliases, the temporary
+  near-black primary override, and the default Button (primary, white label).
   Do not copy this block into apps/blog or case-study CSS.
   If blog and case studies need the same tokens, move them into
   packages/ui/src/globals.css (ADR-006) so all apps inherit them.
@@ -42,18 +42,28 @@
   --surface-kraft: var(--brand-sand);
   --ai-accent: var(--brand-blue);
   --ai-accent-soft: rgba(33, 31, 87, 0.4);
-  --primary-soft: #E3E5E2;
+  --primary-soft: #E8E8E8;
 
-  /* 2026 primary green (Figma node 5178:75186). www-only until launch;
+  /* Temporary near-black primary (#171717). www-only until brand settles;
      ui still ships #2b5f2d so apps/blog is unaffected. Promote into
-     packages/ui (ADR-006) when www goes live and blog adopts the new green. */
-  --primary: #285429;
+     packages/ui (ADR-006) when www goes live and blog adopts the new primary. */
+  --primary: #171717;
   --primary-foreground: #ffffff;
-  --ring: #285429;
-  --primary-hover: #214822;      /* primary darkened, matches ui's ratio */
+  --ring: #171717;
+  --primary-hover: #0f0f0f;      /* primary darkened ~6%, matches ui's ratio */
+  --primary-active: #080808;     /* primary darkened ~12% */
 
-  /* Default Button hover — new primary darkened. Was #2e3e27 (forest). */
-  --button-primary-hover: #214822;
+  /* Default Button hover — primary darkened. Was #214822 (green). */
+  --button-primary-hover: #0f0f0f;
+
+  /* Primary opacity ramp + gradient — override ui green so soft fills match */
+  --opacity-primary-10: rgb(23 23 23 / 0.1);
+  --opacity-primary-20: rgb(23 23 23 / 0.2);
+  --opacity-primary-30: rgb(23 23 23 / 0.3);
+  --opacity-primary-40: rgb(23 23 23 / 0.4);
+  --opacity-primary-50: rgb(23 23 23 / 0.5);
+  --opacity-primary-60: rgb(23 23 23 / 0.6);
+  --primary-gradient: linear-gradient(135deg, #171717 0%, #404040 100%);
 }
 
 @theme inline {
@@ -87,8 +97,8 @@
 }
 
 /*
-  www-only: default Button (data-variant=default) — primary green, white label
-  (was forest + lemongrass). Button uses --radius-control (6px); Card stays on rounded-xl.
+  www-only: default Button (data-variant=default) — primary, white label
+  (was green). Button uses --radius-control (6px); Card stays on rounded-xl.
   Do not copy into blog. If all apps need this, move into packages/ui (ADR-006).
   Unlayered so it wins over the ui primitive’s bg-primary utilities.
   Do not force pills here — radius comes from Button / --radius-control.

@@ -500,7 +500,7 @@ export function CustomizationCatalogPanel({
     }
 
     return (
-        <PageDielineSection innerClassName="pb-24 pt-8 flex flex-col gap-6">
+        <PageDielineSection innerClassName="pb-24 pt-8 flex flex-col gap-8">
             {/* Mobile: sticky search + filters + category chips */}
             <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                 <div className="flex items-center gap-2 py-3">
@@ -575,7 +575,7 @@ export function CustomizationCatalogPanel({
                         <span
                             aria-hidden
                             className={cn(
-                                'pointer-events-none absolute bottom-0 z-10 h-0.5 bg-primary',
+                                'pointer-events-none absolute bottom-0 z-10 h-1 bg-primary',
                                 indicatorTransitionEnabled &&
                                     'transition-[left,width,opacity] duration-300 ease-out',
                                 indicator.ready ? 'opacity-100' : 'opacity-0',
@@ -603,15 +603,15 @@ export function CustomizationCatalogPanel({
                                         setHoveredTab(tab.value)
                                     }
                                     className={cn(
-                                        'relative flex items-center gap-2 py-4 text-md font-semibold transition-colors duration-200',
+                                        'relative flex items-center gap-2 py-4 text-sm font-medium transition-colors duration-200',
                                         isActive
                                             ? 'text-primary'
-                                            : 'text-mauve-400 hover:text-primary',
+                                            : 'text-muted-foreground hover:text-primary',
                                     )}
                                     aria-pressed={isActive}
                                 >
                                     <span>{tab.label}</span>
-                                    <span className="font-normal tabular-nums text-mauve-400">
+                                    <span className="font-normal tabular-nums text-muted-foreground/50">
                                         {countForTab(tab.value)}
                                     </span>
                                 </button>

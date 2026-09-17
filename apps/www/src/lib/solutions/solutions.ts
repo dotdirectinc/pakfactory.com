@@ -14,7 +14,7 @@ import {
 } from '@pakfactory/sanity/queries';
 import {mapSanityProduct} from '@/lib/catalog/map-sanity';
 import type {Product} from '@/lib/catalog/types';
-import {getPublishedSanityClient} from '@/lib/sanity/client';
+import {draftAwareClient, readThrough} from '@/lib/sanity/draft-aware';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
     mapSanitySolution,
@@ -41,7 +41,7 @@ async function fetchTaggedProducts(
 ): Promise<Product[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await draftAwareClient()).fetch<
             CatalogProductDoc[]
         >(SOLUTION_TAGGED_PRODUCTS_QUERY, {solutionSlug});
         return (docs ?? [])
@@ -64,7 +64,7 @@ async function fetchSolutionBySlug(
 ): Promise<SolutionPage | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const doc = await getPublishedSanityClient().fetch<
+        const doc = await (await draftAwareClient()).fetch<
             SolutionBySlugDoc | null
         >(SOLUTION_BY_SLUG_QUERY, {slug});
         if (!doc || doc.hasPage !== true) return null;
@@ -92,7 +92,7 @@ async function fetchSolutionLineProducts(
 ): Promise<Product[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await draftAwareClient()).fetch<
             CatalogProductDoc[]
         >(SOLUTION_LINE_PRODUCTS_QUERY, {solutionSlug, lineSlug});
         return (docs ?? [])
@@ -113,7 +113,7 @@ async function fetchSolutionPageSlugs(): Promise<SolutionPageSlugDoc[]> {
     if (!isSanityConfigured()) return [];
     try {
         return (
-            (await getPublishedSanityClient().fetch<SolutionPageSlugDoc[]>(
+            (await (await draftAwareClient()).fetch<SolutionPageSlugDoc[]>(
                 SOLUTION_PAGE_SLUGS_QUERY,
             )) ?? []
         );
@@ -128,7 +128,7 @@ async function fetchSolutionPageSlugs(): Promise<SolutionPageSlugDoc[]> {
 async function fetchSolutionsWithPages(): Promise<SolutionCard[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await draftAwareClient()).fetch<
             SolutionWithPageDoc[]
         >(SOLUTIONS_WITH_PAGES_QUERY);
         return (docs ?? [])
@@ -146,14 +146,17 @@ export async function getSolutionBySlug(
     slug: string,
 ): Promise<SolutionPage | null> {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return readThrough(
         () => fetchSolutionBySlug(key),
-        [wwwSolutionTag(key), 'v2-related-products'],
-        {
-            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-            tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(key)],
-        },
-    )();
+        unstable_cache(
+            () => fetchSolutionBySlug(key),
+            [wwwSolutionTag(key), 'v2-related-products'],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(key)],
+            },
+        ),
+    );
 }
 
 export async function getSolutionLineCatalog(
@@ -171,40 +174,49 @@ export async function getSolutionLineCatalog(
     );
     if (!line) return null;
 
-    const products = await unstable_cache(
+    const products = await readThrough(
         () => fetchSolutionLineProducts(solutionKey, lineKey),
-        [`${wwwSolutionTag(solutionKey)}:line:${lineKey}`],
-        {
-            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-            tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(solutionKey)],
-        },
-    )();
+        unstable_cache(
+            () => fetchSolutionLineProducts(solutionKey, lineKey),
+            [`${wwwSolutionTag(solutionKey)}:line:${lineKey}`],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(solutionKey)],
+            },
+        ),
+    );
 
     return {solution, line, products};
 }
 
 export async function listSolutionsWithPages(): Promise<SolutionCard[]> {
-    return unstable_cache(
+    return readThrough(
         fetchSolutionsWithPages,
-        [WWW_SOLUTIONS_CACHE_TAG, 'with-pages'],
-        {
-            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-            tags: [WWW_SOLUTIONS_CACHE_TAG],
-        },
-    )();
+        unstable_cache(
+            fetchSolutionsWithPages,
+            [WWW_SOLUTIONS_CACHE_TAG, 'with-pages'],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG],
+            },
+        ),
+    );
 }
 
 export async function listSolutionPageSlugs(): Promise<
     Array<{slug: string; lineSlugs: string[]}>
 > {
-    const docs = await unstable_cache(
+    const docs = await readThrough(
         fetchSolutionPageSlugs,
-        [WWW_SOLUTIONS_CACHE_TAG, 'page-slugs'],
-        {
-            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-            tags: [WWW_SOLUTIONS_CACHE_TAG],
-        },
-    )();
+        unstable_cache(
+            fetchSolutionPageSlugs,
+            [WWW_SOLUTIONS_CACHE_TAG, 'page-slugs'],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG],
+            },
+        ),
+    );
 
     return docs
         .map((doc) => {

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Box, FolderOpen, FolderPlus } from "lucide-react";
+import { Box, ClipboardList, ClipboardPlus } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import { Separator } from "@pakfactory/ui/components/separator";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
@@ -102,9 +102,9 @@ export function MarketingSiteNav({
                     >
                       <Link href={request.href}>
                         {requestCount > 0 ? (
-                          <FolderOpen className="size-6" strokeWidth={1.75} />
+                          <ClipboardList className="size-6" strokeWidth={1.75} />
                         ) : (
-                          <FolderPlus className="size-6" strokeWidth={1.75} />
+                          <ClipboardPlus className="size-6" strokeWidth={1.75} />
                         )}
                         {requestCount > 0 ? (
                           <span
@@ -132,7 +132,7 @@ export function MarketingSiteNav({
                 (signIn ? (
                   <Link
                     href={signIn.href}
-                    className="py-2 text-base font-medium text-foreground no-underline transition-colors hover:text-foreground/80"
+                    className="py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:text-foreground/80"
                   >
                     {signIn.label}
                   </Link>
@@ -142,7 +142,7 @@ export function MarketingSiteNav({
 
           <Button
             size="lg"
-            className="hidden sm:inline-flex"
+            className="hidden font-semibold sm:inline-flex"
             asChild
           >
             <Link href={cta.href}>{cta.label}</Link>

@@ -1,7 +1,9 @@
 import {
+    type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
     type CatalogProductDoc,
     type CatalogProductLineDoc,
+    type CatalogPropertyValueDetailDoc,
 } from '@pakfactory/sanity/queries';
 import {
     resolveImageAlt,
@@ -9,8 +11,12 @@ import {
 } from '@/lib/sanity/image';
 import type {
     CatalogMedia,
+    CustomizationDeclaredProperty,
+    CustomizationDetail,
     CustomizationLibraryItem,
     CustomizationOption,
+    CustomizationPropertyFact,
+    CustomizationPropertyValue,
     Product,
     ProductFaq,
     ProductKind,
@@ -350,5 +356,130 @@ export function mapSanityLibraryOption(
         attrs,
         propertyTitles,
         valueTitles,
+    };
+}
+
+function mapPropertyFacts(
+    facts: CatalogPropertyValueDetailDoc['facts'],
+): CustomizationPropertyFact[] {
+    if (!Array.isArray(facts)) return [];
+    const out: CustomizationPropertyFact[] = [];
+    for (const fact of facts) {
+        if (!fact) continue;
+        const label = fact.label?.trim();
+        if (!label) continue;
+        if (typeof fact.value === 'number' && Number.isFinite(fact.value)) {
+            out.push({label, display: String(fact.value)});
+            continue;
+        }
+        const text = fact.text?.trim();
+        if (text) out.push({label, display: text});
+    }
+    return out;
+}
+
+function mapDetailPropertyValue(
+    value: CatalogPropertyValueDetailDoc | null | undefined,
+): CustomizationPropertyValue | null {
+    if (!value) return null;
+    const slug = value.slug?.trim();
+    const title = value.title?.trim();
+    if (!slug || !title) return null;
+    const propSlug = value.property?.slug?.trim();
+    const propTitle = value.property?.title?.trim();
+    const valuesPerItem = value.property?.valuesPerItem;
+    const imageUrl = value.image
+        ? (sanityImageBaseUrl(value.image) ?? null)
+        : null;
+    const imageAlt = value.image
+        ? resolveImageAlt(value.image, title)
+        : undefined;
+    return {
+        id: value._id,
+        title,
+        slug,
+        ...(value.property?._id ? {propertyId: value.property._id} : {}),
+        ...(propSlug ? {propertySlug: propSlug} : {}),
+        ...(propTitle ? {propertyTitle: propTitle} : {}),
+        ...(valuesPerItem === 'one' || valuesPerItem === 'many'
+            ? {valuesPerItem}
+            : {}),
+        ...(imageUrl !== undefined ? {imageUrl} : {}),
+        ...(imageAlt ? {imageAlt} : {}),
+        facts: mapPropertyFacts(value.facts),
+    };
+}
+
+export function mapSanityCustomizationDetail(
+    doc: CatalogCustomizationDetailDoc,
+): CustomizationDetail | null {
+    const slug = doc.slug?.trim();
+    const categorySlug = doc.category?.slug?.trim();
+    const title = doc.title?.trim();
+    if (!slug || !categorySlug || !title) return null;
+
+    const productLines: ProductLineRef[] = [];
+    const seenLines = new Set<string>();
+    for (const line of doc.productLines ?? []) {
+        const lineSlug = line?.slug?.trim();
+        const lineTitle = line?.title?.trim();
+        if (!lineSlug || !lineTitle || seenLines.has(lineSlug)) continue;
+        seenLines.add(lineSlug);
+        productLines.push({slug: lineSlug, title: lineTitle});
+    }
+
+    const properties = (doc.properties ?? [])
+        .map(mapDetailPropertyValue)
+        .filter((item): item is CustomizationPropertyValue => item != null);
+
+    const declaredProperties: CustomizationDeclaredProperty[] = [];
+    for (const row of doc.type?.declaredProperties ?? []) {
+        if (!row) continue;
+        const usage = row.usage === 'selectable' ? 'selectable' : 'stated';
+        const propSlug = row.property?.slug?.trim();
+        const propTitle = row.property?.title?.trim();
+        const valuesPerItem = row.property?.valuesPerItem;
+        declaredProperties.push({
+            usage,
+            ...(row.property?._id ? {propertyId: row.property._id} : {}),
+            ...(propSlug ? {propertySlug: propSlug} : {}),
+            ...(propTitle ? {propertyTitle: propTitle} : {}),
+            ...(valuesPerItem === 'one' || valuesPerItem === 'many'
+                ? {valuesPerItem}
+                : {}),
+        });
+    }
+
+    const description = firstNonEmpty(
+        doc.metaDescription,
+        doc.glossaryPlain,
+        doc.benefitsPlain,
+    );
+
+    const typeTitle = doc.type?.title?.trim();
+    const typeSlug = doc.type?.slug?.trim();
+
+    const faqs: ProductFaq[] = [];
+    for (const row of doc.faqs ?? []) {
+        const question = row?.question?.trim();
+        const answerPlain = row?.answerPlain?.trim();
+        if (!question || !answerPlain) continue;
+        faqs.push({question, answerPlain});
+    }
+
+    return {
+        id: doc._id,
+        title,
+        slug,
+        categoryValue: categorySlug,
+        categoryLabel: doc.category?.title?.trim() || categorySlug,
+        ...(typeTitle ? {typeTitle} : {}),
+        ...(typeSlug ? {typeSlug} : {}),
+        ...(description ? {description} : {}),
+        media: mediaFromSanity(doc.media, title),
+        properties,
+        declaredProperties,
+        productLines,
+        ...(faqs.length > 0 ? {faqs} : {}),
     };
 }

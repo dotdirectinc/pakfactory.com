@@ -121,7 +121,7 @@ export function CustomizationFacetGroup({
                                         className={cn(
                                             'min-w-0 flex-1 truncate text-sm',
                                             disabled
-                                                ? 'text-muted-foreground'
+                                                ? 'text-muted-foreground/50'
                                                 : 'text-foreground',
                                         )}
                                     >
@@ -130,7 +130,7 @@ export function CustomizationFacetGroup({
                                     <span
                                         className={cn(
                                             FACET_TRAILING_COL,
-                                            'text-center text-sm tabular-nums text-muted-foreground',
+                                            'text-center text-sm tabular-nums text-muted-foreground/50',
                                         )}
                                     >
                                         {count}

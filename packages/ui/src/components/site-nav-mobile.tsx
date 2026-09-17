@@ -68,8 +68,8 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
                       onClick={close}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "block py-2 text-sm font-medium no-underline transition-colors hover:text-primary",
-                        isActive ? "text-primary" : "text-muted-foreground",
+                        "block py-2 text-sm font-semibold no-underline transition-colors hover:text-primary",
+                        isActive ? "text-primary" : "text-foreground",
                       )}
                     >
                       {item.label}
@@ -80,7 +80,7 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
                 return (
                   <span
                     key={item.key}
-                    className="block py-2 text-sm font-medium text-muted-foreground"
+                    className="block py-2 text-sm font-semibold text-foreground"
                     aria-disabled="true"
                   >
                     {item.label}
@@ -99,13 +99,13 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
                 </Button>
               ) : null}
               {signIn ? (
-                <Button variant="outline" className="w-full" asChild>
+                <Button variant="outline" className="w-full font-semibold" asChild>
                   <Link href={signIn.href} onClick={close}>
                     {signIn.label}
                   </Link>
                 </Button>
               ) : null}
-              <Button size="lg" className="w-full" asChild>
+              <Button size="lg" className="w-full font-semibold" asChild>
                 <Link href={cta.href} onClick={close}>
                   {cta.label}
                 </Link>

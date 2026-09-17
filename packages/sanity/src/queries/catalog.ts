@@ -201,6 +201,30 @@ const PROPERTY_VALUE_PROJ = /* groq */ `{
   }
 }`;
 
+/** Detail-page property values — media + facts for configurator / specs (PROD-1299). */
+const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  kindOf,
+  image{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  facts[]{
+    _type,
+    label,
+    value,
+    text
+  },
+  "property": property->{
+    _id,
+    title,
+    "slug": slug.current,
+    valuesPerItem
+  }
+}`;
+
 /**
  * Public customization library (PROD-1288 facets).
  * Gate is `hasPage` (D55 / PROD-2482) — not deprecated `role == "reference"`.
@@ -269,6 +293,59 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
     _id,
     title,
     "slug": slug.current
+  }
+}`;
+
+/**
+ * Customization detail page (PROD-1299). Same hasPage gate; richer property + copy fields.
+ */
+export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  hasPage == true &&
+  status == "active" &&
+  slug.current == $handle &&
+  type->category->slug.current == $category
+][0]{
+  _id,
+  title,
+  "slug": slug.current,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[]{
+      usage,
+      "property": property->{
+        _id,
+        title,
+        "slug": slug.current,
+        valuesPerItem
+      }
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
+  "productLines": availableOnProducts[@->_type == "productLine"]->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  "faqs": faqs[]{
+    "question": select(
+      _type == "faqItem" => question,
+      defined(@->question) => @->question
+    ),
+    "answerPlain": select(
+      _type == "faqItem" => pt::text(answer),
+      defined(@->answer) => pt::text(@->answer)
+    )
   }
 }`;
 
@@ -403,4 +480,50 @@ export type CatalogLibraryOptionDoc = {
   type?: CatalogLibraryTypeDoc | null;
   properties?: (CatalogPropertyValueDoc | null)[] | null;
   productLines?: (CatalogLineRefDoc | null)[] | null;
+};
+
+export type CatalogPropertyValueDetailDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  kindOf?: unknown | null;
+  image?: unknown | null;
+  facts?:
+    | {
+        _type?: string | null;
+        label?: string | null;
+        value?: number | null;
+        text?: string | null;
+      }[]
+    | null;
+  property: (CatalogPropertyRefDoc & {
+    valuesPerItem?: 'one' | 'many' | null;
+  }) | null;
+};
+
+export type CatalogDeclaredPropertyDoc = {
+  usage?: 'stated' | 'selectable' | null;
+  property: (CatalogPropertyRefDoc & {
+    valuesPerItem?: 'one' | 'many' | null;
+  }) | null;
+};
+
+export type CatalogCustomizationDetailDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  metaDescription?: string | null;
+  glossaryPlain?: string | null;
+  benefitsPlain?: string | null;
+  media?: unknown[] | null;
+  category: CatalogCategoryDoc | null;
+  type?: {
+    _id: string;
+    title: string;
+    slug: string | null;
+    declaredProperties?: (CatalogDeclaredPropertyDoc | null)[] | null;
+  } | null;
+  properties?: (CatalogPropertyValueDetailDoc | null)[] | null;
+  productLines?: (CatalogLineRefDoc | null)[] | null;
+  faqs?: (CatalogProductFaqDoc | null)[] | null;
 };

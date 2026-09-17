@@ -32,13 +32,16 @@ export const TARGETS = {
     studioUrl: "http://localhost:3333",
     dataset: "development",
     label: "local Studio (pnpm dev:studio)",
-    // What the Studio's Presentation pane points AT. Local blog runs on :3003
-    // with no basePath; local www on :3000, where the case-studies enable route
-    // lives under /case-studies (PROD-2223) and the site root is the whole app.
+    // What the Studio's Presentation pane points AT. Ports are taken from the
+    // apps' own dev scripts, not from habit: `apps/www` runs on **3003** and
+    // `apps/blog` on **3004** (`next dev --port …` in each package.json). The
+    // earlier values here said blog 3003 / www 3000 — inherited from stale
+    // fallbacks in sanity.config.ts, and 3000 has nothing on it at all. Caught
+    // when `www-new-release` merged, because its .env.example says so plainly.
     previews: {
-      BLOG: "http://localhost:3003/",
-      WWW: "http://localhost:3000/case-studies/",
-      SITE: "http://localhost:3000/",
+      BLOG: "http://localhost:3004/",
+      WWW: "http://localhost:3003/case-studies/",
+      SITE: "http://localhost:3003/",
     },
   },
   staging: {
@@ -62,17 +65,26 @@ export const TARGETS = {
     previews: {
       BLOG: "https://pakfactory.com/blog/",
       WWW: "https://pakfactory.com/case-studies/",
-      // Deliberately staging, and NOT a mistake: production has no site root to
-      // preview. The apex root is Magento — pakfactory.com/products redirects
-      // home and /capabilities 404s — so the product / solution / customization
-      // routes exist only on staging. Decided 2026-09-16; matches what the
-      // deployed prod Studio already ships in apps/studio/.env.production.
-      SITE: "https://staging.pakfactory.com/",
+      // NOT WIRED YET — deliberately null, and this is the release switch.
+      //
+      // The site-root workspaces (Products, Customization, Solutions, Expertise,
+      // Resources, Main Website, Global) are unreleased: their routes exist only
+      // on the staging surface. QA previews them from the **staging** Studio,
+      // where Studio and site share the `development` dataset.
+      //
+      // Pointing this at staging instead would look like it worked and could not:
+      // Presentation's preview secret is a document in the Studio's OWN dataset,
+      // so a production-dataset Studio previewing a development-dataset site
+      // fails with "Invalid secret" every time. Verified 2026-09-17 — the secret
+      // documents land in `production` while the site looks for them in
+      // `development`.
+      //
+      // ON RELEASE: set this to the production site root (e.g.
+      // "https://pakfactory.com/") and the seven workspaces gain their
+      // Presentation tab in the production Studio automatically — the Studio
+      // config adds the tool only when a target is wired. One value, one switch.
+      SITE: null,
     },
-    // Flags the SITE row above as a known exception rather than a mismatch, so
-    // `status` explains it instead of crying wolf on every prod check.
-    siteCrossDataset:
-      "production Studio previews the staging site root — production has no site root of its own",
   },
 };
 
@@ -84,7 +96,7 @@ export const TARGETS = {
  */
 export const HOST_DATASET = {
   "localhost:3003": "development",
-  "localhost:3000": "development",
+  "localhost:3004": "development",
   "staging-blog.pakfactory.com": "development",
   "staging.pakfactory.com": "development",
   "pakfactory.com": "production",
