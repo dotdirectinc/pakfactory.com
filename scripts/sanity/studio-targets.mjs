@@ -65,17 +65,26 @@ export const TARGETS = {
     previews: {
       BLOG: "https://pakfactory.com/blog/",
       WWW: "https://pakfactory.com/case-studies/",
-      // Deliberately staging, and NOT a mistake: production has no site root to
-      // preview. The apex root is Magento — pakfactory.com/products redirects
-      // home and /capabilities 404s — so the product / solution / customization
-      // routes exist only on staging. Decided 2026-09-16; matches what the
-      // deployed prod Studio already ships in apps/studio/.env.production.
-      SITE: "https://staging.pakfactory.com/",
+      // NOT WIRED YET — deliberately null, and this is the release switch.
+      //
+      // The site-root workspaces (Products, Customization, Solutions, Expertise,
+      // Resources, Main Website, Global) are unreleased: their routes exist only
+      // on the staging surface. QA previews them from the **staging** Studio,
+      // where Studio and site share the `development` dataset.
+      //
+      // Pointing this at staging instead would look like it worked and could not:
+      // Presentation's preview secret is a document in the Studio's OWN dataset,
+      // so a production-dataset Studio previewing a development-dataset site
+      // fails with "Invalid secret" every time. Verified 2026-09-17 — the secret
+      // documents land in `production` while the site looks for them in
+      // `development`.
+      //
+      // ON RELEASE: set this to the production site root (e.g.
+      // "https://pakfactory.com/") and the seven workspaces gain their
+      // Presentation tab in the production Studio automatically — the Studio
+      // config adds the tool only when a target is wired. One value, one switch.
+      SITE: null,
     },
-    // Flags the SITE row above as a known exception rather than a mismatch, so
-    // `status` explains it instead of crying wolf on every prod check.
-    siteCrossDataset:
-      "production Studio previews the staging site root — production has no site root of its own",
   },
 };
 

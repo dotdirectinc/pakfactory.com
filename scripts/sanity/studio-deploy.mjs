@@ -63,17 +63,25 @@ if (strays.length) die(`Unrecognised argument: ${strays[0]} (pass sanity flags a
 const env = {
   ...process.env,
   SANITY_STUDIO_DATASET: target.dataset,
+  // A preview target of `null` means "not wired for this Studio yet" — an
+  // unreleased surface. It is OMITTED rather than exported empty, because the
+  // Studio config decides whether to offer the Presentation tool by whether the
+  // variable is set at all.
   ...Object.fromEntries(
-    Object.entries(PREVIEW_VARS).map(([k, name]) => [name, target.previews[k]]),
+    Object.entries(PREVIEW_VARS)
+      .filter(([k]) => target.previews[k])
+      .map(([k, name]) => [name, target.previews[k]]),
   ),
 };
 
 console.log(`\n🚀  Deploying the ${target.label} — ${target.studioUrl}\n`);
 console.log(`    dataset        ${target.dataset}`);
-for (const [k, name] of Object.entries(PREVIEW_VARS)) {
-  console.log(`    previews ${k.padEnd(4)}  ${target.previews[k]}`);
+for (const [k] of Object.entries(PREVIEW_VARS)) {
+  const url = target.previews[k];
+  console.log(
+    `    previews ${k.padEnd(4)}  ${url ?? "— not wired: no Presentation tab for this surface —"}`,
+  );
 }
-if (target.siteCrossDataset) console.log(`\n    ℹ️  ${target.siteCrossDataset}`);
 console.log("");
 
 const result = spawnSync(
