@@ -173,12 +173,16 @@ function cmdStatus() {
       const known = Object.values(TARGETS).find(
         (t) => t.dataset === dataset && t.previews[key] === url,
       );
-      const exception = key === "SITE" && known?.siteCrossDataset;
+      // `previews[key] === null` on a target means the surface is unreleased for
+      // that Studio. Not a mismatch to warn about — a deliberate state.
+      const unwired = Object.values(TARGETS).some(
+        (t) => t.dataset === dataset && t.previews[key] === null,
+      );
       let note = "";
       if (!hostDataset) note = "  ⚠️ unrecognised host";
       else if (dataset && hostDataset !== dataset) {
-        note = exception
-          ? `  ℹ️  by design — ${known.siteCrossDataset}`
+        note = unwired
+          ? '  ℹ️  unreleased surface — previewed from the staging Studio'
           : `  ⚠️ that site renders "${hostDataset}", this Studio reads "${dataset}"`;
         if (!exception) incoherent++;
       }
