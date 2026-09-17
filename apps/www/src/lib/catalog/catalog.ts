@@ -25,7 +25,12 @@ import type {
     ProductStyleRef,
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
-import {getPublishedSanityClient} from '@/lib/sanity/client';
+import {draftMode} from 'next/headers';
+import type {SanityClient} from 'next-sanity';
+import {
+    getPublishedSanityClient,
+    getSanityClient,
+} from '@/lib/sanity/client';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
     WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
@@ -39,10 +44,47 @@ function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
 }
 
+/**
+ * Is this request inside a Presentation / draft-mode session?
+ *
+ * `draftMode()` is a dynamic API: it THROWS when there is no request scope, and
+ * `generateStaticParams` has none — `listLines()` is called from there on
+ * /products/[slug]. So the throw is caught and treated as "not a draft", which
+ * keeps static generation on the cached published path. Without the catch,
+ * making this seam draft-aware would break the build.
+ */
+async function isDraftRequest(): Promise<boolean> {
+    try {
+        return (await draftMode()).isEnabled;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * The client this seam reads through.
+ *
+ * Draft mode needs the `drafts` perspective for two reasons, only one of which
+ * is obvious. The first is content: unpublished edits must be visible. The
+ * second is that `stega` is enabled ONLY on the drafts client
+ * (`apps/www/src/lib/sanity/client.ts`), and stega encoding is what lets Sanity
+ * Presentation map rendered output back to documents and fields. Without it the
+ * pane renders but shows "No matching documents" and no click-to-edit overlays
+ * — which is exactly what this seam did before, because every fetch used the
+ * published client.
+ *
+ * Outside draft mode nothing changes: same published client, same CDN, no token.
+ */
+async function catalogClient(): Promise<SanityClient> {
+    return (await isDraftRequest())
+        ? getSanityClient()
+        : getPublishedSanityClient();
+}
+
 async function fetchSanityProducts(): Promise<Product[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<CatalogProductDoc[]>(
+        const docs = await (await catalogClient()).fetch<CatalogProductDoc[]>(
             CATALOG_PRODUCTS_QUERY,
         );
         return (docs ?? [])
@@ -59,7 +101,7 @@ async function fetchSanityProducts(): Promise<Product[]> {
 async function fetchSanityLines(): Promise<ProductLine[]> {
     if (!isSanityConfigured()) return [];
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await catalogClient()).fetch<
             CatalogProductLineDoc[]
         >(CATALOG_PRODUCT_LINES_QUERY);
         return (docs ?? [])
@@ -79,7 +121,7 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
 async function fetchSanityProduct(slug: string): Promise<Product | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const doc = await getPublishedSanityClient().fetch<CatalogProductDoc | null>(
+        const doc = await (await catalogClient()).fetch<CatalogProductDoc | null>(
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
@@ -121,7 +163,7 @@ async function fetchSanityCustomizationLibrary(): Promise<
         return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
     }
     try {
-        const docs = await getPublishedSanityClient().fetch<
+        const docs = await (await catalogClient()).fetch<
             CatalogLibraryOptionDoc[]
         >(CATALOG_CUSTOMIZATION_LIBRARY_QUERY);
         const items = (docs ?? [])
@@ -175,17 +217,27 @@ function getCachedProductBySlug(slug: string) {
     )();
 }
 
+/**
+ * Draft reads MUST NOT go through `unstable_cache`. Two reasons: a cached draft
+ * is stale the moment the editor types again (so Presentation would show an old
+ * value and look broken), and the cache is shared across requests, so one
+ * editor's unpublished content could be served to somebody else. Draft mode is
+ * request-scoped and uncached by design; published reads keep the cache exactly
+ * as before.
+ */
 export async function listLines(): Promise<ProductLine[]> {
-    return getCachedLines();
+    return (await isDraftRequest()) ? fetchSanityLines() : getCachedLines();
 }
 
 export async function listProducts(): Promise<Product[]> {
-    return getCachedProducts();
+    return (await isDraftRequest()) ? fetchSanityProducts() : getCachedProducts();
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */
 export async function listCustomizations(): Promise<CustomizationLibraryResult> {
-    return getCachedCustomizationLibrary();
+    return (await isDraftRequest())
+        ? fetchSanityCustomizationLibrary()
+        : getCachedCustomizationLibrary();
 }
 
 /** @deprecated Prefer listCustomizations(); kept as thin alias for call sites. */
@@ -204,26 +256,28 @@ export async function getCustomizationCategory(
     const handleKey = normalizeSlug(handle);
     if (!isSanityConfigured()) return null;
 
-    const getCached = unstable_cache(
-        async () => {
-            try {
-                const doc = await getPublishedSanityClient().fetch<
-                    CatalogLibraryOptionDoc | null
-                >(CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY, {
-                    category: categoryKey,
-                    handle: handleKey,
-                });
-                return doc ? mapSanityLibraryOption(doc) : null;
-            } catch (err) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.error(
-                        '[catalog] Sanity customization by handle failed:',
-                        err,
-                    );
-                }
-                return null;
+    const fetchUncached = async (): Promise<CustomizationLibraryItem | null> => {
+        try {
+            const doc = await (await catalogClient()).fetch<
+                CatalogLibraryOptionDoc | null
+            >(CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY, {
+                category: categoryKey,
+                handle: handleKey,
+            });
+            return doc ? mapSanityLibraryOption(doc) : null;
+        } catch (err) {
+            if (process.env.NODE_ENV === 'development') {
+                console.error(
+                    '[catalog] Sanity customization by handle failed:',
+                    err,
+                );
             }
-        },
+            return null;
+        }
+    };
+
+    const getCached = unstable_cache(
+        fetchUncached,
         [`www-customization:${categoryKey}:${handleKey}`],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
@@ -231,11 +285,13 @@ export async function getCustomizationCategory(
         },
     );
 
-    return getCached();
+    return (await isDraftRequest()) ? fetchUncached() : getCached();
 }
 
 export async function getProduct(slug: string): Promise<Product | null> {
-    return getCachedProductBySlug(slug);
+    return (await isDraftRequest())
+        ? fetchSanityProduct(normalizeSlug(slug))
+        : getCachedProductBySlug(slug);
 }
 
 export async function getByProductsSegment(
