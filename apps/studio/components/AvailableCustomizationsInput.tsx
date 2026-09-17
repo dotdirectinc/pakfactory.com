@@ -509,6 +509,12 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                   <ul style={{ listStyle: 'none', margin: 0, padding: '0.2rem 0 0 18px' }}>
                     {type.options.map((option) => {
                       const state = stateOf(byOption.get(option._id), isInspiration)
+                      // On a preset an unstarred row is available because the
+                      // BASE says so, not because anyone ticked it here, and it
+                      // cannot be turned off. Drawing it like a ticked checkbox
+                      // invites someone to try to untick it. Muted, so the tick
+                      // reads as a statement rather than a control.
+                      const inherited = isInspiration && state === 'available'
                       return (
                         <li key={option._id}>
                           <button
@@ -546,13 +552,19 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                                 justifyContent: 'center',
                                 fontSize: 10,
                                 lineHeight: 1,
-                                color: state === 'off' ? 'transparent' : '#fff',
-                                border:
+                                color:
                                   state === 'off'
+                                    ? 'transparent'
+                                    : inherited
+                                      ? 'var(--card-muted-fg-color, rgba(125,125,125,0.9))'
+                                      : '#fff',
+                                border:
+                                  state === 'off' || inherited
                                     ? '1px solid var(--card-border-color, rgba(125,125,125,0.45))'
                                     : '1px solid transparent',
-                                background:
-                                  state === 'preselected'
+                                background: inherited
+                                  ? 'transparent'
+                                  : state === 'preselected'
                                     ? 'var(--card-badge-primary-dot-color, #2276fc)'
                                     : state === 'available'
                                       ? 'var(--card-badge-positive-dot-color, #3ab667)'
@@ -566,6 +578,8 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                             </span>
                             {state === 'preselected' ? (
                               <span style={{ fontSize: 10, opacity: 0.6, flexShrink: 0 }}>PRE-SELECTED</span>
+                            ) : inherited ? (
+                              <span style={{ fontSize: 10, opacity: 0.4, flexShrink: 0 }}>INHERITED</span>
                             ) : null}
                           </button>
                         </li>
