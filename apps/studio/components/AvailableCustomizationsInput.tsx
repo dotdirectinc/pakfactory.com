@@ -76,6 +76,27 @@ const UNIVERSE_QUERY = `*[
 }`
 
 /**
+ * What the product this preset is based on actually offers.
+ *
+ * An Inspiration product is a Standard one with some choices already made, and
+ * the record is explicit that **both kinds have the same available set** — the
+ * preset adds pre-selection, not availability. So the picker on a preset must
+ * offer only what its base offers. Showing all 77 would let someone pre-select
+ * a material the underlying box cannot be made from, and nothing downstream
+ * would catch it.
+ *
+ * Draft preferred, as everywhere else here: a base whose list is being edited
+ * should be read as it is about to be, not as it was.
+ */
+const BASE_QUERY = `coalesce(
+  *[_id == "drafts." + $baseId][0],
+  *[_id == $baseId][0]
+){
+  title,
+  "optionIds": coalesce(availableCustomizations[].customization._ref, [])
+}`
+
+/**
  * Array members need a `_key`. Same generator the other custom inputs use
  * (`ChartDataInput`), prefixed per type so a collision across fields is
  * impossible to produce by accident.
@@ -166,6 +187,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   const client = useClient({ apiVersion: '2024-01-01' })
   const kind = useFormValue(['kind'])
   const isInspiration = kind === 'inspiration'
+  const baseId = (useFormValue(['basedOn']) as { _ref?: string } | undefined)?._ref
 
   const value = useMemo(
     () => (Array.isArray(props.value) ? (props.value as unknown as Entry[]) : []),
@@ -176,6 +198,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   const [error, setError] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
+  const [base, setBase] = useState<{ title: string | null; optionIds: string[] } | null>(null)
 
   // One-shot, not a live subscription: the option list is taxonomy and changes
   // rarely, where this form opens constantly. A `listenQuery` per open document
@@ -197,6 +220,29 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
       cancelled = true
     }
   }, [client])
+
+  // Refetched when `basedOn` changes, so repointing a preset at a different box
+  // narrows the picker immediately rather than at the next reload.
+  useEffect(() => {
+    if (!isInspiration || !baseId) {
+      setBase(null)
+      return
+    }
+    let cancelled = false
+    client
+      .fetch<{ title: string | null; optionIds: string[] } | null>(BASE_QUERY, { baseId })
+      .then((row) => {
+        if (cancelled) return
+        setBase({ title: row?.title ?? null, optionIds: row?.optionIds ?? [] })
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : String(err))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [client, isInspiration, baseId])
 
   /** Entry by the option id it points at. Two entries for one option is invalid
    *  (validation reports it); the first wins so the UI stays deterministic. */
@@ -261,11 +307,51 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     return <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>Loading options…</div>
   }
 
+  const notice = (text: string) => (
+    <div
+      style={{
+        padding: '0.7rem 0.8rem',
+        borderRadius: 4,
+        fontSize: 13,
+        background: 'var(--card-muted-bg-color, rgba(125,125,125,0.08))',
+      }}
+    >
+      {text}
+    </div>
+  )
+
+  // A preset offers what the box it is based on offers — no more. Until that
+  // box says what it offers, there is nothing legitimate to choose from here,
+  // and an empty picker should say which document to go and fill in rather
+  // than looking broken.
+  if (isInspiration) {
+    if (!baseId) {
+      return notice(
+        'This is an Inspiration preset, so what it can offer follows from the product it is based on. Set "Based on" (Categorization) first.',
+      )
+    }
+    if (base === null) {
+      return <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>Loading options…</div>
+    }
+    if (base.optionIds.length === 0) {
+      return notice(
+        `${base.title || 'The product this is based on'} does not offer any customizations yet, so there is nothing for this preset to pre-select. Fill in its "Available customizations" first — a preset cannot offer what the box it is built from cannot be made with.`,
+      )
+    }
+  }
+
+  // On a preset the choosable set is the base's list, intersected with the two
+  // categories a product dictates. Anything already stored that falls outside
+  // it drops into "not editable here" below, which is how a preset offering
+  // something its base does not becomes visible rather than silent.
+  const baseIds = base ? new Set(base.optionIds) : null
+  const scoped = baseIds ? universe.filter((o) => baseIds.has(o._id)) : universe
+
   const term = search.trim().toLowerCase()
-  const visible = term ? universe.filter((o) => (o.title ?? '').toLowerCase().includes(term)) : universe
+  const visible = term ? scoped.filter((o) => (o.title ?? '').toLowerCase().includes(term)) : scoped
   const groups = group(visible)
 
-  const inScope = new Set(universe.map((o) => o._id))
+  const inScope = new Set(scoped.map((o) => o._id))
   const selectedCount = value.filter((e) => e.customization?._ref && inScope.has(e.customization._ref)).length
   const preselectedCount = value.filter((e) => e.preselected === true).length
 
@@ -293,7 +379,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
-          placeholder={`Search ${universe.length} options…`}
+          placeholder={`Search ${scoped.length} options…`}
           style={{
             flex: 1,
             minWidth: 160,
@@ -307,10 +393,17 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           }}
         />
         <div style={{ fontSize: 12, opacity: 0.6, flexShrink: 0 }}>
-          {selectedCount} selected
+          {selectedCount} of {scoped.length} selected
           {isInspiration && preselectedCount > 0 ? ` · ${preselectedCount} pre-selected` : ''}
         </div>
       </div>
+
+      {isInspiration && base ? (
+        <div style={{ fontSize: 12, opacity: 0.6, marginBottom: '0.75rem' }}>
+          Limited to what <strong>{base.title || 'the product this is based on'}</strong> offers — a
+          preset cannot offer what the box it is built from cannot be made with.
+        </div>
+      ) : null}
 
       {groups.length === 0 ? (
         <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>
@@ -482,7 +575,8 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           </strong>{' '}
           Finishing and Printing follow from compatibility between customization options, not from the
           product, so this picker does not offer them. They are kept, not lost — nothing above will
-          remove them. An entry pointing at a deleted option also lands here.
+          remove them. An entry pointing at a deleted option lands here too — and on a preset, so does
+          anything the product it is based on does not itself offer.
         </div>
       ) : null}
     </div>

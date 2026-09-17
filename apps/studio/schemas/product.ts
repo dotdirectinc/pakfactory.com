@@ -482,6 +482,41 @@ export const product = defineType({
           if (flagged === 0 || !isStandard(context.document)) return true
           return `${flagged} option(s) are marked pre-selected, but this is a Standard product. Pre-selection only has an effect on an Inspiration preset — either clear the flags or change Kind.`
         }).warning(),
+        // A preset offers what the box it is built from offers, and no more —
+        // both kinds carry the same available set, the preset just arrives with
+        // some choices already made. The picker enforces this by only drawing
+        // the base's options, but a script or a push from the product data
+        // source does not go through the picker, so the rule has to exist here
+        // as well as in the UI.
+        //
+        // A warning, not an error: the two documents can legitimately be written
+        // in either order, and failing a preset because its base has not landed
+        // yet would break a correct import halfway through.
+        Rule.custom(async (value, context) => {
+          const list = Array.isArray(value) ? value : []
+          if (list.length === 0) return true
+          const doc = context.document as { kind?: string; basedOn?: { _ref?: string } } | undefined
+          if (doc?.kind !== 'inspiration') return true
+          const baseRef = doc?.basedOn?._ref
+          if (!baseRef) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const offered = await client.fetch<string[] | null>(
+              `coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]).availableCustomizations[].customization._ref`,
+              { baseRef },
+            )
+            const allowed = new Set(offered ?? [])
+            const stray = (list as { customization?: { _ref?: string } }[]).filter(
+              (e) => e?.customization?._ref && !allowed.has(e.customization._ref),
+            ).length
+            if (stray > 0) {
+              return `${stray} option(s) here are not offered by the product this preset is based on. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
+            }
+          } catch {
+            return true // never block on a lookup failure
+          }
+          return true
+        }).warning(),
       ],
       of: [
         {
