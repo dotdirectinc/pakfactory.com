@@ -7,6 +7,7 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -448,7 +449,75 @@ export const product = defineType({
       title: 'Available customizations',
       type: 'array',
       group: GROUPS.specs,
-      description: `What can be applied to this product, each flagged pre-selected or not. A preset simply has some already flagged. ${SOURCE_OWNED_NOTE}`,
+      // The picker draws Materials and Additional Customization only, and this
+      // array holds all four categories — so it patches by `_key` and never
+      // writes the array whole. Anything it cannot edit it still lists, at the
+      // bottom, rather than leaving it somewhere an editor cannot see it.
+      // PROD-2529.
+      components: { input: AvailableCustomizationsInput },
+      description: `What this product offers, each flagged pre-selected or not. A preset simply has some already flagged. Finishing and Printing are not chosen here — they follow from compatibility between customization options. ${SOURCE_OWNED_NOTE}`,
+      // Two rules, two levels. A repeated option is always a mistake, so it is an
+      // error. A pre-selected flag on a Standard product is inert rather than
+      // wrong — warn, and do not clear it: a field switch that silently edits
+      // data is worse than one that says something.
+      validation: (Rule) => [
+        Rule.custom((value) => {
+          const list = Array.isArray(value) ? value : []
+          const seen = new Set<string>()
+          const repeated = new Set<string>()
+          for (const entry of list as { customization?: { _ref?: string } }[]) {
+            const ref = entry?.customization?._ref
+            if (!ref) continue
+            if (seen.has(ref)) repeated.add(ref)
+            seen.add(ref)
+          }
+          if (repeated.size > 0) {
+            return `${repeated.size} customization option(s) appear more than once. Each option should be listed at most once.`
+          }
+          return true
+        }),
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const flagged = (list as { preselected?: boolean }[]).filter((e) => e?.preselected === true).length
+          if (flagged === 0 || !isStandard(context.document)) return true
+          return `${flagged} option(s) are marked pre-selected, but this is a Standard product. Pre-selection only has an effect on an Inspiration preset — either clear the flags or change Kind.`
+        }).warning(),
+        // A preset offers what the box it is built from offers, and no more —
+        // both kinds carry the same available set, the preset just arrives with
+        // some choices already made. The picker enforces this by only drawing
+        // the base's options, but a script or a push from the product data
+        // source does not go through the picker, so the rule has to exist here
+        // as well as in the UI.
+        //
+        // A warning, not an error: the two documents can legitimately be written
+        // in either order, and failing a preset because its base has not landed
+        // yet would break a correct import halfway through.
+        Rule.custom(async (value, context) => {
+          const list = Array.isArray(value) ? value : []
+          if (list.length === 0) return true
+          const doc = context.document as { kind?: string; basedOn?: { _ref?: string } } | undefined
+          if (doc?.kind !== 'inspiration') return true
+          const baseRef = doc?.basedOn?._ref
+          if (!baseRef) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const offered = await client.fetch<string[] | null>(
+              `coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]).availableCustomizations[].customization._ref`,
+              { baseRef },
+            )
+            const allowed = new Set(offered ?? [])
+            const stray = (list as { customization?: { _ref?: string } }[]).filter(
+              (e) => e?.customization?._ref && !allowed.has(e.customization._ref),
+            ).length
+            if (stray > 0) {
+              return `${stray} option(s) here are not offered by the product this preset is based on. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
+            }
+          } catch {
+            return true // never block on a lookup failure
+          }
+          return true
+        }).warning(),
+      ],
       of: [
         {
           type: 'object',

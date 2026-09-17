@@ -107,10 +107,11 @@ export const PropertyValueUsedByView = createReferencedByView({
  * The "can I retire this?" tab. An option named by a published case study cannot
  * quietly disappear.
  *
- * ⚠️ Products here reads `product.availableCustomizations` — populated on 1 of
- * 310. The option's own `availableOnProducts` field states the same relationship
- * from this side and is visible on the form above, so it is deliberately NOT
- * repeated here: this tab is for what the form cannot show.
+ * Products here reads `product.availableCustomizations`, which since PROD-2529 is
+ * the ONLY place the product-option relationship is stated — the option's own
+ * `availableOnProducts` is retired. So this tab is no longer a second opinion on
+ * the form above; for this relationship it is the only view the Option has, and
+ * the reverse lookup it does is the only way to answer it from this side.
  */
 export const CustomizationOptionUsedByView = createReferencedByView({
   tag: 'customization-option-used-by',
