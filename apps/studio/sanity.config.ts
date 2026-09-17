@@ -378,7 +378,26 @@ const sitePresentation = () =>
     title: 'Presentation',
     previewUrl: {
       initial: SITE_PREVIEW_BASE,
-      previewMode: { enable: 'api/draft-mode/enable' },
+      // ABSOLUTE, with a leading slash — and that slash is the whole fix.
+      //
+      // Presentation resolves a RELATIVE `enable` against the iframe's CURRENT
+      // pathname, not against `initial`. From /products/custom-book-style-…,
+      // `new URL('api/draft-mode/enable', …)` drops the last segment and yields
+      // **/products/api/draft-mode/enable**, which 404s. The iframe then renders
+      // that 404 page, draft mode never engages, and Presentation reports
+      // "Unable to connect to visual editing" with "No matching documents" —
+      // three symptoms, one missing slash. Observed on staging 2026-09-17.
+      //
+      // The site-root surface is served from the origin root, so the route is at
+      // /api/draft-mode/enable for every depth of page. An absolute path is both
+      // correct and depth-proof here.
+      //
+      // NOTE: the blog and case-studies tools below still use the relative form.
+      // That works only while the previewed page sits exactly one segment under
+      // their base (/blog/my-post → /blog/api/…) and breaks at depth ≥ 2
+      // (/blog/topics/foo → /blog/topics/api/… → 404). Left alone deliberately —
+      // shipped scope, see the PR.
+      previewMode: { enable: '/api/draft-mode/enable' },
     },
     allowOrigins: SITE_ALLOW_ORIGINS,
     resolve: { locations: siteLocations },
