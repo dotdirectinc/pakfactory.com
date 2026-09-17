@@ -258,6 +258,7 @@ export function TypeHeader({
   title,
   chosen,
   total,
+  note,
   collapsed,
   onToggleCollapsed,
   actions,
@@ -265,6 +266,10 @@ export function TypeHeader({
   title: string
   chosen: number
   total: number
+  /** Anything the count alone would misreport — e.g. ticks the row shows but
+   *  this document does not own. Without it a header reading `0 / 7` sits above
+   *  a visibly ticked row and the two appear to disagree. */
+  note?: string
   collapsed: boolean
   onToggleCollapsed: () => void
   actions?: ReactNode
@@ -298,6 +303,7 @@ export function TypeHeader({
         <span style={{ fontWeight: 600, fontSize: 13 }}>{title}</span>
         <span style={{ fontSize: 11, opacity: 0.55 }}>
           {chosen} / {total}
+          {note ? ` · ${note}` : ''}
         </span>
       </button>
       {actions ? <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>{actions}</div> : null}
