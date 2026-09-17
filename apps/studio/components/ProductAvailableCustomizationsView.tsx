@@ -19,6 +19,12 @@ import { IntentLink } from 'sanity/router'
  * Category > Type > Option — which is the shape someone vetting the list is
  * holding in their head anyway.
  *
+ * On an Inspiration preset that field holds only the pre-selections: what the
+ * preset OFFERS is its base product's list, inherited rather than restated
+ * (PROD-2530). So the rows here come from the base and the preset's own entries
+ * only decide which are flagged. A tab that read the preset's own array would
+ * report it offering three options when it offers forty.
+ *
  * Read-only on purpose. The field is source-owned and flips to `readOnly` when
  * the Registry ships; a view that never writes survives that unchanged.
  */
@@ -42,8 +48,31 @@ type Entry = {
 type ProductDoc = {
   _id: string
   kind: string | null
-  entries: Entry[] | null
+  baseTitle: string | null
+  /** Refs this document flags pre-selected — the only thing a preset states. */
+  preselectedRefs: string[] | null
+  /** This document's own entries. On a preset, only its pre-selections. */
+  own: Entry[] | null
+  /** What `basedOn` offers. Empty on a standard product. */
+  inherited: Entry[] | null
 }
+
+/** Resolved the same way in both halves, so a row reads identically either way. */
+const OPTION = `{
+  _id,
+  title,
+  "typeId": type._ref,
+  "typeTitle": type->title,
+  "categoryId": type->category._ref,
+  "categoryTitle": type->category->title
+}`
+
+const DEREF = `coalesce(
+  *[_id == "drafts." + ^.customization._ref][0],
+  *[_id == ^.customization._ref][0]
+)`
+
+const BASE = `coalesce(*[_id == "drafts." + ^.basedOn._ref][0], *[_id == ^.basedOn._ref][0])`
 
 /**
  * Both ids are fetched and the draft is preferred in JS rather than by
@@ -54,26 +83,30 @@ type ProductDoc = {
  * Each option is resolved through its own `coalesce` for the same reason one
  * level down: a plain `customization->` misses an option that exists only as a
  * draft, and the row would render as a dangling reference. PROD-2526.
+ *
+ * `own` and `inherited` are both fetched rather than branching in GROQ, because
+ * which one to show is a question about `kind` and reads more plainly in JS.
  */
 const QUERY = `*[_id in [$draftId, $publishedId]]{
   _id,
   kind,
-  "entries": coalesce(
+  "baseTitle": ${BASE}.title,
+  "preselectedRefs": coalesce(availableCustomizations[preselected == true].customization._ref, []),
+  "own": coalesce(
     availableCustomizations[]{
       _key,
       "preselected": preselected == true,
       "refId": customization._ref,
-      "option": coalesce(
-        *[_id == "drafts." + ^.customization._ref][0],
-        *[_id == ^.customization._ref][0]
-      ){
-        _id,
-        title,
-        "typeId": type._ref,
-        "typeTitle": type->title,
-        "categoryId": type->category._ref,
-        "categoryTitle": type->category->title
-      }
+      "option": ${DEREF}${OPTION}
+    },
+    []
+  ),
+  "inherited": coalesce(
+    ${BASE}.availableCustomizations[]{
+      _key,
+      "preselected": false,
+      "refId": customization._ref,
+      "option": ${DEREF}${OPTION}
     },
     []
   )
@@ -186,13 +219,37 @@ export const ProductAvailableCustomizationsView: UserViewComponent = ({ document
 
   // Prefer the draft — this tab exists to show what you are about to publish.
   const doc = docs.find((d) => d._id.startsWith('drafts.')) ?? docs[0] ?? null
-  const entries = doc?.entries ?? []
+  const isInspiration = doc?.kind === 'inspiration'
+
+  // A preset does not restate what it offers; that is its base's list, and this
+  // document holds only the pre-selections (PROD-2530). So the rows come from
+  // the base, and this document's entries decide which of them are flagged.
+  // Reading `own` alone here would show a preset offering three options when it
+  // offers forty — the field means something different per Kind, and a view
+  // that ignores that reports the wrong thing rather than nothing.
+  const preselected = new Set(doc?.preselectedRefs ?? [])
+  const entries: Entry[] = isInspiration
+    ? (doc?.inherited ?? []).map((e) => ({
+        ...e,
+        preselected: e.refId !== null && preselected.has(e.refId),
+      }))
+    : (doc?.own ?? [])
 
   if (entries.length === 0) {
     return (
       <div style={{ padding: '1.5rem', opacity: 0.6, fontSize: 13 }}>
-        No customizations are available on this product yet. They are listed in{' '}
-        <strong>Available customizations</strong> on the Specs tab.
+        {isInspiration ? (
+          <>
+            No customizations are available on this preset yet. A preset offers whatever{' '}
+            <strong>{doc?.baseTitle || 'the product it is based on'}</strong> offers, so fill in{' '}
+            <strong>Available customizations</strong> there first.
+          </>
+        ) : (
+          <>
+            No customizations are available on this product yet. They are listed in{' '}
+            <strong>Available customizations</strong> on the Specs tab.
+          </>
+        )}
       </div>
     )
   }
@@ -200,7 +257,6 @@ export const ProductAvailableCustomizationsView: UserViewComponent = ({ document
   const groups = group(entries)
   const preselectedCount = entries.filter((e) => e.preselected).length
   const unresolvedCount = entries.filter((e) => !e.option).length
-  const isInspiration = doc?.kind === 'inspiration'
   const allCollapsed = groups.every((c) => c.types.every((t) => collapsed[`${c.id}:${t.id}`]))
 
   const toggleAll = () => {
@@ -225,6 +281,7 @@ export const ProductAvailableCustomizationsView: UserViewComponent = ({ document
           {entries.length} {entries.length === 1 ? 'customization' : 'customizations'} across{' '}
           {groups.length} {groups.length === 1 ? 'category' : 'categories'}
           {isInspiration && preselectedCount > 0 ? ` · ${preselectedCount} pre-selected` : ''}
+          {isInspiration ? ` · inherited from ${doc?.baseTitle || 'its base product'}` : ''}
         </div>
         <button
           type="button"

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import {
   insert,
-  set,
   setIfMissing,
   unset,
   useClient,
@@ -19,10 +18,17 @@ import {
  * Option — with every option in scope drawn whether it is selected or not,
  * because you cannot tick a box that is not on screen.
  *
- * Three states per row: off, available, and available + pre-selected. The third
- * only means anything on an Inspiration product (a preset is a product with
- * some choices already made), so on a Standard product the row is a plain
- * toggle and the state is unreachable.
+ * A row is a toggle, and what it toggles depends on the kind of product. On a
+ * Standard one it is availability: the product is stating what it offers. On an
+ * Inspiration preset availability is not this document's to state — it is
+ * whatever the product in `basedOn` offers — so the toggle is pre-selection,
+ * and the preset stores only the options it comes already configured with.
+ *
+ * That asymmetry is deliberate and it is the reason there is no tri-state. The
+ * alternative was to have an editor mark forty options "available" before
+ * flagging three, which is hand-copying the base product's list into a second
+ * document: the same fact twice, drifting the moment the base changes.
+ * PROD-2530.
  *
  * 🔴 This component renders TWO of the four customization categories, and the
  * field holds all four. Everything here must therefore patch by `_key` and
@@ -107,12 +113,18 @@ function newKey(): string {
   return `ac${Date.now().toString(36)}${keySeq.toString(36)}${Math.random().toString(36).slice(2, 6)}`
 }
 
-function entryFor(optionId: string): Record<string, unknown> {
+/**
+ * On a Standard product an entry means "this is offered". On a preset it means
+ * "this one comes already chosen" — availability there is inherited from
+ * `basedOn` and is never written here, so a preset entry is only ever
+ * `preselected: true`. An entry flagged false on a preset would assert nothing.
+ */
+function entryFor(optionId: string, preselected: boolean): Record<string, unknown> {
   return {
     _key: newKey(),
     _type: 'availableCustomization',
     customization: { _type: 'reference', _ref: optionId },
-    preselected: false,
+    preselected,
   }
 }
 
@@ -174,12 +186,23 @@ const RESET_BUTTON: CSSProperties = {
   cursor: 'pointer',
 }
 
-/** off → available → pre-selected (Inspiration only) → off */
+/**
+ * A row is a plain toggle, and what it toggles depends on the kind of product.
+ *
+ * Standard — off or available. The product is stating what it offers.
+ * Preset   — always available, because that is inherited from the product it is
+ *            based on and is not this document's to state. The toggle is
+ *            pre-selection, so the states are inherited or inherited+chosen.
+ *
+ * This is why there is no tri-state. Making an editor mark forty options
+ * "available" before flagging three would be asking them to hand-copy the base
+ * product's list, which is the duplicated fact the whole design avoids.
+ */
 type RowState = 'off' | 'available' | 'preselected'
 
-function stateOf(entry: Entry | undefined): RowState {
-  if (!entry) return 'off'
-  return entry.preselected === true ? 'preselected' : 'available'
+function stateOf(entry: Entry | undefined, isInspiration: boolean): RowState {
+  if (isInspiration) return entry ? 'preselected' : 'available'
+  return entry ? 'available' : 'off'
 }
 
 export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
@@ -255,27 +278,18 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     return map
   }, [value])
 
-  const cycle = useCallback(
+  // One toggle, both kinds. On a Standard product it adds or removes
+  // availability; on a preset it adds or removes pre-selection, because the
+  // presence of an entry is what "pre-chosen" means there.
+  const toggle = useCallback(
     (optionId: string) => {
       if (readOnly) return
       const entry = byOption.get(optionId)
-      const state = stateOf(entry)
-
-      if (state === 'off') {
-        onChange([setIfMissing([]), insert([entryFor(optionId)], 'after', [-1])])
+      if (entry) {
+        onChange(unset([{ _key: entry._key }]))
         return
       }
-      if (state === 'available') {
-        // A Standard product skips the pre-selected state entirely — it has no
-        // effect there, and offering it would invite data that means nothing.
-        if (isInspiration && entry) {
-          onChange(set(true, [{ _key: entry._key }, 'preselected']))
-        } else if (entry) {
-          onChange(unset([{ _key: entry._key }]))
-        }
-        return
-      }
-      if (entry) onChange(unset([{ _key: entry._key }]))
+      onChange([setIfMissing([]), insert([entryFor(optionId, isInspiration)], 'after', [-1])])
     },
     [byOption, isInspiration, onChange, readOnly],
   )
@@ -285,9 +299,12 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
       if (readOnly) return
       const missing = options.filter((o) => !byOption.has(o._id))
       if (missing.length === 0) return
-      onChange([setIfMissing([]), insert(missing.map((o) => entryFor(o._id)), 'after', [-1])])
+      onChange([
+        setIfMissing([]),
+        insert(missing.map((o) => entryFor(o._id, isInspiration)), 'after', [-1]),
+      ])
     },
-    [byOption, onChange, readOnly],
+    [byOption, isInspiration, onChange, readOnly],
   )
 
   const clearAll = useCallback(
@@ -393,15 +410,17 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           }}
         />
         <div style={{ fontSize: 12, opacity: 0.6, flexShrink: 0 }}>
-          {selectedCount} of {scoped.length} selected
-          {isInspiration && preselectedCount > 0 ? ` · ${preselectedCount} pre-selected` : ''}
+          {isInspiration
+            ? `${scoped.length} inherited · ${preselectedCount} pre-selected`
+            : `${selectedCount} of ${scoped.length} selected`}
         </div>
       </div>
 
       {isInspiration && base ? (
         <div style={{ fontSize: 12, opacity: 0.6, marginBottom: '0.75rem' }}>
-          Limited to what <strong>{base.title || 'the product this is based on'}</strong> offers — a
-          preset cannot offer what the box it is built from cannot be made with.
+          Everything <strong>{base.title || 'the product this is based on'}</strong> offers is
+          available here already — a preset does not restate its base's list, it only says which
+          options come pre-chosen. Tick the ones this preset arrives with.
         </div>
       ) : null}
 
@@ -466,7 +485,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                           cursor: chosen === type.options.length ? 'default' : 'pointer',
                         }}
                       >
-                        Select all
+                        {isInspiration ? 'Pre-select all' : 'Select all'}
                       </button>
                       <button
                         type="button"
@@ -489,19 +508,19 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
                 {isCollapsed ? null : (
                   <ul style={{ listStyle: 'none', margin: 0, padding: '0.2rem 0 0 18px' }}>
                     {type.options.map((option) => {
-                      const state = stateOf(byOption.get(option._id))
+                      const state = stateOf(byOption.get(option._id), isInspiration)
                       return (
                         <li key={option._id}>
                           <button
                             type="button"
-                            onClick={() => cycle(option._id)}
+                            onClick={() => toggle(option._id)}
                             disabled={readOnly}
                             title={
                               readOnly
                                 ? undefined
                                 : isInspiration
-                                  ? 'Click to cycle: not available → available → pre-selected'
-                                  : 'Click to toggle availability'
+                                  ? 'Available on every preset built from this base. Click to pre-select it.'
+                                  : 'Click to offer this option on this product'
                             }
                             style={{
                               ...RESET_BUTTON,
