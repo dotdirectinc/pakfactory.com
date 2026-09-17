@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import {
   getPublishedId,
   insert,
@@ -8,6 +8,7 @@ import {
   useFormValue,
   type ArrayOfObjectsInputProps,
 } from 'sanity'
+import { useRouter } from 'sanity/router'
 import {
   group,
   makeKeyGenerator,
@@ -110,6 +111,16 @@ const UNIVERSE_QUERY = `{
 
 const newKey = makeKeyGenerator('cc')
 
+/** The button and the link have to line up pixel for pixel, so they share this. */
+const ROW: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  width: '100%',
+  padding: '0.3rem 0',
+  textAlign: 'left',
+}
+
 function entryFor(optionId: string): Record<string, unknown> {
   return { _key: newKey(), _type: 'reference', _ref: optionId }
 }
@@ -117,6 +128,10 @@ function entryFor(optionId: string): Record<string, unknown> {
 export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
   const { onChange, readOnly } = props
   const client = useClient({ apiVersion: '2024-01-01' })
+  // `navigateIntent` rather than `<IntentLink>`: same navigation, but a hook adds
+  // nothing to the TS2786 pile that `@types/react@18` produces for every
+  // `@sanity/*` JSX component, and this row wants button semantics anyway.
+  const router = useRouter()
 
   const rawId = useFormValue(['_id'])
   const selfId = typeof rawId === 'string' ? getPublishedId(rawId) : null
@@ -231,8 +246,19 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
 
   const selectable = universe.filter((o) => !isGreyed(o))
   const inScope = new Set(universe.map((o) => o._id))
-  const storedCount = value.filter((e) => e._ref && inScope.has(e._ref)).length
-  const inboundCount = fetched.inbound.filter((r) => !outbound.has(r._id)).length
+  // Counted as one number, not two. "How many of these work with this one" is a
+  // question about the pairs, and which of the two documents happens to hold the
+  // reference is not part of it — a split fraction asked the reader to do
+  // arithmetic to answer it, above rows they could already see.
+  const compatibleCount = selectable.filter(
+    (o) => outbound.has(o._id) || inboundFrom.has(o._id),
+  ).length
+  // A breakdown of that total, not a separate one: how many of the ticks on
+  // screen are recorded on the other document, which is also exactly the set
+  // Clear cannot reach.
+  const elsewhereCount = selectable.filter(
+    (o) => !outbound.has(o._id) && inboundFrom.has(o._id),
+  ).length
 
   // An entry pointing at something this picker does not offer: a `reference`
   // Option (validation warns), or one that has been deleted. Shown, not hidden —
@@ -246,17 +272,15 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
         onChange={setSearch}
         placeholder={`Search ${selectable.length} options…`}
         summary={
-          // The total stays in both shapes. Dropping it when something arrives
-          // from the other side made the one case that needs the most context
-          // the one that showed the least.
-          `${storedCount} of ${selectable.length} chosen` +
-          (inboundCount > 0 ? ` · ${inboundCount} from elsewhere` : '')
+          `${compatibleCount} of ${selectable.length} compatible` +
+          (elsewhereCount > 0 ? ` · ${elsewhereCount} from elsewhere` : '')
         }
       />
 
       <div style={{ fontSize: 12, opacity: 0.6, marginBottom: '0.75rem' }}>
         Compatibility reads both ways, so it only has to be recorded once. A muted tick is an option
-        that names <em>this</em> one in its own list — open that option to change it.
+        that already names <em>this</em> one in its own list — it counts the same, and its name is a
+        link if you want to go and remove it.
       </div>
 
       {groups.length === 0 ? (
@@ -274,11 +298,13 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
             // Searching implies you want to see what matched.
             const isCollapsed = term ? false : collapsed[key] !== false
             const pickable = type.options.filter((o) => !isGreyed(o))
-            const chosen = pickable.filter((o) => outbound.has(o._id)).length
-            // Ticks this type shows that are NOT stored here. Counted separately
-            // rather than folded into `chosen`, because Select all and Clear act
-            // on what this document owns and the fraction has to match them.
-            const elsewhere = pickable.filter((o) => !outbound.has(o._id) && inboundFrom.has(o._id)).length
+            // Everything ticked, from either side. Select all skips what is
+            // already true, so it still lands on `n / n`; Clear removes only what
+            // this document owns, which leaves the inbound ticks drawn AND
+            // counted. The fraction matches the rows in both cases.
+            const chosen = pickable.filter((o) => outbound.has(o._id) || inboundFrom.has(o._id)).length
+            const clearable = pickable.filter((o) => outbound.has(o._id)).length
+            const elsewhere = chosen - clearable
             const isOwnExclusiveType = ownTypeIsExclusive && type.id === ownTypeId
             return (
               <div key={key} style={{ marginBottom: '0.4rem' }}>
@@ -294,13 +320,13 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
                       <>
                         <HeaderAction
                           label="Select all"
-                          onClick={() => selectAll(pickable)}
+                          onClick={() => selectAll(pickable.filter((o) => !inboundFrom.has(o._id)))}
                           disabled={chosen === pickable.length}
                         />
                         <HeaderAction
                           label="Clear"
                           onClick={() => clearAll(pickable)}
-                          disabled={chosen === 0}
+                          disabled={clearable === 0}
                         />
                       </>
                     )
@@ -319,58 +345,101 @@ export function CompatibleCustomizationsInput(props: ArrayOfObjectsInputProps) {
                     {type.options.map((option) => {
                       const greyed = isGreyed(option)
                       const stored = outbound.has(option._id)
-                      const from = inboundFrom.get(option._id)
                       // Stored here wins over inbound: a pair recorded on both
                       // documents is redundant rather than wrong, and drawing it
                       // as editable lets an editor remove the half they own.
-                      const tick = greyed ? 'off' : stored ? 'on' : from ? 'muted' : 'off'
-                      const locked = greyed || (!stored && !!from)
-                      return (
-                        <li key={option._id}>
-                          <button
-                            type="button"
-                            onClick={() => toggle(option._id)}
-                            disabled={readOnly || locked}
-                            title={
-                              greyed
-                                ? option._id === selfId
-                                  ? 'An option is not compatible with itself.'
-                                  : 'A customer picks one option from this type, so these two can never be ordered together.'
-                                : !stored && from
-                                  ? `Recorded on ${from}. Open that option to change it.`
-                                  : readOnly
-                                    ? undefined
-                                    : 'Click to record that these two can be ordered together'
-                            }
-                            style={{
-                              ...RESET_BUTTON,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 10,
-                              width: '100%',
-                              padding: '0.3rem 0',
-                              cursor: readOnly || locked ? 'default' : 'pointer',
-                              opacity: greyed ? 0.35 : readOnly ? 0.75 : 1,
-                              textAlign: 'left',
-                            }}
-                          >
-                            <Tick state={tick} />
-                            <span style={{ fontSize: 13, flex: 1, minWidth: 0 }}>
-                              {option.title || 'Untitled'}
-                            </span>
-                            {!greyed && !stored && from ? (
+                      const inbound = !greyed && !stored && inboundFrom.has(option._id)
+
+                      // ── The edge lives on the other option ──────────────
+                      // It cannot be unticked from here, so the row is not a
+                      // control that refuses to work — it is a LINK to the one
+                      // place it can be changed. One click to get there, one to
+                      // untick.
+                      //
+                      // ⚠️ Its own control, not a label inside the disabled
+                      // button — anything nested in a disabled button is
+                      // unclickable, which would have made this the dead control
+                      // it exists to avoid.
+                      //
+                      // The tick stays muted rather than solid green, and that
+                      // is deliberate. Drawn identically it would have to behave
+                      // identically, which means unticking would write to the
+                      // OTHER document — landing in that document's draft, so it
+                      // silently gains an unpublished change, and discarding this
+                      // draft afterwards leaves the two permanently disagreeing
+                      // with nothing to say which was meant.
+                      if (inbound) {
+                        return (
+                          <li key={option._id}>
+                            {/* Not a button. The row states a fact it cannot change;
+                                only the name is actionable, so only the name is a
+                                control. A whole row that looks clickable and mostly
+                                is not is the ambiguity this is avoiding. */}
+                            <div style={{ ...ROW, cursor: 'default' }}>
+                              <Tick state="muted" />
+                              <span style={{ fontSize: 13, flex: 1, minWidth: 0 }}>
+                                {option.title || 'Untitled'}
+                              </span>
                               <span
                                 style={{
                                   fontSize: 10,
-                                  opacity: 0.4,
+                                  opacity: 0.5,
                                   flexShrink: 0,
                                   textTransform: 'uppercase',
                                   letterSpacing: '0.05em',
                                 }}
                               >
-                                From {from}
+                                From{' '}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    router.navigateIntent('edit', {
+                                      id: option._id,
+                                      type: 'customizationOption',
+                                    })
+                                  }
+                                  title={`Recorded on ${option.title || 'that option'}. Open it to remove.`}
+                                  style={{
+                                    ...RESET_BUTTON,
+                                    textDecoration: 'underline',
+                                    letterSpacing: 'inherit',
+                                    textTransform: 'inherit',
+                                  }}
+                                >
+                                  {option.title || 'Untitled'}
+                                </button>
                               </span>
-                            ) : null}
+                            </div>
+                          </li>
+                        )
+                      }
+
+                      return (
+                        <li key={option._id}>
+                          <button
+                            type="button"
+                            onClick={() => toggle(option._id)}
+                            disabled={readOnly || greyed}
+                            title={
+                              greyed
+                                ? option._id === selfId
+                                  ? 'An option is not compatible with itself.'
+                                  : 'A customer picks one option from this type, so these two can never be ordered together.'
+                                : readOnly
+                                  ? undefined
+                                  : 'Click to record that these two can be ordered together'
+                            }
+                            style={{
+                              ...RESET_BUTTON,
+                              ...ROW,
+                              cursor: readOnly || greyed ? 'default' : 'pointer',
+                              opacity: greyed ? 0.35 : readOnly ? 0.75 : 1,
+                            }}
+                          >
+                            <Tick state={greyed ? 'off' : stored ? 'on' : 'off'} />
+                            <span style={{ fontSize: 13, flex: 1, minWidth: 0 }}>
+                              {option.title || 'Untitled'}
+                            </span>
                           </button>
                         </li>
                       )

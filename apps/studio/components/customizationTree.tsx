@@ -266,9 +266,9 @@ export function TypeHeader({
   title: string
   chosen: number
   total: number
-  /** Anything the count alone would misreport — e.g. ticks the row shows but
-   *  this document does not own. Without it a header reading `0 / 7` sits above
-   *  a visibly ticked row and the two appear to disagree. */
+  /** A breakdown of `chosen`, never a remainder. `1 / 7 · 1 from elsewhere` reads
+   *  as a total and where part of it lives; `0 / 7 · 1 from elsewhere` made the
+   *  reader add the two up to answer the only question the header is asked. */
   note?: string
   collapsed: boolean
   onToggleCollapsed: () => void
