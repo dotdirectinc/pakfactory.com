@@ -12,7 +12,9 @@ import { createClient } from "@pakfactory/supabase/server";
  * Every call is server-side for the same reason: a token that reached client code
  * could be replayed against the registry from anywhere.
  */
-const BASE = process.env.SPEC_API_URL ?? "http://localhost:8080";
+// The same backend the attachment resolver calls, and the same variable — it is already
+// set in every environment, so a new one would only be a second thing to forget.
+const BASE = (process.env.BACKEND_API_BASE_URL ?? "http://localhost:8080").replace(/\/$/, "");
 
 export type ChangesetState = "draft" | "approved" | "discarded";
 
