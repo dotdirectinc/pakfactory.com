@@ -32,13 +32,16 @@ export const TARGETS = {
     studioUrl: "http://localhost:3333",
     dataset: "development",
     label: "local Studio (pnpm dev:studio)",
-    // What the Studio's Presentation pane points AT. Local blog runs on :3003
-    // with no basePath; local www on :3000, where the case-studies enable route
-    // lives under /case-studies (PROD-2223) and the site root is the whole app.
+    // What the Studio's Presentation pane points AT. Ports are taken from the
+    // apps' own dev scripts, not from habit: `apps/www` runs on **3003** and
+    // `apps/blog` on **3004** (`next dev --port …` in each package.json). The
+    // earlier values here said blog 3003 / www 3000 — inherited from stale
+    // fallbacks in sanity.config.ts, and 3000 has nothing on it at all. Caught
+    // when `www-new-release` merged, because its .env.example says so plainly.
     previews: {
-      BLOG: "http://localhost:3003/",
-      WWW: "http://localhost:3000/case-studies/",
-      SITE: "http://localhost:3000/",
+      BLOG: "http://localhost:3004/",
+      WWW: "http://localhost:3003/case-studies/",
+      SITE: "http://localhost:3003/",
     },
   },
   staging: {
@@ -84,7 +87,7 @@ export const TARGETS = {
  */
 export const HOST_DATASET = {
   "localhost:3003": "development",
-  "localhost:3000": "development",
+  "localhost:3004": "development",
   "staging-blog.pakfactory.com": "development",
   "staging.pakfactory.com": "development",
   "pakfactory.com": "production",
