@@ -99,12 +99,12 @@ const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
 // Env-driven so a developer can aim it at their own localhost (PROD-2494 AC:
 // "no hard-coded host"). Trailing slash required, as for the other two bases.
 const SITE_PREVIEW_RAW =
-  process.env.SANITY_STUDIO_PREVIEW_URL_SITE || 'http://localhost:3000/'
+  process.env.SANITY_STUDIO_PREVIEW_URL_SITE || 'http://localhost:3003/'
 const SITE_PREVIEW_BASE = SITE_PREVIEW_RAW.endsWith('/')
   ? SITE_PREVIEW_RAW
   : `${SITE_PREVIEW_RAW}/`
 const SITE_ALLOW_ORIGINS = [
-  'http://localhost:3000',
+  'http://localhost:3003',
   'https://staging.pakfactory.com',
 ]
 
