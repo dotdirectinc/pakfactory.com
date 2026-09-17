@@ -4,6 +4,7 @@ import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { deprecateField } from '../lib/schema-guards'
+import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -247,29 +248,142 @@ export const customizationOption = defineType({
 
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
 
-    // ─── AVAILABILITY ─────────────────────────────────────────────────────────
-    // Two axes, and only one of them is still answered here.
+    // ─── AVAILABILITY AND COMPATIBILITY ───────────────────────────────────────
+    // Two axes were answered here. Neither is answered the way it once was, and
+    // all four of the fields that did it are retired below.
     //
-    // THE PRODUCT AXIS HAS MOVED (PROD-2529). `availableOnProducts` and
-    // `exceptProducts` are retired below. A Product now states which options it
+    // THE PRODUCT AXIS MOVED (PROD-2529). A Product states which options it
     // offers, in `product.availableCustomizations`, and that is the only place
     // it is stated — the two directions used to both be writable with nothing
     // deciding which won.
     //
-    // Worth keeping from the reasoning that built the retired pair: the split
-    // existed because ONE ARRAY CAN CARRY ONLY ONE MEANING FOR "EMPTY", and the
-    // two grids needed opposite ones — an unauthored product list had to fail
-    // closed (offered nowhere), an unauthored material list had to fail open (no
-    // restriction). That argument still holds for everything below, and it is
-    // the reason the customization axis was NOT collapsed at the same time.
+    // THE CUSTOMIZATION AXIS COLLAPSED TO ONE FIELD (PROD-2534).
+    // `worksOnCustomizations` and `incompatibleWithCustomizations` became
+    // `compatibleCustomizations` below: one atomic list, read both ways.
     //
-    // THE CUSTOMIZATION AXIS IS UNCHANGED, and the boundary rule between its two
-    // fields is repeated in both descriptions so it cannot be lost:
-    //   Material constraints are always POSITIVE, in `worksOnCustomizations`.
-    //   `incompatibleWithCustomizations` is only for two things a customer might
-    //   otherwise pick together.
-    // Without it, "Soft Touch doesn't work on blister plastic" has two homes and the
-    // allow-list/deny-list duplication comes straight back.
+    // ⚠️ The retired pair existed because ONE ARRAY CAN CARRY ONLY ONE MEANING
+    // FOR "EMPTY", and an allow-list and a deny-list want opposite ones. That
+    // argument was sound and it is not what changed — what changed is who
+    // authors the list. The spec system will own compatibility and push it
+    // whole, and a machine does not care that one polarity is dense: a flat
+    // list of option-to-option pairs is idempotent and diffable, where a Type
+    // reference forces the sync to decide when to collapse N options into one,
+    // and that decision is unstable across runs.
+    //
+    // 🔴 So the cost is real and is accepted rather than avoided: EMPTY NOW
+    // FAILS CLOSED. An option with nothing recorded combines with nothing.
+    // Every one of them is empty today, which is survivable only because
+    // nothing outside the Studio reads this — and which makes populating it a
+    // precondition of the configurator, not a follow-up.
+
+    // The one live field on this axis. PROD-2534.
+    //
+    // ❌ Do not re-add a Customization Type target here, and do not bring back a
+    // separate deny-list. Both are the obvious simplifications and both were
+    // weighed: a Type reference is cheaper to author by hand but a sync that
+    // replaces this list wipes it on its first run, so the saving expires while
+    // the read cost — expand "or this option's Type", on BOTH sides of a
+    // symmetric read — does not. A second field re-creates the boundary rule
+    // that had to be repeated in two descriptions to survive.
+    defineField({
+      name: 'compatibleCustomizations',
+      title: 'Compatible customizations',
+      type: 'array',
+      group: 'categorization',
+      components: { input: CompatibleCustomizationsInput },
+      description:
+        'Which other customizations can be ordered together with this one. Compatibility reads both ways, so recording it on either of the two options is enough — the other one shows it automatically, muted. Only options a customer can actually pick are offered; an option that just has a library page cannot be combined with anything. EMPTY MEANS NOTHING IS COMPATIBLE: this list is the whole answer rather than a narrowing of some wider default. Source-owned (product data source) once that ships; editable for now.',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'customizationOption' }],
+          options: { disableNew: true },
+        },
+      ],
+      // Three errors and a warning, and the levels follow D48's test: error
+      // where a wrong entry means the RIGHT mechanism never gets used and nobody
+      // notices, warning where the entry is merely inert.
+      validation: (Rule) => [
+        // ── ERROR ──────────────────────────────────────────────────────────
+        // Self-reference and repeats. Neither has a legitimate case, so the rule
+        // can only ever fire on invalid data — which is what makes an error safe.
+        Rule.custom((value, context) => {
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+
+          if (ids.includes(selfId)) return 'An option cannot be compatible with itself.'
+
+          const seen = new Set<string>()
+          const repeated = new Set<string>()
+          for (const id of ids) {
+            if (seen.has(id)) repeated.add(id)
+            seen.add(id)
+          }
+          if (repeated.size > 0) {
+            return `${repeated.size} option(s) appear more than once. Each option should be listed at most once.`
+          }
+          return true
+        }),
+        // ── ERROR ──────────────────────────────────────────────────────────
+        // A sibling in a type a customer takes ONE of. The pair is unreachable,
+        // not false — and an editor who ticks it has almost certainly mistaken
+        // this field for the one that records exclusivity. A warning would get
+        // published through, the data would claim a combination nobody can
+        // order, and the real mechanism would stay unset. The message redirects
+        // rather than just refusing, because a bare rejection blocks someone
+        // without showing them the field they actually wanted.
+        Rule.custom(async (value, context) => {
+          const doc = context.document as { type?: { _ref?: string } } | undefined
+          const ownTypeRef = doc?.type?._ref?.replace(/^drafts\./, '')
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+          if (!ownTypeRef || ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const rows = await client.fetch<{ _id: string; title: string | null; typeId: string | null }[]>(
+              `*[_id in $ids]{ _id, title, "typeId": type._ref }`,
+              { ids },
+            )
+            const selects = await client.fetch<string | null>(
+              `*[_id == $ownTypeRef][0].customerSelects`,
+              { ownTypeRef },
+            )
+            if (selects !== 'one') return true
+            const siblings = rows.filter((r) => r.typeId === ownTypeRef)
+            if (siblings.length === 0) return true
+            return `${siblings.map((s) => s.title || s._id).join(', ')} ${siblings.length === 1 ? 'is' : 'are'} in this option's own type, and a customer chooses only one option from it — so these can never be ordered together. If you meant that a customer may pick several, change "How many can a customer choose?" on the type instead.`
+          } catch {
+            return true // never block on a lookup failure
+          }
+        }),
+        // ── WARNING ────────────────────────────────────────────────────────
+        // A reference-role option is a library page, never something a customer
+        // picks, so an entry naming one is inert rather than wrong. It is not
+        // reachable through the picker at all — only a script, or flipping an
+        // option to `reference` AFTER this was authored. Never auto-cleared: a
+        // field switch that silently edits data is worse than one that says
+        // something.
+        Rule.custom(async (value, context) => {
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+          if (ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const rows = await client.fetch<{ _id: string; title: string | null }[]>(
+              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              { ids },
+            )
+            if (rows.length === 0) return true
+            const names = rows.map((r) => r.title || r._id).join(', ')
+            const one = rows.length === 1
+            return `${names} ${one ? 'is' : 'are'} not something a customer picks in the configurator — ${one ? 'it has' : 'they have'} a library page instead, so ${one ? 'it' : 'they'} cannot be ordered alongside anything. The ${one ? 'entry has' : 'entries have'} no effect.`
+          } catch {
+            return true // never block on a lookup failure
+          }
+        }).warning(),
+      ],
+    }),
 
     // RETIRED (PROD-2529). A product now states its own list, in
     // `product.availableCustomizations`. This field answered the same question
@@ -325,18 +439,26 @@ export const customizationOption = defineType({
         },
       ],
     }),
+    // RETIRED (PROD-2534). Merged into `compatibleCustomizations` above, which
+    // records the same fact at option level and reads from both ends. The
+    // finish x material constraint this field was created to hold is now one
+    // shape of the same list: a finish names the boards it can go on, and each
+    // board shows the finish back.
+    //
+    // 0 of 126 populated, so nothing is preserved and nothing had to be
+    // migrated. Deprecated rather than deleted anyway (Conventions section 4.3),
+    // so the name cannot be quietly re-added meaning something else — the same
+    // call `exceptProducts` got at the same count.
     defineField({
       name: 'worksOnCustomizations',
-      title: 'Works on',
+      title: 'Works on (retired)',
       type: 'array',
       group: 'categorization',
+      ...deprecateField(
+        'Retired — merged into "Compatible customizations", which says the same thing at option level and reads both ways. Nothing was ever recorded here.',
+      ),
       description:
-        'Which materials or other customizations this can be applied ON TOP OF — Soft Touch Lamination works on paperboard, not on blister plastic. EMPTY MEANS NO MATERIAL RESTRICTION: it only narrows what a product already offers, it never widens it. Point at a whole Customization Type to mean "any option under it".',
-      // The finish × material constraint, which had nowhere to live under the single
-      // `appliesTo` array — this is the field whose absence forced the Surface Finish
-      // split by material family (ADR-017 §4). Empty fails OPEN. It narrows what the
-      // Product opened up, and cannot widen it: a product that does not offer an
-      // option is not made to offer it by anything written here.
+        'RETIRED. Which materials a customization can be applied to is now part of "Compatible customizations" above, recorded once and read from either end.',
       of: [
         {
           type: 'reference',
@@ -347,13 +469,29 @@ export const customizationOption = defineType({
         },
       ],
     }),
+    // RETIRED (PROD-2534). A separate deny-list is gone: what cannot be combined
+    // is now the ABSENCE of an entry in `compatibleCustomizations`.
+    //
+    // ⚠️ That is a real inversion and it is the expensive half of this change.
+    // A deny-list records a few dozen clashes; an allow-list has to record every
+    // pair that is fine in order to imply them. It is only affordable because
+    // the spec system will author the list rather than a person.
+    //
+    // Its validation goes with it, including the symmetry warning. Symmetry is
+    // no longer something to check: one stored edge read from both ends makes
+    // asymmetry unrepresentable rather than detectable. A rule on a field nobody
+    // can write is noise nobody can act on — the same reason the role-conditioned
+    // warning went with `availableOnProducts`.
     defineField({
       name: 'incompatibleWithCustomizations',
-      title: "Can't combine with",
+      title: "Can't combine with (retired)",
       type: 'array',
       group: 'categorization',
+      ...deprecateField(
+        'Retired — there is no separate deny-list now. Two options that cannot be combined are simply not listed in each other\'s "Compatible customizations". Nothing was ever recorded here.',
+      ),
       description:
-        'Two things a customer might otherwise pick together but cannot — real manufacturing clashes only, a short deny-list. Empty means no known clash, which fails open deliberately: an unauthored clash must not invent one. A material constraint is NOT a clash — that belongs in "Works on". Keep it symmetric: if A lists B, B should list A.',
+        'RETIRED. Clashes are no longer recorded separately — an option that is not in "Compatible customizations" cannot be ordered alongside this one.',
       of: [
         {
           type: 'reference',
@@ -362,65 +500,6 @@ export const customizationOption = defineType({
             { type: 'customizationOption' },
           ],
         },
-      ],
-      // Two rules at two levels, because they fail differently (D48's principle:
-      // error where a wrong entry means the RIGHT MECHANISM never gets used and
-      // nobody notices; warning where it is visible on the page and someone reports).
-      //
-      // ⚠️ The previous single rule carried the comment "Self-reference is an error"
-      // while terminating in `.warning()` — the comment described the intent and the
-      // code did not deliver it. Splitting them is what makes the levels real.
-      validation: (Rule) => [
-        // ── ERROR ──────────────────────────────────────────────────────────────
-        // Self-reference, and the own-Type clash D43 requires. Neither has a
-        // legitimate case: an Option cannot clash with itself, and it is BY
-        // DEFINITION inside its own Type — so an error here can only fire on invalid
-        // data, which is what makes an error safe. A warning gets published through,
-        // and not carelessly: the editor believes they have just recorded "only one
-        // lamination per box", so the warning reads as pedantry.
-        Rule.custom(async (value, context) => {
-          const doc = context.document as { _id?: string; type?: { _ref?: string } } | undefined
-          const selfId = (doc?._id ?? '').replace(/^drafts\./, '')
-          const ownTypeRef = doc?.type?._ref?.replace(/^drafts\./, '')
-          const refs = (value as { _ref?: string }[] | undefined) ?? []
-          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
-
-          if (ids.includes(selfId)) return 'An option cannot be incompatible with itself.'
-
-          // The message does the teaching, and that is the point — a bare rejection
-          // blocks the editor without showing them the field they actually wanted.
-          if (ownTypeRef && ids.includes(ownTypeRef)) {
-            return "An Option can't clash with its own Type. If you mean 'only one Lamination per box', set cardinality to one on the Lamination Type instead — that's a different field, on the Type."
-          }
-          return true
-        }),
-        // ── WARNING ────────────────────────────────────────────────────────────
-        // Asymmetry is visible and recoverable, so it warns. Symmetry is only asked
-        // of option→option pairs: a Type has no reciprocal field to answer with, so
-        // naming a whole Type is one-directional by construction.
-        Rule.custom(async (value, context) => {
-          const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
-          const refs = (value as { _ref?: string }[] | undefined) ?? []
-          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
-          if (ids.length === 0) return true
-          try {
-            const client = context.getClient({ apiVersion: '2024-01-01' })
-            const targets = await client.fetch<{ _id: string; _type: string; back: string[] }[]>(
-              `*[_id in $ids]{ _id, _type, "back": incompatibleWithCustomizations[]._ref }`,
-              { ids },
-            )
-            const options = targets.filter((t) => t._type === 'customizationOption')
-            const listsSelf = (t: { back: string[] }) =>
-              (t.back ?? []).some((r) => r?.replace(/^drafts\./, '') === selfId)
-            const asymmetric = options.filter((t) => !listsSelf(t))
-            if (asymmetric.length > 0) {
-              return `Not symmetric — ${asymmetric.length} listed option(s) don't list this one back. Add this option to their "Can't combine with" too.`
-            }
-          } catch {
-            return true // never block on a lookup failure
-          }
-          return true
-        }).warning(),
       ],
     }),
     // D47 §1 — `achieves` names CANDIDATES, not a recipe. It points from a technical
