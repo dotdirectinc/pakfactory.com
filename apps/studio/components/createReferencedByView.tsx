@@ -46,8 +46,31 @@ export type ReferencedBySection = {
   order?: string
   /** GROQ expression for the grey second line. */
   subtitle?: string
-  /** GROQ expression for the right-hand label — a status, a count, a parent. */
+  /**
+   * GROQ expression for the right-hand label — a status, a parent.
+   * NOT for counting what points at this row: use `count`.
+   */
   badge?: string
+  /**
+   * A per-row count badge — "9 options".
+   *
+   * This is a declaration rather than an expression because the obvious
+   * hand-written version is wrong. A row with unsaved edits arrives as
+   * `drafts.abc`, `dedupeDrafts` keeps it deliberately, and a reference NEVER
+   * points at a draft id — so `count(*[ref == ^._id])` returns 0 for precisely
+   * the rows someone is working on, and returns it silently (PROD-2526).
+   * Declaring the relationship lets the factory match both id forms once, here.
+   */
+  count?: {
+    /** Document type doing the pointing, e.g. `customizationOption`. */
+    type: string
+    /** Reference path on that type, e.g. `type._ref`. */
+    ref: string
+    /** Noun when the count is 1 — `option` renders "1 option". */
+    one: string
+    /** Noun otherwise — `options` renders "9 options" and "0 options". */
+    many: string
+  }
   /** GROQ path to an image asset `_ref`, e.g. `media[0].asset._ref`. */
   thumb?: string
   /** Shown in place of the list when this section alone is empty. */
@@ -62,12 +85,23 @@ type Row = {
   thumbRef: string | null
 }
 
+/**
+ * Matches BOTH id forms, because the row may be a draft while every reference
+ * pointing at it names the published document. Returns a raw number — the noun
+ * is attached in `formatBadge`, which also keeps this clear of the GROQ trap
+ * where number + string evaluates to null instead of erroring.
+ */
+function countExpr(c: NonNullable<ReferencedBySection['count']>): string {
+  return `count(*[_type == "${c.type}" && (${c.ref} == ^._id || "drafts." + ${c.ref} == ^._id)])`
+}
+
 function sectionQuery(s: ReferencedBySection): string {
+  const badge = s.count ? countExpr(s.count) : (s.badge ?? 'null')
   const projection = [
     '_id',
     `"label": ${s.label ?? 'title'}`,
     `"subtitle": ${s.subtitle ?? 'null'}`,
-    `"badge": ${s.badge ?? 'null'}`,
+    `"badge": ${badge}`,
     `"thumbRef": ${s.thumb ?? 'null'}`,
   ].join(', ')
   const order = s.order ?? `${s.label ?? 'title'} asc`
@@ -99,6 +133,13 @@ function dedupeDrafts(rows: Row[]): Row[] {
   return [...byPublishedId.values()]
 }
 
+function formatBadge(s: ReferencedBySection, badge: Row['badge']): string | null {
+  if (badge === null || badge === undefined || badge === '') return null
+  if (!s.count) return String(badge)
+  const n = Number(badge)
+  return `${n} ${n === 1 ? s.count.one : s.count.many}`
+}
+
 export function createReferencedByView(opts: {
   sections: ReferencedBySection[]
   /** Shown when every section is empty. Say what would populate it. */
@@ -108,6 +149,22 @@ export function createReferencedByView(opts: {
   tag: string
 }): UserViewComponent {
   const { sections, empty, note, tag } = opts
+
+  // `^._id` is the row's own id — the DRAFT id on any row with unsaved edits,
+  // and nothing ever references a draft. An expression built on it reads 0 for
+  // exactly the rows being worked on, without erroring, so it cannot be caught
+  // by looking at the tab. Thrown at construction (module load) so a mistake
+  // fails on boot instead of rendering a plausible wrong number. PROD-2526.
+  for (const s of sections) {
+    const authored = [s.filter, s.label, s.order, s.subtitle, s.badge, s.thumb]
+    if (authored.some((expr) => expr?.includes('^._id'))) {
+      throw new Error(
+        `createReferencedByView(${tag}): section "${s.title}" uses ^._id, which is ` +
+          `the draft id on any row with unsaved edits. Use the "count" option instead.`,
+      )
+    }
+  }
+
   const QUERY = `{ ${sections.map((s, i) => `"s${i}": ${sectionQuery(s)}`).join(', ')} }`
 
   const View: UserViewComponent = ({ documentId }) => {
@@ -199,6 +256,7 @@ export function createReferencedByView(opts: {
                     <RowItem
                       key={row._id}
                       row={row}
+                      badge={formatBadge(section, row.badge)}
                       type={section.type}
                       showThumb={Boolean(section.thumb)}
                       src={thumbUrl(row.thumbRef, projectId, dataset)}
@@ -219,11 +277,13 @@ export function createReferencedByView(opts: {
 
 function RowItem({
   row,
+  badge,
   type,
   showThumb,
   src,
 }: {
   row: Row
+  badge: string | null
   type: string
   showThumb: boolean
   src: string | null
@@ -275,10 +335,8 @@ function RowItem({
         ) : null}
       </div>
 
-      {row.badge === null || row.badge === undefined || row.badge === '' ? null : (
-        <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, flexShrink: 0 }}>
-          {row.badge}
-        </div>
+      {badge === null ? null : (
+        <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, flexShrink: 0 }}>{badge}</div>
       )}
     </li>
   )

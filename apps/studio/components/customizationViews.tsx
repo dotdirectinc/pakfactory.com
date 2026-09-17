@@ -18,9 +18,10 @@ export const CustomizationCategoryTypesView = createReferencedByView({
       type: 'customizationType',
       filter: 'category._ref == $id',
       subtitle: '"/" + slug.current',
-      // string() is not decoration: GROQ returns null for number + string, so
-      // without it the badge silently vanishes rather than erroring.
-      badge: 'string(count(*[_type == "customizationOption" && type._ref == ^._id])) + " options"',
+      // Declared, not written as GROQ: a Type with unsaved edits arrives as its
+      // draft, and no Option references a draft id, so a hand-written count
+      // reads 0 for the one row being worked on. PROD-2526.
+      count: { type: 'customizationOption', ref: 'type._ref', one: 'option', many: 'options' },
     },
   ],
   empty: 'No customization types sit under this category yet.',
@@ -106,10 +107,11 @@ export const PropertyValueUsedByView = createReferencedByView({
  * The "can I retire this?" tab. An option named by a published case study cannot
  * quietly disappear.
  *
- * ⚠️ Products here reads `product.availableCustomizations` — populated on 1 of
- * 310. The option's own `availableOnProducts` field states the same relationship
- * from this side and is visible on the form above, so it is deliberately NOT
- * repeated here: this tab is for what the form cannot show.
+ * Products here reads `product.availableCustomizations`, which since PROD-2529 is
+ * the ONLY place the product-option relationship is stated — the option's own
+ * `availableOnProducts` is retired. So this tab is no longer a second opinion on
+ * the form above; for this relationship it is the only view the Option has, and
+ * the reverse lookup it does is the only way to answer it from this side.
  */
 export const CustomizationOptionUsedByView = createReferencedByView({
   tag: 'customization-option-used-by',
@@ -118,7 +120,14 @@ export const CustomizationOptionUsedByView = createReferencedByView({
     {
       title: 'Products',
       type: 'product',
-      filter: '$id in availableCustomizations[].customization._ref',
+      // Both halves are load-bearing. A standard product names what it offers;
+      // a preset names only its pre-selections and inherits the rest from
+      // `basedOn` (PROD-2530). Matching the first clause alone would report an
+      // option used by no presets when it is offered on forty of them — and
+      // this tab exists to answer "can I retire this?", where under-reporting
+      // is the direction that loses data.
+      filter:
+        '$id in availableCustomizations[].customization._ref || $id in basedOn->availableCustomizations[].customization._ref',
       subtitle: 'sku',
     },
     {
