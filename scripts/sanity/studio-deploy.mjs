@@ -64,13 +64,21 @@ const env = {
   ...process.env,
   SANITY_STUDIO_DATASET: target.dataset,
   // A preview target of `null` means "not wired for this Studio yet" — an
-  // unreleased surface. It is OMITTED rather than exported empty, because the
-  // Studio config decides whether to offer the Presentation tool by whether the
-  // variable is set at all.
+  // unreleased surface. It is exported as an EMPTY STRING, not omitted, and that
+  // distinction is load-bearing.
+  //
+  // Vite's precedence for `sanity build` is
+  //     shell env  >  .env.production  >  .env.local  >  .env
+  // so omitting the variable here does not make it unset — it hands the decision
+  // to `apps/studio/.env.local`, which `pnpm studio:staging|local` WRITES. A
+  // production deploy then inherits the developer's staging URL, re-opens the
+  // gate, and ships a Presentation tab that fails with "Invalid secret". Exactly
+  // what happened on 2026-09-17.
+  //
+  // An empty string is falsy in the config's gate and, being shell env, shadows
+  // every .env file. The absence of a target has to be stated, not implied.
   ...Object.fromEntries(
-    Object.entries(PREVIEW_VARS)
-      .filter(([k]) => target.previews[k])
-      .map(([k, name]) => [name, target.previews[k]]),
+    Object.entries(PREVIEW_VARS).map(([k, name]) => [name, target.previews[k] ?? ""]),
   ),
 };
 
