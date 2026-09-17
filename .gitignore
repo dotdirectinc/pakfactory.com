@@ -13,9 +13,17 @@ dist
 .turbo
 
 # Environment
+# Committed:  .env.example (every app)  ·  apps/studio/.env.production (public URLs only)
+# Never:      anything below. See README § Environment files.
 .env
 .env.local
 .env.*.local
+# Backups written by `pnpm env:staging` / `env:prod` (scripts/env/switch-env.mjs).
+# These are verbatim copies of .env.local — secrets and all — and were NOT matched
+# by the patterns above, so `git add -A` would have committed them.
+.env.local.bak-*
+.env*.bak
+.env*.bak-*
 
 # TypeScript
 *.tsbuildinfo

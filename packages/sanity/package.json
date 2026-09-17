@@ -17,7 +17,9 @@
     "./algolia/post-record": "./src/algolia/post-record.ts",
     "./algolia/content-indexes": "./src/algolia/content-indexes.ts",
     "./stamp-published-at": "./src/stamp-published-at.ts",
-    "./fact-labels": "./src/fact-labels.ts"
+    "./fact-labels": "./src/fact-labels.ts",
+    "./dimension-inputs": "./src/dimension-inputs.ts",
+    "./solution-style-filter": "./src/solution-style-filter.ts"
   },
   "scripts": {
     "lint": "eslint src",

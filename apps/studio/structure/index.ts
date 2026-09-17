@@ -915,6 +915,18 @@ export function solutionItems(
                         {field: 'title', direction: 'asc'},
                     ]),
             ),
+
+        S.listItem()
+            .title('Solution Styles')
+            .icon(ThLargeIcon)
+            .schemaType('solutionStyle')
+            .child(
+                S.documentTypeList('solutionStyle')
+                    .title('Solution Styles')
+                    .defaultOrdering([
+                        {field: 'title', direction: 'asc'},
+                    ]),
+            ),
     ];
 }
 
@@ -1610,6 +1622,18 @@ export const solutionsWorkspaceStructure = (
                 .child(
                     S.documentTypeList('solution')
                         .title('Solutions')
+                        .defaultOrdering([{field: 'title', direction: 'asc'}]),
+                ),
+            // Second level. Flat rather than nested under each solution: a
+            // collection is edited far more often than the solution above it,
+            // and one list is fewer clicks than 36 folders.
+            S.listItem()
+                .title('Solution Styles')
+                .icon(ThLargeIcon)
+                .schemaType('solutionStyle')
+                .child(
+                    S.documentTypeList('solutionStyle')
+                        .title('Solution Styles')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
         ]);

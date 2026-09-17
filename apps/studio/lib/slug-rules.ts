@@ -63,7 +63,16 @@ export function uniqueSlugAcross(types: string[]) {
  * ⚠️ If a query ever does `*[_type == "propertyValue" && slug.current == $slug]`
  * without a property filter, it has to key by property too.
  */
-export function uniqueSlugWithinParent(type: string, scopeField: string, scopeLabel: string) {
+export function uniqueSlugWithinParent(
+  type: string,
+  scopeField: string,
+  scopeLabel: string,
+  /** Why uniqueness is scoped this way, appended to the error. Defaults to the
+   *  filter-URL reason, which is Property Value's. A type whose slug is a PATH
+   *  segment rather than a query value passes its own — the rule is the same, the
+   *  reason an editor needs to read is not. */
+  why = `a filter URL reads ?${scopeLabel}=<slug>, so two identical slugs under one ${scopeLabel} are indistinguishable`,
+) {
   return async (slug: SlugValue | undefined, context: ValidationContext) => {
     if (!slug?.current) return 'Slug is required'
 
@@ -93,8 +102,7 @@ export function uniqueSlugWithinParent(type: string, scopeField: string, scopeLa
     const named = clash.title ? ` ("${clash.title}")` : ''
     return (
       `This slug is already used in the same ${scopeLabel}${named}. ` +
-      `Slugs have to be unique within a ${scopeLabel} — a filter URL reads ` +
-      `?${scopeLabel}=<slug>, so two identical slugs under one ${scopeLabel} are indistinguishable.`
+      `Slugs have to be unique within a ${scopeLabel} — ${why}.`
     )
   }
 }
