@@ -3,6 +3,7 @@ import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../li
 import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { deprecateField } from '../lib/schema-guards'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -246,35 +247,48 @@ export const customizationOption = defineType({
 
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
 
-    // ─── AVAILABILITY (PROD-2250 / D47 / ADR-017) ─────────────────────────────
-    // One `appliesTo` array used to answer two unrelated questions — which products
-    // offer this as a choice, and which materials it can be applied to — and which
-    // grid a given row belonged to was knowable only by inspecting each reference's
-    // `_type`. D42 patched that with a rule that rejected a wrong-axis pick; a field
-    // that needs a rule to stop it crossing its own axis is the wrong field.
+    // ─── AVAILABILITY ─────────────────────────────────────────────────────────
+    // Two axes, and only one of them is still answered here.
     //
-    // The deciding argument is the DEFAULT. One array can carry only one meaning for
-    // "empty", and the two grids need opposite ones: an unauthored product list must
-    // fail closed (offered nowhere), while an unauthored material list must fail open
-    // (no restriction). Hence one field per axis, each with the default its own
-    // question demands. D42's wrong-axis validation is retired rather than
-    // reimplemented — each picker now offers one axis, so a wrong-axis pick is
-    // unpickable rather than rejected.
+    // THE PRODUCT AXIS HAS MOVED (PROD-2529). `availableOnProducts` and
+    // `exceptProducts` are retired below. A Product now states which options it
+    // offers, in `product.availableCustomizations`, and that is the only place
+    // it is stated — the two directions used to both be writable with nothing
+    // deciding which won.
     //
-    // Boundary rule, repeated in both descriptions so it cannot be lost:
+    // Worth keeping from the reasoning that built the retired pair: the split
+    // existed because ONE ARRAY CAN CARRY ONLY ONE MEANING FOR "EMPTY", and the
+    // two grids needed opposite ones — an unauthored product list had to fail
+    // closed (offered nowhere), an unauthored material list had to fail open (no
+    // restriction). That argument still holds for everything below, and it is
+    // the reason the customization axis was NOT collapsed at the same time.
+    //
+    // THE CUSTOMIZATION AXIS IS UNCHANGED, and the boundary rule between its two
+    // fields is repeated in both descriptions so it cannot be lost:
     //   Material constraints are always POSITIVE, in `worksOnCustomizations`.
     //   `incompatibleWithCustomizations` is only for two things a customer might
     //   otherwise pick together.
     // Without it, "Soft Touch doesn't work on blister plastic" has two homes and the
     // allow-list/deny-list duplication comes straight back.
 
+    // RETIRED (PROD-2529). A product now states its own list, in
+    // `product.availableCustomizations`. This field answered the same question
+    // from the other side and nothing decided which won — the Product wins,
+    // because that is the direction the product data source will push and the
+    // direction the work is actually reasoned about. Deprecated rather than
+    // deleted (Conventions §4.3): 2 of 126 documents carry entries and those
+    // stay legible. The role-conditioned warning is gone with it — a warning on
+    // a field nobody can write is noise nobody can act on.
     defineField({
       name: 'availableOnProducts',
-      title: 'Available on products',
+      title: 'Available on products (retired)',
       type: 'array',
       group: 'categorization',
+      ...deprecateField(
+        'Retired — which products offer an option is now stated on the Product, in "Available customizations". Read-only; existing entries are kept.',
+      ),
       description:
-        'Which products offer this as a choice — scope it to Product Lines, Product Styles, or individual Products. EMPTY MEANS OFFERED NOWHERE: this list is the whole answer, so a configurable option needs at least one entry. What this can be applied on top of goes in "Works on", not here.',
+        'RETIRED. Which products offer this as a choice is now answered on the Product itself, in "Available customizations". Kept read-only so existing entries stay readable.',
       of: [
         {
           type: 'reference',
@@ -285,34 +299,22 @@ export const customizationOption = defineType({
           ],
         },
       ],
-      // Reads `role` (D47 §2). Before `role` existed this warning fired on 25 of 33
-      // options while admitting it could not tell which case it was in — the kind of
-      // warning editors learn to ignore before the real one arrives. Now each branch
-      // says something true and actionable.
-      validation: (Rule) =>
-        Rule.custom((value, context) => {
-          const list = Array.isArray(value) ? value : []
-          const role = (context.document as { configuratorRole?: string } | undefined)?.configuratorRole
-          if (role === 'configurable' && list.length === 0) {
-            return 'Empty means offered nowhere, so this option never reaches the configurator. Scope it to at least one Product Line, Style, or Product — or set Configurator role to Reference if it is technical and never picked directly.'
-          }
-          if (role === 'reference' && list.length > 0) {
-            return 'A reference option is never picked in the configurator, so product availability has no effect. Clear it, or set Configurator role to Configurable.'
-          }
-          return true
-        }).warning(),
     }),
+    // RETIRED (PROD-2529). A carve-out only earns its place where you enumerate
+    // coarsely — it exists to subtract from a broad stroke. The Product now
+    // enumerates option by option, so there is no broad stroke left to carve
+    // out of. 0 of 126 populated, so nothing is lost; deprecated rather than
+    // deleted so the field cannot be quietly re-added under the same name.
     defineField({
       name: 'exceptProducts',
-      title: 'Except on',
+      title: 'Except on (retired)',
       type: 'array',
       group: 'categorization',
+      ...deprecateField(
+        'Retired — there is nothing left to carve out of. A product now lists the options it offers one by one, rather than being covered by a broad scope that needed exceptions.',
+      ),
       description:
-        'Carve-outs from "Available on products" — the specific Styles or Products this is NOT available on. Empty means no carve-out. Should be narrower than what Available on products opened up.',
-      // Narrower than the field it replaces, which also accepted a Product Line: a
-      // carve-out at line grain is the same statement as not listing the line above.
-      // D42's plan to add a `customizationOption` target is withdrawn (D47 §1) —
-      // material constraints are positive, in `worksOnCustomizations`.
+        'RETIRED. Carve-outs existed to narrow a coarse "available on" scope. Availability is now stated per option on the Product, so no carve-out is needed.',
       of: [
         {
           type: 'reference',
@@ -322,17 +324,6 @@ export const customizationOption = defineType({
           ],
         },
       ],
-      validation: (Rule) =>
-        Rule.custom((except, context) => {
-          const list = Array.isArray(except) ? except : []
-          if (list.length === 0) return true
-          const available = (context.document as { availableOnProducts?: unknown[] } | undefined)
-            ?.availableOnProducts
-          if (!available || available.length === 0) {
-            return 'Except on is set while Available on products is empty (= offered nowhere). A carve-out from nothing has no effect — scope Available on products instead.'
-          }
-          return true
-        }).warning(),
     }),
     defineField({
       name: 'worksOnCustomizations',
@@ -340,11 +331,12 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'Which materials or other customizations this can be applied ON TOP OF — Soft Touch Lamination works on paperboard, not on blister plastic. EMPTY MEANS NO MATERIAL RESTRICTION: this only narrows what Available on products already opened up, it never widens it. Point at a whole Customization Type to mean "any option under it".',
+        'Which materials or other customizations this can be applied ON TOP OF — Soft Touch Lamination works on paperboard, not on blister plastic. EMPTY MEANS NO MATERIAL RESTRICTION: it only narrows what a product already offers, it never widens it. Point at a whole Customization Type to mean "any option under it".',
       // The finish × material constraint, which had nowhere to live under the single
       // `appliesTo` array — this is the field whose absence forced the Surface Finish
-      // split by material family (ADR-017 §4). Empty fails OPEN, the opposite of
-      // `availableOnProducts`, which is the whole reason it is its own field.
+      // split by material family (ADR-017 §4). Empty fails OPEN. It narrows what the
+      // Product opened up, and cannot widen it: a product that does not offer an
+      // option is not made to offer it by anything written here.
       of: [
         {
           type: 'reference',
@@ -644,36 +636,25 @@ export const customizationOption = defineType({
       type: 'type.title',
       media: 'media.0',
       configuratorRole: 'configuratorRole',
-      availableOnProducts: 'availableOnProducts',
-      exceptProducts: 'exceptProducts',
       hasPage: 'hasPage',
     },
-    prepare({
-      title,
-      shortName,
-      status,
-      type,
-      media,
-      configuratorRole,
-      availableOnProducts,
-      exceptProducts,
-      hasPage,
-    }) {
-      const avail = Array.isArray(availableOnProducts) ? availableOnProducts.length : 0
-      const exceptN = Array.isArray(exceptProducts) ? exceptProducts.length : 0
-
-      // A reference option is never picked in the configurator, so its empty
-      // availability is CORRECT and must not read as a gap — that is the distinction
-      // D47 introduced `role` to make, and flagging it here would rebuild the
-      // warning editors had learned to ignore.
-      const scope =
-        configuratorRole === 'reference'
-          ? 'reference'
-          : avail === 0
-            ? '⚠ offered nowhere'
-            : `${avail} target${avail === 1 ? '' : 's'}${exceptN ? ` · except ${exceptN}` : ''}`
-
-      const parts = [type, scope, hasPage ? 'has page' : null].filter(Boolean)
+    prepare({ title, shortName, status, type, media, configuratorRole, hasPage }) {
+      // This used to summarise availability from `availableOnProducts` — "3
+      // targets", or "⚠ offered nowhere" when empty. That field is retired
+      // (PROD-2529): a Product now states which options it offers, so this
+      // document no longer holds the answer, and a preview cannot go and find
+      // it — `select` reads fields, and the relationship now points the other
+      // way, which takes a reverse lookup.
+      //
+      // Leaving the summary in place would have printed "⚠ offered nowhere"
+      // against 124 of 126 options forever, from a field nobody can write. That
+      // is PROD-2462 exactly, and PROD-2528 after it. The Used-by tab answers
+      // the question instead, where the reverse lookup is possible.
+      const parts = [
+        type,
+        configuratorRole === 'reference' ? 'reference' : null,
+        hasPage ? 'has page' : null,
+      ].filter(Boolean)
       const subtitle = parts.join(' · ')
 
       return {

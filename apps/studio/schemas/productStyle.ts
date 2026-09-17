@@ -1,6 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
-import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
@@ -126,23 +126,28 @@ export const productStyle = defineType({
         },
       ],
     }),
+    // One representative image, one gallery — the same pair on all three product-tree
+    // types. `featuredImage` names a ROLE (the image that stands for this document),
+    // where `cardImage` and `heroMedia` named render slots, which D33 forbids. It is
+    // also the name the shared `ogImage` description has always referred to.
     defineField(taggedImageField({
-      // Renamed from `cardImage` (PROD-2511), which was renamed from `bannerImage`
-      // before it (D33). That first rename fixed the shape word and left the render
-      // slot: a "card" is a UI component, and D33's rule is that a field is never
-      // named for where it renders. With `hero.image` gone this type has exactly one
-      // image, so the honest name is the plain one — the front end pulls it wherever
-      // it needs it. One image serves both a wide hero and a square card; `hotspot`
-      // is what makes that safe. 1 populated at the rename, re-uploaded by hand.
-      name: 'image',
-      title: 'Image',
+      name: 'featuredImage',
+      title: 'Featured image',
       type: 'image',
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'The image for this style. Used wherever the style is shown — the landing hero, line cards, listings and nav.',
+      description: 'The one image that represents this style — the landing hero, line cards, listings, nav and the social fallback.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
+    defineField({
+      name: 'media',
+      title: 'Media',
+      type: 'array',
+      group: GROUPS.content,
+      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
+    }),
     defineField({
       name: 'status',
       title: 'Status',
@@ -212,7 +217,7 @@ export const productStyle = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'shortName', line: 'productLine.title', image: 'image' },
+    select: { title: 'title', display: 'shortName', line: 'productLine.title', image: 'featuredImage' },
     prepare({ title, display, line, image }) {
       return {
         title: display || title || 'Untitled style',
