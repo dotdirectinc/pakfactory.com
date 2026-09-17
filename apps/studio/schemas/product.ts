@@ -455,7 +455,7 @@ export const product = defineType({
       // whole. Anything it cannot edit it still lists, at the bottom, rather
       // than leaving it somewhere an editor cannot see it. PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" is not the product's to choose and does not appear. ${SOURCE_OWNED_NOTE}`,
+      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" is not the product's to choose and does not appear, and neither does an option that only has a library page rather than being something a customer picks. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits
@@ -516,6 +516,34 @@ export const product = defineType({
             return true // never block on a lookup failure
           }
           return true
+        }).warning(),
+        // An option that is a library page rather than a configurator choice.
+        // The picker cannot produce one, so this only fires on a script write or
+        // on an option flipped to `reference` AFTER a product listed it.
+        //
+        // Warning, not error: the entry is inert rather than wrong — nothing
+        // renders it — and it is never auto-cleared, because a field switch that
+        // silently edits data is worse than one that says something. Same call
+        // as the pre-selected flag surviving a Kind switch, two rules above.
+        Rule.custom(async (value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const ids = (list as { customization?: { _ref?: string } }[])
+            .map((e) => e?.customization?._ref?.replace(/^drafts\./, ''))
+            .filter(Boolean) as string[]
+          if (ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const rows = await client.fetch<{ _id: string; title: string | null }[]>(
+              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              { ids },
+            )
+            if (rows.length === 0) return true
+            const names = rows.map((r) => r.title || r._id).join(', ')
+            const one = rows.length === 1
+            return `${names} ${one ? 'is' : 'are'} not something a customer picks in the configurator — ${one ? 'it has' : 'they have'} a library page instead, so listing ${one ? 'it' : 'them'} here has no effect.`
+          } catch {
+            return true // never block on a lookup failure
+          }
         }).warning(),
       ],
       of: [

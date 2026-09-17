@@ -88,6 +88,22 @@ type Entry = {
  * Customization Category. It is the obvious simplification and it cannot
  * express a mixed category, which is the case that exists today.
  *
+ * SECOND FILTER, and it excludes nothing today: `configuratorRole` must be
+ * `configurable`. A `reference` Option is a library page and never reaches the
+ * configurator, so a product "offering" one is inert — nothing renders it.
+ *
+ * All six reference Options happen to sit under Types that answer
+ * `availabilityDecidedBy: customization`, so the filter above already hides
+ * them. ⚠️ That is a COINCIDENCE of two unrelated facts, not a design. Finishing
+ * is a mixed category — the whole reason `availabilityDecidedBy` is on the Type
+ * — and Food-Safe Treatment is already product-decided. The day someone marks
+ * Lamination product-decided, this is what stops Gloss, Matte and Soft Touch
+ * Lamination appearing as things a product offers. PROD-2537.
+ *
+ * `optionCount` carries the same filter, so the partial-category note cannot
+ * count a Type whose options all fail it and print "2 of 8 types" above one
+ * rendered row.
+ *
  * `types` is fetched alongside because two things have to be said on screen and
  * neither is derivable from the options alone: which categories are only
  * PARTLY in scope, and which Types nobody has classified. A Type with no answer
@@ -100,6 +116,7 @@ const UNIVERSE_QUERY = `{
     _type == "customizationOption"
     && !(_id in path("drafts.**"))
     && type->availabilityDecidedBy == "product"
+    && configuratorRole == "configurable"
   ]{${OPTION_PROJECTION}},
   "types": *[
     _type == "customizationType"
@@ -113,6 +130,7 @@ const UNIVERSE_QUERY = `{
       _type == "customizationOption"
       && !(_id in path("drafts.**"))
       && type._ref == ^._id
+      && configuratorRole == "configurable"
     ])
   }
 }`
