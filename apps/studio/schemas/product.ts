@@ -7,6 +7,7 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -448,7 +449,40 @@ export const product = defineType({
       title: 'Available customizations',
       type: 'array',
       group: GROUPS.specs,
-      description: `What can be applied to this product, each flagged pre-selected or not. A preset simply has some already flagged. ${SOURCE_OWNED_NOTE}`,
+      // The picker draws Materials and Additional Customization only, and this
+      // array holds all four categories — so it patches by `_key` and never
+      // writes the array whole. Anything it cannot edit it still lists, at the
+      // bottom, rather than leaving it somewhere an editor cannot see it.
+      // PROD-2529.
+      components: { input: AvailableCustomizationsInput },
+      description: `What this product offers, each flagged pre-selected or not. A preset simply has some already flagged. Finishing and Printing are not chosen here — they follow from compatibility between customization options. ${SOURCE_OWNED_NOTE}`,
+      // Two rules, two levels. A repeated option is always a mistake, so it is an
+      // error. A pre-selected flag on a Standard product is inert rather than
+      // wrong — warn, and do not clear it: a field switch that silently edits
+      // data is worse than one that says something.
+      validation: (Rule) => [
+        Rule.custom((value) => {
+          const list = Array.isArray(value) ? value : []
+          const seen = new Set<string>()
+          const repeated = new Set<string>()
+          for (const entry of list as { customization?: { _ref?: string } }[]) {
+            const ref = entry?.customization?._ref
+            if (!ref) continue
+            if (seen.has(ref)) repeated.add(ref)
+            seen.add(ref)
+          }
+          if (repeated.size > 0) {
+            return `${repeated.size} customization option(s) appear more than once. Each option should be listed at most once.`
+          }
+          return true
+        }),
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const flagged = (list as { preselected?: boolean }[]).filter((e) => e?.preselected === true).length
+          if (flagged === 0 || !isStandard(context.document)) return true
+          return `${flagged} option(s) are marked pre-selected, but this is a Standard product. Pre-selection only has an effect on an Inspiration preset — either clear the flags or change Kind.`
+        }).warning(),
+      ],
       of: [
         {
           type: 'object',
