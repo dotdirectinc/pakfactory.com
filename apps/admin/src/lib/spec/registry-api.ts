@@ -36,6 +36,8 @@ export type ChangesetItem = {
   target_id: string | null;
   payload: Record<string, unknown>;
   deterministic_key: string;
+  /** The row as a sentence, in the board's words — what a reviewer actually checks. */
+  describe?: string;
 };
 
 export type ChangesetDetail = ChangesetSummary & { items: ChangesetItem[] };
@@ -101,6 +103,18 @@ export async function fetchSpecMe(): Promise<SpecMe | null> {
 
 export async function listDraftChangesets() {
   return call<ChangesetSummary[]>("/api/v1/changesets?state=draft&page_size=100");
+}
+
+/**
+ * Every changeset, whatever its state.
+ *
+ * Readiness needs the APPROVED ones too: a frame is unblocked precisely because its
+ * prerequisites have been approved, and those are no longer drafts. Computing it from the
+ * draft list alone would leave every dependent frame blocked for ever — the prerequisite
+ * disappears from the list at the exact moment it stops being a problem.
+ */
+export async function listAllChangesets() {
+  return call<ChangesetSummary[]>("/api/v1/changesets?page_size=200");
 }
 
 export async function getChangesetDetail(id: string) {

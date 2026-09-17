@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
-import { getChangesetDetail } from "@/lib/spec/registry-api";
+import { getChangesetDetail, listAllChangesets } from "@/lib/spec/registry-api";
+import { blockedBy } from "@/lib/spec/prerequisites";
 import { canApprove, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecDecisionBar } from "@/components/spec/spec-decision-bar";
+import { SpecItemList } from "@/components/spec/spec-item-list";
 import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Review frame" };
@@ -37,6 +39,11 @@ export default async function SpecChangesetPage({
 
   const cs = res.data;
   const items = cs.items ?? [];
+  // Prerequisites are about the OTHER frames' states, so the list is needed as well as
+  // this one. Best-effort: if it cannot be read the button stays available and the
+  // backend refuses, which is the guard that actually matters.
+  const all = await listAllChangesets();
+  const blocked = all.ok ? blockedBy(cs, all.data) : [];
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
@@ -65,11 +72,18 @@ export default async function SpecChangesetPage({
         </ul>
       </section>
 
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium text-foreground">{ADMIN_SPEC_COPY.everyChange}</h2>
+        <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.everyChangeLead}</p>
+        <SpecItemList items={items} />
+      </section>
+
       {cs.state === "draft" ? (
         <SpecDecisionBar
           changesetId={cs.id}
           itemCount={items.length}
           canDecide={canApprove(me)}
+          blockedBy={blocked}
         />
       ) : (
         <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.decidedNote}</p>

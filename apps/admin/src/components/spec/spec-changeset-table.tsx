@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import type { ChangesetSummary } from "@/lib/spec/registry-api";
+import { blockedBy, byReadiness } from "@/lib/spec/prerequisites";
 
 /**
  * A frame is only reviewable as a whole, so this lists frames and not items: the
@@ -19,7 +20,15 @@ function describe(cs: ChangesetSummary): string {
   return entries.map(([k, v]) => `${v as number} ${k}`).join(" · ");
 }
 
-export function SpecChangesetTable({ changesets }: { changesets: ChangesetSummary[] }) {
+export function SpecChangesetTable({
+  changesets,
+  all,
+}: {
+  /** The frames to list — the pending ones. */
+  changesets: ChangesetSummary[];
+  /** Every frame, including approved ones: readiness is judged against those. */
+  all: ChangesetSummary[];
+}) {
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full min-w-[40rem] text-sm">
@@ -29,10 +38,13 @@ export function SpecChangesetTable({ changesets }: { changesets: ChangesetSummar
             <th className="px-3 py-2 font-medium">Source</th>
             <th className="px-3 py-2 font-medium text-right">Items</th>
             <th className="px-3 py-2 font-medium">What it changes</th>
+            <th className="px-3 py-2 font-medium">Ready?</th>
           </tr>
         </thead>
         <tbody>
-          {changesets.map((cs) => (
+          {byReadiness(changesets, all).map((cs) => {
+            const blocked = blockedBy(cs, all);
+            return (
             <tr key={cs.id} className="border-t border-border hover:bg-muted/30">
               <td className="px-3 py-2">
                 <Link href={`/spec/${cs.id}`} className="font-medium text-foreground hover:underline">
@@ -44,8 +56,18 @@ export function SpecChangesetTable({ changesets }: { changesets: ChangesetSummar
               </td>
               <td className="px-3 py-2 text-right tabular-nums">{itemTotal(cs) || "—"}</td>
               <td className="px-3 py-2 text-muted-foreground">{describe(cs) || "—"}</td>
+              <td className="px-3 py-2">
+                {blocked.length === 0 ? (
+                  <span className="text-foreground">Ready</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    after {blocked.join(", ")}
+                  </span>
+                )}
+              </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
