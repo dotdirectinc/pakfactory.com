@@ -21,7 +21,7 @@ function LandingPageCard({page}: {page: ProductCatalogPage}) {
             href={`/products/${page.slug}`}
             className="group relative flex h-full min-h-0 w-full flex-col justify-center overflow-hidden rounded-xl bg-gray-400/30 p-6 transition-colors gap-4 hover:bg-gray-400/50 "
         >
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
                 <span className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
                     {solutionTypeLabel(page.solutionType)}
                 </span>
@@ -30,7 +30,7 @@ function LandingPageCard({page}: {page: ProductCatalogPage}) {
                 </h3>
             </div>
 
-            <span className="text-foreground/70 group-hover:text-foreground flex items-center gap-1.5 text-sm font-medium transition-colors">
+            <span className="text-foreground/70 group-hover:text-foreground flex items-center gap-2 text-sm font-medium transition-colors">
                 Learn more
                 <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>

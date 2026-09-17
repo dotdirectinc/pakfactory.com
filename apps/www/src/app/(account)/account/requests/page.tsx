@@ -30,7 +30,7 @@ export default async function AccountRequestsPage() {
                         {ACCOUNT_COPY.requestsEmpty}
                     </p>
                     <div>
-                        <Button asChild className="rounded-sm">
+                        <Button asChild>
                             <Link href={WWW_ROUTES.request}>
                                 {ACCOUNT_COPY.startARequest}
                             </Link>

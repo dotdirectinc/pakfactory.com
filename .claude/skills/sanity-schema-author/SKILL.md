@@ -39,7 +39,7 @@ workflow; it lives on `feature/sanity-studio-ux` in the studio worktree.
 3. **Human follow-up (seeds):** document optional updates to `scripts/seed.mjs` / `seed-blog-dev.mjs` in the PR or ticket so a human can exercise the new field — **agents do not run seeds or write documents** ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
 4. **Typegen:** keep `pnpm sanity typegen` clean (PROD-1490 AC). If typegen isn't wired yet, set up `sanity schema extract` + `sanity-typegen.json` as part of the ticket — downstream GROQ types depend on it.
 5. **Verify locally:** `pnpm dev:studio` (`:3333`), confirm the editor renders the groups/validation/preview as intended; run `pnpm --filter @pakfactory/studio build`.
-6. **Commit** on `feature/sanity-studio-ux` (`feat(studio): …`), schema + structure (+ seed script diffs if added for humans). Then **`pnpm --filter @pakfactory/studio run deploy`** (`sanity deploy`) so the team Studio gets the schema and any document actions.
+6. **Commit** on `feature/sanity-studio-ux` (`feat(studio): …`), schema + structure (+ seed script diffs if added for humans). Then **`pnpm sanity:deploy:staging`** so the staging Studio (`pakfactory-staging.sanity.studio`, `development` dataset) gets the schema and any document actions; `pnpm sanity:deploy:prod` promotes the same build to `pakfactory.sanity.studio` once it is approved. The bare `sanity deploy` has no script on purpose — the dataset is baked in at build time, so the target must be named. See `scripts/sanity/RUNBOOK.md` § Deployed studios.
 7. **Hand off the consumption** to the blog via the **schema-contract** skill — a deployed field isn't "done" until an app projects and renders it.
 
 ## Breaking changes → migrate

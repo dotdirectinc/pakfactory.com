@@ -45,6 +45,8 @@ const repoRoot = join(appDir, "../..");
  *
  * Local dev only — on Vercel the platform populates process.env directly and no
  * .env.local exists, so both calls are no-ops there.
+ *
+ * Identical to `apps/blog/next.config.ts` — keep the two in step.
  */
 loadEnvConfig(repoRoot, undefined, undefined, true);
 const rootEnv = { ...process.env };

@@ -92,7 +92,8 @@ function BlogSiteNav({
             </Link>
 
             <Button
-              className="hidden h-10 rounded-full bg-primary px-6 text-base font-medium text-white hover:bg-primary/90 lg:inline-flex"
+              size="lg"
+              className="hidden lg:inline-flex"
               asChild
             >
               {cta.external ? (

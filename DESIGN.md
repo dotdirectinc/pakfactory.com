@@ -16,6 +16,7 @@ PakFactory’s UI is **packaging-brand restraint**: clear hierarchy, a dieline c
 - Interactive accent is **forest green** (`--primary`), not blue and not purple gradients.
 - Warm **brand cream** (`--brand-cream`) appears for selected bands (e.g. newsletter); do not invent a second cream palette.
 - Atmosphere should feel engineered and trustworthy for B2B packaging buyers: RFQ / “Get a quote” CTAs, not cart chrome.
+- **Spacing:** an **8pt grid** with a preference for **breathing room** — see [Spacing (8pt — binding)](#spacing-8pt--binding). Not a 4pt-as-default system.
 
 Avoid AI-default looks that fight Pak tokens (purple-on-white, terracotta-on-cream newspaper layouts, glow stacks, emoji ornament).
 
@@ -45,6 +46,8 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 
 **Philosophy:** one brand accent (forest green). Status / chart colors stay small and data-bound — not large decorative fills.
 
+**Inactive / disabled:** interactive text and chrome labels that are inactive, non-selected, or disabled use `text-muted-foreground` — never near-black `text-foreground`. Active / selected primary labels use `text-foreground`.
+
 ---
 
 ## 3. Typography Rules
@@ -62,6 +65,13 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 
 From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/content/footer), **`Badge`**, **`Input`**, and other existing shadcn-style primitives. Avoid raw bordered `div`s when a primitive fits.
 
+### Links
+
+- **Text links** (inline anchors or `Button variant="link"`) always use `underline underline-offset-4` at rest. Prefer the shared `link` button variant or the same classes on a Next.js `Link`.
+- **Arrow / chevron CTAs** (text links like “See all”) use the chevron as the affordance — underline is not required.
+- **Circular directional controls** (carousel prev/next, accordion expand): shadcn **`Button` `size="icon-lg"`** (40px / `size-10`) with Lucide **`Chevron*`** (not `Arrow*`). Fill: `bg-foreground` + light icon. In www, wrap the glyph with [`Icon`](apps/www/src/components/ui/icon.tsx) `size="sm"`.
+- **Filled / outline / ghost buttons** do not use underline for affordance. Nav and logo chrome may keep `no-underline`.
+
 ### CTAs (domain)
 
 - Primary actions: quote / RFQ / “Talk to packaging experts” — `Button` with primary (forest) styling.
@@ -71,15 +81,29 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 
 - Use cards for **interactive or content containers** (lists, pillars, forms), not decorative chrome around every section.
 - If removing border/shadow/background/radius does not hurt understanding, it should not be a card.
+- `@pakfactory/ui` **`Card`** remains the form / metrics / content surface primitive (header, title, description, footer).
+
+**www catalog tiles** use two named types — prefer these names in design and engineering talk:
+
+| Type | Job | Shared core | Includes | Excludes |
+| --- | --- | --- | --- | --- |
+| **General card** | Discovery / navigation | `MediaTileCard` (via `CatalogCard`) | Centered title, optional description, text CTA (“See all”), whole-card settle scale, brand mark on media hover | Bookmark / compare utilities, SKU eyebrow, left-aligned product meta |
+| **Transactional card** | Catalog item with utilities | `MediaCardFrame` | Media settle-zoom, brand mark, bookmark / compare overlays, eyebrow (SKU or category), left-aligned title | Centered blurb + “See all” CTA |
+
+- Feature tiles compose the cores: **ProductCard** / **CustomizationCard** → transactional; product lines / styles / formats → general (`CatalogCard`).
+- Settle scale is shared (`PRODUCT_MEDIA_SCALE` 0.98 → 1.0): general cards settle the **whole tile**; transactional cards settle **media only**. Do not invent a second scale or grow past 1.
 
 ### Focus & interaction
 
 - Use existing focus/ring behavior from primitives (`--ring`).
 - Prefer color and elevation changes already in the design system over novel hover animations.
+- **Cursor:** interactive links (`a[href]`) and buttons use `cursor-pointer`. Disabled / non-interactive controls do not (`not-allowed` / `pointer-events-none`).
 
 ### Radius
 
-- Base radius: `--radius` (see CSS; Figma-aligned). Use `--radius-sm` … `--radius-xl` derived scales — do not invent one-off radii.
+- Box / card radius: `--radius` (14px, Figma rounded-box). `Card` uses `rounded-xl`.
+- Buttons: `--radius-control` (**6px**) — between Tailwind `xs` (2px) and our `sm` (~10px). Do not invent one-off radii on call sites.
+- Use `--radius-sm` … `--radius-xl` for elevated surfaces. Keep `rounded-full` for true circles only (avatars, radios, switches, badges). Never force pills on Buttons.
 
 ---
 
@@ -95,16 +119,26 @@ Use `max-w-[var(--layout-max)]` / blog `PageDielineSection` helpers. Do not inve
 
 ### Spacing (8pt — binding)
 
-From [`AGENTS.md`](AGENTS.md):
+**Principle:** layout and component spacing snap to an **8-point grid** so rhythm stays consistent and surfaces keep **breathing room**. Challenged against a full 4pt grid — **8pt is primary**; 4px is exception-only, not a competing system.
 
-- Grid unit: `--spacing-grid-unit` (8px) → prefer `gap-2`/`p-2` (8), `gap-4` (16), `gap-6` (24) or `gap-grid-*` / `p-grid-*`.
-- `gap-1` / `p-1` (4px) only for tight pairs (label ↔ description, icon ↔ label).
-- **Do not** use fractional steps that yield 6/10/14px (`gap-1.5`, `gap-2.5`, `py-2.5`, `mt-1.5`, `space-y-1.5`).
+| Step | px | Typical Tailwind | Use |
+| --- | --- | --- | --- |
+| Tight pair only | 4 | `gap-1` / `p-1` | Label ↔ description, icon ↔ label |
+| Base unit | 8 | `gap-2` / `p-2` | Compact related controls |
+| Comfortable | 16 | `gap-4` / `p-4` | Card internals, field groups |
+| Airy | 24 | `gap-6` / `p-6` | Section stacks, roomy card padding |
+| Section / inset | 32 | `gap-8` / `p-8` / `px-8` | Band gaps, card meta inset |
+
+Token: `--spacing-grid-unit` (8px) in `@pakfactory/ui/globals.css`. Prefer `gap-grid-*` / `p-grid-*` when those utilities fit.
+
+- **Prefer the roomier even step** when a surface feels cramped at `lg+` (e.g. choose `px-8` / `gap-6` over `px-4` / `gap-4`).
+- **Card meta:** left- and center-aligned catalog tiles share the same airy inset (`px-8` / `pb-8` / internal `gap-4`) unless a density variant is explicitly documented.
+- **Do not** use off-grid / fractional steps that yield 6/10/12/14/20px (`gap-1.5`, `gap-2.5`, `gap-3`, `gap-5`, `top-3`, `py-2.5`, `mt-1.5`, `space-y-1.5`).
 - Form rhythm: label+description `gap-1` → control `gap-2` → between fields `gap-4`.
 
 ### Blog dieline gutters
 
-Mobile **outer 16px** (`px-4`) + **inner 16px** (`px-4`) = **32px** viewport → content via [`page-dieline-section`](apps/blog/src/components/layout/page-dieline-section.tsx). Do not set mobile outer to `px-8`. Flush borders need `px-0 md:px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
+Tokens in `@pakfactory/ui/globals.css`: `--layout-gutter-outer` / `--layout-gutter-inner` (utilities `px-layout-gutter-*`). Mobile **outer 16 + inner 16** = **32px** viewport → content; `sm+` inner **32px**; `md+` outer **32px** (matches `gap-8`). Prefer [`page-dieline-section`](packages/ui/src/components/page-dieline-section.tsx) helpers (blog keeps a synced fork). Do not set mobile outer to `px-8`. Flush borders: `px-0`. Full-bleed bands: exactly one outer wrapper; newsletter cream may use `w-screen` shell (see blog CLAUDE).
 
 ### Composition
 
@@ -134,7 +168,9 @@ Primitives may use CSS `border` via shadcn patterns — **do not** mandate Verce
 | `--motion-slow` (500ms) | Text entrances |
 | `--motion-reveal` (700ms) | Section reveals / hero |
 
-**Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.92`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
+**Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.98`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
+
+**Collapsible / accordion:** open/close height slide via `animate-collapsible-down` / `animate-collapsible-up` in [`packages/ui/src/globals.css`](packages/ui/src/globals.css) (`--motion-base`, 0.3s ease-out). Chevron rotates `180deg` with `duration-300 ease-out`; skip transform transition under `motion-reduce`. Apply classes on `CollapsibleContent` at the call site (`overflow-hidden` + data-state animations); do not invent bespoke height transitions.
 
 Detail: [`docs/plans/PROD-1947-motion-animation-spec.md`](docs/plans/PROD-1947-motion-animation-spec.md). Prefer intentional, sparse motion — not decorative noise.
 
@@ -181,7 +217,7 @@ Primary CTA:       --primary (#2b5f2d in CSS) + --primary-foreground
 Muted:             --muted / --muted-foreground
 Cream band:        --brand-cream
 Border:            --border
-Radius:            --radius (+ sm/md/lg/xl)
+Radius:            --radius 14px cards; --radius-control 6px buttons; Card rounded-xl
 Layout max:        --layout-max (1280 / 1440@1600+)
 Spacing:           8pt grid (--spacing-grid-unit)
 Shadows:           --shadow-* / --shadow-primary-*
@@ -200,7 +236,7 @@ CTA language:      Get a quote / Talk to packaging experts
 > Add a primary `Button` labeled “Get a quote”. Use primary/forest styling from the design system. Do not add cart icons or checkout copy.
 
 **3. Dieline section**  
-> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer+inner 16px; no `px-8` outer on mobile.
+> Wrap the section in the blog dieline helpers (`PageDielineSection` / documented gutters). Content max width `var(--layout-max)`. Mobile outer+inner 16+16; sm+ inner 32; md+ outer 32 (matches `gap-8`); no `px-8` outer on mobile. Prefer `px-layout-gutter-*`.
 
 **4. Form field group**  
 > Label + description in `gap-1`; group to control `gap-2`; between fields `gap-4`. Use `Input` from `@pakfactory/ui`. Focus via existing ring tokens.

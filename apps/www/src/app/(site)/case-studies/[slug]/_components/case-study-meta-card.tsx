@@ -51,7 +51,7 @@ function MetaBlock({
         {visible.map((item) => (
           <span
             key={item._id}
-            className="inline-flex h-[23px] items-center justify-center rounded-full border-[0.5px] border-[#cecece] bg-card px-4 text-xs font-normal leading-4 text-muted-foreground"
+            className="inline-flex h-[23px] items-center justify-center rounded-md border-[0.5px] border-[#cecece] bg-card px-4 text-xs font-normal leading-4 text-muted-foreground"
           >
             {item.title}
           </span>
@@ -61,7 +61,7 @@ function MetaBlock({
             type="button"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="inline-flex h-[23px] cursor-pointer items-center justify-center rounded-full border border-dashed border-foreground/10 bg-transparent px-4 text-xs font-medium leading-4 text-[#173807] transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+            className="inline-flex h-[23px] cursor-pointer items-center justify-center rounded-md border border-dashed border-foreground/10 bg-transparent px-4 text-xs font-medium leading-4 text-[#173807] transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
           >
             {expanded ? "Show less" : `+${hidden} more`}
           </button>

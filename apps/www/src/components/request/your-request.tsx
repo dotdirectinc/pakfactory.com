@@ -30,7 +30,7 @@ function SelectedPoolRailLine({line, onDeselect}: SelectedPoolRailLineProps) {
         .join(', ');
 
     return (
-        <div className="flex items-center gap-3 py-2">
+        <div className="flex items-center gap-4 py-2">
             <span className="relative size-11 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
                 {thumb?.src ? (
                     // Catalog media URLs are static fixture assets.
@@ -149,7 +149,7 @@ export function YourRequest() {
                         aria-hidden
                     >
                         <div className="min-w-0">
-                            <div className="mb-3 flex items-center justify-between gap-3">
+                            <div className="mb-4 flex items-center justify-between gap-4">
                                 <Skeleton className="h-7 w-28" />
                                 <Skeleton className="h-4 w-20" />
                             </div>
@@ -164,7 +164,7 @@ export function YourRequest() {
                             <Skeleton className="mt-4 h-4 w-36" />
                         </div>
                         <aside className="hidden h-fit lg:block lg:sticky lg:top-24 lg:self-start">
-                            <div className="rounded-xl border border-border p-5">
+                            <div className="rounded-xl border border-border p-8">
                                 <Skeleton className="h-5 w-40" />
                                 <Skeleton className="mt-2 h-3 w-full" />
                                 <Skeleton className="mt-4 h-[120px] w-full rounded-lg" />
@@ -185,7 +185,7 @@ export function YourRequest() {
                 ) : (
                     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
                         <div className="min-w-0">
-                            <div className="mb-3 flex items-center justify-between gap-3">
+                            <div className="mb-4 flex items-center justify-between gap-4">
                                 <h3 className="text-lg font-semibold tracking-tight">
                                     {REQUEST_COPY.itemsHeading.replace(
                                         '{n}',
@@ -233,7 +233,7 @@ export function YourRequest() {
                         </div>
 
                         <aside className="h-fit lg:sticky lg:top-24 lg:self-start">
-                            <div className="rounded-xl border border-border p-5">
+                            <div className="rounded-xl border border-border p-8">
                                 <h3 className="text-base font-semibold tracking-tight">
                                     {REQUEST_COPY.selectedProductsHeading}
                                 </h3>

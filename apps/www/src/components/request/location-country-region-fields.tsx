@@ -344,7 +344,7 @@ export function LocationCountryRegionFields({
     value,
     onPatch,
     className,
-    gridClassName = 'grid gap-3 sm:grid-cols-2',
+    gridClassName = 'grid gap-4 sm:grid-cols-2',
 }: {
     value: LocationValue;
     onPatch: (patch: LocationPatch) => void;

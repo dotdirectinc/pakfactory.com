@@ -22,7 +22,7 @@ export function ProfileView({profile}: ProfileViewProps) {
             <PageHeadingSection
                 variant="compact"
                 title={ACCOUNT_COPY.profileTitle}
-                className="px-0 sm:px-0 md:px-0"
+                className="px-0 sm:px-0"
                 innerClassName="border-x-0 px-0 pb-0 pt-0 md:px-0"
             />
 
@@ -37,7 +37,7 @@ export function ProfileView({profile}: ProfileViewProps) {
             <ProfilePasswordSection />
 
             <div>
-                <Button asChild variant="outline" className="rounded-full">
+                <Button asChild variant="outline">
                     <Link href={WWW_ROUTES.login}>{ACCOUNT_COPY.signOut}</Link>
                 </Button>
             </div>

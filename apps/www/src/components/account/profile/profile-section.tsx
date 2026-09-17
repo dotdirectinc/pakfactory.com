@@ -25,7 +25,6 @@ export function ProfileSection({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="rounded-full"
                         onClick={onAction}
                     >
                         {actionLabel}

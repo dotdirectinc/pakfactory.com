@@ -101,7 +101,7 @@ export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
                     </p>
                 </div>
             ) : (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <div
                         className={cn(
                             'flex gap-2',
@@ -130,12 +130,12 @@ export function BriefAssistUpload({onFill, className}: BriefAssistUploadProps) {
                             ) : null}
                         </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3 pl-9 sm:pl-0">
+                    <div className="flex shrink-0 items-center gap-4 pl-9 sm:pl-0">
                         <Button
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="h-9 gap-1.5 rounded-full px-4 text-xs shadow-none"
+                            className="gap-1 shadow-none"
                             onClick={() => inputRef.current?.click()}
                         >
                             <UploadCloud className="size-3.5" aria-hidden />

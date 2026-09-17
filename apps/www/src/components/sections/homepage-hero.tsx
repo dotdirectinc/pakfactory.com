@@ -105,11 +105,11 @@ const HomepageHero = ({
                 {description}
               </p>
 
-              <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap lg:justify-start">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap lg:justify-start">
                 <Button
                   asChild
                   size="lg"
-                  className="rounded-full border-0 bg-[#c2e9a6] px-8 text-emerald-950 shadow-none hover:bg-[#b5de9a] dark:bg-[#c2e9a6] dark:text-emerald-950 dark:hover:bg-[#b5de9a]"
+                  className="border-0 bg-[#c2e9a6] px-8 text-emerald-950 shadow-none hover:bg-[#b5de9a] dark:bg-[#c2e9a6] dark:text-emerald-950 dark:hover:bg-[#b5de9a]"
                 >
                   <Link href={primaryCta.href}>{primaryCta.label}</Link>
                 </Button>

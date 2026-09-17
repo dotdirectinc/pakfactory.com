@@ -99,7 +99,7 @@ export function AddressPickerBlock({
 
     return (
         <div className={className}>
-            <div className="mb-4 flex items-baseline justify-between gap-3">
+            <div className="mb-4 flex items-baseline justify-between gap-4">
                 <Label className="text-xs font-medium">
                     {title}
                     {required ? (
@@ -122,7 +122,7 @@ export function AddressPickerBlock({
             ) : null}
 
             {showSummary && value ? (
-                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-4">
+                <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/40 p-4">
                     <span
                         className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted"
                         aria-hidden
@@ -147,7 +147,7 @@ export function AddressPickerBlock({
                         type="button"
                         variant="link"
                         size="sm"
-                        className="h-auto shrink-0 gap-1.5 px-0 text-[12.5px] font-medium"
+                        className="h-auto shrink-0 gap-1 px-0 text-[12.5px] font-medium"
                         onClick={openEditor}
                     >
                         <Pencil className="size-3.5" aria-hidden />
@@ -203,14 +203,12 @@ export function AddressPickerBlock({
                         <Button
                             type="button"
                             variant="outline"
-                            className="rounded-sm"
                             onClick={() => setPickerOpen(false)}
                         >
                             {REQUEST_COPY.shippingAddressCancel}
                         </Button>
                         <Button
                             type="button"
-                            className="rounded-sm"
                             disabled={!hasShippingLocation(editDraft)}
                             onClick={saveAddress}
                         >

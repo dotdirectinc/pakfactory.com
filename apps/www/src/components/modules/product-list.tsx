@@ -59,7 +59,7 @@ function ProductListCard({
                 )}
             </div>
 
-            <div className="flex shrink-0 flex-col gap-1.5 px-1 pt-4 pb-1">
+            <div className="flex shrink-0 flex-col gap-2 px-1 pt-4 pb-1">
                 <span className="text-muted-foreground font-mono text-xs uppercase tracking-wider">
                     {/* {code} */} SKU: SK000000
                 </span>
@@ -94,7 +94,7 @@ export default function ProductList({
         >
             <div className="mx-auto max-w-7xl px-6 py-14 md:py-16">
                 <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
-                    <div className="max-w-3xl flex flex-col gap-3">
+                    <div className="max-w-3xl flex flex-col gap-4">
                         <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
                             {overline}
                         </p>
@@ -113,7 +113,7 @@ export default function ProductList({
                             <Button
                                 variant="outline"
                                 size="lg"
-                                className="rounded-full border-emerald-800 bg-transparent text-emerald-900 shadow-none hover:bg-emerald-950/5 dark:border-emerald-600 dark:text-emerald-100 dark:hover:bg-emerald-950/20"
+                                className="border-emerald-800 bg-transparent text-emerald-900 shadow-none hover:bg-emerald-950/5 dark:border-emerald-600 dark:text-emerald-100 dark:hover:bg-emerald-950/20"
                                 asChild
                             >
                                 <Link href={cta.href}>{cta.label}</Link>

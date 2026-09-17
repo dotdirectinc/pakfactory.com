@@ -7,8 +7,18 @@
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
-/** Card thumbnail: style uses cardImage → hero.image; line uses cardImage → heroMedia. */
-const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, hero.image){
+/**
+ * Card thumbnail.
+ *
+ * Style: `image` is its only image since PROD-2511 renamed `cardImage` and
+ * dropped `hero` (a card is a render slot, not a field name). `cardImage` stays
+ * as a fallback for the one legacy value until it is unset; `hero.image` was
+ * empty on every style and is gone. The projection key stays `cardImage`
+ * because it names what the consumer renders, not the schema field.
+ *
+ * Line: unchanged, `cardImage` → `heroMedia`.
+ */
+const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(image, cardImage){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
@@ -59,12 +69,18 @@ const LINE_REF_PROJ = /* groq */ `{
   "description": coalesce(cardSummary, pt::text(intro))
 }`;
 
+/**
+ * `description` never reads `hero.description`: PROD-2511 removed it as placeholder
+ * copy, but the key survives on 83 styles because removing a field deletes no
+ * data. Authored copy only — the rich-text `description`, else `shortDescription`
+ * so the style page heading isn't blank before descriptions are filled.
+ */
 const STYLE_REF_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
   shortDescription,
-  "description": coalesce(hero.description, pt::text(description)),
+  "description": coalesce(pt::text(description), shortDescription),
   ${STYLE_CARD_IMAGE}
 }`;
 
@@ -76,8 +92,9 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   sku,
   kind,
   status,
-  "description": coalesce(shortDescription, pt::text(description)),
+  "description": coalesce(pt::text(description), shortDescription),
   moq,
+  leadTimeDays,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
   media[]{
@@ -94,7 +111,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
 
 /**
  * Card/list projection — no availableCustomizations tree (PROD-2456).
- * PDP still uses {@link CATALOG_PRODUCT_FIELDS}.
+ * PDP still uses {@link CATALOG_PRODUCT_FIELDS} (+ PDP extras on by-slug).
  */
 export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   _id,
@@ -105,12 +122,29 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   status,
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
+  leadTimeDays,
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
   "productLine": coalesce(productLine, basedOn->productLine)->${LINE_REF_PROJ},
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
+`;
+
+/** PDP-only extras: specs properties, FAQs, curated related (PROD-1913). */
+export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
+  ${CATALOG_PRODUCT_FIELDS},
+  "properties": properties[defined(property)]{
+    "label": property->title,
+    "values": values[]->title
+  },
+  "faqs": faqs[]->{
+    question,
+    "answerPlain": pt::text(answer)
+  },
+  "relatedProducts": relatedProducts[]->{
+    ${CATALOG_PRODUCT_CARD_FIELDS}
+  }
 `;
 
 /** Active (or unset status) products for catalog index / params. */
@@ -127,7 +161,7 @@ export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   slug.current == $slug &&
   (status == "active" || !defined(status) || status == "coming-soon")
 ][0]{
-  ${CATALOG_PRODUCT_FIELDS}
+  ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
@@ -145,7 +179,7 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
     title,
     "slug": slug.current,
     shortDescription,
-    "description": coalesce(hero.description, pt::text(description)),
+    "description": coalesce(pt::text(description), shortDescription),
     ${STYLE_CARD_IMAGE}
   },
   "products": *[_type == "product" && (
@@ -156,10 +190,25 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   }
 }`;
 
-/** Reference-role options for the public customization library. */
+const PROPERTY_VALUE_PROJ = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "property": property->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}`;
+
+/**
+ * Public customization library (PROD-1288 facets).
+ * Gate is `hasPage` (D55 / PROD-2482) — not deprecated `role == "reference"`.
+ * Configurator pickability is `configuratorRole` and is orthogonal to library membership.
+ */
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  role == "reference" &&
+  hasPage == true &&
   status == "active" &&
   defined(slug.current)
 ] | order(title asc) {
@@ -170,13 +219,29 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
     ...,
     "alt": ${IMAGE_ALT}
   },
-  "category": type->category->${CATEGORY_PROJ}
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[].property->{
+      _id,
+      title,
+      "slug": slug.current
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_PROJ},
+  "productLines": availableOnProducts[@->_type == "productLine"]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
 }`;
 
-/** Single library option by category + handle slugs (PROD-2456). */
+/** Single library option by category + handle slugs (PROD-2456). Same `hasPage` gate as the library list. */
 export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  role == "reference" &&
+  hasPage == true &&
   status == "active" &&
   slug.current == $handle &&
   type->category->slug.current == $category
@@ -188,7 +253,23 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
     ...,
     "alt": ${IMAGE_ALT}
   },
-  "category": type->category->${CATEGORY_PROJ}
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[].property->{
+      _id,
+      title,
+      "slug": slug.current
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_PROJ},
+  "productLines": availableOnProducts[@->_type == "productLine"]->{
+    _id,
+    title,
+    "slug": slug.current
+  }
 }`;
 
 export type CatalogCategoryDoc = {
@@ -243,6 +324,16 @@ export type CatalogStyleRefDoc = {
   cardImage?: unknown | null;
 };
 
+export type CatalogProductPropertyDoc = {
+  label?: string | null;
+  values?: (string | null)[] | null;
+};
+
+export type CatalogProductFaqDoc = {
+  question?: string | null;
+  answerPlain?: string | null;
+};
+
 export type CatalogProductDoc = {
   _id: string;
   title: string;
@@ -252,6 +343,7 @@ export type CatalogProductDoc = {
   status?: string | null;
   description?: string | null;
   moq?: number | null;
+  leadTimeDays?: number | null;
   dimensionRange?: {
     lengthMin?: number | null;
     lengthMax?: number | null;
@@ -265,6 +357,10 @@ export type CatalogProductDoc = {
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
   availableCustomizations?: CatalogAvailableCustomizationDoc[] | null;
+  /** PDP by-slug only (PROD-1913). */
+  properties?: CatalogProductPropertyDoc[] | null;
+  faqs?: CatalogProductFaqDoc[] | null;
+  relatedProducts?: CatalogProductDoc[] | null;
 };
 
 export type CatalogProductLineDoc = {
@@ -278,10 +374,33 @@ export type CatalogProductLineDoc = {
   products?: CatalogProductDoc[] | null;
 };
 
+export type CatalogPropertyRefDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+};
+
+export type CatalogPropertyValueDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  property: CatalogPropertyRefDoc | null;
+};
+
+export type CatalogLibraryTypeDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  declaredProperties?: (CatalogPropertyRefDoc | null)[] | null;
+};
+
 export type CatalogLibraryOptionDoc = {
   _id: string;
   title: string;
   slug: string | null;
   media?: unknown[] | null;
   category: CatalogCategoryDoc | null;
+  type?: CatalogLibraryTypeDoc | null;
+  properties?: (CatalogPropertyValueDoc | null)[] | null;
+  productLines?: (CatalogLineRefDoc | null)[] | null;
 };

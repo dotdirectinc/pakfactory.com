@@ -43,11 +43,11 @@ export default function PackagingHero({
               <p className="text-foreground/80 mx-auto max-w-xl text-base leading-relaxed lg:mx-0 lg:text-lg">
                 {description}
               </p>
-              <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap lg:justify-start">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap lg:justify-start">
                 <Button
                   asChild
                   size="lg"
-                  className="rounded-full border-0 bg-[#C7F0A9] px-10 text-emerald-950 shadow-none hover:bg-[#bce79d] dark:bg-[#C7F0A9] dark:text-emerald-950 dark:hover:bg-[#bce79d]"
+                  className="border-0 bg-[#C7F0A9] px-10 text-emerald-950 shadow-none hover:bg-[#bce79d] dark:bg-[#C7F0A9] dark:text-emerald-950 dark:hover:bg-[#bce79d]"
                 >
                   <Link href={primaryCta.href}>{primaryCta.label}</Link>
                 </Button>

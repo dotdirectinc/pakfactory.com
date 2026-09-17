@@ -10,7 +10,11 @@ import {
   useDeleteTranslationAction,
   useDuplicateWithTranslationsAction,
 } from '@sanity/document-internationalization'
-import { websiteLocations, makeBlogLocations } from './presentation/locations'
+import {
+  websiteLocations,
+  makeBlogLocations,
+  siteLocations,
+} from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
 import { publishCaseStudy } from './actions/publishCaseStudy'
@@ -33,7 +37,16 @@ import { RelatedPostsView } from './components/RelatedPostsView'
 import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
-import { ProductRelatedCapabilitiesView } from './components/ProductRelatedCapabilitiesView'
+import { ProductAvailableCustomizationsView } from './components/ProductAvailableCustomizationsView'
+import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
+import { SolutionStylesView } from './components/SolutionStylesView'
+import {
+  CustomizationCategoryTypesView,
+  CustomizationOptionUsedByView,
+  CustomizationTypeOptionsView,
+  PropertyValueUsedByView,
+  PropertyValuesView,
+} from './components/customizationViews'
 
 const projectId = process.env.SANITY_STUDIO_PROJECT_ID!
 const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
@@ -71,6 +84,30 @@ const BLOG_PREVIEW_RAW =
 const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
   ? BLOG_PREVIEW_RAW
   : `${BLOG_PREVIEW_RAW}/`
+// SITE preview BASE — the www app at its ROOT, for the seven content workspaces
+// whose documents live outside /case-studies and /blog (PROD-2494). This is a
+// DIFFERENT surface from WWW_PREVIEW_BASE above: that one is path-scoped to
+// `/case-studies/` because nginx forwards only that prefix at the apex, and the
+// product / solution / customization routes are not reachable there at all.
+//
+// Default target is `staging.pakfactory.com`, which serves those routes and reads
+// the **development** dataset (verified: its asset URLs are
+// cdn.sanity.io/files/8293wrxp/development/...). That makes it the right pair for
+// the development-dataset Studio; a production-dataset Studio pointed here would
+// edit prod content against a site rendering dev content.
+//
+// Env-driven so a developer can aim it at their own localhost (PROD-2494 AC:
+// "no hard-coded host"). Trailing slash required, as for the other two bases.
+const SITE_PREVIEW_RAW =
+  process.env.SANITY_STUDIO_PREVIEW_URL_SITE || 'http://localhost:3000/'
+const SITE_PREVIEW_BASE = SITE_PREVIEW_RAW.endsWith('/')
+  ? SITE_PREVIEW_RAW
+  : `${SITE_PREVIEW_RAW}/`
+const SITE_ALLOW_ORIGINS = [
+  'http://localhost:3000',
+  'https://staging.pakfactory.com',
+]
+
 // basePath the blog app is mounted under on this origin ('/blog' in prod, '' local).
 // Location hrefs are resolved against the ORIGIN only (Presentation drops the base
 // path when building them), so they must be prefixed with this — see locations.ts.
@@ -130,7 +167,58 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
-      S.view.component(ProductRelatedCapabilitiesView).title('Customization'),
+      S.view.component(ProductAvailableCustomizationsView).title('Customization'),
+    ])
+  }
+  // Solution Styles are listed flat in the Solutions workspace, so this tab is
+  // the only place a solution's own collections appear together — with the match
+  // count that says which of them would publish empty.
+  if (schemaType === 'solution') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(SolutionStylesView).title('Solution Styles'),
+    ])
+  }
+  // Not a nicety. A Solution Style is a stored filter, and a stored filter can
+  // resolve to zero with the form still valid — this tab is the only thing that
+  // says so before the page publishes empty.
+  if (schemaType === 'solutionStyle') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(SolutionStyleMatchesView).title('Matching products'),
+    ])
+  }
+  // Customization and Property trees — the reference that makes each of these
+  // relationships lives on the OTHER document, so the form cannot show any of
+  // them. See `createReferencedByView`.
+  if (schemaType === 'customizationCategory') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationCategoryTypesView).title('Types'),
+    ])
+  }
+  if (schemaType === 'customizationType') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationTypeOptionsView).title('Options'),
+    ])
+  }
+  if (schemaType === 'customizationOption') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(CustomizationOptionUsedByView).title('Used by'),
+    ])
+  }
+  if (schemaType === 'property') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(PropertyValuesView).title('Values'),
+    ])
+  }
+  if (schemaType === 'propertyValue') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(PropertyValueUsedByView).title('Used by'),
     ])
   }
   return S.document().views([S.view.form()])
@@ -279,6 +367,23 @@ const releasesAndScheduleDisabled = {
   scheduledDrafts: { enabled: false as const },
 }
 
+// Presentation for the seven content workspaces (PROD-2494). One factory rather
+// than seven copies: every workspace previews the same origin with the same
+// resolver map, and the only thing that varies is which documents you arrive
+// from. `enable` is RELATIVE so it resolves under the base path, matching the
+// blog and case-studies tools above.
+const sitePresentation = () =>
+  presentationTool({
+    name: 'presentation',
+    title: 'Presentation',
+    previewUrl: {
+      initial: SITE_PREVIEW_BASE,
+      previewMode: { enable: 'api/draft-mode/enable' },
+    },
+    allowOrigins: SITE_ALLOW_ORIGINS,
+    resolve: { locations: siteLocations },
+  })
+
 export default defineConfig([
   // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
   // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
@@ -318,6 +423,14 @@ export default defineConfig([
           'http://localhost:3004',
           'https://origin.blog.pakfactory.com',
           'https://pakfactory.com',
+          // `pnpm studio:staging` points this workspace's preview at the staging
+          // blog, which is mounted under /blog. Appended, not substituted — the
+          // origins above still serve the local and production targets.
+          // NOTE: that host sits behind Vercel Deployment Protection. Signed into
+          // the Vercel team it serves 200 with no x-frame-options and iframes
+          // fine; without a session it 302s to an SSO page carrying
+          // `x-frame-options: DENY`, so the pane renders blank rather than erroring.
+          'https://staging-blog.pakfactory.com',
         ],
         resolve: { locations: makeBlogLocations(BLOG_BASE_PATH) },
       }),
@@ -360,6 +473,8 @@ export default defineConfig([
           // Magento may serve (or 301 to) the www host; keep both so Presentation
           // does not bounce the iframe off allowOrigins after a host redirect.
           'https://www.pakfactory.com',
+          // `pnpm studio:staging` previews case studies on the staging site.
+          'https://staging.pakfactory.com',
         ],
         resolve: { locations: websiteLocations },
       }),
@@ -381,6 +496,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: productsStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -399,6 +515,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: customizationStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -417,6 +534,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -435,6 +553,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: expertiseStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -453,6 +572,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -472,6 +592,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),
@@ -491,6 +612,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: globalStructure, defaultDocumentNode }),
+      sitePresentation(),
       colorInput(),
       media(),
       visionTool(),

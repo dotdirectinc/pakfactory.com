@@ -9,23 +9,38 @@ import {
 import type {Product, ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
 
+export {
+    ProductCardSkeleton,
+    ProductCatalogGridSkeleton,
+} from '@/components/product/product-card-skeleton';
+
 const TILE_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:gap-8';
 
 const PRODUCT_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
 
+
 function toProductCardData(
     product: Product,
     line: ProductLine,
 ): ProductCardData {
+    const images = product.media
+        .filter((item): item is {src: string; alt: string} =>
+            Boolean(item.src),
+        )
+        .map((item) => ({
+            src: item.src as string,
+            alt: item.alt || product.title,
+        }));
     return {
         title: product.title,
         href: productHref(product.slug),
         sku: product.sku,
         eyebrowLabel: product.productStyle.title ?? line.title,
-        imageUrl: product.media[0]?.src ?? null,
-        imageAlt: product.media[0]?.alt ?? product.title,
+        imageUrl: images[0]?.src ?? product.media[0]?.src ?? null,
+        imageAlt: images[0]?.alt ?? product.media[0]?.alt ?? product.title,
+        images: images.length > 0 ? images : undefined,
         moq: product.moq,
     };
 }

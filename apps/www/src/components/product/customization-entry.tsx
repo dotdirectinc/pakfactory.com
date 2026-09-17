@@ -49,7 +49,7 @@ function SummaryRow({label, summary, onCustomize}: SummaryRowProps) {
         <button
             type="button"
             onClick={onCustomize}
-            className="flex w-full cursor-pointer items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50"
+            className="flex w-full cursor-pointer items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/50"
         >
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">{label}</p>
@@ -59,7 +59,7 @@ function SummaryRow({label, summary, onCustomize}: SummaryRowProps) {
                         : summary}
                 </p>
             </div>
-            <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
                 {REQUEST_COPY.customizeRow}
                 <ChevronRight className="size-4" aria-hidden />
             </span>

@@ -183,7 +183,7 @@ export default async function CaseStudyPage({ params }: Props) {
       </PageDielineSection>
 
       {/* Body — left sidebar + right content */}
-      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 md:px-0 lg:grid-cols-[360px_1fr]">
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 sm:px-0 lg:grid-cols-[360px_1fr]">
 
         {/* ── Left sidebar — metrics + share/CTA stick together on lg+ ── */}
         <aside className="flex flex-col border-r border-dashed border-border px-4 pb-8 pt-8 md:px-8 lg:pb-16 lg:pt-24">
@@ -210,7 +210,7 @@ export default async function CaseStudyPage({ params }: Props) {
             <div className="hidden flex-col gap-[42px] lg:flex">
               <div
                 aria-hidden="true"
-                className="-mx-4 border-t border-dashed border-border md:-mx-8"
+                className="-mx-layout-gutter-inner border-t border-dashed border-border"
               />
               <CaseStudyShare
                 url={pageUrl}
@@ -296,7 +296,7 @@ export default async function CaseStudyPage({ params }: Props) {
       {study.relatedStudies && study.relatedStudies.length > 0 && (
         <PageDielineSection
           className="border-t border-dashed border-border"
-          innerClassName="px-0"
+          innerClassName="px-0 sm:px-0"
         >
           <RelatedStudiesCarousel
             studies={study.relatedStudies}

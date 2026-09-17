@@ -49,7 +49,7 @@ export function StepServices({
                         aria-checked={servicesEnabled}
                         onClick={() => onToggleEnabled(!servicesEnabled)}
                         className={cn(
-                            'rounded-full px-4 py-2 text-xs font-medium',
+                            'rounded-md px-4 py-2 text-xs font-medium',
                             servicesEnabled
                                 ? 'bg-foreground text-background'
                                 : 'border border-border bg-background text-foreground',
@@ -68,7 +68,7 @@ export function StepServices({
                             <label
                                 key={svc.id}
                                 className={cn(
-                                    'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-3.5 text-sm font-medium',
+                                    'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-4 text-sm font-medium',
                                     on
                                         ? 'border-foreground bg-muted/40'
                                         : 'border-border bg-background hover:bg-muted/30',

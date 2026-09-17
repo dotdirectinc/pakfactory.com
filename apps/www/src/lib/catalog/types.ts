@@ -53,6 +53,32 @@ export type ProductDimensionRange = {
     depthMax?: number;
 };
 
+export type ProductProperty = {
+    label: string;
+    value: string;
+};
+
+export type ProductFaq = {
+    question: string;
+    answerPlain: string;
+};
+
+export type TestimonialSource = 'google' | 'trustpilot';
+
+export type ProductTestimonial = {
+    quote: string;
+    attributionName: string;
+    rating: number;
+    positives: string[];
+    source: TestimonialSource;
+};
+
+export type TestimonialsAggregate = {
+    source: 'google';
+    label: string;
+    score: number;
+};
+
 export type Product = {
     title: string;
     slug: string;
@@ -65,7 +91,14 @@ export type Product = {
     availableCustomizations: CustomizationOption[];
     primarySolution?: string;
     moq?: number;
+    leadTimeDays?: number;
     dimensionRange?: ProductDimensionRange;
+    /** Spec rows from Sanity properties (PDP). */
+    properties?: ProductProperty[];
+    faqs?: ProductFaq[];
+    relatedProducts?: Product[];
+    /** Props-ready; empty until testimonial docs land (PROD-2293). */
+    testimonials?: ProductTestimonial[];
 };
 
 export type ProductLine = {
@@ -81,3 +114,53 @@ export type ProductLine = {
 export type ProductsSegmentResult =
     | {type: 'line'; line: ProductLine}
     | {type: 'product'; product: Product};
+
+/** Facet option for the customizations library rail (PROD-1288). */
+export type CustomizationFacetOption = {
+    value: string;
+    label: string;
+};
+
+export type CustomizationFacetDef = {
+    /** `product-line` or Sanity `property.slug`. */
+    id: string;
+    title: string;
+    options: CustomizationFacetOption[];
+};
+
+/** Enriched library card for faceted listing. */
+export type CustomizationLibraryItem = {
+    _id: string;
+    title: string;
+    slug: string;
+    /** Sanity customizationCategory.slug */
+    categoryValue: string;
+    categoryLabel?: string;
+    imageUrl?: string | null;
+    imageAlt?: string | null;
+    /** Full media list for card gallery (hero = images[0] / imageUrl). */
+    images?: {src: string; alt?: string}[];
+    /** One-way from option.availableOnProducts → productLine. */
+    productLines: ProductLineRef[];
+    /** property.slug → propertyValue.slug[] */
+    attrs: Record<string, string[]>;
+    /** property.slug → display title */
+    propertyTitles: Record<string, string>;
+    /** propertyValue.slug → display title */
+    valueTitles: Record<string, string>;
+};
+
+export type CustomizationLibraryResult = {
+    items: CustomizationLibraryItem[];
+    tabs: {label: string; value: string}[];
+    facetCatalog: {
+        /** Always-on: Product Line + Sustainability (when present). */
+        shared: CustomizationFacetDef[];
+        /** Extra attribute facets keyed by category slug. */
+        byCategory: Record<string, CustomizationFacetDef[]>;
+    };
+};
+
+/** Stable facet id for Product Line (not a Sanity property). */
+export const CUSTOMIZATION_PRODUCT_LINE_FACET_ID = 'product-line';
+

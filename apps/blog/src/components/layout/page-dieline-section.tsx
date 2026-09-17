@@ -3,10 +3,10 @@ import { cn } from "@pakfactory/ui/lib/utils";
 
 /**
  * Horizontal gutter outside the dashed dieline column.
- * Mobile: 16px (`px-4`); with inner `px-4` = 32px total viewport → content (including border).
+ * Values from `--layout-gutter-outer` / `--layout-gutter-inner` (mobile 16+16; sm+ inner 32; md+ outer 32 / gap-8).
  */
 export function pageDielineOuterClass(className?: string) {
-  return cn("w-full px-4 sm:px-6 md:px-8", className);
+  return cn("w-full px-layout-gutter-outer", className);
 }
 
 /**
@@ -15,7 +15,7 @@ export function pageDielineOuterClass(className?: string) {
  */
 export function pageFullBleedRowClass(className?: string) {
   return cn(
-    "relative -mx-4 w-[calc(100%+2rem)] max-w-none sm:-mx-6 sm:w-[calc(100%+3rem)] md:-mx-8 md:w-[calc(100%+4rem)]",
+    "relative -mx-layout-gutter-outer w-[calc(100%+2*var(--layout-gutter-outer))] max-w-none",
     className,
   );
 }
@@ -27,16 +27,19 @@ export function pageFullBleedSectionContentClass(className?: string) {
 
 /** Centered content column without dashed vertical guides (e.g. category header band). */
 export function pageDielineContentClass(className?: string) {
-  return cn("mx-auto w-full max-w-[var(--layout-max)] px-4 md:px-8", className);
+  return cn(
+    "mx-auto w-full max-w-[var(--layout-max)] px-layout-gutter-inner",
+    className,
+  );
 }
 
 /**
- * Centered column with dashed vertical guides; mobile `px-4` + outer `px-4` = 32px total including border.
- * Flush to the dieline (e.g. full-width borders): pass `px-0 md:px-0` — bare `px-0` does not clear `md:px-8`.
+ * Centered column with dashed vertical guides; gutters via `--layout-gutter-inner`.
+ * Flush to the dieline (e.g. full-width borders): pass `px-0` — twMerge clears the token utility.
  */
 export function pageDielineInnerClass(className?: string) {
   return cn(
-    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-4 md:px-8",
+    "mx-auto w-full max-w-[var(--layout-max)] border-x border-dashed border-border px-layout-gutter-inner",
     className,
   );
 }

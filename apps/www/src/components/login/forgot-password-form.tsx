@@ -90,7 +90,8 @@ export function ForgotPasswordForm() {
 
                 <Button
                     type="submit"
-                    className="h-11 w-full rounded-sm"
+                    size="lg"
+                    className="w-full"
                     disabled={!canSubmit}
                 >
                     {pending ? 'Sending…' : FORGOT_PASSWORD_COPY.sendResetCode}

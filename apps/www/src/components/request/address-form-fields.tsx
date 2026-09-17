@@ -49,7 +49,7 @@ export function AddressFormFields({
     const showRegion = shouldShowRegionField(location);
 
     return (
-        <div className={cn('grid gap-3', className)}>
+        <div className={cn('grid gap-4', className)}>
             <LocationCountryField value={location} onPatch={onPatch} />
 
             <div>
@@ -81,7 +81,7 @@ export function AddressFormFields({
 
             <div
                 className={cn(
-                    'grid gap-3',
+                    'grid gap-4',
                     showRegion
                         ? 'sm:grid-cols-3'
                         : 'sm:grid-cols-2',

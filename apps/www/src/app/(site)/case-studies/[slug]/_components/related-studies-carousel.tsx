@@ -46,7 +46,7 @@ export function RelatedStudiesCarousel({ studies, heading, intro }: Props) {
       setApi={setApi}
       opts={{ align: "start", slidesToScroll: 1 }}
     >
-      <header className="flex flex-wrap items-end justify-between gap-y-8 px-4 md:px-8">
+      <header className="flex flex-wrap items-end justify-between gap-y-8 px-layout-gutter-inner">
         <div className="flex min-w-[280px] flex-1 flex-col gap-4">
           <h2 className="text-4xl font-medium leading-10 tracking-tight text-foreground">
             {heading}
@@ -82,7 +82,7 @@ export function RelatedStudiesCarousel({ studies, heading, intro }: Props) {
         </div>
       </header>
 
-      <div className="px-4 md:px-8">
+      <div className="px-layout-gutter-inner">
         <CarouselContent className="-ml-6">
           {studies.map((s) => (
             <CarouselItem

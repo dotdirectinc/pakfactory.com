@@ -11,18 +11,20 @@ import {
     type CatalogProductDoc,
     type CatalogProductLineDoc,
 } from '@pakfactory/sanity/queries';
+import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
 import {
     mapSanityLibraryOption,
     mapSanityProduct,
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
 import type {
+    CustomizationLibraryItem,
+    CustomizationLibraryResult,
     Product,
     ProductLine,
     ProductStyleRef,
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
-import type {CustomizationCardData} from '@/components/customization/customization-card';
 import {getPublishedSanityClient} from '@/lib/sanity/client';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
@@ -81,7 +83,10 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
-        return doc ? mapSanityProduct(doc) : null;
+        if (!doc) return null;
+        const mapped = mapSanityProduct(doc);
+        if (!mapped) return null;
+        return enrichRelatedProducts(mapped);
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity product by slug failed:', err);
@@ -90,22 +95,44 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
     }
 }
 
+const RELATED_PRODUCTS_CAP = 6;
+
+/** Curated related first; else same product-line siblings (PROD-1913). */
+async function enrichRelatedProducts(product: Product): Promise<Product> {
+    if (product.relatedProducts && product.relatedProducts.length > 0) {
+        return product;
+    }
+    const lineSlug = product.productLine.slug;
+    const siblings = (await listProducts())
+        .filter(
+            (item) =>
+                item.slug !== product.slug &&
+                item.productLine.slug === lineSlug,
+        )
+        .slice(0, RELATED_PRODUCTS_CAP);
+    if (siblings.length === 0) return product;
+    return {...product, relatedProducts: siblings};
+}
+
 async function fetchSanityCustomizationLibrary(): Promise<
-    CustomizationCardData[]
+    CustomizationLibraryResult
 > {
-    if (!isSanityConfigured()) return [];
+    if (!isSanityConfigured()) {
+        return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
+    }
     try {
         const docs = await getPublishedSanityClient().fetch<
             CatalogLibraryOptionDoc[]
         >(CATALOG_CUSTOMIZATION_LIBRARY_QUERY);
-        return (docs ?? [])
+        const items = (docs ?? [])
             .map(mapSanityLibraryOption)
-            .filter((item): item is CustomizationCardData => item != null);
+            .filter((item): item is CustomizationLibraryItem => item != null);
+        return buildCustomizationLibraryResult(items);
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity customization library failed:', err);
         }
-        return [];
+        return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
     }
 }
 
@@ -156,16 +183,23 @@ export async function listProducts(): Promise<Product[]> {
     return getCachedProducts();
 }
 
-export async function listCustomizationCategories(): Promise<
-    CustomizationCardData[]
-> {
+/** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */
+export async function listCustomizations(): Promise<CustomizationLibraryResult> {
     return getCachedCustomizationLibrary();
+}
+
+/** @deprecated Prefer listCustomizations(); kept as thin alias for call sites. */
+export async function listCustomizationCategories(): Promise<
+    CustomizationLibraryItem[]
+> {
+    const result = await listCustomizations();
+    return result.items;
 }
 
 export async function getCustomizationCategory(
     category: string,
     handle: string,
-): Promise<CustomizationCardData | null> {
+): Promise<CustomizationLibraryItem | null> {
     const categoryKey = normalizeSlug(category);
     const handleKey = normalizeSlug(handle);
     if (!isSanityConfigured()) return null;

@@ -1,6 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { PackageIcon } from '@sanity/icons'
-import { MEDIA_TAG } from '../lib/media-tags'
+import { MEDIA_TAG, taggedImageField, taggedImageType } from '../lib/media-tags'
 import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
@@ -11,13 +11,23 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 /**
  * Product Line — the top level of the product tree (Rigid, Folding Carton,
  * Corrugated), a landing page built to rank and convert for one packaging format
- * (Entities/Product Line.md). Only `title` and `slug` were deployed; every other
- * field is a free build.
+ * (Entities/Product Line.md). The full type is deployed.
  *
  * Declaring is not inheriting: the Line declares WHICH properties its products
  * state (`properties`), never their values — each product still states its own.
- * The styles grid is derived from Styles pointing here; the Line only sets the
- * order (`styles`), never gates membership.
+ *
+ * The styles grid is DERIVED, not listed. Every Style carries a required
+ * `productLine` reference (97/97 in production), so membership is a query and the
+ * Line never gates it.
+ *
+ * ⚠️ Ordering that grid is an OPEN REQUIREMENT with no mechanism (PROD-2509).
+ * `styles` — an ordered reference array that set the display order — was removed
+ * unpopulated (0/15) because a strong reference held purely for presentation made
+ * every listed Style undeletable, and the "unlisted styles append alphabetically"
+ * fallback it promised was never built. Until a replacement lands, the grid sorts
+ * alphabetically, which is NOT the intent: a landing-page grid is a merchandising
+ * surface and should lead with the styles that convert. Do not read the current
+ * sort as a decision.
  *
  * Deferred: `sections` (page-builder) until the shared section inventory exists
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
@@ -91,27 +101,27 @@ export const productLine = defineType({
         },
       ],
     }),
-    defineField({
-      name: 'heroMedia',
-      title: 'Hero image',
+    // One representative image, one gallery — the same pair on all three product-tree
+    // types. `featuredImage` names a ROLE (the image that stands for this document),
+    // where `cardImage` and `heroMedia` named render slots, which D33 forbids. It is
+    // also the name the shared `ogImage` description has always referred to.
+    defineField(taggedImageField({
+      name: 'featuredImage',
+      title: 'Featured image',
       type: 'image',
       group: GROUPS.content,
-      description: 'The product-line landing hero.',
+      mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
-    }),
+      description: 'The one image that represents this line — the landing hero, catalog cards, nav and the social fallback.',
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
+    })),
     defineField({
-      name: 'cardImage',
-      title: 'Card image',
-      type: 'image',
+      name: 'media',
+      title: 'Media',
+      type: 'array',
       group: GROUPS.content,
-      description: 'Thumbnail for the catalog grid and the nav.',
-      options: { hotspot: true },
-      fields: [
-        defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
-      ],
+      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
+      of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `cardSummary` (PROD-2454), matching Style, Solution,
     // Product and the existing `blogCategory` pair.
@@ -191,17 +201,6 @@ export const productLine = defineType({
       ],
     }),
     defineField({
-      // Renamed from `styleOrder` (D33): an array is ordered by definition, so
-      // `*Order` named the mechanism rather than the thing. 0 populated at the rename.
-      name: 'styles',
-      title: 'Styles',
-      type: 'array',
-      group: GROUPS.categorization,
-      description: 'Display order for the styles grid. Never a gate — unlisted styles append alphabetically.',
-      of: [{ type: 'reference', to: [{ type: 'productStyle' }] }],
-      validation: (Rule) => Rule.unique(),
-    }),
-    defineField({
       name: 'expertise',
       title: 'Expertise',
       type: 'array',
@@ -259,7 +258,7 @@ export const productLine = defineType({
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
   ],
   preview: {
-    select: { title: 'title', display: 'shortName', media: 'heroMedia' },
+    select: { title: 'title', display: 'shortName', media: 'featuredImage' },
     prepare({ title, display, media }) {
       return { title: display || title || 'Untitled line', subtitle: 'Product Line', media }
     },

@@ -98,7 +98,7 @@ function FooterCtaBlock({block}: {block: BlogFooterCtaBlock}) {
 
     return (
         <div
-            className={`${borderClasses} px-4 py-8 md:px-8 md:py-16 ${ALIGN_TEXT_CLASS[block.align]}`}
+            className={`${borderClasses} px-layout-gutter-inner py-8 md:py-16 ${ALIGN_TEXT_CLASS[block.align]}`}
         >
             <h2 className="whitespace-pre-line text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
                 {block.message}
@@ -201,7 +201,7 @@ export function SiteFooter({
 
     return (
         <footer className="bg-background">
-            <PageDielineSection innerClassName="px-0 md:px-0">
+            <PageDielineSection innerClassName="px-0 sm:px-0">
                 {/* Giant wordmark */}
                 {/* <FooterWordmark /> */}
 
@@ -236,7 +236,7 @@ export function SiteFooter({
 
                 {/* Bottom bar — copyright + social */}
                 <div className="border-t border-dashed border-foreground/10">
-                    <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-8 md:px-8">
+                    <div className="flex flex-wrap items-center justify-between gap-y-3 px-layout-gutter-inner py-8">
                         <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
                             © 2026 PakFactory
                         </p>
@@ -253,7 +253,7 @@ export function SiteFooter({
 
                 {/* Bottom bar — AI answer links */}
                 <div className="border-t border-dashed border-foreground/10">
-                    <div className="flex flex-wrap items-center justify-between gap-y-3 px-4 py-8 md:px-8">
+                    <div className="flex flex-wrap items-center justify-between gap-y-3 px-layout-gutter-inner py-8">
                         <div className="flex flex-wrap items-center gap-6">
                             <p className="text-sm text-muted-foreground">
                                 See what AI says about PakFactory

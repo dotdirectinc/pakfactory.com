@@ -141,13 +141,13 @@ export function SiteFooter({
 
   return (
     <footer className="bg-muted">
-      <PageDielineSection innerClassName="px-0 md:px-0">
-        <div className="border-t border-dashed border-foreground/10 px-4 py-16 text-center md:px-8">
+      <PageDielineSection innerClassName="px-0 sm:px-0">
+        <div className="border-t border-dashed border-foreground/10 px-layout-gutter-inner py-16 text-center">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Let&apos;s collaborate and craft <br /> your vision
           </h2>
           <Button
-            className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             asChild
           >
             <a href={contactHref} {...externalLinkAttributes(contactHref)}>
@@ -157,7 +157,7 @@ export function SiteFooter({
         </div>
 
         <div
-          className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-4 py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
+          className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-layout-gutter-inner py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
           style={
             {
               "--footer-section-rows": sectionRows,
@@ -167,7 +167,7 @@ export function SiteFooter({
           {columns.map((column, colIdx) => (
             <div
               key={colIdx}
-              className="flex flex-col gap-16 border-dashed border-border md:grid md:grid-rows-subgrid md:gap-y-16 md:border-r md:px-8 md:py-16 md:last:border-r-0 md:[grid-row:span_var(--footer-section-rows)]"
+              className="flex flex-col gap-16 border-dashed border-border md:grid md:grid-rows-subgrid md:gap-y-16 md:border-r md:px-layout-gutter-inner md:py-16 md:last:border-r-0 md:[grid-row:span_var(--footer-section-rows)]"
             >
               {column.map((section) => (
                 <FooterSectionBlock key={section.title} section={section} />
@@ -188,12 +188,12 @@ export function SiteFooter({
           aria-hidden
         >
           <div
-            className={pageDielineInnerClass("h-full px-0 md:px-0")}
+            className={pageDielineInnerClass("h-full px-0 sm:px-0")}
           />
         </div>
 
         <div className={pageDielineOuterClass("relative z-10")}>
-          <div className="mx-auto flex w-full max-w-[var(--layout-max)] flex-wrap items-start justify-between gap-x-6 gap-y-4 px-4 py-6 md:px-8">
+          <div className="mx-auto flex w-full max-w-[var(--layout-max)] flex-wrap items-start justify-between gap-x-6 gap-y-4 px-layout-gutter-inner py-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center gap-4">
                 <p className="text-sm text-muted-foreground">See what AI says about PakFactory</p>

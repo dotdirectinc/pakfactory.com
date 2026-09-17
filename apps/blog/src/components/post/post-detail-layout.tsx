@@ -30,7 +30,7 @@ export function PostDetailLayout({
           28fr/72fr mirrors the large-desktop 360:920 ratio so both panels scale
           together from 1280 down to 1024; article inset uses a steeper vw clamp
           so mid-desktop is tighter while large desktop still caps at 8rem. */}
-      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 md:px-0 pt-12 lg:grid-cols-[minmax(0,28fr)_minmax(0,72fr)] lg:pt-24">
+      <PageDielineSection innerClassName="grid grid-cols-1 gap-0 px-0 sm:px-0 pt-12 lg:grid-cols-[minmax(0,28fr)_minmax(0,72fr)] lg:pt-24">
         {/* Hidden below lg; on desktop stretches to row height for the sticky sidebar. */}
         <aside className="hidden min-w-0 lg:block">{sidebar}</aside>
         <div className="min-w-0 px-4 pb-24 lg:px-[clamp(1.5rem,18vw-8rem,8rem)]">{article}</div>

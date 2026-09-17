@@ -3,18 +3,20 @@ import {
     type CatalogProductDoc,
     type CatalogProductLineDoc,
 } from '@pakfactory/sanity/queries';
-import type {CustomizationCardData} from '@/components/customization/customization-card';
 import {
     resolveImageAlt,
     sanityImageBaseUrl,
 } from '@/lib/sanity/image';
 import type {
     CatalogMedia,
+    CustomizationLibraryItem,
     CustomizationOption,
     Product,
+    ProductFaq,
     ProductKind,
     ProductLine,
     ProductLineRef,
+    ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
 
@@ -206,6 +208,29 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
           }
         : undefined;
 
+    const properties: ProductProperty[] = [];
+    for (const row of doc.properties ?? []) {
+        const label = row?.label?.trim();
+        if (!label) continue;
+        const value = (row.values ?? [])
+            .map((v) => v?.trim())
+            .filter((v): v is string => Boolean(v))
+            .join(', ');
+        properties.push({label, value: value || 'N/A'});
+    }
+
+    const faqs: ProductFaq[] = [];
+    for (const row of doc.faqs ?? []) {
+        const question = row?.question?.trim();
+        const answerPlain = row?.answerPlain?.trim();
+        if (!question || !answerPlain) continue;
+        faqs.push({question, answerPlain});
+    }
+
+    const relatedProducts = (doc.relatedProducts ?? [])
+        .map(mapSanityProduct)
+        .filter((item): item is Product => item != null);
+
     return {
         title: doc.title,
         slug,
@@ -221,9 +246,15 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
             ? {primarySolution: doc.primarySolution}
             : {}),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
+        ...(typeof doc.leadTimeDays === 'number'
+            ? {leadTimeDays: doc.leadTimeDays}
+            : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
             ? {dimensionRange}
             : {}),
+        ...(properties.length > 0 ? {properties} : {}),
+        ...(faqs.length > 0 ? {faqs} : {}),
+        ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
     };
 }
 
@@ -262,16 +293,49 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
 
 export function mapSanityLibraryOption(
     doc: CatalogLibraryOptionDoc,
-): CustomizationCardData | null {
+): CustomizationLibraryItem | null {
     const slug = doc.slug?.trim();
     const categorySlug = doc.category?.slug?.trim();
     if (!slug || !doc.title || !categorySlug) return null;
 
-    const firstImage = Array.isArray(doc.media) ? doc.media[0] : null;
-    const imageUrl = firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null;
-    const imageAlt = firstImage
-        ? resolveImageAlt(firstImage, doc.title)
-        : doc.title;
+    const mediaItems = Array.isArray(doc.media) ? doc.media : [];
+    const images = mediaItems
+        .map((item) => {
+            const src = sanityImageBaseUrl(item);
+            if (!src) return null;
+            return {
+                src,
+                alt: resolveImageAlt(item, doc.title),
+            };
+        })
+        .filter((item): item is {src: string; alt: string} => item !== null);
+    const first = images[0];
+
+    const productLines: ProductLineRef[] = [];
+    const seenLines = new Set<string>();
+    for (const line of doc.productLines ?? []) {
+        const lineSlug = line?.slug?.trim();
+        const lineTitle = line?.title?.trim();
+        if (!lineSlug || !lineTitle || seenLines.has(lineSlug)) continue;
+        seenLines.add(lineSlug);
+        productLines.push({slug: lineSlug, title: lineTitle});
+    }
+
+    const attrs: Record<string, string[]> = {};
+    const propertyTitles: Record<string, string> = {};
+    const valueTitles: Record<string, string> = {};
+    for (const value of doc.properties ?? []) {
+        const propSlug = value?.property?.slug?.trim();
+        const propTitle = value?.property?.title?.trim();
+        const valueSlug = value?.slug?.trim();
+        const valueTitle = value?.title?.trim();
+        if (!propSlug || !valueSlug) continue;
+        const list = attrs[propSlug] ?? [];
+        if (!list.includes(valueSlug)) list.push(valueSlug);
+        attrs[propSlug] = list;
+        if (propTitle) propertyTitles[propSlug] = propTitle;
+        if (valueTitle) valueTitles[valueSlug] = valueTitle;
+    }
 
     return {
         _id: doc._id,
@@ -279,7 +343,12 @@ export function mapSanityLibraryOption(
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,
-        imageUrl,
-        imageAlt,
+        imageUrl: first?.src ?? null,
+        imageAlt: first?.alt ?? doc.title,
+        images: images.length > 0 ? images : undefined,
+        productLines,
+        attrs,
+        propertyTitles,
+        valueTitles,
     };
 }

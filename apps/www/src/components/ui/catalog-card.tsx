@@ -6,11 +6,12 @@ import {
 const SEE_ALL = 'See all';
 
 export type CatalogCardProps = Omit<MediaTileCardProps, 'ctaLabel'> & {
-    ctaLabel?: string;
+    /** CTA label; pass `null` to hide. Default `See all`. */
+    ctaLabel?: string | null;
 };
 
 /**
- * Catalog navigation tile for lines, styles, formats, and similar entries.
+ * **General card** — catalog navigation tile for lines, styles, formats, and similar entries.
  * Composes {@link MediaTileCard}; keep domain mapping at the call site.
  */
 export function CatalogCard({

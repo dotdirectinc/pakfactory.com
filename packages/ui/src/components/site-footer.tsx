@@ -157,19 +157,19 @@ export function SiteFooter({
 }: SiteFooterProps) {
   return (
     <footer className="bg-background">
-      <PageDielineSection innerClassName="px-0">
+      <PageDielineSection innerClassName="px-0 sm:px-0">
         {/* Wordmark */}
         {wordmark ?? <StaticWordmark />}
 
         {/* Collaboration CTA */}
-        <div className="border-t border-dashed border-border px-8 py-10 text-center">
+        <div className="border-t border-dashed border-border px-layout-gutter-inner py-10 text-center">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Let&apos;s collaborate
             <br />
             and craft your vision
           </h2>
           <Button
-            className="mt-6 h-10 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             asChild
           >
             <a href={contactHref}>
@@ -186,7 +186,7 @@ export function SiteFooter({
           {columns.map((column, colIdx) => (
             <div
               key={colIdx}
-              className="flex flex-col gap-16 border-dashed border-border px-8 py-16 md:border-r md:last:border-r-0"
+              className="flex flex-col gap-16 border-dashed border-border px-layout-gutter-inner py-16 md:border-r md:last:border-r-0"
             >
               {column.map((section) => (
                 <FooterSectionBlock key={section.title} section={section} />
@@ -197,7 +197,7 @@ export function SiteFooter({
 
         {/* Bottom bar — copyright + social icons */}
         <div className="border-t border-dashed border-foreground/10">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
+          <div className="flex flex-wrap items-center justify-between gap-y-3 px-layout-gutter-inner py-8">
             <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
               © 2026 PakFactory
             </p>
@@ -223,7 +223,7 @@ export function SiteFooter({
         {/* Bottom bar — AI answer links (optional) */}
         {aiLinks.length > 0 && (
           <div className="border-t border-dashed border-foreground/10">
-            <div className="flex flex-wrap items-center justify-between gap-y-3 px-8 py-8">
+            <div className="flex flex-wrap items-center justify-between gap-y-3 px-layout-gutter-inner py-8">
               <div className="flex flex-wrap items-center gap-6">
                 <p className="text-sm text-muted-foreground">
                   See what AI says about PakFactory
