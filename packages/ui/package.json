@@ -11,6 +11,8 @@
     "./tailwind-sources.css": "./src/tailwind-sources.css",
     "./lib/utils": "./src/lib/utils.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/customization/types": "./src/components/customization/types.ts",
+    "./components/customization/property-controller/*": "./src/components/customization/property-controller/*.tsx",
     "./icons/*": "./src/icons/*.tsx"
   },
   "scripts": {

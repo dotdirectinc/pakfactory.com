@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customization — Categories, Options & Logic (draft)</title>
+<style>
+  :root{
+    --bg:#ffffff; --panel:#ffffff; --ink:#37352F; --muted:#6B6B6B; --faint:#9B9A97;
+    --line:#E9E9E7; --line2:#F1F0EE; --accent:#2383E2; --accent-soft:#EAF3FE;
+    --eyebrow:#446732; --eyebrow-soft:#EDF3E7; --warn:#B7791F; --warn-soft:#FBF3E0;
+    --danger:#C0392B; --danger-soft:#FBEBE9; --chip:#F7F7F5;
+    --radius:12px; --shadow:0 1px 2px rgba(15,15,15,.04),0 4px 16px rgba(15,15,15,.05);
+  }
+  html[data-theme="dark"]{
+    --bg:#1A1A19; --panel:#232322; --ink:#E9E9E7; --muted:#A5A39E; --faint:#7C7A75;
+    --line:#33322F; --line2:#2B2A28; --accent:#5AA1F0; --accent-soft:#1E2E42;
+    --eyebrow:#8FBF6E; --eyebrow-soft:#1F2A18; --warn:#E0B45C; --warn-soft:#31280F;
+    --danger:#E88B7F; --danger-soft:#2E1512; --chip:#2B2A28;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .shell{max-width:1160px;margin:0 auto;padding:0 28px 80px;}
+  a{color:var(--accent);text-decoration:none}
+  header.top{position:sticky;top:0;z-index:20;background:var(--bg);
+    border-bottom:1px solid var(--line);padding:14px 0 12px;}
+  .top-in{max-width:1160px;margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:16px;}
+  .eyebrow{color:var(--eyebrow);font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;}
+  h1{font-size:19px;margin:2px 0 0;font-weight:650;letter-spacing:-.01em;}
+  .grow{flex:1}
+  .badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;
+    background:var(--warn-soft);color:var(--warn);border:1px solid transparent;white-space:nowrap;}
+  .toggle{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;}
+  nav.sub{display:flex;gap:4px;margin-top:12px;flex-wrap:wrap;}
+  nav.sub a{font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 11px;border-radius:8px;}
+  nav.sub a:hover{background:var(--chip);color:var(--ink);}
+  section{padding-top:34px;}
+  .sec-head{display:flex;align-items:baseline;gap:12px;border-top:1px solid var(--line);
+    padding-top:20px;margin-bottom:6px;}
+  h2{font-size:16px;margin:0;font-weight:650;letter-spacing:-.01em;}
+  .sec-sub{color:var(--muted);font-size:13px;margin:2px 0 18px;max-width:74ch;}
+  .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:6px;}
+  .lg{border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;background:var(--panel);}
+  .lg b{display:block;font-size:13px;margin-bottom:3px;}
+  .lg span{color:var(--muted);font-size:12.5px;}
+  /* category blocks */
+  .cat{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;
+    overflow:hidden;background:var(--panel);box-shadow:var(--shadow);}
+  .cat-h{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--line2);
+    border-bottom:1px solid var(--line);cursor:pointer;user-select:none;}
+  .cat-h .ic{width:26px;height:26px;border-radius:7px;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;font-size:14px;flex-shrink:0;}
+  .cat-h h3{font-size:14.5px;margin:0;font-weight:650;}
+  .cat-h .cnt{color:var(--faint);font-size:12px;margin-left:auto;}
+  .cat-h .caret{color:var(--faint);transition:transform .15s;font-size:12px;}
+  .cat.collapsed .caret{transform:rotate(-90deg);}
+  .cat.collapsed .cat-body{display:none;}
+  .opt{padding:16px 18px;border-bottom:1px solid var(--line2);}
+  .opt:last-child{border-bottom:none;}
+  .opt-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .opt-name{font-weight:600;font-size:13.5px;}
+  .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid transparent;white-space:nowrap;}
+  .p-type{background:var(--accent-soft);color:var(--accent);}
+  .p-single{background:var(--chip);color:var(--muted);border-color:var(--line);}
+  .p-multi{background:var(--eyebrow-soft);color:var(--eyebrow);}
+  .p-req{background:var(--danger-soft);color:var(--danger);}
+  .p-src{background:var(--chip);color:var(--muted);border-color:var(--line);}
+  .opt-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:12px;}
+  @media(max-width:720px){.opt-grid{grid-template-columns:1fr}}
+  .prevcol{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .preview{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--line2);}
+  .pcap{font-size:11.5px;font-weight:600;color:var(--muted);margin:-4px 0 11px;line-height:1.4;}
+  .plabel{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);
+    font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:6px;}
+  .plabel::before{content:"◆";color:var(--accent);font-size:8px;}
+  .spec .opt-meta{color:var(--muted);font-size:12.5px;display:grid;grid-template-columns:80px 1fr;gap:3px 10px;}
+  .opt-meta dt{color:var(--faint);font-weight:600;} .opt-meta dd{margin:0;}
+  .cond{margin-top:10px;display:flex;align-items:flex-start;gap:8px;font-size:12.5px;
+    background:var(--warn-soft);border-radius:8px;padding:8px 10px;color:var(--ink);}
+  .cond b{color:var(--warn);font-weight:700;white-space:nowrap;}
+  .cond ul{margin:0;padding-left:17px;}
+  .cond ul.sub{margin-top:7px;}
+  .cond ul li{margin-bottom:5px;}
+  .cond ul li:last-child{margin-bottom:0;}
+  .cond ul li b{color:inherit;white-space:normal;}
+  /* toggle switches */
+  .tgl-row{display:flex;align-items:center;gap:12px;padding:9px 0;}
+  .tgl-row + .tgl-row{border-top:1px solid var(--line);}
+  .tgl-label{font-size:13px;font-weight:600;}
+  .tgl{margin-left:auto;display:flex;align-items:center;gap:9px;}
+  .sw{width:40px;height:22px;border-radius:999px;background:var(--chip);border:1px solid var(--line);
+    position:relative;cursor:pointer;transition:background .15s,border-color .15s;flex-shrink:0;}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+    background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(15,15,15,.25);}
+  .sw.on{background:var(--accent);border-color:var(--accent);}
+  .sw.on::after{left:20px;}
+  .tgl-state{font-size:12px;font-weight:700;color:var(--faint);min-width:24px;}
+  .tgl-state.yes{color:var(--accent);}
+  /* --- interactive controls --- */
+  .opts{display:flex;gap:7px;flex-wrap:wrap;}
+  .chip{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    border-radius:8px;padding:7px 12px;font-size:13px;font-weight:500;transition:all .12s;user-select:none;}
+  .chip:hover{border-color:var(--accent);}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .chip.check.on{background:var(--eyebrow);border-color:var(--eyebrow);}
+  .chip .bx{display:inline-block;width:13px;height:13px;border:1.5px solid var(--faint);border-radius:3px;
+    margin-right:6px;vertical-align:-2px;}
+  .chip.on .bx{border-color:#fff;background:#fff;position:relative;}
+  .chip.on .bx::after{content:"✓";position:absolute;inset:0;font-size:10px;line-height:12px;
+    text-align:center;color:var(--eyebrow);font-weight:900;}
+  .chip.radio .bx{border-radius:50%;}
+  .chip.radio.on .bx::after{content:"";width:6px;height:6px;background:var(--accent);border-radius:50%;
+    position:absolute;top:2.5px;left:2.5px;}
+  /* scrollable single-select list */
+  .listbox{border:1px solid var(--line);border-radius:8px;background:var(--panel);
+    max-height:204px;overflow-y:auto;}
+  .listbox .li{display:flex;align-items:center;gap:9px;padding:8px 11px;font-size:13px;
+    cursor:pointer;border-bottom:1px solid var(--line2);user-select:none;transition:background .1s;}
+  .listbox .li:last-child{border-bottom:none;}
+  .listbox .li:hover{background:var(--line2);}
+  .listbox .li.on{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .listbox .li .rd{width:13px;height:13px;border:1.5px solid var(--faint);border-radius:50%;
+    flex-shrink:0;position:relative;}
+  .listbox .li.on .rd{border-color:var(--accent);}
+  .listbox .li.on .rd::after{content:"";position:absolute;top:2.5px;left:2.5px;
+    width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .listbox .li .ck{width:13px;height:13px;border:1.5px solid var(--faint);border-radius:3px;
+    flex-shrink:0;position:relative;}
+  .listbox.multi .li.on{background:var(--eyebrow-soft);color:var(--eyebrow);}
+  .listbox.multi .li.on .ck{border-color:var(--eyebrow);background:var(--eyebrow);}
+  .listbox.multi .li.on .ck::after{content:"✓";position:absolute;inset:0;font-size:10px;
+    line-height:11px;text-align:center;color:#fff;font-weight:900;}
+  .num{display:flex;align-items:center;gap:8px;}
+  .num button{width:30px;height:30px;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);border-radius:7px;cursor:pointer;font-size:15px;}
+  .num input{width:52px;height:30px;border:1px solid var(--line);border-radius:7px;text-align:center;
+    background:var(--panel);color:var(--ink);font-size:13px;}
+  .val{color:var(--faint);font-size:12px;}
+  select.sel,input.txt,textarea.txt{width:100%;border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;background:var(--panel);color:var(--ink);font-size:13px;font-family:inherit;}
+  textarea.txt{min-height:58px;resize:vertical;}
+  .dims{display:flex;gap:9px;flex-wrap:wrap;}
+  .diminp{position:relative;flex:1;min-width:74px;}
+  .diminp .pre{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;
+    font-weight:700;color:var(--accent);pointer-events:none;}
+  .diminp .suf{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--faint);}
+  .diminp input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 26px 8px 24px;
+    background:var(--panel);color:var(--ink);font-size:13px;text-align:center;}
+  .ro{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13px;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 11px;}
+  .ro-tag{font-size:10.5px;font-weight:600;color:var(--faint);background:var(--chip);border-radius:999px;padding:1px 8px;}
+  .addbtn{margin-top:7px;border:1px dashed var(--line);background:transparent;color:var(--accent);
+    border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .pms-row{margin-bottom:7px;}
+  .up{display:flex;gap:8px;align-items:center;margin-top:8px;}
+  .up button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;
+    padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .hint{font-size:11.5px;color:var(--faint);margin-top:8px;}
+  /* sandbox */
+  .sandbox{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;align-items:start;}
+  @media(max-width:840px){.sandbox{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);box-shadow:var(--shadow);overflow:hidden;}
+  .panel-h{padding:11px 16px;border-bottom:1px solid var(--line);font-weight:650;font-size:13px;
+    background:var(--line2);display:flex;align-items:center;gap:8px;}
+  .panel-b{padding:16px;}
+  .fld{margin-bottom:16px;} .fld.hidden{display:none;} .fld.disabled{opacity:.4;pointer-events:none;}
+  .fld > label{display:block;font-size:12px;font-weight:650;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;}
+  .chip.dead{opacity:.35;cursor:not-allowed;text-decoration:line-through;}
+  .chip.dead:hover{border-color:var(--line);}
+  .slider{width:100%;}
+  .trace{font-size:12.5px;} .trace .empty{color:var(--faint);font-style:italic;}
+  .rule-fired{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line2);}
+  .rule-fired:last-child{border-bottom:none;}
+  .rid{font-weight:700;color:var(--accent);font-size:11.5px;background:var(--accent-soft);
+    border-radius:6px;padding:1px 7px;flex-shrink:0;margin-top:1px;}
+  .rid.warn{color:var(--warn);background:var(--warn-soft);} .rid.hide{color:var(--muted);background:var(--chip);}
+  .vis-list{display:flex;flex-direction:column;gap:5px;font-size:12.5px;}
+  .vis-row{display:flex;align-items:center;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dot.show{background:#37A169;} .dot.hide{background:#CBD5E0;} .dot.dis{background:var(--warn);}
+  .vis-row .st{margin-left:auto;font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;}
+  table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+  table.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--faint);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);}
+  table.tbl td{padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top;}
+  table.tbl tr:hover td{background:var(--line2);}
+  .tbl .rc{font-weight:700;color:var(--accent);white-space:nowrap;}
+  .tag{font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--chip);
+    color:var(--muted);border:1px solid var(--line);white-space:nowrap;}
+  .confirm{color:var(--warn);font-weight:600;font-size:11.5px;}
+  .tbl-h{font-size:13.5px;font-weight:650;margin:22px 0 4px;display:flex;align-items:baseline;gap:9px;}
+  .tbl-h span{font-weight:500;color:var(--faint);font-size:12px;}
+  .tbl-note{font-size:12.5px;color:var(--muted);margin:0 0 10px;max-width:76ch;}
+  .live{color:var(--eyebrow);font-weight:700;font-size:11.5px;white-space:nowrap;}
+  .prov{background:var(--warn-soft);color:var(--warn);border:1px solid transparent;
+    border-radius:8px;padding:9px 11px;font-size:12px;margin-bottom:14px;line-height:1.45;}
+  .prov b{font-weight:700;}
+  .lvl{font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;
+    letter-spacing:.04em;margin-left:5px;}
+  .chip.on .lvl{color:rgba(255,255,255,.75);}
+  .sub-note{font-size:11.5px;color:var(--faint);margin-top:6px;}
+  .vis-row .stv{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--muted);}
+  .vis-group{font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;
+    letter-spacing:.06em;margin:12px 0 2px;}
+  .vis-group:first-child{margin-top:0;}
+  .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--faint);font-size:12px;}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div>
+      <div class="eyebrow">PakFactory · Customization</div>
+      <h1>Categories, Option Types &amp; Conditional Logic</h1>
+    </div>
+    <div class="grow"></div>
+    <span class="badge">Draft — options &amp; conditions for review</span>
+    <button class="toggle" id="themeBtn">◐ Theme</button>
+  </div>
+  <div class="top-in"><nav class="sub">
+    <a href="#legend">How to read</a>
+    <a href="#catalog">Categories &amp; options</a>
+    <a href="#sandbox">Logic sandbox</a>
+    <a href="#rules">Rules reference</a>
+  </nav></div>
+</header>
+
+<div class="shell">
+
+  <section id="legend">
+    <div class="sec-head"><h2>How to read this</h2></div>
+    <p class="sec-sub">Each option now shows a <b>live preview of its actual control</b> on the left (click radios, tick boxes, type dimensions) and its spec on the right. Pre-set conditions are in amber. The <b>Logic sandbox</b> plays the rules live; the <b>Rules reference</b> lists every rule to confirm.</p>
+    <div class="legend">
+      <div class="lg"><b>◆ Live preview</b><span>The real field UI — interact with it. Wired for feel, not saving.</span></div>
+      <div class="lg"><b><span class="pill p-single">Single</span> / <span class="pill p-multi">Multi</span></b><span>Radio (one) vs checkboxes (many).</span></div>
+      <div class="lg"><b><span class="pill p-req">Required</span></b><span>Needed to submit a quote.</span></div>
+      <div class="lg"><b><span class="pill p-src">Source</span></b><span>Buyer = on site · Specialist / Vendor = internal.</span></div>
+      <div class="lg"><b style="color:var(--warn)">▸ Condition</b><span>An "if this, then that" rule we pre-set. Confirm or correct.</span></div>
+      <div class="lg"><b><span class="live">● Live</span> in the sandbox</b><span>Rules precise enough to run. Mapping-driven lists are listed, not simulated.</span></div>
+    </div>
+  </section>
+
+  <section id="catalog">
+    <div class="sec-head"><h2>Categories &amp; options</h2></div>
+    <p class="sec-sub">Grouped as the configurator would present them. Interact with each preview to feel the interaction. Click a category header to collapse.</p>
+    <div id="catalogHost"></div>
+  </section>
+
+  <section id="sandbox">
+    <div class="sec-head"><h2>Logic sandbox</h2></div>
+    <p class="sec-sub">Change the inputs on the left. The right panels show which rules fire and what the form does in response — the expected logic, made visible. Only rules the catalogue specifies precisely are modelled here; anything that depends on a mapping table appears in the rules reference below, not in this sandbox.</p>
+    <div class="sandbox">
+      <div class="panel">
+        <div class="panel-h">🎛️ Inputs</div>
+        <div class="panel-b" id="inputs"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="panel">
+          <div class="panel-h">⚡ Rule trace <span style="color:var(--faint);font-weight:500;font-size:11px;">— what fired</span></div>
+          <div class="panel-b"><div class="trace" id="trace"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h">👁️ Resulting form state</div>
+          <div class="panel-b"><div class="vis-list" id="vis"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="sec-head"><h2>Rules reference</h2></div>
+    <p class="sec-sub">Two different kinds of work, so two tables. <b>A — Field dependencies</b> asks <i>what determines the contents of this list</i>; most resolve to a mapping table that lives outside this page and still needs building. <b>B — Logic rules</b> is the if-X-then-Y behaviour the form itself performs. Every row needs a confirm.</p>
+
+    <h3 class="tbl-h">A · Field dependencies <span>what determines each list</span></h3>
+    <p class="tbl-note">None of these run in the sandbox — the mapping data doesn't exist yet. Each row is a table someone has to author.</p>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Field</th><th>Driven by</th><th>Resolved by</th><th>Status</th></tr></thead>
+      <tbody id="depsBody"></tbody>
+    </table>
+
+    <h3 class="tbl-h" style="margin-top:30px;">B · Logic rules <span>if X then Y</span></h3>
+    <p class="tbl-note">All of these are fully specified by the conditions in the catalogue, and all of them run live in the sandbox above.</p>
+    <table class="tbl">
+      <thead><tr><th>Rule</th><th>When (trigger)</th><th>Then (effect)</th><th>Type</th><th>Applies to</th><th>Status</th></tr></thead>
+      <tbody id="logicBody"></tbody>
+    </table>
+  </section>
+
+  <div class="foot">Draft build spec · categories &amp; options revised 2026-09-04 · previews are illustrative; conditions are provisional and marked for the specialist to confirm. The product list in the sandbox is assembled from products named in the conditions and is <b>not</b> the real hierarchy — replace it once Line / Style / Product is settled. Pairs with the <b>Customization Build Spec</b> spreadsheet (same content, cell-fillable).</div>
+</div>
+
+<script>
+/* ---------------- CATALOG DATA (with ui descriptor) ---------------- */
+const CATS = [
+ {id:'structure',icon:'▤',name:'Structure',opts:[
+   {n:'Product/Structure',type:'Read-only (from PDP)',card:'Single',req:true,src:'Buyer',
+    vals:'= the chosen product',def:'—',cond:'Sets the Product Line/Style, which drives some of the options below.',
+    ui:{kind:'readonly',value:'Rigid Book-Style Hinged Box'}},
+ ]},
+ {id:'size',icon:'▦',name:'Size',opts:[
+   {n:'Dimensions',type:'Dimension form',card:'Single',req:true,src:'Buyer + confirm',
+    vals:'L×W×H / D(Diameter)×H / W×H×G / W×H×G + Drop / W×H / Diameter',def:'L×W×H',
+    cond:'Dictated by the “Property — Shape” field of the chosen product. For example, Cylinder shape product = Diameter × Height, Bag/Pouch = Width × Height × Gusset.',
+    ui:{kind:'dims',unit:'in'}},
+   {n:'Size mode (Tin)',type:'Radio + picklist',card:'Single',req:true,src:'Buyer',
+    vals:'Stock size / Custom',def:'Stock',cond:'Tin only. Custom routes to specialist.',
+    ui:{kind:'radioPick',choices:['Stock size','Custom'],value:'Stock size',pick:['4 oz','8 oz','16 oz','32 oz'],unit:'in'}},
+ ]},
+ {id:'materials',icon:'▥',name:'Materials',opts:[
+   {n:'Material',type:'List',card:'Single per type',req:false,src:'Buyer',
+    vals:'per line/style/product',def:'—',
+    cond:'List depends on Product Line / Style / Product; refer to Products &lt;&gt; Materials mapping.',
+    ui:{kind:'listbox',value:'',hint:'10 materials — scroll for the full list. One selection only.',
+      choices:['SBS (Solid Bleached Sulfate)','FBB (Folding Boxboard)','CUK (Coated Unbleached Kraft)',
+               'CCKB (Clay-Coated Kraft Back)','CCWB (Clay-Coated White Back)','CCNB (Clay-Coated News Back)',
+               'Natural Brown Kraft','URB (Uncoated Recycled Board)','White Kraft','Black Kraft']}},
+   {n:'Thickness',type:'Radio',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'per material',def:'—',cond:'List depends on Material Type &amp; gated by Product Style.',
+    ui:{kind:'radio',choices:['12 pt','16 pt','18 pt','24 pt'],value:'16 pt'}},
+ ]},
+ {id:'printing',icon:'◑',name:'Printing',opts:[
+   {n:'Printed Side',type:'Toggle',card:'Single per toggle',req:true,src:'Buyer',
+    vals:'Yes / No',def:'Yes (Print Outside only)',
+    cond:`<ul>
+      <li>Only show the “Print Outside” toggle for: Tin, Pouches, Mailers, Cotton &amp; Canvas Tote Bags (Style), Reusable Shopping Bags (Style), Insulated Cooler Bags (Style)</li>
+      <li>Only show a “Printed?: Yes/No” toggle for Labels, Stickers, Accessories, Cardboard Insert (Style)</li>
+      <li>For Product Styles: Foam Inserts, Molded Pulp Inserts, Plastic Tray Inserts, which cannot be printed, this part does not exist</li>
+      <li><b>If user chooses “No” for all toggles, hides all other printing options below.</b></li>
+    </ul>`,
+    uiCap:'Standard — most products & styles',
+    ui:{kind:'toggles',items:[{label:'Print Outside',value:true},{label:'Print Inside',value:false}]},
+    ui2Cap:'Labels · Stickers · Accessories · Cardboard Insert (Style)',
+    ui2:{kind:'toggles',items:[{label:'Printed?',value:true}]}},
+   {n:'Printing Method',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'Offset / Digital / Flexo / Roto, etc.',def:'—',
+    cond:'List depends on Materials &amp; Product Line/Style; refer to Material/Product &lt;&gt; Printing Method mapping.',
+    ui:{kind:'listbox',value:'',
+      choices:['Offset Printing','Digital Printing','Flexographic Printing','Gravure Printing (Rotogravure)',
+               'Screen Printing (Silkscreen)','Heat Transfer Printing (Direct-to-Film)','Sublimation']}},
+   {n:'Color System',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'CMYK Full Color / Pantone Spot Color / Hybrid Color (CMYK + Pantone)',def:'—',
+    cond:'List gated by chosen Printing Method.',
+    ui:{kind:'listbox',value:'',
+      choices:['CMYK Full Color','Pantone Spot Color','Hybrid Color (CMYK + Pantone)']}},
+   {n:'Pantone Count',type:'Stepper',card:'Single',req:false,src:'Buyer',
+    vals:'1 / 2 / 3 (Max)',def:'1',
+    cond:'Shown only if chosen Color System = Pantone / Hybrid. Max 3.',
+    ui:{kind:'stepper',value:1,max:3}},
+   {n:'Pantone (PMS) codes',type:'Text (repeatable)',card:'Multi',req:false,src:'Buyer',
+    vals:'PMS code entries',def:'—',cond:'One entry per Pantone count.',
+    ui:{kind:'repeat',placeholder:'e.g. PMS 185 C'}},
+   {n:'Ink',type:'List',card:'Multi',req:false,src:'Buyer + confirm',
+    vals:'Water-based / Soy-based / Solvent-based, etc.',def:'—',
+    cond:'List depends on Materials, gated by chosen Printing Method.',
+    ui:{kind:'listbox',multi:true,values:[],
+      choices:['Water-Based Ink','Soy-Based Ink','Solvent-Based Ink','UV Ink',
+               'Raised Ink (Thermographic Printing)','Metallic Ink','Pearlescent Ink','Translucent Ink',
+               'Iridescent Ink','Fluorescent Ink','Thermochromic Ink','Plastisol Ink']}},
+ ]},
+ {id:'finishing',icon:'✦',name:'Finishing',opts:[
+   {n:'Surface Finish',type:'List',card:'Single',req:false,src:'Buyer',
+    vals:'Uncoated / Gloss / Matte / Soft Touch, etc.',def:'—',
+    cond:'List depends on Materials.',
+    ui:{kind:'listbox',value:'',
+      choices:['Uncoated / No Surface Finish','Gloss','Semi-Gloss','Matte','Soft Touch','Textured',
+               'Glitter','Metallic Sheen','Pearlescent','Holographic','Anti-Scratch']}},
+   {n:'Spot Coating',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'Spot UV/Spot Gloss, Matte Spot UV, Spot Glitter, Raised Spot UV, Textured Spot UV',def:'—',
+    cond:'List gated by chosen Surface Finish.',
+    ui:{kind:'listbox',value:'',
+      choices:['Spot UV / Spot Gloss','Matte Spot UV','Spot Glitter','Raised Spot UV','Textured Spot UV']}},
+   {n:'Foiling',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'Hot Foil Stamping, Cold Foiling, Edge Foiling / Gilt Edging',def:'—',
+    cond:`List depends on Materials.<ul class="sub">
+      <li>Foam materials can only be compatible with foiling when Flocking / Paper Lamination / Leather Lamination is chosen.</li>
+    </ul>`,
+    ui:{kind:'listbox',value:'',
+      choices:['Hot Foil Stamping','Cold Foiling','Edge Foiling / Gilt Edging']}},
+   {n:'Embossing &amp; Debossing',type:'List',card:'Multi',req:false,src:'Buyer + confirm',
+    vals:'Blind Embossing, Blind Debossing, Registered Embossing, etc.',def:'—',
+    cond:`List depends on Materials.<ul class="sub">
+      <li>Foam materials can only be compatible with embossing/debossing when Paper Lamination / Leather Lamination is chosen.</li>
+      <li>All debossing options not compatible with Soft Touch surface finish.</li>
+      <li>“Textured Embossing &amp; Debossing” incompatible with all other embossing &amp; debossing options.</li>
+      <li>“Textured Embossing &amp; Debossing” is only compatible with the “Uncoated” surface finish.</li>
+    </ul>`,
+    ui:{kind:'listbox',multi:true,values:[],exclusive:'Textured Embossing &amp; Debossing',
+      choices:['Blind Embossing','Blind Debossing','Registered Embossing','Registered Debossing',
+               'Combination Embossing','Combination Debossing','Micro/Nano Embossing','Micro/Nano Debossing',
+               'Multi-Level Embossing','Multi-Level Debossing','Textured Embossing &amp; Debossing']}},
+   {n:'Food-Safe Treatment',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'Food-Grade Material, Internal PE Lining, Internal Aqueous Lining, Wax Coating, Food-Grade Lacquer',def:'—',
+    cond:'List depends on Product Line/Style.',
+    ui:{kind:'listbox',value:'',
+      choices:['Food-Grade Material','Internal PE Lining','Internal Aqueous Lining','Wax Coating','Food-Grade Lacquer']}},
+ ]},
+ {id:'structural',icon:'⊞',name:'Additional Customization',opts:[
+   {n:'Handles',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'Twisted Paper Handle, Flat Paper Handle, Diecut Handle, Satin Ribbon Handle, etc.',def:'—',
+    cond:'List depends on Product Style.',
+    ui:{kind:'listbox',value:'',
+      choices:['Twisted Paper Handle','Flat Paper Handle','Diecut Handle','Satin Ribbon Handle',
+               'Cotton Ribbon Handle','Nylon Rope Handle','Twisted PP Handle','Metal Handle','Plastic Handle']}},
+   {n:'Opening &amp; Access',type:'List',card:'Multi',req:false,src:'Buyer + confirm',
+    vals:'Ribbon Pull Tabs, Plastic Knob, Thumb Notch, Tear Strip, etc.',def:'—',
+    cond:'List depends on Product Style.',
+    ui:{kind:'listbox',multi:true,values:[],
+      choices:['Ribbon Pull Tabs','Leather Pull Tab','Plastic Knob','Metal Knob','Ribbon Lift',
+               'Thumb Notch','Tear Notch','Perforation','Tear Strip']}},
+   {n:'Closures',type:'List',card:'Multi',req:false,src:'Buyer + confirm',
+    vals:'Velcro, Magnetic Closure, Standard Zipper, Tin Tie, etc.',def:'—',
+    cond:'List depends on Product Style.',
+    ui:{kind:'listbox',multi:true,values:[],
+      choices:['Velcro','Metal Clasps','Magnetic Closure','Ribbon Closure','Magnetic Interlocking Panel',
+               'Standard Zipper','Pocket Zipper','Slider Zipper','Tin Tie','Tab Lock']}},
+   {n:'Windows',type:'List',card:'Single',req:false,src:'Buyer + confirm',
+    vals:'Window Patching, Diecut Window, Pouch Window',def:'—',
+    cond:'List depends on Product Style.',
+    ui:{kind:'listbox',value:'',
+      choices:['Window Patching','Diecut Window','Pouch Window']}},
+   {n:'Reinforcement &amp; Utility',type:'List',card:'Multi',req:false,src:'Buyer + confirm',
+    vals:'Paper Wallet, Sleeve Pocket, Bubble Lining, Hang Hole, etc.',def:'—',
+    cond:'List depends on Product Style.',
+    ui:{kind:'listbox',multi:true,values:[],
+      choices:['Paper Wallet','Sleeve Pocket','Ribbon Stop','Beveled Edges / Tapered Edges',
+               'Bubble Lining','Degassing Valve','Hang Hole']}},
+   {n:'Embellishment',type:'List',card:'Multi',req:false,src:'Buyer + confirm',
+    vals:'Metal Plaque, Mirror, Embedded LED Lighting, Sound Module',def:'—',
+    cond:'List depends on Product Style.',
+    ui:{kind:'listbox',multi:true,values:[],
+      choices:['Metal Plaque','Mirror','Embedded LED Lighting','Sound Module']}},
+ ]},
+];
+
+/* ---------------- CONTROL RENDERERS ---------------- */
+function dimsMarkup(unit){
+  const ax=[['L','Length'],['W','Width'],['H','Height']];
+  return `<div class="dims">${ax.map(a=>`
+    <div class="diminp"><span class="pre">${a[0]}</span>
+      <input type="number" min="0" placeholder="0" aria-label="${a[1]}">
+      <span class="suf">${unit}</span></div>`).join('')}</div>`;
+}
+function ctrl(id,ui){
+  switch(ui.kind){
+    case 'readonly':
+      return `<div class="ro">${ui.value}<span class="ro-tag">from product page</span></div>`;
+    case 'dims':
+      return dimsMarkup(ui.unit)+
+        `<div class="hint">Try typing values — prefixes keep L/W/H clear.</div>`;
+    case 'radio':
+      return `<div class="opts" data-group="${id}">${ui.choices.map(c=>
+        `<span class="chip radio${c===ui.value?' on':''}" onclick="pickRadio(this)"><span class="bx"></span>${c}</span>`).join('')}</div>`;
+    case 'radioPick':
+      return `<div class="opts" data-group="${id}">${ui.choices.map(c=>
+        `<span class="chip radio${c===ui.value?' on':''}" onclick="pickRadio(this);togglePick('${id}',this)"><span class="bx"></span>${c}</span>`).join('')}</div>
+        <div id="pick-${id}" style="margin-top:10px;display:${ui.value==='Stock size'?'block':'none'}">
+          <select class="sel">${ui.pick.map(p=>`<option>${p}</option>`).join('')}</select></div>
+        <div id="custom-${id}" style="margin-top:10px;display:${ui.value==='Custom'?'block':'none'}">
+          ${dimsMarkup(ui.unit||'in')}</div>`;
+    case 'toggles':
+      return `<div class="tgls">${ui.items.map(i=>`
+        <div class="tgl-row"><span class="tgl-label">${i.label}</span>
+          <span class="tgl"><span class="sw${i.value?' on':''}" onclick="toggleSw(this)"></span>
+          <span class="tgl-state${i.value?' yes':''}">${i.value?'Yes':'No'}</span></span></div>`).join('')}</div>
+        ${ui.hint?`<div class="hint">${ui.hint}</div>`:''}`;
+    case 'listbox':{
+      const sel=ui.multi?(ui.values||[]):[ui.value];
+      const dflt=ui.multi?'Scroll for the full list — multiple selections allowed.'
+                         :'Scroll for the full list — one selection only.';
+      return `<div class="listbox${ui.multi?' multi':''}"${ui.exclusive?` data-excl="${ui.exclusive}"`:''}>${ui.choices.map(c=>
+        `<div class="li${sel.includes(c)?' on':''}" onclick="${ui.multi?'toggleListItem(this)':'pickList(this)'}"><span class="${ui.multi?'ck':'rd'}"></span>${c}</div>`).join('')}</div>
+        <div class="hint">${ui.hint||dflt}</div>`;
+    }
+    case 'select':
+      return `<select class="sel"><option value="" disabled selected>Select…</option>${ui.choices.map(c=>`<option>${c}</option>`).join('')}</select>`;
+    case 'stepper':
+      return `<div class="num"><button onclick="stepCtrl(this,-1)">–</button>
+        <input value="${ui.value}" data-max="${ui.max||99}" readonly><button onclick="stepCtrl(this,1)">+</button>
+        <span class="val" style="margin-left:8px">spot colors</span></div>`;
+    case 'repeat':
+      return `<div id="rep-${id}"><div class="pms-row"><input class="txt" placeholder="${ui.placeholder}"></div></div>
+        <button class="addbtn" onclick="addRepeat('${id}','${ui.placeholder}')">+ Add another code</button>`;
+    case 'checks':
+      return `<div class="opts">${ui.choices.map(c=>
+        `<span class="chip check" onclick="toggleCheck(this)"><span class="bx"></span>${c}</span>`).join('')}</div>`;
+    case 'textUpload':
+      return `<textarea class="txt" placeholder="${ui.placeholder}"></textarea>
+        <div class="up"><button onclick="return false">⬆ Upload artwork</button><span class="val">PDF, AI, PNG</span></div>`;
+    default: return '';
+  }
+}
+/* control handlers */
+function pickRadio(el){el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+function toggleCheck(el){el.classList.toggle('on');}
+function pickList(el){el.parentNode.querySelectorAll('.li').forEach(r=>r.classList.remove('on'));el.classList.add('on');}
+function toggleListItem(el){
+  const on=el.classList.toggle('on');
+  const lb=el.parentNode,ex=lb.dataset.excl;
+  if(!ex||!on)return;
+  const clickedIsEx=el.textContent.trim()===ex;
+  lb.querySelectorAll('.li').forEach(r=>{
+    if(r===el)return;
+    if(clickedIsEx||r.textContent.trim()===ex)r.classList.remove('on');
+  });
+}
+/* hide the scroll hint on lists that fit without scrolling */
+function pruneHints(){
+  document.querySelectorAll('.listbox').forEach(lb=>{
+    const h=lb.nextElementSibling;
+    if(h&&h.classList.contains('hint')&&lb.scrollHeight<=lb.clientHeight+1)h.style.display='none';
+  });
+}
+function toggleSw(el){const on=el.classList.toggle('on');const s=el.nextElementSibling;
+  if(s&&s.classList.contains('tgl-state')){s.textContent=on?'Yes':'No';s.classList.toggle('yes',on);}}
+function stepCtrl(btn,d){const i=btn.parentNode.querySelector('input');
+  const mx=parseInt(i.dataset.max)||99;
+  i.value=Math.min(mx,Math.max(1,(parseInt(i.value)||1)+d));}
+function togglePick(id,el){const v=el.textContent.trim();
+  document.getElementById('pick-'+id).style.display=v==='Stock size'?'block':'none';
+  document.getElementById('custom-'+id).style.display=v==='Custom'?'block':'none';}
+function addRepeat(id,ph){const w=document.getElementById('rep-'+id);const d=document.createElement('div');
+  d.className='pms-row';d.innerHTML='<input class="txt" placeholder="'+ph+'">';w.appendChild(d);}
+
+function renderCatalog(){
+  const host=document.getElementById('catalogHost');
+  let seq=0;
+  host.innerHTML=CATS.map(c=>`
+    <div class="cat" data-cat="${c.id}">
+      <div class="cat-h" onclick="this.parentNode.classList.toggle('collapsed')">
+        <span class="ic">${c.icon}</span><h3>${c.name}</h3>
+        <span class="cnt">${c.opts.length} option${c.opts.length>1?'s':''}</span>
+        <span class="caret">▾</span>
+      </div>
+      <div class="cat-body">
+        ${c.opts.map(o=>{const id=c.id+'-'+(seq++);return `
+          <div class="opt">
+            <div class="opt-top">
+              <span class="opt-name">${o.n}</span>
+              <span class="pill p-type">${o.type}</span>
+              <span class="pill ${o.card==='Multi'?'p-multi':'p-single'}">${o.card}</span>
+              ${o.req?'<span class="pill p-req">Required</span>':''}
+              <span class="pill p-src">${o.src}</span>
+            </div>
+            <div class="opt-grid">
+              <div class="prevcol">
+                <div class="preview"><div class="plabel">Live preview</div>
+                  ${o.uiCap?`<div class="pcap">${o.uiCap}</div>`:''}${ctrl(id,o.ui)}</div>
+                ${o.ui2?`<div class="preview"><div class="plabel">Live preview — variant</div>
+                  ${o.ui2Cap?`<div class="pcap">${o.ui2Cap}</div>`:''}${ctrl(id+'b',o.ui2)}</div>`:''}
+              </div>
+              <div class="spec">
+                <dl class="opt-meta"><dt>Values</dt><dd>${o.vals}</dd><dt>Default</dt><dd>${o.def}</dd></dl>
+                ${o.cond?`<div class="cond"><b>▸ Condition</b><span>${o.cond}</span></div>`:''}
+              </div>
+            </div>
+          </div>`;}).join('')}
+      </div>
+    </div>`).join('');
+  pruneHints();
+}
+
+/* ---------------- PROVISIONAL PRODUCT LIST ----------------
+   Assembled from every product / style named in the catalogue conditions.
+   NOT the real hierarchy — replace once Line / Style / Product is settled.
+   print: 'both' = Outside + Inside toggles · 'outside' = Outside only
+          'single' = one "Printed?" toggle · 'none' = no printing section  */
+const PRODUCTS=[
+ {n:'Folding Carton',           lvl:'Line',    print:'both'},
+ {n:'Rigid Box',                lvl:'Line',    print:'both'},
+ {n:'Corrugated',               lvl:'Line',    print:'both'},
+ {n:'Mailers',                  lvl:'Line',    print:'outside'},
+ {n:'Tin',                      lvl:'Line',    print:'outside'},
+ {n:'Pouches',                  lvl:'Line',    print:'outside'},
+ {n:'Cotton & Canvas Tote Bags',lvl:'Style',   print:'outside'},
+ {n:'Reusable Shopping Bags',   lvl:'Style',   print:'outside'},
+ {n:'Insulated Cooler Bags',    lvl:'Style',   print:'outside'},
+ {n:'Labels',                   lvl:'Line',    print:'single'},
+ {n:'Stickers',                 lvl:'Line',    print:'single'},
+ {n:'Accessories',              lvl:'Line',    print:'single'},
+ {n:'Cardboard Insert',         lvl:'Style',   print:'single'},
+ {n:'Foam Inserts',             lvl:'Style',   print:'none'},
+ {n:'Molded Pulp Inserts',      lvl:'Style',   print:'none'},
+ {n:'Plastic Tray Inserts',     lvl:'Style',   print:'none'},
+];
+const prod=n=>PRODUCTS.find(p=>p.n===n);
+
+/* Shape → dimension form. Only Cylinder and Bag/Pouch are stated in the
+   conditions; L×W×H is the stated default. The rest await confirmation. */
+const SHAPES=[
+ {n:'Rectangular / Cuboid',form:'L × W × H',     rule:null},
+ {n:'Cylinder',            form:'Diameter × Height', rule:'L14'},
+ {n:'Bag / Pouch',         form:'W × H × Gusset',    rule:'L15'},
+ {n:'Flat / Sheet',        form:'⚠ form to confirm', rule:null},
+ {n:'Other',               form:'⚠ form to confirm', rule:null},
+];
+const shape=n=>SHAPES.find(s=>s.n===n);
+
+const FINISHES=['Uncoated / No Surface Finish','Gloss','Matte','Soft Touch','Textured'];
+const COLORS=['CMYK Full Color','Pantone Spot Color','Hybrid Color (CMYK + Pantone)'];
+const EMBOSS=['Blind Embossing','Blind Debossing','Registered Embossing',
+              'Registered Debossing','Textured Embossing & Debossing'];
+const TEXTURED='Textured Embossing & Debossing';
+const COVERINGS=['None','Flocking','Paper Lamination','Leather Lamination'];
+
+/* ---------------- RULES: A · FIELD DEPENDENCIES ---------------- */
+const DEPS=[
+ ['D1','Material','Product Line / Style / Product','Products &lt;&gt; Materials mapping'],
+ ['D2','Thickness','Chosen Material, gated by Product Style','Material spec per product'],
+ ['D3','Printing Method','Materials &amp; Product Line / Style','Material/Product &lt;&gt; Printing Method mapping'],
+ ['D4','Color System','Chosen Printing Method','Method &lt;&gt; Colour System mapping'],
+ ['D5','Ink','Materials, gated by chosen Printing Method','Material &lt;&gt; Ink mapping'],
+ ['D6','Surface Finish','Materials','Material &lt;&gt; Surface Finish mapping'],
+ ['D7','Spot Coating','Chosen Surface Finish','Surface Finish &lt;&gt; Spot Coating mapping'],
+ ['D8','Foiling','Materials','Material &lt;&gt; Foiling mapping'],
+ ['D9','Embossing &amp; Debossing','Materials','Material &lt;&gt; Emboss/Deboss mapping'],
+ ['D10','Food-Safe Treatment','Product Line / Style','Product &lt;&gt; Treatment mapping'],
+ ['D11','Handles · Opening &amp; Access · Closures · Windows · Reinforcement &amp; Utility · Embellishment','Product Style','Style &lt;&gt; Add-on mapping'],
+ ['D12','Dimension form','“Property — Shape” of the chosen product','Product property (already on the product record)'],
+];
+function renderDeps(){
+  document.getElementById('depsBody').innerHTML=DEPS.map(d=>`
+    <tr><td class="rc">${d[0]}</td><td><b>${d[1]}</b></td><td>${d[2]}</td>
+    <td><span class="tag">${d[3]}</span></td>
+    <td><span class="confirm">Confirm</span></td></tr>`).join('');
+}
+
+/* ---------------- RULES: B · LOGIC ---------------- */
+const LOGIC=[
+ ['L1','Line = Tin · Pouches · Mailers, or a Bag style','Show “Print Outside” only — no inside printing','Visibility','Tin · Pouches · Mailers · Bags'],
+ ['L2','Line = Labels · Stickers · Accessories, or Style = Cardboard Insert','Show one “Printed?: Yes / No” toggle instead of two','Visibility','Labels · Stickers · Accessories · Cardboard Insert'],
+ ['L3','Style = Foam · Molded Pulp · Plastic Tray Insert','Printing section does not exist at all','Visibility','Insert styles'],
+ ['L4','All print toggles = No','Hide every other printing option below','Visibility','All'],
+ ['L5','Color System = Pantone Spot or Hybrid','Show Pantone Count and PMS code entries','Visibility','All'],
+ ['L6','Pantone Count','Capped at 3','Validation','All'],
+ ['L7','Pantone Count set','One PMS code entry per count','Validation','All'],
+ ['L8','Surface Finish = Soft Touch','All debossing options unavailable','Availability','All'],
+ ['L9','“Textured Embossing &amp; Debossing” chosen','Every other embossing &amp; debossing option unavailable','Availability','All'],
+ ['L10','“Textured Embossing &amp; Debossing” chosen','Requires Surface Finish = Uncoated','Validation','All'],
+ ['L11','Material = Foam + Foiling chosen','Requires Flocking, Paper Lamination or Leather Lamination','Validation','Foam materials'],
+ ['L12','Material = Foam + Embossing/Debossing chosen','Requires Paper Lamination or Leather Lamination (Flocking is not enough)','Validation','Foam materials'],
+ ['L13','Product Line = Tin','Size mode = stock picklist, or Custom → L × W × H (routes to specialist)','Availability','Tin'],
+ ['L14','Shape = Cylinder','Dimension form → Diameter × Height','Visibility','All'],
+ ['L15','Shape = Bag / Pouch','Dimension form → Width × Height × Gusset','Visibility','All'],
+];
+function renderLogic(){
+  document.getElementById('logicBody').innerHTML=LOGIC.map(r=>`
+    <tr><td class="rc">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td>
+    <td><span class="tag">${r[3]}</span></td><td>${r[4]}</td>
+    <td><span class="live">● Live</span> <span class="confirm">Confirm</span></td></tr>`).join('');
+}
+
+/* ---------------- SANDBOX ENGINE ---------------- */
+const S={product:'Folding Carton',shape:'Rectangular / Cuboid',
+  pOut:true,pIn:false,pSingle:true,
+  color:'CMYK Full Color',pcount:1,
+  finish:'Uncoated / No Surface Finish',emboss:[],foiling:false,
+  foam:false,covering:'None'};
+
+const mode=()=>prod(S.product).print;
+function anyPrint(){
+  const m=mode();
+  if(m==='none')return false;
+  if(m==='single')return S.pSingle;
+  if(m==='outside')return S.pOut;
+  return S.pOut||S.pIn;
+}
+const isPantone=()=>S.color!=='CMYK Full Color';
+const debossChosen=()=>S.emboss.filter(e=>e.includes('Debossing')&&e!==TEXTURED);
+const hasTextured=()=>S.emboss.includes(TEXTURED);
+
+function chip(label,on,click,dead,extra){
+  return `<span class="chip${on?' on':''}${dead?' dead':''}" ${click&&!dead?`onclick="${click}"`:''}>${label}${extra||''}</span>`;
+}
+function sw(label,on,click){
+  return `<div class="tgl-row"><span class="tgl-label">${label}</span>
+    <span class="tgl"><span class="sw${on?' on':''}" onclick="${click}"></span>
+    <span class="tgl-state${on?' yes':''}">${on?'Yes':'No'}</span></span></div>`;
+}
+
+function renderInputs(){
+  const m=mode(),printing=m!=='none',live=printing&&anyPrint();
+  let toggles='';
+  if(m==='none') toggles=`<div class="sub-note">This product style cannot be printed — the whole printing section is absent (L3).</div>`;
+  else if(m==='single') toggles=sw('Printed?',S.pSingle,"tog('pSingle')");
+  else if(m==='outside') toggles=sw('Print Outside',S.pOut,"tog('pOut')")
+    +`<div class="sub-note">Inside printing is not offered for this product (L1).</div>`;
+  else toggles=sw('Print Outside',S.pOut,"tog('pOut')")+sw('Print Inside',S.pIn,"tog('pIn')");
+
+  document.getElementById('inputs').innerHTML=`
+    <div class="prov"><b>Provisional product list.</b> Assembled from products named in the
+      catalogue conditions — not the real Line / Style / Product hierarchy. Replace when settled.</div>
+
+    <div class="fld"><label>Product</label>
+      <div class="opts">${PRODUCTS.map(p=>chip(p.n,S.product===p.n,`setS('product','${p.n.replace(/'/g,"\\'")}')`,false,
+        `<span class="lvl">${p.lvl}</span>`)).join('')}</div></div>
+
+    <div class="fld"><label>Property — Shape</label>
+      <div class="opts">${SHAPES.map(s=>chip(s.n,S.shape===s.n,`setS('shape','${s.n}')`)).join('')}</div>
+      <div class="sub-note">Drives the dimension form (D12). Only Cylinder and Bag / Pouch are specified so far.</div></div>
+
+    <div class="fld"><label>Printed side</label>${toggles}</div>
+
+    <div class="fld ${live?'':'hidden'}"><label>Color system</label>
+      <div class="opts">${COLORS.map(c=>chip(c,S.color===c,`setS('color','${c}')`)).join('')}</div>
+      <div class="sub-note">Real list is gated by Printing Method (D4) — mapping not modelled here.</div></div>
+
+    <div class="fld ${(live&&isPantone())?'':'hidden'}"><label>Pantone count</label>
+      <div class="num"><button onclick="bumpS(-1)">–</button><input value="${S.pcount}" readonly>
+        <button onclick="bumpS(1)">+</button>
+        <span class="val" style="margin-left:8px">${S.pcount>=3?'at the max of 3':`${S.pcount} PMS entr${S.pcount===1?'y':'ies'}`}</span></div></div>
+
+    <div class="fld"><label>Surface finish</label>
+      <div class="opts">${FINISHES.map(f=>chip(f,S.finish===f,`setS('finish','${f}')`)).join('')}</div></div>
+
+    <div class="fld"><label>Embossing &amp; debossing</label>
+      <div class="opts">${EMBOSS.map(e=>{
+        const on=S.emboss.includes(e);
+        const blockedByTex=hasTextured()&&e!==TEXTURED;
+        const blockedBySoft=S.finish==='Soft Touch'&&e.includes('Debossing')&&e!==TEXTURED;
+        const dead=(blockedByTex||blockedBySoft)&&!on;
+        return chip(e,on,`togEmboss('${e.replace(/&/g,'&amp;')}')`,dead);
+      }).join('')}</div></div>
+
+    <div class="fld"><label>Foiling</label>
+      <div class="opts">${chip('Foiling chosen',S.foiling,"tog('foiling')")}</div></div>
+
+    <div class="fld"><label>Material family <span style="color:var(--warn)">⚠</span></label>
+      <div class="opts">${chip('Paperboard',!S.foam,"setS('foam',false)")}${chip('Foam',S.foam,"setS('foam',true)")}</div>
+      <div class="sub-note">⚠ Foam is not in the Materials list yet — the foiling and embossing conditions reference it.</div></div>
+
+    <div class="fld ${S.foam?'':'hidden'}"><label>Foam covering <span style="color:var(--warn)">⚠</span></label>
+      <div class="opts">${COVERINGS.map(c=>chip(c,S.covering===c,`setS('covering','${c}')`)).join('')}</div>
+      <div class="sub-note">⚠ Not an option in the catalogue yet — referenced only by conditions.</div></div>`;
+}
+
+function setS(k,v){
+  S[k]=v;
+  if(k==='finish'&&v==='Soft Touch') S.emboss=S.emboss.filter(e=>!(e.includes('Debossing')&&e!==TEXTURED));
+  if(k==='foam'&&!v) S.covering='None';
+  evaluate();
+}
+function tog(k){S[k]=!S[k];evaluate();}
+function bumpS(d){S.pcount=Math.min(3,Math.max(1,S.pcount+d));evaluate();}
+function togEmboss(e){
+  const v=e.replace(/&amp;/g,'&');
+  if(S.emboss.includes(v)) S.emboss=S.emboss.filter(x=>x!==v);
+  else if(v===TEXTURED) S.emboss=[TEXTURED];
+  else S.emboss=S.emboss.filter(x=>x!==TEXTURED).concat(v);
+  evaluate();
+}
+
+function evaluate(){
+  const fired=[],m=mode(),printing=m!=='none',live=printing&&anyPrint();
+  const sh=shape(S.shape);
+
+  /* --- printing --- */
+  if(m==='outside') fired.push(['L1','hide',`<b>${S.product}</b> → “Print Outside” only, no inside printing`]);
+  if(m==='single')  fired.push(['L2','hide',`<b>${S.product}</b> → one “Printed?” toggle instead of two`]);
+  if(m==='none')    fired.push(['L3','hide',`<b>${S.product}</b> cannot be printed → printing section does not exist`]);
+  if(printing&&!anyPrint()) fired.push(['L4','hide',`All print toggles <b>No</b> → every other printing option hidden`]);
+  if(live&&isPantone()){
+    fired.push(['L5','',`<b>${S.color}</b> → show Pantone Count + PMS code entries`]);
+    fired.push(['L7','',`Pantone Count <b>${S.pcount}</b> → ${S.pcount} PMS code entr${S.pcount===1?'y':'ies'}`]);
+    if(S.pcount>=3) fired.push(['L6','',`Pantone Count at the cap of <b>3</b> — “+” does nothing further`]);
+  }
+
+  /* --- finishing --- */
+  if(S.finish==='Soft Touch') fired.push(['L8','hide',`<b>Soft Touch</b> → all debossing options unavailable`]);
+  if(hasTextured()){
+    fired.push(['L9','hide',`<b>Textured Emb. &amp; Deb.</b> → every other emb./deb. option unavailable`]);
+    if(S.finish==='Uncoated / No Surface Finish')
+      fired.push(['L10','',`<b>Textured</b> ok — surface finish is Uncoated`]);
+    else
+      fired.push(['L10','warn',`<b>Textured blocked</b> — needs Uncoated, but finish is ${S.finish}`]);
+  }
+  if(S.foam&&S.foiling){
+    const ok=['Flocking','Paper Lamination','Leather Lamination'].includes(S.covering);
+    fired.push(['L11',ok?'':'warn',ok
+      ?`<b>Foiling ok</b> on foam — covering is ${S.covering}`
+      :`<b>Foiling blocked</b> on foam — needs Flocking / Paper Lam. / Leather Lam., covering is ${S.covering}`]);
+  }
+  if(S.foam&&S.emboss.length){
+    const ok=['Paper Lamination','Leather Lamination'].includes(S.covering);
+    fired.push(['L12',ok?'':'warn',ok
+      ?`<b>Emb./Deb. ok</b> on foam — covering is ${S.covering}`
+      :`<b>Emb./Deb. blocked</b> on foam — needs Paper Lam. / Leather Lam., covering is ${S.covering}`]);
+  }
+
+  /* --- size --- */
+  if(S.product==='Tin') fired.push(['L13','',`<b>Tin</b> → size mode = stock picklist, or Custom → L × W × H`]);
+  if(sh.rule) fired.push([sh.rule,'',`Shape <b>${S.shape}</b> → dimension form ${sh.form}`]);
+
+  document.getElementById('trace').innerHTML=fired.length
+    ? fired.map(f=>`<div class="rule-fired">
+        <span class="rid ${f[1]==='warn'?'warn':(f[1]==='hide'?'hide':'')}">${f[0]}</span>
+        <span class="r-txt">${f[2]}</span></div>`).join('')
+    : '<div class="empty">No conditional rules fire for this combination.</div>';
+
+  /* --- resulting form state --- */
+  const texBlocked=hasTextured()&&S.finish!=='Uncoated / No Surface Finish';
+  const foilBlocked=S.foam&&S.foiling&&!['Flocking','Paper Lamination','Leather Lamination'].includes(S.covering);
+  const embBlocked=S.foam&&S.emboss.length&&!['Paper Lamination','Leather Lamination'].includes(S.covering);
+  const groups=[
+    ['Printing',[
+      ['Printing section',printing?'shown':'hidden'],
+      ['“Print Outside” toggle',(m==='both'||m==='outside')?'shown':'hidden'],
+      ['“Print Inside” toggle',m==='both'?'shown':'hidden'],
+      ['“Printed?” toggle',m==='single'?'shown':'hidden'],
+      ['Printing Method · Color System · Ink',live?'shown':'hidden'],
+      ['Pantone Count + PMS codes',(live&&isPantone())?'shown':'hidden'],
+    ]],
+    ['Size',[
+      ['Dimension form',{txt:sh.form}],
+      ['Size mode (Tin)',S.product==='Tin'?'shown':'hidden'],
+    ]],
+    ['Finishing',[
+      ['Debossing options',S.finish==='Soft Touch'?'blocked':(hasTextured()?'blocked':'shown')],
+      ['Other emb./deb. options',hasTextured()?'blocked':'shown'],
+      ['Textured Emb. &amp; Deb.',texBlocked?'blocked':(hasTextured()?'shown':'n/a')],
+      ['Foiling',foilBlocked?'blocked':(S.foiling?'shown':'n/a')],
+      ['Embossing on foam',embBlocked?'blocked':(S.foam&&S.emboss.length?'shown':'n/a')],
+    ]],
+  ];
+  const label={shown:'Show',hidden:'Hidden',blocked:'Blocked','n/a':'—'};
+  document.getElementById('vis').innerHTML=groups.map(g=>
+    `<div class="vis-group">${g[0]}</div>`+g[1].map(([k,st])=>{
+      if(st&&st.txt) return `<div class="vis-row"><span class="dot show"></span><span>${k}</span><span class="stv">${st.txt}</span></div>`;
+      const cls=st==='shown'?'show':(st==='blocked'?'dis':'hide');
+      return `<div class="vis-row"><span class="dot ${cls}"></span><span>${k}</span><span class="st">${label[st]||st}</span></div>`;
+    }).join('')).join('');
+
+  renderInputs();
+}
+
+document.getElementById('themeBtn').onclick=()=>{const h=document.documentElement;
+  h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';};
+renderCatalog();renderDeps();renderLogic();evaluate();
+</script>
+</body>
+</html>

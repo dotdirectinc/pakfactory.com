@@ -38,7 +38,7 @@ export function CustomizationCatalogFilters({
     );
 
     return (
-        <aside className="hidden w-full flex-col gap-4 lg:sticky lg:top-16 lg:flex lg:max-h-[calc(100dvh-5rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
+        <aside className="hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
             <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">
                     {resultCount} of {totalCount}
@@ -104,7 +104,7 @@ export function CustomizationCatalogFiltersSkeleton({
 
     return (
         <aside
-            className="hidden w-full flex-col gap-4 lg:sticky lg:top-16 lg:flex lg:max-h-[calc(100dvh-5rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto"
+            className="hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto"
             aria-busy="true"
             aria-live="polite"
         >

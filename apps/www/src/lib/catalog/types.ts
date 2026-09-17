@@ -164,3 +164,54 @@ export type CustomizationLibraryResult = {
 /** Stable facet id for Product Line (not a Sanity property). */
 export const CUSTOMIZATION_PRODUCT_LINE_FACET_ID = 'product-line';
 
+/** Property value fact row for specs / configurator (PROD-1299). */
+export type CustomizationPropertyFact = {
+    label: string;
+    display: string;
+};
+
+export type CustomizationPropertyValue = {
+    id: string;
+    title: string;
+    slug: string;
+    propertyId?: string;
+    propertySlug?: string;
+    propertyTitle?: string;
+    valuesPerItem?: 'one' | 'many';
+    imageUrl?: string | null;
+    imageAlt?: string;
+    facts: CustomizationPropertyFact[];
+};
+
+export type CustomizationDeclaredProperty = {
+    usage: 'stated' | 'selectable';
+    propertyId?: string;
+    propertySlug?: string;
+    propertyTitle?: string;
+    valuesPerItem?: 'one' | 'many';
+};
+
+/** Full customization option detail (PROD-1299). */
+export type CustomizationDetail = {
+    id: string;
+    title: string;
+    slug: string;
+    categoryValue: string;
+    categoryLabel: string;
+    typeTitle?: string;
+    typeSlug?: string;
+    /** Short copy for the identity column / meta. */
+    description?: string;
+    media: CatalogMedia[];
+    properties: CustomizationPropertyValue[];
+    declaredProperties: CustomizationDeclaredProperty[];
+    productLines: ProductLineRef[];
+    faqs?: ProductFaq[];
+};
+
+export type CustomizationDetailResult = {
+    detail: CustomizationDetail;
+    /** Same-category peers for comparison (Slice G); empty until wired. */
+    peers: CustomizationDetail[];
+};
+

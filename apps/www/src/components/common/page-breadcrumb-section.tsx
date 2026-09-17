@@ -2,10 +2,7 @@ import {
     Breadcrumb,
     type Crumb,
 } from '@pakfactory/components/layout/breadcrumb';
-import {
-    PageDielineFullBleedSection,
-    pageDielineOuterClass,
-} from '@pakfactory/ui/components/page-dieline-section';
+import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 type PageBreadcrumbSectionProps = {
@@ -34,14 +31,14 @@ export function PageBreadcrumbSection({
     const visible = visibleBreadcrumbItems(items);
     if (visible.length < 2) return null;
 
+    // Inner-column border stays inside the dieline (not outer viewport bleed).
     return (
-        <div className={pageDielineOuterClass(className)}>
-            <PageDielineFullBleedSection
-                sectionClassName="bg-background"
-                innerClassName="border-b border-dashed border-border py-6"
-            >
-                <Breadcrumb items={visible} />
-            </PageDielineFullBleedSection>
-        </div>
+        <PageDielineSection
+            band="default"
+            className={className}
+            innerClassName="border-b border-dashed border-border py-6"
+        >
+            <Breadcrumb items={visible} />
+        </PageDielineSection>
     );
 }
