@@ -11,9 +11,9 @@ import {
   useDuplicateWithTranslationsAction,
 } from '@sanity/document-internationalization'
 import {
-  websiteLocations,
-  makeBlogLocations,
   siteLocations,
+  makeBlogWorkspaceLocations,
+  caseStudiesWorkspaceLocations,
 } from './presentation/locations'
 import { schemaTypes } from './schemas'
 import { publishWithRedirect } from './actions/publishWithRedirect'
@@ -107,6 +107,17 @@ const SITE_ALLOW_ORIGINS = [
   'http://localhost:3000',
   'https://staging.pakfactory.com',
 ]
+
+// Path the www app's case-study surface is mounted under on this origin
+// ('/case-studies' everywhere today; '' if it ever moves to an origin root).
+// Used to build the draft-mode enable path — see the note on `previewMode` below.
+const WWW_BASE_PATH = (() => {
+  try {
+    return new URL(WWW_PREVIEW_BASE).pathname.replace(/\/+$/, '')
+  } catch {
+    return ''
+  }
+})()
 
 // basePath the blog app is mounted under on this origin ('/blog' in prod, '' local).
 // Location hrefs are resolved against the ORIGIN only (Presentation drops the base
@@ -378,7 +389,11 @@ const sitePresentation = () =>
     title: 'Presentation',
     previewUrl: {
       initial: SITE_PREVIEW_BASE,
-      previewMode: { enable: 'api/draft-mode/enable' },
+      // ABSOLUTE — see the note on the Blog tool below for why a relative
+      // `enable` breaks. This surface is served from the origin root, so the
+      // route is at /api/draft-mode/enable for a page of any depth. (Shipped to
+      // `www-new-release` as PROD-2494; applied here for `staging`.)
+      previewMode: { enable: '/api/draft-mode/enable' },
     },
     allowOrigins: SITE_ALLOW_ORIGINS,
     resolve: { locations: siteLocations },
@@ -413,11 +428,27 @@ export default defineConfig([
         title: 'Presentation',
         previewUrl: {
           // `initial` (not the deprecated `origin`) so the base path survives:
-          // origin is host-only. `enable` is RELATIVE (no leading slash) so it
-          // resolves under the base's path → `${base}api/draft-mode/enable`
-          // (a leading slash would drop `/blog`). PROD-2223.
+          // origin is host-only.
           initial: BLOG_PREVIEW_BASE,
-          previewMode: { enable: 'api/draft-mode/enable' },
+          // ABSOLUTE, built from this surface's base path. A RELATIVE `enable`
+          // is resolved by Presentation against the iframe's CURRENT pathname,
+          // not against `initial`, so it only lands correctly when the previewed
+          // page sits exactly one segment under the base:
+          //
+          //   /blog/my-post     → /blog/api/draft-mode/enable          ✅
+          //   /blog/topics/foo  → /blog/topics/api/draft-mode/enable   ❌ 404
+          //
+          // The depth-2 case silently 404s: the iframe renders that 404 page,
+          // draft mode never engages, and Presentation reports "Unable to
+          // connect" with "No matching documents". Diagnosed on the site-root
+          // tool (PROD-2494) and fixed the same way here.
+          //
+          // Derived rather than hardcoded so it follows the env-driven base:
+          // '' locally → /api/draft-mode/enable, '/blog' in prod →
+          // /blog/api/draft-mode/enable. Both verified to exist (401, not 404).
+          previewMode: {
+            enable: `${BLOG_BASE_PATH}/api/draft-mode/enable`,
+          },
         },
         allowOrigins: [
           'http://localhost:3003',
@@ -432,7 +463,7 @@ export default defineConfig([
           // `x-frame-options: DENY`, so the pane renders blank rather than erroring.
           'https://staging-blog.pakfactory.com',
         ],
-        resolve: { locations: makeBlogLocations(BLOG_BASE_PATH) },
+        resolve: { locations: makeBlogWorkspaceLocations(BLOG_BASE_PATH) },
       }),
       colorInput(),
       media(),
@@ -459,12 +490,14 @@ export default defineConfig([
         name: 'presentation',
         title: 'Presentation',
         previewUrl: {
-          // `initial` (not `origin`) so the `/case-studies/` path survives; a
-          // relative `enable` (no leading slash) resolves under it →
-          // `…/case-studies/api/draft-mode/enable` (a leading slash would drop the
-          // path and hit Magento at the apex root). PROD-2223.
+          // `initial` (not `origin`) so the `/case-studies/` path survives.
           initial: WWW_PREVIEW_BASE,
-          previewMode: { enable: 'api/draft-mode/enable' },
+          // Same fix as the blog tool above; see that note. `/case-studies` is
+          // also where nginx forwards at the apex, so the route must stay under
+          // it (PROD-2223) — deriving from the base keeps both facts in one place.
+          previewMode: {
+            enable: `${WWW_BASE_PATH}/api/draft-mode/enable`,
+          },
         },
         allowOrigins: [
           'http://localhost:3000',
@@ -476,7 +509,7 @@ export default defineConfig([
           // `pnpm studio:staging` previews case studies on the staging site.
           'https://staging.pakfactory.com',
         ],
-        resolve: { locations: websiteLocations },
+        resolve: { locations: caseStudiesWorkspaceLocations },
       }),
       colorInput(),
       media(),
