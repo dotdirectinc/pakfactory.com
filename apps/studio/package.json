@@ -12,6 +12,8 @@
     "seed:website-navigation": "node scripts/seed-website-navigation.mjs",
     "seed:blog-singleton-pages": "node scripts/seed-blog-singleton-pages.mjs",
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
+    "seed:corrugated-selectable-props": "node scripts/seed-corrugated-board-selectable-props.mjs",
+    "seed:white-lined-detail-demo": "node scripts/seed-white-lined-detail-demo.mjs",
     "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
     "cleanup:blogsettings-defaults": "node scripts/unset-legacy-blogsettings-defaults.mjs",
     "cleanup:sitemap-hints": "node scripts/unset-sitemap-hint-fields.mjs",

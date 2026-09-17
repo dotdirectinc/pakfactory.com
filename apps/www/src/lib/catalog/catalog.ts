@@ -3,21 +3,26 @@ import 'server-only';
 import {unstable_cache} from 'next/cache';
 import {
     CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
+    CATALOG_CUSTOMIZATION_DETAIL_QUERY,
     CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
     CATALOG_PRODUCT_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
+    type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
     type CatalogProductDoc,
     type CatalogProductLineDoc,
 } from '@pakfactory/sanity/queries';
 import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
+import {applyDetailControlFixtures} from '@/lib/catalog/detail-control-fixtures';
 import {
+    mapSanityCustomizationDetail,
     mapSanityLibraryOption,
     mapSanityProduct,
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
 import type {
+    CustomizationDetailResult,
     CustomizationLibraryItem,
     CustomizationLibraryResult,
     Product,
@@ -225,6 +230,47 @@ export async function getCustomizationCategory(
             }
         },
         [`www-customization:${categoryKey}:${handleKey}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+        },
+    );
+
+    return getCached();
+}
+
+export async function getCustomizationDetail(
+    category: string,
+    handle: string,
+): Promise<CustomizationDetailResult | null> {
+    const categoryKey = normalizeSlug(category);
+    const handleKey = normalizeSlug(handle);
+    if (!isSanityConfigured()) return null;
+
+    const getCached = unstable_cache(
+        async () => {
+            try {
+                const doc = await getPublishedSanityClient().fetch<
+                    CatalogCustomizationDetailDoc | null
+                >(CATALOG_CUSTOMIZATION_DETAIL_QUERY, {
+                    category: categoryKey,
+                    handle: handleKey,
+                });
+                const mapped = doc ? mapSanityCustomizationDetail(doc) : null;
+                if (!mapped) return null;
+                const detail = applyDetailControlFixtures(mapped);
+                return {detail, peers: []};
+            } catch (err) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.error(
+                        '[catalog] Sanity customization detail failed:',
+                        err,
+                    );
+                }
+                return null;
+            }
+        },
+        [`www-customization-detail:${categoryKey}:${handleKey}`],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
             tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],

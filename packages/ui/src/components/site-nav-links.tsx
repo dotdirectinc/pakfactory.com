@@ -20,7 +20,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
 
   return (
     <nav
-      className="hidden items-center gap-6 text-sm font-medium md:flex"
+      className="hidden items-center gap-6 text-sm font-semibold md:flex"
       aria-label="Site navigation"
     >
       {items.map((item) => {
@@ -33,7 +33,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "py-2 no-underline transition-colors hover:text-primary",
-                isActive ? "text-primary" : "text-muted-foreground",
+                isActive ? "text-primary" : "text-foreground",
               )}
             >
               {item.label}
@@ -44,7 +44,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
         return (
           <span
             key={item.key}
-            className="cursor-default py-2 text-muted-foreground"
+            className="cursor-default py-2 text-foreground"
             aria-disabled="true"
           >
             {item.label}

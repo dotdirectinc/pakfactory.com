@@ -1,5 +1,20 @@
-import type { ReactNode } from "react";
-import { cn } from "@pakfactory/ui/lib/utils";
+import type {ElementType, ReactNode} from "react";
+import {cn} from "@pakfactory/ui/lib/utils";
+
+export type PageDielinePaddingBlock = "sm" | "md" | "lg";
+export type PageDielineBand = "default" | "muted";
+export type PageDielineAs = "div" | "section" | "header" | "footer" | "nav";
+
+const PADDING_BLOCK_CLASS: Record<PageDielinePaddingBlock, string> = {
+  sm: "py-8 sm:py-12",
+  md: "py-16 sm:py-20",
+  lg: "py-20 sm:py-24",
+};
+
+const BAND_CLASS: Record<PageDielineBand, string> = {
+  default: "bg-background",
+  muted: "bg-muted",
+};
 
 /** Horizontal gutter outside the dashed dieline column (viewport → dieline edge). */
 export function pageDielineOuterClass(className?: string) {
@@ -41,27 +56,135 @@ export function pageDielineInnerClass(className?: string) {
   );
 }
 
+/** Vertical section rhythm on the inner column. */
+export function pageDielinePaddingBlockClass(
+  size?: PageDielinePaddingBlock,
+  className?: string,
+) {
+  return cn(size && PADDING_BLOCK_CLASS[size], className);
+}
+
+/** Section band background for the outer / bleed row. */
+export function pageDielineBandClass(band?: PageDielineBand, className?: string) {
+  return cn(band && BAND_CLASS[band], className);
+}
+
+/** Full-viewport dashed top/bottom rules for the outer / bleed row. */
+export function pageDielineBorderYClass({
+  borderTop = false,
+  borderBottom = false,
+  className,
+}: {
+  borderTop?: boolean;
+  borderBottom?: boolean;
+  className?: string;
+} = {}) {
+  return cn(
+    borderTop && "border-t border-dashed border-border",
+    borderBottom && "border-b border-dashed border-border",
+    className,
+  );
+}
+
 type PageDielineSectionProps = {
   children: ReactNode;
+
+  /** Polymorphic root. Default: `div`. */
+  as?: PageDielineAs;
+  id?: string;
+  "aria-labelledby"?: string;
+
+  /** Escape hatch on the outer / bleed row — layout only, not primary chrome. */
   className?: string;
+  /** Escape hatch on the inner column — layout only, not primary chrome. */
   innerClassName?: string;
+
+  /** Full-viewport dashed rules on the outer (or bleed) row. Default false. */
+  borderTop?: boolean;
+  borderBottom?: boolean;
+
+  /** Vertical dieline guides on the inner column. Default true. */
+  borderX?: boolean;
+
+  /** Vertical section rhythm on the inner column. */
+  paddingBlock?: PageDielinePaddingBlock;
+
+  /** Section band background on the outer (or bleed) row. */
+  band?: PageDielineBand;
+
+  /** Break out of outer gutter so bg/borders span the viewport. */
+  bleed?: boolean;
+
+  /** Drop inner horizontal gutter (`px-0`). */
+  flush?: boolean;
 };
 
 /** Wraps page-builder blocks inside a dieline shell. */
-export function PageDielineBlockRail({ children }: { children: ReactNode }) {
+export function PageDielineBlockRail({children}: {children: ReactNode}) {
   return <div className={pageDielineOuterClass()}>{children}</div>;
 }
 
-/** Outer viewport gutter + inner max-width dieline column. */
+/**
+ * Outer viewport gutter + inner max-width dieline column.
+ * Y-borders and band paint on the outer (or bleed) row; padding/flush/borderX on the inner.
+ */
 export function PageDielineSection({
   children,
+  as: Root = "div",
+  id,
+  "aria-labelledby": ariaLabelledBy,
   className,
   innerClassName,
+  borderTop = false,
+  borderBottom = false,
+  borderX = true,
+  paddingBlock,
+  band,
+  bleed = false,
+  flush = false,
 }: PageDielineSectionProps) {
-  return (
-    <div className={pageDielineOuterClass(className)}>
-      <div className={pageDielineInnerClass(innerClassName)}>{children}</div>
+  const chromeClass = cn(
+    pageDielineBandClass(band),
+    pageDielineBorderYClass({borderTop, borderBottom}),
+  );
+
+  const columnClass = borderX ? pageDielineInnerClass : pageDielineContentClass;
+  const inner = (
+    <div
+      className={columnClass(
+        cn(
+          pageDielinePaddingBlockClass(paddingBlock),
+          flush && "px-0",
+          innerClassName,
+        ),
+      )}
+    >
+      {children}
     </div>
+  );
+
+  if (bleed) {
+    const BleedRoot = Root as ElementType;
+    return (
+      <BleedRoot
+        id={id}
+        aria-labelledby={ariaLabelledBy}
+        className={pageFullBleedRowClass(cn(chromeClass, className))}
+      >
+        <div className={pageFullBleedSectionContentClass()}>{inner}</div>
+      </BleedRoot>
+    );
+  }
+
+  const OuterRoot = Root as ElementType;
+  return (
+    <OuterRoot
+      id={id}
+      aria-labelledby={ariaLabelledBy}
+      className={pageDielineOuterClass(cn(chromeClass, className))}
+    >
+      {inner}
+    </OuterRoot>
   );
 }
 
@@ -72,11 +195,18 @@ type PageDielineFullBleedSectionProps = {
   shellClassName?: string;
   borderTop?: boolean;
   borderBottom?: boolean;
+  borderX?: boolean;
+  paddingBlock?: PageDielinePaddingBlock;
+  band?: PageDielineBand;
+  flush?: boolean;
   "aria-labelledby"?: string;
   id?: string;
 };
 
-/** Full-bleed horizontal band: borders span the viewport, children stay in the dieline column. */
+/**
+ * Full-bleed horizontal band — thin wrapper around {@link PageDielineSection} with `bleed`.
+ * Prefer `PageDielineSection bleed` on new call sites.
+ */
 export function PageDielineFullBleedSection({
   children,
   sectionClassName,
@@ -84,28 +214,29 @@ export function PageDielineFullBleedSection({
   shellClassName,
   borderTop = false,
   borderBottom = false,
+  borderX = true,
+  paddingBlock,
+  band,
+  flush = false,
   "aria-labelledby": ariaLabelledBy,
   id,
 }: PageDielineFullBleedSectionProps) {
   return (
-    <section
+    <PageDielineSection
+      as="section"
+      bleed
       id={id}
       aria-labelledby={ariaLabelledBy}
-      className={cn(pageFullBleedRowClass(), sectionClassName)}
+      borderTop={borderTop}
+      borderBottom={borderBottom}
+      borderX={borderX}
+      paddingBlock={paddingBlock}
+      band={band}
+      flush={flush}
+      className={cn(sectionClassName, shellClassName)}
+      innerClassName={innerClassName}
     >
-      <div className={pageFullBleedSectionContentClass(shellClassName)}>
-        <div
-          className={pageDielineInnerClass(
-            cn(
-              innerClassName,
-              borderTop && "border-t border-dashed border-border",
-              borderBottom && "border-b border-dashed border-border",
-            ),
-          )}
-        >
-          {children}
-        </div>
-      </div>
-    </section>
+      {children}
+    </PageDielineSection>
   );
 }

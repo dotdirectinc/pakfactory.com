@@ -2,7 +2,7 @@
 
 import type {ReactNode} from "react";
 import Link from "next/link";
-import {Box, FolderOpen, FolderPlus} from "lucide-react";
+import {Box, ClipboardList, ClipboardPlus} from "lucide-react";
 import {Button} from "@pakfactory/ui/components/button";
 import {Separator} from "@pakfactory/ui/components/separator";
 import {PageDielineSection} from "@pakfactory/ui/components/page-dieline-section";
@@ -37,7 +37,7 @@ export type SiteNavProps = {
   logo?: ReactNode;
   items: SiteNavItem[];
   cta: SiteNavCta;
-  /** Sign-in / Account link, rendered with the request folder (after the divider). */
+  /** Sign-in / Account link, rendered with the request clipboard (after the divider). */
   signIn?: SiteNavCta;
   /** Takes the signIn link's place on desktop when the visitor has a session. */
   account?: ReactNode;
@@ -109,9 +109,9 @@ export function SiteNav({
                     >
                       <Link href={request.href}>
                         {requestCount > 0 ? (
-                          <FolderOpen className="size-6" strokeWidth={1.75} />
+                          <ClipboardList className="size-6" strokeWidth={1.75} />
                         ) : (
-                          <FolderPlus className="size-6" strokeWidth={1.75} />
+                          <ClipboardPlus className="size-6" strokeWidth={1.75} />
                         )}
                         {requestCount > 0 ? (
                           <span
