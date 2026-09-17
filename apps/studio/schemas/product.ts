@@ -449,13 +449,13 @@ export const product = defineType({
       title: 'Available customizations',
       type: 'array',
       group: GROUPS.specs,
-      // The picker draws Materials and Additional Customization only, and this
-      // array holds all four categories — so it patches by `_key` and never
-      // writes the array whole. Anything it cannot edit it still lists, at the
-      // bottom, rather than leaving it somewhere an editor cannot see it.
-      // PROD-2529.
+      // The picker draws only the Customization Types that say the product
+      // decides them (`availabilityDecidedBy`, PROD-2532), and this array holds
+      // every category — so it patches by `_key` and never writes the array
+      // whole. Anything it cannot edit it still lists, at the bottom, rather
+      // than leaving it somewhere an editor cannot see it. PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Finishing and Printing are not chosen on either; they follow from compatibility between customization options. ${SOURCE_OWNED_NOTE}`,
+      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" is not the product's to choose and does not appear. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits

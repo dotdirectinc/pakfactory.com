@@ -30,28 +30,13 @@ import {
  * document: the same fact twice, drifting the moment the base changes.
  * PROD-2530.
  *
- * 🔴 This component renders TWO of the four customization categories, and the
- * field holds all four. Everything here must therefore patch by `_key` and
+ * 🔴 This component renders a SUBSET of the customization categories, and the
+ * field holds all of them. Everything here must therefore patch by `_key` and
  * never write the array wholesale — a `set()` built from what this can see
- * deletes every Finishing and Printing entry silently. What it cannot edit it
- * still SHOWS, at the bottom, so the blindness is visible rather than a hole
- * data falls into. PROD-2529.
+ * deletes every out-of-scope entry silently. What it cannot edit it still
+ * SHOWS, at the bottom, so the blindness is visible rather than a hole data
+ * falls into. PROD-2529.
  */
-
-/**
- * Which categories a product decides for itself. Finishing and Printing are not
- * the product's to dictate — which of those apply follows from compatibility
- * between customization options, so a product listing them would be asserting
- * something it is not the authority on.
- *
- * ⚠️ This is a fact about a Customization Category and it belongs ON that
- * document, as a field. It is here because adding the field would mean the
- * picker showed nothing until someone hand-set four documents. Slugs rather
- * than titles so a rename does not silently empty the tree, and they are
- * identical in `production` and `development`. Move this to the schema the
- * first time a fifth category appears.
- */
-const PRODUCT_DICTATED_CATEGORIES = ['materials', 'additional-customization']
 
 type OptionRow = {
   _id: string
@@ -62,23 +47,72 @@ type OptionRow = {
   categoryTitle: string | null
 }
 
+/**
+ * One Customization Type, as the scope notes need it. `decidedBy` is null on a
+ * Type nobody has classified — see UNIVERSE_QUERY.
+ */
+type TypeRow = {
+  _id: string
+  categoryId: string | null
+  categoryTitle: string | null
+  decidedBy: string | null
+  optionCount: number
+}
+
+type Universe = { options: OptionRow[]; types: TypeRow[] }
+
 type Entry = {
   _key: string
   customization?: { _ref?: string }
   preselected?: boolean
 }
 
-const UNIVERSE_QUERY = `*[
-  _type == "customizationOption"
-  && !(_id in path("drafts.**"))
-  && type->category->slug.current in $categories
-]{
-  _id,
-  title,
-  "typeId": type._ref,
-  "typeTitle": type->title,
-  "categoryId": type->category._ref,
-  "categoryTitle": type->category->title
+/**
+ * The picker's scope is a fact stored on each Customization Type, not a list in
+ * this file. It used to be `['materials', 'additional-customization']` matched
+ * against `type->category->slug.current`, which had two faults: renaming or
+ * deleting a Category silently emptied a whole group, and PART of a category
+ * could not be included — Finishing needs `Food-Safe Treatment` and none of its
+ * seven siblings. PROD-2532.
+ *
+ * ❌ Do not reintroduce a category-level list, here or as a field on
+ * Customization Category. It is the obvious simplification and it cannot
+ * express a mixed category, which is the case that exists today.
+ *
+ * `types` is fetched alongside because two things have to be said on screen and
+ * neither is derivable from the options alone: which categories are only
+ * PARTLY in scope, and which Types nobody has classified. A Type with no answer
+ * is excluded from `options` by the filter, so without this second list its
+ * absence would be invisible — the exact failure this ticket removes. Both run
+ * in one fetch so they cannot disagree with each other.
+ */
+const UNIVERSE_QUERY = `{
+  "options": *[
+    _type == "customizationOption"
+    && !(_id in path("drafts.**"))
+    && type->availabilityDecidedBy == "product"
+  ]{
+    _id,
+    title,
+    "typeId": type._ref,
+    "typeTitle": type->title,
+    "categoryId": type->category._ref,
+    "categoryTitle": type->category->title
+  },
+  "types": *[
+    _type == "customizationType"
+    && !(_id in path("drafts.**"))
+  ]{
+    _id,
+    "categoryId": category._ref,
+    "categoryTitle": category->title,
+    "decidedBy": availabilityDecidedBy,
+    "optionCount": count(*[
+      _type == "customizationOption"
+      && !(_id in path("drafts.**"))
+      && type._ref == ^._id
+    ])
+  }
 }`
 
 /**
@@ -217,7 +251,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     [props.value],
   )
 
-  const [universe, setUniverse] = useState<OptionRow[] | null>(null)
+  const [fetched, setFetched] = useState<Universe | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
@@ -225,14 +259,17 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
 
   // One-shot, not a live subscription: the option list is taxonomy and changes
   // rarely, where this form opens constantly. A `listenQuery` per open document
-  // would re-fetch 77 documents to tell us nothing almost every time.
+  // would re-fetch the lot to tell us nothing almost every time.
   useEffect(() => {
     let cancelled = false
     client
-      .fetch<OptionRow[]>(UNIVERSE_QUERY, { categories: PRODUCT_DICTATED_CATEGORIES })
+      .fetch<Universe | null>(UNIVERSE_QUERY)
       .then((rows) => {
         if (cancelled) return
-        setUniverse(Array.isArray(rows) ? rows : [])
+        setFetched({
+          options: Array.isArray(rows?.options) ? rows.options : [],
+          types: Array.isArray(rows?.types) ? rows.types : [],
+        })
         setError(null)
       })
       .catch((err: unknown) => {
@@ -320,9 +357,10 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   if (error) {
     return <div style={{ padding: '0.75rem 0', color: 'crimson', fontSize: 13 }}>{error}</div>
   }
-  if (universe === null) {
+  if (fetched === null) {
     return <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>Loading options…</div>
   }
+  const universe = fetched.options
 
   const notice = (text: string) => (
     <div
@@ -357,12 +395,32 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     }
   }
 
-  // On a preset the choosable set is the base's list, intersected with the two
-  // categories a product dictates. Anything already stored that falls outside
-  // it drops into "not editable here" below, which is how a preset offering
-  // something its base does not becomes visible rather than silent.
+  // On a preset the choosable set is the base's list, intersected with what the
+  // product decides. Anything already stored that falls outside it drops into
+  // "not editable here" below, which is how a preset offering something its
+  // base does not becomes visible rather than silent.
   const baseIds = base ? new Set(base.optionIds) : null
   const scoped = baseIds ? universe.filter((o) => baseIds.has(o._id)) : universe
+
+  // Only Types that actually hold a published Option are counted on either side
+  // of the fraction. Four Types hold none and never render, so counting raw
+  // Types would print "15 of 15" above twelve visible rows — a small lie, in a
+  // note whose entire job is to stop the reader assuming they see everything.
+  const stocked = fetched.types.filter((t) => t.optionCount > 0)
+  const partial = new Map<string, { shown: number; total: number }>()
+  for (const t of stocked) {
+    const key = t.categoryId ?? '__none__'
+    const seen = partial.get(key) ?? { shown: 0, total: 0 }
+    seen.total += 1
+    if (t.decidedBy === 'product') seen.shown += 1
+    partial.set(key, seen)
+  }
+
+  // A Type nobody has classified is filtered out of `options` above, so it would
+  // otherwise be missing with nothing to say so. The schema requires an answer,
+  // but that rule binds the Studio form and not a script or an import, so the
+  // guarantee has to be drawn here too.
+  const unclassified = stocked.filter((t) => t.decidedBy !== 'product' && t.decidedBy !== 'customization')
 
   const term = search.trim().toLowerCase()
   const visible = term ? scoped.filter((o) => (o.title ?? '').toLowerCase().includes(term)) : scoped
@@ -430,9 +488,24 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
         </div>
       ) : null}
 
-      {groups.map((category) => (
+      {groups.map((category) => {
+        // A category only partly in scope says so, because a lone Type under a
+        // familiar heading otherwise reads as the whole category — and the
+        // reader has no way to tell the difference. A complete category says
+        // nothing: attention belongs only where it is warranted.
+        const counts = partial.get(category.id)
+        const isPartial = counts ? counts.shown < counts.total : false
+        return (
         <div key={category.id} style={{ marginBottom: '1.25rem' }}>
-          <div style={{ ...LABEL, marginBottom: '0.4rem' }}>{category.title}</div>
+          <div style={{ ...LABEL, marginBottom: '0.4rem' }}>
+            {category.title}
+            {isPartial && counts ? (
+              <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, opacity: 0.6 }}>
+                {' '}· {counts.shown} of {counts.total} types — the rest are decided by another
+                customization
+              </span>
+            ) : null}
+          </div>
 
           {category.types.map((type) => {
             const key = `${category.id}:${type.id}`
@@ -591,7 +664,30 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
             )
           })}
         </div>
-      ))}
+        )
+      })}
+
+      {unclassified.length > 0 ? (
+        <div
+          style={{
+            padding: '0.7rem 0.8rem',
+            marginBottom: '1rem',
+            borderRadius: 4,
+            fontSize: 13,
+            background: 'var(--card-muted-bg-color, rgba(125,125,125,0.08))',
+          }}
+        >
+          <strong>
+            {unclassified.length} Customization {unclassified.length === 1 ? 'Type has' : 'Types have'} not
+            said who decides their availability
+          </strong>
+          , so their options are not shown here. Open each one and answer{' '}
+          <em>Who decides whether a product offers these options?</em> —{' '}
+          {unclassified.map((t) => t.categoryTitle).filter((c, i, a) => c && a.indexOf(c) === i).join(' · ') ||
+            'uncategorized'}
+          .
+        </div>
+      ) : null}
 
       {outOfScope.length > 0 ? (
         <div
@@ -606,10 +702,10 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           <strong>
             {outOfScope.length} {outOfScope.length === 1 ? 'entry is' : 'entries are'} not editable here.
           </strong>{' '}
-          Finishing and Printing follow from compatibility between customization options, not from the
-          product, so this picker does not offer them. They are kept, not lost — nothing above will
-          remove them. An entry pointing at a deleted option lands here too — and on a preset, so does
-          anything the product it is based on does not itself offer.
+          They belong to a Customization Type whose availability is decided by another customization
+          rather than by the product, so this picker does not offer them. They are kept, not lost —
+          nothing above will remove them. An entry pointing at a deleted option lands here too — and on
+          a preset, so does anything the product it is based on does not itself offer.
         </div>
       ) : null}
     </div>
