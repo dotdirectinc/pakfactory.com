@@ -35,10 +35,11 @@ The panel is assembled in three tiers, top to bottom:
 single-select and *decides which facet groups exist* — it is a scope switch, not
 a filter that composes with the others. Search sits in the top rail beside it.
 
-Counts shown next to each option are **contextual**: they reflect how many rows
-that option would return given every *other* active filter. An option whose
+Counts shown next to each option are **contextual (except-self)**: they reflect
+how many rows that option would return given every *other* active filter
+(selections on the facet being counted are ignored — see §2). An option whose
 contextual count is 0 is disabled rather than clickable, so the user cannot
-navigate into an empty grid.
+navigate into an empty grid. Already-selected options stay uncheckable even at 0.
 
 ---
 
@@ -49,6 +50,12 @@ navigate into an empty grid.
 - **Exception — AND within a group:** `Sustainability` and `Performance`. These
   are buyer requirements that stack ("must be FSC **and** recyclable"), and
   their source rows are multi-valued, so AND returns results.
+- **Facet option counts (binding):** use **disjunctive / `passesExcept` counting** —
+  when counting options for facet F, ignore selections on F itself (query +
+  category + all *other* facet groups still apply). Do **not** count against the
+  fully filtered result set alone — that zeros sibling Product Line options after
+  one line is selected. Header “N of M” still uses the fully filtered set.
+  Implemented as `buildProductFacetCounts` / `buildCustomizationFacetCounts`.
 
 ⚠️ **The operator must follow the column's cardinality.** A facet whose source
 column holds exactly one value per row can never satisfy AND across two

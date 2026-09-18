@@ -8,15 +8,18 @@ import {
     CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY,
     CATALOG_OPTION_BY_ID_QUERY,
     CATALOG_PRODUCT_BY_SLUG_QUERY,
+    CATALOG_PRODUCT_LIBRARY_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
     type CatalogOptionDoc,
     type CatalogProductDoc,
+    type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
 } from '@pakfactory/sanity/queries';
 import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
+import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
 import {expandProductCustomizations} from '@/lib/catalog/customization-availability';
 import {getDerivedCategorySlugs} from '@/lib/catalog/customization-category-policy';
 import {
@@ -24,6 +27,8 @@ import {
     mapSanityLibraryOption,
     mapSanityOptionDoc,
     mapSanityProduct,
+    mapSanityProductLibraryItem,
+    mapSanityProductLibraryLineMeta,
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
 import type {
@@ -33,6 +38,9 @@ import type {
     CustomizationLibraryResult,
     CustomizationOption,
     Product,
+    ProductLibraryItem,
+    ProductLibraryLineMeta,
+    ProductLibraryResult,
     ProductLine,
     ProductStyleRef,
     ProductsSegmentResult,
@@ -205,6 +213,31 @@ async function fetchSanityCustomizationLibrary(): Promise<
     }
 }
 
+async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
+    if (!isSanityConfigured()) {
+        return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+    }
+    try {
+        const docs = await (await draftAwareClient()).fetch<
+            CatalogProductLibraryDoc[]
+        >(CATALOG_PRODUCT_LIBRARY_QUERY);
+        const items: ProductLibraryItem[] = [];
+        const lineMetas: ProductLibraryLineMeta[] = [];
+        for (const doc of docs ?? []) {
+            const item = mapSanityProductLibraryItem(doc);
+            if (item) items.push(item);
+            const lineMeta = mapSanityProductLibraryLineMeta(doc);
+            if (lineMeta) lineMetas.push(lineMeta);
+        }
+        return buildProductLibraryResult(items, lineMetas);
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error('[catalog] Sanity product library failed:', err);
+        }
+        return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+    }
+}
+
 const getCachedProducts = unstable_cache(
     fetchSanityProducts,
     [WWW_CATALOG_PRODUCTS_CACHE_TAG],
@@ -229,6 +262,15 @@ const getCachedCustomizationLibrary = unstable_cache(
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    },
+);
+
+const getCachedProductLibrary = unstable_cache(
+    fetchSanityProductLibrary,
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-library`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
     },
 );
 
@@ -258,6 +300,11 @@ export async function listLines(): Promise<ProductLine[]> {
 
 export async function listProducts(): Promise<Product[]> {
     return readThrough(fetchSanityProducts, getCachedProducts);
+}
+
+/** Faceted products library for `/products` (PROD-1845). */
+export async function listProductLibrary(): Promise<ProductLibraryResult> {
+    return readThrough(fetchSanityProductLibrary, getCachedProductLibrary);
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */

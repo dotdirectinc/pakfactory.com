@@ -1,15 +1,16 @@
 import type {Metadata} from 'next';
 import {ProductCatalogView} from '@/components/product/product-catalog-view';
-import {listLines} from '@/lib/catalog/catalog';
+import {listProductLibrary} from '@/lib/catalog/catalog';
 
+/** ISR floor — keep literal for Next.js (PROD-2456). */
 export const revalidate = 60;
 
 export const metadata: Metadata = {
     title: 'Products',
-    description: 'Browse packaging product lines and styles.',
+    description: 'Browse packaging products and styles.',
 };
 
 export default async function ProductsIndexPage() {
-    const lines = await listLines();
-    return <ProductCatalogView lines={lines} />;
+    const library = await listProductLibrary();
+    return <ProductCatalogView library={library} urlSync />;
 }

@@ -176,6 +176,60 @@ export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
 
+/**
+ * Product library listing (PROD-1845) — card fields + property attrs for facets.
+ * Product line includes card image for the 5th-spot entry card.
+ * Property shape differs from customization options (object rows, not value refs).
+ */
+export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  sku,
+  kind,
+  status,
+  "description": coalesce(shortDescription, pt::text(description)),
+  moq,
+  leadTimeDays,
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "productLine": coalesce(productLine, basedOn->productLine)->{
+    _id,
+    title,
+    "slug": slug.current,
+    cardSummary,
+    "description": coalesce(cardSummary, pt::text(intro)),
+    ${LINE_CARD_IMAGE}
+  },
+  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ},
+  "industries": solutions[@->solutionType == "industry"]->{
+    title,
+    "slug": slug.current
+  },
+  "libraryProperties": properties[defined(property)]{
+    "property": property->{
+      _id,
+      title,
+      "slug": slug.current
+    },
+    "values": values[]->{
+      _id,
+      title,
+      "slug": slug.current
+    }
+  }
+`;
+
+export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
+  _type == "product" &&
+  defined(slug.current) &&
+  (status == "active" || !defined(status))
+] | order(title asc) {
+  ${CATALOG_PRODUCT_LIBRARY_FIELDS}
+}`;
+
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
   slug.current == $slug &&
@@ -467,6 +521,7 @@ export type CatalogLineRefDoc = {
   slug: string | null;
   cardSummary?: string | null;
   description?: string | null;
+  cardImage?: unknown | null;
 };
 
 export type CatalogStyleRefDoc = {
@@ -481,6 +536,23 @@ export type CatalogStyleRefDoc = {
 export type CatalogProductPropertyDoc = {
   label?: string | null;
   values?: (string | null)[] | null;
+};
+
+/** Facet-ready property row on the product library query (PROD-1845). */
+export type CatalogProductLibraryPropertyDoc = {
+  property?: CatalogPropertyRefDoc | null;
+  values?: (CatalogPropertyValueDoc | null)[] | null;
+};
+
+/** Industry solution ref on the product library query. */
+export type CatalogProductLibraryIndustryDoc = {
+  title?: string | null;
+  slug?: string | null;
+};
+
+export type CatalogProductLibraryDoc = CatalogProductDoc & {
+  libraryProperties?: CatalogProductLibraryPropertyDoc[] | null;
+  industries?: (CatalogProductLibraryIndustryDoc | null)[] | null;
 };
 
 export type CatalogProductFaqDoc = {

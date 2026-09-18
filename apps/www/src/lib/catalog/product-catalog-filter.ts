@@ -1,32 +1,33 @@
 import type {
     CustomizationFacetDef,
-    CustomizationLibraryItem,
+    ProductLibraryItem,
 } from '@/lib/catalog/types';
-import {CUSTOMIZATION_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
+import {
+    PRODUCT_CATALOG_INDUSTRY_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+} from '@/lib/catalog/types';
 import {withinOpForFacet} from '@/lib/catalog/customization-filter-taxonomy';
 
-/** Category tab value for “all categories”. */
-export const CUSTOMIZATION_CATALOG_ALL_CATEGORY = 'all';
-
-export type CustomizationCatalogFilterInput = {
-    category: string;
+export type ProductCatalogFilterInput = {
     query: string;
     selections: Record<string, string[]>;
 };
 
 function matchesFacet(
-    item: CustomizationLibraryItem,
+    item: ProductLibraryItem,
     facetId: string,
     selected: string[],
 ): boolean {
-    if (facetId === CUSTOMIZATION_PRODUCT_LINE_FACET_ID) {
+    if (facetId === PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID) {
+        return selected.includes(item.productLine.slug);
+    }
+    if (facetId === PRODUCT_CATALOG_INDUSTRY_FACET_ID) {
         return selected.some((slug) =>
-            item.productLines.some((line) => line.slug === slug),
+            item.industries.some((industry) => industry.slug === slug),
         );
     }
     const values = item.attrs[facetId] ?? [];
     const title = item.propertyTitles[facetId];
-    // Within-group: Sustainability + Performance AND; others OR (taxonomy §2).
     if (withinOpForFacet(facetId, title) === 'and') {
         return selected.every((slug) => values.includes(slug));
     }
@@ -34,8 +35,8 @@ function matchesFacet(
 }
 
 /** Whether an item carries a single facet option. */
-export function itemHasFacetValue(
-    item: CustomizationLibraryItem,
+export function productItemHasFacetValue(
+    item: ProductLibraryItem,
     facetId: string,
     value: string,
 ): boolean {
@@ -43,24 +44,28 @@ export function itemHasFacetValue(
 }
 
 /**
- * Whether a library item matches category, search, and facet selections.
+ * Whether a library product matches search and facet selections.
  *
- * Category + search are AND. Active facet groups combine with AND across groups
- * (taxonomy §2). Within a group: Sustainability and Performance are AND; Product
- * Line and other properties are OR.
+ * Search is AND with facets. Active facet groups combine with AND across groups;
+ * within a group: Sustainability and Performance are AND; Product Line, Industries,
+ * and other properties are OR (same taxonomy as customizations).
  */
-export function matchesCustomizationItem(
-    item: CustomizationLibraryItem,
-    {category, query, selections}: CustomizationCatalogFilterInput,
+export function matchesProductItem(
+    item: ProductLibraryItem,
+    {query, selections}: ProductCatalogFilterInput,
 ): boolean {
-    if (
-        category !== CUSTOMIZATION_CATALOG_ALL_CATEGORY &&
-        item.categoryValue !== category
-    ) {
-        return false;
-    }
     const q = query.trim().toLowerCase();
-    if (q && !item.title.toLowerCase().includes(q)) return false;
+    if (q) {
+        const haystack = [
+            item.title,
+            item.sku,
+            item.productLine.title,
+            item.productStyle.title,
+        ]
+            .join(' ')
+            .toLowerCase();
+        if (!haystack.includes(q)) return false;
+    }
 
     const activeFacets = Object.entries(selections).filter(
         ([, selected]) => selected.length > 0,
@@ -74,12 +79,12 @@ export function matchesCustomizationItem(
 
 /**
  * Disjunctive (except-self) facet counts: for facet F, count options against
- * items that match category + query + all selections except F.
+ * items that match query + all selections except F.
  */
-export function buildCustomizationFacetCounts(
-    items: CustomizationLibraryItem[],
+export function buildProductFacetCounts(
+    items: ProductLibraryItem[],
     facets: CustomizationFacetDef[],
-    {category, query, selections}: CustomizationCatalogFilterInput,
+    {query, selections}: ProductCatalogFilterInput,
 ): Record<string, Record<string, number>> {
     const result: Record<string, Record<string, number>> = {};
 
@@ -87,16 +92,12 @@ export function buildCustomizationFacetCounts(
         const selectionsExcept = {...selections};
         delete selectionsExcept[facet.id];
         const base = items.filter((item) =>
-            matchesCustomizationItem(item, {
-                category,
-                query,
-                selections: selectionsExcept,
-            }),
+            matchesProductItem(item, {query, selections: selectionsExcept}),
         );
         const counts: Record<string, number> = {};
         for (const opt of facet.options) {
             counts[opt.value] = base.filter((item) =>
-                itemHasFacetValue(item, facet.id, opt.value),
+                productItemHasFacetValue(item, facet.id, opt.value),
             ).length;
         }
         result[facet.id] = counts;
