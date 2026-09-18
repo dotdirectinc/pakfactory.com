@@ -169,7 +169,7 @@ export const productLine = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Declares which properties products in this line state — never their values. `required` flags the completeness check (a corrugated product with no flute is flagged). Mirrors how a Customization Type declares its own.',
+        'Declares which properties products in this line state — never their values. This list is what a product\'s Properties picker offers, so a product cannot state anything left out of it. Marking one Required warns on any product in this line that does not state it.',
       of: [
         {
           type: 'object',
@@ -187,7 +187,7 @@ export const productLine = defineType({
               name: 'required',
               title: 'Required',
               type: 'boolean',
-              description: 'Products in this line must state a value for this property.',
+              description: 'Products in this line that do not state a value for this property are flagged.',
               initialValue: false,
             }),
           ],
