@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "../../../lib/utils";
-import { DimsInputs } from "./dims-field";
-import { chipClass, inputClass } from "./field-styles";
+import {useState} from "react";
+import {cn} from "../../../lib/utils";
+import {DimsInputs} from "./dims-field";
+import {chipClass, inputClass} from "./field-styles";
 
 export function RadioPickField({
   choices,

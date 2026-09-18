@@ -10,6 +10,7 @@ import {
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
+import {TypePropertyController} from '@/components/customization/type-property-controller';
 import {Icon} from '@/components/ui/icon';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
 import {
@@ -18,6 +19,7 @@ import {
 } from '@/lib/catalog/map-detail-to-property-fields';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import type {UiDescriptor} from '@pakfactory/ui/components/customization/types';
 
 type CustomizationConfigPanelProps = {
     detail: CustomizationDetail;
@@ -38,6 +40,15 @@ function fieldMatchesQuery(
     if (!q) return true;
     if (field.label.toLowerCase().includes(q)) return true;
     return field.options.some((o) => o.title.toLowerCase().includes(q));
+}
+
+/** Phase 1 smoke: Type-panel listbox via shared PropertyController. */
+function typePanelListbox(detail: CustomizationDetail): UiDescriptor {
+    return {
+        kind: 'listbox',
+        choices: [detail.title],
+        value: detail.title,
+    };
 }
 
 /**
@@ -116,7 +127,13 @@ export function CustomizationConfigPanel({
                             </p>
                         ) : null}
                     </div>
-                ) : null}
+                ) : (
+                    <TypePropertyController
+                        label={detail.typeTitle ?? 'Option'}
+                        ui={typePanelListbox(detail)}
+                        controlId={`type-${detail.slug}`}
+                    />
+                )}
             </div>
 
             {fields.length > 0 ? (

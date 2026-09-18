@@ -199,7 +199,8 @@ Do **not** shoehorn `CATS` into a PropertyField model. Property Controls is this
 | Module | Responsibility | Location |
 | --- | --- | --- |
 | Catalog data | Typed `Category` / `CatalogOption` / `UiDescriptor` | `src/lib/customization/catalog-data.ts` |
-| Control primitives | One component per `ui.kind` | `catalog-control.tsx` |
+| Control primitives | One component per `ui.kind` + shared dispatcher | `@pakfactory/ui` `property-controller/*` and `PropertyController`; admin `catalog-control.tsx` is a thin re-export |
+| Preview card chrome | Titled panel around a controller (not the controller itself) | `@pakfactory/ui` `PropertyFieldPanel`; used by www Option/Type controllers and admin catalog live preview |
 | Category accordion + option cards | Collapse/expand; preview + spec + condition | `catalog-section.tsx` |
 | Sandbox state + engine | `S`, `evaluate()`, L1–L15 | `sandbox-engine.ts` + `rules-data.ts` |
 | Sandbox panels | Inputs / trace / form state | `sandbox-section.tsx` |

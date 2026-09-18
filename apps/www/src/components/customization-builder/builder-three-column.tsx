@@ -15,6 +15,7 @@ import {
     type BuilderStepKey,
     type CustomizationBuilderState,
     type DimensionFace,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -39,6 +40,7 @@ type BuilderThreeColumnProps = {
     onPropertySelectionsChange?: (
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) => void;
 };
 
@@ -140,11 +142,12 @@ export function BuilderThreeColumn({
                             option={selectedOption}
                             consultationSelected={consultationSelected}
                             propertySelections={optionPropertySelections}
-                            onPropertySelectionsChange={(selections) => {
+                            onPropertySelectionsChange={(selections, summaries) => {
                                 if (!selectedOption) return;
                                 onPropertySelectionsChange?.(
                                     selectedOption.id,
                                     selections,
+                                    summaries,
                                 );
                             }}
                             {...noteProps}

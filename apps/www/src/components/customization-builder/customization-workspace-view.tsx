@@ -8,6 +8,7 @@ import type {
     BuilderStep,
     BuilderStepKey,
     CustomizationBuilderState,
+    PropertySelectionSummaryItem,
     StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -28,6 +29,7 @@ type CustomizationWorkspaceViewProps = {
     onPropertySelectionsChange: (
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) => void;
 };
 

@@ -44,6 +44,16 @@
     /* Meta/CTA highlight surface (PROD-2201 follow-up: #FBFBFB) */
     --brand-highlight: #fbfbfb;
 
+    /* Catalog Color swatch fallbacks (configurator / property values without image) */
+    --swatch-white: #f5f5f3;
+    --swatch-black: #1a1a1a;
+    --swatch-brown: #c4a574;
+    --swatch-gold: #d4af37;
+    --swatch-silver: #c0c0c0;
+    --swatch-copper: #b87333;
+    --swatch-blue: #3b82f6;
+    --swatch-pink: #ec4899;
+
     /* Primary opacity ramp — hover fills, tints (POC: bg-[var(--opacity-primary-10)]) */
     --opacity-primary-10: rgba(43, 95, 45, 0.1);
     --opacity-primary-20: rgba(43, 95, 45, 0.2);
@@ -239,6 +249,14 @@
     --color-brand-cream: var(--brand-cream);
     --color-brand-cream-foreground: var(--brand-cream-foreground);
     --color-brand-highlight: var(--brand-highlight);
+    --color-swatch-white: var(--swatch-white);
+    --color-swatch-black: var(--swatch-black);
+    --color-swatch-brown: var(--swatch-brown);
+    --color-swatch-gold: var(--swatch-gold);
+    --color-swatch-silver: var(--swatch-silver);
+    --color-swatch-copper: var(--swatch-copper);
+    --color-swatch-blue: var(--swatch-blue);
+    --color-swatch-pink: var(--swatch-pink);
     --color-destructive: var(--destructive);
     --color-border: var(--border);
     --color-input: var(--input);

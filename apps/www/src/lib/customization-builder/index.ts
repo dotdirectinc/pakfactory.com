@@ -12,6 +12,7 @@ export type {
     FaceMeasurements,
     SelectionValue,
     StepAnswer,
+    PropertySelectionSummaryItem,
 } from '@/lib/customization-builder/types';
 
 export {
@@ -40,6 +41,7 @@ export {
     seedFromCustomizations,
     shouldEnterGuided,
     summarizeAnswer,
+    visiblePropertySummaries,
     toRequestCustomizations,
     type BuilderRequestCustomization,
 } from '@/lib/customization-builder/state';

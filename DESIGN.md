@@ -39,6 +39,7 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 | Border / input | `--border`, `--input` | Dividers, field chrome |
 | Brand cream band | `--brand-cream`, `--brand-cream-foreground` | Warm section surfaces |
 | Soft highlight | `--brand-highlight` | Meta/CTA highlight surfaces |
+| Catalog swatches | `--swatch-*` / `bg-swatch-*` | Configurator Color fallbacks when a property value has no image (values in `globals.css` only) |
 | Destructive | `--destructive` | Errors / danger only |
 | Primary tints | `--opacity-primary-10` … `--opacity-primary-60` | Soft fills, hover washes |
 | Neutral scrims | `--opacity-neutral-*` | Overlays, faded chrome |

@@ -33,6 +33,16 @@ export type StepAnswer =
     | {status: 'set'; dimensions: DimensionsValue}
     | {status: 'set'; selection: SelectionValue};
 
+/** Display chip for a selected property value (rail / overview). */
+export type PropertySelectionSummaryItem = {
+    kind: 'swatch' | 'chip';
+    label: string;
+    /** True for Need consultation — omit from front UI, keep in payload. */
+    omitFromSummary: boolean;
+    color?: string;
+    imageUrl?: string;
+};
+
 export type CustomizationBuilderState = {
     answers: Partial<Record<string, StepAnswer>>;
     /** True after the guided walk finishes (or when reopening a configured line). */
@@ -46,6 +56,12 @@ export type CustomizationBuilderState = {
      * Option id → Property key → selected propertyValue slugs.
      */
     propertySelections?: Partial<Record<string, Record<string, string[]>>>;
+    /**
+     * Option id → ordered property summary items for rail / overview UI.
+     */
+    propertySelectionSummaries?: Partial<
+        Record<string, PropertySelectionSummaryItem[]>
+    >;
 };
 
 export type BuilderChoice = {
@@ -122,6 +138,7 @@ export const EMPTY_BUILDER_STATE: CustomizationBuilderState = {
     guidedComplete: false,
     entryNotes: {},
     propertySelections: {},
+    propertySelectionSummaries: {},
 };
 
 export type CatalogOptionLike = Pick<

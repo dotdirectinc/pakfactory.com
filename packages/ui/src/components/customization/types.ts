@@ -31,6 +31,8 @@ export type SwatchItem = {
   label: string;
   color?: string;
   imageUrl?: string;
+  /** Empty dotted circle (e.g. Need consultation); no fill/image. */
+  appearance?: "swatch" | "consultation";
 };
 
 export type SpecSegment = {
@@ -56,10 +58,50 @@ export type ChipItem = {
 
 export type ValuesPerItem = "one" | "many";
 
+/** One dimension axis (e.g. L / W / H, Diameter / Height, W / H / Gusset). */
+export type DimAxis = {
+  id: string;
+  prefix: string;
+  label: string;
+};
+
+export const DEFAULT_DIM_AXES: DimAxis[] = [
+  {id: "L", prefix: "L", label: "Length"},
+  {id: "W", prefix: "W", label: "Width"},
+  {id: "H", prefix: "H", label: "Height"},
+];
+
+/** Controlled value for `dims` — `unsure` is a valid Ready selection. */
+export type DimsFieldValue = {
+  unsure: boolean;
+  /** Axis id → numeric string (empty when blank). */
+  values: Record<string, string>;
+};
+
+/**
+ * Controlled value bag for PropertyController.
+ * Omitted → field uses internal / defaultValue (admin demo).
+ */
+export type PropertyControllerValue =
+  | {kind: "dims"; value: DimsFieldValue}
+  | {kind: "radio"; value: string}
+  | {kind: "radioPick"; value: string}
+  | {kind: "toggles"; value: boolean[]}
+  | {kind: "listbox"; value: string[]}
+  | {kind: "stepper"; value: number}
+  | {kind: "repeat"; value: string[]}
+  | {kind: "select"; value: string}
+  | {kind: "checks"; value: string[]}
+  | {kind: "textUpload"; value: string}
+  | {kind: "swatch"; value: string}
+  | {kind: "specTable"; value: string}
+  | {kind: "cardGrid"; value: string}
+  | {kind: "chip"; value: string[]};
+
 export type UiDescriptor =
-  | { kind: "readonly"; value: string }
-  | { kind: "dims"; unit: string }
-  | { kind: "radio"; choices: string[]; value: string }
+  | {kind: "readonly"; value: string}
+  | {kind: "dims"; unit: string; axes?: DimAxis[]}
+  | {kind: "radio"; choices: string[]; value: string}
   | {
       kind: "radioPick";
       choices: string[];
@@ -67,7 +109,7 @@ export type UiDescriptor =
       pick: string[];
       unit?: string;
     }
-  | { kind: "toggles"; items: ToggleItem[]; hint?: string }
+  | {kind: "toggles"; items: ToggleItem[]; hint?: string}
   | {
       kind: "listbox";
       choices: string[];
@@ -77,20 +119,20 @@ export type UiDescriptor =
       exclusive?: string;
       hint?: string;
     }
-  | { kind: "stepper"; value: number; max?: number }
-  | { kind: "repeat"; placeholder: string }
-  | { kind: "select"; choices: string[] }
-  | { kind: "checks"; choices: string[] }
-  | { kind: "textUpload"; placeholder: string }
-  | { kind: "swatch"; swatches: SwatchItem[]; value?: string }
+  | {kind: "stepper"; value: number; max?: number}
+  | {kind: "repeat"; placeholder: string}
+  | {kind: "select"; choices: string[]}
+  | {kind: "checks"; choices: string[]}
+  | {kind: "textUpload"; placeholder: string}
+  | {kind: "swatch"; swatches: SwatchItem[]; value?: string}
   | {
       kind: "specTable";
       segments: SpecSegment[];
       columns: string[];
       rows: Record<string, string[]>;
     }
-  | { kind: "cardGrid"; cards: CardItem[]; value?: string }
-  | { kind: "linkOut"; links: LinkItem[] }
+  | {kind: "cardGrid"; cards: CardItem[]; value?: string}
+  | {kind: "linkOut"; links: LinkItem[]}
   | {
       kind: "chip";
       chips: ChipItem[];

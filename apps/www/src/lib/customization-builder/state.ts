@@ -19,6 +19,7 @@ import {
     type DimensionFace,
     type DimensionsValue,
     type FaceMeasurements,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder/types';
 
@@ -39,6 +40,7 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         guidedComplete: false,
         entryNotes: {},
         propertySelections: {},
+        propertySelectionSummaries: {},
     };
 }
 
@@ -128,13 +130,27 @@ export function formatDimensionsSummary(value: DimensionsValue): string {
 export function summarizeAnswer(
     answer: StepAnswer,
     specialistLabel: string,
+    options?: {propertySummaries?: PropertySelectionSummaryItem[]},
 ): string {
     if (answer.status === 'unset') return 'Not set';
     if (answer.status === 'not-sure') return specialistLabel;
     if ('dimensions' in answer) {
         return formatDimensionsSummary(answer.dimensions) || 'Not set';
     }
-    return answer.selection.label;
+    const visible = (options?.propertySummaries ?? []).filter(
+        (item) => !item.omitFromSummary && item.kind === 'chip',
+    );
+    if (visible.length === 0) return answer.selection.label;
+    return [answer.selection.label, ...visible.map((item) => item.label)].join(
+        ' · ',
+    );
+}
+
+/** Visible (non-consultation) summary items for UI. */
+export function visiblePropertySummaries(
+    items: PropertySelectionSummaryItem[] | undefined,
+): PropertySelectionSummaryItem[] {
+    return (items ?? []).filter((item) => !item.omitFromSummary);
 }
 
 function dimensionsStep(): BuilderStep {
@@ -305,6 +321,9 @@ export function clearStep(
     const previous = getAnswer(state, key);
     const entryNotes = {...(state.entryNotes ?? {})};
     const propertySelections = {...(state.propertySelections ?? {})};
+    const propertySelectionSummaries = {
+        ...(state.propertySelectionSummaries ?? {}),
+    };
 
     if (key === DIMENSIONS_STEP_KEY) {
         delete entryNotes[dimensionEntryNoteKey('external')];
@@ -312,6 +331,7 @@ export function clearStep(
     } else if (previous.status === 'set' && 'selection' in previous) {
         delete entryNotes[previous.selection.optionId];
         delete propertySelections[previous.selection.optionId];
+        delete propertySelectionSummaries[previous.selection.optionId];
     }
 
     return {
@@ -322,6 +342,7 @@ export function clearStep(
         },
         entryNotes,
         propertySelections,
+        propertySelectionSummaries,
     };
 }
 
@@ -329,12 +350,17 @@ export function patchPropertySelections(
     state: CustomizationBuilderState,
     optionId: string,
     selections: Record<string, string[]>,
+    summaries: PropertySelectionSummaryItem[] = [],
 ): CustomizationBuilderState {
     return {
         ...state,
         propertySelections: {
             ...(state.propertySelections ?? {}),
             [optionId]: selections,
+        },
+        propertySelectionSummaries: {
+            ...(state.propertySelectionSummaries ?? {}),
+            [optionId]: summaries,
         },
     };
 }
@@ -462,11 +488,45 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         }
     }
 
+    const propertySelectionSummaries: NonNullable<
+        CustomizationBuilderState['propertySelectionSummaries']
+    > = {};
+    if (
+        raw.propertySelectionSummaries &&
+        typeof raw.propertySelectionSummaries === 'object'
+    ) {
+        for (const [optionId, items] of Object.entries(
+            raw.propertySelectionSummaries,
+        )) {
+            if (!Array.isArray(items)) continue;
+            propertySelectionSummaries[optionId] = items
+                .filter(
+                    (item): item is PropertySelectionSummaryItem =>
+                        Boolean(item) &&
+                        typeof item === 'object' &&
+                        (item.kind === 'swatch' || item.kind === 'chip') &&
+                        typeof item.label === 'string',
+                )
+                .map((item) => ({
+                    kind: item.kind,
+                    label: item.label,
+                    omitFromSummary: Boolean(item.omitFromSummary),
+                    ...(typeof item.color === 'string'
+                        ? {color: item.color}
+                        : {}),
+                    ...(typeof item.imageUrl === 'string'
+                        ? {imageUrl: item.imageUrl}
+                        : {}),
+                }));
+        }
+    }
+
     return {
         answers,
         guidedComplete: Boolean(raw.guidedComplete),
         entryNotes,
         propertySelections,
+        propertySelectionSummaries,
     };
 }
 
@@ -560,6 +620,7 @@ export function seedFromCustomizations(
         guidedComplete: configured,
         entryNotes: {},
         propertySelections: {},
+        propertySelectionSummaries: {},
     };
 }
 
