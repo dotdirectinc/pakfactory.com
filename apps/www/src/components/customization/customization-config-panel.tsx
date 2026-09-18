@@ -5,14 +5,17 @@ import Link from 'next/link';
 import {Bookmark, Download, Search} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
-import {ChipField} from '@pakfactory/ui/components/customization/property-controller/chip-field';
-import {SwatchField} from '@pakfactory/ui/components/customization/property-controller/swatch-field';
+import {
+    initialPropertySelection,
+    OptionPropertyControllers,
+    type PropertySelectionMap,
+} from '@/components/customization/option-property-controllers';
 import {Icon} from '@/components/ui/icon';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
 import {
-    mapDetailToConfigFields,
-    type ConfigFieldDescriptor,
-} from '@/lib/catalog/map-detail-to-config-fields';
+    mapDetailToPropertyFields,
+    type PropertyFieldDescriptor,
+} from '@/lib/catalog/map-detail-to-property-fields';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -20,18 +23,7 @@ type CustomizationConfigPanelProps = {
     detail: CustomizationDetail;
 };
 
-type SelectionMap = Record<string, string[]>;
-
-function initialSelection(fields: ConfigFieldDescriptor[]): SelectionMap {
-    const next: SelectionMap = {};
-    for (const field of fields) {
-        const first = field.options[0]?.id;
-        next[field.propertyKey] = first ? [first] : [];
-    }
-    return next;
-}
-
-function titlesForIds(field: ConfigFieldDescriptor, ids: string[]): string[] {
+function titlesForIds(field: PropertyFieldDescriptor, ids: string[]): string[] {
     const byId = new Map(field.options.map((o) => [o.id, o.title]));
     return ids
         .map((id) => byId.get(id))
@@ -39,7 +31,7 @@ function titlesForIds(field: ConfigFieldDescriptor, ids: string[]): string[] {
 }
 
 function fieldMatchesQuery(
-    field: ConfigFieldDescriptor,
+    field: PropertyFieldDescriptor,
     query: string,
 ): boolean {
     const q = query.trim().toLowerCase();
@@ -49,15 +41,14 @@ function fieldMatchesQuery(
 }
 
 /**
- * Right-rail configurator for customization Option detail (PROD-1299 Slice C).
- * Chrome matches Configuration mock; shared ui property controllers unchanged.
+ * Right-rail Property controllers for customization Option detail (PROD-1299).
  */
 export function CustomizationConfigPanel({
     detail,
 }: CustomizationConfigPanelProps) {
-    const fields = useMemo(() => mapDetailToConfigFields(detail), [detail]);
-    const [selection, setSelection] = useState<SelectionMap>(() =>
-        initialSelection(fields),
+    const fields = useMemo(() => mapDetailToPropertyFields(detail), [detail]);
+    const [selection, setSelection] = useState<PropertySelectionMap>(() =>
+        initialPropertySelection(fields),
     );
     const [query, setQuery] = useState('');
 
@@ -114,65 +105,11 @@ export function CustomizationConfigPanel({
 
                 {fields.length > 0 ? (
                     <div className="flex flex-col gap-4">
-                        {visibleFields.map((field) => {
-                            const selected = selection[field.propertyKey] ?? [];
-                            return (
-                                <section
-                                    key={field.propertyKey}
-                                    className="overflow-hidden rounded-control border border-border bg-card"
-                                >
-                                    <header className="border-b border-border bg-muted px-4 py-2">
-                                        <h3 className="text-sm font-semibold tracking-tight text-foreground">
-                                            {field.label}
-                                        </h3>
-                                    </header>
-                                    <div className="flex flex-col gap-2 p-4">
-                                        {field.kind === 'swatch' ? (
-                                            <SwatchField
-                                                swatches={field.options.map(
-                                                    (o) => ({
-                                                        id: o.id,
-                                                        label: o.title,
-                                                        ...(o.imageUrl
-                                                            ? {
-                                                                  imageUrl:
-                                                                      o.imageUrl,
-                                                              }
-                                                            : {}),
-                                                    }),
-                                                )}
-                                                value={selected[0]}
-                                                onChange={(id) =>
-                                                    setPropertyValue(
-                                                        field.propertyKey,
-                                                        [id],
-                                                    )
-                                                }
-                                            />
-                                        ) : (
-                                            <ChipField
-                                                chips={field.options.map(
-                                                    (o) => ({
-                                                        id: o.id,
-                                                        label: o.title,
-                                                    }),
-                                                )}
-                                                valuesPerItem={
-                                                    field.valuesPerItem
-                                                }
-                                                value={selected}
-                                                onChange={(ids) =>
-                                                    setPropertyValue(
-                                                        field.propertyKey,
-                                                        ids,
-                                                    )
-                                                }
-                                            />
-                                        )}
-                                    </div>
-                                </section>
-                            );
-                        })}
+                        <OptionPropertyControllers
+                            fields={visibleFields}
+                            value={selection}
+                            onChange={setPropertyValue}
+                        />
                         {visibleFields.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 No options match your search.

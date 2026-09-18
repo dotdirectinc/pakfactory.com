@@ -12,7 +12,12 @@ import {
 import {CustomizationGuidedView} from '@/components/customization-builder/customization-guided-view';
 import {CustomizationWorkspaceView} from '@/components/customization-builder/customization-workspace-view';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
-import type {ProductDimensionRange} from '@/lib/catalog/types';
+import {
+    filterOfferBySelections,
+    fromOfferOption,
+    resolveOffer,
+} from '@/lib/catalog/customization-availability';
+import type {CustomizationOption, ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
 import {
     buildStepsFromCatalog,
@@ -23,6 +28,7 @@ import {
     markGuidedComplete,
     patchAnswer,
     patchEntryNote,
+    patchPropertySelections,
     shouldEnterGuided,
     type BuilderMode,
     type BuilderOption,
@@ -31,6 +37,7 @@ import {
     type CustomizationBuilderState,
     type StepAnswer,
 } from '@/lib/customization-builder';
+import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 
 export type CustomizationBuilderProps = {
     open: boolean;
@@ -74,6 +81,20 @@ function restoreOptionId(
     return null;
 }
 
+function selectionAnswersFromState(state: CustomizationBuilderState) {
+    const out: Record<string, {optionId?: string; typeId?: string}> = {};
+    for (const [key, answer] of Object.entries(state.answers)) {
+        if (!answer || answer.status !== 'set' || !('selection' in answer)) {
+            continue;
+        }
+        out[key] = {
+            optionId: answer.selection.optionId,
+            typeId: answer.selection.typeId,
+        };
+    }
+    return out;
+}
+
 export function CustomizationBuilder({
     open,
     onOpenChange,
@@ -84,15 +105,43 @@ export function CustomizationBuilder({
     initialStepKey,
     dimensionRange,
 }: CustomizationBuilderProps) {
+    const filteredCustomizations = useMemo(() => {
+        const asOptions = availableCustomizations as CustomizationOption[];
+        const offer = resolveOffer(asOptions);
+        const {offer: filtered} = filterOfferBySelections(
+            offer,
+            selectionAnswersFromState(value),
+        );
+        return filtered.map(fromOfferOption);
+    }, [availableCustomizations, value.answers]);
+
     const steps = useMemo(
-        () => buildStepsFromCatalog(availableCustomizations),
-        [availableCustomizations],
+        () => buildStepsFromCatalog(filteredCustomizations),
+        [filteredCustomizations],
     );
+
+    // Clear derived answers that became invalid after a material change.
+    useEffect(() => {
+        const asOptions = availableCustomizations as CustomizationOption[];
+        const offer = resolveOffer(asOptions);
+        const {invalidAnswerKeys} = filterOfferBySelections(
+            offer,
+            selectionAnswersFromState(value),
+        );
+        if (invalidAnswerKeys.length === 0) return;
+        let next = value;
+        for (const key of invalidAnswerKeys) {
+            next = clearStep(next, key);
+        }
+        if (next !== value) onChange(next);
+    }, [availableCustomizations, value.answers]);
 
     const [mode, setMode] = useState<BuilderMode>('guided');
     const [activeKey, setActiveKey] = useState<BuilderStepKey>('dimensions');
     const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
     const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
+    /** Highest rail index unlocked by Next/Skip commit (guided only). */
+    const [guidedMaxIndex, setGuidedMaxIndex] = useState(0);
 
     function selectCategory(key: BuilderStepKey) {
         const step = steps.find((item) => item.key === key);
@@ -135,6 +184,7 @@ export function CustomizationBuilder({
         if (!open) return;
         const enterGuided = shouldEnterGuided(value);
         setMode(enterGuided ? 'guided' : 'workspace');
+        setGuidedMaxIndex(0);
         const focus =
             (initialStepKey
                 ? steps.find((step) => step.key === initialStepKey)
@@ -189,6 +239,13 @@ export function CustomizationBuilder({
         onChange(patchEntryNote(value, entryKey, note));
     }
 
+    function handlePropertySelectionsChange(
+        optionId: string,
+        selections: PropertySelectionMap,
+    ) {
+        onChange(patchPropertySelections(value, optionId, selections));
+    }
+
     function goBack() {
         const index = steps.findIndex((step) => step.key === activeKey);
         const prev = index > 0 ? steps[index - 1] : undefined;
@@ -203,6 +260,7 @@ export function CustomizationBuilder({
                 ? steps[index + 1]
                 : undefined;
         if (!next) return;
+        setGuidedMaxIndex((max) => Math.max(max, index + 1));
         selectCategory(next.key);
     }
 
@@ -221,6 +279,7 @@ export function CustomizationBuilder({
             finishGuided(next);
             return;
         }
+        setGuidedMaxIndex((max) => Math.max(max, index + 1));
         onChange(next);
         const following = steps[index + 1];
         if (!following) return;
@@ -277,6 +336,7 @@ export function CustomizationBuilder({
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
                             state={value}
+                            maxReachableIndex={guidedMaxIndex}
                             dimensionRange={dimensionRange}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
@@ -285,6 +345,9 @@ export function CustomizationBuilder({
                             onAnswerChange={handleAnswerChange}
                             onClearCategory={handleClearCategory}
                             onEntryNoteChange={handleEntryNoteChange}
+                            onPropertySelectionsChange={
+                                handlePropertySelectionsChange
+                            }
                             onBack={goBack}
                             onNext={goNext}
                             onSkip={handleSkip}
@@ -305,6 +368,9 @@ export function CustomizationBuilder({
                             onAnswerChange={handleAnswerChange}
                             onClearCategory={handleClearCategory}
                             onEntryNoteChange={handleEntryNoteChange}
+                            onPropertySelectionsChange={
+                                handlePropertySelectionsChange
+                            }
                         />
                     )}
                 </div>

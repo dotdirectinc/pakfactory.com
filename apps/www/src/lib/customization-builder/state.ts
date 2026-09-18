@@ -1,4 +1,9 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
+import {compareCategorySlugs} from '@/lib/catalog/customization-category-policy';
+import {
+    fromOfferOption,
+    type OfferOption,
+} from '@/lib/catalog/customization-availability';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
@@ -33,6 +38,7 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         answers: {},
         guidedComplete: false,
         entryNotes: {},
+        propertySelections: {},
     };
 }
 
@@ -160,6 +166,14 @@ function dimensionsStep(): BuilderStep {
 }
 
 /**
+ * Build guided/workspace steps from a resolved + expanded offer.
+ * Categories follow www category policy order (not Studio category.order).
+ */
+export function buildStepsFromOffer(offer: OfferOption[]): BuilderStep[] {
+    return buildStepsFromCatalog(offer.map(fromOfferOption));
+}
+
+/**
  * Build guided/workspace steps from the product's available customizations.
  * Categories/types/options come only from that set (Sanity option → type → category).
  */
@@ -171,7 +185,6 @@ export function buildStepsFromCatalog(
     type CategoryBucket = {
         slug: string;
         title: string;
-        order: number;
         description: string;
         types: Map<
             string,
@@ -193,10 +206,6 @@ export function buildStepsFromCatalog(
             bucket = {
                 slug: categorySlug,
                 title: item.categoryTitle?.trim() || categorySlug,
-                order:
-                    typeof item.categoryOrder === 'number'
-                        ? item.categoryOrder
-                        : Number.MAX_SAFE_INTEGER,
                 description: item.categoryDescription?.trim() || '',
                 types: new Map(),
             };
@@ -206,13 +215,17 @@ export function buildStepsFromCatalog(
         const typeId = item.typeId?.trim() || `fallback-${categorySlug}`;
         let typeBucket = bucket.types.get(typeId);
         if (!typeBucket) {
+            const customerSelects =
+                item.customerSelects === 'many' || item.cardinality === 'many'
+                    ? 'many'
+                    : 'one';
             typeBucket = {
                 type: {
                     id: typeId,
                     slug: item.typeSlug?.trim() || typeId,
                     title: item.typeTitle?.trim() || bucket.title,
                     categoryId: categorySlug,
-                    cardinality: item.cardinality === 'many' ? 'many' : 'one',
+                    cardinality: customerSelects,
                     description: item.typeDescription?.trim() || '',
                 },
                 options: [],
@@ -235,10 +248,9 @@ export function buildStepsFromCatalog(
         });
     }
 
-    const orderedCategories = [...categories.values()].sort((a, b) => {
-        if (a.order !== b.order) return a.order - b.order;
-        return a.title.localeCompare(b.title);
-    });
+    const orderedCategories = [...categories.values()].sort((a, b) =>
+        compareCategorySlugs(a.slug, b.slug),
+    );
 
     for (const category of orderedCategories) {
         const types: BuilderType[] = [];
@@ -285,19 +297,21 @@ export function patchAnswer(
     };
 }
 
-/** Unset a step answer and drop related entry notes. */
+/** Unset a step answer and drop related entry notes / Property selections. */
 export function clearStep(
     state: CustomizationBuilderState,
     key: BuilderStepKey,
 ): CustomizationBuilderState {
     const previous = getAnswer(state, key);
     const entryNotes = {...(state.entryNotes ?? {})};
+    const propertySelections = {...(state.propertySelections ?? {})};
 
     if (key === DIMENSIONS_STEP_KEY) {
         delete entryNotes[dimensionEntryNoteKey('external')];
         delete entryNotes[dimensionEntryNoteKey('internal')];
     } else if (previous.status === 'set' && 'selection' in previous) {
         delete entryNotes[previous.selection.optionId];
+        delete propertySelections[previous.selection.optionId];
     }
 
     return {
@@ -307,6 +321,21 @@ export function clearStep(
             [key]: {status: 'unset'},
         },
         entryNotes,
+        propertySelections,
+    };
+}
+
+export function patchPropertySelections(
+    state: CustomizationBuilderState,
+    optionId: string,
+    selections: Record<string, string[]>,
+): CustomizationBuilderState {
+    return {
+        ...state,
+        propertySelections: {
+            ...(state.propertySelections ?? {}),
+            [optionId]: selections,
+        },
     };
 }
 
@@ -414,10 +443,30 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         }
     }
 
+    const propertySelections: NonNullable<
+        CustomizationBuilderState['propertySelections']
+    > = {};
+    if (raw.propertySelections && typeof raw.propertySelections === 'object') {
+        for (const [optionId, selection] of Object.entries(
+            raw.propertySelections,
+        )) {
+            if (!selection || typeof selection !== 'object') continue;
+            const mapped: Record<string, string[]> = {};
+            for (const [propertyKey, ids] of Object.entries(selection)) {
+                if (!Array.isArray(ids)) continue;
+                mapped[propertyKey] = ids.filter(
+                    (id): id is string => typeof id === 'string',
+                );
+            }
+            propertySelections[optionId] = mapped;
+        }
+    }
+
     return {
         answers,
         guidedComplete: Boolean(raw.guidedComplete),
         entryNotes,
+        propertySelections,
     };
 }
 
@@ -510,6 +559,7 @@ export function seedFromCustomizations(
         answers,
         guidedComplete: configured,
         entryNotes: {},
+        propertySelections: {},
     };
 }
 

@@ -30,15 +30,29 @@ Do **not** add `modules/catalog`. Use the F1a seam:
 
 Library options: `customizationOption` with `hasPage == true` and `status == "active"` (D55 / PROD-2482). Configurator pickability is `configuratorRole` and is orthogonal — do not gate the library on deprecated `role == "reference"` (ADR-017 §3 before the split).
 
+### Product offer vs derived categories (PROD-2529)
+
+Studio authors **only** product-dictated categories on `product.availableCustomizations` (`materials`, `additional-customization`). Finishing / Printing are **derived** on www from Option `worksOnCustomizations` / `incompatibleWithCustomizations`.
+
+| Layer | Location |
+| --- | --- |
+| Category policy (`product` \| `derived` \| `code`) | [`src/lib/catalog/customization-category-policy.ts`](../src/lib/catalog/customization-category-policy.ts) |
+| Resolve / expand / filter | [`src/lib/catalog/customization-availability.ts`](../src/lib/catalog/customization-availability.ts) |
+| Derived universe GROQ | `CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY` in [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) |
+
+Builder rail + catalog tabs share policy `sortIndex`: Dimensions → materials → printing → finishing → additional-customization. Empty categories stay hidden. When Studio/Category later authors availability mode, replace the policy seed — keep calling `getCategoryPolicy()` / `compareCategorySlugs()`.
+
 ### Sanity field map
 
 | App | Sanity |
 | --- | --- |
 | Category tabs / `categoryValue` | `type->category` (`customizationCategory.slug` / `title`) |
 | Card title / slug / media | option fields |
-| Product Line facet | **One-way** `availableOnProducts[@->_type == "productLine"]` only — no reverse from `product.availableCustomizations` |
+| Product Line facet | Reverse: products with this option in `availableCustomizations` → `productLine` (PROD-2529; retired `availableOnProducts`) |
 | Sustainability + other facets | `properties[]` → `propertyValue` + parent `property` |
 | Category-specific facet groups | Non-sustainability properties present on items in that category |
+| Configurator pickability | `configuratorRole` (fallback deprecated `role`) |
+| Type pick count | `customerSelects` (fallback deprecated `cardinality`) |
 
 Facet URL keys use `property.slug` (and `product-line` for Product Line). Shared rail: Product Line + Sustainability (when values exist). Other properties appear when a category tab ≠ All is selected.
 

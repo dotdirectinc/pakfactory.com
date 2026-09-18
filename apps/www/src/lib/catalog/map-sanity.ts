@@ -1,6 +1,7 @@
 import {
     type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
+    type CatalogOptionDoc,
     type CatalogProductDoc,
     type CatalogProductLineDoc,
     type CatalogPropertyValueDetailDoc,
@@ -119,8 +120,16 @@ function mapAvailableCustomization(
     const option = row?.customization;
     if (!option?._id || !option.title) return null;
     if (option.status && option.status !== 'active') return null;
-    // Configurator only surfaces configurable options (ADR-017 role).
-    if (option.role === 'reference') return null;
+
+    const configuratorRole =
+        option.configuratorRole === 'reference' ||
+        option.configuratorRole === 'configurable'
+            ? option.configuratorRole
+            : option.role === 'reference' || option.role === 'configurable'
+              ? option.role
+              : 'configurable';
+    // Configurator only surfaces configurable options (D55 / PROD-2529).
+    if (configuratorRole === 'reference') return null;
 
     const type = option.type;
     const category = type?.category;
@@ -138,27 +147,50 @@ function mapAvailableCustomization(
         type?.description,
     );
 
+    const customerSelects =
+        type?.customerSelects === 'many' || type?.cardinality === 'many'
+            ? 'many'
+            : 'one';
+
+    const worksOnIds = (option.worksOnIds ?? [])
+        .map((id) => id?.trim())
+        .filter((id): id is string => Boolean(id));
+    const incompatibleIds = (option.incompatibleIds ?? [])
+        .map((id) => id?.trim())
+        .filter((id): id is string => Boolean(id));
+
     return {
         id: option._id,
         label: option.title,
         slug: option.slug ?? undefined,
         category: categorySlug,
         categoryTitle: category?.title ?? undefined,
-        categoryOrder:
-            typeof category?.order === 'number' ? category.order : undefined,
         categoryDescription: category?.description ?? undefined,
         typeId: type?._id ?? undefined,
         typeSlug: type?.slug ?? undefined,
         typeTitle: type?.title ?? undefined,
         typeDescription: type?.description ?? undefined,
-        cardinality: type?.cardinality === 'many' ? 'many' : 'one',
+        customerSelects,
+        cardinality: customerSelects,
         imageUrl: firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null,
         shortDescription: '',
         description,
         preselected: Boolean(row.preselected),
-        role: option.role ?? undefined,
+        configuratorRole,
+        role: configuratorRole,
         status: option.status ?? undefined,
+        ...(worksOnIds.length > 0 ? {worksOnIds} : {}),
+        ...(incompatibleIds.length > 0 ? {incompatibleIds} : {}),
     };
+}
+
+/** Map a raw option projection (universe / derived fetch) into a catalog option. */
+export function mapSanityOptionDoc(
+    option: CatalogOptionDoc | null | undefined,
+    preselected = false,
+): CustomizationOption | null {
+    if (!option) return null;
+    return mapAvailableCustomization({preselected, customization: option});
 }
 
 export function mapSanityProduct(doc: CatalogProductDoc): Product | null {

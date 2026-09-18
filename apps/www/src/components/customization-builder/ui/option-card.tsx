@@ -24,9 +24,13 @@ export function OptionCard({
             onClick={onSelect}
             className={cn('flex w-full flex-col gap-1', className)}
         >
-            <span className="text-sm font-medium text-foreground">{label}</span>
+            <span className="truncate text-sm font-medium text-foreground">
+                {label}
+            </span>
             {description ? (
-                <span className="text-xs text-muted-foreground">{description}</span>
+                <span className="line-clamp-2 text-xs text-muted-foreground">
+                    {description}
+                </span>
             ) : null}
         </HighlightItem>
     );

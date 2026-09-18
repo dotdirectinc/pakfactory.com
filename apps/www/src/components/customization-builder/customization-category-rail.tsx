@@ -78,9 +78,9 @@ export function CustomizationCategoryRail({
                             )}
                         >
                             <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-start gap-2">
                                     {numbered ? (
-                                        <div className="flex w-4 shrink-0 justify-center">
+                                        <div className="flex w-4 shrink-0 justify-center pt-0.5">
                                             {ready ? (
                                                 <span
                                                     className="flex size-4 items-center justify-center rounded-full bg-brand-forest text-white"

@@ -3,21 +3,22 @@ import type {
     CustomizationPropertyValue,
 } from '@/lib/catalog/types';
 
-export type ConfigValuesPerItem = 'one' | 'many';
+export type PropertyValuesPerItem = 'one' | 'many';
 
-export type ConfigFieldOption = {
+export type PropertyFieldOption = {
     id: string;
     title: string;
     imageUrl?: string | null;
     imageAlt?: string;
 };
 
-export type ConfigFieldDescriptor = {
+export type PropertyFieldDescriptor = {
+    /** Property slug or id used as selection key. */
     propertyKey: string;
     label: string;
-    valuesPerItem: ConfigValuesPerItem;
+    valuesPerItem: PropertyValuesPerItem;
     kind: 'swatch' | 'chip';
-    options: ConfigFieldOption[];
+    options: PropertyFieldOption[];
 };
 
 function groupKey(value: CustomizationPropertyValue): string | null {
@@ -25,12 +26,12 @@ function groupKey(value: CustomizationPropertyValue): string | null {
 }
 
 /**
- * Map a customization Option detail → selectable config fields for the rail.
- * Stated declared properties are excluded (Slice E). Shared ui fields only.
+ * Map a customization Option detail → selectable Property fields.
+ * Stated declared Properties are excluded. Shared ui property controllers only.
  */
-export function mapDetailToConfigFields(
+export function mapDetailToPropertyFields(
     detail: CustomizationDetail,
-): ConfigFieldDescriptor[] {
+): PropertyFieldDescriptor[] {
     const declared = detail.declaredProperties;
     const hasDeclared = declared.length > 0;
     const selectableKeys = new Set(
@@ -50,14 +51,14 @@ export function mapDetailToConfigFields(
         groups.set(key, list);
     }
 
-    const fields: ConfigFieldDescriptor[] = [];
+    const fields: PropertyFieldDescriptor[] = [];
     for (const [propertyKey, values] of groups) {
         if (values.length === 0) continue;
         const declaredMatch = declared.find(
             (d) =>
                 d.propertySlug === propertyKey || d.propertyId === propertyKey,
         );
-        const valuesPerItem: ConfigValuesPerItem =
+        const valuesPerItem: PropertyValuesPerItem =
             declaredMatch?.valuesPerItem ??
             values.find((v) => v.valuesPerItem)?.valuesPerItem ??
             'one';
@@ -65,7 +66,7 @@ export function mapDetailToConfigFields(
             declaredMatch?.propertyTitle?.trim() ||
             values.find((v) => v.propertyTitle)?.propertyTitle?.trim() ||
             propertyKey;
-        const options: ConfigFieldOption[] = values.map((v) => ({
+        const options: PropertyFieldOption[] = values.map((v) => ({
             id: v.slug,
             title: v.title,
             ...(v.imageUrl !== undefined ? {imageUrl: v.imageUrl} : {}),
