@@ -38,6 +38,7 @@ import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
 import { ProductAvailableCustomizationsView } from './components/ProductAvailableCustomizationsView'
+import { ProductInspirationView } from './components/productViews'
 import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
 import { SolutionStylesView } from './components/SolutionStylesView'
 import {
@@ -206,10 +207,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
       S.view.component(ProductStyleCategoryProductsView).title('Products'),
     ])
   }
+  // `basedOn` points from an inspiration product to the standard it was built
+  // from, and PROD-2547 put the two kinds in different workspaces whose lists do
+  // not show each other's rows — so neither end of that relationship is reachable
+  // from the other without this tab.
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(ProductAvailableCustomizationsView).title('Customization'),
+      S.view.component(ProductInspirationView).title('Inspiration'),
     ])
   }
   // Solution Styles are listed flat in the Solutions workspace, so this tab is
