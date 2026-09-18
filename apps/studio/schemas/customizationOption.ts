@@ -704,4 +704,42 @@ export const customizationOption = defineType({
       }
     },
   },
+  // Crystal works this list a Type at a time (PROD-2544). This puts "Type → title"
+  // in the list's sort menu; picking it groups the 126 options under their 23 Types.
+  //
+  // The path is the dotted `type.title`, NOT `type->title`, and the raw-GROQ intuition
+  // is backwards here. A bare `order(type.title asc)` really does return unsorted rows
+  // — a reference holds `{_ref, _type}` and has no `title` under it. But a sort MENU
+  // item does not issue a bare `order()`: `getOrderingMenuItemsForSchemaType` runs
+  // `getExtendedProjection` over this `by` array, which walks the path against the
+  // schema, sees `type` is a reference, and emits `type->{title}`. That rides along on
+  // the menu item, so the query becomes
+  //
+  //   *[...]{_id, _type, type->{title}} | order(type.title asc)[0...$__limit]{...}
+  //
+  // The dereference happens a stage before the sort. `type->title` would not parse into
+  // a reference hop at all.
+  //
+  // ⚠ This ordering CANNOT be used as a list's `.defaultOrdering()`. That extended
+  // projection is built for menu items only — `PaneContainer` constructs the default as
+  // `{by: defaultOrdering}` with no projection slot, and `DocumentListBuilder.defaultOrdering`
+  // accepts a bare `SortOrderingItem[]`, so there is nowhere to put one. A reference sort
+  // set as a default silently degrades to whatever the next key is. The Options list in
+  // `structure/index.ts` therefore defaults to plain `title` and leaves this to the menu.
+  //
+  // Once picked it persists: `validateSortOrder` returns the sort object intact when every
+  // path resolves, and its resolver follows single-target references, so the projection
+  // survives into the per-user key-value store and works on every later load. That check
+  // rejects MULTI-target references — `type` points only at `customizationType`, so it
+  // passes. Same dotted form `propertyValue` already uses for `property.title`.
+  orderings: [
+    {
+      title: 'Type → title',
+      name: 'typeTitle',
+      by: [
+        { field: 'type.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+  ],
 })

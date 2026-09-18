@@ -1505,7 +1505,23 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
         S.listItem()
             .title('Options')
             .schemaType('customizationOption')
-            .child(S.documentTypeList('customizationOption').title('Customization Options')),
+            // Title, not Last Edited (PROD-2544). Last Edited is the Studio's own default
+            // and it reshuffles underfoot: editing one of the 126 options throws it to the
+            // top while an editor is working a Type at a time. Alphabetical holds still.
+            //
+            // Grouping by Type is what editors actually want, and it is NOT settable here.
+            // `defaultOrdering` takes a bare `SortOrderingItem[]`, and `PaneContainer`
+            // builds the default as `{by: defaultOrdering}` — no slot for the extended
+            // projection that makes a reference path like `type.title` resolve. Setting it
+            // here does not error; it silently sorts by the next key, which is why this
+            // reads `title` and not `type.title`. The Type grouping ships as a sort-MENU
+            // entry instead (`orderings` in `customizationOption.ts`, which explains the
+            // mechanism); an editor picks it once and it persists per user.
+            .child(
+                S.documentTypeList('customizationOption')
+                    .title('Customization Options')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.divider().title('Global'),
         ...propertyGlobalItems(S),
     ];
