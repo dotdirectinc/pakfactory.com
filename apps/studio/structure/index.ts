@@ -927,6 +927,7 @@ export function solutionItems(
                         {field: 'title', direction: 'asc'},
                     ]),
             ),
+
     ];
 }
 
@@ -1487,9 +1488,22 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
         S.listItem()
-            .title('Products')
+            .title('Standard Products')
             .schemaType('product')
-            .child(S.documentTypeList('product').title('Products')),
+            // Split by `kind` (PROD-2547). Inspiration presets live in the Solutions
+            // workspace, because Solutions is the surface they hang off; this list is
+            // the fully-configurable line/style products only.
+            //
+            // ⚠ `.filter()` REPLACES the `_type == $type` that `documentTypeList`
+            // sets for itself — it does not append — so the type clause is restated
+            // here. Drop it and the list queries every document type in the dataset
+            // and merely happens to look right.
+            .child(
+                S.documentTypeList('product')
+                    .title('Standard Products')
+                    .filter('_type == $type && kind == $kind')
+                    .params({type: 'product', kind: 'standard'}),
+            ),
         S.listItem()
             .title('Bundles')
             .schemaType('bundle')
@@ -1680,6 +1694,34 @@ export const solutionsWorkspaceStructure = (
                     S.documentTypeList('solutionStyle')
                         .title('Solution Styles')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
+                ),
+            // Inspiration presets are `product` documents, but their breadcrumb runs
+            // through Solutions, so this is where they are edited (PROD-2547). The
+            // Products workspace holds the standard products; neither list shows the
+            // other's rows.
+            //
+            // This belongs HERE, not in `solutionItems` — that helper feeds
+            // `solutionsStructure`, which no workspace consumes. This function is what
+            // the `solutions` workspace actually renders (`sanity.config.ts`).
+            //
+            // The template is load-bearing, not decoration: `kind` has
+            // `initialValue: 'standard'`, so a plain `+` here would create a document
+            // that immediately vanishes from the list it was created in.
+            //
+            // No `.icon()`: `product.ts` already declares `icon: PackageIcon` and
+            // `.schemaType()` picks it up. Setting it again costs a type error against
+            // the 227 baseline for an icon that already renders.
+            S.listItem()
+                .title('Inspiration Products')
+                .schemaType('product')
+                .child(
+                    S.documentTypeList('product')
+                        .title('Inspiration Products')
+                        .filter('_type == $type && kind == $kind')
+                        .params({type: 'product', kind: 'inspiration'})
+                        .initialValueTemplates([
+                            S.initialValueTemplateItem('product-inspiration'),
+                        ]),
                 ),
         ]);
 
