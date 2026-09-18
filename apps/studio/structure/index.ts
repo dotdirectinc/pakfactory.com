@@ -1478,7 +1478,14 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
         S.listItem()
             .title('Product Styles')
             .schemaType('productStyle')
-            .child(S.documentTypeList('productStyle').title('Product Styles')),
+            // Title, not Last Edited (PROD-2546) — same reasoning as the Customization
+            // lists. Grouping by Line is the sort editors want, but a reference path
+            // cannot be a list default; it ships as a menu entry on `productStyle.ts`.
+            .child(
+                S.documentTypeList('productStyle')
+                    .title('Product Styles')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.listItem()
             .title('Products')
             .schemaType('product')

@@ -221,9 +221,44 @@ export const productStyle = defineType({
     prepare({ title, display, line, image }) {
       return {
         title: display || title || 'Untitled style',
-        subtitle: line ? `Style of ${line}` : 'Product Style',
+        // Just the Line name. "Style of Rigid Boxes" restated what the list is already
+        // called; the fallback now names the gap instead, and `productLine` is required,
+        // so an empty one is a fault worth seeing rather than a normal state.
+        subtitle: line || 'No product line',
         media: image,
       }
     },
   },
+  // Editors group Styles by their Line, so "Sort by Line" belongs in the list's sort
+  // menu (PROD-2546). The subtitle above already carries the Line, so grouped rows need
+  // no headers. Third list to get this, after `customizationOption` and `customizationType`.
+  //
+  // ⚠ Title is declared here rather than inherited. A type that declares no `orderings`
+  // gets a GENERATED one — `guessOrderingConfig` in @sanity/schema picks the first field
+  // named title/name/label/heading/header/caption/description — which is where this list's
+  // "Sort by Title" came from. Declaring an `orderings` array suppresses that guess, so
+  // omitting Title here would silently delete it from the menu. That happened on
+  // PROD-2544 and took a follow-up PR to undo.
+  //
+  // ⚠ `productLine.title` is a reference path: correct HERE, as a menu entry, where
+  // `getExtendedProjection` emits `productLine->{title}` and the dereference happens a
+  // stage before the sort — and inert as a `.defaultOrdering()`, where `PaneContainer`
+  // builds `{by: defaultOrdering}` with no projection slot and the sort quietly falls
+  // through to the next key. Hence Line in the menu, plain `title` as the list default
+  // in `structure/index.ts`. `customizationOption.ts` carries the long version.
+  orderings: [
+    {
+      title: 'Line',
+      name: 'lineTitle',
+      by: [
+        { field: 'productLine.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
+    },
+  ],
 })
