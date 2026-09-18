@@ -928,29 +928,6 @@ export function solutionItems(
                     ]),
             ),
 
-        // Inspiration presets are `product` documents, but their breadcrumb runs
-        // through Solutions, so this is where they are edited (PROD-2547). The
-        // Products workspace holds the standard products; neither list shows the
-        // other's rows.
-        //
-        // The template is load-bearing, not decoration: `kind` has
-        // `initialValue: 'standard'`, so a plain `+` here would create a document
-        // that immediately vanishes from the list it was created in.
-        // No `.icon()` here: `product.ts` already declares `icon: PackageIcon`, and
-        // `.schemaType()` picks it up. Setting it again would be a second instance of
-        // the pre-existing `.icon()` type error that this file already carries 20+ of.
-        S.listItem()
-            .title('Inspiration Products')
-            .schemaType('product')
-            .child(
-                S.documentTypeList('product')
-                    .title('Inspiration Products')
-                    .filter('_type == $type && kind == $kind')
-                    .params({type: 'product', kind: 'inspiration'})
-                    .initialValueTemplates([
-                        S.initialValueTemplateItem('product-inspiration'),
-                    ]),
-            ),
     ];
 }
 
@@ -1717,6 +1694,34 @@ export const solutionsWorkspaceStructure = (
                     S.documentTypeList('solutionStyle')
                         .title('Solution Styles')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
+                ),
+            // Inspiration presets are `product` documents, but their breadcrumb runs
+            // through Solutions, so this is where they are edited (PROD-2547). The
+            // Products workspace holds the standard products; neither list shows the
+            // other's rows.
+            //
+            // This belongs HERE, not in `solutionItems` — that helper feeds
+            // `solutionsStructure`, which no workspace consumes. This function is what
+            // the `solutions` workspace actually renders (`sanity.config.ts`).
+            //
+            // The template is load-bearing, not decoration: `kind` has
+            // `initialValue: 'standard'`, so a plain `+` here would create a document
+            // that immediately vanishes from the list it was created in.
+            //
+            // No `.icon()`: `product.ts` already declares `icon: PackageIcon` and
+            // `.schemaType()` picks it up. Setting it again costs a type error against
+            // the 227 baseline for an icon that already renders.
+            S.listItem()
+                .title('Inspiration Products')
+                .schemaType('product')
+                .child(
+                    S.documentTypeList('product')
+                        .title('Inspiration Products')
+                        .filter('_type == $type && kind == $kind')
+                        .params({type: 'product', kind: 'inspiration'})
+                        .initialValueTemplates([
+                            S.initialValueTemplateItem('product-inspiration'),
+                        ]),
                 ),
         ]);
 
