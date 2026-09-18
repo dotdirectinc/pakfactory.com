@@ -95,7 +95,7 @@ export const customizationOption = defineType({
     //
     // It also carried the Type picker's filter, which is why that goes with it: the
     // filter needed a category stored on THIS document to narrow by. The Type picker is
-    // now unfiltered and always visible. That is a real trade — 23 Types instead of a
+    // now unfiltered and always visible. That is a real trade — every Type instead of a
     // narrowed handful — taken because the alternative is storing a fact twice to make
     // a picker shorter. Search in the picker covers it.
     defineField({
@@ -705,7 +705,7 @@ export const customizationOption = defineType({
     },
   },
   // Crystal works this list a Type at a time (PROD-2544). This puts "Sort by Type" in
-  // the list's sort menu; picking it groups the 126 options under their 23 Types, and
+  // the list's sort menu; picking it groups the options under their Types, and
   // sorts by name within each. The second `by` entry is that within-group sort, not a
   // second menu option — which is why the label names only the Type.
   //
