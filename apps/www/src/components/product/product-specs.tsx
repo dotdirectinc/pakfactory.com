@@ -72,7 +72,7 @@ export function ProductSpecs({
 
     return (
         <section id="pdp-specs" className={cn('scroll-mt-32', className)}>
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection innerClassName="border-b border-dashed border-border pt-16 sm:pt-20">
                 <SectionHeading
                     eyebrow="Specifications"
                     title={heading}
@@ -83,12 +83,15 @@ export function ProductSpecs({
                 <div className="-mx-layout-gutter-inner mt-16">
                     <table className="w-full border-collapse border-t border-dashed border-border">
                         <tbody>
-                            {rows.map((row) => {
+                            {rows.map((row, index) => {
                                 const Glyph = row.icon ?? CircleDot;
                                 return (
                                     <tr
                                         key={row.label}
-                                        className="border-b border-dashed border-border"
+                                        className={cn(
+                                            index < rows.length - 1 &&
+                                                'border-b border-dashed border-border',
+                                        )}
                                     >
                                         <th
                                             scope="row"

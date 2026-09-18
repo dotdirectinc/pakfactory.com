@@ -98,62 +98,71 @@ export function ProductCustomizationsPreview({
                     descriptionClassName="text-base leading-6"
                 />
 
-                <div className="mt-16 grid items-start gap-6 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-0 lg:grid-cols-[12rem_minmax(0,1fr)]">
-                    <nav
-                        aria-label="Customization categories"
-                        className="flex flex-wrap gap-2 md:hidden"
-                    >
-                        {categories.map((cat) => (
-                            <CategoryPill
-                                key={cat.slug}
-                                label={cat.label}
-                                selected={selectedCategory === cat.slug}
-                                onSelect={() => setActiveCategory(cat.slug)}
-                                mobile
-                            />
-                        ))}
-                    </nav>
-                    <nav
-                        aria-label="Customization categories"
-                        className="hidden flex-col gap-1 md:flex md:pr-6"
-                    >
-                        {categories.map((cat) => (
-                            <CategoryPill
-                                key={cat.slug}
-                                label={cat.label}
-                                selected={selectedCategory === cat.slug}
-                                onSelect={() => setActiveCategory(cat.slug)}
-                            />
-                        ))}
-                    </nav>
+                <div
+                    className={cn(
+                        'mt-8 max-h-[min(40rem,70vh)] overflow-y-auto overscroll-contain',
+                        'rounded-3xl bg-muted p-6 sm:mt-10 sm:p-8 lg:p-10',
+                    )}
+                >
+                    <div className="grid items-start gap-6 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-0 lg:grid-cols-[12rem_minmax(0,1fr)]">
+                        <nav
+                            aria-label="Customization categories"
+                            className="flex flex-wrap gap-2 md:hidden"
+                        >
+                            {categories.map((cat) => (
+                                <CategoryPill
+                                    key={cat.slug}
+                                    label={cat.label}
+                                    selected={selectedCategory === cat.slug}
+                                    onSelect={() => setActiveCategory(cat.slug)}
+                                    mobile
+                                />
+                            ))}
+                        </nav>
+                        <nav
+                            aria-label="Customization categories"
+                            className="hidden flex-col gap-1 md:sticky md:top-0 md:flex md:self-start md:pr-6"
+                        >
+                            {categories.map((cat) => (
+                                <CategoryPill
+                                    key={cat.slug}
+                                    label={cat.label}
+                                    selected={selectedCategory === cat.slug}
+                                    onSelect={() => setActiveCategory(cat.slug)}
+                                />
+                            ))}
+                        </nav>
 
-                    <div className="min-w-0 md:pl-10">
-                        {visibleItems.length ? (
-                            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                {visibleItems.map((item) => (
-                                    <li key={item.href}>
-                                        <CustomizationCatalogCard
-                                            href={item.href}
-                                            title={item.label}
-                                            eyebrow={
-                                                item.typeTitle ??
-                                                item.categoryTitle
-                                            }
-                                            description={item.description}
-                                            imageSrc={item.imageUrl}
-                                            imageAlt={item.imageAlt ?? item.label}
-                                            onCloserLook={() =>
-                                                setActiveItem(item)
-                                            }
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="py-8 text-sm text-muted-foreground">
-                                No customizations in this category yet.
-                            </p>
-                        )}
+                        <div className="min-w-0 md:pl-10">
+                            {visibleItems.length ? (
+                                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                    {visibleItems.map((item) => (
+                                        <li key={item.href}>
+                                            <CustomizationCatalogCard
+                                                href={item.href}
+                                                title={item.label}
+                                                eyebrow={
+                                                    item.typeTitle ??
+                                                    item.categoryTitle
+                                                }
+                                                imageSrc={item.imageUrl}
+                                                imageAlt={
+                                                    item.imageAlt ?? item.label
+                                                }
+                                                surface="elevated"
+                                                onCloserLook={() =>
+                                                    setActiveItem(item)
+                                                }
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="py-8 text-sm text-muted-foreground">
+                                    No customizations in this category yet.
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </PageDielineSection>
