@@ -1501,7 +1501,14 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
         S.listItem()
             .title('Types')
             .schemaType('customizationType')
-            .child(S.documentTypeList('customizationType').title('Customization Types')),
+            // Title, not Last Edited (PROD-2545) — same reasoning as Options below.
+            // Grouping by Category is the sort editors want, but a reference path cannot
+            // be a list default; it ships as a menu entry on `customizationType.ts`.
+            .child(
+                S.documentTypeList('customizationType')
+                    .title('Customization Types')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.listItem()
             .title('Options')
             .schemaType('customizationOption')

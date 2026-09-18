@@ -237,4 +237,36 @@ export const customizationType = defineType({
       return { title, subtitle: category ? `Type in ${category}` : 'Customization Type' }
     },
   },
+  // Editors group Types by Category — Materials, Printing, Finishing, Additional
+  // Customization — so "Sort by Category" belongs in the list's sort menu (PROD-2545).
+  // The subtitle above already reads "Type in Materials", so grouped rows need no headers.
+  //
+  // ⚠ Title is declared here rather than inherited. A type that declares no `orderings`
+  // gets a GENERATED one: `guessOrderingConfig` in @sanity/schema picks the first field
+  // named title/name/label/heading/header/caption/description — which is where this list's
+  // "Sort by Title" came from, carrying the i18n key `default-orderings.title`. Declaring
+  // an `orderings` array suppresses that guess, so omitting Title here would silently
+  // delete it from the menu. That happened on PROD-2544 and took a follow-up PR to undo.
+  //
+  // ⚠ `category.title` is a reference path. It is correct HERE, as a menu entry —
+  // `getExtendedProjection` emits `category->{title}` and the dereference happens a stage
+  // before the sort — and it is inert as a `.defaultOrdering()`, where `PaneContainer`
+  // builds `{by: defaultOrdering}` with no projection slot and the sort quietly falls
+  // through to the next key. Hence Category in the menu, plain `title` as the list
+  // default in `structure/index.ts`. `customizationOption.ts` carries the long version.
+  orderings: [
+    {
+      title: 'Category',
+      name: 'categoryTitle',
+      by: [
+        { field: 'category.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
+    },
+  ],
 })
