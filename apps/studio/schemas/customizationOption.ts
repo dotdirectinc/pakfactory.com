@@ -438,6 +438,95 @@ export const customizationOption = defineType({
           },
         },
       }],
+      // Two checks the Product side got in PROD-2539, adapted — and the
+      // adaptation is the whole point, because the two sides are NOT symmetric.
+      //
+      // 🔴 `valuesPerItem` applies to STATED properties only. A Type may declare
+      // a property SELECTABLE, and then this list is the menu a customer picks
+      // from rather than a claim about the option: Corrugated Board declares
+      // Color selectable, so White Lined Corrugated Board offering White, Natural
+      // Brown and Black is correct, not three colours at once. Measured before
+      // this was written — every multi-value property in the dataset is
+      // selectable, so a rule without this test would have warned on the only
+      // two populated options and been wrong on both.
+      //
+      // Warning, not error, for the same reason as the Product side: an editor
+      // opening an option cannot always fix data that arrived before the picker
+      // filter existed, and two options are in exactly that state today.
+      validation: (Rule) => [
+        Rule.unique(),
+        Rule.custom(async (value, context) => {
+          const refs = ((Array.isArray(value) ? value : []) as { _ref?: string }[])
+            .map((entry) => entry?._ref)
+            .filter((ref): ref is string => Boolean(ref))
+          const typeRef = (context.document as { type?: { _ref?: string } } | undefined)?.type?._ref
+          if (!typeRef || refs.length === 0) return true
+
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+          const { declared, values } = await client.fetch<{
+            declared: { ref: string | null; usage: string | null }[] | null
+            values:
+              | {
+                  _id: string
+                  title: string | null
+                  propRef: string | null
+                  propTitle: string | null
+                  perItem: string | null
+                }[]
+              | null
+          }>(
+            `{
+              "declared": *[_id == $typeRef][0].properties[]{ "ref": property._ref, usage },
+              "values": *[_id in $refs]{
+                _id, title,
+                "propRef": property._ref,
+                "propTitle": property->title,
+                "perItem": property->valuesPerItem
+              }
+            }`,
+            { typeRef, refs },
+          )
+
+          const declaredList = declared ?? []
+          const valueList = values ?? []
+          const usageOf = new Map(declaredList.map((d) => [d.ref, d.usage]))
+          const problems: string[] = []
+
+          // The flat array carries no grouping, so it is grouped here: the
+          // Product side stores one row per property and gets this for free.
+          const byProperty = new Map<string, { title: string; perItem: string | null; names: string[] }>()
+          for (const v of valueList) {
+            if (!v.propRef) continue
+            const group = byProperty.get(v.propRef) ?? {
+              title: v.propTitle ?? 'This property',
+              perItem: v.perItem,
+              names: [],
+            }
+            group.names.push(v.title ?? 'Untitled value')
+            byProperty.set(v.propRef, group)
+          }
+
+          // 1 — a property the Type never declared. Silent when the Type declares
+          // nothing: that is an unfinished Type, not a wrong option.
+          if (declaredList.length) {
+            for (const [ref, group] of byProperty) {
+              if (usageOf.has(ref)) continue
+              problems.push(
+                `${group.title} is not declared by this customization type — remove ${group.names.join(', ')}, or add the property to the type.`,
+              )
+            }
+          }
+
+          // 2 — more values than the Property allows, stated properties only.
+          for (const [ref, group] of byProperty) {
+            if (usageOf.get(ref) !== 'stated') continue
+            if (group.perItem !== 'one' || group.names.length <= 1) continue
+            problems.push(`${group.title} allows one value — ${group.names.join(', ')}.`)
+          }
+
+          return problems.length ? problems.join(' ') : true
+        }).warning(),
+      ],
     }),
 
     // The five per-topic property fields — `materialSource`, `physicalProperties`,
