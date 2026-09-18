@@ -3,7 +3,6 @@ import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../li
 import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { deprecateField } from '../lib/schema-guards'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 
 export const customizationOption = defineType({
@@ -215,28 +214,6 @@ export const customizationOption = defineType({
       // fact; wiring it to a URL is a separate piece of work.
       initialValue: false,
     }),
-    // DEPRECATED by D55 — kept because it is populated on all 126 Options, and
-    // Conventions §4.3 forbids removing a populated field in the change that stops
-    // using it. `migrate:split-customization-role` copies it to `configuratorRole`
-    // and derives `hasPage`; removal is a later sweep once both are verified.
-    defineField({
-      name: 'role',
-      title: 'Role (deprecated)',
-      type: 'string',
-      group: 'content',
-      readOnly: true,
-      description:
-        'DEPRECATED (D55) — replaced by "Configurator role" and "Has a page". It answered both questions ' +
-        'at once and could not express the commonest case: an option a customer picks that also has a ' +
-        'page. Read-only; do not author. Scheduled for removal once the split is verified.',
-      options: {
-        layout: 'radio',
-        list: [
-          { title: 'Configurable', value: 'configurable' },
-          { title: 'Reference', value: 'reference' },
-        ],
-      },
-    }),
     defineField({
       name: 'media',
       title: 'Media',
@@ -249,19 +226,28 @@ export const customizationOption = defineType({
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
 
     // ─── AVAILABILITY AND COMPATIBILITY ───────────────────────────────────────
-    // Two axes were answered here. Neither is answered the way it once was, and
-    // all four of the fields that did it are retired below.
+    // Two axes were answered here by four fields. All four are gone as of
+    // PROD-2538 — deprecated first, then removed once nothing read them and
+    // their successors were verified complete. What follows is a summary of
+    // where each answer went, because the next person to want one of those
+    // fields back should find the argument before the empty space.
     //
     // THE PRODUCT AXIS MOVED (PROD-2529). A Product states which options it
     // offers, in `product.availableCustomizations`, and that is the only place
     // it is stated — the two directions used to both be writable with nothing
     // deciding which won.
     //
+    // ⚠️ `availableOnProducts` held two entries when it was deleted, and they
+    // could not be carried over: they named product LINES, and the product side
+    // enumerates option by option. The three facts — CCNB on Folding Cartons,
+    // SBS on Folding Cartons and Rigid Boxes — are recorded in the decision
+    // register, because a coarse claim has nowhere to live in a fine model.
+    //
     // THE CUSTOMIZATION AXIS COLLAPSED TO ONE FIELD (PROD-2534).
     // `worksOnCustomizations` and `incompatibleWithCustomizations` became
     // `compatibleCustomizations` below: one atomic list, read both ways.
     //
-    // ⚠️ The retired pair existed because ONE ARRAY CAN CARRY ONLY ONE MEANING
+    // ⚠️ The deleted pair existed because ONE ARRAY CAN CARRY ONLY ONE MEANING
     // FOR "EMPTY", and an allow-list and a deny-list want opposite ones. That
     // argument was sound and it is not what changed — what changed is who
     // authors the list. The spec system will own compatibility and push it
@@ -384,124 +370,6 @@ export const customizationOption = defineType({
         }).warning(),
       ],
     }),
-
-    // RETIRED (PROD-2529). A product now states its own list, in
-    // `product.availableCustomizations`. This field answered the same question
-    // from the other side and nothing decided which won — the Product wins,
-    // because that is the direction the product data source will push and the
-    // direction the work is actually reasoned about. Deprecated rather than
-    // deleted (Conventions §4.3): 2 of 126 documents carry entries and those
-    // stay legible. The role-conditioned warning is gone with it — a warning on
-    // a field nobody can write is noise nobody can act on.
-    defineField({
-      name: 'availableOnProducts',
-      title: 'Available on products (retired)',
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField(
-        'Retired — which products offer an option is now stated on the Product, in "Available customizations". Read-only; existing entries are kept.',
-      ),
-      description:
-        'RETIRED. Which products offer this as a choice is now answered on the Product itself, in "Available customizations". Kept read-only so existing entries stay readable.',
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'productLine' },
-            { type: 'productStyle' },
-            { type: 'product' },
-          ],
-        },
-      ],
-    }),
-    // RETIRED (PROD-2529). A carve-out only earns its place where you enumerate
-    // coarsely — it exists to subtract from a broad stroke. The Product now
-    // enumerates option by option, so there is no broad stroke left to carve
-    // out of. 0 of 126 populated, so nothing is lost; deprecated rather than
-    // deleted so the field cannot be quietly re-added under the same name.
-    defineField({
-      name: 'exceptProducts',
-      title: 'Except on (retired)',
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField(
-        'Retired — there is nothing left to carve out of. A product now lists the options it offers one by one, rather than being covered by a broad scope that needed exceptions.',
-      ),
-      description:
-        'RETIRED. Carve-outs existed to narrow a coarse "available on" scope. Availability is now stated per option on the Product, so no carve-out is needed.',
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'productStyle' },
-            { type: 'product' },
-          ],
-        },
-      ],
-    }),
-    // RETIRED (PROD-2534). Merged into `compatibleCustomizations` above, which
-    // records the same fact at option level and reads from both ends. The
-    // finish x material constraint this field was created to hold is now one
-    // shape of the same list: a finish names the boards it can go on, and each
-    // board shows the finish back.
-    //
-    // 0 of 126 populated, so nothing is preserved and nothing had to be
-    // migrated. Deprecated rather than deleted anyway (Conventions section 4.3),
-    // so the name cannot be quietly re-added meaning something else — the same
-    // call `exceptProducts` got at the same count.
-    defineField({
-      name: 'worksOnCustomizations',
-      title: 'Works on (retired)',
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField(
-        'Retired — merged into "Compatible customizations", which says the same thing at option level and reads both ways. Nothing was ever recorded here.',
-      ),
-      description:
-        'RETIRED. Which materials a customization can be applied to is now part of "Compatible customizations" above, recorded once and read from either end.',
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'customizationType' },
-            { type: 'customizationOption' },
-          ],
-        },
-      ],
-    }),
-    // RETIRED (PROD-2534). A separate deny-list is gone: what cannot be combined
-    // is now the ABSENCE of an entry in `compatibleCustomizations`.
-    //
-    // ⚠️ That is a real inversion and it is the expensive half of this change.
-    // A deny-list records a few dozen clashes; an allow-list has to record every
-    // pair that is fine in order to imply them. It is only affordable because
-    // the spec system will author the list rather than a person.
-    //
-    // Its validation goes with it, including the symmetry warning. Symmetry is
-    // no longer something to check: one stored edge read from both ends makes
-    // asymmetry unrepresentable rather than detectable. A rule on a field nobody
-    // can write is noise nobody can act on — the same reason the role-conditioned
-    // warning went with `availableOnProducts`.
-    defineField({
-      name: 'incompatibleWithCustomizations',
-      title: "Can't combine with (retired)",
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField(
-        'Retired — there is no separate deny-list now. Two options that cannot be combined are simply not listed in each other\'s "Compatible customizations". Nothing was ever recorded here.',
-      ),
-      description:
-        'RETIRED. Clashes are no longer recorded separately — an option that is not in "Compatible customizations" cannot be ordered alongside this one.',
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'customizationType' },
-            { type: 'customizationOption' },
-          ],
-        },
-      ],
-    }),
     // D47 §1 — `achieves` names CANDIDATES, not a recipe. It points from a technical
     // option at the simplified, customer-facing option it can deliver: VMPET Film
     // achieves High-Barrier. The reverse list shown on the simplified option is
@@ -585,9 +453,9 @@ export const customizationOption = defineType({
 
     // `benefits` replaces `whyChooseBlock`, matching what Product and Product Style
     // already ship (D33). "Block" meant rich text and named the mechanism, not the
-    // meaning. The old field is deprecated rather than deleted — 8 of 33 Options carry
-    // copy — and the migration copies it across, so this is steps 1-4 of the rename
-    // procedure with step 5 left for a later sweep.
+    // meaning. The old field was deprecated rather than deleted while 8 of 33 Options
+    // carried copy; the migration copied it across and a later sweep removed the
+    // field and swept the key. The full five steps, finished.
     defineField({
       name: 'benefits',
       title: 'Benefits',

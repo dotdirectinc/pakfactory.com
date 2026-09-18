@@ -32,6 +32,7 @@
     "migrate:unset-retired-fields": "node scripts/migrate-unset-retired-option-fields.mjs",
     "migrate:schema-review-d48": "node scripts/migrate-schema-review-d48.mjs",
     "migrate:unset-removed-deprecated": "node scripts/migrate-unset-removed-deprecated-fields.mjs",
+    "migrate:unset-verified-deprecations": "node scripts/migrate-unset-verified-deprecations.mjs",
     "migrate:split-customization-role": "node scripts/migrate-split-customization-role.mjs",
     "migrate:product-tree-featured-image": "node scripts/migrate-product-tree-featured-image.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",

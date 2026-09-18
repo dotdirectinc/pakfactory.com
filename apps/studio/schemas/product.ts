@@ -341,30 +341,6 @@ export const product = defineType({
           return true
         }),
     }),
-    // DEPRECATED (PROD-2512) — `solutions[0]` is the primary now, the same
-    // positional rule `productStyle` already uses. This field was exactly
-    // `solutions[0]` on all 58 presets that carried it, and nothing outside the
-    // Studio ever read it, so the merge loses nothing.
-    //
-    // Kept read-only rather than deleted: Conventions §4.3 forbids removing a
-    // POPULATED field in the same change that stops using it. Removal is a
-    // follow-up once the source stops sending it.
-    //
-    // Why merge at all: two fields held one fact and nothing checked them against
-    // each other, so a stray edit could point the breadcrumb at a solution the
-    // product does not serve.
-    defineField({
-      name: 'primarySolution',
-      title: 'Primary solution (deprecated)',
-      type: 'reference',
-      group: GROUPS.categorization,
-      to: [{ type: 'solution' }],
-      readOnly: true,
-      options: { disableNew: true },
-      description:
-        'DEPRECATED — the primary solution is now the first entry in Solutions above. Kept read-only so nothing is lost while the product data source stops sending it; it is not read anywhere.',
-      hidden: ({ value }) => !value,
-    }),
     defineField({
       name: 'relatedProducts',
       title: 'Related products',
