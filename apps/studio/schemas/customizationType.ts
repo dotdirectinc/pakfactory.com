@@ -144,29 +144,6 @@ export const customizationType = defineType({
       },
       validation: (Rule) => Rule.required(),
     }),
-    // DEPRECATED by the rename above. Kept because it is populated on all 37 Types
-    // (drafts included), and Conventions §4.3 forbids removing a populated field in
-    // the change that stops using it. `migrate:split-customization-role` copies it to
-    // `customerSelects`; removal is a later sweep.
-    //
-    // Contrast `property.cardinality`, renamed outright in the same PR — that one was
-    // unset on all 9 documents, so there was nothing to deprecate toward.
-    defineField({
-      name: 'cardinality',
-      title: 'How many can a customer choose? (deprecated)',
-      type: 'string',
-      group: 'content',
-      readOnly: true,
-      description:
-        'DEPRECATED — renamed to "How many can a customer choose?" (`customerSelects`). Read-only; do not author. Scheduled for removal once the rename is verified.',
-      options: {
-        layout: 'radio',
-        list: [
-          { title: 'One', value: 'one' },
-          { title: 'Several', value: 'many' },
-        ],
-      },
-    }),
     defineField({
       name: 'description',
       title: 'Description',
