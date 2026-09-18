@@ -375,7 +375,7 @@ export const product = defineType({
       title: 'Properties',
       type: 'array',
       group: GROUPS.specs,
-      description: `Every property value this product states — the picker is scoped by the line's declaration. Nothing inherits from Line or Style. ${SOURCE_OWNED_NOTE}`,
+      description: `Every property value this product states — the picker offers only what this product's line declares, so an empty picker means the property has to be added to the line first. Nothing inherits from Line or Style. ${SOURCE_OWNED_NOTE}`,
       of: [
         {
           type: 'object',
@@ -386,7 +386,44 @@ export const product = defineType({
               title: 'Property',
               type: 'reference',
               to: [{ type: 'property' }],
-              options: { disableNew: true },
+              // Scoped to what the product's Line declared, exactly as an Option's
+              // picker is scoped by its Type's declaration. Without this the
+              // declaration was decorative — every Property was offered on every
+              // product, so a rigid box could state a flute and nothing objected.
+              //
+              // An inspiration preset has no Line of its own (`productLine` is
+              // required for standard products only), so it resolves through
+              // `basedOn` to the standard product it is built from. 58 of 336
+              // products are in that position — not an edge case worth skipping.
+              //
+              // Declaring nothing offers nothing, deliberately: the fix is to
+              // declare the property on the Line, never to widen the picker.
+              options: {
+                disableNew: true,
+                filter: ({ document }) => {
+                  const doc = document as
+                    | { productLine?: { _ref?: string }; basedOn?: { _ref?: string } }
+                    | undefined
+                  const lineRef = doc?.productLine?._ref
+                  if (lineRef) {
+                    return {
+                      filter: '_id in *[_id == $lineRef][0].properties[].property._ref',
+                      params: { lineRef },
+                    }
+                  }
+                  const basedOnRef = doc?.basedOn?._ref
+                  if (basedOnRef) {
+                    return {
+                      filter:
+                        '_id in *[_id == *[_id == $basedOnRef][0].productLine._ref][0].properties[].property._ref',
+                      params: { basedOnRef },
+                    }
+                  }
+                  // No line and nothing to inherit one from: there is no
+                  // declaration to scope by, so offer nothing rather than everything.
+                  return { filter: 'false' }
+                },
+              },
               validation: (Rule) => Rule.required(),
             }),
             defineField({
@@ -419,6 +456,99 @@ export const product = defineType({
           },
         },
       ],
+      // The other half of the Line's declaration. `productLine.properties[]`
+      // flags each entry `required`, and until now nothing read that flag — the
+      // only two occurrences of the word in the repo were its own help strings.
+      //
+      // WARNING, not error, for two reasons that both matter. These values are
+      // written by the product data source over the API, where the picker filter
+      // above has no effect whatsoever; an editor opening a synced product cannot
+      // fix what the sync produced, and blocking the save would strand them with
+      // a document they are not the author of. And requiredness is set on the
+      // Line by one person while the block would land on a Product edited by
+      // another.
+      //
+      // One fetch, three findings, one message: `custom` returns a single result,
+      // and splitting this into three rules would mean three round trips.
+      validation: (Rule) =>
+        Rule.custom(async (value, context) => {
+          const rows = Array.isArray(value)
+            ? (value as { property?: { _ref?: string }; values?: unknown[] }[])
+            : []
+          const doc = context.document as
+            | { productLine?: { _ref?: string }; basedOn?: { _ref?: string } }
+            | undefined
+          const statedRefs = rows
+            .map((row) => row?.property?._ref)
+            .filter((ref): ref is string => Boolean(ref))
+
+          const lineRef = doc?.productLine?._ref ?? ''
+          const basedOnRef = doc?.basedOn?._ref ?? ''
+          if (!lineRef && !basedOnRef && statedRefs.length === 0) return true
+
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+
+          // Both halves in one round trip. A preset resolves its declaration
+          // through `basedOn`, the same fallback the picker above uses. Every
+          // filter is `_id ==` or `_id in`, so this stays index-backed.
+          const { declared, stated } = await client.fetch<{
+            declared: { ref: string | null; title: string | null; required: boolean | null }[] | null
+            stated: { _id: string; title: string | null }[] | null
+          }>(
+            `{
+              "declared": coalesce(
+                *[_id == $lineRef][0].properties,
+                *[_id == *[_id == $basedOnRef][0].productLine._ref][0].properties,
+                []
+              )[]{ "ref": property._ref, "title": property->title, required },
+              "stated": *[_id in $statedRefs]{ _id, title }
+            }`,
+            { lineRef, basedOnRef, statedRefs },
+          )
+
+          const declaredList = declared ?? []
+          const titleOf = new Map((stated ?? []).map((p) => [p._id, p.title ?? 'Untitled property']))
+          const statedSet = new Set(statedRefs)
+          const problems: string[] = []
+
+          // 1 — a required declaration with nothing stated against it.
+          const missing = declaredList
+            .filter((d) => d.required && d.ref && !statedSet.has(d.ref))
+            .map((d) => d.title ?? 'Untitled property')
+          if (missing.length) {
+            problems.push(
+              `${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} required by this product line but not stated here.`,
+            )
+          }
+
+          // 2 — something stated that the line never declared. Silent when the
+          // line declares nothing at all: that is an unfinished line rather than
+          // a wrong product, and flagging it would fire on every product in it.
+          if (declaredList.length) {
+            const declaredRefs = new Set(declaredList.map((d) => d.ref))
+            const undeclared = statedRefs
+              .filter((ref) => !declaredRefs.has(ref))
+              .map((ref) => titleOf.get(ref) ?? 'Untitled property')
+            if (undeclared.length) {
+              problems.push(
+                `${[...new Set(undeclared)].join(', ')} ${undeclared.length === 1 ? 'is' : 'are'} not declared by this product line — add the property to the line, or remove it here.`,
+              )
+            }
+          }
+
+          // 3 — a row that names a property and states no value for it says
+          // nothing at all, and reads as a filled-in row at a glance.
+          const empty = rows
+            .filter((row) => row?.property?._ref && !(row.values ?? []).length)
+            .map((row) => titleOf.get(row.property!._ref!) ?? 'Untitled property')
+          if (empty.length) {
+            problems.push(
+              `${[...new Set(empty)].join(', ')} ${empty.length === 1 ? 'has' : 'have'} no value.`,
+            )
+          }
+
+          return problems.length ? problems.join(' ') : true
+        }).warning(),
     }),
     defineField({
       name: 'availableCustomizations',
