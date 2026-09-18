@@ -4,7 +4,6 @@ import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_COMPARISON_ID} from '@/components/customization/customization-comparison';
 import {Icon} from '@/components/ui/icon';
-import {getReferenceSpecFixture} from '@/lib/catalog/reference-fixtures';
 import type {
     CustomizationDetail,
     CustomizationPropertyValue,
@@ -29,7 +28,7 @@ function groupKey(value: CustomizationPropertyValue): string | null {
 }
 
 /**
- * Spec rows from stated declared properties (Slice E), else slug fixture.
+ * Spec rows from stated declared Properties on the Option's Type (Sanity only).
  */
 export function buildReferenceSpecRows(
     detail: CustomizationDetail,
@@ -41,42 +40,39 @@ export function buildReferenceSpecRows(
             .filter((k): k is string => Boolean(k)),
     );
 
-    if (statedKeys.size > 0) {
-        const groups = new Map<string, CustomizationPropertyValue[]>();
-        for (const value of detail.properties) {
-            const key = groupKey(value);
-            if (!key || !statedKeys.has(key)) continue;
-            const list = groups.get(key) ?? [];
-            list.push(value);
-            groups.set(key, list);
-        }
+    if (statedKeys.size === 0) return [];
 
-        const rows: ReferenceSpecRow[] = [];
-        for (const [key, values] of groups) {
-            if (values.length === 0) continue;
-            const declared = detail.declaredProperties.find(
-                (d) =>
-                    d.propertySlug === key || d.propertyId === key,
-            );
-            const label =
-                declared?.propertyTitle?.trim() ||
-                values.find((v) => v.propertyTitle)?.propertyTitle?.trim() ||
-                key;
-            const factDisplays = values.flatMap((v) =>
-                v.facts.map((f) => f.display).filter(Boolean),
-            );
-            const titles = values.map((v) => v.title).filter(Boolean);
-            const value =
-                factDisplays.length > 0
-                    ? factDisplays.join(' · ')
-                    : titles.join(' · ');
-            if (!value) continue;
-            rows.push({label, value});
-        }
-        if (rows.length > 0) return rows;
+    const groups = new Map<string, CustomizationPropertyValue[]>();
+    for (const value of detail.properties) {
+        const key = groupKey(value);
+        if (!key || !statedKeys.has(key)) continue;
+        const list = groups.get(key) ?? [];
+        list.push(value);
+        groups.set(key, list);
     }
 
-    return getReferenceSpecFixture(detail.slug);
+    const rows: ReferenceSpecRow[] = [];
+    for (const [key, values] of groups) {
+        if (values.length === 0) continue;
+        const declared = detail.declaredProperties.find(
+            (d) => d.propertySlug === key || d.propertyId === key,
+        );
+        const label =
+            declared?.propertyTitle?.trim() ||
+            values.find((v) => v.propertyTitle)?.propertyTitle?.trim() ||
+            key;
+        const factDisplays = values.flatMap((v) =>
+            v.facts.map((f) => f.display).filter(Boolean),
+        );
+        const titles = values.map((v) => v.title).filter(Boolean);
+        const value =
+            factDisplays.length > 0
+                ? factDisplays.join(' · ')
+                : titles.join(' · ');
+        if (!value) continue;
+        rows.push({label, value});
+    }
+    return rows;
 }
 
 /**

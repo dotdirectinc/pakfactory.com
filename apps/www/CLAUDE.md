@@ -60,6 +60,8 @@ Do **not** collapse these layers:
 
 **Customizations catalog (PROD-1288):** route `/customizations` + Studio section `customizationsCatalog` share `listCustomizations()` and `CustomizationCatalog*` components. Distinct from `customizationsRow` (catalogue strip). How-built: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md).
 
+**Products catalog (PROD-1845):** route `/products` uses `listProductLibrary()` and `ProductCatalog*` components — same filter/search/load-more pattern as customizations **without** category tabs. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md). Line/style drill-down routes unchanged.
+
 **Route gate (challenge before adding Sections):**
 
 - Chrome (nav/footer/breadcrumbs)? → **not** a section.

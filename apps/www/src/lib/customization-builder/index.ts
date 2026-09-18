@@ -16,6 +16,7 @@ export type {
 
 export {
     buildStepsFromCatalog,
+    buildStepsFromOffer,
     createEmptyBuilderState,
     emptyDimensions,
     emptyFace,
@@ -35,6 +36,7 @@ export {
     clearStep,
     patchEntryNote,
     patchFace,
+    patchPropertySelections,
     seedFromCustomizations,
     shouldEnterGuided,
     summarizeAnswer,

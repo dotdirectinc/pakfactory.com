@@ -4,7 +4,6 @@ import {
     useCallback,
     useDeferredValue,
     useEffect,
-    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -19,47 +18,34 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {
-    CustomizationCatalogFilters,
-} from '@/components/customization/customization-catalog-filters';
-import {CustomizationCatalogFiltersDrawer} from '@/components/customization/customization-catalog-filters-drawer';
+    ProductCatalogFilters,
+} from '@/components/product/product-catalog-filters';
+import {ProductCatalogFiltersDrawer} from '@/components/product/product-catalog-filters-drawer';
 import {
-    CustomizationCatalogList,
-    CustomizationCatalogListSkeleton,
-} from '@/components/customization/customization-catalog-list';
+    ProductCatalogList,
+    ProductCatalogListSkeleton,
+} from '@/components/product/product-catalog-list';
 import {
-    buildCustomizationFacetCounts,
-    CUSTOMIZATION_CATALOG_ALL_CATEGORY,
-    matchesCustomizationItem,
-} from '@/lib/catalog/customization-catalog-filter';
+    buildProductFacetCounts,
+    matchesProductItem,
+} from '@/lib/catalog/product-catalog-filter';
 import {useCatalogSearchDraft} from '@/lib/catalog/use-catalog-search-draft';
-import type {
-    CustomizationFacetDef,
-    CustomizationLibraryResult,
-} from '@/lib/catalog/types';
+import type {ProductLibraryResult} from '@/lib/catalog/types';
+import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
 /** Auto-reveal this many PAGE_SIZE batches via scroll before showing Load more. */
 const AUTO_REVEAL_LIMIT = 2;
 /** Simulated delay so append skeletons are visible before revealing the next batch. */
 const APPEND_DELAY_MS = 400;
-const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
-const PARAM_CATEGORY = 'category';
 const PARAM_Q = 'q';
 /** Legacy load-more depth param — stripped on URL writes, never read. */
 const LEGACY_PARAM_VISIBLE = 'visible';
 
-export type CustomizationCatalogTab = {
-    label: string;
-    value: string;
-};
-
-type CustomizationCatalogPanelProps = {
-    library: CustomizationLibraryResult;
+type ProductCatalogPanelProps = {
+    library: ProductLibraryResult;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
-    /** Optional initial category slug from Studio section. */
-    initialCategory?: string | null;
-    showHeroChrome?: boolean;
 };
 
 function parseList(raw: string | null): string[] {
@@ -80,36 +66,15 @@ function toggleValue(list: string[], value: string): string[] {
         : [...list, value];
 }
 
-export function CustomizationCatalogPanel({
+export function ProductCatalogPanel({
     library,
     urlSync = true,
-    initialCategory = null,
-}: CustomizationCatalogPanelProps) {
+}: ProductCatalogPanelProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
 
-    const tabs: CustomizationCatalogTab[] = useMemo(
-        () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
-        [library.tabs],
-    );
-
-    const sharedFacetIds = useMemo(
-        () => new Set(library.facetCatalog.shared.map((f) => f.id)),
-        [library.facetCatalog.shared],
-    );
-
-    const readCategory = useCallback(() => {
-        if (urlSync) {
-            const fromUrl = searchParams.get(PARAM_CATEGORY)?.trim();
-            if (fromUrl) return fromUrl;
-        }
-        if (initialCategory?.trim()) return initialCategory.trim();
-        return ALL_CATEGORY;
-    }, [urlSync, searchParams, initialCategory]);
-
-    const [localCategory, setLocalCategory] = useState(readCategory);
     const [localQuery, setLocalQuery] = useState(() =>
         urlSync ? (searchParams.get(PARAM_Q) ?? '') : '',
     );
@@ -118,10 +83,7 @@ export function CustomizationCatalogPanel({
     >(() => {
         if (!urlSync) return {};
         const next: Record<string, string[]> = {};
-        for (const facet of [
-            ...library.facetCatalog.shared,
-            ...Object.values(library.facetCatalog.byCategory).flat(),
-        ]) {
+        for (const facet of library.facetCatalog.shared) {
             const values = parseList(searchParams.get(facet.id));
             if (values.length) next[facet.id] = values;
         }
@@ -129,35 +91,21 @@ export function CustomizationCatalogPanel({
     });
     const [localVisible, setLocalVisible] = useState(PAGE_SIZE);
 
-    const category = urlSync ? readCategory() : localCategory;
     const query = urlSync ? (searchParams.get(PARAM_Q) ?? '') : localQuery;
     const visible = localVisible;
 
     const selections = useMemo(() => {
         if (!urlSync) return localSelections;
         const next: Record<string, string[]> = {};
-        const facets = [
-            ...library.facetCatalog.shared,
-            ...(category !== ALL_CATEGORY
-                ? (library.facetCatalog.byCategory[category] ?? [])
-                : []),
-        ];
-        for (const facet of facets) {
+        for (const facet of library.facetCatalog.shared) {
             const values = parseList(searchParams.get(facet.id));
             if (values.length) next[facet.id] = values;
         }
         return next;
-    }, [
-        urlSync,
-        localSelections,
-        searchParams,
-        library.facetCatalog,
-        category,
-    ]);
+    }, [urlSync, localSelections, searchParams, library.facetCatalog.shared]);
 
     const writeParams = useCallback(
         (patch: {
-            category?: string;
             q?: string;
             visible?: number;
             selections?: Record<string, string[]>;
@@ -166,15 +114,12 @@ export function CustomizationCatalogPanel({
             if (patch.visible !== undefined) setLocalVisible(patch.visible);
 
             if (!urlSync) {
-                if (patch.category !== undefined)
-                    setLocalCategory(patch.category);
                 if (patch.q !== undefined) setLocalQuery(patch.q);
                 if (patch.selections) setLocalSelections(patch.selections);
                 return;
             }
 
             const touchesUrl =
-                patch.category !== undefined ||
                 patch.q !== undefined ||
                 patch.selections !== undefined ||
                 (patch.clearFacetIds?.length ?? 0) > 0;
@@ -183,24 +128,14 @@ export function CustomizationCatalogPanel({
             const params = new URLSearchParams(searchParams.toString());
             params.delete(LEGACY_PARAM_VISIBLE);
 
-            const nextCategory = patch.category ?? category;
-            if (!nextCategory || nextCategory === ALL_CATEGORY) {
-                params.delete(PARAM_CATEGORY);
-            } else {
-                params.set(PARAM_CATEGORY, nextCategory);
-            }
-
             const nextQ = patch.q ?? query;
             if (!nextQ.trim()) params.delete(PARAM_Q);
             else params.set(PARAM_Q, nextQ);
 
             const nextSelections = patch.selections ?? selections;
-            const allFacetIds = new Set([
-                ...library.facetCatalog.shared.map((f) => f.id),
-                ...Object.values(library.facetCatalog.byCategory)
-                    .flat()
-                    .map((f) => f.id),
-            ]);
+            const allFacetIds = new Set(
+                library.facetCatalog.shared.map((f) => f.id),
+            );
             for (const id of allFacetIds) {
                 params.delete(id);
             }
@@ -222,10 +157,9 @@ export function CustomizationCatalogPanel({
         [
             urlSync,
             searchParams,
-            category,
             query,
             selections,
-            library.facetCatalog,
+            library.facetCatalog.shared,
             pathname,
             router,
         ],
@@ -245,20 +179,19 @@ export function CustomizationCatalogPanel({
     const deferredQuery = useDeferredValue(draftQuery);
     const isSearchUpdating = draftQuery !== deferredQuery;
 
-    const categoryFacets: CustomizationFacetDef[] =
-        category === ALL_CATEGORY
-            ? []
-            : (library.facetCatalog.byCategory[category] ?? []);
-
     const filtered = useMemo(() => {
         return library.items.filter((item) =>
-            matchesCustomizationItem(item, {
-                category,
-                query: deferredQuery,
-                selections,
-            }),
+            matchesProductItem(item, {query: deferredQuery, selections}),
         );
-    }, [library.items, category, deferredQuery, selections]);
+    }, [library.items, deferredQuery, selections]);
+
+    const lineEntry = useMemo(() => {
+        const selected =
+            selections[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID] ?? [];
+        const slug = selected.length === 1 ? selected[0] : undefined;
+        if (!slug) return null;
+        return library.linesBySlug[slug] ?? null;
+    }, [selections, library.linesBySlug]);
 
     const shown = filtered.slice(0, visible);
 
@@ -354,108 +287,14 @@ export function CustomizationCatalogPanel({
         return () => observer.disconnect();
     }, [canAutoReveal, revealNextBatch, visible]);
 
-    const countForTab = useCallback(
-        (tabValue: string) => {
-            return library.items.filter((item) =>
-                matchesCustomizationItem(item, {
-                    category: tabValue,
-                    query: deferredQuery,
-                    selections,
-                }),
-            ).length;
-        },
-        [library.items, deferredQuery, selections],
+    const countsByFacet = useMemo(
+        () =>
+            buildProductFacetCounts(library.items, library.facetCatalog.shared, {
+                query: deferredQuery,
+                selections,
+            }),
+        [library.items, library.facetCatalog.shared, deferredQuery, selections],
     );
-
-    const navRef = useRef<HTMLElement>(null);
-    const tabRefs = useRef(new Map<string, HTMLButtonElement>());
-    const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-    const [indicator, setIndicator] = useState({
-        left: 0,
-        width: 0,
-        ready: false,
-    });
-    /** After first layout placement, enable slide transitions (hover / tab clicks). */
-    const [indicatorTransitionEnabled, setIndicatorTransitionEnabled] =
-        useState(false);
-
-    const updateIndicator = useCallback(() => {
-        const nav = navRef.current;
-        const target = hoveredTab ?? category;
-        const btn = tabRefs.current.get(target);
-        if (!nav || !btn) {
-            setIndicator((prev) =>
-                prev.ready ? {...prev, ready: false} : prev,
-            );
-            return;
-        }
-        const navRect = nav.getBoundingClientRect();
-        const btnRect = btn.getBoundingClientRect();
-        setIndicator({
-            left: btnRect.left - navRect.left + nav.scrollLeft,
-            width: btnRect.width,
-            ready: true,
-        });
-    }, [category, hoveredTab]);
-
-    useLayoutEffect(() => {
-        updateIndicator();
-        const nav = navRef.current;
-        const ro =
-            typeof ResizeObserver !== 'undefined'
-                ? new ResizeObserver(() => updateIndicator())
-                : null;
-        if (nav && ro) ro.observe(nav);
-        window.addEventListener('resize', updateIndicator);
-        return () => {
-            ro?.disconnect();
-            window.removeEventListener('resize', updateIndicator);
-        };
-    }, [updateIndicator, tabs]);
-
-    // Enable slide only after the first positioned frame has painted — otherwise
-    // deep links animate left from 0 (under All) to the seeded category.
-    useEffect(() => {
-        if (indicator.ready) setIndicatorTransitionEnabled(true);
-    }, [indicator.ready]);
-
-    const countsByFacet = useMemo(() => {
-        const facets = [...library.facetCatalog.shared, ...categoryFacets];
-        return buildCustomizationFacetCounts(library.items, facets, {
-            category,
-            query: deferredQuery,
-            selections,
-        });
-    }, [
-        library.items,
-        library.facetCatalog.shared,
-        categoryFacets,
-        category,
-        deferredQuery,
-        selections,
-    ]);
-
-    function selectCategory(next: string) {
-        // Clear category-specific facet selections when switching tabs.
-        const nextSelections: Record<string, string[]> = {};
-        for (const [id, values] of Object.entries(selections)) {
-            if (sharedFacetIds.has(id)) nextSelections[id] = values;
-        }
-        setDraftQuery('');
-        writeParams({
-            category: next,
-            q: '',
-            selections: nextSelections,
-            visible: PAGE_SIZE,
-            clearFacetIds: Object.keys(selections).filter(
-                (id) => !sharedFacetIds.has(id),
-            ),
-        });
-        if (!urlSync) {
-            setLocalSelections(nextSelections);
-            setLocalQuery('');
-        }
-    }
 
     function onToggle(facetId: string, value: string) {
         const next = {
@@ -474,14 +313,12 @@ export function CustomizationCatalogPanel({
     function onReset() {
         setDraftQuery('');
         writeParams({
-            category: ALL_CATEGORY,
             q: '',
             selections: {},
             visible: PAGE_SIZE,
             clearFacetIds: Object.keys(selections),
         });
         if (!urlSync) {
-            setLocalCategory(ALL_CATEGORY);
             setLocalQuery('');
             setLocalSelections({});
         }
@@ -510,8 +347,8 @@ export function CustomizationCatalogPanel({
                     onChange={(event) => {
                         setDraftQuery(event.target.value);
                     }}
-                    placeholder="Search customizations"
-                    aria-label="Search customizations"
+                    placeholder="Search products"
+                    aria-label="Search products"
                     className="rounded-md py-2 pl-9"
                 />
             </div>
@@ -520,7 +357,7 @@ export function CustomizationCatalogPanel({
 
     return (
         <PageDielineSection innerClassName="pb-24 pt-8 flex flex-col gap-8">
-            {/* Mobile: sticky search + filters + category chips */}
+            {/* Mobile: sticky search + filters */}
             <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                 <div className="flex items-center gap-2 py-3">
                     {renderSearchField()}
@@ -546,133 +383,37 @@ export function CustomizationCatalogPanel({
                         ) : null}
                     </Button>
                 </div>
-                <nav
-                    className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-3"
-                    aria-label="Customization categories"
-                >
-                    {tabs.map((tab) => {
-                        const isActive = category === tab.value;
-                        return (
-                            <button
-                                key={tab.value}
-                                type="button"
-                                onClick={() => selectCategory(tab.value)}
-                                className={cn(
-                                    'shrink-0 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
-                                    isActive
-                                        ? 'border-foreground bg-foreground text-background'
-                                        : 'border-border bg-background text-foreground',
-                                )}
-                                aria-pressed={isActive}
-                            >
-                                {tab.label}{' '}
-                                <span
-                                    className={cn(
-                                        'tabular-nums',
-                                        isActive
-                                            ? 'text-background/80'
-                                            : 'text-muted-foreground',
-                                    )}
-                                >
-                                    {countForTab(tab.value)}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </nav>
             </div>
 
-            {/* Desktop: sticky underline tabs + search */}
+            {/* Desktop: sticky search bar (no category tabs) */}
             <div className="-mx-layout-gutter-inner hidden border-y border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block">
                 <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
-                    <nav
-                        ref={navRef}
-                        className="relative flex min-w-0 flex-1 flex-wrap items-stretch gap-x-6 gap-y-2"
-                        aria-label="Customization categories"
-                        onMouseLeave={() => setHoveredTab(null)}
-                    >
-                        <span
-                            aria-hidden
-                            className={cn(
-                                'pointer-events-none absolute bottom-0 z-10 h-1 bg-primary',
-                                indicatorTransitionEnabled &&
-                                    'transition-[left,width,opacity] duration-300 ease-out',
-                                indicator.ready ? 'opacity-100' : 'opacity-0',
-                            )}
-                            style={{
-                                left: indicator.left,
-                                width: indicator.width,
-                            }}
-                        />
-                        {tabs.map((tab) => {
-                            const isActive = category === tab.value;
-                            return (
-                                <button
-                                    key={tab.value}
-                                    ref={(el) => {
-                                        if (el) {
-                                            tabRefs.current.set(tab.value, el);
-                                        } else {
-                                            tabRefs.current.delete(tab.value);
-                                        }
-                                    }}
-                                    type="button"
-                                    onClick={() => selectCategory(tab.value)}
-                                    onMouseEnter={() =>
-                                        setHoveredTab(tab.value)
-                                    }
-                                    className={cn(
-                                        'relative flex items-center gap-2 py-4 text-sm font-medium transition-colors duration-200',
-                                        isActive
-                                            ? 'text-primary'
-                                            : 'text-muted-foreground hover:text-primary',
-                                    )}
-                                    aria-pressed={isActive}
-                                >
-                                    <span>{tab.label}</span>
-                                    <span className="font-normal tabular-nums text-muted-foreground/50">
-                                        {countForTab(tab.value)}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </nav>
-                    <div className="relative flex w-full min-w-[14rem] items-center py-2 sm:ml-auto sm:w-64">
+                    <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
                         {renderSearchField()}
                     </div>
                 </div>
             </div>
 
-            <CustomizationCatalogFiltersDrawer
+            <ProductCatalogFiltersDrawer
                 open={filtersOpen}
                 onOpenChange={setFiltersOpen}
                 resultCount={filtered.length}
-                category={category}
-                categoryOptions={tabs}
-                categoryCounts={Object.fromEntries(
-                    tabs.map((tab) => [tab.value, countForTab(tab.value)]),
-                )}
-                onSelectCategory={selectCategory}
                 sharedFacets={library.facetCatalog.shared}
-                categoryFacets={categoryFacets}
                 selections={selections}
                 countsByFacet={countsByFacet}
                 onToggle={onToggle}
                 onReset={onReset}
-                showCategoryHint={category === ALL_CATEGORY}
             />
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-                <CustomizationCatalogFilters
+                <ProductCatalogFilters
                     resultCount={filtered.length}
                     totalCount={library.items.length}
                     sharedFacets={library.facetCatalog.shared}
-                    categoryFacets={categoryFacets}
                     selections={selections}
                     countsByFacet={countsByFacet}
                     onToggle={onToggle}
                     onReset={onReset}
-                    showCategoryHint={category === ALL_CATEGORY}
                 />
 
                 <div
@@ -684,11 +425,12 @@ export function CustomizationCatalogPanel({
                     )}
                     aria-busy={isPending || isAppending || isSearchUpdating}
                 >
-                    <CustomizationCatalogList items={shown} />
+                    <ProductCatalogList
+                        items={shown}
+                        lineEntry={lineEntry}
+                    />
                     {isAppending ? (
-                        <CustomizationCatalogListSkeleton
-                            count={appendCount}
-                        />
+                        <ProductCatalogListSkeleton count={appendCount} />
                     ) : null}
                     <div className="mt-4 flex flex-col items-center gap-2">
                         {canAutoReveal ? (

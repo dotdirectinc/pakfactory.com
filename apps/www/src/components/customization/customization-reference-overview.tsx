@@ -1,8 +1,5 @@
-import {Check} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {Icon} from '@/components/ui/icon';
 import {SanityImage} from '@/components/ui/sanity-image';
-import {getReferenceFeatures} from '@/lib/catalog/reference-fixtures';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export const CUSTOMIZATION_REFERENCE_OVERVIEW_ID =
@@ -15,16 +12,15 @@ type CustomizationReferenceOverviewProps = {
 
 /**
  * Material Reference — Overview subsection (PROD-1299).
- * Content-only; parent band owns the dieline shell.
+ * Sanity Option description + media only (no fixture features).
  */
 export function CustomizationReferenceOverview({
     detail,
     className,
 }: CustomizationReferenceOverviewProps) {
-    const features = getReferenceFeatures(detail.slug);
     const hero = detail.media.find((m) => Boolean(m.src));
     const body = detail.description?.trim();
-    const hasContent = Boolean(body || hero?.src || features.length > 0);
+    const hasContent = Boolean(body || hero?.src);
     if (!hasContent) return null;
 
     return (
@@ -58,43 +54,11 @@ export function CustomizationReferenceOverview({
                     ) : null}
                 </div>
             </div>
-
-            {features.length > 0 ? (
-                <ul className="mt-12 grid gap-6 sm:grid-cols-2">
-                    {features.map((feature) => (
-                        <li
-                            key={feature.title}
-                            className="flex gap-3 rounded-control border border-border bg-card p-4"
-                        >
-                            <span
-                                aria-hidden
-                                className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                            >
-                                <Icon
-                                    icon={Check}
-                                    size="sm"
-                                    className="size-3"
-                                    strokeWidth={2.5}
-                                />
-                            </span>
-                            <div className="flex min-w-0 flex-col gap-1">
-                                <p className="text-sm font-semibold tracking-tight text-foreground">
-                                    {feature.title}
-                                </p>
-                                <p className="text-sm leading-relaxed text-muted-foreground">
-                                    {feature.description}
-                                </p>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            ) : null}
         </section>
     );
 }
 
 export function hasReferenceOverview(detail: CustomizationDetail): boolean {
-    const features = getReferenceFeatures(detail.slug);
     const hero = detail.media.some((m) => Boolean(m.src));
-    return Boolean(detail.description?.trim() || hero || features.length > 0);
+    return Boolean(detail.description?.trim() || hero);
 }

@@ -1512,13 +1512,27 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
 }
 
 /** Products — Product Line · Product Style · Product (+ Global Property picks) */
+/**
+ * Editors have no Presentation tab in these workspaces while the surface is
+ * unreleased (PROD-2494), so the structure says where previewing does happen.
+ *
+ * Gated on the SAME switch as the tool itself — `SANITY_STUDIO_PREVIEW_URL_SITE`
+ * — so the note cannot outlive the condition it describes: wire the production
+ * preview target and the tab appears while this label disappears, from one
+ * value in scripts/sanity/studio-targets.mjs.
+ */
+const sitePreviewHint = (S: StructureBuilder) =>
+    process.env.SANITY_STUDIO_PREVIEW_URL_SITE
+        ? []
+        : [S.divider().title('Preview from the staging Studio until release')];
+
 export const productsStructure = (
     S: StructureBuilder,
     _context: StructureResolverContext,
 ) =>
     S.list()
         .title('Products')
-        .items([...productsItems(S)]);
+        .items([...sitePreviewHint(S), ...productsItems(S)]);
 
 /** Customization — Category · Type · Option · Option Group (+ Global Property picks) */
 export const customizationStructure = (
@@ -1527,7 +1541,7 @@ export const customizationStructure = (
 ) =>
     S.list()
         .title('Customization')
-        .items([...customizationItems(S)]);
+        .items([...sitePreviewHint(S), ...customizationItems(S)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D1 workspaces (PROD-2329 / D39) — Case Studies · Global (+ Solutions ·
@@ -1603,7 +1617,7 @@ export const globalStructure = (
 ) =>
     S.list()
         .title('Global')
-        .items([...globalItems(S)]);
+        .items([...sitePreviewHint(S), ...globalItems(S)]);
 
 /** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
  *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
@@ -1615,6 +1629,7 @@ export const solutionsWorkspaceStructure = (
     S.list()
         .title('Solutions')
         .items([
+            ...sitePreviewHint(S),
             S.listItem()
                 .title('Solutions')
                 .icon(BulbOutlineIcon)
@@ -1647,6 +1662,7 @@ export const expertiseStructure = (
     S.list()
         .title('Expertise')
         .items([
+            ...sitePreviewHint(S),
             S.listItem()
                 .title('Expertise Stages')
                 .schemaType('expertiseStage')
@@ -1666,6 +1682,7 @@ export const resourcesWorkspaceStructure = (
     S.list()
         .title('Resources')
         .items([
+            ...sitePreviewHint(S),
             S.listItem()
                 .title('FAQs')
                 .icon(HelpCircleIcon)
@@ -1701,6 +1718,7 @@ export const mainWebsiteStructure = (
     S.list()
         .title('Main Website')
         .items([
+            ...sitePreviewHint(S),
             // Platform pages (PROD-2292) — four shared types. The old static
             // singletons (aboutPage/contactPage/privacyPolicy/termsOfService)
             // folded into Content Page / Legal Page and were removed in pt 3.

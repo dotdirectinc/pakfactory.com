@@ -1,7 +1,9 @@
 import {
     type CatalogCustomizationDetailDoc,
     type CatalogLibraryOptionDoc,
+    type CatalogOptionDoc,
     type CatalogProductDoc,
+    type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
     type CatalogPropertyValueDetailDoc,
 } from '@pakfactory/sanity/queries';
@@ -20,6 +22,8 @@ import type {
     Product,
     ProductFaq,
     ProductKind,
+    ProductLibraryItem,
+    ProductLibraryLineMeta,
     ProductLine,
     ProductLineRef,
     ProductProperty,
@@ -119,8 +123,16 @@ function mapAvailableCustomization(
     const option = row?.customization;
     if (!option?._id || !option.title) return null;
     if (option.status && option.status !== 'active') return null;
-    // Configurator only surfaces configurable options (ADR-017 role).
-    if (option.role === 'reference') return null;
+
+    const configuratorRole =
+        option.configuratorRole === 'reference' ||
+        option.configuratorRole === 'configurable'
+            ? option.configuratorRole
+            : option.role === 'reference' || option.role === 'configurable'
+              ? option.role
+              : 'configurable';
+    // Configurator only surfaces configurable options (D55 / PROD-2529).
+    if (configuratorRole === 'reference') return null;
 
     const type = option.type;
     const category = type?.category;
@@ -138,27 +150,50 @@ function mapAvailableCustomization(
         type?.description,
     );
 
+    const customerSelects =
+        type?.customerSelects === 'many' || type?.cardinality === 'many'
+            ? 'many'
+            : 'one';
+
+    const worksOnIds = (option.worksOnIds ?? [])
+        .map((id) => id?.trim())
+        .filter((id): id is string => Boolean(id));
+    const incompatibleIds = (option.incompatibleIds ?? [])
+        .map((id) => id?.trim())
+        .filter((id): id is string => Boolean(id));
+
     return {
         id: option._id,
         label: option.title,
         slug: option.slug ?? undefined,
         category: categorySlug,
         categoryTitle: category?.title ?? undefined,
-        categoryOrder:
-            typeof category?.order === 'number' ? category.order : undefined,
         categoryDescription: category?.description ?? undefined,
         typeId: type?._id ?? undefined,
         typeSlug: type?.slug ?? undefined,
         typeTitle: type?.title ?? undefined,
         typeDescription: type?.description ?? undefined,
-        cardinality: type?.cardinality === 'many' ? 'many' : 'one',
+        customerSelects,
+        cardinality: customerSelects,
         imageUrl: firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null,
         shortDescription: '',
         description,
         preselected: Boolean(row.preselected),
-        role: option.role ?? undefined,
+        configuratorRole,
+        role: configuratorRole,
         status: option.status ?? undefined,
+        ...(worksOnIds.length > 0 ? {worksOnIds} : {}),
+        ...(incompatibleIds.length > 0 ? {incompatibleIds} : {}),
     };
+}
+
+/** Map a raw option projection (universe / derived fetch) into a catalog option. */
+export function mapSanityOptionDoc(
+    option: CatalogOptionDoc | null | undefined,
+    preselected = false,
+): CustomizationOption | null {
+    if (!option) return null;
+    return mapAvailableCustomization({preselected, customization: option});
 }
 
 export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
@@ -261,6 +296,89 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         ...(properties.length > 0 ? {properties} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
+    };
+}
+
+/** Faceted `/products` library card (PROD-1845) — no availableCustomizations tree. */
+export function mapSanityProductLibraryItem(
+    doc: CatalogProductLibraryDoc,
+): ProductLibraryItem | null {
+    const product = mapSanityProduct(doc);
+    if (!product) return null;
+
+    const images = product.media
+        .filter((item): item is {src: string; alt: string} => Boolean(item.src))
+        .map((item) => ({
+            src: item.src as string,
+            alt: item.alt || product.title,
+        }));
+    const first = images[0];
+
+    const attrs: Record<string, string[]> = {};
+    const propertyTitles: Record<string, string> = {};
+    const valueTitles: Record<string, string> = {};
+    for (const row of doc.libraryProperties ?? []) {
+        const propSlug = row?.property?.slug?.trim();
+        const propTitle = row?.property?.title?.trim();
+        if (!propSlug) continue;
+        if (propTitle) propertyTitles[propSlug] = propTitle;
+        const list = attrs[propSlug] ?? [];
+        for (const value of row?.values ?? []) {
+            const valueSlug = value?.slug?.trim();
+            const valueTitle = value?.title?.trim();
+            if (!valueSlug) continue;
+            if (!list.includes(valueSlug)) list.push(valueSlug);
+            if (valueTitle) valueTitles[valueSlug] = valueTitle;
+        }
+        if (list.length > 0) attrs[propSlug] = list;
+    }
+
+    const industries: {slug: string; title: string}[] = [];
+    for (const row of doc.industries ?? []) {
+        const slug = row?.slug?.trim();
+        const title = row?.title?.trim();
+        if (!slug || !title) continue;
+        if (industries.some((item) => item.slug === slug)) continue;
+        industries.push({slug, title});
+    }
+
+    return {
+        _id: doc._id,
+        title: product.title,
+        slug: product.slug,
+        sku: product.sku,
+        productLine: product.productLine,
+        productStyle: product.productStyle,
+        imageUrl: first?.src ?? null,
+        imageAlt: first?.alt ?? product.title,
+        images: images.length > 0 ? images : undefined,
+        ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
+        industries,
+        attrs,
+        propertyTitles,
+        valueTitles,
+    };
+}
+
+/** Line meta for the first-spot entry card — reads enriched library productLine fields. */
+export function mapSanityProductLibraryLineMeta(
+    doc: CatalogProductLibraryDoc,
+): ProductLibraryLineMeta | null {
+    const line = doc.productLine;
+    if (!line) return null;
+    const slug = line.slug?.trim();
+    const title = line.title?.trim();
+    if (!slug || !title) return null;
+
+    const description =
+        line.description?.trim() || line.cardSummary?.trim() || undefined;
+    const {imageUrl, imageAlt} = cardImageFromSanity(line.cardImage, title);
+
+    return {
+        slug,
+        title,
+        ...(description ? {description} : {}),
+        ...(imageUrl ? {imageUrl, imageAlt} : {}),
     };
 }
 

@@ -21,7 +21,7 @@ Do **not** add `modules/catalog`. Use the F1a seam:
 | GROQ | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_CUSTOMIZATION_LIBRARY_QUERY` |
 | Mapper | [`src/lib/catalog/map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityLibraryOption` |
 | Facet assembly | [`src/lib/catalog/build-customization-library.ts`](../src/lib/catalog/build-customization-library.ts) |
-| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem` (parallel stem for a future `product-catalog-*`) |
+| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem`, `buildCustomizationFacetCounts` |
 | Filter taxonomy (ops + product lines) | [`src/lib/catalog/customization-filter-taxonomy.ts`](../src/lib/catalog/customization-filter-taxonomy.ts) — driven by [`docs/customization-filter-taxonomy.md`](./customization-filter-taxonomy.md) |
 | API | [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) — **`listCustomizations()`** (ticket name `getCustomizations`) |
 | Alias | `listCustomizationCategories()` → `listCustomizations().items` |
@@ -30,15 +30,29 @@ Do **not** add `modules/catalog`. Use the F1a seam:
 
 Library options: `customizationOption` with `hasPage == true` and `status == "active"` (D55 / PROD-2482). Configurator pickability is `configuratorRole` and is orthogonal — do not gate the library on deprecated `role == "reference"` (ADR-017 §3 before the split).
 
+### Product offer vs derived categories (PROD-2529)
+
+Studio authors **only** product-dictated categories on `product.availableCustomizations` (`materials`, `additional-customization`). Finishing / Printing are **derived** on www from Option `worksOnCustomizations` / `incompatibleWithCustomizations`.
+
+| Layer | Location |
+| --- | --- |
+| Category policy (`product` \| `derived` \| `code`) | [`src/lib/catalog/customization-category-policy.ts`](../src/lib/catalog/customization-category-policy.ts) |
+| Resolve / expand / filter | [`src/lib/catalog/customization-availability.ts`](../src/lib/catalog/customization-availability.ts) |
+| Derived universe GROQ | `CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY` in [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) |
+
+Builder rail + catalog tabs share policy `sortIndex`: Dimensions → materials → printing → finishing → additional-customization. Empty categories stay hidden. When Studio/Category later authors availability mode, replace the policy seed — keep calling `getCategoryPolicy()` / `compareCategorySlugs()`.
+
 ### Sanity field map
 
 | App | Sanity |
 | --- | --- |
 | Category tabs / `categoryValue` | `type->category` (`customizationCategory.slug` / `title`) |
 | Card title / slug / media | option fields |
-| Product Line facet | **One-way** `availableOnProducts[@->_type == "productLine"]` only — no reverse from `product.availableCustomizations` |
+| Product Line facet | Reverse: products with this option in `availableCustomizations` → `productLine` (PROD-2529; retired `availableOnProducts`) |
 | Sustainability + other facets | `properties[]` → `propertyValue` + parent `property` |
 | Category-specific facet groups | Non-sustainability properties present on items in that category |
+| Configurator pickability | `configuratorRole` (fallback deprecated `role`) |
+| Type pick count | `customerSelects` (fallback deprecated `cardinality`) |
 
 Facet URL keys use `property.slug` (and `product-line` for Product Line). Shared rail: Product Line + Sustainability (when values exist). Other properties appear when a category tab ≠ All is selected.
 
@@ -61,7 +75,7 @@ Buyer copy: **customization**, never “capability”.
 ## Filter / URL responsibility
 
 - **Server:** one library fetch + facet catalog in `CustomizationLibraryResult`
-- **Client:** filter in memory via `matchesCustomizationItem`; facet option counts = attribute frequency in the **current result set**; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; each reveal shows append card skeletons for ~400ms before bumping `visible`)
+- **Client:** filter in memory via `matchesCustomizationItem`; facet option counts via `buildCustomizationFacetCounts` — **disjunctive (except-self)**: for facet F, count options against items that match category + query + all selections **except F** (so selecting one Product Line does not zero sibling lines); header **“N of M”** stays based on the fully filtered result set; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; each reveal shows append card skeletons for ~400ms before bumping `visible`)
 - **Route:** `urlSync` (default true) — `category`, `q`, plus facet ids as comma-separated query params (load-more depth is session-only, not in the URL)
 
 - **Section:** `urlSync={false}` — local React state only

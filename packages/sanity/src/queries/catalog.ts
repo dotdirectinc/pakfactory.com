@@ -32,7 +32,6 @@ const CATEGORY_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  order,
   description
 }`;
 
@@ -40,26 +39,47 @@ const TYPE_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
+  customerSelects,
   cardinality,
   description,
   "category": category->${CATEGORY_PROJ}
 }`;
+
+const COMPAT_REF_IDS = /* groq */ `coalesce(worksOnCustomizations[]._ref, [])`;
+const INCOMPAT_REF_IDS = /* groq */ `coalesce(incompatibleWithCustomizations[]._ref, [])`;
 
 const OPTION_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
   status,
+  configuratorRole,
   role,
+  hasPage,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  "worksOnIds": ${COMPAT_REF_IDS},
+  "incompatibleIds": ${INCOMPAT_REF_IDS},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
   "type": type->${TYPE_PROJ}
 }`;
+
+/** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
+const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
+  _type == "product" &&
+  (status == "active" || !defined(status)) &&
+  ^._id in availableCustomizations[].customization._ref
+]{
+  "line": coalesce(productLine, basedOn->productLine)->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}.line`;
 
 const LINE_REF_PROJ = /* groq */ `{
   _id,
@@ -154,6 +174,60 @@ export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   (status == "active" || !defined(status))
 ] | order(title asc) {
   ${CATALOG_PRODUCT_CARD_FIELDS}
+}`;
+
+/**
+ * Product library listing (PROD-1845) — card fields + property attrs for facets.
+ * Product line includes card image for the 5th-spot entry card.
+ * Property shape differs from customization options (object rows, not value refs).
+ */
+export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
+  _id,
+  title,
+  "slug": slug.current,
+  sku,
+  kind,
+  status,
+  "description": coalesce(shortDescription, pt::text(description)),
+  moq,
+  leadTimeDays,
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "productLine": coalesce(productLine, basedOn->productLine)->{
+    _id,
+    title,
+    "slug": slug.current,
+    cardSummary,
+    "description": coalesce(cardSummary, pt::text(intro)),
+    ${LINE_CARD_IMAGE}
+  },
+  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ},
+  "industries": solutions[@->solutionType == "industry"]->{
+    title,
+    "slug": slug.current
+  },
+  "libraryProperties": properties[defined(property)]{
+    "property": property->{
+      _id,
+      title,
+      "slug": slug.current
+    },
+    "values": values[]->{
+      _id,
+      title,
+      "slug": slug.current
+    }
+  }
+`;
+
+export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
+  _type == "product" &&
+  defined(slug.current) &&
+  (status == "active" || !defined(status))
+] | order(title asc) {
+  ${CATALOG_PRODUCT_LIBRARY_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
@@ -255,11 +329,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_PROJ},
-  "productLines": availableOnProducts[@->_type == "productLine"]->{
-    _id,
-    title,
-    "slug": slug.current
-  }
+  ${PRODUCT_LINES_FROM_PRODUCTS}
 }`;
 
 /** Single library option by category + handle slugs (PROD-2456). Same `hasPage` gate as the library list. */
@@ -289,11 +359,7 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_PROJ},
-  "productLines": availableOnProducts[@->_type == "productLine"]->{
-    _id,
-    title,
-    "slug": slug.current
-  }
+  ${PRODUCT_LINES_FROM_PRODUCTS}
 }`;
 
 /**
@@ -332,11 +398,68 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
-  "productLines": availableOnProducts[@->_type == "productLine"]->{
+  ${PRODUCT_LINES_FROM_PRODUCTS},
+  "faqs": faqs[]{
+    "question": select(
+      _type == "faqItem" => question,
+      defined(@->question) => @->question
+    ),
+    "answerPlain": select(
+      _type == "faqItem" => pt::text(answer),
+      defined(@->answer) => pt::text(@->answer)
+    )
+  }
+}`;
+
+/**
+ * Active configurable options in derived categories (finishing / printing).
+ * Used by www to expand product offers via worksOn / incompatibleWith (PROD-2529).
+ */
+export const CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  status == "active" &&
+  coalesce(configuratorRole, role) == "configurable" &&
+  type->category->slug.current in $categorySlugs
+] | order(title asc) {
+  ${OPTION_PROJ}
+}`;
+
+/**
+ * Option by id for builder Property controllers — no hasPage gate (configurable
+ * Options may not have a library page).
+ */
+export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  _id == $id &&
+  status == "active"
+][0]{
+  _id,
+  title,
+  "slug": slug.current,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
     _id,
     title,
-    "slug": slug.current
+    "slug": slug.current,
+    "declaredProperties": properties[]{
+      usage,
+      "property": property->{
+        _id,
+        title,
+        "slug": slug.current,
+        valuesPerItem
+      }
+    }
   },
+  "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
+  ${PRODUCT_LINES_FROM_PRODUCTS},
   "faqs": faqs[]{
     "question": select(
       _type == "faqItem" => question,
@@ -353,6 +476,7 @@ export type CatalogCategoryDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  /** Retired on www (policy sortIndex); kept optional for older projections. */
   order?: number | null;
   description?: string | null;
 };
@@ -361,6 +485,8 @@ export type CatalogTypeDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  customerSelects?: 'one' | 'many' | null;
+  /** Deprecated — prefer customerSelects. */
   cardinality?: 'one' | 'many' | null;
   description?: string | null;
   category: CatalogCategoryDoc | null;
@@ -371,10 +497,15 @@ export type CatalogOptionDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
+  configuratorRole?: 'configurable' | 'reference' | null;
+  /** Deprecated — prefer configuratorRole. */
   role?: 'configurable' | 'reference' | null;
+  hasPage?: boolean | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
+  worksOnIds?: (string | null)[] | null;
+  incompatibleIds?: (string | null)[] | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
 };
@@ -390,6 +521,7 @@ export type CatalogLineRefDoc = {
   slug: string | null;
   cardSummary?: string | null;
   description?: string | null;
+  cardImage?: unknown | null;
 };
 
 export type CatalogStyleRefDoc = {
@@ -404,6 +536,23 @@ export type CatalogStyleRefDoc = {
 export type CatalogProductPropertyDoc = {
   label?: string | null;
   values?: (string | null)[] | null;
+};
+
+/** Facet-ready property row on the product library query (PROD-1845). */
+export type CatalogProductLibraryPropertyDoc = {
+  property?: CatalogPropertyRefDoc | null;
+  values?: (CatalogPropertyValueDoc | null)[] | null;
+};
+
+/** Industry solution ref on the product library query. */
+export type CatalogProductLibraryIndustryDoc = {
+  title?: string | null;
+  slug?: string | null;
+};
+
+export type CatalogProductLibraryDoc = CatalogProductDoc & {
+  libraryProperties?: CatalogProductLibraryPropertyDoc[] | null;
+  industries?: (CatalogProductLibraryIndustryDoc | null)[] | null;
 };
 
 export type CatalogProductFaqDoc = {

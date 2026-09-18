@@ -4,9 +4,8 @@ import type {ReactNode} from 'react';
 import {CategoryTypeList} from '@/components/customization-builder/category-type-list';
 import {CustomizationCategoryRail} from '@/components/customization-builder/customization-category-rail';
 import {CustomizationDimensionOption} from '@/components/customization-builder/customization-dimension-option';
-import {CustomizationFinishOption} from '@/components/customization-builder/customization-finish-option';
-import {CustomizationMaterialOption} from '@/components/customization-builder/customization-material-option';
-import {CustomizationPrintOption} from '@/components/customization-builder/customization-print-option';
+import {OptionDetail} from '@/components/customization-builder/option-detail';
+import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
     dimensionEntryNoteKey,
@@ -37,6 +36,10 @@ type BuilderThreeColumnProps = {
     onAnswerChange: (key: BuilderStepKey, answer: StepAnswer) => void;
     onClearCategory?: (key: BuilderStepKey) => void;
     onEntryNoteChange: (entryKey: string, note: string) => void;
+    onPropertySelectionsChange?: (
+        optionId: string,
+        selections: PropertySelectionMap,
+    ) => void;
 };
 
 export function BuilderThreeColumn({
@@ -57,6 +60,7 @@ export function BuilderThreeColumn({
     onAnswerChange,
     onClearCategory,
     onEntryNoteChange,
+    onPropertySelectionsChange,
 }: BuilderThreeColumnProps) {
     const step = steps.find((item) => item.key === activeKey) ?? steps[0];
     if (!step) return null;
@@ -91,6 +95,10 @@ export function BuilderThreeColumn({
             onEntryNoteChange(entryNoteKey, note);
         },
     };
+
+    const optionPropertySelections = selectedOption
+        ? (state.propertySelections?.[selectedOption.id] ?? {})
+        : undefined;
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -127,22 +135,18 @@ export function BuilderThreeColumn({
                             onChange={(next) => onAnswerChange(step.key, next)}
                             {...noteProps}
                         />
-                    ) : step.key === 'material' ? (
-                        <CustomizationMaterialOption
-                            option={selectedOption}
-                            consultationSelected={consultationSelected}
-                            {...noteProps}
-                        />
-                    ) : step.key === 'print' ? (
-                        <CustomizationPrintOption
-                            option={selectedOption}
-                            consultationSelected={consultationSelected}
-                            {...noteProps}
-                        />
                     ) : (
-                        <CustomizationFinishOption
+                        <OptionDetail
                             option={selectedOption}
                             consultationSelected={consultationSelected}
+                            propertySelections={optionPropertySelections}
+                            onPropertySelectionsChange={(selections) => {
+                                if (!selectedOption) return;
+                                onPropertySelectionsChange?.(
+                                    selectedOption.id,
+                                    selections,
+                                );
+                            }}
                             {...noteProps}
                         />
                     )}
