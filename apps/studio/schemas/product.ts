@@ -437,8 +437,31 @@ export const product = defineType({
                   to: [{ type: 'propertyValue' }],
                   options: {
                     disableNew: true,
-                    filter: ({ parent }: { parent?: { property?: { _ref?: string } } }) => {
-                      const ref = parent?.property?._ref
+                    // Keyed off `document`, like every other filter here, and NOT
+                    // off `parent`. For a reference that is an array member,
+                    // `parent` is the `values` ARRAY rather than the row holding
+                    // the Property — ReferenceFilterResolverContext types it
+                    // `Record<string, unknown> | Record<string, unknown>[]` for
+                    // exactly this case. So `parent.property` was always
+                    // undefined, the filter was always 'false', and no value was
+                    // ever selectable. That is why the one populated row in the
+                    // dataset names a property and holds no values: the picker
+                    // could not be used, not that nobody tried.
+                    //
+                    // The row is found from the path instead — properties[_key].values.
+                    filter: ({ document, parentPath }) => {
+                      const rowKey = (parentPath ?? []).find(
+                        (segment): segment is { _key: string } =>
+                          typeof segment === 'object' &&
+                          segment !== null &&
+                          '_key' in segment,
+                      )?._key
+                      const rows = (
+                        document as
+                          | { properties?: { _key?: string; property?: { _ref?: string } }[] }
+                          | undefined
+                      )?.properties
+                      const ref = rows?.find((row) => row?._key === rowKey)?.property?._ref
                       if (!ref) return { filter: 'false' }
                       return { filter: 'property._ref == $ref', params: { ref } }
                     },
@@ -449,9 +472,18 @@ export const product = defineType({
             }),
           ],
           preview: {
-            select: { title: 'property.title', count: 'values.length' },
-            prepare({ title, count }) {
-              return { title: title || 'Property', subtitle: count ? `${count} value(s)` : 'No values' }
+            // `values.length` reads like it works and never has: preview `select`
+            // resolves field PATHS, not expressions, so it looked for a field
+            // called `length` on the array, found nothing, and every row read
+            // "No values" however many it actually held. The array itself comes
+            // back intact, so it is counted here instead.
+            select: { title: 'property.title', values: 'values' },
+            prepare({ title, values }) {
+              const count = Array.isArray(values) ? values.length : 0
+              return {
+                title: title || 'Property',
+                subtitle: count ? `${count} value${count === 1 ? '' : 's'}` : 'No values',
+              }
             },
           },
         },
