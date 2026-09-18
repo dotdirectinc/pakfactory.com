@@ -1,6 +1,7 @@
 'use client';
 
 import {BuilderThreeColumn} from '@/components/customization-builder/builder-three-column';
+import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {
     BuilderOption,
@@ -24,6 +25,10 @@ type CustomizationWorkspaceViewProps = {
     onAnswerChange: (key: BuilderStepKey, answer: StepAnswer) => void;
     onClearCategory: (key: BuilderStepKey) => void;
     onEntryNoteChange: (entryKey: string, note: string) => void;
+    onPropertySelectionsChange: (
+        optionId: string,
+        selections: PropertySelectionMap,
+    ) => void;
 };
 
 export function CustomizationWorkspaceView({
@@ -40,6 +45,7 @@ export function CustomizationWorkspaceView({
     onAnswerChange,
     onClearCategory,
     onEntryNoteChange,
+    onPropertySelectionsChange,
 }: CustomizationWorkspaceViewProps) {
     return (
         <BuilderThreeColumn
@@ -56,6 +62,7 @@ export function CustomizationWorkspaceView({
             onAnswerChange={onAnswerChange}
             onClearCategory={onClearCategory}
             onEntryNoteChange={onEntryNoteChange}
+            onPropertySelectionsChange={onPropertySelectionsChange}
         />
     );
 }

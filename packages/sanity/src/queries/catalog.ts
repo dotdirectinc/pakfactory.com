@@ -73,11 +73,13 @@ const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
   (status == "active" || !defined(status)) &&
   ^._id in availableCustomizations[].customization._ref
-].coalesce(productLine, basedOn->productLine)->{
-  _id,
-  title,
-  "slug": slug.current
-}`;
+]{
+  "line": coalesce(productLine, basedOn->productLine)->{
+    _id,
+    title,
+    "slug": slug.current
+  }
+}.line`;
 
 const LINE_REF_PROJ = /* groq */ `{
   _id,
@@ -366,6 +368,54 @@ export const CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY = /* groq */ `*[
   type->category->slug.current in $categorySlugs
 ] | order(title asc) {
   ${OPTION_PROJ}
+}`;
+
+/**
+ * Option by id for builder Property controllers — no hasPage gate (configurable
+ * Options may not have a library page).
+ */
+export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
+  _type == "customizationOption" &&
+  _id == $id &&
+  status == "active"
+][0]{
+  _id,
+  title,
+  "slug": slug.current,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[]{
+      usage,
+      "property": property->{
+        _id,
+        title,
+        "slug": slug.current,
+        valuesPerItem
+      }
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
+  ${PRODUCT_LINES_FROM_PRODUCTS},
+  "faqs": faqs[]{
+    "question": select(
+      _type == "faqItem" => question,
+      defined(@->question) => @->question
+    ),
+    "answerPlain": select(
+      _type == "faqItem" => pt::text(answer),
+      defined(@->answer) => pt::text(@->answer)
+    )
+  }
 }`;
 
 export type CatalogCategoryDoc = {

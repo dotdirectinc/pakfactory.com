@@ -70,6 +70,10 @@ export function CategoryTypeList({
                                           const active =
                                               !consultationSelected &&
                                               option.id === activeOptionId;
+                                          const blurb =
+                                              option.shortDescription?.trim() ||
+                                              option.description?.trim() ||
+                                              '';
                                           return (
                                               <li key={option.id}>
                                                   <HighlightItem
@@ -97,14 +101,12 @@ export function CategoryTypeList({
                                                           ) : null}
                                                       </span>
                                                       <span className="min-w-0">
-                                                          <span className="block text-sm font-medium">
+                                                          <span className="block truncate text-sm font-medium">
                                                               {option.title}
                                                           </span>
-                                                          {option.shortDescription ? (
+                                                          {blurb ? (
                                                               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                                                  {
-                                                                      option.shortDescription
-                                                                  }
+                                                                  {blurb}
                                                               </p>
                                                           ) : null}
                                                       </span>

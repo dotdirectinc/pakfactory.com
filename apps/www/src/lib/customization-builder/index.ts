@@ -36,6 +36,7 @@ export {
     clearStep,
     patchEntryNote,
     patchFace,
+    patchPropertySelections,
     seedFromCustomizations,
     shouldEnterGuided,
     summarizeAnswer,

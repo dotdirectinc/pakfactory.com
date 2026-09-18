@@ -117,6 +117,7 @@ export {
     CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
     CATALOG_CUSTOMIZATION_DETAIL_QUERY,
     CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY,
+    CATALOG_OPTION_BY_ID_QUERY,
     type CatalogAvailableCustomizationDoc,
     type CatalogCategoryDoc,
     type CatalogCustomizationDetailDoc,

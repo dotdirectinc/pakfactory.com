@@ -28,6 +28,7 @@ import {
     markGuidedComplete,
     patchAnswer,
     patchEntryNote,
+    patchPropertySelections,
     shouldEnterGuided,
     type BuilderMode,
     type BuilderOption,
@@ -36,6 +37,7 @@ import {
     type CustomizationBuilderState,
     type StepAnswer,
 } from '@/lib/customization-builder';
+import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 
 export type CustomizationBuilderProps = {
     open: boolean;
@@ -138,6 +140,8 @@ export function CustomizationBuilder({
     const [activeKey, setActiveKey] = useState<BuilderStepKey>('dimensions');
     const [activeTypeId, setActiveTypeId] = useState<string | null>(null);
     const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
+    /** Highest rail index unlocked by Next/Skip commit (guided only). */
+    const [guidedMaxIndex, setGuidedMaxIndex] = useState(0);
 
     function selectCategory(key: BuilderStepKey) {
         const step = steps.find((item) => item.key === key);
@@ -180,6 +184,7 @@ export function CustomizationBuilder({
         if (!open) return;
         const enterGuided = shouldEnterGuided(value);
         setMode(enterGuided ? 'guided' : 'workspace');
+        setGuidedMaxIndex(0);
         const focus =
             (initialStepKey
                 ? steps.find((step) => step.key === initialStepKey)
@@ -234,6 +239,13 @@ export function CustomizationBuilder({
         onChange(patchEntryNote(value, entryKey, note));
     }
 
+    function handlePropertySelectionsChange(
+        optionId: string,
+        selections: PropertySelectionMap,
+    ) {
+        onChange(patchPropertySelections(value, optionId, selections));
+    }
+
     function goBack() {
         const index = steps.findIndex((step) => step.key === activeKey);
         const prev = index > 0 ? steps[index - 1] : undefined;
@@ -248,6 +260,7 @@ export function CustomizationBuilder({
                 ? steps[index + 1]
                 : undefined;
         if (!next) return;
+        setGuidedMaxIndex((max) => Math.max(max, index + 1));
         selectCategory(next.key);
     }
 
@@ -266,6 +279,7 @@ export function CustomizationBuilder({
             finishGuided(next);
             return;
         }
+        setGuidedMaxIndex((max) => Math.max(max, index + 1));
         onChange(next);
         const following = steps[index + 1];
         if (!following) return;
@@ -322,6 +336,7 @@ export function CustomizationBuilder({
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
                             state={value}
+                            maxReachableIndex={guidedMaxIndex}
                             dimensionRange={dimensionRange}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
@@ -330,6 +345,9 @@ export function CustomizationBuilder({
                             onAnswerChange={handleAnswerChange}
                             onClearCategory={handleClearCategory}
                             onEntryNoteChange={handleEntryNoteChange}
+                            onPropertySelectionsChange={
+                                handlePropertySelectionsChange
+                            }
                             onBack={goBack}
                             onNext={goNext}
                             onSkip={handleSkip}
@@ -350,6 +368,9 @@ export function CustomizationBuilder({
                             onAnswerChange={handleAnswerChange}
                             onClearCategory={handleClearCategory}
                             onEntryNoteChange={handleEntryNoteChange}
+                            onPropertySelectionsChange={
+                                handlePropertySelectionsChange
+                            }
                         />
                     )}
                 </div>

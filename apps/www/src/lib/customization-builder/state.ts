@@ -38,6 +38,7 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         answers: {},
         guidedComplete: false,
         entryNotes: {},
+        propertySelections: {},
     };
 }
 
@@ -296,19 +297,21 @@ export function patchAnswer(
     };
 }
 
-/** Unset a step answer and drop related entry notes. */
+/** Unset a step answer and drop related entry notes / Property selections. */
 export function clearStep(
     state: CustomizationBuilderState,
     key: BuilderStepKey,
 ): CustomizationBuilderState {
     const previous = getAnswer(state, key);
     const entryNotes = {...(state.entryNotes ?? {})};
+    const propertySelections = {...(state.propertySelections ?? {})};
 
     if (key === DIMENSIONS_STEP_KEY) {
         delete entryNotes[dimensionEntryNoteKey('external')];
         delete entryNotes[dimensionEntryNoteKey('internal')];
     } else if (previous.status === 'set' && 'selection' in previous) {
         delete entryNotes[previous.selection.optionId];
+        delete propertySelections[previous.selection.optionId];
     }
 
     return {
@@ -318,6 +321,21 @@ export function clearStep(
             [key]: {status: 'unset'},
         },
         entryNotes,
+        propertySelections,
+    };
+}
+
+export function patchPropertySelections(
+    state: CustomizationBuilderState,
+    optionId: string,
+    selections: Record<string, string[]>,
+): CustomizationBuilderState {
+    return {
+        ...state,
+        propertySelections: {
+            ...(state.propertySelections ?? {}),
+            [optionId]: selections,
+        },
     };
 }
 
@@ -425,10 +443,30 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         }
     }
 
+    const propertySelections: NonNullable<
+        CustomizationBuilderState['propertySelections']
+    > = {};
+    if (raw.propertySelections && typeof raw.propertySelections === 'object') {
+        for (const [optionId, selection] of Object.entries(
+            raw.propertySelections,
+        )) {
+            if (!selection || typeof selection !== 'object') continue;
+            const mapped: Record<string, string[]> = {};
+            for (const [propertyKey, ids] of Object.entries(selection)) {
+                if (!Array.isArray(ids)) continue;
+                mapped[propertyKey] = ids.filter(
+                    (id): id is string => typeof id === 'string',
+                );
+            }
+            propertySelections[optionId] = mapped;
+        }
+    }
+
     return {
         answers,
         guidedComplete: Boolean(raw.guidedComplete),
         entryNotes,
+        propertySelections,
     };
 }
 
@@ -521,6 +559,7 @@ export function seedFromCustomizations(
         answers,
         guidedComplete: configured,
         entryNotes: {},
+        propertySelections: {},
     };
 }
 

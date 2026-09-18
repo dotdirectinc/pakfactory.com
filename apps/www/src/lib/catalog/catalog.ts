@@ -6,6 +6,7 @@ import {
     CATALOG_CUSTOMIZATION_DETAIL_QUERY,
     CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
     CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY,
+    CATALOG_OPTION_BY_ID_QUERY,
     CATALOG_PRODUCT_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
@@ -18,7 +19,6 @@ import {
 import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
 import {expandProductCustomizations} from '@/lib/catalog/customization-availability';
 import {getDerivedCategorySlugs} from '@/lib/catalog/customization-category-policy';
-import {applyDetailControlFixtures} from '@/lib/catalog/detail-control-fixtures';
 import {
     mapSanityCustomizationDetail,
     mapSanityLibraryOption,
@@ -27,6 +27,7 @@ import {
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
 import type {
+    CustomizationDetail,
     CustomizationDetailResult,
     CustomizationLibraryItem,
     CustomizationLibraryResult,
@@ -331,8 +332,7 @@ export async function getCustomizationDetail(
                 });
                 const mapped = doc ? mapSanityCustomizationDetail(doc) : null;
                 if (!mapped) return null;
-                const detail = applyDetailControlFixtures(mapped);
-                return {detail, peers: []};
+                return {detail: mapped, peers: []};
             } catch (err) {
                 if (process.env.NODE_ENV === 'development') {
                     console.error(
@@ -347,6 +347,44 @@ export async function getCustomizationDetail(
     const getCached = unstable_cache(
         fetchUncached,
         [`www-customization-detail:${categoryKey}:${handleKey}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+        },
+    );
+
+    return readThrough(fetchUncached, getCached);
+}
+
+/**
+ * Active Option by id for builder Property controllers (no hasPage gate).
+ */
+export async function getCustomizationOption(
+    optionId: string,
+): Promise<CustomizationDetail | null> {
+    const id = optionId.trim();
+    if (!id || !isSanityConfigured()) return null;
+
+    const fetchUncached = async (): Promise<CustomizationDetail | null> => {
+        try {
+            const doc = await (await draftAwareClient()).fetch<
+                CatalogCustomizationDetailDoc | null
+            >(CATALOG_OPTION_BY_ID_QUERY, {id});
+            return doc ? mapSanityCustomizationDetail(doc) : null;
+        } catch (err) {
+            if (process.env.NODE_ENV === 'development') {
+                console.error(
+                    '[catalog] Sanity customization option by id failed:',
+                    err,
+                );
+            }
+            return null;
+        }
+    };
+
+    const getCached = unstable_cache(
+        fetchUncached,
+        [`www-customization-option:${id}`],
         {
             revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
             tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],

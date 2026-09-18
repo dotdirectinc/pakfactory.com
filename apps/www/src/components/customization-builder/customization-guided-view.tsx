@@ -3,9 +3,9 @@
 import {Button} from '@pakfactory/ui/components/button';
 import {BuilderThreeColumn} from '@/components/customization-builder/builder-three-column';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
-    firstUnresolvedStepIndex,
     getAnswer,
     isAnswerReady,
     type BuilderOption,
@@ -21,6 +21,8 @@ type CustomizationGuidedViewProps = {
     activeTypeId: string | null;
     activeOptionId: string | null;
     state: CustomizationBuilderState;
+    /** Highest rail index unlocked by Next/Skip commit. */
+    maxReachableIndex: number;
     dimensionRange?: ProductDimensionRange;
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
@@ -29,6 +31,10 @@ type CustomizationGuidedViewProps = {
     onAnswerChange: (key: BuilderStepKey, answer: StepAnswer) => void;
     onClearCategory: (key: BuilderStepKey) => void;
     onEntryNoteChange: (entryKey: string, note: string) => void;
+    onPropertySelectionsChange: (
+        optionId: string,
+        selections: PropertySelectionMap,
+    ) => void;
     onBack: () => void;
     onNext: () => void;
     onSkip: () => void;
@@ -41,6 +47,7 @@ export function CustomizationGuidedView({
     activeTypeId,
     activeOptionId,
     state,
+    maxReachableIndex,
     dimensionRange,
     onSelectStep,
     onSelectConsultation,
@@ -49,6 +56,7 @@ export function CustomizationGuidedView({
     onAnswerChange,
     onClearCategory,
     onEntryNoteChange,
+    onPropertySelectionsChange,
     onBack,
     onNext,
     onSkip,
@@ -61,7 +69,6 @@ export function CustomizationGuidedView({
     const isFirst = stepIndex <= 0;
     const isLast = stepIndex >= steps.length - 1;
     const canAdvance = isAnswerReady(getAnswer(state, activeKey));
-    const maxReachableIndex = firstUnresolvedStepIndex(state, steps);
 
     function handleSelectStep(key: BuilderStepKey) {
         const index = steps.findIndex((step) => step.key === key);
@@ -86,6 +93,7 @@ export function CustomizationGuidedView({
             onAnswerChange={onAnswerChange}
             onClearCategory={onClearCategory}
             onEntryNoteChange={onEntryNoteChange}
+            onPropertySelectionsChange={onPropertySelectionsChange}
             footer={
                 <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3">
                     <Button

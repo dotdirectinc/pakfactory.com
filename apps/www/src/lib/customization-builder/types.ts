@@ -42,6 +42,10 @@ export type CustomizationBuilderState = {
      * Keys: optionId, or `dimensions:external` / `dimensions:internal`.
      */
     entryNotes: Partial<Record<string, string>>;
+    /**
+     * Option id → Property key → selected propertyValue slugs.
+     */
+    propertySelections?: Partial<Record<string, Record<string, string[]>>>;
 };
 
 export type BuilderChoice = {
@@ -117,6 +121,7 @@ export const EMPTY_BUILDER_STATE: CustomizationBuilderState = {
     answers: {},
     guidedComplete: false,
     entryNotes: {},
+    propertySelections: {},
 };
 
 export type CatalogOptionLike = Pick<
