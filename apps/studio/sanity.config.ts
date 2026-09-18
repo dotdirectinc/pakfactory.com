@@ -166,6 +166,19 @@ const productTemplates: Template[] = [
   // The 'product-industry' template was removed in PROD-2284: it pre-filled the
   // retired `industries` / `industryCategories` reference arrays. Industry-typed
   // products now tag via Solutions.
+  //
+  // Unparameterised, unlike `product-standard` above, because the Solutions
+  // workspace's Inspiration Products list needs a plain `+` (PROD-2547). That list
+  // filters on `kind == "inspiration"` while the schema's initialValue is
+  // 'standard', so without this the create button would make a document that
+  // vanishes from the list it was created in. Being unparameterised also puts it
+  // in the global + menu as "Product (Inspiration)", which is wanted.
+  {
+    id: 'product-inspiration',
+    title: 'Product (Inspiration)',
+    schemaType: 'product',
+    value: { kind: 'inspiration' },
+  },
 ]
 
 const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => {
