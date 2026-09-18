@@ -732,6 +732,11 @@ export const customizationOption = defineType({
   // survives into the per-user key-value store and works on every later load. That check
   // rejects MULTI-target references — `type` points only at `customizationType`, so it
   // passes. Same dotted form `propertyValue` already uses for `property.title`.
+  //
+  // Title is declared explicitly rather than relied on. `getOrderingMenuItemsForSchemaType`
+  // builds the menu as `type.orderings.concat(DEFAULT_ORDERING_OPTIONS)`, and in sanity
+  // 5.24.0 those built-ins are only Last edited and Created — there is no built-in Title
+  // to inherit. Declaring it keeps the menu at four whatever the built-ins do next.
   orderings: [
     {
       title: 'Type → title',
@@ -740,6 +745,11 @@ export const customizationOption = defineType({
         { field: 'type.title', direction: 'asc' },
         { field: 'title', direction: 'asc' },
       ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
     },
   ],
 })
