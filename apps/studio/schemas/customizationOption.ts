@@ -704,8 +704,10 @@ export const customizationOption = defineType({
       }
     },
   },
-  // Crystal works this list a Type at a time (PROD-2544). This puts "Type → title"
-  // in the list's sort menu; picking it groups the 126 options under their 23 Types.
+  // Crystal works this list a Type at a time (PROD-2544). This puts "Sort by Type" in
+  // the list's sort menu; picking it groups the 126 options under their 23 Types, and
+  // sorts by name within each. The second `by` entry is that within-group sort, not a
+  // second menu option — which is why the label names only the Type.
   //
   // The path is the dotted `type.title`, NOT `type->title`, and the raw-GROQ intuition
   // is backwards here. A bare `order(type.title asc)` really does return unsorted rows
@@ -739,7 +741,7 @@ export const customizationOption = defineType({
   // to inherit. Declaring it keeps the menu at four whatever the built-ins do next.
   orderings: [
     {
-      title: 'Type → title',
+      title: 'Type',
       name: 'typeTitle',
       by: [
         { field: 'type.title', direction: 'asc' },
