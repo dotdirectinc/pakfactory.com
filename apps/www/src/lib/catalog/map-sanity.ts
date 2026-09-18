@@ -3,6 +3,7 @@ import {
     type CatalogLibraryOptionDoc,
     type CatalogOptionDoc,
     type CatalogProductDoc,
+    type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
     type CatalogPropertyValueDetailDoc,
 } from '@pakfactory/sanity/queries';
@@ -21,6 +22,8 @@ import type {
     Product,
     ProductFaq,
     ProductKind,
+    ProductLibraryItem,
+    ProductLibraryLineMeta,
     ProductLine,
     ProductLineRef,
     ProductProperty,
@@ -293,6 +296,89 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         ...(properties.length > 0 ? {properties} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
+    };
+}
+
+/** Faceted `/products` library card (PROD-1845) — no availableCustomizations tree. */
+export function mapSanityProductLibraryItem(
+    doc: CatalogProductLibraryDoc,
+): ProductLibraryItem | null {
+    const product = mapSanityProduct(doc);
+    if (!product) return null;
+
+    const images = product.media
+        .filter((item): item is {src: string; alt: string} => Boolean(item.src))
+        .map((item) => ({
+            src: item.src as string,
+            alt: item.alt || product.title,
+        }));
+    const first = images[0];
+
+    const attrs: Record<string, string[]> = {};
+    const propertyTitles: Record<string, string> = {};
+    const valueTitles: Record<string, string> = {};
+    for (const row of doc.libraryProperties ?? []) {
+        const propSlug = row?.property?.slug?.trim();
+        const propTitle = row?.property?.title?.trim();
+        if (!propSlug) continue;
+        if (propTitle) propertyTitles[propSlug] = propTitle;
+        const list = attrs[propSlug] ?? [];
+        for (const value of row?.values ?? []) {
+            const valueSlug = value?.slug?.trim();
+            const valueTitle = value?.title?.trim();
+            if (!valueSlug) continue;
+            if (!list.includes(valueSlug)) list.push(valueSlug);
+            if (valueTitle) valueTitles[valueSlug] = valueTitle;
+        }
+        if (list.length > 0) attrs[propSlug] = list;
+    }
+
+    const industries: {slug: string; title: string}[] = [];
+    for (const row of doc.industries ?? []) {
+        const slug = row?.slug?.trim();
+        const title = row?.title?.trim();
+        if (!slug || !title) continue;
+        if (industries.some((item) => item.slug === slug)) continue;
+        industries.push({slug, title});
+    }
+
+    return {
+        _id: doc._id,
+        title: product.title,
+        slug: product.slug,
+        sku: product.sku,
+        productLine: product.productLine,
+        productStyle: product.productStyle,
+        imageUrl: first?.src ?? null,
+        imageAlt: first?.alt ?? product.title,
+        images: images.length > 0 ? images : undefined,
+        ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
+        industries,
+        attrs,
+        propertyTitles,
+        valueTitles,
+    };
+}
+
+/** Line meta for the first-spot entry card — reads enriched library productLine fields. */
+export function mapSanityProductLibraryLineMeta(
+    doc: CatalogProductLibraryDoc,
+): ProductLibraryLineMeta | null {
+    const line = doc.productLine;
+    if (!line) return null;
+    const slug = line.slug?.trim();
+    const title = line.title?.trim();
+    if (!slug || !title) return null;
+
+    const description =
+        line.description?.trim() || line.cardSummary?.trim() || undefined;
+    const {imageUrl, imageAlt} = cardImageFromSanity(line.cardImage, title);
+
+    return {
+        slug,
+        title,
+        ...(description ? {description} : {}),
+        ...(imageUrl ? {imageUrl, imageAlt} : {}),
     };
 }
 

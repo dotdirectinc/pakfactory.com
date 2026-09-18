@@ -173,6 +173,52 @@ export type CustomizationLibraryResult = {
 /** Stable facet id for Product Line (not a Sanity property). */
 export const CUSTOMIZATION_PRODUCT_LINE_FACET_ID = 'product-line';
 
+/** Same URL key as customizations — Product Line facet on `/products`. */
+export const PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID =
+    CUSTOMIZATION_PRODUCT_LINE_FACET_ID;
+
+/** Industries facet — Sanity `solution` with `solutionType == "industry"`. */
+export const PRODUCT_CATALOG_INDUSTRY_FACET_ID = 'industry';
+
+/** Enriched product card for the faceted `/products` library (PROD-1845). */
+export type ProductLibraryItem = {
+    _id: string;
+    title: string;
+    slug: string;
+    sku: string;
+    productLine: ProductLineRef;
+    productStyle: ProductStyleRef;
+    imageUrl?: string | null;
+    imageAlt?: string | null;
+    images?: {src: string; alt?: string}[];
+    moq?: number;
+    /** Industry solutions tagged on the product (`solutionType == "industry"`). */
+    industries: {slug: string; title: string}[];
+    /** property.slug → propertyValue.slug[] */
+    attrs: Record<string, string[]>;
+    propertyTitles: Record<string, string>;
+    valueTitles: Record<string, string>;
+};
+
+/** Line meta for the catalog entry card (first spot when one line is filtered). */
+export type ProductLibraryLineMeta = {
+    slug: string;
+    title: string;
+    description?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLibraryResult = {
+    items: ProductLibraryItem[];
+    /** Unique product lines in the library, keyed by slug. */
+    linesBySlug: Record<string, ProductLibraryLineMeta>;
+    facetCatalog: {
+        /** Always-on: Product Line + Industries + Sustainability (when present). */
+        shared: CustomizationFacetDef[];
+    };
+};
+
 /** Property value fact row for specs / configurator (PROD-1299). */
 export type CustomizationPropertyFact = {
     label: string;

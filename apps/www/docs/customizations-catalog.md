@@ -21,7 +21,7 @@ Do **not** add `modules/catalog`. Use the F1a seam:
 | GROQ | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_CUSTOMIZATION_LIBRARY_QUERY` |
 | Mapper | [`src/lib/catalog/map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityLibraryOption` |
 | Facet assembly | [`src/lib/catalog/build-customization-library.ts`](../src/lib/catalog/build-customization-library.ts) |
-| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem` (parallel stem for a future `product-catalog-*`) |
+| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem`, `buildCustomizationFacetCounts` |
 | Filter taxonomy (ops + product lines) | [`src/lib/catalog/customization-filter-taxonomy.ts`](../src/lib/catalog/customization-filter-taxonomy.ts) — driven by [`docs/customization-filter-taxonomy.md`](./customization-filter-taxonomy.md) |
 | API | [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) — **`listCustomizations()`** (ticket name `getCustomizations`) |
 | Alias | `listCustomizationCategories()` → `listCustomizations().items` |
@@ -75,7 +75,7 @@ Buyer copy: **customization**, never “capability”.
 ## Filter / URL responsibility
 
 - **Server:** one library fetch + facet catalog in `CustomizationLibraryResult`
-- **Client:** filter in memory via `matchesCustomizationItem`; facet option counts = attribute frequency in the **current result set**; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; each reveal shows append card skeletons for ~400ms before bumping `visible`)
+- **Client:** filter in memory via `matchesCustomizationItem`; facet option counts via `buildCustomizationFacetCounts` — **disjunctive (except-self)**: for facet F, count options against items that match category + query + all selections **except F** (so selecting one Product Line does not zero sibling lines); header **“N of M”** stays based on the fully filtered result set; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; each reveal shows append card skeletons for ~400ms before bumping `visible`)
 - **Route:** `urlSync` (default true) — `category`, `q`, plus facet ids as comma-separated query params (load-more depth is session-only, not in the URL)
 
 - **Section:** `urlSync={false}` — local React state only
