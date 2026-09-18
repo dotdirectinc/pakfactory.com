@@ -234,7 +234,10 @@ export const customizationType = defineType({
   preview: {
     select: { title: 'title', category: 'category.title' },
     prepare({ title, category }) {
-      return { title, subtitle: category ? `Type in ${category}` : 'Customization Type' }
+      // Just the Category name. "Type in Finishing" restated what the list is
+      // already called; the fallback now names the gap instead, and Category is
+      // required, so an empty one is a real problem rather than a normal state.
+      return { title, subtitle: category || 'No category' }
     },
   },
   // Editors group Types by Category — Materials, Printing, Finishing, Additional

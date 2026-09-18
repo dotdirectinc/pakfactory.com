@@ -1513,8 +1513,8 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
             .title('Options')
             .schemaType('customizationOption')
             // Title, not Last Edited (PROD-2544). Last Edited is the Studio's own default
-            // and it reshuffles underfoot: editing one of the 126 options throws it to the
-            // top while an editor is working a Type at a time. Alphabetical holds still.
+            // and it reshuffles underfoot: editing any option throws it to the top while
+            // an editor is working a Type at a time. Alphabetical holds still.
             //
             // Grouping by Type is what editors actually want, and it is NOT settable here.
             // `defaultOrdering` takes a bare `SortOrderingItem[]`, and `PaneContainer`
