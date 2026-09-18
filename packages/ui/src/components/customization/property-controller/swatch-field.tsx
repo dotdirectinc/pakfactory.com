@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { cn } from "../../../lib/utils";
-import type { SwatchItem } from "../types";
+import {useState, type CSSProperties} from "react";
+import {cn} from "../../../lib/utils";
+import type {SwatchItem} from "../types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "../../tooltip";
 
 export function SwatchField({
   swatches,
@@ -25,30 +30,40 @@ export function SwatchField({
   };
 
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Swatches">
+    <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Swatches">
       {swatches.map((s) => {
         const on = selected === s.id;
-        const style: CSSProperties = s.imageUrl
-          ? { backgroundImage: `url(${s.imageUrl})` }
-          : { backgroundColor: s.color ?? "var(--muted)" };
+        const isConsultation = s.appearance === "consultation";
+        const style: CSSProperties | undefined = isConsultation
+          ? undefined
+          : s.imageUrl
+            ? {backgroundImage: `url(${s.imageUrl})`}
+            : {backgroundColor: s.color ?? "var(--muted)"};
         return (
-          <button
-            key={s.id}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            className={cn(
-              "flex cursor-pointer flex-col items-center gap-1 rounded-[var(--radius-control)] border border-border bg-background p-2 text-sm",
-              on && "border-primary bg-primary/10 text-primary",
-            )}
-            onClick={() => setSelected(s.id)}
-          >
-            <span
-              className="size-8 rounded-full border border-border bg-cover bg-center"
-              style={style}
-            />
-            <span className="text-xs">{s.label}</span>
-          </button>
+          <Tooltip key={s.id}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={on}
+                aria-label={s.label}
+                className={cn(
+                  "size-9 shrink-0 cursor-pointer rounded-full transition-shadow",
+                  isConsultation
+                    ? "border-[3px] border-dotted border-muted-foreground bg-transparent"
+                    : "border border-border bg-cover bg-center",
+                  on &&
+                    "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                  on && !isConsultation && "border-transparent",
+                )}
+                style={style}
+                onClick={() => setSelected(s.id)}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={6}>
+              {s.label}
+            </TooltipContent>
+          </Tooltip>
         );
       })}
     </div>

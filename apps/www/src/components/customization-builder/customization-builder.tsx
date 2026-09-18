@@ -35,6 +35,7 @@ import {
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
@@ -242,8 +243,11 @@ export function CustomizationBuilder({
     function handlePropertySelectionsChange(
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) {
-        onChange(patchPropertySelections(value, optionId, selections));
+        onChange(
+            patchPropertySelections(value, optionId, selections, summaries),
+        );
     }
 
     function goBack() {

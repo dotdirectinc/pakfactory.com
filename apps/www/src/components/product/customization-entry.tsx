@@ -6,6 +6,7 @@ import {Check, ChevronRight} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import {SelectionSummaryDisplay} from '@/components/customization-builder/ui/selection-summary-display';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {
     CustomizationOption,
@@ -20,6 +21,8 @@ import {
     summarizeAnswer,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PropertySelectionSummaryItem,
+    type StepAnswer,
 } from '@/lib/customization-builder';
 
 const CustomizationBuilder = dynamic(
@@ -40,11 +43,24 @@ type CustomizationEntryProps = {
 
 type SummaryRowProps = {
     label: string;
-    summary: string;
+    answer: StepAnswer;
+    propertySummaries?: PropertySelectionSummaryItem[];
     onCustomize: () => void;
 };
 
-function SummaryRow({label, summary, onCustomize}: SummaryRowProps) {
+function SummaryRow({
+    label,
+    answer,
+    propertySummaries,
+    onCustomize,
+}: SummaryRowProps) {
+    const summaryText = summarizeAnswer(
+        answer,
+        CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+        {propertySummaries},
+    );
+    const isUnset = summaryText === 'Not set';
+
     return (
         <button
             type="button"
@@ -53,11 +69,19 @@ function SummaryRow({label, summary, onCustomize}: SummaryRowProps) {
         >
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">{label}</p>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {summary === 'Not set'
-                        ? REQUEST_COPY.notSet
-                        : summary}
-                </p>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                    {isUnset ? (
+                        REQUEST_COPY.notSet
+                    ) : (
+                        <SelectionSummaryDisplay
+                            answer={answer}
+                            specialistLabel={
+                                CUSTOMIZATION_BUILDER_COPY.specialistToAdvise
+                            }
+                            propertySummaries={propertySummaries}
+                        />
+                    )}
+                </div>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
                 {REQUEST_COPY.customizeRow}
@@ -87,17 +111,28 @@ function SummaryGroup({
                 {title}
             </p>
             <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-background">
-                {rows.map((row) => (
-                    <SummaryRow
-                        key={row.key}
-                        label={row.label}
-                        summary={summarizeAnswer(
-                            getAnswer(builderState, row.key),
-                            CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
-                        )}
-                        onCustomize={() => onCustomize(row.key)}
-                    />
-                ))}
+                {rows.map((row) => {
+                    const answer = getAnswer(builderState, row.key);
+                    const optionId =
+                        answer.status === 'set' && 'selection' in answer
+                            ? answer.selection.optionId
+                            : undefined;
+                    return (
+                        <SummaryRow
+                            key={row.key}
+                            label={row.label}
+                            answer={answer}
+                            propertySummaries={
+                                optionId
+                                    ? builderState.propertySelectionSummaries?.[
+                                          optionId
+                                      ]
+                                    : undefined
+                            }
+                            onCustomize={() => onCustomize(row.key)}
+                        />
+                    );
+                })}
             </div>
         </div>
     );

@@ -12,6 +12,7 @@ import {
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -34,6 +35,7 @@ type CustomizationGuidedViewProps = {
     onPropertySelectionsChange: (
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) => void;
     onBack: () => void;
     onNext: () => void;
