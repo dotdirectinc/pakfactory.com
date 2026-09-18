@@ -3,7 +3,7 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
-import {ProductCustomizationsMansoryPreview} from '@/components/product/product-customizations-mansory-preview';
+import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {ProductRequestRail} from '@/components/product/product-request-rail';
 import {
@@ -86,7 +86,7 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     {label: product.title},
                 ]}
             />
-            <PageDielineSection innerClassName="border-b border-dashed border-border">
+            <PageDielineSection>
                 <article
                     id="pdp-overview"
                     className="scroll-mt-32 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
@@ -120,11 +120,9 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
             <div className="relative">
                 <AnchorNav items={navItems} />
                 <ProductSpecs rows={specRows} />
-                <ProductCustomizationsMansoryPreview
-                    theme="muted"
+                <ProductCustomizationsPreview
                     styleTitle={style.title}
                     items={customizationItems}
-                    productLineSlug={line.slug}
                 />
                 <ProductsRow theme="muted" products={relatedCards} />
                 <TestimonialsRow

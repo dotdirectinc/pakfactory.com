@@ -23,6 +23,10 @@ export type CustomizationCatalogCardProps = {
      * `action` — only the "Take a closer look" control opens quick view.
      */
     mediaClickTarget?: 'container' | 'action';
+    /**
+     * `elevated` — white chrome on a muted band (media well + outer tile).
+     */
+    surface?: 'default' | 'elevated';
 };
 
 const closerLookPillClass = cn(
@@ -51,6 +55,7 @@ export function CustomizationCatalogCard({
     className,
     onCloserLook,
     mediaClickTarget = 'container',
+    surface = 'default',
 }: CustomizationCatalogCardProps) {
     const closerLookLabel = `Take a closer look at ${title}`;
 
@@ -118,32 +123,41 @@ export function CustomizationCatalogCard({
         );
 
     return (
-        <MediaCardFrame
-            className={cn('h-full', className)}
-            media={media}
-            mediaOverlay={mediaOverlay}
-            meta={
-                <div className="space-y-1 text-left">
-                    {eyebrow ? (
-                        <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {eyebrow}
-                        </p>
-                    ) : null}
-                    <Link
-                        href={href}
-                        className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
-                            {title}
-                        </h3>
-                    </Link>
-                    {description ? (
-                        <p className="line-clamp-3 text-xs leading-4 text-muted-foreground">
-                            {description}
-                        </p>
-                    ) : null}
-                </div>
-            }
-        />
+        <div
+            className={cn(
+                'h-full',
+                surface === 'elevated' && 'rounded-2xl bg-background p-4',
+                className,
+            )}
+        >
+            <MediaCardFrame
+                className="h-full"
+                surface={surface}
+                media={media}
+                mediaOverlay={mediaOverlay}
+                meta={
+                    <div className="space-y-1 text-left">
+                        {eyebrow ? (
+                            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {eyebrow}
+                            </p>
+                        ) : null}
+                        <Link
+                            href={href}
+                            className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
+                                {title}
+                            </h3>
+                        </Link>
+                        {description ? (
+                            <p className="line-clamp-3 text-xs leading-4 text-muted-foreground">
+                                {description}
+                            </p>
+                        ) : null}
+                    </div>
+                }
+            />
+        </div>
     );
 }
