@@ -39,6 +39,7 @@ import {
     type StepAnswer,
 } from '@/lib/customization-builder';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
+import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
 
 export type CustomizationBuilderProps = {
     open: boolean;
@@ -50,7 +51,9 @@ export type CustomizationBuilderProps = {
     productTitle?: string;
     /** When opening, focus this step (e.g. from overview summary row). */
     initialStepKey?: BuilderStepKey;
-    /** Sanity product dimensionRange in mm (L/W/D). */
+    /** Sanity product.dimensionInput shape key. */
+    dimensionInput?: string;
+    /** Sanity product dimensionRange in mm. */
     dimensionRange?: ProductDimensionRange;
 };
 
@@ -104,8 +107,16 @@ export function CustomizationBuilder({
     onChange,
     productTitle,
     initialStepKey,
+    dimensionInput,
     dimensionRange,
 }: CustomizationBuilderProps) {
+    const dimensionAxisIds = useMemo(
+        () =>
+            resolveProductDims(dimensionInput ?? 'rectangular', dimensionRange)
+                .axes,
+        [dimensionInput, dimensionRange],
+    );
+
     const filteredCustomizations = useMemo(() => {
         const asOptions = availableCustomizations as CustomizationOption[];
         const offer = resolveOffer(asOptions);
@@ -341,7 +352,9 @@ export function CustomizationBuilder({
                             activeOptionId={activeOptionId}
                             state={value}
                             maxReachableIndex={guidedMaxIndex}
+                            dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
+                            dimensionAxisIds={dimensionAxisIds}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}
@@ -364,7 +377,9 @@ export function CustomizationBuilder({
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
                             state={value}
+                            dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
+                            dimensionAxisIds={dimensionAxisIds}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}

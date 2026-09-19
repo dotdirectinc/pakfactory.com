@@ -54,6 +54,9 @@ importers:
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       algoliasearch:
         specifier: ^5.55.2
         version: 5.55.2
@@ -312,6 +315,9 @@ importers:
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       '@portabletext/react':
         specifier: ^6.0.3
         version: 6.0.3(react@19.2.5)
@@ -622,6 +628,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../utilities
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -671,6 +680,12 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/utilities:
+    devDependencies:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

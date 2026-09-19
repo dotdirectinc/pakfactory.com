@@ -240,6 +240,30 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
               ...(typeof dim.widthMax === 'number'
                   ? {widthMax: dim.widthMax}
                   : {}),
+              ...(typeof dim.heightMin === 'number'
+                  ? {heightMin: dim.heightMin}
+                  : {}),
+              ...(typeof dim.heightMax === 'number'
+                  ? {heightMax: dim.heightMax}
+                  : {}),
+              ...(typeof dim.diameterMin === 'number'
+                  ? {diameterMin: dim.diameterMin}
+                  : {}),
+              ...(typeof dim.diameterMax === 'number'
+                  ? {diameterMax: dim.diameterMax}
+                  : {}),
+              ...(typeof dim.gussetMin === 'number'
+                  ? {gussetMin: dim.gussetMin}
+                  : {}),
+              ...(typeof dim.gussetMax === 'number'
+                  ? {gussetMax: dim.gussetMax}
+                  : {}),
+              ...(typeof dim.dropMin === 'number'
+                  ? {dropMin: dim.dropMin}
+                  : {}),
+              ...(typeof dim.dropMax === 'number'
+                  ? {dropMax: dim.dropMax}
+                  : {}),
               ...(typeof dim.depthMin === 'number'
                   ? {depthMin: dim.depthMin}
                   : {}),
@@ -248,6 +272,11 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
                   : {}),
           }
         : undefined;
+
+    const dimensionInput =
+        typeof doc.dimensionInput === 'string' && doc.dimensionInput.trim()
+            ? doc.dimensionInput.trim()
+            : undefined;
 
     const properties: ProductProperty[] = [];
     for (const row of doc.properties ?? []) {
@@ -290,6 +319,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         ...(typeof doc.leadTimeDays === 'number'
             ? {leadTimeDays: doc.leadTimeDays}
             : {}),
+        ...(dimensionInput ? {dimensionInput} : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
             ? {dimensionRange}
             : {}),

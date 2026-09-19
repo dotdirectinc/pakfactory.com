@@ -38,6 +38,7 @@ type CustomizationEntryProps = {
     builderState: CustomizationBuilderState;
     onBuilderStateChange: (next: CustomizationBuilderState) => void;
     productTitle?: string;
+    dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
 };
 
@@ -143,6 +144,7 @@ export function CustomizationEntry({
     builderState,
     onBuilderStateChange,
     productTitle,
+    dimensionInput,
     dimensionRange,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
@@ -234,6 +236,7 @@ export function CustomizationEntry({
                 onChange={onBuilderStateChange}
                 productTitle={productTitle}
                 initialStepKey={initialStepKey}
+                dimensionInput={dimensionInput}
                 dimensionRange={dimensionRange}
             />
         </div>

@@ -51,19 +51,24 @@ export function getAnswer(
     return state.answers[key] ?? {status: 'unset'};
 }
 
-function faceIsFilled(face: FaceMeasurements): boolean {
-    return Boolean(
-        face.length.trim() && face.width.trim() && face.height.trim(),
-    );
+function faceIsFilled(
+    face: FaceMeasurements,
+    axisIds: readonly string[],
+): boolean {
+    if (axisIds.length === 0) return true;
+    return axisIds.every((id) => Boolean(face[id]?.trim()));
 }
 
-export function isAnswerReady(answer: StepAnswer | undefined): boolean {
+export function isAnswerReady(
+    answer: StepAnswer | undefined,
+    axisIds: readonly string[] = ['length', 'width', 'height'],
+): boolean {
     if (!answer || answer.status === 'unset') return false;
     if (answer.status === 'not-sure') return true;
     if ('dimensions' in answer) {
         return (
-            faceIsFilled(answer.dimensions.external) ||
-            faceIsFilled(answer.dimensions.internal)
+            faceIsFilled(answer.dimensions.external, axisIds) ||
+            faceIsFilled(answer.dimensions.internal, axisIds)
         );
     }
     if ('selection' in answer) {
@@ -80,10 +85,15 @@ export function isAnswerReady(answer: StepAnswer | undefined): boolean {
 export function firstUnresolvedStepIndex(
     state: CustomizationBuilderState,
     steps: BuilderStep[],
+    dimensionAxisIds?: readonly string[],
 ): number {
-    const index = steps.findIndex(
-        (step) => !isAnswerReady(getAnswer(state, step.key)),
-    );
+    const index = steps.findIndex((step) => {
+        const answer = getAnswer(state, step.key);
+        if (step.kind === 'dimensions') {
+            return !isAnswerReady(answer, dimensionAxisIds);
+        }
+        return !isAnswerReady(answer);
+    });
     return index === -1 ? steps.length : index;
 }
 
@@ -102,25 +112,39 @@ export function shouldEnterGuided(state: CustomizationBuilderState): boolean {
 export function isBuilderReady(
     state: CustomizationBuilderState,
     steps: BuilderStep[],
+    dimensionAxisIds?: readonly string[],
 ): boolean {
     if (steps.length === 0) return true;
-    return steps.every((step) => isAnswerReady(getAnswer(state, step.key)));
+    return steps.every((step) => {
+        const answer = getAnswer(state, step.key);
+        if (step.kind === 'dimensions') {
+            return isAnswerReady(answer, dimensionAxisIds);
+        }
+        return isAnswerReady(answer);
+    });
 }
 
 export function formatFaceSummary(
     face: FaceMeasurements,
     unit: DimensionsValue['unit'],
+    axisIds?: readonly string[],
 ): string {
-    const l = face.length.trim();
-    const w = face.width.trim();
-    const h = face.height.trim();
-    if (!l && !w && !h) return '';
-    return `${l || '—'} × ${w || '—'} × ${h || '—'} ${unit}`;
+    const ids =
+        axisIds && axisIds.length > 0
+            ? axisIds
+            : Object.keys(face).filter((id) => face[id]?.trim());
+    if (ids.length === 0) return '';
+    const parts = ids.map((id) => face[id]?.trim() || '—');
+    if (parts.every((p) => p === '—')) return '';
+    return `${parts.join(' × ')} ${unit}`;
 }
 
-export function formatDimensionsSummary(value: DimensionsValue): string {
-    const ext = formatFaceSummary(value.external, value.unit);
-    const inn = formatFaceSummary(value.internal, value.unit);
+export function formatDimensionsSummary(
+    value: DimensionsValue,
+    axisIds?: readonly string[],
+): string {
+    const ext = formatFaceSummary(value.external, value.unit, axisIds);
+    const inn = formatFaceSummary(value.internal, value.unit, axisIds);
     if (ext && inn) return `Ext ${ext} · Int ${inn}`;
     if (ext) return `Ext ${ext}`;
     if (inn) return `Int ${inn}`;
@@ -532,12 +556,18 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
 
 function parseFace(value: unknown): FaceMeasurements {
     if (!value || typeof value !== 'object') return {...EMPTY_FACE};
-    const raw = value as FaceMeasurements;
-    return {
-        length: String(raw.length ?? ''),
-        width: String(raw.width ?? ''),
-        height: String(raw.height ?? ''),
-    };
+    const raw = value as Record<string, unknown>;
+    const out: FaceMeasurements = {};
+    for (const [key, rawValue] of Object.entries(raw)) {
+        if (typeof rawValue === 'string' || typeof rawValue === 'number') {
+            out[key] = String(rawValue);
+        }
+    }
+    // Legacy faces always had length/width/height.
+    if (!('length' in out) && !('width' in out) && !('height' in out)) {
+        return {...EMPTY_FACE, ...out};
+    }
+    return out;
 }
 
 function parseAnswer(value: unknown): StepAnswer | null {
@@ -624,23 +654,30 @@ export function seedFromCustomizations(
     };
 }
 
-export function emptyDimensions(): DimensionsValue {
+export function emptyFace(axisIds?: readonly string[]): FaceMeasurements {
+    if (!axisIds?.length) return {...EMPTY_FACE};
+    return Object.fromEntries(axisIds.map((id) => [id, '']));
+}
+
+export function emptyDimensions(
+    axisIds?: readonly string[],
+): DimensionsValue {
+    const face = emptyFace(axisIds);
     return {
         unit: EMPTY_DIMENSIONS.unit,
-        external: {...EMPTY_FACE},
-        internal: {...EMPTY_FACE},
+        external: {...face},
+        internal: {...face},
     };
 }
 
-export function emptyFace(): FaceMeasurements {
-    return {...EMPTY_FACE};
-}
-
-export function getDimensionsValue(answer: StepAnswer): DimensionsValue {
+export function getDimensionsValue(
+    answer: StepAnswer,
+    axisIds?: readonly string[],
+): DimensionsValue {
     if (answer.status === 'set' && 'dimensions' in answer) {
         return answer.dimensions;
     }
-    return emptyDimensions();
+    return emptyDimensions(axisIds);
 }
 
 export function patchFace(

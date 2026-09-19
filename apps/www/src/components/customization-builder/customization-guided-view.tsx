@@ -25,6 +25,8 @@ type CustomizationGuidedViewProps = {
     /** Highest rail index unlocked by Next/Skip commit. */
     maxReachableIndex: number;
     dimensionRange?: ProductDimensionRange;
+    dimensionInput?: string;
+    dimensionAxisIds?: readonly string[];
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -51,6 +53,8 @@ export function CustomizationGuidedView({
     state,
     maxReachableIndex,
     dimensionRange,
+    dimensionInput,
+    dimensionAxisIds,
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -70,7 +74,11 @@ export function CustomizationGuidedView({
     );
     const isFirst = stepIndex <= 0;
     const isLast = stepIndex >= steps.length - 1;
-    const canAdvance = isAnswerReady(getAnswer(state, activeKey));
+    const step = steps[stepIndex];
+    const canAdvance =
+        step?.kind === 'dimensions'
+            ? isAnswerReady(getAnswer(state, activeKey), dimensionAxisIds)
+            : isAnswerReady(getAnswer(state, activeKey));
 
     function handleSelectStep(key: BuilderStepKey) {
         const index = steps.findIndex((step) => step.key === key);
@@ -88,6 +96,8 @@ export function CustomizationGuidedView({
             numberedRail
             maxReachableIndex={maxReachableIndex}
             dimensionRange={dimensionRange}
+            dimensionInput={dimensionInput}
+            dimensionAxisIds={dimensionAxisIds}
             onSelectCategory={handleSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}

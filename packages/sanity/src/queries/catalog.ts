@@ -115,6 +115,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   "description": coalesce(pt::text(description), shortDescription),
   moq,
   leadTimeDays,
+  dimensionInput,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
   media[]{
@@ -570,11 +571,21 @@ export type CatalogProductDoc = {
   description?: string | null;
   moq?: number | null;
   leadTimeDays?: number | null;
+  dimensionInput?: string | null;
   dimensionRange?: {
     lengthMin?: number | null;
     lengthMax?: number | null;
     widthMin?: number | null;
     widthMax?: number | null;
+    heightMin?: number | null;
+    heightMax?: number | null;
+    diameterMin?: number | null;
+    diameterMax?: number | null;
+    gussetMin?: number | null;
+    gussetMax?: number | null;
+    dropMin?: number | null;
+    dropMax?: number | null;
+    /** Legacy Studio depth → treated as height. */
     depthMin?: number | null;
     depthMax?: number | null;
   } | null;
