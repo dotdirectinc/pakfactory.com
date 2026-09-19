@@ -21,6 +21,7 @@
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/supabase": "workspace:*",
     "@pakfactory/ui": "workspace:*",
+    "@pakfactory/utilities": "workspace:*",
     "algoliasearch": "^5.55.2",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^0.468.0",

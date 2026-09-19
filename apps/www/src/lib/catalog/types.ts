@@ -58,6 +58,15 @@ export type ProductDimensionRange = {
     lengthMax?: number;
     widthMin?: number;
     widthMax?: number;
+    heightMin?: number;
+    heightMax?: number;
+    diameterMin?: number;
+    diameterMax?: number;
+    gussetMin?: number;
+    gussetMax?: number;
+    dropMin?: number;
+    dropMax?: number;
+    /** Legacy Studio depth → treated as height. */
     depthMin?: number;
     depthMax?: number;
 };
@@ -101,6 +110,8 @@ export type Product = {
     primarySolution?: string;
     moq?: number;
     leadTimeDays?: number;
+    /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
+    dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
     /** Spec rows from Sanity properties (PDP). */
     properties?: ProductProperty[];

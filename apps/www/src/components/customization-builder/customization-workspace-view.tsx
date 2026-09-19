@@ -19,6 +19,8 @@ type CustomizationWorkspaceViewProps = {
     activeOptionId: string | null;
     state: CustomizationBuilderState;
     dimensionRange?: ProductDimensionRange;
+    dimensionInput?: string;
+    dimensionAxisIds?: readonly string[];
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -40,6 +42,8 @@ export function CustomizationWorkspaceView({
     activeOptionId,
     state,
     dimensionRange,
+    dimensionInput,
+    dimensionAxisIds,
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -57,6 +61,8 @@ export function CustomizationWorkspaceView({
             activeOptionId={activeOptionId}
             state={state}
             dimensionRange={dimensionRange}
+            dimensionInput={dimensionInput}
+            dimensionAxisIds={dimensionAxisIds}
             onSelectCategory={onSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}

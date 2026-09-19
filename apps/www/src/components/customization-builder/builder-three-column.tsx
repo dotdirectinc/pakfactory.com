@@ -30,6 +30,8 @@ type BuilderThreeColumnProps = {
     header?: ReactNode;
     footer?: ReactNode;
     dimensionRange?: ProductDimensionRange;
+    dimensionInput?: string;
+    dimensionAxisIds?: readonly string[];
     onSelectCategory: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -55,6 +57,8 @@ export function BuilderThreeColumn({
     header,
     footer,
     dimensionRange,
+    dimensionInput,
+    dimensionAxisIds,
     onSelectCategory,
     onSelectConsultation,
     onSelectType,
@@ -113,6 +117,7 @@ export function BuilderThreeColumn({
                         state={state}
                         numbered={numberedRail}
                         maxReachableIndex={maxReachableIndex}
+                        dimensionAxisIds={dimensionAxisIds}
                         onSelect={onSelectCategory}
                         onClearCategory={onClearCategory}
                     />
@@ -133,6 +138,7 @@ export function BuilderThreeColumn({
                         <CustomizationDimensionOption
                             answer={answer}
                             face={face}
+                            dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
                             onChange={(next) => onAnswerChange(step.key, next)}
                             {...noteProps}

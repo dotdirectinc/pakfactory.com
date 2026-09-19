@@ -7,7 +7,7 @@ import type {
 import {CardGridField} from "./card-grid-field";
 import {ChecksField} from "./checks-field";
 import {ChipField} from "./chip-field";
-import {DimsField} from "./dims-field";
+import {DimensionField} from "./dimension-field";
 import {LinkOutField} from "./link-out-field";
 import {ListboxField} from "./listbox-field";
 import {RadioField} from "./radio-field";
@@ -58,16 +58,17 @@ export function PropertyController({
   switch (ui.kind) {
     case "readonly":
       return <ReadonlyField value={ui.value} />;
-    case "dims": {
-      const controlled = asKind(value, "dims");
+    case "dimension": {
+      const controlled = asKind(value, "dimension");
       return (
-        <DimsField
+        <DimensionField
           unit={ui.unit}
           axes={ui.axes}
+          ranges={ui.ranges}
           value={controlled?.value}
           onChange={
             onChange
-              ? (next) => onChange({kind: "dims", value: next})
+              ? (next) => onChange({kind: "dimension", value: next})
               : undefined
           }
         />

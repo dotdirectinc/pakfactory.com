@@ -3,9 +3,16 @@
  * Props-only — no Sanity, fixtures, or sandbox state.
  */
 
+import type {AxisRange} from "@pakfactory/utilities/length-units";
+import type {DimensionFieldAxis} from "@pakfactory/utilities/dimension-axes";
+import {DEFAULT_DIMENSION_AXES} from "@pakfactory/utilities/dimension-axes";
+
+export type {DimensionFieldAxis, AxisRange};
+export {DEFAULT_DIMENSION_AXES};
+
 export type UiKind =
   | "readonly"
-  | "dims"
+  | "dimension"
   | "radio"
   | "radioPick"
   | "toggles"
@@ -58,21 +65,8 @@ export type ChipItem = {
 
 export type ValuesPerItem = "one" | "many";
 
-/** One dimension axis (e.g. L / W / H, Diameter / Height, W / H / Gusset). */
-export type DimAxis = {
-  id: string;
-  prefix: string;
-  label: string;
-};
-
-export const DEFAULT_DIM_AXES: DimAxis[] = [
-  {id: "L", prefix: "L", label: "Length"},
-  {id: "W", prefix: "W", label: "Width"},
-  {id: "H", prefix: "H", label: "Height"},
-];
-
-/** Controlled value for `dims` — `unsure` is a valid Ready selection. */
-export type DimsFieldValue = {
+/** Controlled value for `dimension` — `unsure` is a valid Ready selection. */
+export type DimensionFieldValue = {
   unsure: boolean;
   /** Axis id → numeric string (empty when blank). */
   values: Record<string, string>;
@@ -83,7 +77,7 @@ export type DimsFieldValue = {
  * Omitted → field uses internal / defaultValue (admin demo).
  */
 export type PropertyControllerValue =
-  | {kind: "dims"; value: DimsFieldValue}
+  | {kind: "dimension"; value: DimensionFieldValue}
   | {kind: "radio"; value: string}
   | {kind: "radioPick"; value: string}
   | {kind: "toggles"; value: boolean[]}
@@ -100,7 +94,13 @@ export type PropertyControllerValue =
 
 export type UiDescriptor =
   | {kind: "readonly"; value: string}
-  | {kind: "dims"; unit: string; axes?: DimAxis[]}
+  | {
+      kind: "dimension";
+      unit: string;
+      axes?: DimensionFieldAxis[];
+      /** Per-axis min/max already in `unit` (from utilities convert). */
+      ranges?: Partial<Record<string, AxisRange>> | null;
+    }
   | {kind: "radio"; choices: string[]; value: string}
   | {
       kind: "radioPick";

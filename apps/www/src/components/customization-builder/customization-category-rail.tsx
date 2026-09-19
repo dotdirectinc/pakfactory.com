@@ -22,6 +22,7 @@ type CustomizationCategoryRailProps = {
     numbered?: boolean;
     /** Indices greater than this are locked (guided). Omit for workspace. */
     maxReachableIndex?: number;
+    dimensionAxisIds?: readonly string[];
     onSelect: (key: BuilderStepKey) => void;
     onClearCategory?: (key: BuilderStepKey) => void;
 };
@@ -32,6 +33,7 @@ export function CustomizationCategoryRail({
     state,
     numbered = false,
     maxReachableIndex,
+    dimensionAxisIds,
     onSelect,
     onClearCategory,
 }: CustomizationCategoryRailProps) {
@@ -46,7 +48,10 @@ export function CustomizationCategoryRail({
                     maxReachableIndex !== undefined &&
                     index > maxReachableIndex;
                 const answer = getAnswer(state, item.key);
-                const ready = isAnswerReady(answer);
+                const ready =
+                    item.kind === 'dimensions'
+                        ? isAnswerReady(answer, dimensionAxisIds)
+                        : isAnswerReady(answer);
                 const optionId =
                     answer.status === 'set' && 'selection' in answer
                         ? answer.selection.optionId

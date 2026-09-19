@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {cn} from "../../../lib/utils";
-import {DimsInputs} from "./dims-field";
+import {DimensionInputs} from "./dimension-field";
 import {chipClass, inputClass} from "./field-styles";
 
 export function RadioPickField({
@@ -65,7 +65,7 @@ export function RadioPickField({
         </select>
       </div>
       <div className={cn("mt-2", value === "Custom" ? "block" : "hidden")}>
-        <DimsInputs unit={unit} />
+        <DimensionInputs unit={unit} />
       </div>
     </>
   );

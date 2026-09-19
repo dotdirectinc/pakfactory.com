@@ -8,11 +8,8 @@ export type BuilderStepKey = 'dimensions' | (string & {});
 
 export type DimensionFace = 'external' | 'internal';
 
-export type FaceMeasurements = {
-    length: string;
-    width: string;
-    height: string;
-};
+/** Axis id (Sanity length/width/height/…) → numeric string. */
+export type FaceMeasurements = Record<string, string>;
 
 /** Dual external/internal measurements for the Dimensions category. */
 export type DimensionsValue = {
@@ -112,6 +109,7 @@ export type BuilderMode = 'guided' | 'workspace';
 /** Dimensions always leads; selection steps follow category order from the product. */
 export const DIMENSIONS_STEP_KEY: BuilderStepKey = 'dimensions';
 
+/** Default rectangular L×W×H until product axes are applied. */
 export const EMPTY_FACE: FaceMeasurements = {
     length: '',
     width: '',

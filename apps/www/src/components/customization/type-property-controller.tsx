@@ -9,7 +9,7 @@ import type {
 } from '@pakfactory/ui/components/customization/types';
 
 export type TypePropertyControllerProps = {
-    /** Type-panel descriptor (listbox / toggles / dims / …). */
+    /** Type-panel descriptor (listbox / toggles / dimension / …). */
     ui: UiDescriptor;
     /** Optional section title above the control. */
     label?: string;
@@ -42,9 +42,9 @@ function initialValue(ui: UiDescriptor): PropertyControllerValue | undefined {
             return {kind: 'radioPick', value: ui.value};
         case 'stepper':
             return {kind: 'stepper', value: ui.value};
-        case 'dims':
+        case 'dimension':
             return {
-                kind: 'dims',
+                kind: 'dimension',
                 value: {unsure: false, values: {}},
             };
         case 'repeat':

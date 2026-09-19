@@ -19,6 +19,7 @@
     "./stamp-published-at": "./src/stamp-published-at.ts",
     "./fact-labels": "./src/fact-labels.ts",
     "./dimension-inputs": "./src/dimension-inputs.ts",
+    "./resolve-product-dims": "./src/resolve-product-dims.ts",
     "./solution-style-filter": "./src/solution-style-filter.ts"
   },
   "scripts": {
