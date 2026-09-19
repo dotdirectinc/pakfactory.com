@@ -106,28 +106,43 @@ export const customizationType = defineType({
       initialValue: 'one',
       validation: (Rule) => Rule.required(),
     }),
-    // DEPRECATED by the rename above. Kept because it is populated on all 37 Types
-    // (drafts included), and Conventions §4.3 forbids removing a populated field in
-    // the change that stops using it. `migrate:split-customization-role` copies it to
-    // `customerSelects`; removal is a later sweep.
+    // PROD-2532 — this replaces a hard-coded list of two category slugs that used to
+    // live in `components/AvailableCustomizationsInput.tsx`. That list matched on
+    // `type->category->slug.current`, so renaming or deleting a Category made a whole
+    // group vanish from the product picker with no error and nothing to notice.
     //
-    // Contrast `property.cardinality`, renamed outright in the same PR — that one was
-    // unset on all 9 documents, so there was nothing to deprecate toward.
+    // ❌ DO NOT move this to Customization Category, and do not add a second copy
+    // there. It is the obvious simplification — 4 documents instead of 36 — and it is
+    // the reason this field exists at all: Finishing holds ONE product-decided Type
+    // (Food-Safe Treatment) and seven material-decided ones, so a Category-level answer
+    // cannot be given without splitting Finishing in two. A flag on both levels is
+    // inheritance-with-overrides, retired from this branch by D12, D30 and D47 §2 —
+    // the same argument that moved `role` off the Type and onto the Option.
+    //
+    // NO `initialValue`, unlike `customerSelects` above, and that is deliberate. No
+    // default is safe in both directions: default `customization` and a forgotten Type
+    // is INVISIBLE — its options silently never reach any product's picker, which is
+    // precisely the bug this field removes. Required with no default makes the author
+    // choose. The Studio rule binds the form only, so the picker also counts unanswered
+    // Types on screen rather than dropping them in silence.
     defineField({
-      name: 'cardinality',
-      title: 'How many can a customer choose? (deprecated)',
+      name: 'availabilityDecidedBy',
+      title: 'Who decides whether a product offers these options?',
       type: 'string',
       group: 'content',
-      readOnly: true,
       description:
-        'DEPRECATED — renamed to "How many can a customer choose?" (`customerSelects`). Read-only; do not author. Scheduled for removal once the rename is verified.',
+        'Product — each product lists which of these options it offers, under "Available customizations" on the product. Another Customization — availability follows from what it goes on, so the material decides rather than the product. Materials and Additional Customization are product-decided; most of Finishing and all of Printing are decided by the material.',
       options: {
         layout: 'radio',
         list: [
-          { title: 'One', value: 'one' },
-          { title: 'Several', value: 'many' },
+          { title: 'Product — each product lists which of these it offers', value: 'product' },
+          {
+            title: 'Another Customization — the material or finish it goes on decides',
+            value: 'customization',
+          },
         ],
       },
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'description',
@@ -219,7 +234,42 @@ export const customizationType = defineType({
   preview: {
     select: { title: 'title', category: 'category.title' },
     prepare({ title, category }) {
-      return { title, subtitle: category ? `Type in ${category}` : 'Customization Type' }
+      // Just the Category name. "Type in Finishing" restated what the list is
+      // already called; the fallback now names the gap instead, and Category is
+      // required, so an empty one is a real problem rather than a normal state.
+      return { title, subtitle: category || 'No category' }
     },
   },
+  // Editors group Types by Category — Materials, Printing, Finishing, Additional
+  // Customization — so "Sort by Category" belongs in the list's sort menu (PROD-2545).
+  // The subtitle above already reads "Type in Materials", so grouped rows need no headers.
+  //
+  // ⚠ Title is declared here rather than inherited. A type that declares no `orderings`
+  // gets a GENERATED one: `guessOrderingConfig` in @sanity/schema picks the first field
+  // named title/name/label/heading/header/caption/description — which is where this list's
+  // "Sort by Title" came from, carrying the i18n key `default-orderings.title`. Declaring
+  // an `orderings` array suppresses that guess, so omitting Title here would silently
+  // delete it from the menu. That happened on PROD-2544 and took a follow-up PR to undo.
+  //
+  // ⚠ `category.title` is a reference path. It is correct HERE, as a menu entry —
+  // `getExtendedProjection` emits `category->{title}` and the dereference happens a stage
+  // before the sort — and it is inert as a `.defaultOrdering()`, where `PaneContainer`
+  // builds `{by: defaultOrdering}` with no projection slot and the sort quietly falls
+  // through to the next key. Hence Category in the menu, plain `title` as the list
+  // default in `structure/index.ts`. `customizationOption.ts` carries the long version.
+  orderings: [
+    {
+      title: 'Category',
+      name: 'categoryTitle',
+      by: [
+        { field: 'category.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
+    },
+  ],
 })

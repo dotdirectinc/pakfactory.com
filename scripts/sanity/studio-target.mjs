@@ -161,26 +161,33 @@ function cmdStatus() {
     for (const [key, name] of Object.entries(app.previewVars ?? {})) {
       const url = readVar(content, name);
       if (!url) {
-        console.log(`           previews ${key.padEnd(4)} (unset — falls back to localhost)`);
+        // `previews[key] === null` on this dataset's target means the surface is
+        // unreleased for that Studio — a deliberate state, not a gap. That is a
+        // property of an UNSET url; a set url is judged on its dataset below.
+        const unwired = Object.values(TARGETS).some(
+          (t) => t.dataset === dataset && t.previews[key] === null,
+        );
+        // SITE has no localhost fallback in sanity.config.ts: unset means the
+        // seven site-root workspaces get no Presentation tool at all.
+        const effect = key === "SITE" ? "no Presentation tab" : "falls back to localhost";
+        console.log(
+          `           previews ${key.padEnd(4)} (unset — ${effect})` +
+            (unwired ? "  ℹ️  unreleased surface — previewed from the staging Studio" : ""),
+        );
         continue;
       }
       const host = hostOf(url);
       const hostDataset = host ? HOST_DATASET[host] : undefined;
-      // Identify the target by the Studio's DATASET, not by the URL alone:
-      // `prod` and `staging` deliberately share the same SITE url, so a
-      // url-only lookup finds `staging` first and misses prod's declared
-      // exception — which is how this read as a mismatch on every prod check.
-      const known = Object.values(TARGETS).find(
-        (t) => t.dataset === dataset && t.previews[key] === url,
-      );
-      const exception = key === "SITE" && known?.siteCrossDataset;
+      // A set url on a site that renders another dataset is always a mismatch,
+      // with no exceptions: the preview secret is a document in the Studio's OWN
+      // dataset, so the site cannot validate it and the pane fails with
+      // "Invalid secret". That includes a production Studio pointed at staging,
+      // which is the pairing TARGETS.prod.previews.SITE = null exists to prevent.
       let note = "";
       if (!hostDataset) note = "  ⚠️ unrecognised host";
       else if (dataset && hostDataset !== dataset) {
-        note = exception
-          ? `  ℹ️  by design — ${known.siteCrossDataset}`
-          : `  ⚠️ that site renders "${hostDataset}", this Studio reads "${dataset}"`;
-        if (!exception) incoherent++;
+        note = `  ⚠️ that site renders "${hostDataset}", this Studio reads "${dataset}" — "Invalid secret"`;
+        incoherent++;
       }
       console.log(`           previews ${key.padEnd(4)} ${url.padEnd(45)}${note}`);
     }
@@ -262,8 +269,13 @@ function cmdSwitch(key) {
 
     // Which SITES this Studio previews — the third axis. Upserted, not replaced,
     // because SITE is newer than most .env.local files.
+    //
+    // An unwired (`null`) target is written as an EMPTY string, matching
+    // studio-deploy.mjs. Interpolating null wrote the literal "null", which is
+    // truthy: sanity.config.ts then opened the gate and crashed on
+    // `new URL("null/")` before the local Studio could start.
     for (const [key, name] of Object.entries(app.previewVars ?? {})) {
-      content = upsertVar(content, name, target.previews[key]);
+      content = upsertVar(content, name, target.previews[key] ?? "");
       touched = true;
     }
 

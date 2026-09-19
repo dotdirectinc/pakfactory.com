@@ -341,30 +341,6 @@ export const product = defineType({
           return true
         }),
     }),
-    // DEPRECATED (PROD-2512) — `solutions[0]` is the primary now, the same
-    // positional rule `productStyle` already uses. This field was exactly
-    // `solutions[0]` on all 58 presets that carried it, and nothing outside the
-    // Studio ever read it, so the merge loses nothing.
-    //
-    // Kept read-only rather than deleted: Conventions §4.3 forbids removing a
-    // POPULATED field in the same change that stops using it. Removal is a
-    // follow-up once the source stops sending it.
-    //
-    // Why merge at all: two fields held one fact and nothing checked them against
-    // each other, so a stray edit could point the breadcrumb at a solution the
-    // product does not serve.
-    defineField({
-      name: 'primarySolution',
-      title: 'Primary solution (deprecated)',
-      type: 'reference',
-      group: GROUPS.categorization,
-      to: [{ type: 'solution' }],
-      readOnly: true,
-      options: { disableNew: true },
-      description:
-        'DEPRECATED — the primary solution is now the first entry in Solutions above. Kept read-only so nothing is lost while the product data source stops sending it; it is not read anywhere.',
-      hidden: ({ value }) => !value,
-    }),
     defineField({
       name: 'relatedProducts',
       title: 'Related products',
@@ -399,7 +375,7 @@ export const product = defineType({
       title: 'Properties',
       type: 'array',
       group: GROUPS.specs,
-      description: `Every property value this product states — the picker is scoped by the line's declaration. Nothing inherits from Line or Style. ${SOURCE_OWNED_NOTE}`,
+      description: `Every property value this product states — the picker offers only what this product's line declares, so an empty picker means the property has to be added to the line first. Nothing inherits from Line or Style. ${SOURCE_OWNED_NOTE}`,
       of: [
         {
           type: 'object',
@@ -410,7 +386,44 @@ export const product = defineType({
               title: 'Property',
               type: 'reference',
               to: [{ type: 'property' }],
-              options: { disableNew: true },
+              // Scoped to what the product's Line declared, exactly as an Option's
+              // picker is scoped by its Type's declaration. Without this the
+              // declaration was decorative — every Property was offered on every
+              // product, so a rigid box could state a flute and nothing objected.
+              //
+              // An inspiration preset has no Line of its own (`productLine` is
+              // required for standard products only), so it resolves through
+              // `basedOn` to the standard product it is built from. 58 of 336
+              // products are in that position — not an edge case worth skipping.
+              //
+              // Declaring nothing offers nothing, deliberately: the fix is to
+              // declare the property on the Line, never to widen the picker.
+              options: {
+                disableNew: true,
+                filter: ({ document }) => {
+                  const doc = document as
+                    | { productLine?: { _ref?: string }; basedOn?: { _ref?: string } }
+                    | undefined
+                  const lineRef = doc?.productLine?._ref
+                  if (lineRef) {
+                    return {
+                      filter: '_id in *[_id == $lineRef][0].properties[].property._ref',
+                      params: { lineRef },
+                    }
+                  }
+                  const basedOnRef = doc?.basedOn?._ref
+                  if (basedOnRef) {
+                    return {
+                      filter:
+                        '_id in *[_id == *[_id == $basedOnRef][0].productLine._ref][0].properties[].property._ref',
+                      params: { basedOnRef },
+                    }
+                  }
+                  // No line and nothing to inherit one from: there is no
+                  // declaration to scope by, so offer nothing rather than everything.
+                  return { filter: 'false' }
+                },
+              },
               validation: (Rule) => Rule.required(),
             }),
             defineField({
@@ -424,8 +437,31 @@ export const product = defineType({
                   to: [{ type: 'propertyValue' }],
                   options: {
                     disableNew: true,
-                    filter: ({ parent }: { parent?: { property?: { _ref?: string } } }) => {
-                      const ref = parent?.property?._ref
+                    // Keyed off `document`, like every other filter here, and NOT
+                    // off `parent`. For a reference that is an array member,
+                    // `parent` is the `values` ARRAY rather than the row holding
+                    // the Property — ReferenceFilterResolverContext types it
+                    // `Record<string, unknown> | Record<string, unknown>[]` for
+                    // exactly this case. So `parent.property` was always
+                    // undefined, the filter was always 'false', and no value was
+                    // ever selectable. That is why the one populated row in the
+                    // dataset names a property and holds no values: the picker
+                    // could not be used, not that nobody tried.
+                    //
+                    // The row is found from the path instead — properties[_key].values.
+                    filter: ({ document, parentPath }) => {
+                      const rowKey = (parentPath ?? []).find(
+                        (segment): segment is { _key: string } =>
+                          typeof segment === 'object' &&
+                          segment !== null &&
+                          '_key' in segment,
+                      )?._key
+                      const rows = (
+                        document as
+                          | { properties?: { _key?: string; property?: { _ref?: string } }[] }
+                          | undefined
+                      )?.properties
+                      const ref = rows?.find((row) => row?._key === rowKey)?.property?._ref
                       if (!ref) return { filter: 'false' }
                       return { filter: 'property._ref == $ref', params: { ref } }
                     },
@@ -436,26 +472,169 @@ export const product = defineType({
             }),
           ],
           preview: {
-            select: { title: 'property.title', count: 'values.length' },
-            prepare({ title, count }) {
-              return { title: title || 'Property', subtitle: count ? `${count} value(s)` : 'No values' }
+            // `values.length` reads like it works and never has: preview `select`
+            // resolves field PATHS, not expressions, so it looked for a field
+            // called `length` on the array, found nothing, and every row read
+            // "No values" however many it actually held. The array itself comes
+            // back intact, so it is counted here instead.
+            select: { title: 'property.title', values: 'values' },
+            prepare({ title, values }) {
+              const count = Array.isArray(values) ? values.length : 0
+              return {
+                title: title || 'Property',
+                subtitle: count ? `${count} value${count === 1 ? '' : 's'}` : 'No values',
+              }
             },
           },
         },
       ],
+      // The other half of the Line's declaration. `productLine.properties[]`
+      // flags each entry `required`, and until now nothing read that flag — the
+      // only two occurrences of the word in the repo were its own help strings.
+      //
+      // WARNING, not error, for two reasons that both matter. These values are
+      // written by the product data source over the API, where the picker filter
+      // above has no effect whatsoever; an editor opening a synced product cannot
+      // fix what the sync produced, and blocking the save would strand them with
+      // a document they are not the author of. And requiredness is set on the
+      // Line by one person while the block would land on a Product edited by
+      // another.
+      //
+      // One fetch, three findings, one message: `custom` returns a single result,
+      // and splitting this into three rules would mean three round trips.
+      validation: (Rule) =>
+        Rule.custom(async (value, context) => {
+          const rows = Array.isArray(value)
+            ? (value as { property?: { _ref?: string }; values?: unknown[] }[])
+            : []
+          const doc = context.document as
+            | { productLine?: { _ref?: string }; basedOn?: { _ref?: string } }
+            | undefined
+          const statedRefs = rows
+            .map((row) => row?.property?._ref)
+            .filter((ref): ref is string => Boolean(ref))
+
+          const lineRef = doc?.productLine?._ref ?? ''
+          const basedOnRef = doc?.basedOn?._ref ?? ''
+          if (!lineRef && !basedOnRef && statedRefs.length === 0) return true
+
+          // The Property Values themselves, so a message can name them rather
+          // than only counting. `stated` resolves PROPERTY documents (the refs
+          // come from `row.property`); these are one level down.
+          const valueRefs = rows
+            .flatMap((row) => (row?.values ?? []) as { _ref?: string }[])
+            .map((v) => v?._ref)
+            .filter((ref): ref is string => Boolean(ref))
+
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+
+          // Every half in one round trip. A preset resolves its declaration
+          // through `basedOn`, the same fallback the picker above uses. Every
+          // filter is `_id ==` or `_id in`, so this stays index-backed.
+          const { declared, stated, values } = await client.fetch<{
+            declared: { ref: string | null; title: string | null; required: boolean | null }[] | null
+            stated: { _id: string; title: string | null; valuesPerItem: string | null }[] | null
+            values: { _id: string; title: string | null }[] | null
+          }>(
+            `{
+              "declared": coalesce(
+                *[_id == $lineRef][0].properties,
+                *[_id == *[_id == $basedOnRef][0].productLine._ref][0].properties,
+                []
+              )[]{ "ref": property._ref, "title": property->title, required },
+              "stated": *[_id in $statedRefs]{ _id, title, valuesPerItem },
+              "values": *[_id in $valueRefs]{ _id, title }
+            }`,
+            { lineRef, basedOnRef, statedRefs, valueRefs },
+          )
+
+          const declaredList = declared ?? []
+          const titleOf = new Map((stated ?? []).map((p) => [p._id, p.title ?? 'Untitled property']))
+          const statedSet = new Set(statedRefs)
+          const problems: string[] = []
+
+          // 1 — a required declaration with nothing stated against it.
+          const missing = declaredList
+            .filter((d) => d.required && d.ref && !statedSet.has(d.ref))
+            .map((d) => d.title ?? 'Untitled property')
+          if (missing.length) {
+            problems.push(
+              `${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} required by this product line but not stated here.`,
+            )
+          }
+
+          // 2 — something stated that the line never declared. Silent when the
+          // line declares nothing at all: that is an unfinished line rather than
+          // a wrong product, and flagging it would fire on every product in it.
+          if (declaredList.length) {
+            const declaredRefs = new Set(declaredList.map((d) => d.ref))
+            const undeclared = statedRefs
+              .filter((ref) => !declaredRefs.has(ref))
+              .map((ref) => titleOf.get(ref) ?? 'Untitled property')
+            if (undeclared.length) {
+              problems.push(
+                `${[...new Set(undeclared)].join(', ')} ${undeclared.length === 1 ? 'is' : 'are'} not declared by this product line — add the property to the line, or remove it here.`,
+              )
+            }
+          }
+
+          // 3 — a row that names a property and states no value for it says
+          // nothing at all, and reads as a filled-in row at a glance.
+          const empty = rows
+            .filter((row) => row?.property?._ref && !(row.values ?? []).length)
+            .map((row) => titleOf.get(row.property!._ref!) ?? 'Untitled property')
+          if (empty.length) {
+            problems.push(
+              `${[...new Set(empty)].join(', ')} ${empty.length === 1 ? 'has' : 'have'} no value.`,
+            )
+          }
+
+          // 4 — more values than the Property allows. `valuesPerItem` is the
+          // Property's own answer to "can one thing carry several of these at
+          // once", and before this nothing in the repo read it anywhere.
+          //
+          // No `usage` test here, unlike the Customization side. A Customization
+          // Type can declare a property SELECTABLE, meaning its options list the
+          // menu a customer chooses from, and several values are then correct. A
+          // Product has no such mode: `properties` is what this product IS, and
+          // what it OFFERS lives in `availableCustomizations`. So on this side a
+          // second value always contradicts `one`.
+          const valueTitleOf = new Map(
+            (values ?? []).map((v) => [v._id, v.title ?? 'Untitled value']),
+          )
+          const perItemOf = new Map((stated ?? []).map((p) => [p._id, p.valuesPerItem]))
+          const overLimit = rows
+            .filter((row) => {
+              const ref = row?.property?._ref
+              if (!ref || perItemOf.get(ref) !== 'one') return false
+              return ((row.values ?? []) as unknown[]).length > 1
+            })
+            .map((row) => {
+              const ref = row.property!._ref!
+              const names = ((row.values ?? []) as { _ref?: string }[])
+                .map((v) => (v?._ref ? valueTitleOf.get(v._ref) : undefined))
+                .filter(Boolean)
+              return `${titleOf.get(ref) ?? 'This property'} allows one value${
+                names.length ? ` — ${names.join(', ')}` : ''
+              }.`
+            })
+          if (overLimit.length) problems.push(overLimit.join(' '))
+
+          return problems.length ? problems.join(' ') : true
+        }).warning(),
     }),
     defineField({
       name: 'availableCustomizations',
       title: 'Available customizations',
       type: 'array',
       group: GROUPS.specs,
-      // The picker draws Materials and Additional Customization only, and this
-      // array holds all four categories — so it patches by `_key` and never
-      // writes the array whole. Anything it cannot edit it still lists, at the
-      // bottom, rather than leaving it somewhere an editor cannot see it.
-      // PROD-2529.
+      // The picker draws only the Customization Types that say the product
+      // decides them (`availabilityDecidedBy`, PROD-2532), and this array holds
+      // every category — so it patches by `_key` and never writes the array
+      // whole. Anything it cannot edit it still lists, at the bottom, rather
+      // than leaving it somewhere an editor cannot see it. PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Finishing and Printing are not chosen on either; they follow from compatibility between customization options. ${SOURCE_OWNED_NOTE}`,
+      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" is not the product's to choose and does not appear, and neither does an option that only has a library page rather than being something a customer picks. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits
@@ -516,6 +695,34 @@ export const product = defineType({
             return true // never block on a lookup failure
           }
           return true
+        }).warning(),
+        // An option that is a library page rather than a configurator choice.
+        // The picker cannot produce one, so this only fires on a script write or
+        // on an option flipped to `reference` AFTER a product listed it.
+        //
+        // Warning, not error: the entry is inert rather than wrong — nothing
+        // renders it — and it is never auto-cleared, because a field switch that
+        // silently edits data is worse than one that says something. Same call
+        // as the pre-selected flag surviving a Kind switch, two rules above.
+        Rule.custom(async (value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const ids = (list as { customization?: { _ref?: string } }[])
+            .map((e) => e?.customization?._ref?.replace(/^drafts\./, ''))
+            .filter(Boolean) as string[]
+          if (ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const rows = await client.fetch<{ _id: string; title: string | null }[]>(
+              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              { ids },
+            )
+            if (rows.length === 0) return true
+            const names = rows.map((r) => r.title || r._id).join(', ')
+            const one = rows.length === 1
+            return `${names} ${one ? 'is' : 'are'} not something a customer picks in the configurator — ${one ? 'it has' : 'they have'} a library page instead, so listing ${one ? 'it' : 'them'} here has no effect.`
+          } catch {
+            return true // never block on a lookup failure
+          }
         }).warning(),
       ],
       of: [

@@ -15,9 +15,11 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  *
  * 🔴 The display sequence is Eric's end-to-end order (Design → Prototyping →
  * Managed Manufacturing → Strategy → Logistics → Fulfillment) and it lives on the
- * Expertise landing page as an ordered array (PROD-2292), NOT here. The deployed
- * `order` field carries a DIFFERENT, wrong sequence — it is deprecated, never
- * migrated. Do not copy its numbers into the landing-page array.
+ * Expertise landing page as an ordered array (PROD-2292), NOT here. A deployed
+ * `order` field once carried a DIFFERENT, wrong sequence; it was removed from
+ * the schema and swept from the data, and its numbers were never migrated
+ * anywhere. Do not reintroduce them into the landing-page array from an old
+ * export.
  */
 export const expertiseStage = defineType({
   name: 'expertiseStage',

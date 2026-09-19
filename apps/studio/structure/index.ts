@@ -898,38 +898,6 @@ export function knowledgeLibraryItems(
     ];
 }
 
-export function solutionItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title('Solutions'),
-
-        S.listItem()
-            .title('Solutions')
-            .icon(BulbOutlineIcon)
-            .schemaType('solution')
-            .child(
-                S.documentTypeList('solution')
-                    .title('Solutions')
-                    .defaultOrdering([
-                        {field: 'title', direction: 'asc'},
-                    ]),
-            ),
-
-        S.listItem()
-            .title('Solution Styles')
-            .icon(ThLargeIcon)
-            .schemaType('solutionStyle')
-            .child(
-                S.documentTypeList('solutionStyle')
-                    .title('Solution Styles')
-                    .defaultOrdering([
-                        {field: 'title', direction: 'asc'},
-                    ]),
-            ),
-    ];
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN-SPECIFIC BUILDING BLOCKS
 // Used only in adminStructure. Individual workspaces use their own flat items.
@@ -1426,19 +1394,6 @@ export const websiteStructure = (
             ...settingsItems(S, context),
         ]);
 
-/** Solutions — industry and use-case solution pages */
-export const solutionsStructure = (
-    S: StructureBuilder,
-    context: StructureResolverContext,
-) =>
-    S.list()
-        .title('Solutions')
-        .items([
-            ...solutionItems(S),
-            ...knowledgeLibraryItems(S),
-            ...settingsItems(S, context, {solutions: true}),
-        ]);
-
 /** Academy — placeholder until Academy schema is built */
 export const academyStructure = (
     S: StructureBuilder,
@@ -1478,11 +1433,31 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
         S.listItem()
             .title('Product Styles')
             .schemaType('productStyle')
-            .child(S.documentTypeList('productStyle').title('Product Styles')),
+            // Title, not Last Edited (PROD-2546) — same reasoning as the Customization
+            // lists. Grouping by Line is the sort editors want, but a reference path
+            // cannot be a list default; it ships as a menu entry on `productStyle.ts`.
+            .child(
+                S.documentTypeList('productStyle')
+                    .title('Product Styles')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.listItem()
-            .title('Products')
+            .title('Standard Products')
             .schemaType('product')
-            .child(S.documentTypeList('product').title('Products')),
+            // Split by `kind` (PROD-2547). Inspiration presets live in the Solutions
+            // workspace, because Solutions is the surface they hang off; this list is
+            // the fully-configurable line/style products only.
+            //
+            // ⚠ `.filter()` REPLACES the `_type == $type` that `documentTypeList`
+            // sets for itself — it does not append — so the type clause is restated
+            // here. Drop it and the list queries every document type in the dataset
+            // and merely happens to look right.
+            .child(
+                S.documentTypeList('product')
+                    .title('Standard Products')
+                    .filter('_type == $type && kind == $kind')
+                    .params({type: 'product', kind: 'standard'}),
+            ),
         S.listItem()
             .title('Bundles')
             .schemaType('bundle')
@@ -1501,24 +1476,61 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
         S.listItem()
             .title('Types')
             .schemaType('customizationType')
-            .child(S.documentTypeList('customizationType').title('Customization Types')),
+            // Title, not Last Edited (PROD-2545) — same reasoning as Options below.
+            // Grouping by Category is the sort editors want, but a reference path cannot
+            // be a list default; it ships as a menu entry on `customizationType.ts`.
+            .child(
+                S.documentTypeList('customizationType')
+                    .title('Customization Types')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.listItem()
             .title('Options')
             .schemaType('customizationOption')
-            .child(S.documentTypeList('customizationOption').title('Customization Options')),
+            // Title, not Last Edited (PROD-2544). Last Edited is the Studio's own default
+            // and it reshuffles underfoot: editing any option throws it to the top while
+            // an editor is working a Type at a time. Alphabetical holds still.
+            //
+            // Grouping by Type is what editors actually want, and it is NOT settable here.
+            // `defaultOrdering` takes a bare `SortOrderingItem[]`, and `PaneContainer`
+            // builds the default as `{by: defaultOrdering}` — no slot for the extended
+            // projection that makes a reference path like `type.title` resolve. Setting it
+            // here does not error; it silently sorts by the next key, which is why this
+            // reads `title` and not `type.title`. The Type grouping ships as a sort-MENU
+            // entry instead (`orderings` in `customizationOption.ts`, which explains the
+            // mechanism); an editor picks it once and it persists per user.
+            .child(
+                S.documentTypeList('customizationOption')
+                    .title('Customization Options')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.divider().title('Global'),
         ...propertyGlobalItems(S),
     ];
 }
 
 /** Products — Product Line · Product Style · Product (+ Global Property picks) */
+/**
+ * Editors have no Presentation tab in these workspaces while the surface is
+ * unreleased (PROD-2494), so the structure says where previewing does happen.
+ *
+ * Gated on the SAME switch as the tool itself — `SANITY_STUDIO_PREVIEW_URL_SITE`
+ * — so the note cannot outlive the condition it describes: wire the production
+ * preview target and the tab appears while this label disappears, from one
+ * value in scripts/sanity/studio-targets.mjs.
+ */
+const sitePreviewHint = (S: StructureBuilder) =>
+    process.env.SANITY_STUDIO_PREVIEW_URL_SITE
+        ? []
+        : [S.divider().title('Preview from the staging Studio until release')];
+
 export const productsStructure = (
     S: StructureBuilder,
     _context: StructureResolverContext,
 ) =>
     S.list()
         .title('Products')
-        .items([...productsItems(S)]);
+        .items([...sitePreviewHint(S), ...productsItems(S)]);
 
 /** Customization — Category · Type · Option · Option Group (+ Global Property picks) */
 export const customizationStructure = (
@@ -1527,7 +1539,7 @@ export const customizationStructure = (
 ) =>
     S.list()
         .title('Customization')
-        .items([...customizationItems(S)]);
+        .items([...sitePreviewHint(S), ...customizationItems(S)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D1 workspaces (PROD-2329 / D39) — Case Studies · Global (+ Solutions ·
@@ -1603,7 +1615,7 @@ export const globalStructure = (
 ) =>
     S.list()
         .title('Global')
-        .items([...globalItems(S)]);
+        .items([...sitePreviewHint(S), ...globalItems(S)]);
 
 /** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
  *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
@@ -1615,6 +1627,7 @@ export const solutionsWorkspaceStructure = (
     S.list()
         .title('Solutions')
         .items([
+            ...sitePreviewHint(S),
             S.listItem()
                 .title('Solutions')
                 .icon(BulbOutlineIcon)
@@ -1636,6 +1649,30 @@ export const solutionsWorkspaceStructure = (
                         .title('Solution Styles')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
                 ),
+            // Inspiration presets are `product` documents, but their breadcrumb runs
+            // through Solutions, so this is where they are edited (PROD-2547). The
+            // Products workspace holds the standard products; neither list shows the
+            // other's rows.
+            //
+            // The template is load-bearing, not decoration: `kind` has
+            // `initialValue: 'standard'`, so a plain `+` here would create a document
+            // that immediately vanishes from the list it was created in.
+            //
+            // No `.icon()`: `product.ts` already declares `icon: PackageIcon` and
+            // `.schemaType()` picks it up. Setting it again costs a type error against
+            // the 227 baseline for an icon that already renders.
+            S.listItem()
+                .title('Inspiration Products')
+                .schemaType('product')
+                .child(
+                    S.documentTypeList('product')
+                        .title('Inspiration Products')
+                        .filter('_type == $type && kind == $kind')
+                        .params({type: 'product', kind: 'inspiration'})
+                        .initialValueTemplates([
+                            S.initialValueTemplateItem('product-inspiration'),
+                        ]),
+                ),
         ]);
 
 /** Expertise workspace (PROD-2330 / D2) — Expertise Stage today; Expertise
@@ -1647,6 +1684,7 @@ export const expertiseStructure = (
     S.list()
         .title('Expertise')
         .items([
+            ...sitePreviewHint(S),
             S.listItem()
                 .title('Expertise Stages')
                 .schemaType('expertiseStage')
@@ -1666,6 +1704,7 @@ export const resourcesWorkspaceStructure = (
     S.list()
         .title('Resources')
         .items([
+            ...sitePreviewHint(S),
             S.listItem()
                 .title('FAQs')
                 .icon(HelpCircleIcon)
@@ -1701,6 +1740,7 @@ export const mainWebsiteStructure = (
     S.list()
         .title('Main Website')
         .items([
+            ...sitePreviewHint(S),
             // Platform pages (PROD-2292) — four shared types. The old static
             // singletons (aboutPage/contactPage/privacyPolicy/termsOfService)
             // folded into Content Page / Legal Page and were removed in pt 3.

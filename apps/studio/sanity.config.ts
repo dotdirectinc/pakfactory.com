@@ -38,6 +38,7 @@ import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
 import { ProductAvailableCustomizationsView } from './components/ProductAvailableCustomizationsView'
+import { ProductInspirationView } from './components/productViews'
 import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
 import { SolutionStylesView } from './components/SolutionStylesView'
 import {
@@ -67,7 +68,7 @@ const datasetSuffix = dataset !== 'production' ? ` [${dataset.toUpperCase()}]` :
 // `/case-studies` — the route was moved to `case-studies/api/draft-mode/enable` and
 // the relative `enable` below resolves under this base. PROD-2223.
 const WWW_PREVIEW_RAW =
-  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3000/case-studies/'
+  process.env.SANITY_STUDIO_PREVIEW_URL_WWW || 'http://localhost:3003/case-studies/'
 const WWW_PREVIEW_BASE = WWW_PREVIEW_RAW.endsWith('/')
   ? WWW_PREVIEW_RAW
   : `${WWW_PREVIEW_RAW}/`
@@ -78,9 +79,9 @@ const WWW_PREVIEW_BASE = WWW_PREVIEW_RAW.endsWith('/')
 // ('api/draft-mode/enable') only appends under the base path when the base ends
 // in '/' (PROD-2223). Prod → 'https://pakfactory.com/blog/' (the apex, served by
 // nginx — the origin.blog host now 307-redirects direct hits to the apex),
-// local → 'http://localhost:3003/'.
+// local → 'http://localhost:3004/'.
 const BLOG_PREVIEW_RAW =
-  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3003/'
+  process.env.SANITY_STUDIO_PREVIEW_URL_BLOG || 'http://localhost:3004/'
 const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
   ? BLOG_PREVIEW_RAW
   : `${BLOG_PREVIEW_RAW}/`
@@ -90,23 +91,41 @@ const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
 // `/case-studies/` because nginx forwards only that prefix at the apex, and the
 // product / solution / customization routes are not reachable there at all.
 //
-// Default target is `staging.pakfactory.com`, which serves those routes and reads
-// the **development** dataset (verified: its asset URLs are
-// cdn.sanity.io/files/8293wrxp/development/...). That makes it the right pair for
-// the development-dataset Studio; a production-dataset Studio pointed here would
-// edit prod content against a site rendering dev content.
+// Today the only wired target is `staging.pakfactory.com`, which serves those
+// routes and reads the **development** dataset (verified: its asset URLs are
+// cdn.sanity.io/files/8293wrxp/development/...), so it pairs with the staging
+// Studio. The production Studio has no site target until those workspaces are
+// released — see the release switch below and TARGETS in
+// scripts/sanity/studio-targets.mjs.
 //
-// Env-driven so a developer can aim it at their own localhost (PROD-2494 AC:
-// "no hard-coded host"). Trailing slash required, as for the other two bases.
-const SITE_PREVIEW_RAW =
-  process.env.SANITY_STUDIO_PREVIEW_URL_SITE || 'http://localhost:3000/'
-const SITE_PREVIEW_BASE = SITE_PREVIEW_RAW.endsWith('/')
-  ? SITE_PREVIEW_RAW
-  : `${SITE_PREVIEW_RAW}/`
-const SITE_ALLOW_ORIGINS = [
-  'http://localhost:3000',
-  'https://staging.pakfactory.com',
-]
+// Env-driven, with no fallback (PROD-2494 AC: "no hard-coded host"). Trailing
+// slash required, as for the other two bases.
+// Presence of this variable is the RELEASE SWITCH for the seven site-root
+// workspaces. No fallback on purpose: when it is unset, those workspaces get no
+// Presentation tab at all.
+//
+// Why availability follows configuration rather than a dataset check: the
+// site-root surfaces are unreleased, and their routes exist only on staging. QA
+// previews them from the staging Studio, where Studio and site share the
+// `development` dataset. A production-dataset Studio cannot preview them — the
+// preview secret is a document in the Studio's OWN dataset, so it fails with
+// "Invalid secret" (verified 2026-09-17). Wiring the target is therefore the
+// same act as releasing the surface: set SITE for the prod target in
+// scripts/sanity/studio-targets.mjs and the tab appears.
+//
+// Local dev: `pnpm studio:local` writes it into apps/studio/.env.local.
+const SITE_PREVIEW_RAW = process.env.SANITY_STUDIO_PREVIEW_URL_SITE
+const SITE_PREVIEW_BASE = !SITE_PREVIEW_RAW
+  ? ''
+  : SITE_PREVIEW_RAW.endsWith('/')
+    ? SITE_PREVIEW_RAW
+    : `${SITE_PREVIEW_RAW}/`
+// Derived from the wired target rather than hardcoded: one fewer place to edit
+// at release, and an unwired Studio carries no stray origin. Local dev keeps
+// :3003 (apps/www's dev port) so `pnpm studio:local` works without extra setup.
+const SITE_ALLOW_ORIGINS = SITE_PREVIEW_BASE
+  ? [new URL(SITE_PREVIEW_BASE).origin, 'http://localhost:3003']
+  : []
 
 // Path the www app's case-study surface is mounted under on this origin
 // ('/case-studies' everywhere today; '' if it ever moves to an origin root).
@@ -148,6 +167,19 @@ const productTemplates: Template[] = [
   // The 'product-industry' template was removed in PROD-2284: it pre-filled the
   // retired `industries` / `industryCategories` reference arrays. Industry-typed
   // products now tag via Solutions.
+  //
+  // Unparameterised, unlike `product-standard` above, because the Solutions
+  // workspace's Inspiration Products list needs a plain `+` (PROD-2547). That list
+  // filters on `kind == "inspiration"` while the schema's initialValue is
+  // 'standard', so without this the create button would make a document that
+  // vanishes from the list it was created in. Being unparameterised also puts it
+  // in the global + menu as "Product (Inspiration)", which is wanted.
+  {
+    id: 'product-inspiration',
+    title: 'Product (Inspiration)',
+    schemaType: 'product',
+    value: { kind: 'inspiration' },
+  },
 ]
 
 const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => {
@@ -175,10 +207,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
       S.view.component(ProductStyleCategoryProductsView).title('Products'),
     ])
   }
+  // `basedOn` points from an inspiration product to the standard it was built
+  // from, and PROD-2547 put the two kinds in different workspaces whose lists do
+  // not show each other's rows — so neither end of that relationship is reachable
+  // from the other without this tab.
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(ProductAvailableCustomizationsView).title('Customization'),
+      S.view.component(ProductInspirationView).title('Inspiration'),
     ])
   }
   // Solution Styles are listed flat in the Solutions workspace, so this tab is
@@ -399,6 +436,11 @@ const sitePresentation = () =>
     resolve: { locations: siteLocations },
   })
 
+// Empty when no site-root preview target is wired — see SITE_PREVIEW_RAW above.
+// Spread into the seven site-root workspaces so an unreleased surface simply has
+// no Presentation tab, rather than one that always errors.
+const sitePresentationPlugins = SITE_PREVIEW_RAW ? [sitePresentation()] : []
+
 export default defineConfig([
   // Nine workspaces (PROD-2329 D1 + PROD-2330 D2, per D39), in switcher order:
   // Blog · Case Studies · Products · Customization · Solutions · Expertise ·
@@ -451,7 +493,7 @@ export default defineConfig([
           },
         },
         allowOrigins: [
-          'http://localhost:3003',
+          'http://localhost:3004',
           'https://origin.blog.pakfactory.com',
           'https://pakfactory.com',
           // `pnpm studio:staging` points this workspace's preview at the staging
@@ -500,7 +542,7 @@ export default defineConfig([
           },
         },
         allowOrigins: [
-          'http://localhost:3000',
+          'http://localhost:3003',
           'https://pakfactory-com-www.vercel.app',
           'https://pakfactory.com',
           // Magento may serve (or 301 to) the www host; keep both so Presentation
@@ -529,7 +571,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: productsStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -548,7 +590,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: customizationStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -567,7 +609,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: solutionsWorkspaceStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -586,7 +628,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: expertiseStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -605,7 +647,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: resourcesWorkspaceStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -625,7 +667,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: mainWebsiteStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
@@ -645,7 +687,7 @@ export default defineConfig([
     document: { actions: documentActions, newDocumentOptions: makeNewDocumentOptions(null) },
     plugins: [
       structureTool({ structure: globalStructure, defaultDocumentNode }),
-      sitePresentation(),
+      ...sitePresentationPlugins,
       colorInput(),
       media(),
       visionTool(),
