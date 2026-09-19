@@ -898,39 +898,6 @@ export function knowledgeLibraryItems(
     ];
 }
 
-export function solutionItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title('Solutions'),
-
-        S.listItem()
-            .title('Solutions')
-            .icon(BulbOutlineIcon)
-            .schemaType('solution')
-            .child(
-                S.documentTypeList('solution')
-                    .title('Solutions')
-                    .defaultOrdering([
-                        {field: 'title', direction: 'asc'},
-                    ]),
-            ),
-
-        S.listItem()
-            .title('Solution Styles')
-            .icon(ThLargeIcon)
-            .schemaType('solutionStyle')
-            .child(
-                S.documentTypeList('solutionStyle')
-                    .title('Solution Styles')
-                    .defaultOrdering([
-                        {field: 'title', direction: 'asc'},
-                    ]),
-            ),
-
-    ];
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN-SPECIFIC BUILDING BLOCKS
 // Used only in adminStructure. Individual workspaces use their own flat items.
@@ -1427,19 +1394,6 @@ export const websiteStructure = (
             ...settingsItems(S, context),
         ]);
 
-/** Solutions — industry and use-case solution pages */
-export const solutionsStructure = (
-    S: StructureBuilder,
-    context: StructureResolverContext,
-) =>
-    S.list()
-        .title('Solutions')
-        .items([
-            ...solutionItems(S),
-            ...knowledgeLibraryItems(S),
-            ...settingsItems(S, context, {solutions: true}),
-        ]);
-
 /** Academy — placeholder until Academy schema is built */
 export const academyStructure = (
     S: StructureBuilder,
@@ -1699,10 +1653,6 @@ export const solutionsWorkspaceStructure = (
             // through Solutions, so this is where they are edited (PROD-2547). The
             // Products workspace holds the standard products; neither list shows the
             // other's rows.
-            //
-            // This belongs HERE, not in `solutionItems` — that helper feeds
-            // `solutionsStructure`, which no workspace consumes. This function is what
-            // the `solutions` workspace actually renders (`sanity.config.ts`).
             //
             // The template is load-bearing, not decoration: `kind` has
             // `initialValue: 'standard'`, so a plain `+` here would create a document
