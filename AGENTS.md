@@ -45,15 +45,36 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 
 ## Repo layout
 
-| Path                                 | Role                                                      |
+| Path | Role |
 | ------------------------------------ | --------------------------------------------------------- |
-| [`apps/www`](apps/www)               | Main marketing site — rebuild trunk (dev **3003**, prod start **3000**) |
-| [`apps/blog`](apps/blog)             | Blog app — Platform Evolution stream #1 (port **3004**) |
-| [`apps/admin`](apps/admin)           | Internal back office — PROD-2405 (port **4000**); PR base `www-new-release` |
-| [`apps/studio`](apps/studio)         | Sanity Studio (port **3333**)                             |
-| [`packages/sanity`](packages/sanity) | Shared schemas, GROQ queries, scripts                     |
-| [`packages/ui`](packages/ui)         | Shared shadcn-style UI primitives                         |
-| [`packages/seo`](packages/seo)       | Typed JSON-LD / schema.org generators (`@pakfactory/seo`) |
+| [`apps/www`](apps/www) | Main marketing site — rebuild trunk (dev **3003**, prod start **3000**) |
+| [`apps/blog`](apps/blog) | Blog app — Platform Evolution stream #1 (port **3004**) |
+| [`apps/admin`](apps/admin) | Internal back office — PROD-2405 (port **4000**); PR base `www-new-release` |
+| [`apps/studio`](apps/studio) | Sanity Studio (port **3333**) |
+| [`packages/ui`](packages/ui) | **Platform** — shared design-system primitives + tokens |
+| [`packages/sanity`](packages/sanity) | **Platform** — schemas helpers, GROQ, CMS contracts |
+| [`packages/utilities`](packages/utilities) | **Platform** — pure shared helpers (length units, dim axes, …) |
+| [`packages/seo`](packages/seo) | **Platform** — typed JSON-LD / schema.org generators |
+| [`packages/supabase`](packages/supabase) | **Platform** — auth client / server / session |
+| [`packages/domain`](packages/domain) | **Domain** — request / shipping / account types + adapters |
+| [`packages/geo`](packages/geo) | **Domain** — country lists (fold into domain/utilities later) |
+| [`packages/redirects`](packages/redirects) | **Infra** — shared redirect map helpers (blog + www) |
+| [`packages/sitemap`](packages/sitemap) | **Infra** — shared sitemap builders |
+| [`packages/auth-ui`](packages/auth-ui) | **Feature** — shared login / auth shell (www + admin) |
+| [`packages/brief-builder-ui`](packages/brief-builder-ui) | **Feature** — shared request-review UI (www + admin) |
+| [`packages/components`](packages/components) | **Feature / extract-pending** — www+blog chrome & listing helpers; do not add new files |
+
+Index by role: [`packages/README.md`](packages/README.md). Binding rules: § Workspace packages and [ADR-019](docs/adr/0019-workspace-package-taxonomy.md).
+
+## Workspace packages (binding)
+
+Adopt **Turborepo** (`apps/` = deployables, `packages/` = shared libs) plus **platform vs product**. Full decision: [ADR-019](docs/adr/0019-workspace-package-taxonomy.md).
+
+- **Default new code in the owning app.** Extract to `packages/` only when a **second app** needs it, or the code is clearly platform (tokens, Sanity queries, SEO generators, auth client).
+- **One design system:** `@pakfactory/ui` only (ADR-006 / ADR-013). Never grow a second DS under `@pakfactory/components`.
+- **Do not add files to `@pakfactory/components`.** Prefer `@pakfactory/ui` or app composition. That package is extract-pending (pagination / watermark / gallery → `ui`/`utilities`; chrome migrate to existing ui SiteNav/SiteFooter; then retire).
+- **Do not invent alternate package taxonomies.** Feature packages (`*-ui`) only for genuine multi-app composition.
+- Prefer promoting props-only cores into `@pakfactory/ui` over new feature packages.
 
 ## UI and design system (preserve primitives)
 
@@ -152,6 +173,7 @@ The full decisions register lives in **[`docs/adr/README.md`](docs/adr/)** — i
 | **ADR-005 — Component organization** | Feature/domain grouping (not Sanity schema); **`app/` is routing-only**, all components in `src/components/<feature>` (+ `common/`) → `@pakfactory/ui`; `src/ = app/ components/ lib/`. Enforced in `apps/blog`; `www` deferred.                 | [`docs/adr/0005-component-organization.md`](docs/adr/0005-component-organization.md)     |
 | **ADR-006 — Design system & tokens** | POC dieline system, Geist typography, brand tokens, and **8pt spacing** (`--spacing-grid-unit`) centralized in `@pakfactory/ui/globals.css`; apps import, never define tokens for features. Agent UI guide: [`DESIGN.md`](DESIGN.md). | [`docs/adr/0006-design-system-and-tokens.md`](docs/adr/0006-design-system-and-tokens.md) |
 | **ADR-013 — Shared core vs feature composition** | Extract shared UI as controlled, props-only `ui/` primitives; features own data/URL wiring in `modules/` controllers. Never import one feature's component into another, and never fork a feature component — extract the shared core. | [`docs/adr/0013-shared-core-vs-feature-composition.md`](docs/adr/0013-shared-core-vs-feature-composition.md) |
+| **ADR-019 — Workspace package taxonomy** | Turborepo apps/packages + platform / domain / infra / feature roles; promotion rules; `@pakfactory/components` extract-pending. | [`docs/adr/0019-workspace-package-taxonomy.md`](docs/adr/0019-workspace-package-taxonomy.md) |
 
 > ADRs 007–012 (component grouping refinements, blog content model, localization, page-builder terminology) and **ADR-014 (Sanity naming — singular types/titles/desk labels; `_type` renames are content migrations)** are listed in the register linked above.
 
