@@ -66,6 +66,21 @@ export const customizationOption = defineType({
       description:
         'A shorter, customer-facing version of the Title — for the configurator swatch, chips and listings, where the full technical name will not fit. Leave empty to use the Title.',
     }),
+    // The house `shortDescription` — same shape as Product, Product Line,
+    // Product Style, Solution, Solution Style, Bundle and Blog Category. No
+    // character cap on any of them; if one is wanted it belongs on all eight.
+    //
+    // Not surfaced in `preview`: the subtitle there shows the Type (PROD-2544),
+    // and this field is empty on every Option today, so promoting it would
+    // trade a useful line for a blank one.
+    defineField({
+      name: 'shortDescription',
+      title: 'Short description',
+      type: 'text',
+      group: 'content',
+      rows: 3,
+      description: 'One-line summary for the customization card, listings and search results.',
+    }),
     defineField({
       name: 'slug',
       title: 'Slug',
