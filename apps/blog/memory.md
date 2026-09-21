@@ -457,7 +457,7 @@ Pinned document ids imply `pageRole` (source of truth for Studio field visibilit
 - **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
 - **Validation:** singletons skip `pageRole` required (role implied by id; see `blogPage.ts` custom rule).
 - **Seeds:** `seed-blog-singleton-pages.mjs` / `seed-blog-dev.mjs` must always set explicit `pageRole`.
-- **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: run seed or patch field; deploy schema with validation skip.
+- **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: patch the field; deploy schema with validation skip.
 
 ---
 
@@ -919,7 +919,6 @@ Root `.env.example` defaults to `development`. Production dataset is for Vercel 
 
 | Command                                     | What it writes                                                                                                                                  |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm --filter @pakfactory/studio run seed` | Full catalog (~163 docs): capabilities, products, blog taxonomy, 3 base posts, settings. Idempotent `createOrReplace`. Reads root `.env.local`. |
 | `pnpm seed:blog-dev`                        | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries + nav + home/topics defaults. **Overwrites** singletons. Script: `apps/studio/scripts/seed-blog-dev.mjs`. |
 | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` | Home + topics page builders only (`blogHomePage`, `blogTopicsPage`). **No post changes.** Script: `apps/studio/scripts/seed-blog-singleton-pages.mjs`. |
 
@@ -1032,7 +1031,7 @@ Tags stay **flat** (`blogTag`, URL `/topics/{slug}`). Grouping for Studio and th
 | **Source of truth** — group vocabulary | `blogTopicGroup` in `apps/studio/schemas/blogTopicGroup.ts` |
 | Tag → group reference | `topicGroup` on `apps/studio/schemas/blogTag.ts` |
 | Studio browse — panel 2: group folders \| divider \| Edit groups \| Ungrouped; panel 3: topics (folder), group CRUD (Edit groups), or ungrouped topics | `apps/studio/structure/index.ts` (`topicsDeskItem`) |
-| Seeded groups + tag assignments | `apps/studio/scripts/seed.mjs` (`blogTopicGroups`, `blogTags`) |
+| Seeded groups + tag assignments | originally `apps/studio/scripts/seed.mjs` (`blogTopicGroups`, `blogTags`) — script deleted 2026-09-21; the documents live on in the datasets |
 | `/topics` grid (listed only) | Topic page Overview `topics[]` (references to `blogTopicGroup`); publish prepends new groups — [`publishTopicGroupToTopicsPage`](../../apps/studio/actions/publishTopicGroupToTopicsPage.ts) |
 | `/topics` page GROQ | `BLOG_TOPICS_PAGE_BUILDER_QUERY` (hydrates `topics[]` + `pageBuilder`) in `@pakfactory/sanity/queries` |
 | Front-end grid | `src/lib/blog-topics-index.ts` (`fetchTopicsIndex(pageTopics)` — no auto-append), `src/components/modules/topic-grid.tsx` |
@@ -1042,7 +1041,7 @@ Tags stay **flat** (`blogTag`, URL `/topics/{slug}`). Grouping for Studio and th
 
 **To add/rename a group:** create or edit a `blogTopicGroup` in Studio (or seed). Assign tags via `topicGroup` ref. **Publish** the group to prepend it on **Pages → Topic page → Overview → Topics**; only listed groups render on `/topics` (group headings show even with zero topic links). Drag to reorder. Do not change group slugs after tags use them (`?group=` deep links).
 
-**Existing groups (migration):** re-publish each `blogTopicGroup`, manually add references on the Topic page `topics` list, or run seed — until listed, groups do not appear on `/topics`. After the reference-array schema change, replace any legacy `topicsGridItem` rows by re-adding groups on Overview → Topics.
+**Existing groups (migration):** re-publish each `blogTopicGroup`, manually add references on the Topic page `topics` list — until listed, groups do not appear on `/topics`. After the reference-array schema change, replace any legacy `topicsGridItem` rows by re-adding groups on Overview → Topics.
 
 ### Human migration (existing datasets)
 
