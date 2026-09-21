@@ -184,7 +184,7 @@ export const caseStudy = defineType({
       type: 'image',
       group: 'content',
       options: { hotspot: true },
-      description: 'Grid visual shown on the listing page card.',
+      description: 'The image on the listing page card. Cropped square.',
     }),
     defineField({
       name: 'cardImageAlt',
@@ -199,7 +199,9 @@ export const caseStudy = defineType({
       type: 'text',
       rows: 2,
       group: 'content',
-      description: '1–2 line summary shown on the listing card under the client name.',
+      description:
+        'A 1–2 line summary for search engines. Not shown on the page; used when the ' +
+        'meta description is blank.',
     }),
 
     // ─── Story + Metrics (Content tab) ────────────────────────────────────────
@@ -209,7 +211,7 @@ export const caseStudy = defineType({
       title: 'Challenge',
       type: 'array',
       group: 'content',
-      description: 'The problem the client faced. Paragraphs, bullets, inline images, and blocks.',
+      description: 'The problem the client faced. Text, bullets, images, testimonials and galleries.',
       of: storyPtOf,
     }),
     defineField({
@@ -225,7 +227,7 @@ export const caseStudy = defineType({
       title: 'Result',
       type: 'array',
       group: 'content',
-      description: 'Measurable outcomes. Supports inline images and gallery blocks.',
+      description: 'Measurable outcomes of the work.',
       of: storyPtOf,
     }),
     defineField({
@@ -233,7 +235,7 @@ export const caseStudy = defineType({
       title: 'Metrics',
       type: 'array',
       group: 'content',
-      description: 'Key stats shown in the left rail. Recommend 2–4.',
+      description: 'Key stats shown in the sidebar beside the story. Keep to 2–4.',
       of: [
         {
           type: 'object',
@@ -244,14 +246,14 @@ export const caseStudy = defineType({
               name: 'title',
               title: 'Stat',
               type: 'string',
-              description: 'Bold headline, e.g. "70k+ Boxes Manufactured".',
+              description: 'The stat itself, kept short. For example, 70k+ Boxes Manufactured.',
             }),
             defineField({
               name: 'description',
               title: 'Supporting line',
               type: 'text',
               rows: 2,
-              description: 'Context, e.g. "Across 5+ years of a continuous partnership."',
+              description: 'Context under the stat. For example, "Across 5+ years of a continuous partnership."',
             }),
           ],
           preview: {
