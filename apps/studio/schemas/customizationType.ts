@@ -9,7 +9,7 @@ export const customizationType = defineType({
   // A Customization Type has never had a page, so both tabs described a surface that
   // does not exist.
   groups: [
-    { name: 'content', title: 'Content', default: true },
+    { name: 'content', title: 'Content' },
     { name: 'specs', title: 'Specs' },
   ],
   fields: [

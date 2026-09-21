@@ -6,7 +6,7 @@ export const property = defineType({
   name: 'property',
   title: 'Property',
   type: 'document',
-  groups: [{ name: 'content', title: 'Content', default: true }],
+  groups: [{ name: 'content', title: 'Content' }],
   fields: [
     defineField({
       name: 'title',

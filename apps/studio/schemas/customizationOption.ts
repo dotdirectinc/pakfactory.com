@@ -10,7 +10,7 @@ export const customizationOption = defineType({
   title: 'Customization Option',
   type: 'document',
   groups: [
-    { name: 'content', title: 'Content', default: true },
+    { name: 'content', title: 'Content' },
     { name: 'categorization', title: 'Categorization' },
     { name: 'specs', title: 'Specs' },
     { name: 'seo', title: 'SEO' },

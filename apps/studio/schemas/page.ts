@@ -6,7 +6,7 @@ export const page = defineType({
   title: 'Page',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
+    { name: 'basic', title: 'Basic' },
     { name: 'content', title: 'Content' },
     { name: 'seo', title: 'SEO' },
   ],
