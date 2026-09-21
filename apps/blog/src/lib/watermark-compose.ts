@@ -2,8 +2,8 @@ import sharp from "sharp";
 import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
-} from "@pakfactory/components/commons/watermark-geometry";
-import { pickWatermarkSrc } from "@pakfactory/components/commons/watermark-variant";
+} from "@pakfactory/ui/lib/watermark/watermark-geometry";
+import { pickWatermarkSrc } from "@pakfactory/ui/lib/watermark/watermark-variant";
 import { sampleCornerLuminanceFromBuffer } from "@/lib/watermark-luma-sample";
 
 export type CompositeWatermarkInput = {

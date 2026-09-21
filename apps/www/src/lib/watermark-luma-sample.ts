@@ -1,8 +1,8 @@
-import { watermarkHexagonSampleRect } from "@pakfactory/components/commons/watermark-geometry";
+import { watermarkHexagonSampleRect } from "@pakfactory/ui/lib/watermark/watermark-geometry";
 import {
   WATERMARK_SAMPLE_MAX_PX,
   maxLuminanceFromRgba,
-} from "@pakfactory/components/commons/watermark-variant";
+} from "@pakfactory/ui/lib/watermark/watermark-variant";
 
 /**
  * Max luminance (0–1) under the hexagonal logo mark (PROD-2244).

@@ -41,9 +41,6 @@
 'pkg:auth-ui':
   - changed-files:
       - any-glob-to-any-file: 'packages/auth-ui/**'
-'pkg:components':
-  - changed-files:
-      - any-glob-to-any-file: 'packages/components/**'
 'pkg:brief-builder-ui':
   - changed-files:
       - any-glob-to-any-file: 'packages/brief-builder-ui/**'

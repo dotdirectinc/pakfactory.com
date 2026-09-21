@@ -42,9 +42,6 @@ importers:
       '@pakfactory/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@pakfactory/geo':
-        specifier: workspace:*
-        version: link:../../packages/geo
       '@pakfactory/sanity':
         specifier: workspace:*
         version: link:../../packages/sanity
@@ -102,7 +99,7 @@ importers:
         version: 9.39.4(jiti@2.6.1)
       eslint-config-next:
         specifier: ^16.2.3
-        version: 16.2.4(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+        version: 16.2.4(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       postcss:
         specifier: ^8.5.1
         version: 8.5.14
@@ -124,9 +121,6 @@ importers:
       '@next/third-parties':
         specifier: ^16.2.10
         version: 16.2.10(next@16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
-      '@pakfactory/components':
-        specifier: workspace:*
-        version: link:../../packages/components
       '@pakfactory/redirects':
         specifier: workspace:*
         version: link:../../packages/redirects
@@ -142,6 +136,9 @@ importers:
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       '@portabletext/react':
         specifier: ^6.0.3
         version: 6.0.3(react@19.2.5)
@@ -288,15 +285,9 @@ importers:
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
         version: link:../../packages/brief-builder-ui
-      '@pakfactory/components':
-        specifier: workspace:*
-        version: link:../../packages/components
       '@pakfactory/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@pakfactory/geo':
-        specifier: workspace:*
-        version: link:../../packages/geo
       '@pakfactory/redirects':
         specifier: workspace:*
         version: link:../../packages/redirects
@@ -396,7 +387,7 @@ importers:
         version: 9.39.4(jiti@2.6.1)
       eslint-config-next:
         specifier: ^16.2.3
-        version: 16.2.4(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+        version: 16.2.4(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       postcss:
         specifier: ^8.5.1
         version: 8.5.14
@@ -505,47 +496,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/components:
-    dependencies:
-      '@pakfactory/sanity':
-        specifier: workspace:*
-        version: link:../sanity
-      '@pakfactory/ui':
-        specifier: workspace:*
-        version: link:../ui
-      jpeg-js:
-        specifier: ^0.4.4
-        version: 0.4.4
-      lucide-react:
-        specifier: ^0.468.0
-        version: 0.468.0(react@19.2.5)
-      next:
-        specifier: '>=15.0.0'
-        version: 16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.5
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.5(react@19.2.5)
-    devDependencies:
-      '@types/jpeg-js':
-        specifier: ^0.3.7
-        version: 0.3.7
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.14
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-
   packages/domain:
-    devDependencies:
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-
-  packages/geo:
     dependencies:
       i18n-iso-countries:
         specifier: ^7.14.0
@@ -637,6 +588,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      jpeg-js:
+        specifier: ^0.4.4
+        version: 0.4.4
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.5)
@@ -674,6 +628,9 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
+      '@types/jpeg-js':
+        specifier: ^0.3.7
+        version: 0.3.7
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.14

@@ -5,7 +5,7 @@ import {
   parsePathPage,
   pathPaginationHref,
   scrollToPaginationTarget,
-} from "../commons/path-pagination";
+} from "@pakfactory/ui/lib/pagination/path-pagination";
 
 type UsePathPaginationOptions = {
   /** Listing root path, e.g. `/case-studies`. */

@@ -10,6 +10,8 @@
     "./globals.css": "./src/globals.css",
     "./tailwind-sources.css": "./src/tailwind-sources.css",
     "./lib/utils": "./src/lib/utils.ts",
+    "./lib/pagination/*": "./src/lib/pagination/*.ts",
+    "./lib/watermark/*": "./src/lib/watermark/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./components/customization/types": "./src/components/customization/types.ts",
     "./components/customization/property-controller/*": "./src/components/customization/property-controller/*.tsx",
@@ -23,6 +25,7 @@
     "@pakfactory/utilities": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jpeg-js": "^0.4.4",
     "lucide-react": "^0.468.0",
     "motion": "^12.38.0",
     "radix-ui": "^1.4.3",
@@ -39,6 +42,7 @@
     "tailwindcss": "^4.0.0"
   },
   "devDependencies": {
+    "@types/jpeg-js": "^0.3.7",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "^5.7.3"

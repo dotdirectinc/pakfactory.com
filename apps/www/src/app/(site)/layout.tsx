@@ -1,11 +1,11 @@
 import type {ReactNode} from 'react';
 import type {User} from '@supabase/supabase-js';
-import {SiteFooter} from '@pakfactory/components/layout/site-footer';
+import {SiteFooter} from '@pakfactory/ui/components/site-footer';
 import {FooterWordmark} from '@/components/layout/footer-wordmark';
 import {SiteNavRequestSlot} from '@/components/layout/site-nav-request-slot';
 import {accountAvatarUrl, accountDisplayName} from '@pakfactory/supabase/session';
 import {RequestRoot} from '@/lib/request/request-root';
-import {buildSiteNavProps, toMarketingNavItems} from '@/lib/site-nav';
+import {buildSiteNavProps} from '@/lib/site-nav';
 import {mapWwwFooterFromChrome} from '@/lib/www-footer';
 import {fetchWebsiteNavigation} from '@/lib/website-navigation';
 import {createClient} from '@pakfactory/supabase/server';
@@ -31,7 +31,7 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
     <RequestRoot>
       <SiteNavRequestSlot
         homeHref={nav.homeHref}
-        navItems={toMarketingNavItems(nav.items)}
+        navItems={nav.items}
         cta={nav.cta}
         signIn={nav.signIn}
         account={

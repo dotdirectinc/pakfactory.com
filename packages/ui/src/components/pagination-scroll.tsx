@@ -5,7 +5,7 @@ import {
   consumePaginationScrollIntent,
   scrollToPaginationTarget,
   setPaginationScrollIntent,
-} from "../commons/path-pagination";
+} from "@pakfactory/ui/lib/pagination/path-pagination";
 
 export { setPaginationScrollIntent };
 

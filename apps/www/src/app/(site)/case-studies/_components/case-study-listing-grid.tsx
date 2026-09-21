@@ -33,8 +33,8 @@ import {
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CaseStudyCard } from "@pakfactory/sanity/queries";
 import { CaseStudyCard as CaseStudyCardComponent } from "@/components/modules/case-study-card";
-import { Pagination } from "@pakfactory/components/modules/pagination";
-import { usePathPagination } from "@pakfactory/components/modules/use-path-pagination";
+import { Pagination } from "@pakfactory/ui/components/pagination";
+import { usePathPagination } from "@pakfactory/ui/components/use-path-pagination";
 import {
   CASE_STUDIES_BASE_PATH,
   CASE_STUDIES_LISTING_TOP_ID,

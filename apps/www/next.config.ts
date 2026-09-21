@@ -86,10 +86,6 @@ const workspaceCssAliases = {
     repoRoot,
     "packages/ui/src/tailwind-sources.css",
   ),
-  "@pakfactory/components/tailwind-sources.css": join(
-    repoRoot,
-    "packages/components/src/tailwind-sources.css",
-  ),
   "@pakfactory/brief-builder-ui/tailwind-sources.css": join(
     repoRoot,
     "packages/brief-builder-ui/src/tailwind-sources.css",
@@ -113,7 +109,7 @@ const nextConfig: NextConfig = {
       "node_modules/@img/sharp-linux-x64/**/*",
     ],
   },
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "@pakfactory/geo", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/utilities", "@pakfactory/domain", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
   turbopack: {
     resolveAlias: workspaceCssAliases,
   },

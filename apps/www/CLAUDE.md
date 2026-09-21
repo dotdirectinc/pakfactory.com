@@ -92,6 +92,6 @@ www prefers **Sections** language for page composition ([ADR-015](../../docs/adr
 | `@pakfactory/sanity` | GROQ queries, shared content types |
 | `@pakfactory/seo` | JSON-LD generators |
 | `@pakfactory/ui` | Design tokens and primitives — do not edit for features |
-| `@pakfactory/components` | Shared marketing blocks |
+| `@pakfactory/utilities` | General pure helpers (length units, dim axes, external-link) |
 | `@pakfactory/supabase` | Auth client + session |
 | `@pakfactory/auth-ui` | Shared login form (props-only) |

@@ -5,4 +5,4 @@
 export {
   resolveWatermarkVariantFromLqip,
   type WatermarkVariant,
-} from "@pakfactory/components/commons/watermark-lqip-variant";
+} from "@pakfactory/ui/lib/watermark/watermark-lqip-variant";

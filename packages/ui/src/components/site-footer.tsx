@@ -1,135 +1,123 @@
-import type { ReactNode } from "react";
-import { MessageSquareText } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
+import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
-import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import {
+  PageDielineSection,
+  pageDielineInnerClass,
+  pageDielineOuterClass,
+} from "@pakfactory/ui/components/page-dieline-section";
+import { AI_ENGINE_ICONS } from "@pakfactory/ui/icons/ai-brand-icon";
+import { EXTERNAL_LINK_REL, externalLinkAttributes } from "@pakfactory/utilities/external-link";
 
-export type SiteFooterLink = { label: string; href: string; external?: boolean };
-export type SiteFooterSection = { title: string; links: SiteFooterLink[] };
-/** One array of sections per column (left → right). */
-export type SiteFooterColumns = SiteFooterSection[][];
+export type FooterLink = { label: string; href: string; external?: boolean };
+export type FooterSection = { title: string; links: FooterLink[] };
+export type FooterColumns = FooterSection[][];
 
-export type SiteFooterSocialLink = {
-  platform:
-    | "facebook"
-    | "instagram"
-    | "x"
-    | "linkedin"
-    | "youtube"
-    | "pinterest";
+export type SocialPlatform = "instagram" | "facebook" | "linkedin" | "youtube" | "pinterest" | "x";
+
+export type SocialLink = {
+  platform: SocialPlatform;
   url: string;
 };
 
-export type SiteFooterAiLink = {
-  /** Display name, e.g. "ChatGPT". Used in aria-label. */
-  label: string;
-  /** Deep-link URL to an AI query about PakFactory. */
+export type AiEngine = "chatgpt" | "gemini" | "perplexity" | "claude" | "grok";
+
+export type AiLink = {
+  engine: AiEngine;
   url: string;
-  /** Optional image URL for the engine glyph. Prefer `@pakfactory/ui/icons/ai-brand-icon` in new code. */
-  iconSrc: string;
 };
 
-export type SiteFooterProps = {
-  columns: SiteFooterColumns;
-  contactHref: string;
-  /**
-   * Optional wordmark slot at the top of the footer.
-   * Pass a GSAP-animated <FooterWordmark /> or omit for the static fallback.
-   */
-  wordmark?: ReactNode;
-  /** Social platform links rendered in the copyright bar. Omit to hide the icon row. */
-  social?: SiteFooterSocialLink[];
-  /** AI engine links rendered in the second bottom bar. Omit to hide it. */
-  aiLinks?: SiteFooterAiLink[];
-};
-
-const PLATFORM_LABELS: Record<SiteFooterSocialLink["platform"], string> = {
-  facebook: "Facebook",
+const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   instagram: "Instagram",
-  x: "X",
+  facebook: "Facebook",
   linkedin: "LinkedIn",
   youtube: "YouTube",
   pinterest: "Pinterest",
+  x: "X (Twitter)",
 };
 
-function SocialIcon({ platform }: { platform: SiteFooterSocialLink["platform"] }) {
-  switch (platform) {
-    case "facebook":
-      return (
-        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-        </svg>
-      );
-    case "instagram":
-      return (
-        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-          <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-        </svg>
-      );
-    case "x":
-      return (
-        <svg className="size-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      );
-    case "linkedin":
-      return (
-        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-          <rect x="2" y="9" width="4" height="12" />
-          <circle cx="4" cy="4" r="2" />
-        </svg>
-      );
-    case "youtube":
-      return (
-        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-          <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
-          <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none" />
-        </svg>
-      );
-    case "pinterest":
-      return (
-        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.852 0 1.266.64 1.266 1.408 0 .858-.546 2.14-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.969-2.29 2.969-4.993 0-2.061-1.399-3.604-3.912-3.604-2.852 0-4.634 2.128-4.634 4.498 0 .817.241 1.392.619 1.839.173.205.197.287.134.524-.045.172-.145.589-.187.755-.06.243-.246.33-.451.24C5.5 17.57 4.5 15.6 4.5 13.2c0-3.36 2.85-7.4 8.5-7.4 4.574 0 7.5 3.34 7.5 6.928 0 4.77-2.77 8.272-6.867 8.272-1.38 0-2.681-.744-3.126-1.578l-.874 3.36c-.316 1.16-1.168 2.614-1.74 3.498.55.162 1.128.249 1.727.249 5.523 0 10-4.477 10-10S17.523 2 12 2z" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
+const AI_LABELS: Record<AiEngine, string> = {
+  chatgpt: "ChatGPT",
+  gemini: "Gemini",
+  perplexity: "Perplexity",
+  claude: "Claude",
+  grok: "Grok",
+};
 
-function FooterLinkItem({ link }: { link: SiteFooterLink }) {
-  const className =
-    "block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground";
-  if (link.external) {
-    return (
-      <a
-        href={link.href}
-        className={className}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {link.label}
-      </a>
-    );
-  }
+// ─── Social icons — lucide (outline) + custom X logo & Pinterest ──────────────
+// Instagram/Facebook/LinkedIn/YouTube come from lucide (shadcn's icon library).
+// X keeps its brand mark; Pinterest has no lucide icon so it's a matching outline SVG.
+
+function XIcon({ className }: { className?: string }) {
   return (
-    <a href={link.href} className={className}>
-      {link.label}
-    </a>
+    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
   );
 }
 
-function FooterSectionBlock({ section }: { section: SiteFooterSection }) {
+// Pinterest has no lucide icon — filled brand "P" mark (matches the POC footer).
+function PinterestIcon({ className }: { className?: string }) {
   return (
-    <div className="flex min-w-[200px] flex-1 flex-col gap-3">
-      <p className="pb-2 text-lg font-medium leading-7 text-foreground">
-        {section.title}
+    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
+      <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026z" />
+    </svg>
+  );
+}
+
+const PLATFORM_ICONS: Record<SocialPlatform, React.ComponentType<{ className?: string }>> = {
+  instagram: Instagram,
+  facebook: Facebook,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  pinterest: PinterestIcon,
+  x: XIcon,
+};
+
+// Fixed display order (matches the POC footer): Facebook → Instagram → LinkedIn → YouTube → Pinterest, X last.
+const PLATFORM_ORDER: SocialPlatform[] = ["facebook", "instagram", "linkedin", "youtube", "pinterest", "x"];
+
+/** Soft 8pt dotted grid (token-based) — shared by meta bar + wordmark section. */
+const DOTTED_GRID_BG =
+  "bg-[radial-gradient(circle,color-mix(in_srgb,var(--foreground)_12%,transparent)_1px,transparent_1px)] bg-[length:16px_16px]";
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+type SiteFooterProps = {
+  columns: FooterColumns;
+  contactHref: string;
+  contactLabel?: string;
+  social?: SocialLink[];
+  aiLinks?: AiLink[];
+  /** Optional override for the bottom PAKFACTORY mark (e.g. animated). */
+  wordmark?: ReactNode;
+};
+
+function StaticWordmark() {
+  return (
+    <div className="relative z-10 w-full overflow-hidden py-4 md:py-5" aria-hidden="true">
+      <p className="mx-auto w-full select-none text-center text-[clamp(4rem,15vw,15rem)] font-black leading-none tracking-tight text-primary">
+        PAKFACTORY
       </p>
+    </div>
+  );
+}
+
+function FooterLinkItem({ link }: { link: FooterLink }) {
+  const className = "block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground";
+  // Footer nav links stay in the same tab — categories/topics/company links are
+  // part of the site experience (incl. the blog served under the same domain).
+  // Social/AI icons keep their own new-tab rendering below.
+  return <a href={link.href} className={className}>{link.label}</a>;
+}
+
+function FooterSectionBlock({ section }: { section: FooterSection }) {
+  return (
+    <div className="flex min-w-[200px] flex-col gap-3">
+      <p className="pb-2 text-lg font-medium leading-7 text-foreground">{section.title}</p>
       <ul className="flex flex-col gap-3">
         {section.links.map((link) => (
-          <li key={`${section.title}-${link.label}`}>
+          <li key={link.label}>
             <FooterLinkItem link={link} />
           </li>
         ))}
@@ -138,55 +126,48 @@ function FooterSectionBlock({ section }: { section: SiteFooterSection }) {
   );
 }
 
-function StaticWordmark() {
-  return (
-    <div className="flex justify-center overflow-hidden px-8 py-7">
-      <p className="select-none text-center text-[clamp(3rem,12vw,9.5rem)] font-bold leading-none tracking-tight text-primary/35">
-        PAKFACTORY
-      </p>
-    </div>
-  );
-}
-
 export function SiteFooter({
   columns,
   contactHref,
-  wordmark,
+  contactLabel = "Let's talk",
   social = [],
   aiLinks = [],
+  wordmark,
 }: SiteFooterProps) {
-  return (
-    <footer className="bg-background">
-      <PageDielineSection innerClassName="px-0 sm:px-0">
-        {/* Wordmark */}
-        {wordmark ?? <StaticWordmark />}
+  const sectionRows = Math.max(1, ...columns.map((column) => column.length));
+  const orderedSocial = [...social].sort(
+    (a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform),
+  );
 
-        {/* Collaboration CTA */}
-        <div className="border-t border-dashed border-border px-layout-gutter-inner py-10 text-center">
+  return (
+    <footer className="bg-muted">
+      <PageDielineSection innerClassName="px-0 sm:px-0">
+        <div className="px-layout-gutter-inner py-16 text-center">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
-            Let&apos;s collaborate
-            <br />
-            and craft your vision
+            Let&apos;s collaborate and craft <br /> your vision
           </h2>
           <Button
             className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             asChild
           >
-            <a href={contactHref}>
-              Let&apos;s talk
-              <span className="ml-2 inline-flex size-5 items-center justify-center rounded-full bg-background text-primary">
-                <MessageSquareText className="size-3" strokeWidth={2} />
-              </span>
+            <a href={contactHref} {...externalLinkAttributes(contactHref)}>
+              {contactLabel}
             </a>
           </Button>
         </div>
 
-        {/* Link columns */}
-        <div className="grid grid-cols-1 gap-0 border-t border-dashed border-border md:grid-cols-3">
+        <div
+          className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-layout-gutter-inner py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
+          style={
+            {
+              "--footer-section-rows": sectionRows,
+            } as CSSProperties
+          }
+        >
           {columns.map((column, colIdx) => (
             <div
               key={colIdx}
-              className="flex flex-col gap-16 border-dashed border-border px-layout-gutter-inner py-16 md:border-r md:last:border-r-0"
+              className="flex flex-col gap-16 border-dashed border-border md:grid md:grid-rows-subgrid md:gap-y-16 md:border-r md:px-layout-gutter-inner md:py-16 md:last:border-r-0 md:[grid-row:span_var(--footer-section-rows)]"
             >
               {column.map((section) => (
                 <FooterSectionBlock key={section.title} section={section} />
@@ -194,70 +175,84 @@ export function SiteFooter({
             </div>
           ))}
         </div>
+      </PageDielineSection>
 
-        {/* Bottom bar — copyright + social icons */}
-        <div className="border-t border-dashed border-foreground/10">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 px-layout-gutter-inner py-8">
-            <p className="min-w-[200px] flex-1 text-base font-medium text-foreground">
-              © 2026 PakFactory
-            </p>
-            {social.length > 0 && (
-              <div className="flex items-center gap-8 text-foreground">
-                {social.map((link) => (
-                  <a
-                    key={link.platform}
-                    href={link.url}
-                    aria-label={PLATFORM_LABELS[link.platform] ?? link.platform}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground hover:opacity-80"
-                  >
-                    <SocialIcon platform={link.platform} />
-                  </a>
-                ))}
+      {/* Full-bleed dotted band: full-width top rule, guides behind, meta + wordmark above */}
+      <div
+        className={`relative w-full border-t border-dashed border-border ${DOTTED_GRID_BG}`}
+      >
+        <div
+          className={pageDielineOuterClass(
+            "pointer-events-none absolute inset-0 z-0",
+          )}
+          aria-hidden
+        >
+          <div
+            className={pageDielineInnerClass("h-full px-0 sm:px-0")}
+          />
+        </div>
+
+        <div className={pageDielineOuterClass("relative z-10")}>
+          <div className="mx-auto flex w-full max-w-[var(--layout-max)] flex-wrap items-start justify-between gap-x-6 gap-y-4 px-layout-gutter-inner py-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <p className="text-sm text-muted-foreground">See what AI says about PakFactory</p>
+                {aiLinks.length > 0 && (
+                  <div className="flex h-4 items-center gap-3">
+                    {aiLinks.map((link) => {
+                      const Icon = AI_ENGINE_ICONS[link.engine];
+                      if (!Icon) return null;
+                      return (
+                        <a
+                          key={link.engine}
+                          href={link.url}
+                          aria-label={`Ask ${AI_LABELS[link.engine]} about PakFactory`}
+                          target="_blank"
+                          rel={EXTERNAL_LINK_REL}
+                          className="text-foreground hover:opacity-80"
+                        >
+                          <Icon className="size-4" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
+
+              {orderedSocial.length > 0 && (
+                <div className="flex flex-wrap items-center gap-4">
+                  <p className="text-sm text-muted-foreground">Follow us on</p>
+                  <div className="flex items-center gap-2">
+                    {orderedSocial.map((link) => {
+                      const Icon = PLATFORM_ICONS[link.platform];
+                      return (
+                        <a
+                          key={link.platform}
+                          href={link.url}
+                          aria-label={PLATFORM_LABELS[link.platform]}
+                          target="_blank"
+                          rel={EXTERNAL_LINK_REL}
+                          className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 hover:text-primary"
+                        >
+                          {Icon ? <Icon className="size-4" /> : <span className="text-sm">{PLATFORM_LABELS[link.platform]}</span>}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              © 2026 PakFactory. All Rights Reserved
+            </p>
           </div>
         </div>
 
-        {/* Bottom bar — AI answer links (optional) */}
-        {aiLinks.length > 0 && (
-          <div className="border-t border-dashed border-foreground/10">
-            <div className="flex flex-wrap items-center justify-between gap-y-3 px-layout-gutter-inner py-8">
-              <div className="flex flex-wrap items-center gap-6">
-                <p className="text-sm text-muted-foreground">
-                  See what AI says about PakFactory
-                </p>
-                <div className="flex h-4 items-center gap-3">
-                  {aiLinks.map((link) => (
-                    <a
-                      key={link.label}
-                      href={link.url}
-                      aria-label={`Ask ${link.label} about PakFactory`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:opacity-80"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={link.iconSrc}
-                        alt=""
-                        width={16}
-                        height={16}
-                        className="size-4"
-                        aria-hidden
-                      />
-                    </a>
-                  ))}
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                © 2026 PakFactory. All Rights Reserved
-              </p>
-            </div>
-          </div>
-        )}
-      </PageDielineSection>
+        <div className="relative z-10">
+          {wordmark ?? <StaticWordmark />}
+        </div>
+      </div>
     </footer>
   );
 }

@@ -1,7 +1,7 @@
 import type {
   WatermarkConfig,
   WatermarkMode,
-} from "@pakfactory/components/ui/watermark-context";
+} from "@pakfactory/ui/components/watermark-context";
 
 type WatermarkRow = {
   enabled?: boolean | null;

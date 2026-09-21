@@ -17,7 +17,6 @@
     "@pakfactory/auth-ui": "workspace:*",
     "@pakfactory/brief-builder-ui": "workspace:*",
     "@pakfactory/domain": "workspace:*",
-    "@pakfactory/geo": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/supabase": "workspace:*",
     "@pakfactory/ui": "workspace:*",

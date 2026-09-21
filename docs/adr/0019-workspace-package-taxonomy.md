@@ -4,7 +4,7 @@
 
 ## Context
 
-The monorepo grew many `packages/*` entries. Agents and humans need a stable answer to: *where does new shared code go?* Without a role model, we risk a second design system (`@pakfactory/components` vs `@pakfactory/ui`), feature packages without a second consumer, and one-off “utils” packages that never earn their folder.
+The monorepo grew many `packages/*` entries. Agents and humans need a stable answer to: *where does new shared code go?* Without a role model, we risk a second design system vs `@pakfactory/ui`, feature packages without a second consumer, and one-off “utils” packages that never earn their folder.
 
 Industry default for this stack (Turborepo / Vercel-style): **`apps/` = deployables**, **`packages/` = shared libraries**, extracted when a **second app** needs the code or the code is clearly platform (design system, CMS SDK, SEO generators, auth client).
 
@@ -15,9 +15,9 @@ Industry default for this stack (Turborepo / Vercel-style): **`apps/` = deployab
 | Role | Meaning | Packages today |
 | --- | --- | --- |
 | **Platform** | Slow-changing foundations consumed by many apps | `ui`, `sanity`, `utilities`, `seo`, `supabase` |
-| **Domain** | Business types/rules without React | `domain` (+ `geo` until folded) |
+| **Domain** | Business types/rules without React | `domain` (includes country/region lists via `@pakfactory/domain/geo`) |
 | **Infra / web ops** | Shared technical SDKs with tests | `redirects`, `sitemap` |
-| **Feature** | Multi-app product UI / composed shells | `auth-ui`, `brief-builder-ui`, `components` (**extract-pending**) |
+| **Feature** | Multi-app product UI / composed shells | `auth-ui`, `brief-builder-ui` |
 
 Human index: [`packages/README.md`](../../packages/README.md). Agent front door: [`AGENTS.md`](../../AGENTS.md) § Workspace packages.
 
@@ -25,39 +25,38 @@ Human index: [`packages/README.md`](../../packages/README.md). Agent front door:
 
 1. **Default to the owning app** (`apps/www`, `apps/blog`, `apps/admin`, `apps/studio`).
 2. **Extract to `packages/`** only when a **second app** imports it, or it is clearly platform (tokens, Sanity queries/helpers, SEO generators, auth client/session).
-3. **One design system:** primitives and tokens live in `@pakfactory/ui` (ADR-006 / ADR-013). Do **not** grow a second DS under `@pakfactory/components`.
+3. **One design system:** primitives and tokens live in `@pakfactory/ui` (ADR-006 / ADR-013). Do **not** grow a second design-system package.
 4. **Feature packages** (`*-ui`, composed chrome) are allowed only for genuine multi-app composition. Prefer promoting props-only bits into `@pakfactory/ui` over adding new feature packages.
 5. Do **not** invent alternate taxonomies per ticket. Change this ADR via a superseding ADR if the model must change.
 
-### 3. `@pakfactory/components` — extract-pending (binding direction)
+### 3. `@pakfactory/components` — retired
 
-`@pakfactory/components` is a **feature** package shared by www + blog. It overlaps `@pakfactory/ui` (ui already has props-only `SiteNav`, `SiteFooter`, and shadcn `breadcrumb`). New work must **not** add files there; prefer `@pakfactory/ui` or app composition.
+`@pakfactory/components` was a **feature** package shared by www + blog that overlapped `@pakfactory/ui`. It has been **retired**. Former clusters now live as:
 
-**Inventory (direction for follow-up PRs — not executed by this ADR alone):**
+| Former cluster | Now lives in |
+| --- | --- |
+| Breadcrumb trail | `@pakfactory/ui` (`breadcrumb-trail`) |
+| Pagination + path/window helpers | `@pakfactory/ui` (components + `lib/pagination`) |
+| Gallery slider | `@pakfactory/ui` |
+| Watermark (React + pure geometry/variant) | `@pakfactory/ui` (components + `lib/watermark`) |
+| Site nav / footer chrome | `@pakfactory/ui` `SiteNav` / `SiteFooter` (www wires request slot + primary-nav types locally) |
+| `external-link` helper | `@pakfactory/utilities` |
 
-| Cluster | Extract to | Notes |
-| --- | --- | --- |
-| Breadcrumb trail (`layout/breadcrumb.tsx`) | `@pakfactory/ui` | Thin composition over ui primitives |
-| Pagination + path/window helpers | `@pakfactory/ui` + `@pakfactory/utilities` | Highest-value Phase 1 |
-| Gallery slider | `@pakfactory/ui` | Shared media module |
-| Watermark (React + pure geometry/variant) | `@pakfactory/ui` + `@pakfactory/utilities` | Keep as one cluster |
-| Site nav / footer chrome in components | Migrate call sites to **existing** `@pakfactory/ui` shells, then delete | Parallel stack — do not promote a second chrome |
-| `external-link` helper | Fold with chrome migration | Tiny |
+Do **not** recreate `@pakfactory/components`. New shared UI goes in `@pakfactory/ui` (or app composition). General pure helpers (length units, dimension axes, external-link) go in `@pakfactory/utilities` — not pagination/watermark (those stay with `ui`).
 
-**Extraction phases (follow-up PRs):**
+### 4. `@pakfactory/geo` — folded into `domain`
 
-1. Listing primitives (pagination, breadcrumb trail, path/window helpers) → `ui` / `utilities`.
-2. Watermark cluster → `ui` / `utilities`.
-3. Chrome: migrate SiteNav/SiteFooter call sites to `@pakfactory/ui`; delete components `layout/*`.
-4. Retire `@pakfactory/components` when empty; drop workspace deps.
+Country/region list helpers lived in `@pakfactory/geo` and are now exported as `@pakfactory/domain/geo` (shipping / address / request location). Do **not** recreate `@pakfactory/geo`.
 
-### 4. Other deferred consolidations
+### 5. Feature packages — accepted long-lived (flat)
 
-- Fold `@pakfactory/geo` into `domain` or `utilities` when convenient.
-- Revisit `auth-ui` / `brief-builder-ui` as long-lived feature packages vs promoting presentational cores into `ui`.
+`auth-ui` and `brief-builder-ui` are the correct home for multi-app product shells (www + admin). Keep them **flat** under `packages/*` (no `packages/feature/` nest). Do **not** merge them wholesale into `@pakfactory/ui`. Promote only true design-system primitives into `ui` when they lose product-specific copy/wiring.
+
+### 6. Layout
+
+Package roles live in docs. `packages/` stays a **flat** Turborepo layout — do not nest by role (`platform/`, `feature/`, …).
 
 ## Consequences
 
-- Agents refuse new packages that do not meet promotion rules; refuse additive work in `@pakfactory/components`.
-- Package moves are separate chores; this ADR documents taxonomy and the components retirement path.
+- Agents refuse new packages that do not meet promotion rules; refuse recreating a second design-system package or a one-off `geo` package.
 - Aligns with Turborepo practice and ADR-013 without replacing app-level component folder rules (ADR-005 → 008 → 011).

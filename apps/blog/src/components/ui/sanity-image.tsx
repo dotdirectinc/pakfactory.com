@@ -1,14 +1,14 @@
 "use client";
 
 import Image, { type ImageLoader, type ImageProps } from "next/image";
-import { buildWatermarkApiUrl } from "@pakfactory/components/commons/watermark-api-url";
-import { ImageWatermarkOverlay } from "@pakfactory/components/ui/image-watermark-overlay";
+import { buildWatermarkApiUrl } from "@pakfactory/ui/lib/watermark/watermark-api-url";
+import { ImageWatermarkOverlay } from "@pakfactory/ui/components/image-watermark-overlay";
 import {
   isServeWatermarkMode,
   shouldApplyWatermark,
   useWatermarkConfig,
   type WatermarkConfig,
-} from "@pakfactory/components/ui/watermark-context";
+} from "@pakfactory/ui/components/watermark-context";
 import { sanityImageLoader } from "@/lib/sanity-image";
 
 export type SanityImageProps = Omit<ImageProps, "loader"> & {

@@ -2,13 +2,15 @@
 
 Shared workspace libraries for the PakFactory monorepo. **Apps** (`apps/*`) are deployables; **packages** are extracted libraries. Binding rules: [`AGENTS.md`](../AGENTS.md) § Workspace packages and [ADR-019](../docs/adr/0019-workspace-package-taxonomy.md).
 
+Layout is **flat** under `packages/*` (roles live in this doc / ADR — no role parent folders).
+
 ## Platform
 
 | Package | Purpose |
 | --- | --- |
-| [`ui`](ui) | Design-system primitives + tokens (`@pakfactory/ui`) |
+| [`ui`](ui) | Design-system primitives + tokens; pagination & watermark helpers (`lib/pagination`, `lib/watermark`) |
 | [`sanity`](sanity) | CMS helpers, GROQ, shared contracts |
-| [`utilities`](utilities) | Pure helpers (length units, dimension axes, …) |
+| [`utilities`](utilities) | General pure helpers (length units, dimension axes, external-link) |
 | [`seo`](seo) | Typed JSON-LD / schema.org generators |
 | [`supabase`](supabase) | Auth client, server, session |
 
@@ -16,8 +18,7 @@ Shared workspace libraries for the PakFactory monorepo. **Apps** (`apps/*`) are 
 
 | Package | Purpose |
 | --- | --- |
-| [`domain`](domain) | Request / shipping / account types + adapters |
-| [`geo`](geo) | Country lists — fold into domain or utilities later |
+| [`domain`](domain) | Request / shipping / account types + adapters; country/region lists (`@pakfactory/domain/geo`) |
 
 ## Infra / web ops
 
@@ -30,9 +31,10 @@ Shared workspace libraries for the PakFactory monorepo. **Apps** (`apps/*`) are 
 
 | Package | Purpose |
 | --- | --- |
-| [`auth-ui`](auth-ui) | Login / auth shell (www + admin) |
-| [`brief-builder-ui`](brief-builder-ui) | Request-review UI (www + admin) |
-| [`components`](components) | **Extract-pending** — www+blog listing helpers, watermark, legacy chrome. Do **not** add new files; migrate toward `@pakfactory/ui` / `@pakfactory/utilities` (ADR-019 phases 1–4), then retire. |
+| [`auth-ui`](auth-ui) | Login / auth shell (www + admin) — long-lived feature package |
+| [`brief-builder-ui`](brief-builder-ui) | Request-review UI (www + admin) — long-lived feature package |
+
+Retired (do not recreate): `@pakfactory/components` → `ui`; `@pakfactory/geo` → `domain/geo`.
 
 ## Promotion cheat sheet
 

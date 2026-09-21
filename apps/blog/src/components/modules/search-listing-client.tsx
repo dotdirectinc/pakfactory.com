@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pagination, LISTING_TOP_ID } from "@pakfactory/components/modules/pagination";
-import { scrollToPaginationTarget } from "@pakfactory/components/commons/path-pagination";
+import { Pagination, LISTING_TOP_ID } from "@pakfactory/ui/components/pagination";
+import { scrollToPaginationTarget } from "@pakfactory/ui/lib/pagination/path-pagination";
 import {
   ListingFilterBar,
   type FilterOption,

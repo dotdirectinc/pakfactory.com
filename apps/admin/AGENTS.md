@@ -28,7 +28,7 @@ Next.js 16, React 19, Tailwind 4, port **4000**. PR base: `www-new-release`.
 | `@pakfactory/ui` | Design tokens and primitives |
 | `@pakfactory/sanity` | Content search GROQ / Algolia record contracts (ADR-018) |
 
-Does **not** depend on `@pakfactory/components`.
+Does **not** depend on retired `@pakfactory/components` (use `@pakfactory/ui` / `@pakfactory/utilities`).
 
 ## Mock-first data layer (wire-up later)
 
