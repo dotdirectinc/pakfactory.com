@@ -2,7 +2,7 @@
 
 Shared workspace libraries for the PakFactory monorepo. **Apps** (`apps/*`) are deployables; **packages** are extracted libraries. Binding rules: [`AGENTS.md`](../AGENTS.md) § Workspace packages and [ADR-019](../docs/adr/0019-workspace-package-taxonomy.md).
 
-Layout is **flat** under `packages/*` (roles live in this doc / ADR — no role parent folders).
+Most packages are **flat** under `packages/*`. Feature `*-ui` packages live under [`features/`](features/).
 
 ## Platform
 
@@ -31,8 +31,8 @@ Layout is **flat** under `packages/*` (roles live in this doc / ADR — no role 
 
 | Package | Purpose |
 | --- | --- |
-| [`auth-ui`](auth-ui) | Login / auth shell (www + admin) — long-lived feature package |
-| [`brief-builder-ui`](brief-builder-ui) | Request-review UI (www + admin) — long-lived feature package |
+| [`features/auth-ui`](features/auth-ui) | Login / auth shell (www + admin) — `@pakfactory/auth-ui` |
+| [`features/brief-builder-ui`](features/brief-builder-ui) | Request-review UI (www + admin) — `@pakfactory/brief-builder-ui` |
 
 Retired (do not recreate): `@pakfactory/components` → `ui`; `@pakfactory/geo` → `request/geo`; `@pakfactory/domain` → `@pakfactory/request`.
 
@@ -41,3 +41,4 @@ Retired (do not recreate): `@pakfactory/components` → `ui`; `@pakfactory/geo` 
 1. New code → owning **app**.
 2. Second app needs it (or platform) → extract here.
 3. UI primitives → **`ui` only** (never a second design system).
+4. New multi-app product shells → `packages/features/<name>-ui`.

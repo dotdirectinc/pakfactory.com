@@ -17,7 +17,7 @@ Industry default for this stack (Turborepo / Vercel-style): **`apps/` = deployab
 | **Platform** | Slow-changing foundations consumed by many apps | `ui`, `sanity`, `utilities`, `seo`, `supabase` |
 | **Domain** | Business types/rules without React | `request` (RFQ/shipping/account types + `@pakfactory/request/geo`) |
 | **Infra / web ops** | Shared technical SDKs with tests | `redirects`, `sitemap` |
-| **Feature** | Multi-app product UI / composed shells | `auth-ui`, `brief-builder-ui` |
+| **Feature** | Multi-app product UI / composed shells | `features/auth-ui`, `features/brief-builder-ui` |
 
 Human index: [`packages/README.md`](../../packages/README.md). Agent front door: [`AGENTS.md`](../../AGENTS.md) § Workspace packages.
 
@@ -50,13 +50,13 @@ Country/region list helpers lived in `@pakfactory/geo` and are now exported as `
 
 `@pakfactory/domain` was renamed to `@pakfactory/request` (same Domain role; clearer package name). Do **not** recreate `@pakfactory/domain`.
 
-### 5. Feature packages — accepted long-lived (flat)
+### 5. Feature packages — under `packages/features/`
 
-`auth-ui` and `brief-builder-ui` are the correct home for multi-app product shells (www + admin). Keep them **flat** under `packages/*` (no `packages/feature/` nest). Do **not** merge them wholesale into `@pakfactory/ui`. Promote only true design-system primitives into `ui` when they lose product-specific copy/wiring.
+`auth-ui` and `brief-builder-ui` are the correct home for multi-app product shells (www + admin). They live under **`packages/features/*`** (grouping folder only — package names stay `@pakfactory/auth-ui` / `@pakfactory/brief-builder-ui`). Do **not** merge them wholesale into `@pakfactory/ui`. Promote only true design-system primitives into `ui` when they lose product-specific copy/wiring.
 
 ### 6. Layout
 
-Package roles live in docs. `packages/` stays a **flat** Turborepo layout — do not nest by role (`platform/`, `feature/`, …).
+Package roles live in docs. Most packages stay **flat** under `packages/*`. The only role grouping folder is **`packages/features/`** for Feature `*-ui` packages. Do not nest platform / domain / infra under role parents (`platform/`, `domain/`, …).
 
 ## Consequences
 

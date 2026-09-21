@@ -35,10 +35,10 @@ importers:
         version: 5.2.9
       '@pakfactory/auth-ui':
         specifier: workspace:*
-        version: link:../../packages/auth-ui
+        version: link:../../packages/features/auth-ui
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
-        version: link:../../packages/brief-builder-ui
+        version: link:../../packages/features/brief-builder-ui
       '@pakfactory/request':
         specifier: workspace:*
         version: link:../../packages/request
@@ -281,10 +281,10 @@ importers:
         version: 16.2.10(next@16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
       '@pakfactory/auth-ui':
         specifier: workspace:*
-        version: link:../../packages/auth-ui
+        version: link:../../packages/features/auth-ui
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
-        version: link:../../packages/brief-builder-ui
+        version: link:../../packages/features/brief-builder-ui
       '@pakfactory/redirects':
         specifier: workspace:*
         version: link:../../packages/redirects
@@ -431,14 +431,14 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@aws-lite/client@0.23.6)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)
 
-  packages/auth-ui:
+  packages/features/auth-ui:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.86.0(react@19.2.5))(valibot@1.3.1(typescript@5.9.3))(zod@4.4.3)
       '@pakfactory/ui':
         specifier: workspace:*
-        version: link:../ui
+        version: link:../../ui
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.5)
@@ -468,14 +468,14 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/brief-builder-ui:
+  packages/features/brief-builder-ui:
     dependencies:
       '@pakfactory/request':
         specifier: workspace:*
-        version: link:../request
+        version: link:../../request
       '@pakfactory/ui':
         specifier: workspace:*
-        version: link:../ui
+        version: link:../../ui
       next:
         specifier: '>=15.0.0'
         version: 16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

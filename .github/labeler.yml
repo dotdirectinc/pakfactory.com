@@ -40,10 +40,10 @@
       - any-glob-to-any-file: 'packages/supabase/**'
 'pkg:auth-ui':
   - changed-files:
-      - any-glob-to-any-file: 'packages/auth-ui/**'
+      - any-glob-to-any-file: 'packages/features/auth-ui/**'
 'pkg:brief-builder-ui':
   - changed-files:
-      - any-glob-to-any-file: 'packages/brief-builder-ui/**'
+      - any-glob-to-any-file: 'packages/features/brief-builder-ui/**'
 'pkg:redirects':
   - changed-files:
       - any-glob-to-any-file: 'packages/redirects/**'

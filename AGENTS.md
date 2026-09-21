@@ -59,8 +59,8 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 | [`packages/request`](packages/request) | **Domain** — request / shipping / account types + adapters; country/region lists (`@pakfactory/request/geo`) |
 | [`packages/redirects`](packages/redirects) | **Infra** — shared redirect map helpers (blog + www) |
 | [`packages/sitemap`](packages/sitemap) | **Infra** — shared sitemap builders |
-| [`packages/auth-ui`](packages/auth-ui) | **Feature** — shared login / auth shell (www + admin) |
-| [`packages/brief-builder-ui`](packages/brief-builder-ui) | **Feature** — shared request-review UI (www + admin) |
+| [`packages/auth-ui`](packages/features/auth-ui) | **Feature** — shared login / auth shell (www + admin); under `packages/features/` |
+| [`packages/brief-builder-ui`](packages/features/brief-builder-ui) | **Feature** — shared request-review UI (www + admin); under `packages/features/` |
 
 Index by role: [`packages/README.md`](packages/README.md). Binding rules: § Workspace packages and [ADR-019](docs/adr/0019-workspace-package-taxonomy.md).
 

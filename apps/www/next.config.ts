@@ -88,7 +88,7 @@ const workspaceCssAliases = {
   ),
   "@pakfactory/brief-builder-ui/tailwind-sources.css": join(
     repoRoot,
-    "packages/brief-builder-ui/src/tailwind-sources.css",
+    "packages/features/brief-builder-ui/src/tailwind-sources.css",
   ),
 } as const;
 
