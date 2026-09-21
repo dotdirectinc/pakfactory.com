@@ -13,7 +13,7 @@ export const propertyValue = defineType({
   title: 'Property Value',
   type: 'document',
   groups: [
-    { name: 'content', title: 'Content', default: true },
+    { name: 'content', title: 'Content' },
     // Specs (§2.4): the manufacturing facts that show beside this value.
     { name: 'specs', title: 'Specs' },
   ],

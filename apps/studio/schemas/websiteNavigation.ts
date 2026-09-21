@@ -25,7 +25,7 @@ export const websiteNavigation = defineType({
   type: 'document',
   icon: ThLargeIcon,
   groups: [
-    { name: 'primary', title: 'Primary Navigation', default: true },
+    { name: 'primary', title: 'Primary Navigation' },
     { name: 'footer', title: 'Footer Navigation' },
   ],
   fields: [

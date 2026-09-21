@@ -39,7 +39,7 @@ export const settings = defineType({
   type: 'document',
   // Singleton — only one document of this type ever exists.
   groups: [
-    { name: 'identity', title: 'Identity & brand', default: true },
+    { name: 'identity', title: 'Identity & brand' },
     { name: 'company', title: 'Company' },
     { name: 'seoDefaults', title: 'SEO defaults' },
     { name: 'socialDefaults', title: 'Social defaults' },

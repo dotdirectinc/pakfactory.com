@@ -5,7 +5,7 @@ export const customizationCategory = defineType({
   name: 'customizationCategory',
   title: 'Customization Category',
   type: 'document',
-  groups: [{ name: 'content', title: 'Content', default: true }],
+  groups: [{ name: 'content', title: 'Content' }],
   fields: [
     defineField({
       name: 'title',
