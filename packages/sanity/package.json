@@ -19,7 +19,8 @@
     "./fact-labels": "./src/fact-labels.ts",
     "./dimension-inputs": "./src/dimension-inputs.ts",
     "./solution-style-filter": "./src/solution-style-filter.ts",
-    "./customization-rules": "./src/customization-rules/index.ts"
+    "./customization-rules": "./src/customization-rules/index.ts",
+    "./customization-rules/dependencies": "./src/customization-rules/dependencies.ts"
   },
   "scripts": {
     "test": "node --import tsx --test src/**/*.test.ts",
