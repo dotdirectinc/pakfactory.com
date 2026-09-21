@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { RequestAttachment } from "@pakfactory/domain/request";
+import type { RequestAttachment } from "@pakfactory/request/request";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 import { resolveAttachmentUrl } from "@/lib/attachments/resolve-attachment";
 

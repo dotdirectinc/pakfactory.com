@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import type { RequestSummary } from "@pakfactory/domain/request";
+import type { RequestSummary } from "@pakfactory/request/request";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Input } from "@pakfactory/ui/components/input";
 import { cn } from "@pakfactory/ui/lib/utils";

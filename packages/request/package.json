@@ -1,5 +1,5 @@
 {
-  "name": "@pakfactory/domain",
+  "name": "@pakfactory/request",
   "version": "0.0.0",
   "private": true,
   "type": "module",

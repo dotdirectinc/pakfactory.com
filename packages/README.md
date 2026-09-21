@@ -18,7 +18,7 @@ Layout is **flat** under `packages/*` (roles live in this doc / ADR — no role 
 
 | Package | Purpose |
 | --- | --- |
-| [`domain`](domain) | Request / shipping / account types + adapters; country/region lists (`@pakfactory/domain/geo`) |
+| [`request`](request) | RFQ / shipping / account types + adapters; country/region lists (`@pakfactory/request/geo`) |
 
 ## Infra / web ops
 
@@ -34,7 +34,7 @@ Layout is **flat** under `packages/*` (roles live in this doc / ADR — no role 
 | [`auth-ui`](auth-ui) | Login / auth shell (www + admin) — long-lived feature package |
 | [`brief-builder-ui`](brief-builder-ui) | Request-review UI (www + admin) — long-lived feature package |
 
-Retired (do not recreate): `@pakfactory/components` → `ui`; `@pakfactory/geo` → `domain/geo`.
+Retired (do not recreate): `@pakfactory/components` → `ui`; `@pakfactory/geo` → `request/geo`; `@pakfactory/domain` → `@pakfactory/request`.
 
 ## Promotion cheat sheet
 

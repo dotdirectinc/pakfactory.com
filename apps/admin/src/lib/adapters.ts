@@ -1,9 +1,9 @@
 import {
   createMockInternalAccountAdapter,
   type InternalAccountAdapter,
-} from "@pakfactory/domain/adapters/internal-account";
-import type { RequestReadAdapter } from "@pakfactory/domain/adapters/requests";
-import { createMockRequestReadAdapter } from "@pakfactory/domain/adapters/mock-requests";
+} from "@pakfactory/request/adapters/internal-account";
+import type { RequestReadAdapter } from "@pakfactory/request/adapters/requests";
+import { createMockRequestReadAdapter } from "@pakfactory/request/adapters/mock-requests";
 import { createSupabaseInternalAccountAdapter } from "./adapters/supabase-internal-account";
 import { createSupabaseRequestReadAdapter } from "./adapters/supabase-requests";
 

@@ -1,5 +1,5 @@
-import type { RequestReadAdapter } from "@pakfactory/domain/adapters/requests";
-import type { Request, RequestSummary } from "@pakfactory/domain/request";
+import type { RequestReadAdapter } from "@pakfactory/request/adapters/requests";
+import type { Request, RequestSummary } from "@pakfactory/request/request";
 import { createClient } from "@pakfactory/supabase/server";
 import {
   toRequest,

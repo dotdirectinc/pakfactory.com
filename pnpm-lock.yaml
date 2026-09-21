@@ -39,9 +39,9 @@ importers:
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
         version: link:../../packages/brief-builder-ui
-      '@pakfactory/domain':
+      '@pakfactory/request':
         specifier: workspace:*
-        version: link:../../packages/domain
+        version: link:../../packages/request
       '@pakfactory/sanity':
         specifier: workspace:*
         version: link:../../packages/sanity
@@ -285,12 +285,12 @@ importers:
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
         version: link:../../packages/brief-builder-ui
-      '@pakfactory/domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
       '@pakfactory/redirects':
         specifier: workspace:*
         version: link:../../packages/redirects
+      '@pakfactory/request':
+        specifier: workspace:*
+        version: link:../../packages/request
       '@pakfactory/sanity':
         specifier: workspace:*
         version: link:../../packages/sanity
@@ -470,9 +470,9 @@ importers:
 
   packages/brief-builder-ui:
     dependencies:
-      '@pakfactory/domain':
+      '@pakfactory/request':
         specifier: workspace:*
-        version: link:../domain
+        version: link:../request
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../ui
@@ -496,7 +496,16 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/domain:
+  packages/redirects:
+    devDependencies:
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/request:
     dependencies:
       i18n-iso-countries:
         specifier: ^7.14.0
@@ -508,15 +517,6 @@ importers:
       '@types/iso-3166-2':
         specifier: ^1.0.4
         version: 1.0.4
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-
-  packages/redirects:
-    devDependencies:
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

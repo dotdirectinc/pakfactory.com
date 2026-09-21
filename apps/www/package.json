@@ -17,7 +17,7 @@
     "@next/third-parties": "^16.2.10",
     "@pakfactory/auth-ui": "workspace:*",
     "@pakfactory/brief-builder-ui": "workspace:*",
-    "@pakfactory/domain": "workspace:*",
+    "@pakfactory/request": "workspace:*",
     "@pakfactory/redirects": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",

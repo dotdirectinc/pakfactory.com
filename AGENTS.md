@@ -56,7 +56,7 @@ When Sanity rule files mention Shopify (e.g. legacy templates), treat those sect
 | [`packages/utilities`](packages/utilities) | **Platform** — general pure helpers (length units, dim axes, external-link) |
 | [`packages/seo`](packages/seo) | **Platform** — typed JSON-LD / schema.org generators |
 | [`packages/supabase`](packages/supabase) | **Platform** — auth client / server / session |
-| [`packages/domain`](packages/domain) | **Domain** — request / shipping / account types + adapters; country/region lists (`@pakfactory/domain/geo`) |
+| [`packages/request`](packages/request) | **Domain** — request / shipping / account types + adapters; country/region lists (`@pakfactory/request/geo`) |
 | [`packages/redirects`](packages/redirects) | **Infra** — shared redirect map helpers (blog + www) |
 | [`packages/sitemap`](packages/sitemap) | **Infra** — shared sitemap builders |
 | [`packages/auth-ui`](packages/auth-ui) | **Feature** — shared login / auth shell (www + admin) |

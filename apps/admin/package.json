@@ -16,7 +16,7 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@pakfactory/auth-ui": "workspace:*",
     "@pakfactory/brief-builder-ui": "workspace:*",
-    "@pakfactory/domain": "workspace:*",
+    "@pakfactory/request": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/supabase": "workspace:*",
     "@pakfactory/ui": "workspace:*",

@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
     "@pakfactory/brief-builder-ui",
     "@pakfactory/supabase",
     "@pakfactory/sanity",
-    "@pakfactory/domain",
+    "@pakfactory/request",
   ],
   turbopack: {
     resolveAlias: {

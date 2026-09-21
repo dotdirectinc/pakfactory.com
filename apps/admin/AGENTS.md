@@ -22,7 +22,7 @@ Next.js 16, React 19, Tailwind 4, port **4000**. PR base: `www-new-release`.
 
 | Package | Role |
 |---|---|
-| `@pakfactory/domain` | Request types, internal account model, read adapters |
+| `@pakfactory/request` | Request types, internal account model, read adapters |
 | `@pakfactory/supabase` | SSR Supabase client + session helpers |
 | `@pakfactory/auth-ui` | Shared login UI (props-only) |
 | `@pakfactory/ui` | Design tokens and primitives |
@@ -36,7 +36,7 @@ Until PROD-2414/PROD-2415 land, admin uses **real Supabase auth** with **mock** 
 
 | `ADMIN_DATA_SOURCE` | Internal account | Requests |
 |---|---|---|
-| `mock` (default) | `ADMIN_INTERNAL_ACCOUNT_ALLOWLIST` env | Fixtures in `@pakfactory/domain` |
+| `mock` (default) | `ADMIN_INTERNAL_ACCOUNT_ALLOWLIST` env | Fixtures in `@pakfactory/request` |
 | `supabase` | `lib/adapters/supabase-internal-account.ts` (PROD-2415) | `lib/adapters/supabase-requests.ts` (PROD-2414/2415) |
 
 **Wire-up contract:**
@@ -104,7 +104,7 @@ Global search open / dialog behavior stays under ADR-018 (below). Do not bake pi
 
 `/requests` follows a Shopify Orders–style index: page title + All / local search strip + dense table in a white card ([`request-list.tsx`](src/components/requests/request-list.tsx)).
 
-List rows use **`RequestSummary`** from [`@pakfactory/domain/request`](../../packages/domain/src/request.ts) (`contactName`, `timeline`, `lineCount`, `contactIndustry`, plus ref / company / email / entryKind / submittedAt). When extending the summary, keep mock [`toSummary`](../../packages/domain/src/adapters/mock-requests.ts) and Supabase [`toRequestSummary`](src/lib/adapters/rfq-to-domain.ts) in sync.
+List rows use **`RequestSummary`** from [`@pakfactory/request/request`](../../packages/request/src/request.ts) (`contactName`, `timeline`, `lineCount`, `contactIndustry`, plus ref / company / email / entryKind / submittedAt). When extending the summary, keep mock [`toSummary`](../../packages/request/src/adapters/mock-requests.ts) and Supabase [`toRequestSummary`](src/lib/adapters/rfq-to-domain.ts) in sync.
 
 Do **not** invent RFQ workflow statuses, metrics sparklines, Export/Create, or bulk checkboxes until product asks.
 

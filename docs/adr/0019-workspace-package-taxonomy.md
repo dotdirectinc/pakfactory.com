@@ -15,7 +15,7 @@ Industry default for this stack (Turborepo / Vercel-style): **`apps/` = deployab
 | Role | Meaning | Packages today |
 | --- | --- | --- |
 | **Platform** | Slow-changing foundations consumed by many apps | `ui`, `sanity`, `utilities`, `seo`, `supabase` |
-| **Domain** | Business types/rules without React | `domain` (includes country/region lists via `@pakfactory/domain/geo`) |
+| **Domain** | Business types/rules without React | `request` (RFQ/shipping/account types + `@pakfactory/request/geo`) |
 | **Infra / web ops** | Shared technical SDKs with tests | `redirects`, `sitemap` |
 | **Feature** | Multi-app product UI / composed shells | `auth-ui`, `brief-builder-ui` |
 
@@ -44,9 +44,11 @@ Human index: [`packages/README.md`](../../packages/README.md). Agent front door:
 
 Do **not** recreate `@pakfactory/components`. New shared UI goes in `@pakfactory/ui` (or app composition). General pure helpers (length units, dimension axes, external-link) go in `@pakfactory/utilities` — not pagination/watermark (those stay with `ui`).
 
-### 4. `@pakfactory/geo` — folded into `domain`
+### 4. `@pakfactory/geo` — folded into `request`
 
-Country/region list helpers lived in `@pakfactory/geo` and are now exported as `@pakfactory/domain/geo` (shipping / address / request location). Do **not** recreate `@pakfactory/geo`.
+Country/region list helpers lived in `@pakfactory/geo` and are now exported as `@pakfactory/request/geo` (shipping / address / request location). Do **not** recreate `@pakfactory/geo`.
+
+`@pakfactory/domain` was renamed to `@pakfactory/request` (same Domain role; clearer package name). Do **not** recreate `@pakfactory/domain`.
 
 ### 5. Feature packages — accepted long-lived (flat)
 
@@ -58,5 +60,5 @@ Package roles live in docs. `packages/` stays a **flat** Turborepo layout — do
 
 ## Consequences
 
-- Agents refuse new packages that do not meet promotion rules; refuse recreating a second design-system package or a one-off `geo` package.
+- Agents refuse new packages that do not meet promotion rules; refuse recreating a second design-system package, a one-off `geo` package, or `@pakfactory/domain` (use `@pakfactory/request`).
 - Aligns with Turborepo practice and ADR-013 without replacing app-level component folder rules (ADR-005 → 008 → 011).

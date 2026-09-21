@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pakfactory/domain": "workspace:*",
+    "@pakfactory/request": "workspace:*",
     "@pakfactory/ui": "workspace:*"
   },
   "peerDependencies": {

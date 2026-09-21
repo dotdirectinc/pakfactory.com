@@ -32,9 +32,9 @@
 'pkg:seo':
   - changed-files:
       - any-glob-to-any-file: 'packages/seo/**'
-'pkg:domain':
+'pkg:request':
   - changed-files:
-      - any-glob-to-any-file: 'packages/domain/**'
+      - any-glob-to-any-file: 'packages/request/**'
 'pkg:supabase':
   - changed-files:
       - any-glob-to-any-file: 'packages/supabase/**'

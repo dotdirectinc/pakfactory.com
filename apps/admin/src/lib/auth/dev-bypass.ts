@@ -7,7 +7,7 @@
  */
 
 import type { User } from "@supabase/supabase-js";
-import type { InternalAccount } from "@pakfactory/domain/internal-account";
+import type { InternalAccount } from "@pakfactory/request/internal-account";
 
 const DEFAULT_DEV_BYPASS_ZOHO_USER_ID = "zoho-user-sales-1";
 

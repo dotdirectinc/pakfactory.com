@@ -109,7 +109,7 @@ const nextConfig: NextConfig = {
       "node_modules/@img/sharp-linux-x64/**/*",
     ],
   },
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/utilities", "@pakfactory/domain", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/utilities", "@pakfactory/request", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
   turbopack: {
     resolveAlias: workspaceCssAliases,
   },

@@ -150,7 +150,7 @@
     "@pakfactory/admin#build": {
       "dependsOn": [
         "@pakfactory/ui#typecheck",
-        "@pakfactory/domain#typecheck",
+        "@pakfactory/request#typecheck",
         "@pakfactory/supabase#typecheck",
         "@pakfactory/auth-ui#typecheck",
         "@pakfactory/brief-builder-ui#typecheck"

@@ -1,4 +1,4 @@
-import type { RequestEntryKind } from "@pakfactory/domain/request";
+import type { RequestEntryKind } from "@pakfactory/request/request";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 
 export function entryKindLabel(entryKind: RequestEntryKind): string {
