@@ -37,7 +37,8 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   "slug": slug.current,
   shortDescription,
   description,
-  heroImage{
+  "descriptionText": pt::text(description),
+  featuredImage{
     ...,
     "alt": ${IMAGE_ALT}
   },
@@ -111,7 +112,7 @@ export const SOLUTIONS_WITH_PAGES_QUERY = /* groq */ `*[
   shortName,
   shortDescription,
   "slug": slug.current,
-  heroImage{
+  featuredImage{
     ...,
     "alt": ${IMAGE_ALT}
   }
@@ -143,7 +144,8 @@ export type SolutionBySlugDoc = {
     slug: string | null;
     shortDescription?: string | null;
     description?: unknown[] | null;
-    heroImage?: unknown | null;
+    descriptionText?: string | null;
+    featuredImage?: unknown | null;
     packagingFormats?: SolutionFormatRefDoc[] | null;
     relatedProducts?: CatalogProductDoc[] | null;
     relatedCaseStudies?: SolutionRelatedRefDoc[] | null;
@@ -167,5 +169,5 @@ export type SolutionWithPageDoc = {
     shortName?: string | null;
     shortDescription?: string | null;
     slug: string | null;
-    heroImage?: unknown | null;
+    featuredImage?: unknown | null;
 };

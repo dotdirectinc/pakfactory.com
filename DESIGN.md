@@ -66,6 +66,15 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 
 From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/content/footer), **`Badge`**, **`Input`**, and other existing shadcn-style primitives. Avoid raw bordered `div`s when a primitive fits.
 
+### Designer / Figma handoff
+
+When implementing a marketing section from Figma (e.g. Industry Solution LP forks), clarify **before coding** whether each control maps to an existing `@pakfactory/ui` / app shared primitive (`Button`, `Dialog`, carousel nav, etc.) or is a **new** component ([ADR-006](docs/adr/0006-design-system-and-tokens.md), [ADR-013](docs/adr/0013-shared-core-vs-feature-composition.md)):
+
+1. **Ask (or decide with design):** stock primitive vs new component.
+2. **Default:** stock primitives + tokens — do not invent one-off CTA chrome (custom fills, dashed borders, radii) when `Button` variants cover the job.
+3. **If new:** name it, place it under `components/…`, and note whether it stays app-local or should become a shared primitive later. Do not silently fork an existing primitive’s look in a feature file.
+4. **Lesson (Solution hero CTAs):** Figma forest pill / dashed secondary → stock `Button` `default` + `ghost` unless design opens a design-system ticket for a new variant.
+
 ### Links
 
 - **Text links** (inline anchors or `Button variant="link"`) always use `underline underline-offset-4` at rest. Prefer the shared `link` button variant or the same classes on a Next.js `Link`.
@@ -76,6 +85,7 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 ### CTAs (domain)
 
 - Primary actions: quote / RFQ / “Talk to packaging experts” — `Button` with primary (forest) styling.
+- Sizes: prefer `lg` for most CTAs; marketing heroes / page headings may use `size="xl"` (48px / `h-12`).
 - Do **not** introduce cart, checkout, or “Add to cart” patterns unless product explicitly requests them.
 
 ### Cards

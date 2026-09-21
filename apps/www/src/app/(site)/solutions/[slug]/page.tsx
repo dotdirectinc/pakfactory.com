@@ -1,8 +1,9 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {SolutionLandingView} from '@/components/solution/solution-views';
+import {BEAUTY_COSMETICS_SLUG} from '@/lib/solutions/fixtures/beauty-cosmetics';
 import {
-    getSolutionBySlug,
+    getSolutionLandingContent,
     listSolutionPageSlugs,
 } from '@/lib/solutions/solutions';
 import {absoluteUrl} from '@/lib/site';
@@ -16,16 +17,20 @@ type PageProps = {
 
 export async function generateStaticParams(): Promise<{slug: string}[]> {
     const pages = await listSolutionPageSlugs();
-    return pages.map((page) => ({slug: page.slug}));
+    const slugs = new Set(pages.map((page) => page.slug));
+    // Fixture LP so beauty is always buildable before Sanity hasPage lands.
+    slugs.add(BEAUTY_COSMETICS_SLUG);
+    return [...slugs].map((slug) => ({slug}));
 }
 
 export async function generateMetadata({
     params,
 }: PageProps): Promise<Metadata> {
     const {slug} = await params;
-    const solution = await getSolutionBySlug(slug);
-    if (!solution) return {title: 'Solution'};
+    const content = await getSolutionLandingContent(slug);
+    if (!content) return {title: 'Solution'};
 
+    const {solution} = content;
     const title = solution.metaTitle || solution.h1;
     const description =
         solution.metaDescription || solution.shortDescription || undefined;
@@ -54,7 +59,7 @@ export async function generateMetadata({
 
 export default async function SolutionDetailPage({params}: PageProps) {
     const {slug} = await params;
-    const solution = await getSolutionBySlug(slug);
-    if (!solution) notFound();
-    return <SolutionLandingView solution={solution} />;
+    const content = await getSolutionLandingContent(slug);
+    if (!content) notFound();
+    return <SolutionLandingView content={content} />;
 }

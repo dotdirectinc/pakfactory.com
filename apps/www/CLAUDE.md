@@ -57,7 +57,7 @@ Do **not** collapse these layers:
 | **Site chrome** | Global nav / footer | `components/layout/`; Sanity `websiteNavigation` singleton (not `sections[]`) |
 | **Structured routes** | Catalog URL trees | Code owns breadcrumb, H1, primary grids/cards (`/products…`, `/solutions…`, `/customizations`); optional `doc.sections` only as a body slot |
 | **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; React under `components/sections/`; presentation-free (D35); allowlisted per page type |
-| **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features |
+| **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features. Figma section handoff: ask stock primitive vs new component ([DESIGN.md § Designer / Figma handoff](../../DESIGN.md#designer--figma-handoff)) |
 
 **Customizations catalog (PROD-1288):** route `/customizations` + Studio section `customizationsCatalog` share `listCustomizations()` and `CustomizationCatalog*` components. Distinct from `customizationsRow` (catalogue strip). How-built: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md).
 

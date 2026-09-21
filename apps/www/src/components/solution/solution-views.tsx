@@ -5,12 +5,19 @@ import {
     ProductCard,
     type ProductCardData,
 } from '@/components/product/product-card';
+import {SolutionHero} from '@/components/solution/solution-hero';
+import {SolutionInspirations} from '@/components/solution/solution-inspirations';
 import {CatalogCard} from '@/components/ui/catalog-card';
+import {
+    LogoMarquee,
+    type LogoMarqueeItem,
+} from '@/components/ui/logo-marquee';
 import type {Product} from '@/lib/catalog/types';
 import type {
     SolutionCard,
+    SolutionLandingContent,
     SolutionLineCatalog,
-    SolutionPage,
+    SolutionLogosContent,
 } from '@/lib/solutions/types';
 import {
     productHref,
@@ -44,6 +51,50 @@ function toProductCardData(product: Product): ProductCardData {
         images: images.length > 0 ? images : undefined,
         moq: product.moq,
     };
+}
+
+function toLogoMarqueeItems(
+    logos: SolutionLogosContent,
+): LogoMarqueeItem[] {
+    return logos.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        imageSrc: item.imageSrc,
+        href: item.href,
+        linkLabel: item.linkLabel,
+        width: item.width,
+        height: item.height,
+    }));
+}
+
+function SolutionLogosBand({logos}: {logos: SolutionLogosContent}) {
+    const items = toLogoMarqueeItems(logos);
+    if (items.length === 0) return null;
+
+    return (
+        <PageDielineSection
+            as="section"
+            bleed
+            borderBottom
+            aria-labelledby={
+                logos.heading ? 'solution-logos-heading' : undefined
+            }
+            className="bg-background"
+            innerClassName="pb-16 pt-16"
+        >
+            {logos.heading ? (
+                <h2 id="solution-logos-heading" className="sr-only">
+                    {logos.heading}
+                </h2>
+            ) : null}
+            {logos.subhead ? (
+                <p className="mb-10 max-w-[720px] text-[15px] leading-[1.5] text-muted-foreground">
+                    {logos.subhead}
+                </p>
+            ) : null}
+            <LogoMarquee items={items} />
+        </PageDielineSection>
+    );
 }
 
 export function SolutionCatalogView({
@@ -81,7 +132,19 @@ export function SolutionCatalogView({
     );
 }
 
-export function SolutionLandingView({solution}: {solution: SolutionPage}) {
+/**
+ * Industry Solution LP shell (PROD-1541).
+ * Hero (Fork 2) when `content.hero` is set; otherwise thin heading.
+ * Logos band (Fork 3) when `content.logos` is set.
+ * Inspirations grid (Fork 4) when `content.inspirations` is set.
+ */
+export function SolutionLandingView({
+    content,
+}: {
+    content: SolutionLandingContent;
+}) {
+    const {solution, hero, logos, inspirations} = content;
+
     return (
         <>
             <PageBreadcrumbSection
@@ -91,12 +154,20 @@ export function SolutionLandingView({solution}: {solution: SolutionPage}) {
                     {label: solution.shortName},
                 ]}
             />
-            <PageHeadingSection
-                title={solution.h1}
-                description={
-                    solution.shortDescription || undefined
-                }
-            />
+            {hero ? (
+                <SolutionHero content={hero} />
+            ) : (
+                <PageHeadingSection
+                    title={solution.h1}
+                    description={
+                        solution.shortDescription || undefined
+                    }
+                />
+            )}
+            {logos ? <SolutionLogosBand logos={logos} /> : null}
+            {inspirations ? (
+                <SolutionInspirations content={inspirations} />
+            ) : null}
             {solution.relatedProducts.length > 0 ? (
                 <PageDielineSection innerClassName="pb-24 pt-8">
                     <div className="mb-8">

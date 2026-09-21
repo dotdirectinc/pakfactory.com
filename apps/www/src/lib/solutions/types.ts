@@ -29,8 +29,10 @@ export type SolutionPage = {
     slug: string;
     shortDescription: string;
     description: PortableTextBlock[];
-    heroImageUrl: string | null;
-    heroImageAlt: string;
+    /** Plain text from Sanity `description` (pt::text) for hero subtitle. */
+    descriptionText: string;
+    featuredImageUrl: string | null;
+    featuredImageAlt: string;
     packagingFormats: SolutionFormat[];
     relatedProducts: Product[];
     relatedCaseStudies: SolutionRelatedLink[];
@@ -47,4 +49,152 @@ export type SolutionLineCatalog = {
     solution: SolutionPage;
     line: SolutionFormat;
     products: Product[];
+};
+
+/** Shared link shape for CTAs across landing bands (Fork 0 → Sanity later). */
+export type SolutionCta = {
+    label: string;
+    href: string;
+};
+
+export type SolutionMedia = {
+    src: string;
+    alt: string;
+};
+
+export type SolutionHeroTile = {
+    id: string;
+    /** Optional; empty carousel tiles omit image. */
+    image?: SolutionMedia | null;
+    label?: string;
+    /** Desktop width in px for masonry/carousel; height is uniform. */
+    width?: number;
+};
+
+export type SolutionHeroContent = {
+    /** Static leading segment / full H1 when rotatingWords empty. */
+    h1Lead?: string;
+    /** Static trailing segment after the keyword, e.g. "packaging". */
+    h1Trail?: string;
+    /**
+     * Keyword options for the H1. Empty = render h1Lead alone (Sanity H1).
+     */
+    rotatingWords: string[];
+    subtitle: string;
+    cta: SolutionCta;
+    secondaryCta?: SolutionCta;
+    kitMark?: SolutionMedia | null;
+    tiles: SolutionHeroTile[];
+};
+
+export type SolutionLogoItem = {
+    id: string;
+    name: string;
+    imageSrc: string;
+    href?: string;
+    /** Accessible name when `href` is set (e.g. case study title). */
+    linkLabel?: string;
+    width?: number;
+    height?: number;
+};
+
+export type SolutionLogosContent = {
+    /** Document outline / screen readers; not shown visibly. */
+    heading?: string;
+    /** Muted band lead under the hero. */
+    subhead?: string;
+    items: SolutionLogoItem[];
+};
+
+export type SolutionInspirationCard = {
+    id: string;
+    title: string;
+    description?: string;
+    image: SolutionMedia;
+    href: string;
+    countLabel?: string;
+};
+
+export type SolutionInspirationsContent = {
+    eyebrow: string;
+    headline: string;
+    /** Substrings within `headline` that receive the highlight wipe. */
+    highlightSpans?: string[];
+    /** Band lead under the headline (POC/Figma description). */
+    description?: string;
+    cta?: SolutionCta;
+    cards: SolutionInspirationCard[];
+};
+
+export type SolutionCustomizationsContent = {
+    eyebrow: string;
+    headline: string;
+    highlightSpans?: string[];
+    body?: string;
+    image: SolutionMedia;
+    cta: SolutionCta;
+};
+
+export type SolutionExpertiseStage = {
+    id: string;
+    title: string;
+    body?: string;
+    media?: SolutionMedia | null;
+};
+
+export type SolutionExpertiseManager = {
+    name: string;
+    role?: string;
+    blurb?: string;
+    avatar?: SolutionMedia | null;
+};
+
+export type SolutionExpertiseContent = {
+    eyebrow: string;
+    headline: string;
+    highlightSpans?: string[];
+    cta?: SolutionCta;
+    journeyLabels: string[];
+    stages: SolutionExpertiseStage[];
+    manager?: SolutionExpertiseManager | null;
+};
+
+export type SolutionCaseStudyCard = {
+    id: string;
+    brand: string;
+    title: string;
+    href: string;
+    image?: SolutionMedia | null;
+};
+
+export type SolutionTestimonialCard = {
+    id: string;
+    quote: string;
+    author: string;
+    role?: string;
+    company?: string;
+    rating?: number;
+};
+
+export type SolutionFaqItem = {
+    id: string;
+    question: string;
+    answer: string;
+};
+
+/**
+ * Full Industry Solution LP payload (PROD-1541).
+ * Section UIs land in later forks; Fork 0 defines the contract + fixtures.
+ * Optional bands may be null until content/UI exists.
+ */
+export type SolutionLandingContent = {
+    solution: SolutionPage;
+    hero: SolutionHeroContent | null;
+    logos: SolutionLogosContent | null;
+    inspirations: SolutionInspirationsContent | null;
+    customizations: SolutionCustomizationsContent | null;
+    expertise: SolutionExpertiseContent | null;
+    caseStudies: SolutionCaseStudyCard[] | null;
+    testimonials: SolutionTestimonialCard[] | null;
+    faqs: SolutionFaqItem[] | null;
 };
