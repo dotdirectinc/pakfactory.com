@@ -189,7 +189,7 @@ export const productStyle = defineType({
       title: 'Featured case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated — the case studies to feature for this style.',
+      description: 'Curated override. Empty falls back to the line’s studies.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),

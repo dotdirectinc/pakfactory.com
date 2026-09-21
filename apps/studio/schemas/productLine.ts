@@ -222,7 +222,7 @@ export const productLine = defineType({
       title: 'Featured case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated — the case studies to feature for this line.',
+      description: 'Curated override. Empty falls back to the newest studies referencing this line.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     defineField({
