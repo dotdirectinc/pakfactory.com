@@ -21,8 +21,18 @@ import {
     mapSanitySolutionCard,
     isCompleteProduct,
 } from '@/lib/solutions/map-sanity';
+import {
+    beautyCosmeticsInspirations,
+    beautyCosmeticsLogos,
+    beautyCosmeticsSolutionPage,
+} from '@/lib/solutions/fixtures/beauty-cosmetics';
+import {
+    buildSolutionLandingContent,
+    isBeautyCosmeticsSlug,
+} from '@/lib/solutions/landing-content';
 import type {
     SolutionCard,
+    SolutionLandingContent,
     SolutionLineCatalog,
     SolutionPage,
 } from '@/lib/solutions/types';
@@ -157,6 +167,38 @@ export async function getSolutionBySlug(
             },
         ),
     );
+}
+
+/**
+ * Industry Solution LP payload for `/solutions/[slug]`.
+ * Hero is built from Sanity page fields for every hasPage solution.
+ * Falls back to a minimal Beauty page when Sanity has no hasPage doc yet.
+ * Beauty logos + inspirations use local fixtures until Sanity fields land.
+ */
+export async function getSolutionLandingContent(
+    slug: string,
+): Promise<SolutionLandingContent | null> {
+    const key = normalizeSlug(slug);
+    const fromSanity = await getSolutionBySlug(key);
+    const beautyBands = isBeautyCosmeticsSlug(key)
+        ? {
+              logos: beautyCosmeticsLogos,
+              inspirations: beautyCosmeticsInspirations,
+          }
+        : undefined;
+
+    if (fromSanity) {
+        return buildSolutionLandingContent(fromSanity, beautyBands);
+    }
+
+    if (isBeautyCosmeticsSlug(key)) {
+        return buildSolutionLandingContent(
+            beautyCosmeticsSolutionPage,
+            beautyBands,
+        );
+    }
+
+    return null;
 }
 
 export async function getSolutionLineCatalog(

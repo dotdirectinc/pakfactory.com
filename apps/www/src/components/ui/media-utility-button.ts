@@ -14,7 +14,7 @@ export function mediaUtilityTooltipClass(
     side: MediaUtilityTooltipSide = 'bottom',
 ): string {
     return cn(
-        'pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-3 py-1 text-[13px] font-medium text-background opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100',
+        'pointer-events-none absolute inset-x-0 z-50 mx-auto w-max whitespace-nowrap rounded-full bg-foreground px-3 py-1 text-[13px] font-medium text-background opacity-0 shadow-sm transition-opacity duration-150 peer-hover:opacity-100 peer-focus-visible:opacity-100',
         side === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
     );
 }

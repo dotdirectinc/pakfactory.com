@@ -71,11 +71,11 @@ export function mapSanitySolutionCard(
     if (!slug || !title) return null;
 
     const description = doc.shortDescription?.trim() || undefined;
-    const imageUrl = doc.heroImage
-        ? (sanityImageBaseUrl(doc.heroImage) ?? null)
+    const imageUrl = doc.featuredImage
+        ? (sanityImageBaseUrl(doc.featuredImage) ?? null)
         : null;
-    const imageAlt = doc.heroImage
-        ? resolveImageAlt(doc.heroImage, title)
+    const imageAlt = doc.featuredImage
+        ? resolveImageAlt(doc.featuredImage, title)
         : title;
 
     return {
@@ -97,12 +97,13 @@ export function mapSanitySolution(doc: SolutionBySlugDoc): SolutionPage | null {
     const description = Array.isArray(doc.description)
         ? (doc.description as PortableTextBlock[])
         : [];
+    const descriptionText = doc.descriptionText?.trim() || '';
 
-    const heroImageUrl = doc.heroImage
-        ? (sanityImageBaseUrl(doc.heroImage) ?? null)
+    const featuredImageUrl = doc.featuredImage
+        ? (sanityImageBaseUrl(doc.featuredImage) ?? null)
         : null;
-    const heroImageAlt = doc.heroImage
-        ? resolveImageAlt(doc.heroImage, h1)
+    const featuredImageAlt = doc.featuredImage
+        ? resolveImageAlt(doc.featuredImage, h1)
         : h1;
 
     const packagingFormats = (doc.packagingFormats ?? [])
@@ -125,8 +126,9 @@ export function mapSanitySolution(doc: SolutionBySlugDoc): SolutionPage | null {
         slug,
         shortDescription,
         description,
-        heroImageUrl,
-        heroImageAlt,
+        descriptionText,
+        featuredImageUrl,
+        featuredImageAlt,
         packagingFormats,
         relatedProducts,
         relatedCaseStudies: mapRelated(doc.relatedCaseStudies),

@@ -31,7 +31,7 @@ export function BookmarkIconButton({
     const tooltipLabel = pressed ? 'Remove' : 'Save';
 
     return (
-        <span className="relative flex">
+        <span className="relative inline-flex">
             <Button
                 type="button"
                 variant="ghost"
