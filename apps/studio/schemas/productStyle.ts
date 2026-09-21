@@ -53,7 +53,7 @@ export const productStyle = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Magnetic Closure Boxes". Required, always presentable.',
+      description: 'The canonical name. For example, "Magnetic Closure Rigid Boxes". Must be unique across styles.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is
@@ -73,7 +73,7 @@ export const productStyle = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -81,7 +81,7 @@ export const productStyle = defineType({
       type: 'slug',
       group: GROUPS.content,
       options: { source: 'title' },
-      description: 'The /products/<line>/<style> segment.',
+      description: 'The /products/<line>/<style> segment. Must be unique across all styles, even under different lines.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['productStyle'])),
     }),
     defineField({
@@ -89,7 +89,7 @@ export const productStyle = defineType({
       title: 'Parent product line',
       type: 'reference',
       group: GROUPS.content,
-      description: 'The line this style belongs to (its parent) — one line per style, required.',
+      description: 'The line this style belongs to. One line per style.',
       to: [{ type: 'productLine' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -112,7 +112,7 @@ export const productStyle = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full description of this style — what it is, how it is constructed and what it suits. Renders on the style landing page.',
+        'What this style is, how it is constructed and what it suits.',
       of: [
         {
           type: 'block',
@@ -153,7 +153,7 @@ export const productStyle = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — so a retired style can say so (the deployed type had no way to).',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -170,7 +170,7 @@ export const productStyle = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
@@ -189,7 +189,7 @@ export const productStyle = defineType({
       title: 'Featured case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated override — empty falls back to the line’s studies.',
+      description: 'Curated — the case studies to feature for this style.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),

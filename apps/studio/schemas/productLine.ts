@@ -46,7 +46,7 @@ export const productLine = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Rigid Boxes". Required, always presentable; renders wherever H1 and Short name are empty.',
+      description: 'The canonical name. For example, "Rigid Boxes". Must be unique across product lines.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is
@@ -67,7 +67,7 @@ export const productLine = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -75,7 +75,7 @@ export const productLine = defineType({
       type: 'slug',
       group: GROUPS.content,
       options: { source: 'title' },
-      description: 'The /products/<slug> segment. Unique across Product Line AND Product — both sit one segment under /products/.',
+      description: 'The /products/<slug> segment. Must be unique across product lines and products — both sit one segment under /products/.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
     // Renamed from `intro` (PROD-2454): one concept, one name across
@@ -87,7 +87,7 @@ export const productLine = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full description of this line — what it covers and who it is for. Renders on the line landing page. Keep it evergreen: no countable facts, those belong on the products.',
+        'What this line covers and who it is for. Keep it evergreen — no countable facts, those belong on the products.',
       of: [
         {
           type: 'block',
@@ -141,7 +141,7 @@ export const productLine = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — so a retired line can say so.',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -158,7 +158,7 @@ export const productLine = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
     }),
 
@@ -205,7 +205,7 @@ export const productLine = defineType({
       title: 'Expertise',
       type: 'array',
       group: GROUPS.categorization,
-      description: '2–3, curated — the expertise stages commonly bought alongside this line.',
+      description: 'Up to 3 — the expertise stages commonly bought alongside this line.',
       of: [{ type: 'reference', to: [{ type: 'expertiseStage' }], options: { disableNew: true } }],
       validation: (Rule) => Rule.max(3).unique(),
     }),
@@ -214,7 +214,7 @@ export const productLine = defineType({
       title: 'Solutions',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'The verticals this line serves.',
+      description: 'Which solutions this line serves — industry, channel, focus or use case.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
     }),
     defineField({
@@ -222,7 +222,7 @@ export const productLine = defineType({
       title: 'Featured case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated override — empty derives the newest studies referencing this line.',
+      description: 'Curated — the case studies to feature for this line.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     defineField({
@@ -230,7 +230,7 @@ export const productLine = defineType({
       title: 'Related lines',
       type: 'array',
       group: GROUPS.categorization,
-      description: '"Customers also considered" — sibling lines.',
+      description: 'Sibling lines to suggest as alternatives.',
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
