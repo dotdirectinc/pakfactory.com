@@ -24,7 +24,7 @@ export const customizationOption = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The customization option name shown to customers (e.g. "Matte Lamination").',
+      description: 'The customization option name (e.g. "Matte Lamination").',
       // `uniqueTaxonomyTitle` was missing here while Category and Type both had it
       // (PROD-2462). Same type only, case- and punctuation-insensitive.
       //
@@ -63,8 +63,7 @@ export const customizationOption = defineType({
       title: 'Short name',
       type: 'string',
       group: 'content',
-      description:
-        'A shorter, customer-facing version of the Title — for the configurator swatch, chips and listings, where the full technical name will not fit. Leave empty to use the Title.',
+      description: 'A shorter name for swatches, chips and listings. Leave empty to use the Title.',
     }),
     // The house `shortDescription` — same shape as Product, Product Line,
     // Product Style, Solution, Solution Style, Bundle and Blog Category. No
@@ -86,7 +85,7 @@ export const customizationOption = defineType({
       title: 'Slug',
       type: 'slug',
       group: 'content',
-      description: 'URL-safe identifier, generated from the title. Unique across all customizations.',
+      description: 'URL-safe identifier, generated from the title. Unique across all customization options.',
       options: { source: 'title' },
       validation: (Rule) =>
         Rule.required().custom(async (slug, context) => {
@@ -119,8 +118,7 @@ export const customizationOption = defineType({
       type: 'reference',
       group: 'content',
       to: [{ type: 'customizationType' }],
-      description:
-        'Which Customization Type this option belongs to. The Category follows from the Type — it is not stored here.',
+      description: 'The customization type this option belongs to. The category follows from it.',
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
@@ -141,7 +139,8 @@ export const customizationOption = defineType({
       group: 'content',
       to: [{ type: 'glossaryTerm' }],
       description:
-        'The industry term this option is an instance of. The definition lives on the Glossary Term only — the option page pulls it and never restates it.',
+        'The industry term this option is an instance of. The definition lives on the Glossary Term — ' +
+        'never restate it here.',
     }),
     defineField({
       name: 'status',
@@ -180,10 +179,9 @@ export const customizationOption = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Does a customer pick this in the configurator? Configurable: Matte, High-Barrier, SBS. ' +
-        'Reference: VMPET Film, Matte Lamination — real materials and processes a customer never picks ' +
-        'directly, reached through the simplified option they achieve. This no longer decides whether ' +
-        'the document has a page; that is "Has a page".',
+        'Does a customer pick this in the configurator? For example, Matte is Configurable. Matte ' +
+        'Lamination is Reference — a real process a customer never picks directly, reached through the ' +
+        'simplified option it achieves.',
       options: {
         layout: 'radio',
         list: [
@@ -293,7 +291,8 @@ export const customizationOption = defineType({
       group: 'categorization',
       components: { input: CompatibleCustomizationsInput },
       description:
-        'Which other customizations can be ordered together with this one. Compatibility reads both ways, so recording it on either of the two options is enough — the other one shows it automatically, muted. Only options a customer can actually pick are offered; an option that just has a library page cannot be combined with anything. EMPTY MEANS NOTHING IS COMPATIBLE: this list is the whole answer rather than a narrowing of some wider default. Source-owned (product data source) once that ships; editable for now.',
+        'Which other customizations can be ordered with this one. Recording it on either option is ' +
+        'enough. Empty means none are compatible.',
       of: [
         {
           type: 'reference',
@@ -401,7 +400,9 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'On a technical (Reference) option only: which simplified, customer-facing option this one can deliver — VMPET Film achieves High-Barrier. Listing an option here does NOT claim this one is sufficient on its own; which combination is actually used is decided at quoting.',
+        'Reference options only: which customer-facing option this one can deliver. For example, Matte ' +
+        'Lamination achieves Matte. Listing it here does not claim this one is enough on its own — the ' +
+        'actual combination is decided at quoting.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       validation: (Rule) =>
         Rule.custom((value, context) => {
@@ -435,7 +436,8 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first.',
+        'What this option is, in property values. The choices come from its customization type — if this ' +
+        'is empty, add the property to the type first.',
       of: [{
         type: 'reference',
         to: [{ type: 'propertyValue' }],
@@ -566,7 +568,7 @@ export const customizationOption = defineType({
       type: 'object',
       group: 'content',
       description:
-        'Why a customer would pick this customization (renamed from whyChooseBlock, D33). Argues the choice; it must not restate the definition — that belongs to the Glossary Term.',
+        'Why a customer would pick this. Argue the choice — the definition belongs on the Glossary Term.',
       fields: [
         defineField({ name: 'title', title: 'Title', type: 'string' }),
         defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
