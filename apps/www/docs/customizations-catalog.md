@@ -14,7 +14,7 @@ Renderer for the section: [`src/components/sections/customizations-catalog.tsx`]
 
 ## Data seam (Sanity → UI)
 
-Do **not** add `modules/catalog`. Use the F1a seam:
+Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the F1a seam:
 
 | Layer | Location |
 | --- | --- |

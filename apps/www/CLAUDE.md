@@ -45,7 +45,8 @@ Use **Server Components** by default. Do not add cart or checkout UX unless expl
 - `src/` = `app/`, `components/`, `lib/` only
 - `app/` is routing-only; importable components live under `src/components/`
 - **Known deferred violation:** `app/case-studies/_components/` and `app/case-studies/[slug]/_components/` — remediation deferred per [ADR-005](../../docs/adr/0005-component-organization.md); do not add new `_components/` folders elsewhere
-- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in `lib/` / modules — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles.
+- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in feature folders / `lib/` — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles.
+- **Do not** reintroduce `components/modules/` on www — put new work in a feature folder (`product/`, `case-study/`, …), `sections/` (Sanity page body), `layout/` (site chrome), or `ui/` (props-only).
 
 ## Composition: chrome vs structured routes vs Sections
 
@@ -53,9 +54,9 @@ Do **not** collapse these layers:
 
 | Layer | Owns | www practice |
 | ----- | ---- | ------------ |
-| **Site chrome** | Global nav / footer | Layout + modules; Sanity `websiteNavigation` singleton (not `sections[]`) |
+| **Site chrome** | Global nav / footer | `components/layout/`; Sanity `websiteNavigation` singleton (not `sections[]`) |
 | **Structured routes** | Catalog URL trees | Code owns breadcrumb, H1, primary grids/cards (`/products…`, `/solutions…`, `/customizations`); optional `doc.sections` only as a body slot |
-| **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; presentation-free (D35); allowlisted per page type |
+| **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; React under `components/sections/`; presentation-free (D35); allowlisted per page type |
 | **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features |
 
 **Customizations catalog (PROD-1288):** route `/customizations` + Studio section `customizationsCatalog` share `listCustomizations()` and `CustomizationCatalog*` components. Distinct from `customizationsRow` (catalogue strip). How-built: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md).
