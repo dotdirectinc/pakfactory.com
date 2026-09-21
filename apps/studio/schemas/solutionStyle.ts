@@ -219,7 +219,7 @@ export const solutionStyle = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Defaults to H1 if left blank. Target 50–60 chars.',
+      description: 'Overrides the browser and search title. 60 characters maximum — longer will not save.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -228,7 +228,7 @@ export const solutionStyle = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.seo,
-      description: 'Target 140–160 chars.',
+      description: 'The snippet shown under the title in search results. 160 characters maximum — longer will not save.',
       validation: (Rule) => Rule.max(160),
     }),
     // Carried here where Solution deliberately has none: two collections can

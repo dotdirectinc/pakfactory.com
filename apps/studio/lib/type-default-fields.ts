@@ -36,7 +36,8 @@ export const TOKEN_HELP =
   'Tokens: %title%, %name%, %job_title%, %excerpt%, %description%, %shortBio%, %sitename%. One change affects every page of this type, so keep it generic.'
 
 export const PAGE_TOKEN_HELP =
-  'For blog pages, %title% and %description% map to the page Overview title and description. Other tokens apply the same way across page roles (home, topics, search, contribute, 404, landing, static).'
+  'For blog pages, %title% and %description% map to the page Overview title and description. ' +
+  'Other tokens work the same way for every page role.'
 
 /**
  * Fieldsets for the per-type settings singletons. Spread into each `defineType`
@@ -47,13 +48,16 @@ export const TYPE_SETTINGS_FIELDSETS = [
     name: 'metadataFormats',
     title: 'Metadata formats',
     description:
-      'Applied live to every document of this type that leaves its own Meta title or description blank. Editing these changes existing pages straight away.',
+      'Applied to every document of this type that leaves its own Meta title or description blank. ' +
+      'Editing these changes existing pages straight away.',
   },
   {
     name: 'newDocumentDefaults',
     title: 'Defaults for new documents',
     description:
-      'The starting values a newly created document of this type gets for its three robots toggles. Nothing else. Changing them never affects documents that already exist — each one keeps whatever is set on its own SEO tab, and that always wins.',
+      'The starting values a new document of this type gets for its three robots toggles, and nothing ' +
+      'else. Changing them never affects documents that already exist — each keeps what is set on its ' +
+      'own SEO tab.',
   },
 ] as const
 
@@ -106,7 +110,8 @@ export function typeDefaultFields({
       type: 'boolean',
       initialValue: indexDefault,
       description:
-        'Off also drops the page from on-site Related / Featured / listings, not just from search engines.',
+        'Off also drops the page from on-site Related, Featured and listing blocks, not just from ' +
+        'search engines.',
       fieldset: 'newDocumentDefaults',
       ...g,
     }),
@@ -116,7 +121,8 @@ export function typeDefaultFields({
       type: 'boolean',
       initialValue: true,
       description:
-        'Advanced — leave ON. Off means page-level nofollow: engines ignore every link on the page, including internal ones.',
+        'Leave on. Off tells search engines to ignore every link on the page, including links to your ' +
+        'own pages.',
       fieldset: 'newDocumentDefaults',
       ...g,
     }),
