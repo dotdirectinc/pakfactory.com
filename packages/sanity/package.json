@@ -18,9 +18,11 @@
     "./stamp-published-at": "./src/stamp-published-at.ts",
     "./fact-labels": "./src/fact-labels.ts",
     "./dimension-inputs": "./src/dimension-inputs.ts",
-    "./solution-style-filter": "./src/solution-style-filter.ts"
+    "./solution-style-filter": "./src/solution-style-filter.ts",
+    "./customization-rules": "./src/customization-rules/index.ts"
   },
   "scripts": {
+    "test": "node --import tsx --test src/**/*.test.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "seed:demo": "tsx scripts/seed-demo.ts",
