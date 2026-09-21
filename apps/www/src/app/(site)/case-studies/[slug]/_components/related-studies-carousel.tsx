@@ -10,7 +10,7 @@ import {
   type CarouselApi,
 } from "@pakfactory/ui/components/carousel";
 import type { CaseStudyCard as CaseStudyCardData } from "@pakfactory/sanity/queries";
-import { CaseStudyCard } from "@/components/modules/case-study-card";
+import { CaseStudyCard } from "@/components/case-study/case-study-card";
 
 type Props = {
   studies: CaseStudyCardData[];

@@ -13,7 +13,7 @@ How the filterable products library is wired for humans and AI agents. Binding p
 
 ## Data seam (Sanity → UI)
 
-Do **not** add `modules/catalog`. Use the F1a seam:
+Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the F1a seam:
 
 | Layer | Location |
 | --- | --- |
