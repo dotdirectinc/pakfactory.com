@@ -149,6 +149,78 @@ export const customizationType = defineType({
       },
       validation: (Rule) => Rule.required(),
     }),
+    // WHICH SIDE RESTRICTS WHICH (PROD-2558).
+    //
+    // `compatibleCustomizations` is one flat list of pairs, read from both ends —
+    // "recording it on either option is enough" — so it states that Spot UV and Matte go
+    // together and CANNOT state that Matte decides Spot UV rather than the other way
+    // round. Nothing else in the model carries direction, so without this field the rules
+    // engine has to be told it by its caller, and every caller has to agree.
+    //
+    // A reference here may be a CATEGORY or a TYPE, because the board states it both ways.
+    // "Material dictates Printing Method" is a category — all sixteen material types, and
+    // listing them one by one would be wrong the day a seventeenth arrives. "Colour System
+    // depends on Printing Method" is a single type. Spot Coating needs three (Surface
+    // Finish, Surface Finish (non-paper) and Lamination), which is still a list of types
+    // rather than the whole Finishing category — that would drag in Foiling, which does
+    // not gate it.
+    //
+    // Read as ALL-OF: an option must find a compatible partner in EVERY entry here, and any
+    // one partner within an entry is enough. That is what the board draws as separate
+    // frames, and flattening it to "any pair anywhere" keeps an option alive on the
+    // strength of a relationship from a different axis entirely.
+    //
+    // Empty is a WARNING, not an error. Nothing constrains such a type today, so the rules
+    // return every option and say so rather than guessing; making it an error would light
+    // up every unfilled Type at once and teach people to clear the warning rather than
+    // answer it. It is still a precondition of the configurator, exactly as
+    // `compatibleCustomizations` is.
+    defineField({
+      name: 'dependsOn',
+      title: 'What decides which of these are available?',
+      type: 'array',
+      group: 'specs',
+      description:
+        'The customizations a customer picks FIRST, which then decide what is left here. Choose a whole category ' +
+        'when anything in it decides — Printing Method is decided by Materials — or specific types when only some ' +
+        'do. Leave empty only while nobody has worked it out: an empty list means nothing narrows this type, so ' +
+        'every option stays available.',
+      hidden: ({ parent }) => parent?.availabilityDecidedBy !== 'customization',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'customizationCategory' }, { type: 'customizationType' }],
+          options: { disableNew: true },
+        },
+      ],
+      validation: (Rule) => [
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const self = (context.document as { _id?: string } | undefined)?._id?.replace(/^drafts\./, '')
+          if (self && list.some((e) => (e as { _ref?: string })?._ref === self)) {
+            return 'A type cannot depend on itself.'
+          }
+          const refs = list.map((e) => (e as { _ref?: string })?._ref).filter(Boolean)
+          if (new Set(refs).size !== refs.length) return 'The same customization is listed more than once.'
+          return true
+        }),
+        // Inert rather than wrong, so it warns and does not clear the data: a Type the
+        // PRODUCT decides is never narrowed by another customization, and this list is
+        // simply not read for it.
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const decidedBy = (context.document as { availabilityDecidedBy?: string } | undefined)?.availabilityDecidedBy
+          if (list.length === 0 || decidedBy !== 'product') return true
+          return 'The product decides whether these options are offered, so nothing is read from this list. Either clear it or change "Who decides".'
+        }).warning(),
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const decidedBy = (context.document as { availabilityDecidedBy?: string } | undefined)?.availabilityDecidedBy
+          if (list.length > 0 || decidedBy !== 'customization') return true
+          return 'Nothing decides which of these are available yet, so every option will stay available on every product. The configurator needs this filled in before launch.'
+        }).warning(),
+      ],
+    }),
     defineField({
       name: 'description',
       title: 'Description',
