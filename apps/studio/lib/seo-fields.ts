@@ -88,7 +88,8 @@ export function seoFields({
         group,
         validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
         description:
-          'Shown in search results and the browser tab. When blank, Blog Settings type format applies (e.g. Category defaults), then the content title. A filled value always wins over formats.',
+          'Shown in search results and the browser tab. Best kept under 60 characters. When blank, the ' +
+          'Blog Settings format applies, then the page title.',
       }),
       defineField({
         name: 'metaDescription',
@@ -98,7 +99,8 @@ export function seoFields({
         group,
         validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
         description:
-          'The SERP snippet. When blank, Blog Settings type format applies, then excerpt/description. A filled value always wins over formats.',
+          'The snippet shown under the title in search results. Best kept under 160 characters. When ' +
+          'blank, the Blog Settings format applies, then the excerpt.',
       }),
     ]),
     ...(canonical
@@ -109,7 +111,8 @@ export function seoFields({
             type: 'string',
             group,
             description:
-              'Blank in 99% of cases (the page self-canonicals). Enter a relative path (e.g. /custom-box-guide) for a same-domain duplicate; a full URL only for duplication across another PakFactory-owned domain.',
+              'Leave blank almost always. For a duplicate on this domain, enter a relative path. For example, ' +
+              '/custom-box-guide. Use a full URL only for another PakFactory domain.',
           }),
         ]
       : []),
@@ -120,7 +123,8 @@ export function seoFields({
       group,
       initialValue: newDocDefault(typeSettingsId, 'allowIndex', indexDefault),
       description:
-        'On = eligible to index. Off = noindex, and the page is also dropped from on-site Related / Featured / listings — not just from search engines.',
+        'On: search engines may index this page. Off: they may not, and it also disappears from on-site ' +
+        'Related, Featured and listing blocks.',
     }),
     defineField({
       name: 'allowFollow',
@@ -129,7 +133,8 @@ export function seoFields({
       group,
       initialValue: newDocDefault(typeSettingsId, 'allowFollow', true),
       description:
-        'Advanced — leave ON for essentially all pages. Page-level nofollow tells engines to ignore every link on the page, including your own internal links.',
+        'Leave on for almost every page. Off tells search engines to ignore every link on the page, ' +
+        'including links to your own pages.',
     }),
     defineField({
       name: 'noImageIndex',
@@ -137,7 +142,7 @@ export function seoFields({
       type: 'boolean',
       group,
       initialValue: newDocDefault(typeSettingsId, 'noImageIndex', false),
-      description: 'Prevents images on this page from appearing in Google Images.',
+      description: 'Keeps images on the page out of Google Images.',
     }),
   ]
 }
@@ -164,7 +169,7 @@ export function socialFields({
       type: 'text',
       rows: 2,
       group,
-      description: 'Falls back to the meta description.',
+      description: 'Used when this page is shared. Falls back to the meta description.',
     }),
     defineField(
       taggedImageField({
@@ -174,7 +179,7 @@ export function socialFields({
         group,
         mediaTags: ogMediaTags(channel),
         options: { hotspot: true },
-        description: '1200×630 (1.91:1). Falls back to the featured image, then the global default.',
+        description: 'Shown when this page is shared. 1200×630. Falls back to the featured image, then the global default.',
         fields: [
           defineField({
             name: 'alt',

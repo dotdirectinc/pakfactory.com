@@ -197,7 +197,7 @@ export const solution = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Defaults to H1 if left blank. Target 50–60 chars.',
+      description: 'Overrides the browser and search title. 60 characters maximum — longer will not save.',
       validation: (Rule) => Rule.max(60),
     }),
     defineField({
@@ -206,7 +206,7 @@ export const solution = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.seo,
-      description: 'Target 140–160 chars.',
+      description: 'The snippet shown under the title in search results. 160 characters maximum — longer will not save.',
       validation: (Rule) => Rule.max(160),
     }),
     pageSectionsField(SECTION_ALLOW.marketPage),
