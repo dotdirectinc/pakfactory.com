@@ -28,7 +28,7 @@ export const dieline = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Card and listing title — name the construction ("Hang Tag Dieline").',
+      description: 'Name the construction — shown on the card and in the listing.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -36,7 +36,7 @@ export const dieline = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'The /resources/dielines/<slug> segment.',
+      description: 'The /resources/dielines/<slug> segment. Must be unique across dielines.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['dieline'])),
     }),
@@ -64,7 +64,7 @@ export const dieline = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'On requires an email before download — and decides whether the file URL can be public. A modelling fact, not a design detail.',
+        'On requires an email before download, so the file URL cannot be public.',
       initialValue: false,
     }),
 
@@ -75,7 +75,7 @@ export const dieline = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'What the dieline is about — drives which pages surface it and the filter inside the listing. The Expertise pages are the biggest win: a dieline on the Prototyping page is a reason to be there.',
+        'What the dieline is about — the pages that match surface it automatically.',
       of: [
         {
           type: 'reference',
