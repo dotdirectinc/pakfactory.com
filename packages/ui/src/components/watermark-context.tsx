@@ -5,7 +5,7 @@ import {
   useContext,
   type ReactNode,
 } from "react";
-import { hasWatermarkSrc } from "../commons/watermark-variant";
+import { hasWatermarkSrc } from "@pakfactory/ui/lib/watermark/watermark-variant";
 
 export type WatermarkMode = "overlay" | "serve";
 

@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
-import { getPaginationWindow } from "../commons/pagination-window";
-import { PaginationLink } from "./pagination-link";
-import { PaginationScroll } from "./pagination-scroll";
+import { getPaginationWindow } from "@pakfactory/ui/lib/pagination/pagination-window";
+import { PaginationLink } from "@pakfactory/ui/components/pagination-link";
+import { PaginationScroll } from "@pakfactory/ui/components/pagination-scroll";
 
 /** Shared id for the top of a paginated listing — one listing per route. */
 export const LISTING_TOP_ID = "listing-top";

@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react";
 import Link from "next/link";
-import { setPaginationScrollIntent } from "../commons/path-pagination";
+import { setPaginationScrollIntent } from "@pakfactory/ui/lib/pagination/path-pagination";
 
 type PaginationLinkProps = ComponentProps<typeof Link>;
 

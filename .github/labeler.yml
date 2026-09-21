@@ -32,21 +32,18 @@
 'pkg:seo':
   - changed-files:
       - any-glob-to-any-file: 'packages/seo/**'
-'pkg:domain':
+'pkg:request':
   - changed-files:
-      - any-glob-to-any-file: 'packages/domain/**'
+      - any-glob-to-any-file: 'packages/request/**'
 'pkg:supabase':
   - changed-files:
       - any-glob-to-any-file: 'packages/supabase/**'
 'pkg:auth-ui':
   - changed-files:
-      - any-glob-to-any-file: 'packages/auth-ui/**'
-'pkg:components':
-  - changed-files:
-      - any-glob-to-any-file: 'packages/components/**'
+      - any-glob-to-any-file: 'packages/features/auth-ui/**'
 'pkg:brief-builder-ui':
   - changed-files:
-      - any-glob-to-any-file: 'packages/brief-builder-ui/**'
+      - any-glob-to-any-file: 'packages/features/brief-builder-ui/**'
 'pkg:redirects':
   - changed-files:
       - any-glob-to-any-file: 'packages/redirects/**'

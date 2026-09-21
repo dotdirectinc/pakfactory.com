@@ -3,7 +3,7 @@
  * Every record MUST include assignedOwnerCrmId for forced BFF filters.
  */
 
-import type { RequestSummary } from "@pakfactory/domain/request";
+import type { RequestSummary } from "@pakfactory/request/request";
 
 export const ADMIN_REQUESTS_INDEX = "admin_requests";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@pakfactory/domain",
+  "name": "@pakfactory/request",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,6 +8,8 @@
     "./shipping-address": "./src/shipping-address.ts",
     "./annual-spend": "./src/annual-spend.ts",
     "./internal-account": "./src/internal-account.ts",
+    "./geo": "./src/geo/index.ts",
+    "./geo/countries": "./src/geo/countries.ts",
     "./adapters/requests": "./src/adapters/requests.ts",
     "./adapters/mock-requests": "./src/adapters/mock-requests.ts",
     "./adapters/internal-account": "./src/adapters/internal-account.ts"
@@ -15,7 +17,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "i18n-iso-countries": "^7.14.0",
+    "iso-3166-2": "^1.0.0"
+  },
   "devDependencies": {
+    "@types/iso-3166-2": "^1.0.4",
     "typescript": "^5.7.3"
   }
 }

@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import type { RequestLine } from "@pakfactory/domain/request";
+import type { RequestLine } from "@pakfactory/request/request";
 import { RequestProductCard } from "@pakfactory/brief-builder-ui/request-product-card";
 import { Button } from "@pakfactory/ui/components/button";
 import { cn } from "@pakfactory/ui/lib/utils";

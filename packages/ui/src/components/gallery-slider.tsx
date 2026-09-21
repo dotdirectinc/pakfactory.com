@@ -3,14 +3,14 @@
 import { useRef, useState, useEffect } from "react";
 import Image, { type ImageLoader } from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { ImageWatermarkOverlay } from "../ui/image-watermark-overlay";
+import { ImageWatermarkOverlay } from "@pakfactory/ui/components/image-watermark-overlay";
 import {
   isServeWatermarkMode,
   shouldApplyWatermark,
   useWatermarkConfig,
   type WatermarkConfig,
-} from "../ui/watermark-context";
-import { buildWatermarkApiUrl } from "../commons/watermark-api-url";
+} from "@pakfactory/ui/components/watermark-context";
+import { buildWatermarkApiUrl } from "@pakfactory/ui/lib/watermark/watermark-api-url";
 
 export type SliderImage = {
   key: string;

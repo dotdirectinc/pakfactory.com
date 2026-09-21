@@ -1,4 +1,4 @@
-import type { RequestSummary } from "@pakfactory/domain/request";
+import type { RequestSummary } from "@pakfactory/request/request";
 import type { AdminSearchHit } from "./types";
 
 function matchesQuery(summary: RequestSummary, query: string): boolean {

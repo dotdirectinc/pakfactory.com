@@ -1,6 +1,6 @@
 "use client";
 
-import type { RequestActivity } from "@pakfactory/domain/request";
+import type { RequestActivity } from "@pakfactory/request/request";
 import { toast } from "sonner";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ComingSoonButton } from "@/components/requests/coming-soon-button";

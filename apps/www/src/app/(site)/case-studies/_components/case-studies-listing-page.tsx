@@ -16,7 +16,7 @@ import {
   jsonLdGraph,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { pathPaginationHref } from "@pakfactory/components/commons/path-pagination";
+import { pathPaginationHref } from "@pakfactory/ui/lib/pagination/path-pagination";
 import { absoluteUrl } from "@/lib/site";
 import { pakfactoryOrganization } from "@/lib/case-study-jsonld";
 import {

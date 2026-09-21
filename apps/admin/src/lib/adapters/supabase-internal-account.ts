@@ -1,5 +1,5 @@
-import type { InternalAccountAdapter } from "@pakfactory/domain/adapters/internal-account";
-import type { InternalAccount } from "@pakfactory/domain/internal-account";
+import type { InternalAccountAdapter } from "@pakfactory/request/adapters/internal-account";
+import type { InternalAccount } from "@pakfactory/request/internal-account";
 import { createClient } from "@pakfactory/supabase/server";
 
 /**

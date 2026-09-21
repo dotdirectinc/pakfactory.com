@@ -1,7 +1,7 @@
 import {
     Breadcrumb,
     type Crumb,
-} from '@pakfactory/components/layout/breadcrumb';
+} from '@pakfactory/ui/components/breadcrumb-trail';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {WWW_ROUTES} from '@/lib/www-routes';
 

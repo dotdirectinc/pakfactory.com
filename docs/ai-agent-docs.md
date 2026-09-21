@@ -7,6 +7,7 @@ How markdown and Cursor rules are organized so **Cursor and Claude** share one h
 | Task | Read first |
 | --- | --- |
 | Any change | [`AGENTS.md`](../AGENTS.md) → relevant [`docs/adr/`](adr/README.md) |
+| New shared package / package layout | [`AGENTS.md`](../AGENTS.md) § Workspace packages → [ADR-019](adr/0019-workspace-package-taxonomy.md) → [`packages/README.md`](../packages/README.md) |
 | Design / build / plan UI look | [`DESIGN.md`](../DESIGN.md) → [`packages/ui/src/globals.css`](../packages/ui/src/globals.css) |
 | Scaffold / RSC / state / placement | [`ENGINEERING.md`](../ENGINEERING.md) → [`docs/adr/README.md`](adr/README.md) |
 | Blog | [`apps/blog/CLAUDE.md`](../apps/blog/CLAUDE.md) |

@@ -1,9 +1,9 @@
 "use client";
 
 import type { CSSProperties, ReactNode, Ref } from "react";
-import { formatAnnualSpendDisplay } from "@pakfactory/domain/annual-spend";
-import type { RequestDraft, RequestLine } from "@pakfactory/domain/request";
-import { formatAddressLines } from "@pakfactory/domain/shipping-address";
+import { formatAnnualSpendDisplay } from "@pakfactory/request/annual-spend";
+import type { RequestDraft, RequestLine } from "@pakfactory/request/request";
+import { formatAddressLines } from "@pakfactory/request/shipping-address";
 import { Button } from "@pakfactory/ui/components/button";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { RequestReviewCopy } from "./request-review-copy";

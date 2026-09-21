@@ -75,7 +75,7 @@ Public blog/www imagery can show a PakFactory logo watermark. Studio Media downl
 | Phase | Deliverable |
 | --- | --- |
 | Studio | `settings.watermark` (`enabled` / `lightImage` / `darkImage` / `opacity`); `applyWatermark` on body/gallery with `DefaultOnBooleanInput` (unset shows ON) |
-| Shared UI | `@pakfactory/components` presentational `ImageWatermarkOverlay` + `WatermarkProvider`; light/dark via server `variant` prop |
+| Shared UI | `@pakfactory/ui` presentational `ImageWatermarkOverlay` + `WatermarkProvider`; light/dark via server `variant` prop |
 | Blog / www | Layouts provide light+dark URLs; body/gallery pass `true`; GROQ `lqip` → `resolveWatermarkVariantFromLqip` at render |
 | Bake trial | `GET /api/wm` Sharp composite (`wmLight` / `wmDark`) when `NEXT_PUBLIC_WATERMARK_MODE=serve` |
 
@@ -1022,7 +1022,7 @@ Full-bleed blocks (`postFeaturedRow`, `postCategoryRow`, `postPopularRow`, `post
 ## Archive listing pagination
 
 - **Page size:** `LISTING_PAGE_SIZE = 15` in `src/lib/blog-archive.ts` (topic, category, `/all` archives).
-- **UI:** shared `@pakfactory/components/modules/pagination` (`Pagination` + `LISTING_TOP_ID`) — one props-only presentation core used by blog archives **and** case studies (PROD-1998). Figma Topic Detail layout (status left, Previous + numbered window + Next right). Per-page control is feature-owned, passed via `rightSlot` (blog: `per-page-select.tsx`). Scroll-to-listing is opt-in via `scrollTargetId` (href mode) — the scroll wrappers (`PaginationLink`/`PaginationScroll`) also live in `@pakfactory/components`.
+- **UI:** shared `@pakfactory/ui/components/pagination` (`Pagination` + `LISTING_TOP_ID`) — one props-only presentation core used by blog archives **and** case studies (PROD-1998). Figma Topic Detail layout (status left, Previous + numbered window + Next right). Per-page control is feature-owned, passed via `rightSlot` (blog: `per-page-select.tsx`). Scroll-to-listing is opt-in via `scrollTargetId` (href mode) — the scroll wrappers (`PaginationLink`/`PaginationScroll`) also live in `@pakfactory/ui`.
 - **Routes:** page 1 at list root; page 2+ at `/page/{n}` (e.g. `/topics/{slug}/page/2`). Single-page rule (PROD-1994/1998): with results and `totalPages === 1`, the bar shows page info + per-page combobox and **hides the center nav**; empty listings hide the bar (caller-guarded).
 
 ## Topic groups — `blogTopicGroup` + `topicGroup` ref (CMS taxonomy)

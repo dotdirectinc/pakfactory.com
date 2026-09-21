@@ -7,7 +7,7 @@ import { RequestDetailCustomerPaperStack } from "@/components/requests/request-d
 import { RequestAttachments } from "@/components/requests/request-attachments";
 import { RequestDetailHeader } from "@/components/requests/request-detail-header";
 import { RequestDetailTimeline } from "@/components/requests/request-detail-timeline";
-import type { Request, ShippingAddress } from "@pakfactory/domain/request";
+import type { Request, ShippingAddress } from "@pakfactory/request/request";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { LogoMark } from "@/components/layout/logo-mark";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";

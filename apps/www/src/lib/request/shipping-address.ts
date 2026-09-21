@@ -1,6 +1,6 @@
 import type {ShippingAddress} from '@/lib/request/request.storage';
 
-export {formatAddressLines} from '@pakfactory/domain/shipping-address';
+export {formatAddressLines} from '@pakfactory/request/shipping-address';
 
 export function makeShippingId(): string {
     return Math.random().toString(36).slice(2, 10);

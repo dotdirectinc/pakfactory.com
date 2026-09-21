@@ -2,7 +2,7 @@ import type {
   PrimaryNavHeader,
   PrimaryNavItem,
   PrimaryNavLogo,
-} from "@pakfactory/components/layout/primary-nav-types";
+} from "@/lib/primary-nav-types";
 import { DEFAULT_BLOG_LANGUAGE } from "@pakfactory/sanity/languages";
 import {
   BLOG_GLOBAL_SETTINGS_QUERY,

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
-import type { Request } from "@pakfactory/domain/request";
+import type { Request } from "@pakfactory/request/request";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { cn } from "@pakfactory/ui/lib/utils";
 import { ComingSoonButton } from "@/components/requests/coming-soon-button";

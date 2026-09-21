@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { Breadcrumb } from "@pakfactory/components/layout/breadcrumb";
+import { Breadcrumb } from "@pakfactory/ui/components/breadcrumb-trail";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";

@@ -1,4 +1,4 @@
-import type { Request } from "@pakfactory/domain/request";
+import type { Request } from "@pakfactory/request/request";
 import { ADMIN_REQUESTS_COPY } from "@/lib/copy/requests";
 
 /**
@@ -31,7 +31,7 @@ export function requestStatusDotClass(status: RequestStatus): string {
   return REQUEST_STATUS_DOT_CLASS[status];
 }
 
-/** Stub until `@pakfactory/domain` carries a real status field. */
+/** Stub until `@pakfactory/request` carries a real status field. */
 export function getRequestStatus(_request: Request): RequestStatus {
   return "submitted";
 }

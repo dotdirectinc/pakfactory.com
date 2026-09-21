@@ -1,1 +1,1 @@
-export { Breadcrumb, type Crumb } from "@pakfactory/components/layout/breadcrumb";
+export { Breadcrumb, type Crumb } from "@pakfactory/ui/components/breadcrumb-trail";

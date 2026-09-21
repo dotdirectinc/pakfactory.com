@@ -2,13 +2,13 @@ import type { CSSProperties, ReactNode } from "react";
 import {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
-} from "../commons/watermark-geometry";
-import { pickWatermarkSrc } from "../commons/watermark-variant";
+} from "@pakfactory/ui/lib/watermark/watermark-geometry";
+import { pickWatermarkSrc } from "@pakfactory/ui/lib/watermark/watermark-variant";
 
 export {
   WATERMARK_PADDING_PERCENT,
   WATERMARK_WIDTH_PERCENT,
-} from "../commons/watermark-geometry";
+} from "@pakfactory/ui/lib/watermark/watermark-geometry";
 
 export type ImageWatermarkOverlayProps = {
   children: ReactNode;
