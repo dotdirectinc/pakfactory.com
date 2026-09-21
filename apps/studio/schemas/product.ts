@@ -20,15 +20,16 @@ import { AvailableCustomizationsInput } from '../components/AvailableCustomizati
  * replace the old arrays. The re-seed produces correct-shaped documents.
  *
  * Source-owned fields (sku, status, moq, leadTimeDays, dimensionRange,
- * properties, availableCustomizations) are marked but kept EDITABLE — decision b,
- * PROD-2295: they flip to readOnly when the Registry/SPECs system ships.
+ * properties, availableCustomizations, productLine, productStyle) are marked but
+ * kept EDITABLE — decision b, PROD-2295: they flip to readOnly when the
+ * Registry/SPECs system ships.
  *
  * `sections` (page-builder) is confirmed needed but deferred until the shared
  * section inventory exists (PROD-2292).
  */
 
 const SOURCE_OWNED_NOTE =
-  'Source-owned (product data source). Editable for now; becomes read-only when the Registry ships.'
+  'Owned by the product data source. Editable for now, read-only once that source is live.'
 
 const kindOf = (doc: unknown): string | undefined => (doc as { kind?: string } | undefined)?.kind
 const isStandard = (doc: unknown) => kindOf(doc) === 'standard'
@@ -64,7 +65,7 @@ export const product = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Short canonical name (e.g. "Matte Magnetic Gift Box").',
+      description: 'The canonical name. For example, "Custom Magnetic Closure Boxes".',
       validation: (Rule) => Rule.required(),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is
@@ -84,7 +85,7 @@ export const product = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -92,7 +93,7 @@ export const product = defineType({
       type: 'slug',
       group: GROUPS.content,
       options: { source: 'title' },
-      description: 'The /products/<slug> segment. Unique across Product AND Product Line.',
+      description: 'The /products/<slug> segment. Must be unique across products and product lines.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
     defineField({
@@ -101,7 +102,7 @@ export const product = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'Standard = a fully-configurable line/style product. Inspiration = a pre-configured preset (breadcrumb runs through Solutions, some customizations pre-selected). Bundle is its own type, not a value here.',
+        'Standard = fully configurable by the customer. Inspiration = pre-configured, with some customizations already chosen. A bundle is its own document type, not a value here.',
       options: {
         layout: 'radio',
         list: [
@@ -117,7 +118,7 @@ export const product = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: `Lifecycle — active · coming soon · discontinued. Synced, never an unpublish. ${SOURCE_OWNED_NOTE}`,
+      description: `Lifecycle — Active, Coming soon or Discontinued. Never unpublishes the product. ${SOURCE_OWNED_NOTE}`,
       options: {
         layout: 'radio',
         list: [
@@ -135,7 +136,7 @@ export const product = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how a standard product that exists purely as a preset\'s `basedOn` target stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
       // WARNING, never an error. A customer-facing product under a hidden line or
       // style is the one rule a human can break silently: nothing in the Studio shows
@@ -194,7 +195,7 @@ export const product = defineType({
       title: 'Media',
       type: 'array',
       group: GROUPS.content,
-      description: 'The PDP gallery. Order is presentation only — the card and social images come from Featured image.',
+      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `description` (PROD-2454) — the field was already
@@ -206,7 +207,7 @@ export const product = defineType({
       type: 'text',
       group: GROUPS.content,
       rows: 3,
-      description: 'One-line summary for the product card, listings and search results.',
+      description: 'One-line summary for the product card and listings.',
     }),
     // The `description` key was freed by PROD-2455 and reused for the
     // long-form field, matching Line and Solution. Starts empty everywhere.
@@ -216,7 +217,7 @@ export const product = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full description of this product — what it is, how it is built and what it suits. Renders on the product page.',
+        'What this product is, how it is built and what it suits.',
       of: [
         {
           type: 'block',
@@ -279,7 +280,7 @@ export const product = defineType({
       title: 'Product styles',
       type: 'array',
       group: GROUPS.categorization,
-      description: `The construction style(s) — a product may have more than one, but all within its single product line. THE FIRST ONE IS THE PRIMARY: it is the style the product data source uses to work out what the product can be ordered with, so reordering this list changes that. At least one required for standard products. ${SOURCE_OWNED_NOTE}`,
+      description: `The construction style(s) — a product may have more than one, but all within its single product line. The first one is the primary: the product data source uses it to work out what the product can be ordered with, so reordering this list changes that. At least one for standard products. ${SOURCE_OWNED_NOTE}`,
       hidden: ({ document }) => isInspiration(document),
       of: [
         {
@@ -317,7 +318,7 @@ export const product = defineType({
         disableNew: true,
         filter: 'kind == "standard"',
       },
-      description: 'The standard product this preset is built from — the way back to its construction. Required for inspiration presets; no preset of a preset.',
+      description: 'The standard product this inspiration product is built from. It cannot point at another inspiration product.',
       hidden: ({ document }) => isStandard(document),
       validation: (Rule) =>
         Rule.custom((val, context) => {
@@ -331,7 +332,7 @@ export const product = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Every solution this product serves — industries, channels, focus areas and use cases in one list. POSITION IS MEANINGFUL: the first entry is the primary, and it names the breadcrumb parent. Drag to change which one leads. Required for inspiration presets.',
+        'Which solutions this product serves — industry, channel, focus or use case. The first entry is the primary and names the breadcrumb parent, so drag to change which one leads. Required for inspiration products.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
       validation: (Rule) =>
         Rule.unique().custom((val, context) => {
@@ -346,7 +347,7 @@ export const product = defineType({
       title: 'Related products',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated override — empty derives related products.',
+      description: 'Curated override. Empty falls back to a derived list.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
@@ -634,7 +635,7 @@ export const product = defineType({
       // whole. Anything it cannot edit it still lists, at the bottom, rather
       // than leaving it somewhere an editor cannot see it. PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `This field reads differently per Kind. On a STANDARD product: what it offers. On an INSPIRATION preset: which options come already chosen — a preset offers whatever the product in "Based on" offers, and does not restate that list, so only its pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" is not the product's to choose and does not appear, and neither does an option that only has a library page rather than being something a customer picks. ${SOURCE_OWNED_NOTE}`,
+      description: `Reads differently by Product type. On a standard product: what it offers. On an inspiration product: which options are already chosen — it offers whatever the product in "Based on" offers, so only the pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" does not appear, and nor does an option that only has a library page. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits
@@ -742,7 +743,7 @@ export const product = defineType({
               name: 'preselected',
               title: 'Pre-selected',
               type: 'boolean',
-              description: 'Rendered as already chosen on a preset. Stays changeable — a preset is a starting point.',
+              description: 'Shown as already chosen on an inspiration product. A customer can still change it.',
               initialValue: false,
             }),
           ],
