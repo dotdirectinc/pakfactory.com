@@ -59,7 +59,7 @@ export const caseStudy = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'Detail page H1.',
+      description: 'The H1 heading shown on the case study, and the name used on listing cards.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -77,7 +77,7 @@ export const caseStudy = defineType({
       to: [{ type: 'client' }],
       group: 'content',
       description:
-        'The brand entity. Card and hero use client→name; sidebar logo uses client→logo; Solution chip uses client→industry.',
+        'The client this study is about. Their name, logo and industry all come from that Client document.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -85,7 +85,9 @@ export const caseStudy = defineType({
       title: 'Intro',
       type: 'array',
       group: 'content',
-      description: 'Intro paragraph. Bold, "Client link", and "Link" (custom external URL) annotations only — no headings. The Client link mark resolves to the client\'s website URL at render time; the Link mark uses the URL you enter.',
+      description:
+        'The intro paragraph under the heading. Bold and links only, no headings. ' +
+        '"Client link" uses the client\'s own website automatically; "Link" uses the address you type.',
       of: [
         {
           type: 'block',
@@ -163,7 +165,7 @@ export const caseStudy = defineType({
           name: 'videoUrl',
           title: 'Video URL',
           type: 'url',
-          description: 'YouTube or Vimeo URL. Renders as a facade (thumbnail + play button); the iframe loads only on click.',
+          description: 'A YouTube link only. The page shows a thumbnail with a play button and loads the video when clicked.',
           hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'video',
         }),
         defineField({
