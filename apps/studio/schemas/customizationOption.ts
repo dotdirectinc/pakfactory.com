@@ -638,8 +638,8 @@ export const customizationOption = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      description: 'Overrides the browser and search title. 60 characters maximum — longer will not save.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -647,8 +647,8 @@ export const customizationOption = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      description: 'The snippet shown under the title in search results. 160 characters maximum — longer will not save.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     // Robots toggles from the one shared definition every other page type uses.
     // This type had meta tags and no way to keep the page out of the index.

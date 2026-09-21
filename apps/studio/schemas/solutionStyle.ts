@@ -219,8 +219,8 @@ export const solutionStyle = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Overrides the browser and search title. 60 characters maximum — longer will not save.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -228,8 +228,8 @@ export const solutionStyle = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.seo,
-      description: 'The snippet shown under the title in search results. 160 characters maximum — longer will not save.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     // Carried here where Solution deliberately has none: two collections can
     // resolve to overlapping product sets, which is the duplicate a manual
