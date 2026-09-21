@@ -273,7 +273,7 @@ export const caseStudy = defineType({
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
-      description: 'Product filter + chips. Reuses the deployed Product Lines taxonomy.',
+      description: 'The product lines this study covers. Filters the listing, shown as chips here.',
     }),
     defineField({
       name: 'expertiseAreas',
@@ -281,7 +281,7 @@ export const caseStudy = defineType({
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'expertiseStage' }] }],
-      description: 'Expertise filter + chips (the 6 lifecycle stages).',
+      description: 'The expertise stages this study covers. Filters the listing, shown as chips here.',
     }),
     defineField({
       name: 'capabilities',
@@ -289,7 +289,7 @@ export const caseStudy = defineType({
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
-      description: 'Detail chip group only (no launch filter). Materials, finishes, certifications.',
+      description: 'Any customization options used on this project. Shown as chips here, not a filter.',
     }),
     defineField({
       name: 'relatedStudies',
@@ -297,7 +297,7 @@ export const caseStudy = defineType({
       type: 'array',
       group: 'categorization',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
-      description: 'Manual override for the "See What\'s More" section. Empty → auto-fallback to newest 6.',
+      description: 'Up to six studies for the related section. Leave empty and the newest six appear.',
       validation: (Rule) => Rule.max(6),
     }),
 
