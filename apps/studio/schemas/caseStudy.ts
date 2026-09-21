@@ -327,7 +327,9 @@ export const caseStudy = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      description: 'Shown in search results and the browser tab. Falls back to the title when blank.',
+      description:
+        'Shown in search results and the browser tab. Best kept under 60 characters. When blank, ' +
+        'the client\'s name plus "Packaging Case Study" is used.',
       validation: (Rule) =>
         Rule.max(60).warning('Titles over 60 characters may be truncated.'),
     }),
@@ -337,7 +339,9 @@ export const caseStudy = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      description: 'The SERP snippet. Falls back to the card summary, then the intro, when blank.',
+      description:
+        'The snippet shown under the title in search results. Best kept under 160 characters. ' +
+        'When blank, the card summary is used, then the intro.',
       validation: (Rule) =>
         Rule.max(160).warning('Descriptions over 160 characters are typically truncated.'),
     }),
@@ -346,14 +350,16 @@ export const caseStudy = defineType({
       title: 'Canonical URL',
       type: 'url',
       group: 'seo',
-      description: 'Rare cross-domain override only.',
+      description:
+        'Leave blank almost always. A full URL only, for a duplicate on another PakFactory domain.',
     }),
     defineField({
       name: 'allowIndex',
       title: 'Allow indexing',
       type: 'boolean',
       group: 'seo',
-      description: 'Uncheck to set noindex. Also drops this study from the on-site grid and related.',
+      description:
+        'On: search engines may index this study. Off: they may not. Either way it stays on the site.',
       initialValue: true,
     }),
     defineField({
@@ -361,7 +367,9 @@ export const caseStudy = defineType({
       title: 'Allow follow',
       type: 'boolean',
       group: 'seo',
-      description: 'Uncheck to set nofollow.',
+      description:
+        'Leave on for almost every study. Off tells search engines to ignore every link on the ' +
+        'page, including links to your own pages.',
       initialValue: true,
     }),
     defineField({
@@ -369,7 +377,7 @@ export const caseStudy = defineType({
       title: 'No image index',
       type: 'boolean',
       group: 'seo',
-      description: 'Set noimageindex to prevent Google from indexing images on this page.',
+      description: 'Keeps images on the page out of Google Images.',
       initialValue: false,
     }),
 
@@ -381,7 +389,9 @@ export const caseStudy = defineType({
       type: 'image',
       group: 'social',
       options: { hotspot: true },
-      description: 'Open Graph image for social sharing. Fallback: cardImage → heroMedia image → global default.',
+      description:
+        'Shown when this study is shared. 1200×630. Falls back to the Thumbnail Image, then the ' +
+        'Feature Image, then the global default.',
     }),
   ],
   preview: {
