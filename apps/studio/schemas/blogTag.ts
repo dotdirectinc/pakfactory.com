@@ -36,7 +36,7 @@ export const blogTag = defineType({
       type: 'slug',
       group: 'details',
       options: { source: 'title' },
-      description: 'Used in the URL: /topics/{slug}. Set once — changing breaks links.',
+      description: 'Used in the URL: /blog/topics/<slug>. Set once — changing it breaks existing links. Unique per language.',
       validation: (Rule) =>
         Rule.required().custom(uniqueSlugPerLanguage('blogTag')),
     }),
@@ -47,7 +47,7 @@ export const blogTag = defineType({
       rows: 2,
       group: 'details',
       description:
-        'Short description shown on the topic landing page (/topics/{slug}); reduces thin-content risk.',
+        'Short description shown on the topic landing page, at /blog/topics/<slug>.',
     }),
     defineField({
       name: 'topicGroup',
@@ -56,7 +56,7 @@ export const blogTag = defineType({
       to: [{ type: 'blogTopicGroup' }],
       group: 'details',
       description:
-        'Topic group for Studio organization and the /topics index grid. Leave empty for Ungrouped.',
+        'Topic group for Studio organization and the /blog/topics index grid. Leave empty for Ungrouped.',
     }),
 
     // ── SEO ───────────────────────────────────────────────────────────────────

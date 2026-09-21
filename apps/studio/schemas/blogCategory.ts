@@ -37,7 +37,7 @@ export const blogCategory = defineType({
       type: 'slug',
       group: 'details',
       options: { source: 'title' },
-      description: 'Used in the URL: /blog/{slug}. Must be lowercase, hyphen-separated, and unique per language.',
+      description: 'Used in the URL: /blog/<slug>. Keep it lowercase and hyphen-separated. Unique per language.',
       validation: (Rule) =>
         Rule.required()
           .custom(uniqueSlugPerLanguage('blogCategory')),
@@ -62,7 +62,7 @@ export const blogCategory = defineType({
       group: 'details',
       of: [{ type: 'block' }],
       description:
-        '100–200 words. Renders on the category landing page, is the primary on-page SEO signal, and the meta-description fallback. Do not leave blank.',
+        '100–200 words. Renders on the category landing page and is the meta description fallback. Do not leave blank.',
       validation: (Rule) => Rule.required(),
     }),
     defineField(taggedImageField({
@@ -73,7 +73,7 @@ export const blogCategory = defineType({
       mediaTags: [MEDIA_TAG.blog],
       options: { hotspot: true },
       description:
-        'Hero on the category landing page, and the default OG image for posts in this category (unless a post overrides it).',
+        'Hero image on the category landing page.',
       fields: [
         defineField({
           name: 'alt',

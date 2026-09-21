@@ -15,7 +15,7 @@ export const blogTopicGroup = defineType({
       name: 'title',
       title: 'Name',
       type: 'string',
-      description: 'Section label on the /topics grid (e.g. Material, Industry).',
+      description: 'Section label on the /blog/topics grid. For example, Material or Industry.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({

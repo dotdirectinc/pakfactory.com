@@ -111,7 +111,7 @@ export const blogPage = defineType({
       type: 'string',
       group: 'overview',
       description:
-        'The homepage H1. Rendered visually-hidden (sr-only) for SEO + screen readers, not shown visually. Defaults to the site name when blank.',
+        'The homepage H1 heading. Hidden visually but read by search engines and screen readers. When blank, falls back to the page title, then the site name.',
       hidden: ({ document }) => !isBlogHomeSingleton(document),
     }),
     defineField({
@@ -121,7 +121,7 @@ export const blogPage = defineType({
       rows: 3,
       group: 'overview',
       description:
-        'Intro copy shown under the page title on /topics. Separate from the SEO meta description.',
+        'Intro copy shown under the page title on /blog/topics. Separate from the SEO meta description.',
       hidden: ({ document }) => !isBlogTopicsSingleton(document),
     }),
     defineField({
@@ -137,7 +137,7 @@ export const blogPage = defineType({
         }),
       ],
       description:
-        'Drag to set order on /topics. Only groups listed here appear on the site. New groups are added here automatically when published.',
+        'Drag to set the order on /blog/topics. Only groups listed here appear on the site. New groups are added automatically when published.',
       hidden: ({ document }) => !isBlogTopicsSingleton(document),
       validation: (Rule) =>
         Rule.custom((items) => uniqueTopicGroupRefs(items as { _ref?: string }[])),
@@ -150,7 +150,7 @@ export const blogPage = defineType({
       group: 'overview',
       of: [defineArrayMember({ type: 'reference', to: [{ type: 'blogTag' }] })],
       description:
-        'Curated topic chips for the 404 recovery section and search empty/no-results state. When empty, the newest topics are used as a fallback.',
+        'Curated topic chips for the 404 page and the search no-results state. On the 404 page, empty falls back to the newest topics.',
       hidden: ({ document }) =>
         !isBlogNotFoundSingleton(document) && !isBlogSearchSingleton(document),
       validation: (Rule) => Rule.max(8).unique(),
@@ -161,7 +161,7 @@ export const blogPage = defineType({
       type: 'slug',
       group: 'overview',
       options: { source: 'title', maxLength: 96 },
-      description: 'URL path: /{slug}. Not used on homepage or topics singletons.',
+      description: 'URL path: /blog/<slug>. Only Landing and Static pages have one; the others sit at fixed URLs.',
       hidden: ({ document }) => isBlogPageSingleton(document),
       validation: (Rule) =>
         Rule.custom(async (slug, context) => {
