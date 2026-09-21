@@ -309,7 +309,7 @@ export const caseStudy = defineType({
       type: 'datetime',
       group: 'publishing',
       description:
-        "The publish date shown on the case study and used for Article datePublished + listing sort. Auto-set when the document goes live (Publish, or when a scheduled publish fires); edit only to back-date migrated content or set a future date for a soft launch/embargo. Editing this does NOT publish the study — use Publish (or Schedule when your Sanity plan includes it).",
+        "Set automatically when the study goes live, and used for listing order and structured data. A future date keeps the study off the site until then; back-date it only for migrated content. Editing this does not publish the study — use Publish.",
     }),
     defineField({
       name: 'lastModified',
@@ -317,7 +317,7 @@ export const caseStudy = defineType({
       type: 'datetime',
       group: 'publishing',
       description:
-        "The 'Updated' date shown on the case study and used for Google's Article dateModified + sitemap lastmod. Set it only for substantive content updates — not typos or metadata. Editor-controlled; separate from Sanity's automatic last-edited timestamp. Leave blank to default to Publish date.",
+        "Tells search engines when the study last changed, in the sitemap and structured data. Set it only for substantive changes, not typos or metadata. Separate from Sanity's own last-edited timestamp. Leave blank to use the Publish date.",
     }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
