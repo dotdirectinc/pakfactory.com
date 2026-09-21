@@ -44,7 +44,8 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'A shorter, customer-facing version of the Title — for the configurator panel heading and anywhere the full name will not fit. Leave empty to use the Title.',
+        'A shorter name for tight spaces, like the configurator panel heading. Leave empty to use the ' +
+        'Title.',
     }),
     defineField({
       name: 'slug',
@@ -52,7 +53,7 @@ export const customizationType = defineType({
       type: 'slug',
       group: 'content',
       options: { source: 'title' },
-      description: 'URL-safe identifier, generated from the title.',
+      description: 'URL-safe identifier, generated from the title. Nothing links to it, so changing it is safe.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -60,7 +61,7 @@ export const customizationType = defineType({
       title: 'Category',
       type: 'reference',
       group: 'content',
-      description: 'The customization category this type belongs to (its parent) — required.',
+      description: 'The category this type belongs to.',
       to: [{ type: 'customizationCategory' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -89,7 +90,8 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'How many of this type\'s options a customer may pick in the configurator. One — Paperboard: a box is made of a single board. Several — Embossing & Debossing: a design can carry more than one.',
+        'How many of these options a customer can pick at once. For example, Chipboards is One — a box is ' +
+        'made of a single board. Embossing & Debossing is Several — a design can carry both.',
       options: {
         layout: 'radio',
         list: [
@@ -131,7 +133,10 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Product — each product lists which of these options it offers, under "Available customizations" on the product. Another Customization — availability follows from what it goes on, so the material decides rather than the product. Materials and Additional Customization are product-decided; most of Finishing and all of Printing are decided by the material.',
+        'Product — each product lists which of these options it offers, under "Available customizations" ' +
+        'on the product. For example, Materials and Additional Customization. Another Customization — the ' +
+        'material or process it goes on decides instead, so these never appear under "Available ' +
+        'customizations". For example, most of Finishing and all of Printing.',
       options: {
         layout: 'radio',
         list: [
@@ -150,7 +155,7 @@ export const customizationType = defineType({
       type: 'text',
       group: 'content',
       rows: 3,
-      description: 'One sentence on what this customization type is, for the content team.',
+      description: 'One sentence on what this customization type is.',
     }),
     // `order` was REMOVED here on 2026-09-01. It sorted Types within their category
     // and nothing read it — no GROQ query, no desk pane, no registry projection (the

@@ -23,7 +23,7 @@ export const propertyValue = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The value an editor picks — e.g. "Matte", "300 GSM", "Kraft".',
+      description: 'The value an editor picks — e.g. "Matte", "Gold", "2.5mm".',
       // Unique within the PARENT PROPERTY, not across every Property Value
       // (Eric + Richard, 2026-08-21). A value cannot exist outside a Property,
       // so its identity is (Property, title) — Board Colour's "Gold" and Foil
@@ -55,7 +55,8 @@ export const propertyValue = defineType({
       type: 'slug',
       group: 'content',
       description:
-        'URL-safe identifier, generated from the title. A stable key — rename the title freely, but change the slug deliberately (a slug in a URL needs a redirect).',
+        'URL-safe identifier, generated from the title. Rename the title freely; changing the slug needs ' +
+        'a redirect.',
       options: { source: 'title' },
       // Scoped to the Property for the same reason as the title: the filter URL
       // is ?<property>=<slug>, so the property is the namespace and two Golds
@@ -69,7 +70,7 @@ export const propertyValue = defineType({
       title: 'Property',
       type: 'reference',
       group: 'content',
-      description: 'The Property this is a value of (its parent) — required.',
+      description: 'The property this is a value of.',
       to: [{ type: 'property' }],
       // §4.2 governance: pick an existing Property, never mint one inline from
       // this picker — that is how a taxonomy drifts into two spellings.
@@ -84,7 +85,8 @@ export const propertyValue = defineType({
       group: 'content',
       options: { hotspot: true },
       description:
-        'Optional. What lets someone recognise this value at a glance — a metallic sheen, a kraft texture, a flute profile. No alt field by design (D40): where a label sits beside it the front end uses empty alt, and where it stands alone it derives alt from the title.',
+        'Optional. What lets someone recognize this value at a glance — a metallic sheen, a kraft ' +
+        'texture, a flute profile.',
     }),
     defineField({
       name: 'kindOf',
@@ -93,7 +95,8 @@ export const propertyValue = defineType({
       group: 'content',
       to: [{ type: 'propertyValue' }],
       description:
-        'Optional. The broader value this is a kind of — "Champagne is a kind of Gold". Same Property only, one hop: the target cannot itself be a kind of something, and this cannot be a kind of anything while other values are a kind of it. Leave empty for a plain value.',
+        'Optional. The broader value this is a kind of — Champagne is a kind of Gold. Same property, one ' +
+        'hop only.',
       options: {
         disableNew: true,
         // Only same-Property base values (no kindOf of their own), never self.
@@ -172,7 +175,9 @@ export const propertyValue = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'What shows beside this value in the configurator — Caliper, Thickness, "Commonly used for". Only facts that are the SAME for every option belong here; a number that differs per option lives on the Option. Labels come from a fixed list. ⚠️ Column order on the page comes from that list, not this array — reordering rows here changes nothing on the page.',
+        'What shows beside this value in the configurator. Only facts that are the same for every option ' +
+        'belong here; a number that differs per option lives on the Option. Column order comes from the ' +
+        'label list, not from this array.',
       of: [
         defineArrayMember({
           type: 'object',
