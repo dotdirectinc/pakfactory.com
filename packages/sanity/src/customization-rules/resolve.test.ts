@@ -122,3 +122,61 @@ test("product-decided types are never touched by the cascade", () => {
   const r = resolveForProduct(catalog(), productWith("o.sbs", "o.kraft"), graph);
   assert.deepEqual(r.availableByType.get("t.material"), ["o.sbs", "o.kraft"]);
 });
+
+// ── a type that ends with nothing at all ─────────────────────────────────────
+
+test("a type emptied by a dependency is NAMED, not just missing", () => {
+  // Kraft only. Offset needs SBS, so Printing Method loses everything, and Colour System
+  // follows it. Both are absent from availableByType — which on its own is indistinguishable
+  // from a catalogue that never had them.
+  const r = resolveForProduct(catalog(), productWith("o.kraft"), {
+    dependsOn: { "t.method": ["t.material"], "t.colour": ["t.method"] },
+  });
+  assert.equal(r.availableByType.get("t.colour"), undefined);
+  const colour = r.emptiedTypes.find((e) => e.typeId === "t.colour");
+  assert.deepEqual(colour, { typeId: "t.colour", had: 1, unsatisfied: ["t.method"] });
+});
+
+test("a type the product simply never offered is NOT reported as emptied", () => {
+  // Seeded empty is ordinary — the product offers no material of that type. Reporting it
+  // would bury the real signal under noise on every product in the catalogue.
+  const bare: Catalog = { types: catalog().types, options: [] };
+  const r = resolveForProduct(bare, { _id: "p.bare", availableCustomizations: [] }, graph);
+  assert.deepEqual(r.emptiedTypes, []);
+});
+
+test("nothing is emptied when the rules settle normally", () => {
+  const r = resolveForProduct(catalog(), productWith("o.sbs"), graph);
+  assert.deepEqual(r.emptiedTypes, []);
+});
+
+test("THE SIBLING TRAP: a dependency on its own category empties the type", () => {
+  // Crystal's worry, in code. Embossing & Debossing and Foiling Technique are both dictated
+  // by Material and are never wired to each other. That is fine — they do not gate each other.
+  // It stops being fine the moment Embossing is authored as depending on its own CATEGORY,
+  // because that expands to its siblings, and Embossing has never named a Foiling option.
+  const finishing: Catalog = {
+    types: [
+      { _id: "t.material", title: "Material", availabilityDecidedBy: "product" },
+      { _id: "t.emboss", title: "Embossing & Debossing", availabilityDecidedBy: "customization" },
+      { _id: "t.foil", title: "Foiling Technique", availabilityDecidedBy: "customization" },
+    ],
+    options: [
+      { _id: "o.sbs", title: "SBS", typeId: "t.material" },
+      { _id: "o.blind", title: "Blind Emboss", typeId: "t.emboss", compatibleCustomizations: ["o.sbs"] },
+      { _id: "o.hot", title: "Hot Foil", typeId: "t.foil", compatibleCustomizations: ["o.sbs"] },
+    ],
+  };
+  const product: ProductDoc = { _id: "p.box", availableCustomizations: [{ optionId: "o.sbs" }] };
+
+  // Drawn as the board states it: each gated by Material only. Both survive.
+  const ok = resolveForProduct(finishing, product, { dependsOn: { "t.emboss": ["t.material"], "t.foil": ["t.material"] } });
+  assert.deepEqual(ok.availableByType.get("t.emboss"), ["o.blind"]);
+  assert.deepEqual(ok.availableByType.get("t.foil"), ["o.hot"]);
+  assert.deepEqual(ok.emptiedTypes, []);
+
+  // Authored with the sibling as a dependency: Embossing is wiped out — and says so.
+  const trap = resolveForProduct(finishing, product, { dependsOn: { "t.emboss": ["t.foil"] } });
+  assert.equal(trap.availableByType.get("t.emboss"), undefined);
+  assert.deepEqual(trap.emptiedTypes, [{ typeId: "t.emboss", had: 1, unsatisfied: ["t.foil"] }]);
+});
