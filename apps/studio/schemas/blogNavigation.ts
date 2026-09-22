@@ -191,7 +191,7 @@ export const blogNavigation = defineType({
           title: 'Header CTA',
           type: 'object',
           description:
-            'Optional header button. When label or link is empty, the blog falls back to "Contact Us" → /contribute.',
+            'Optional header button. Leave it empty and the blog shows "Contact Us", linking to the main site’s contact page.',
           fields: [
             defineField({
               name: 'label',
@@ -230,7 +230,7 @@ export const blogNavigation = defineType({
           title: 'Footer blocks',
           type: 'pageBuilderFooter',
           description:
-            'Blocks rendered above the footer navigation. Currently: CTA — Text and Button.',
+            'Blocks rendered above the footer navigation.',
         }),
         defineField({
           name: 'columns',
@@ -245,14 +245,14 @@ export const blogNavigation = defineType({
         socialLinksField({
           context: 'footer',
           description:
-            'Social profile icons shown in the footer bottom bar. When empty, the blog falls back to built-in defaults.',
+            'Social profile icons shown in the footer bottom bar. Leave it empty and no icons appear.',
         }),
         defineField({
           name: 'aiAnswerLinks',
           title: 'AI answer links',
           type: 'array',
           description:
-            'Links for the "See what AI says about PakFactory" row. When empty, the blog falls back to built-in default query URLs.',
+            'Links for the "See what AI says about PakFactory" row. Leave it empty and the heading still shows, with no icons beside it.',
           of: [
             defineArrayMember({
               type: 'object',
@@ -278,7 +278,10 @@ export const blogNavigation = defineType({
                   title: 'URL',
                   type: 'url',
                   description:
-                    'Full URL including the query (e.g. https://chatgpt.com/?q=What+is+PakFactory+%28pakfactory.com%29%3F+Summarize+what+they+do%2C+who+they+serve%2C+and+cite+your+sources.). Include brand name and domain in the prompt for best results.',
+                    
+                      'The full URL, with the question as a query parameter (e.g. ' +
+                      'https://chatgpt.com/?q=What+is+PakFactory). Name the brand and the ' +
+                      'domain in the question.',
                   validation: (Rule) => Rule.required(),
                 }),
               ],

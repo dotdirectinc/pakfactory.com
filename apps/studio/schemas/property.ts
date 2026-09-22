@@ -6,14 +6,15 @@ export const property = defineType({
   name: 'property',
   title: 'Property',
   type: 'document',
-  groups: [{ name: 'content', title: 'Content', default: true }],
+  groups: [{ name: 'content', title: 'Content' }],
   fields: [
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The property an editor picks a value under — e.g. "Finish type", "Material", "GSM".',
+      description:
+        'The property an editor picks a value under (e.g. "Finish Type", "Thickness").',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
@@ -22,7 +23,8 @@ export const property = defineType({
       type: 'slug',
       group: 'content',
       description:
-        'URL-safe identifier from the title; used to scope which values a Customization Type may declare. Load-bearing — Studio picker filters resolve against it, so change it deliberately.',
+        'URL-safe identifier, generated from the title. Unique across properties. Nothing links to it, so ' +
+        'changing it is safe.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['property'])),
     }),
@@ -32,7 +34,7 @@ export const property = defineType({
       type: 'text',
       rows: 2,
       group: 'content',
-      description: 'One sentence on what this property captures, for the content team.',
+      description: 'One sentence on what this property captures.',
     }),
     // Renamed from `cardinality` on 2026-09-14 (PROD-2482). Two fields shared that
     // name — this one and `customizationType.cardinality` — and D45 accepted the
@@ -57,9 +59,11 @@ export const property = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Can one option or product carry several values of this property at once, or exactly one? ' +
-        'One — Color: a board is white, not white and brown. Many — Sustainability: a board can be ' +
-        'recyclable AND FSC certified. Intrinsic to the property, so it is never restated per line or per type.',
+        
+          'Can one option or product carry several values of this property at once, or exactly ' +
+          'one? E.g. Color is One — a board is white, not white and brown. Sustainability is ' +
+          'Many — a board can be recyclable and FSC certified. Intrinsic to the property, so it ' +
+          'is never restated per line or per type.',
       options: {
         layout: 'radio',
         list: [

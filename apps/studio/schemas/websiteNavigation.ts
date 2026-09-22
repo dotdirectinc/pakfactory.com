@@ -25,7 +25,7 @@ export const websiteNavigation = defineType({
   type: 'document',
   icon: ThLargeIcon,
   groups: [
-    { name: 'primary', title: 'Primary Navigation', default: true },
+    { name: 'primary', title: 'Primary Navigation' },
     { name: 'footer', title: 'Footer Navigation' },
   ],
   fields: [
@@ -154,7 +154,7 @@ export const websiteNavigation = defineType({
       title: 'AI answer links',
       type: 'array',
       group: 'footer',
-      description: 'Pre-built query URLs for answer engines — an answer-engine surface built for the blog.',
+      description: 'Pre-built query URLs — the same answer-engine row the blog already has.',
       of: [
         defineArrayMember({
           type: 'object',

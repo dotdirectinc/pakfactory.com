@@ -59,7 +59,7 @@ export const bundle = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The canonical name — "Candle Launch Kit". Required, always presentable.',
+      description: 'The canonical name for this bundle — the kit, not its parts.',
       validation: (Rule) => Rule.required(),
     }),
     // One naming convention across the tree: Title is the canonical name, H1 is
@@ -79,7 +79,7 @@ export const bundle = defineType({
       type: 'string',
       group: 'content',
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -96,7 +96,7 @@ export const bundle = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Its own lifecycle. A bundle also reads as unavailable when any included product is unavailable — that is derived at read time, not set here.',
+        'Lifecycle — Active, Coming soon or Discontinued. A bundle also reads as unavailable when any included product is, which is derived and not set here.',
       options: {
         layout: 'radio',
         list: [
@@ -122,7 +122,7 @@ export const bundle = defineType({
       type: 'array',
       group: 'content',
       description:
-        'The full description of this bundle — what it is for and who it suits. Renders on the bundle page.',
+        'What this bundle is for and who it suits.',
       of: [
         {
           type: 'block',
@@ -174,7 +174,7 @@ export const bundle = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'The parts of this bundle. Inspiration (preset) products only — a bundle of a configurable product cannot be pre-configured. At least one.',
+        'The parts of this bundle. Inspiration products only — a configurable product cannot be pre-configured. At least one.',
       validation: (Rule) => Rule.required().min(1),
       of: [
         defineArrayMember({
@@ -193,7 +193,7 @@ export const bundle = defineType({
               // which is the whole promise of a bundle.
               options: { disableNew: true, filter: 'kind == "inspiration"' },
               description:
-                'An inspiration (preset) product included in the bundle. The picker shows only presets.',
+                'One product in the bundle. The picker offers inspiration products only.',
               validation: (Rule) => Rule.required(),
             }),
             // Kept when `note` went (Eric, 2026-09-15): quantity is the fact that
@@ -204,7 +204,7 @@ export const bundle = defineType({
               name: 'quantity',
               title: 'Quantity',
               type: 'number',
-              description: 'How many of this product the kit contains (e.g. 1 box, 2 inserts).',
+              description: 'How many of this product the bundle contains (e.g. 2 inserts).',
               validation: (Rule) => Rule.required().integer().min(1),
             }),
           ],
@@ -222,7 +222,7 @@ export const bundle = defineType({
       title: 'Solutions',
       type: 'array',
       group: 'categorization',
-      description: 'Every solution this bundle targets — industries, channels, focus areas, use cases.',
+      description: 'Which solutions this bundle targets — industry, channel, focus or use case.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
@@ -253,8 +253,8 @@ export const bundle = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -262,8 +262,8 @@ export const bundle = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      description: 'The search-result snippet. Aim for ≤160 characters.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: 'seo', meta: false }),

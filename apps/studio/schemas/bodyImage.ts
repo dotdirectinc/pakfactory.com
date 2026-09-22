@@ -38,7 +38,7 @@ export const bodyImage = defineType({
       name: 'caption',
       title: 'Caption',
       type: 'string',
-      description: 'Optional short caption shown below the image in the frontend.',
+      description: 'Optional short caption shown below the image.',
     }),
     applyWatermarkField(),
     defineField({
@@ -47,7 +47,9 @@ export const bodyImage = defineType({
       type: 'url',
       readOnly: true,
       description:
-        'Read-only provenance from the WordPress → Sanity blog migration: the original S3 URL of this inline image. The media-upload step replaces it with a Sanity asset; kept as a fallback until the S3 bucket is decommissioned.',
+        
+          'Set by the WordPress migration, not by hand. The original image URL, kept as a ' +
+          'fallback while images move to Sanity.',
     }),
     defineField({
       name: 'link',

@@ -22,7 +22,7 @@ export const bodyTable = defineType({
       type: 'array',
       of: [{ type: 'string' }],
       description:
-        'Column headers, left to right. Leave an entry blank for a headerless column. Or use Import below.',
+        'Column headers, left to right. Leave an entry blank for a headerless column.',
       validation: (Rule) =>
         Rule.required().min(1).error('Add at least one column header.'),
     }),

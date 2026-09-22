@@ -5,16 +5,20 @@
  * this file makes it a single importable definition so no type re-invents a tab
  * name, re-orders the set, or quietly adds a ninth. An area task calls
  * `groupsFor([...])` with the tabs its type actually needs and gets them back in
- * the canonical order, with Content pre-selected.
+ * the canonical order.
  *
- * Three rules from §2.4 are enforced here, not left to reviewer memory:
+ * Two rules from §2.4 are enforced here, not left to reviewer memory:
  *
  * 1. **Closed vocabulary.** `GroupName` is a union of exactly eight ids. A typo
  *    or an invented ninth tab is a TypeScript error, not a runtime surprise.
  * 2. **Fixed order.** The order a type declares its groups in is ignored;
  *    `groupsFor` always returns them in `GROUP_ORDER`. "The order never varies."
- * 3. **Content is the default.** Whenever a type includes Content it opens there.
- *    A type without Content (a settings singleton, say) opens on its first tab.
+ *
+ * §2.4's third rule used to live here too — "Content is always the default tab"
+ * — and it is deliberately gone. No group is marked `default`, so a document
+ * opens on **All fields**: Sanity prepends that group itself when a type does not
+ * declare it, and picks the first non-hidden group when nothing claims the
+ * default. Editors asked to see the whole form first and narrow by tab second.
  *
  * Adopting these renames nothing — the ids match the groups already deployed on
  * `post` / `caseStudy` / `blogPage` — so there is no content migration.
@@ -47,12 +51,11 @@ const GROUP_TITLES: Record<GroupName, string> = {
 }
 
 /**
- * Field groups (tabs) for a type, in canonical order, with Content defaulted.
+ * Field groups (tabs) for a type, in canonical order.
  *
  * Pass the tabs the type needs, in any order — the result is always ordered by
- * `GROUP_ORDER`. Duplicates are collapsed. Content becomes the default tab; if
- * the type has no Content tab, the first tab in canonical order defaults instead
- * so the form never opens with nothing selected.
+ * `GROUP_ORDER`. Duplicates are collapsed. Nothing is marked `default`, which is
+ * what makes the document open on All fields rather than on a single tab.
  *
  * @example
  *   // Post: Content · Categorization · Publishing · Schema & AI · SEO · Social
@@ -63,17 +66,13 @@ const GROUP_TITLES: Record<GroupName, string> = {
  */
 export function groupsFor(
   names: GroupName[],
-): Array<{ name: GroupName; title: string; default?: boolean }> {
+): Array<{ name: GroupName; title: string }> {
   const wanted = new Set(names)
   const ordered = GROUP_ORDER.filter((name) => wanted.has(name))
-  const defaultName: GroupName | undefined = ordered.includes('content')
-    ? 'content'
-    : ordered[0]
 
   return ordered.map((name) => ({
     name,
     title: GROUP_TITLES[name],
-    ...(name === defaultName ? { default: true } : {}),
   }))
 }
 

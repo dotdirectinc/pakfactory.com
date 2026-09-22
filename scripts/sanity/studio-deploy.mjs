@@ -63,17 +63,33 @@ if (strays.length) die(`Unrecognised argument: ${strays[0]} (pass sanity flags a
 const env = {
   ...process.env,
   SANITY_STUDIO_DATASET: target.dataset,
+  // A preview target of `null` means "not wired for this Studio yet" — an
+  // unreleased surface. It is exported as an EMPTY STRING, not omitted, and that
+  // distinction is load-bearing.
+  //
+  // Vite's precedence for `sanity build` is
+  //     shell env  >  .env.production  >  .env.local  >  .env
+  // so omitting the variable here does not make it unset — it hands the decision
+  // to `apps/studio/.env.local`, which `pnpm studio:staging|local` WRITES. A
+  // production deploy then inherits the developer's staging URL, re-opens the
+  // gate, and ships a Presentation tab that fails with "Invalid secret". Exactly
+  // what happened on 2026-09-17.
+  //
+  // An empty string is falsy in the config's gate and, being shell env, shadows
+  // every .env file. The absence of a target has to be stated, not implied.
   ...Object.fromEntries(
-    Object.entries(PREVIEW_VARS).map(([k, name]) => [name, target.previews[k]]),
+    Object.entries(PREVIEW_VARS).map(([k, name]) => [name, target.previews[k] ?? ""]),
   ),
 };
 
 console.log(`\n🚀  Deploying the ${target.label} — ${target.studioUrl}\n`);
 console.log(`    dataset        ${target.dataset}`);
-for (const [k, name] of Object.entries(PREVIEW_VARS)) {
-  console.log(`    previews ${k.padEnd(4)}  ${target.previews[k]}`);
+for (const [k] of Object.entries(PREVIEW_VARS)) {
+  const url = target.previews[k];
+  console.log(
+    `    previews ${k.padEnd(4)}  ${url ?? "— not wired: no Presentation tab for this surface —"}`,
+  );
 }
-if (target.siteCrossDataset) console.log(`\n    ℹ️  ${target.siteCrossDataset}`);
 console.log("");
 
 const result = spawnSync(

@@ -9,7 +9,7 @@ export const customizationType = defineType({
   // A Customization Type has never had a page, so both tabs described a surface that
   // does not exist.
   groups: [
-    { name: 'content', title: 'Content', default: true },
+    { name: 'content', title: 'Content' },
     { name: 'specs', title: 'Specs' },
   ],
   fields: [
@@ -44,7 +44,8 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'A shorter, customer-facing version of the Title — for the configurator panel heading and anywhere the full name will not fit. Leave empty to use the Title.',
+        'A shorter name for tight spaces, like the configurator panel heading. Leave empty to use the ' +
+        'Title.',
     }),
     defineField({
       name: 'slug',
@@ -52,7 +53,7 @@ export const customizationType = defineType({
       type: 'slug',
       group: 'content',
       options: { source: 'title' },
-      description: 'URL-safe identifier, generated from the title.',
+      description: 'URL-safe identifier, generated from the title. Nothing links to it, so changing it is safe.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -60,7 +61,7 @@ export const customizationType = defineType({
       title: 'Category',
       type: 'reference',
       group: 'content',
-      description: 'The customization category this type belongs to (its parent) — required.',
+      description: 'The category this type belongs to.',
       to: [{ type: 'customizationCategory' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -89,7 +90,10 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'How many of this type\'s options a customer may pick in the configurator. One — Paperboard: a box is made of a single board. Several — Embossing & Debossing: a design can carry more than one.',
+        
+          'How many of these options a customer can pick at once. E.g. Chipboards is One — a ' +
+          'box is made of a single board. Embossing & Debossing is Several — a design can carry ' +
+          'both.',
       options: {
         layout: 'radio',
         list: [
@@ -106,28 +110,121 @@ export const customizationType = defineType({
       initialValue: 'one',
       validation: (Rule) => Rule.required(),
     }),
-    // DEPRECATED by the rename above. Kept because it is populated on all 37 Types
-    // (drafts included), and Conventions §4.3 forbids removing a populated field in
-    // the change that stops using it. `migrate:split-customization-role` copies it to
-    // `customerSelects`; removal is a later sweep.
+    // PROD-2532 — this replaces a hard-coded list of two category slugs that used to
+    // live in `components/AvailableCustomizationsInput.tsx`. That list matched on
+    // `type->category->slug.current`, so renaming or deleting a Category made a whole
+    // group vanish from the product picker with no error and nothing to notice.
     //
-    // Contrast `property.cardinality`, renamed outright in the same PR — that one was
-    // unset on all 9 documents, so there was nothing to deprecate toward.
+    // ❌ DO NOT move this to Customization Category, and do not add a second copy
+    // there. It is the obvious simplification — 4 documents instead of 36 — and it is
+    // the reason this field exists at all: Finishing holds ONE product-decided Type
+    // (Food-Safe Treatment) and seven material-decided ones, so a Category-level answer
+    // cannot be given without splitting Finishing in two. A flag on both levels is
+    // inheritance-with-overrides, retired from this branch by D12, D30 and D47 §2 —
+    // the same argument that moved `role` off the Type and onto the Option.
+    //
+    // NO `initialValue`, unlike `customerSelects` above, and that is deliberate. No
+    // default is safe in both directions: default `customization` and a forgotten Type
+    // is INVISIBLE — its options silently never reach any product's picker, which is
+    // precisely the bug this field removes. Required with no default makes the author
+    // choose. The Studio rule binds the form only, so the picker also counts unanswered
+    // Types on screen rather than dropping them in silence.
     defineField({
-      name: 'cardinality',
-      title: 'How many can a customer choose? (deprecated)',
+      name: 'availabilityDecidedBy',
+      title: 'Who decides whether a product offers these options?',
       type: 'string',
       group: 'content',
-      readOnly: true,
       description:
-        'DEPRECATED — renamed to "How many can a customer choose?" (`customerSelects`). Read-only; do not author. Scheduled for removal once the rename is verified.',
+        
+          'Product — each product lists which of these options it offers, under "Available ' +
+          'customizations" on the product. E.g. Materials and Additional Customization. Another ' +
+          'Customization — the material or process it goes on decides instead, so these never ' +
+          'appear under "Available customizations". E.g. most of Finishing and all of Printing.',
       options: {
         layout: 'radio',
         list: [
-          { title: 'One', value: 'one' },
-          { title: 'Several', value: 'many' },
+          { title: 'Product — each product lists which of these it offers', value: 'product' },
+          {
+            title: 'Another Customization — the material or finish it goes on decides',
+            value: 'customization',
+          },
         ],
       },
+      validation: (Rule) => Rule.required(),
+    }),
+    // WHICH SIDE RESTRICTS WHICH (PROD-2558).
+    //
+    // `compatibleCustomizations` is one flat list of pairs, read from both ends —
+    // "recording it on either option is enough" — so it states that Spot UV and Matte go
+    // together and CANNOT state that Matte decides Spot UV rather than the other way
+    // round. Nothing else in the model carries direction, so without this field the rules
+    // engine has to be told it by its caller, and every caller has to agree.
+    //
+    // A reference here may be a CATEGORY or a TYPE, because the board states it both ways.
+    // "Material dictates Printing Method" is a category — all sixteen material types, and
+    // listing them one by one would be wrong the day a seventeenth arrives. "Colour System
+    // depends on Printing Method" is a single type. Spot Coating needs three (Surface
+    // Finish, Surface Finish (non-paper) and Lamination), which is still a list of types
+    // rather than the whole Finishing category — that would drag in Foiling, which does
+    // not gate it.
+    //
+    // Read as ALL-OF: an option must find a compatible partner in EVERY entry here, and any
+    // one partner within an entry is enough. That is what the board draws as separate
+    // frames, and flattening it to "any pair anywhere" keeps an option alive on the
+    // strength of a relationship from a different axis entirely.
+    //
+    // Empty is a WARNING, not an error. Nothing constrains such a type today, so the rules
+    // return every option and say so rather than guessing; making it an error would light
+    // up every unfilled Type at once and teach people to clear the warning rather than
+    // answer it. It is still a precondition of the configurator, exactly as
+    // `compatibleCustomizations` is.
+    defineField({
+      name: 'dependsOn',
+      title: 'What decides which of these are available?',
+      type: 'array',
+      group: 'specs',
+      description:
+        
+          'The customizations a customer picks before this one, which then decide what is left ' +
+          'here. Choose a whole category when anything in it decides — Printing Method is ' +
+          'decided by Materials — or specific types when only some do. Leave empty only while ' +
+          'nobody has worked it out: an empty list means nothing narrows this type, so every ' +
+          'option stays available.',
+      hidden: ({ parent }) => parent?.availabilityDecidedBy !== 'customization',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'customizationCategory' }, { type: 'customizationType' }],
+          options: { disableNew: true },
+        },
+      ],
+      validation: (Rule) => [
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const self = (context.document as { _id?: string } | undefined)?._id?.replace(/^drafts\./, '')
+          if (self && list.some((e) => (e as { _ref?: string })?._ref === self)) {
+            return 'A type cannot depend on itself.'
+          }
+          const refs = list.map((e) => (e as { _ref?: string })?._ref).filter(Boolean)
+          if (new Set(refs).size !== refs.length) return 'The same customization is listed more than once.'
+          return true
+        }),
+        // Inert rather than wrong, so it warns and does not clear the data: a Type the
+        // PRODUCT decides is never narrowed by another customization, and this list is
+        // simply not read for it.
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const decidedBy = (context.document as { availabilityDecidedBy?: string } | undefined)?.availabilityDecidedBy
+          if (list.length === 0 || decidedBy !== 'product') return true
+          return 'The product decides whether these options are offered, so nothing is read from this list. Either clear it or change "Who decides".'
+        }).warning(),
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const decidedBy = (context.document as { availabilityDecidedBy?: string } | undefined)?.availabilityDecidedBy
+          if (list.length > 0 || decidedBy !== 'customization') return true
+          return 'Nothing decides which of these are available yet, so every option will stay available on every product. The configurator needs this filled in before launch.'
+        }).warning(),
+      ],
     }),
     defineField({
       name: 'description',
@@ -135,7 +232,7 @@ export const customizationType = defineType({
       type: 'text',
       group: 'content',
       rows: 3,
-      description: 'One sentence on what this customization type is, for the content team.',
+      description: 'One sentence on what this customization type is.',
     }),
     // `order` was REMOVED here on 2026-09-01. It sorted Types within their category
     // and nothing read it — no GROQ query, no desk pane, no registry projection (the
@@ -219,7 +316,42 @@ export const customizationType = defineType({
   preview: {
     select: { title: 'title', category: 'category.title' },
     prepare({ title, category }) {
-      return { title, subtitle: category ? `Type in ${category}` : 'Customization Type' }
+      // Just the Category name. "Type in Finishing" restated what the list is
+      // already called; the fallback now names the gap instead, and Category is
+      // required, so an empty one is a real problem rather than a normal state.
+      return { title, subtitle: category || 'No category' }
     },
   },
+  // Editors group Types by Category — Materials, Printing, Finishing, Additional
+  // Customization — so "Sort by Category" belongs in the list's sort menu (PROD-2545).
+  // The subtitle above already reads "Type in Materials", so grouped rows need no headers.
+  //
+  // ⚠ Title is declared here rather than inherited. A type that declares no `orderings`
+  // gets a GENERATED one: `guessOrderingConfig` in @sanity/schema picks the first field
+  // named title/name/label/heading/header/caption/description — which is where this list's
+  // "Sort by Title" came from, carrying the i18n key `default-orderings.title`. Declaring
+  // an `orderings` array suppresses that guess, so omitting Title here would silently
+  // delete it from the menu. That happened on PROD-2544 and took a follow-up PR to undo.
+  //
+  // ⚠ `category.title` is a reference path. It is correct HERE, as a menu entry —
+  // `getExtendedProjection` emits `category->{title}` and the dereference happens a stage
+  // before the sort — and it is inert as a `.defaultOrdering()`, where `PaneContainer`
+  // builds `{by: defaultOrdering}` with no projection slot and the sort quietly falls
+  // through to the next key. Hence Category in the menu, plain `title` as the list
+  // default in `structure/index.ts`. `customizationOption.ts` carries the long version.
+  orderings: [
+    {
+      title: 'Category',
+      name: 'categoryTitle',
+      by: [
+        { field: 'category.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
+    },
+  ],
 })

@@ -61,7 +61,7 @@ export const solutionStyle = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Retail Snack Displays". Required, always presentable.',
+      description: 'The canonical name for this grouping, not the solution above it.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -77,7 +77,7 @@ export const solutionStyle = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'solution',
@@ -95,7 +95,7 @@ export const solutionStyle = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'The /solutions/<solution>/<slug> segment.',
+      description: 'The /solutions/<solution>/<slug> segment. Must be unique within its parent solution, not across all of them.',
       options: { source: 'title' },
       // Scoped to the parent, not global: two solutions may each hold a "Boxes",
       // and they never meet because the parent is in the path.
@@ -124,7 +124,7 @@ export const solutionStyle = defineType({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.solution],
       options: { hotspot: true },
-      description: 'The image for this collection — the card on the solution page, and the page itself.',
+      description: 'The image for this collection — the card on the solution page, the page itself, and the social fallback.',
       fields: [
         defineField({
           name: 'alt',
@@ -140,7 +140,7 @@ export const solutionStyle = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full copy for this collection page — what this grouping is and who it suits. Renders above the product grid.',
+        'What this collection is and who it suits. Appears above the product grid.',
       of: [
         {
           type: 'block',
@@ -162,7 +162,7 @@ export const solutionStyle = defineType({
       type: 'object',
       group: GROUPS.categorization,
       description:
-        'The three conditions are combined with OR — a product appears if it matches ANY of them. "Retail Snack Displays" is the whole Cardboard Displays line PLUS two styles that sit under a different line. Everything is scoped to the parent solution and to inspiration products automatically.',
+        'The three conditions below are combined with OR — a product appears if it matches any one of them. Everything is scoped to the parent solution and to inspiration products automatically.',
       options: { columns: 1 },
       fields: [
         defineField({
@@ -177,7 +177,7 @@ export const solutionStyle = defineType({
           title: 'Product styles',
           type: 'array',
           description:
-            'Every inspiration product in these styles. A style may sit under a line you have not selected — that is the point of OR.',
+            'Every inspiration product in these styles. A style may sit under a line you have not selected — the conditions widen the list, never narrow it.',
           of: [{ type: 'reference', to: [{ type: 'productStyle' }], options: { disableNew: true } }],
         }),
         defineField({
@@ -186,7 +186,12 @@ export const solutionStyle = defineType({
           type: 'array',
           of: [{ type: 'string' }],
           description:
-            'Matches product names. Type the words plainly — "pizza box" — and the last word is matched as a prefix, so it catches "Boxes" without catching "Pizzeria". All the words in one keyword must appear in the name, in any order; separate keywords widen the collection. A keyword that keeps earning its place means the taxonomy is missing a node — add the node rather than another keyword.',
+            
+              'Matches product names. Type the words plainly. E.g. "pizza box" catches "Boxes", ' +
+              'because the last word is treated as a prefix, but not "Pizzeria". All the words ' +
+              'in one keyword must appear in the name, in any order; separate keywords widen ' +
+              'the collection. If a keyword keeps being necessary, a product line or style is ' +
+              'missing — add that instead.',
         }),
       ],
       // A filter with nothing set resolves to the parent solution's ENTIRE list,
@@ -219,8 +224,8 @@ export const solutionStyle = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Defaults to H1 if left blank. Target 50–60 chars.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -228,8 +233,8 @@ export const solutionStyle = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.seo,
-      description: 'Target 140–160 chars.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     // Carried here where Solution deliberately has none: two collections can
     // resolve to overlapping product sets, which is the duplicate a manual

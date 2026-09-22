@@ -53,7 +53,7 @@ export const productStyle = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Magnetic Closure Boxes". Required, always presentable.',
+      description: 'The canonical name (e.g. "Magnetic Closure Rigid Boxes"). Must be unique across styles.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is
@@ -73,7 +73,7 @@ export const productStyle = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -81,7 +81,7 @@ export const productStyle = defineType({
       type: 'slug',
       group: GROUPS.content,
       options: { source: 'title' },
-      description: 'The /products/<line>/<style> segment.',
+      description: 'The /products/<line>/<style> segment. Must be unique across all styles, even under different lines.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['productStyle'])),
     }),
     defineField({
@@ -89,7 +89,7 @@ export const productStyle = defineType({
       title: 'Parent product line',
       type: 'reference',
       group: GROUPS.content,
-      description: 'The line this style belongs to (its parent) — one line per style, required.',
+      description: 'The line this style belongs to. One line per style.',
       to: [{ type: 'productLine' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -112,7 +112,7 @@ export const productStyle = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full description of this style — what it is, how it is constructed and what it suits. Renders on the style landing page.',
+        'What this style is, how it is constructed and what it suits.',
       of: [
         {
           type: 'block',
@@ -153,7 +153,7 @@ export const productStyle = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — so a retired style can say so (the deployed type had no way to).',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -170,7 +170,7 @@ export const productStyle = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
@@ -189,7 +189,7 @@ export const productStyle = defineType({
       title: 'Featured case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated override — empty falls back to the line’s studies.',
+      description: 'Curated override. Empty falls back to the line’s studies.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
@@ -200,8 +200,8 @@ export const productStyle = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -209,8 +209,8 @@ export const productStyle = defineType({
       type: 'text',
       rows: 3,
       group: GROUPS.seo,
-      description: 'The search-result snippet. Aim for ≤160 characters.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
@@ -221,9 +221,44 @@ export const productStyle = defineType({
     prepare({ title, display, line, image }) {
       return {
         title: display || title || 'Untitled style',
-        subtitle: line ? `Style of ${line}` : 'Product Style',
+        // Just the Line name. "Style of Rigid Boxes" restated what the list is already
+        // called; the fallback now names the gap instead, and `productLine` is required,
+        // so an empty one is a fault worth seeing rather than a normal state.
+        subtitle: line || 'No product line',
         media: image,
       }
     },
   },
+  // Editors group Styles by their Line, so "Sort by Line" belongs in the list's sort
+  // menu (PROD-2546). The subtitle above already carries the Line, so grouped rows need
+  // no headers. Third list to get this, after `customizationOption` and `customizationType`.
+  //
+  // ⚠ Title is declared here rather than inherited. A type that declares no `orderings`
+  // gets a GENERATED one — `guessOrderingConfig` in @sanity/schema picks the first field
+  // named title/name/label/heading/header/caption/description — which is where this list's
+  // "Sort by Title" came from. Declaring an `orderings` array suppresses that guess, so
+  // omitting Title here would silently delete it from the menu. That happened on
+  // PROD-2544 and took a follow-up PR to undo.
+  //
+  // ⚠ `productLine.title` is a reference path: correct HERE, as a menu entry, where
+  // `getExtendedProjection` emits `productLine->{title}` and the dereference happens a
+  // stage before the sort — and inert as a `.defaultOrdering()`, where `PaneContainer`
+  // builds `{by: defaultOrdering}` with no projection slot and the sort quietly falls
+  // through to the next key. Hence Line in the menu, plain `title` as the list default
+  // in `structure/index.ts`. `customizationOption.ts` carries the long version.
+  orderings: [
+    {
+      title: 'Line',
+      name: 'lineTitle',
+      by: [
+        { field: 'productLine.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
+    },
+  ],
 })

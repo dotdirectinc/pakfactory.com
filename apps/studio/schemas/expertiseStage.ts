@@ -15,9 +15,11 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  *
  * 🔴 The display sequence is Eric's end-to-end order (Design → Prototyping →
  * Managed Manufacturing → Strategy → Logistics → Fulfillment) and it lives on the
- * Expertise landing page as an ordered array (PROD-2292), NOT here. The deployed
- * `order` field carries a DIFFERENT, wrong sequence — it is deprecated, never
- * migrated. Do not copy its numbers into the landing-page array.
+ * Expertise landing page as an ordered array (PROD-2292), NOT here. A deployed
+ * `order` field once carried a DIFFERENT, wrong sequence; it was removed from
+ * the schema and swept from the data, and its numbers were never migrated
+ * anywhere. Do not reintroduce them into the landing-page array from an old
+ * export.
  */
 export const expertiseStage = defineType({
   name: 'expertiseStage',
@@ -32,7 +34,7 @@ export const expertiseStage = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Canonical name — e.g. "Packaging Design".',
+      description: 'The canonical name (e.g. "Packaging Design"). Must be unique across stages.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // Title / H1, the same convention as Line / Style / Solution / Product. No
@@ -49,7 +51,7 @@ export const expertiseStage = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'The /expertise/<slug> segment. All six already match — nothing to rename or redirect.',
+      description: 'The /expertise/<slug> segment. Must be unique across stages.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['expertiseStage'])),
     }),
@@ -67,14 +69,14 @@ export const expertiseStage = defineType({
       rows: 2,
       group: GROUPS.content,
       description:
-        'Short card summary — for the landing page and anywhere a stage is listed. (Currently empty on all six; this is the field to fill.)',
+        'Short card summary — for the landing page and anywhere a stage is listed.',
     }),
     defineField({
       name: 'intro',
       title: 'Intro',
       type: 'array',
       group: GROUPS.content,
-      description: 'The page opener.',
+      description: 'The opening copy on the stage page.',
       of: [
         {
           type: 'block',
@@ -109,7 +111,7 @@ export const expertiseStage = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'All six stages are active. Packaging Fulfillment is active, not coming soon — 0 case studies is a content gap, not a retired service.',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -134,7 +136,7 @@ export const expertiseStage = defineType({
       title: 'Services',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'The named services inside this stage, in display order. Count varies and is not fixed.',
+      description: 'The named services inside this stage, in display order.',
       of: [{ type: 'reference', to: [{ type: 'expertiseService' }] }],
     }),
     defineField({

@@ -49,7 +49,8 @@ export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
       type: 'reference',
       to: linkableReferenceTo,
       description:
-        'Pick any routable CMS document (blog, website, solutions, resources). Slug changes update the link automatically. Topic Landing, Search, and 404 pages are excluded.',
+        'Pick any CMS document that has a page of its own (blog, website, solutions, resources). Slug ' +
+        'changes update the link automatically. Topic Landing, Search and 404 pages are excluded.',
       options: {
         filter: LINKABLE_TYPE_FILTER,
         filterParams: linkableTypeFilterParams,
@@ -69,7 +70,7 @@ export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
       title: 'External URL',
       type: 'url',
       description:
-        'Full marketing-site URL (e.g. https://www.pakfactory.com/about). Renders as a plain anchor.',
+        'A full URL (e.g. https://www.pakfactory.com/about).',
       hidden: ({ parent }) => parent?.linkType !== 'external',
       validation: (Rule) =>
         Rule.custom((value, context) => {

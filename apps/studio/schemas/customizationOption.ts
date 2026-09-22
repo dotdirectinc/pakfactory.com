@@ -3,14 +3,14 @@ import { MEDIA_TAG, ogMediaTags, taggedImageField, taggedImageType } from '../li
 import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { deprecateField } from '../lib/schema-guards'
+import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
   title: 'Customization Option',
   type: 'document',
   groups: [
-    { name: 'content', title: 'Content', default: true },
+    { name: 'content', title: 'Content' },
     { name: 'categorization', title: 'Categorization' },
     { name: 'specs', title: 'Specs' },
     { name: 'seo', title: 'SEO' },
@@ -24,7 +24,7 @@ export const customizationOption = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The customization option name shown to customers (e.g. "Matte Lamination").',
+      description: 'The customization option name (e.g. "Matte Lamination").',
       // `uniqueTaxonomyTitle` was missing here while Category and Type both had it
       // (PROD-2462). Same type only, case- and punctuation-insensitive.
       //
@@ -63,15 +63,29 @@ export const customizationOption = defineType({
       title: 'Short name',
       type: 'string',
       group: 'content',
-      description:
-        'A shorter, customer-facing version of the Title — for the configurator swatch, chips and listings, where the full technical name will not fit. Leave empty to use the Title.',
+      description: 'A shorter name for swatches, chips and listings. Leave empty to use the Title.',
+    }),
+    // The house `shortDescription` — same shape as Product, Product Line,
+    // Product Style, Solution, Solution Style, Bundle and Blog Category. No
+    // character cap on any of them; if one is wanted it belongs on all eight.
+    //
+    // Not surfaced in `preview`: the subtitle there shows the Type (PROD-2544),
+    // and this field is empty on every Option today, so promoting it would
+    // trade a useful line for a blank one.
+    defineField({
+      name: 'shortDescription',
+      title: 'Short description',
+      type: 'text',
+      group: 'content',
+      rows: 3,
+      description: 'One-line summary for the customization card, listings and search results.',
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
       group: 'content',
-      description: 'URL-safe identifier, generated from the title. Unique across all customizations.',
+      description: 'URL-safe identifier, generated from the title. Unique across all customization options.',
       options: { source: 'title' },
       validation: (Rule) =>
         Rule.required().custom(async (slug, context) => {
@@ -95,7 +109,7 @@ export const customizationOption = defineType({
     //
     // It also carried the Type picker's filter, which is why that goes with it: the
     // filter needed a category stored on THIS document to narrow by. The Type picker is
-    // now unfiltered and always visible. That is a real trade — 23 Types instead of a
+    // now unfiltered and always visible. That is a real trade — every Type instead of a
     // narrowed handful — taken because the alternative is storing a fact twice to make
     // a picker shorter. Search in the picker covers it.
     defineField({
@@ -104,8 +118,7 @@ export const customizationOption = defineType({
       type: 'reference',
       group: 'content',
       to: [{ type: 'customizationType' }],
-      description:
-        'Which Customization Type this option belongs to. The Category follows from the Type — it is not stored here.',
+      description: 'The customization type this option belongs to. The category follows from it.',
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
     }),
@@ -126,14 +139,15 @@ export const customizationOption = defineType({
       group: 'content',
       to: [{ type: 'glossaryTerm' }],
       description:
-        'The industry term this option is an instance of. The definition lives on the Glossary Term only — the option page pulls it and never restates it.',
+        'The industry term this option is an instance of. The definition lives on the Glossary Term — ' +
+        'never restate it here.',
     }),
     defineField({
       name: 'status',
       title: 'Status',
       type: 'string',
       group: 'content',
-      description: 'Lifecycle: Active (offered now), Coming soon, or Discontinued (retired).',
+      description: 'Lifecycle — Active (offered now), Coming soon or Discontinued.',
       options: {
         layout: 'radio',
         list: [
@@ -165,10 +179,10 @@ export const customizationOption = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Does a customer pick this in the configurator? Configurable: Matte, High-Barrier, SBS. ' +
-        'Reference: VMPET Film, Matte Lamination — real materials and processes a customer never picks ' +
-        'directly, reached through the simplified option they achieve. This no longer decides whether ' +
-        'the document has a page; that is "Has a page".',
+        
+          'Does a customer pick this in the configurator? E.g. Matte is Configurable. Matte ' +
+          'Lamination is Reference — a real process a customer never picks directly, reached ' +
+          'through the simplified option it achieves.',
       options: {
         layout: 'radio',
         list: [
@@ -214,28 +228,6 @@ export const customizationOption = defineType({
       // fact; wiring it to a URL is a separate piece of work.
       initialValue: false,
     }),
-    // DEPRECATED by D55 — kept because it is populated on all 126 Options, and
-    // Conventions §4.3 forbids removing a populated field in the change that stops
-    // using it. `migrate:split-customization-role` copies it to `configuratorRole`
-    // and derives `hasPage`; removal is a later sweep once both are verified.
-    defineField({
-      name: 'role',
-      title: 'Role (deprecated)',
-      type: 'string',
-      group: 'content',
-      readOnly: true,
-      description:
-        'DEPRECATED (D55) — replaced by "Configurator role" and "Has a page". It answered both questions ' +
-        'at once and could not express the commonest case: an option a customer picks that also has a ' +
-        'page. Read-only; do not author. Scheduled for removal once the split is verified.',
-      options: {
-        layout: 'radio',
-        list: [
-          { title: 'Configurable', value: 'configurable' },
-          { title: 'Reference', value: 'reference' },
-        ],
-      },
-    }),
     defineField({
       name: 'media',
       title: 'Media',
@@ -247,179 +239,149 @@ export const customizationOption = defineType({
 
     // ─── CATEGORIZATION (applicability + related lists) ───────────────────────
 
-    // ─── AVAILABILITY ─────────────────────────────────────────────────────────
-    // Two axes, and only one of them is still answered here.
+    // ─── AVAILABILITY AND COMPATIBILITY ───────────────────────────────────────
+    // Two axes were answered here by four fields. All four are gone as of
+    // PROD-2538 — deprecated first, then removed once nothing read them and
+    // their successors were verified complete. What follows is a summary of
+    // where each answer went, because the next person to want one of those
+    // fields back should find the argument before the empty space.
     //
-    // THE PRODUCT AXIS HAS MOVED (PROD-2529). `availableOnProducts` and
-    // `exceptProducts` are retired below. A Product now states which options it
+    // THE PRODUCT AXIS MOVED (PROD-2529). A Product states which options it
     // offers, in `product.availableCustomizations`, and that is the only place
     // it is stated — the two directions used to both be writable with nothing
     // deciding which won.
     //
-    // Worth keeping from the reasoning that built the retired pair: the split
-    // existed because ONE ARRAY CAN CARRY ONLY ONE MEANING FOR "EMPTY", and the
-    // two grids needed opposite ones — an unauthored product list had to fail
-    // closed (offered nowhere), an unauthored material list had to fail open (no
-    // restriction). That argument still holds for everything below, and it is
-    // the reason the customization axis was NOT collapsed at the same time.
+    // ⚠️ `availableOnProducts` held two entries when it was deleted, and they
+    // could not be carried over: they named product LINES, and the product side
+    // enumerates option by option. The three facts — CCNB on Folding Cartons,
+    // SBS on Folding Cartons and Rigid Boxes — are recorded in the decision
+    // register, because a coarse claim has nowhere to live in a fine model.
     //
-    // THE CUSTOMIZATION AXIS IS UNCHANGED, and the boundary rule between its two
-    // fields is repeated in both descriptions so it cannot be lost:
-    //   Material constraints are always POSITIVE, in `worksOnCustomizations`.
-    //   `incompatibleWithCustomizations` is only for two things a customer might
-    //   otherwise pick together.
-    // Without it, "Soft Touch doesn't work on blister plastic" has two homes and the
-    // allow-list/deny-list duplication comes straight back.
+    // THE CUSTOMIZATION AXIS COLLAPSED TO ONE FIELD (PROD-2534).
+    // `worksOnCustomizations` and `incompatibleWithCustomizations` became
+    // `compatibleCustomizations` below: one atomic list, read both ways.
+    //
+    // ⚠️ The deleted pair existed because ONE ARRAY CAN CARRY ONLY ONE MEANING
+    // FOR "EMPTY", and an allow-list and a deny-list want opposite ones. That
+    // argument was sound and it is not what changed — what changed is who
+    // authors the list. The spec system will own compatibility and push it
+    // whole, and a machine does not care that one polarity is dense: a flat
+    // list of option-to-option pairs is idempotent and diffable, where a Type
+    // reference forces the sync to decide when to collapse N options into one,
+    // and that decision is unstable across runs.
+    //
+    // 🔴 So the cost is real and is accepted rather than avoided: EMPTY NOW
+    // FAILS CLOSED. An option with nothing recorded combines with nothing.
+    // Every one of them is empty today, which is survivable only because
+    // nothing outside the Studio reads this — and which makes populating it a
+    // precondition of the configurator, not a follow-up.
 
-    // RETIRED (PROD-2529). A product now states its own list, in
-    // `product.availableCustomizations`. This field answered the same question
-    // from the other side and nothing decided which won — the Product wins,
-    // because that is the direction the product data source will push and the
-    // direction the work is actually reasoned about. Deprecated rather than
-    // deleted (Conventions §4.3): 2 of 126 documents carry entries and those
-    // stay legible. The role-conditioned warning is gone with it — a warning on
-    // a field nobody can write is noise nobody can act on.
+    // The one live field on this axis. PROD-2534.
+    //
+    // ❌ Do not re-add a Customization Type target here, and do not bring back a
+    // separate deny-list. Both are the obvious simplifications and both were
+    // weighed: a Type reference is cheaper to author by hand but a sync that
+    // replaces this list wipes it on its first run, so the saving expires while
+    // the read cost — expand "or this option's Type", on BOTH sides of a
+    // symmetric read — does not. A second field re-creates the boundary rule
+    // that had to be repeated in two descriptions to survive.
     defineField({
-      name: 'availableOnProducts',
-      title: 'Available on products (retired)',
+      name: 'compatibleCustomizations',
+      title: 'Compatible customizations',
       type: 'array',
       group: 'categorization',
-      ...deprecateField(
-        'Retired — which products offer an option is now stated on the Product, in "Available customizations". Read-only; existing entries are kept.',
-      ),
+      components: { input: CompatibleCustomizationsInput },
       description:
-        'RETIRED. Which products offer this as a choice is now answered on the Product itself, in "Available customizations". Kept read-only so existing entries stay readable.',
+        'Which other customizations can be ordered with this one. Recording it on either option is ' +
+        'enough. Empty means none are compatible.',
       of: [
         {
           type: 'reference',
-          to: [
-            { type: 'productLine' },
-            { type: 'productStyle' },
-            { type: 'product' },
-          ],
+          to: [{ type: 'customizationOption' }],
+          options: { disableNew: true },
         },
       ],
-    }),
-    // RETIRED (PROD-2529). A carve-out only earns its place where you enumerate
-    // coarsely — it exists to subtract from a broad stroke. The Product now
-    // enumerates option by option, so there is no broad stroke left to carve
-    // out of. 0 of 126 populated, so nothing is lost; deprecated rather than
-    // deleted so the field cannot be quietly re-added under the same name.
-    defineField({
-      name: 'exceptProducts',
-      title: 'Except on (retired)',
-      type: 'array',
-      group: 'categorization',
-      ...deprecateField(
-        'Retired — there is nothing left to carve out of. A product now lists the options it offers one by one, rather than being covered by a broad scope that needed exceptions.',
-      ),
-      description:
-        'RETIRED. Carve-outs existed to narrow a coarse "available on" scope. Availability is now stated per option on the Product, so no carve-out is needed.',
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'productStyle' },
-            { type: 'product' },
-          ],
-        },
-      ],
-    }),
-    defineField({
-      name: 'worksOnCustomizations',
-      title: 'Works on',
-      type: 'array',
-      group: 'categorization',
-      description:
-        'Which materials or other customizations this can be applied ON TOP OF — Soft Touch Lamination works on paperboard, not on blister plastic. EMPTY MEANS NO MATERIAL RESTRICTION: it only narrows what a product already offers, it never widens it. Point at a whole Customization Type to mean "any option under it".',
-      // The finish × material constraint, which had nowhere to live under the single
-      // `appliesTo` array — this is the field whose absence forced the Surface Finish
-      // split by material family (ADR-017 §4). Empty fails OPEN. It narrows what the
-      // Product opened up, and cannot widen it: a product that does not offer an
-      // option is not made to offer it by anything written here.
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'customizationType' },
-            { type: 'customizationOption' },
-          ],
-        },
-      ],
-    }),
-    defineField({
-      name: 'incompatibleWithCustomizations',
-      title: "Can't combine with",
-      type: 'array',
-      group: 'categorization',
-      description:
-        'Two things a customer might otherwise pick together but cannot — real manufacturing clashes only, a short deny-list. Empty means no known clash, which fails open deliberately: an unauthored clash must not invent one. A material constraint is NOT a clash — that belongs in "Works on". Keep it symmetric: if A lists B, B should list A.',
-      of: [
-        {
-          type: 'reference',
-          to: [
-            { type: 'customizationType' },
-            { type: 'customizationOption' },
-          ],
-        },
-      ],
-      // Two rules at two levels, because they fail differently (D48's principle:
-      // error where a wrong entry means the RIGHT MECHANISM never gets used and
-      // nobody notices; warning where it is visible on the page and someone reports).
-      //
-      // ⚠️ The previous single rule carried the comment "Self-reference is an error"
-      // while terminating in `.warning()` — the comment described the intent and the
-      // code did not deliver it. Splitting them is what makes the levels real.
+      // Three errors and a warning, and the levels follow D48's test: error
+      // where a wrong entry means the RIGHT mechanism never gets used and nobody
+      // notices, warning where the entry is merely inert.
       validation: (Rule) => [
-        // ── ERROR ──────────────────────────────────────────────────────────────
-        // Self-reference, and the own-Type clash D43 requires. Neither has a
-        // legitimate case: an Option cannot clash with itself, and it is BY
-        // DEFINITION inside its own Type — so an error here can only fire on invalid
-        // data, which is what makes an error safe. A warning gets published through,
-        // and not carelessly: the editor believes they have just recorded "only one
-        // lamination per box", so the warning reads as pedantry.
-        Rule.custom(async (value, context) => {
-          const doc = context.document as { _id?: string; type?: { _ref?: string } } | undefined
-          const selfId = (doc?._id ?? '').replace(/^drafts\./, '')
-          const ownTypeRef = doc?.type?._ref?.replace(/^drafts\./, '')
+        // ── ERROR ──────────────────────────────────────────────────────────
+        // Self-reference and repeats. Neither has a legitimate case, so the rule
+        // can only ever fire on invalid data — which is what makes an error safe.
+        Rule.custom((value, context) => {
           const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
           const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
 
-          if (ids.includes(selfId)) return 'An option cannot be incompatible with itself.'
+          if (ids.includes(selfId)) return 'An option cannot be compatible with itself.'
 
-          // The message does the teaching, and that is the point — a bare rejection
-          // blocks the editor without showing them the field they actually wanted.
-          if (ownTypeRef && ids.includes(ownTypeRef)) {
-            return "An Option can't clash with its own Type. If you mean 'only one Lamination per box', set cardinality to one on the Lamination Type instead — that's a different field, on the Type."
+          const seen = new Set<string>()
+          const repeated = new Set<string>()
+          for (const id of ids) {
+            if (seen.has(id)) repeated.add(id)
+            seen.add(id)
+          }
+          if (repeated.size > 0) {
+            return `${repeated.size} option(s) appear more than once. Each option should be listed at most once.`
           }
           return true
         }),
-        // ── WARNING ────────────────────────────────────────────────────────────
-        // Asymmetry is visible and recoverable, so it warns. Symmetry is only asked
-        // of option→option pairs: a Type has no reciprocal field to answer with, so
-        // naming a whole Type is one-directional by construction.
+        // ── ERROR ──────────────────────────────────────────────────────────
+        // A sibling in a type a customer takes ONE of. The pair is unreachable,
+        // not false — and an editor who ticks it has almost certainly mistaken
+        // this field for the one that records exclusivity. A warning would get
+        // published through, the data would claim a combination nobody can
+        // order, and the real mechanism would stay unset. The message redirects
+        // rather than just refusing, because a bare rejection blocks someone
+        // without showing them the field they actually wanted.
         Rule.custom(async (value, context) => {
-          const selfId = (context.document?._id ?? '').replace(/^drafts\./, '')
+          const doc = context.document as { type?: { _ref?: string } } | undefined
+          const ownTypeRef = doc?.type?._ref?.replace(/^drafts\./, '')
+          const refs = (value as { _ref?: string }[] | undefined) ?? []
+          const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
+          if (!ownTypeRef || ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const rows = await client.fetch<{ _id: string; title: string | null; typeId: string | null }[]>(
+              `*[_id in $ids]{ _id, title, "typeId": type._ref }`,
+              { ids },
+            )
+            const selects = await client.fetch<string | null>(
+              `*[_id == $ownTypeRef][0].customerSelects`,
+              { ownTypeRef },
+            )
+            if (selects !== 'one') return true
+            const siblings = rows.filter((r) => r.typeId === ownTypeRef)
+            if (siblings.length === 0) return true
+            return `${siblings.map((s) => s.title || s._id).join(', ')} ${siblings.length === 1 ? 'is' : 'are'} in this option's own type, and a customer chooses only one option from it — so these can never be ordered together. If you meant that a customer may pick several, change "How many can a customer choose?" on the type instead.`
+          } catch {
+            return true // never block on a lookup failure
+          }
+        }),
+        // ── WARNING ────────────────────────────────────────────────────────
+        // A reference-role option is a library page, never something a customer
+        // picks, so an entry naming one is inert rather than wrong. It is not
+        // reachable through the picker at all — only a script, or flipping an
+        // option to `reference` AFTER this was authored. Never auto-cleared: a
+        // field switch that silently edits data is worse than one that says
+        // something.
+        Rule.custom(async (value, context) => {
           const refs = (value as { _ref?: string }[] | undefined) ?? []
           const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
           if (ids.length === 0) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
-            const targets = await client.fetch<{ _id: string; _type: string; back: string[] }[]>(
-              `*[_id in $ids]{ _id, _type, "back": incompatibleWithCustomizations[]._ref }`,
+            const rows = await client.fetch<{ _id: string; title: string | null }[]>(
+              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
               { ids },
             )
-            const options = targets.filter((t) => t._type === 'customizationOption')
-            const listsSelf = (t: { back: string[] }) =>
-              (t.back ?? []).some((r) => r?.replace(/^drafts\./, '') === selfId)
-            const asymmetric = options.filter((t) => !listsSelf(t))
-            if (asymmetric.length > 0) {
-              return `Not symmetric — ${asymmetric.length} listed option(s) don't list this one back. Add this option to their "Can't combine with" too.`
-            }
+            if (rows.length === 0) return true
+            const names = rows.map((r) => r.title || r._id).join(', ')
+            const one = rows.length === 1
+            return `${names} ${one ? 'is' : 'are'} not something a customer picks in the configurator — ${one ? 'it has' : 'they have'} a library page instead, so ${one ? 'it' : 'they'} cannot be ordered alongside anything. The ${one ? 'entry has' : 'entries have'} no effect.`
           } catch {
             return true // never block on a lookup failure
           }
-          return true
         }).warning(),
       ],
     }),
@@ -439,7 +401,10 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'On a technical (Reference) option only: which simplified, customer-facing option this one can deliver — VMPET Film achieves High-Barrier. Listing an option here does NOT claim this one is sufficient on its own; which combination is actually used is decided at quoting.',
+        
+          'Reference options only: which customer-facing option this one can deliver. E.g. ' +
+          'Matte Lamination achieves Matte. Listing it here does not claim this one is enough ' +
+          'on its own — the actual combination is decided at quoting.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       validation: (Rule) =>
         Rule.custom((value, context) => {
@@ -473,7 +438,8 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'What this option is, in property values. The choices come from the properties its Customization type declares — if this list is empty, add the property to the type first.',
+        'What this option is, in property values. The choices come from its customization type — if this ' +
+        'is empty, add the property to the type first.',
       of: [{
         type: 'reference',
         to: [{ type: 'propertyValue' }],
@@ -491,6 +457,95 @@ export const customizationOption = defineType({
           },
         },
       }],
+      // Two checks the Product side got in PROD-2539, adapted — and the
+      // adaptation is the whole point, because the two sides are NOT symmetric.
+      //
+      // 🔴 `valuesPerItem` applies to STATED properties only. A Type may declare
+      // a property SELECTABLE, and then this list is the menu a customer picks
+      // from rather than a claim about the option: Corrugated Board declares
+      // Color selectable, so White Lined Corrugated Board offering White, Natural
+      // Brown and Black is correct, not three colours at once. Measured before
+      // this was written — every multi-value property in the dataset is
+      // selectable, so a rule without this test would have warned on the only
+      // two populated options and been wrong on both.
+      //
+      // Warning, not error, for the same reason as the Product side: an editor
+      // opening an option cannot always fix data that arrived before the picker
+      // filter existed, and two options are in exactly that state today.
+      validation: (Rule) => [
+        Rule.unique(),
+        Rule.custom(async (value, context) => {
+          const refs = ((Array.isArray(value) ? value : []) as { _ref?: string }[])
+            .map((entry) => entry?._ref)
+            .filter((ref): ref is string => Boolean(ref))
+          const typeRef = (context.document as { type?: { _ref?: string } } | undefined)?.type?._ref
+          if (!typeRef || refs.length === 0) return true
+
+          const client = context.getClient({ apiVersion: '2024-01-01' })
+          const { declared, values } = await client.fetch<{
+            declared: { ref: string | null; usage: string | null }[] | null
+            values:
+              | {
+                  _id: string
+                  title: string | null
+                  propRef: string | null
+                  propTitle: string | null
+                  perItem: string | null
+                }[]
+              | null
+          }>(
+            `{
+              "declared": *[_id == $typeRef][0].properties[]{ "ref": property._ref, usage },
+              "values": *[_id in $refs]{
+                _id, title,
+                "propRef": property._ref,
+                "propTitle": property->title,
+                "perItem": property->valuesPerItem
+              }
+            }`,
+            { typeRef, refs },
+          )
+
+          const declaredList = declared ?? []
+          const valueList = values ?? []
+          const usageOf = new Map(declaredList.map((d) => [d.ref, d.usage]))
+          const problems: string[] = []
+
+          // The flat array carries no grouping, so it is grouped here: the
+          // Product side stores one row per property and gets this for free.
+          const byProperty = new Map<string, { title: string; perItem: string | null; names: string[] }>()
+          for (const v of valueList) {
+            if (!v.propRef) continue
+            const group = byProperty.get(v.propRef) ?? {
+              title: v.propTitle ?? 'This property',
+              perItem: v.perItem,
+              names: [],
+            }
+            group.names.push(v.title ?? 'Untitled value')
+            byProperty.set(v.propRef, group)
+          }
+
+          // 1 — a property the Type never declared. Silent when the Type declares
+          // nothing: that is an unfinished Type, not a wrong option.
+          if (declaredList.length) {
+            for (const [ref, group] of byProperty) {
+              if (usageOf.has(ref)) continue
+              problems.push(
+                `${group.title} is not declared by this customization type — remove ${group.names.join(', ')}, or add the property to the type.`,
+              )
+            }
+          }
+
+          // 2 — more values than the Property allows, stated properties only.
+          for (const [ref, group] of byProperty) {
+            if (usageOf.get(ref) !== 'stated') continue
+            if (group.perItem !== 'one' || group.names.length <= 1) continue
+            problems.push(`${group.title} allows one value — ${group.names.join(', ')}.`)
+          }
+
+          return problems.length ? problems.join(' ') : true
+        }).warning(),
+      ],
     }),
 
     // The five per-topic property fields — `materialSource`, `physicalProperties`,
@@ -506,16 +561,16 @@ export const customizationOption = defineType({
 
     // `benefits` replaces `whyChooseBlock`, matching what Product and Product Style
     // already ship (D33). "Block" meant rich text and named the mechanism, not the
-    // meaning. The old field is deprecated rather than deleted — 8 of 33 Options carry
-    // copy — and the migration copies it across, so this is steps 1-4 of the rename
-    // procedure with step 5 left for a later sweep.
+    // meaning. The old field was deprecated rather than deleted while 8 of 33 Options
+    // carried copy; the migration copied it across and a later sweep removed the
+    // field and swept the key. The full five steps, finished.
     defineField({
       name: 'benefits',
       title: 'Benefits',
       type: 'object',
       group: 'content',
       description:
-        'Why a customer would pick this customization (renamed from whyChooseBlock, D33). Argues the choice; it must not restate the definition — that belongs to the Glossary Term.',
+        'Why a customer would pick this. Argue the choice — the definition belongs on the Glossary Term.',
       fields: [
         defineField({ name: 'title', title: 'Title', type: 'string' }),
         defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
@@ -585,8 +640,8 @@ export const customizationOption = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -594,8 +649,8 @@ export const customizationOption = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      description: 'The search-result snippet. Aim for ≤160 characters.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     // Robots toggles from the one shared definition every other page type uses.
     // This type had meta tags and no way to keep the page out of the index.
@@ -610,7 +665,7 @@ export const customizationOption = defineType({
       group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
-      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
+      description: 'Shown when this option is shared. 1200×630. Falls back to the first media image.',
       fields: [
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
@@ -668,4 +723,54 @@ export const customizationOption = defineType({
       }
     },
   },
+  // Crystal works this list a Type at a time (PROD-2544). This puts "Sort by Type" in
+  // the list's sort menu; picking it groups the options under their Types, and
+  // sorts by name within each. The second `by` entry is that within-group sort, not a
+  // second menu option — which is why the label names only the Type.
+  //
+  // The path is the dotted `type.title`, NOT `type->title`, and the raw-GROQ intuition
+  // is backwards here. A bare `order(type.title asc)` really does return unsorted rows
+  // — a reference holds `{_ref, _type}` and has no `title` under it. But a sort MENU
+  // item does not issue a bare `order()`: `getOrderingMenuItemsForSchemaType` runs
+  // `getExtendedProjection` over this `by` array, which walks the path against the
+  // schema, sees `type` is a reference, and emits `type->{title}`. That rides along on
+  // the menu item, so the query becomes
+  //
+  //   *[...]{_id, _type, type->{title}} | order(type.title asc)[0...$__limit]{...}
+  //
+  // The dereference happens a stage before the sort. `type->title` would not parse into
+  // a reference hop at all.
+  //
+  // ⚠ This ordering CANNOT be used as a list's `.defaultOrdering()`. That extended
+  // projection is built for menu items only — `PaneContainer` constructs the default as
+  // `{by: defaultOrdering}` with no projection slot, and `DocumentListBuilder.defaultOrdering`
+  // accepts a bare `SortOrderingItem[]`, so there is nowhere to put one. A reference sort
+  // set as a default silently degrades to whatever the next key is. The Options list in
+  // `structure/index.ts` therefore defaults to plain `title` and leaves this to the menu.
+  //
+  // Once picked it persists: `validateSortOrder` returns the sort object intact when every
+  // path resolves, and its resolver follows single-target references, so the projection
+  // survives into the per-user key-value store and works on every later load. That check
+  // rejects MULTI-target references — `type` points only at `customizationType`, so it
+  // passes. Same dotted form `propertyValue` already uses for `property.title`.
+  //
+  // Title is declared explicitly rather than relied on. `getOrderingMenuItemsForSchemaType`
+  // builds the menu as `type.orderings.concat(DEFAULT_ORDERING_OPTIONS)`, and in sanity
+  // 5.24.0 those built-ins are only Last edited and Created — there is no built-in Title
+  // to inherit. Declaring it keeps the menu at four whatever the built-ins do next.
+  orderings: [
+    {
+      title: 'Type',
+      name: 'typeTitle',
+      by: [
+        { field: 'type.title', direction: 'asc' },
+        { field: 'title', direction: 'asc' },
+      ],
+    },
+    {
+      title: 'Title',
+      name: 'titleAsc',
+      by: [{ field: 'title', direction: 'asc' }],
+    },
+  ],
 })

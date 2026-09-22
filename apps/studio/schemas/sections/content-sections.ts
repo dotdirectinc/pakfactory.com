@@ -72,7 +72,7 @@ export const stats = defineType({
           type: 'object',
           name: 'stat',
           fields: [
-            defineField({ name: 'value', title: 'Value', type: 'string', description: 'e.g. "500+", "48h".', validation: (Rule) => Rule.required() }),
+            defineField({ name: 'value', title: 'Value', type: 'string', description: 'The figure itself (e.g. "500+" or "48h").', validation: (Rule) => Rule.required() }),
             defineField({ name: 'label', title: 'Label', type: 'string', validation: (Rule) => Rule.required() }),
           ],
           preview: { select: { title: 'value', subtitle: 'label' } },

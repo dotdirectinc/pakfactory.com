@@ -70,7 +70,7 @@ export const solution = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'The canonical name — required and always presentable. Replaces the old Studio-only internalTitle.',
+        'The canonical name (e.g. "Coffee"). Must be unique across solutions.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is
@@ -90,7 +90,7 @@ export const solution = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'solutionType',
@@ -98,7 +98,7 @@ export const solution = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'Which axis this solution sits on. Pick one only — a term on two axes appears twice in the nav and splits its own search authority. The axis is not part of the URL, so re-categorising never needs a redirect.',
+        'Which kind of solution this is. Pick one only — a term on two kinds appears twice in the nav and competes with itself in search. Not part of the URL, so re-categorising never needs a redirect.',
       options: { list: [...SOLUTION_TYPES], layout: 'radio' },
       initialValue: 'industry',
       validation: (Rule) => Rule.required(),
@@ -108,7 +108,7 @@ export const solution = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'The /solutions/<slug> segment — flat, no axis in the path.',
+      description: 'The /solutions/<slug> segment — flat, with no solution type in the path. Must be unique across solutions.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['solution'])),
     }),
@@ -118,7 +118,7 @@ export const solution = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Does this term have a landing page? An editorial judgement — business focus, profitability, demand, search value. Authored, never derived. A term can exist for tagging without earning a page.',
+        'An editorial judgement — business focus, profitability, demand, search value. A solution can exist for tagging without earning a page.',
       initialValue: false,
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
@@ -130,7 +130,7 @@ export const solution = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.content,
-      description: 'One-line summary of this solution, for the solution card, listings and the nav.',
+      description: 'One-line summary for the solution card, listings and nav.',
     }),
     taggedImageField({
       name: 'featuredImage',
@@ -140,7 +140,7 @@ export const solution = defineType({
       mediaTags: [MEDIA_TAG.solution],
       options: { hotspot: true },
       description:
-        'The one image that represents this solution — used wherever it is shown: the page hero, cards, listings and nav.',
+        'The one image that represents this solution — the page hero, cards, listings, nav and the social fallback.',
       fields: [
         defineField({
           name: 'alt',
@@ -158,7 +158,7 @@ export const solution = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full description of this solution — the packaging problem it addresses and how we solve it. Renders on the solution page.',
+        'The packaging problem this solution addresses, and how we solve it.',
       of: [
         {
           type: 'block',
@@ -197,8 +197,8 @@ export const solution = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Defaults to H1 if left blank. Target 50–60 chars.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -206,8 +206,8 @@ export const solution = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.seo,
-      description: 'Target 140–160 chars.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     pageSectionsField(SECTION_ALLOW.marketPage),
     ...seoFields({ group: GROUPS.seo, meta: false, indexDefault: true }),
