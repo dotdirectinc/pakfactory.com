@@ -64,7 +64,7 @@ export const videoPost = defineType({
       title: 'Duration',
       type: 'string',
       group: 'content',
-      description: 'Display hint. For example, "4:32". Used in structured data when it can be parsed.',
+      description: 'Display hint (e.g. "4:32"). Used in structured data when it can be parsed.',
     }),
 
     // ── Source ───────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ export const videoPost = defineType({
       title: 'External URL',
       type: 'url',
       group: 'source',
-      description: 'The canonical watch URL. For example, https://www.youtube.com/watch?v=abc123.',
+      description: 'The canonical watch URL (e.g. https://www.youtube.com/watch?v=abc123).',
       hidden: ({ document }) => document?.sourceType !== 'external',
       validation: (Rule) =>
         Rule.custom((value, context) => {

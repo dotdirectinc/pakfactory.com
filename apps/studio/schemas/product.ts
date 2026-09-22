@@ -65,7 +65,7 @@ export const product = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name. For example, "Custom Magnetic Closure Boxes".',
+      description: 'The canonical name (e.g. "Custom Magnetic Closure Boxes").',
       validation: (Rule) => Rule.required(),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is

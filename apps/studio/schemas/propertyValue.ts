@@ -23,7 +23,7 @@ export const propertyValue = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The value an editor picks. For example, "Matte", "Gold" or "2.5mm".',
+      description: 'The value an editor picks (e.g. "Matte", "Gold", "2.5mm").',
       // Unique within the PARENT PROPERTY, not across every Property Value
       // (Eric + Richard, 2026-08-21). A value cannot exist outside a Property,
       // so its identity is (Property, title) — Board Colour's "Gold" and Foil

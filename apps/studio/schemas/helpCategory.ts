@@ -32,7 +32,7 @@ export const helpCategory = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The section name. For example, Pricing, MOQ & Lead Times, or Artwork & Files.',
+      description: 'The section name (e.g. Pricing, MOQ & Lead Times, or Artwork & Files).',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({

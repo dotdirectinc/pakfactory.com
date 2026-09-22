@@ -23,8 +23,9 @@ export const contentWidget = defineType({
       title: 'Internal title',
       type: 'string',
       description:
-        'Editor-facing label used in search and the embed picker. Not shown on the website. ' +
-        'For example, "Q2 Promo CTA" or "Mailer Box Product Card".',
+        
+          'Editor-facing label used in search and the embed picker. Not shown on the website. ' +
+          'E.g. "Q2 Promo CTA" or "Mailer Box Product Card".',
       validation: (Rule) => Rule.required(),
     }),
     defineField({

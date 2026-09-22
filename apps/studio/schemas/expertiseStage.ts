@@ -34,7 +34,7 @@ export const expertiseStage = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name. For example, "Packaging Design". Must be unique across stages.',
+      description: 'The canonical name (e.g. "Packaging Design"). Must be unique across stages.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // Title / H1, the same convention as Line / Style / Solution / Product. No

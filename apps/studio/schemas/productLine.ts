@@ -46,7 +46,7 @@ export const productLine = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name. For example, "Rigid Boxes". Must be unique across product lines.',
+      description: 'The canonical name (e.g. "Rigid Boxes"). Must be unique across product lines.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is

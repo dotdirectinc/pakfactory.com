@@ -204,7 +204,7 @@ export const bundle = defineType({
               name: 'quantity',
               title: 'Quantity',
               type: 'number',
-              description: 'How many of this product the bundle contains. For example, 2 inserts.',
+              description: 'How many of this product the bundle contains (e.g. 2 inserts).',
               validation: (Rule) => Rule.required().integer().min(1),
             }),
           ],

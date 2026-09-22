@@ -53,7 +53,7 @@ export const productStyle = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name. For example, "Magnetic Closure Rigid Boxes". Must be unique across styles.',
+      description: 'The canonical name (e.g. "Magnetic Closure Rigid Boxes"). Must be unique across styles.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is

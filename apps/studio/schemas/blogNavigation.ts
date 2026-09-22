@@ -278,7 +278,10 @@ export const blogNavigation = defineType({
                   title: 'URL',
                   type: 'url',
                   description:
-                    'The full URL, with the question as a query parameter. For example, https://chatgpt.com/?q=What+is+PakFactory. Name the brand and the domain in the question.',
+                    
+                      'The full URL, with the question as a query parameter (e.g. ' +
+                      'https://chatgpt.com/?q=What+is+PakFactory). Name the brand and the ' +
+                      'domain in the question.',
                   validation: (Rule) => Rule.required(),
                 }),
               ],

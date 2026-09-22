@@ -244,14 +244,14 @@ export const caseStudy = defineType({
               name: 'title',
               title: 'Stat',
               type: 'string',
-              description: 'The stat itself, kept short. For example, 70k+ Boxes Manufactured.',
+              description: 'The stat itself, kept short (e.g. 70k+ Boxes Manufactured).',
             }),
             defineField({
               name: 'description',
               title: 'Supporting line',
               type: 'text',
               rows: 2,
-              description: 'Context under the stat. For example, "Across 5+ years of a continuous partnership."',
+              description: 'Context under the stat (e.g. "Across 5+ years of a continuous partnership").',
             }),
           ],
           preview: {
