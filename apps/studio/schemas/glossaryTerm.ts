@@ -37,7 +37,7 @@ export const glossaryTerm = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'The /glossary/<slug> segment — flat, at root (not under the blog).',
+      description: 'The /glossary/<slug> segment.',
       options: { source: 'term' },
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['glossaryTerm'])),
     }),
@@ -57,7 +57,8 @@ export const glossaryTerm = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'Two sentences, neutral. Links allowed (they point at depth); no other formatting. Depth lives on the guide / customization page, not here.',
+        'Two sentences, neutral. Link out to the guide or customization page rather than going ' +
+        'deep here.',
       of: [
         {
           type: 'block',
@@ -127,7 +128,7 @@ export const glossaryTerm = defineType({
       title: 'Related products',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'One field, all three levels — line, style or product.',
+      description: 'Product lines, styles or products this term relates to.',
       of: [
         {
           type: 'reference',
@@ -169,7 +170,7 @@ export const glossaryTerm = defineType({
       title: 'Related terms',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'See-also — other glossary terms.',
+      description: 'Other glossary terms this one relates to.',
       of: [{ type: 'reference', to: [{ type: 'glossaryTerm' }] }],
     }),
 

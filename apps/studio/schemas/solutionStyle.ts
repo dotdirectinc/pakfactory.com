@@ -186,7 +186,12 @@ export const solutionStyle = defineType({
           type: 'array',
           of: [{ type: 'string' }],
           description:
-            'Matches product names. Type the words plainly. For example, "pizza box" catches "Boxes", because the last word is treated as a prefix, but not "Pizzeria". All the words in one keyword must appear in the name, in any order; separate keywords widen the collection. If a keyword keeps being necessary, a product line or style is missing — add that instead.',
+            
+              'Matches product names. Type the words plainly. E.g. "pizza box" catches "Boxes", ' +
+              'because the last word is treated as a prefix, but not "Pizzeria". All the words ' +
+              'in one keyword must appear in the name, in any order; separate keywords widen ' +
+              'the collection. If a keyword keeps being necessary, a product line or style is ' +
+              'missing — add that instead.',
         }),
       ],
       // A filter with nothing set resolves to the parent solution's ENTIRE list,

@@ -40,7 +40,9 @@ export const listingPage = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Pins chosen items to the TOP of the listing grid, in this order. Empty means nothing pinned (the grid renders in its natural order) — it does NOT derive a highlight. Different from a curated row section, which sits around the listing. The picker is scoped to what this page lists.',
+        'Pins chosen items to the top of the listing grid, in this order. Empty leaves the grid ' +
+        'in its natural order. Different from a curated row section, which sits around the ' +
+        'listing rather than in it.',
       of: [
         {
           type: 'reference',
@@ -67,7 +69,9 @@ export const listingPage = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Which properties filter this listing, in display order. Empty = every property in use on this listing, alphabetically. Fill it only to control order, trim the list, or rename one. The VALUES inside each filter are always derived from the content — never listed here.',
+        'Which properties filter this listing, in display order. Leave it empty and every ' +
+        'property in use appears, alphabetically. Fill it only to change the order, trim the ' +
+        'list, or rename one. The values inside each filter always come from the content.',
       of: [
         {
           type: 'object',

@@ -14,7 +14,7 @@ export const property = defineType({
       type: 'string',
       group: 'content',
       description:
-        'The property an editor picks a value under — e.g. "Finish Type", "Sustainability", "Thickness".',
+        'The property an editor picks a value under (e.g. "Finish Type", "Thickness").',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
@@ -59,10 +59,11 @@ export const property = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Can one option or product carry several values of this property at once, or exactly one? For ' +
-        'example, Color is One — a board is white, not white and brown. Sustainability is Many — a board ' +
-        'can be recyclable and FSC certified. Intrinsic to the property, so it is never restated per line ' +
-        'or per type.',
+        
+          'Can one option or product carry several values of this property at once, or exactly ' +
+          'one? E.g. Color is One — a board is white, not white and brown. Sustainability is ' +
+          'Many — a board can be recyclable and FSC certified. Intrinsic to the property, so it ' +
+          'is never restated per line or per type.',
       options: {
         layout: 'radio',
         list: [

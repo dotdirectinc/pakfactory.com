@@ -70,7 +70,7 @@ export const solution = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'The canonical name. For example, "Coffee". Must be unique across solutions.',
+        'The canonical name (e.g. "Coffee"). Must be unique across solutions.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is

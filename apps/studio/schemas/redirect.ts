@@ -53,7 +53,9 @@ export const redirect = defineType({
       type: 'reference',
       to: [{ type: 'redirectGroup' }],
       description:
-        'Editor-managed folder for organizing redirects. Purely organizational — it does NOT decide which app applies this redirect (that is the From path prefix). Leave empty for Ungrouped.',
+        
+          'Editor-managed folder for organizing redirects. Which app applies a redirect comes ' +
+          'from the From path prefix, not from this. Leave empty for Ungrouped.',
     }),
 
     defineField({
@@ -78,7 +80,9 @@ export const redirect = defineType({
       title: 'What should happen?',
       type: 'string',
       description:
-        'Pick the plain word — the status code is set for you. 301 permanent (passes SEO value) · 302 temporary · 410 gone (deleted, no replacement).',
+        
+          'Pick the plain word — the status code is set for you. Permanent passes SEO value; ' +
+          'Gone means deleted with no replacement.',
       options: {
         list: [
           { value: 'permanent', title: 'Permanent (301)' },
@@ -171,7 +175,9 @@ export const redirect = defineType({
       title: 'Keep the rest of the path',
       type: 'boolean',
       description:
-        'For "Starts with": sub-pages keep their slug (e.g. /blog/tag/coffee → /blog/topics/coffee). Off = everything lands on one page.',
+        
+          'For "Starts with": sub-pages keep their slug (e.g. /blog/tag/coffee → ' +
+          '/blog/topics/coffee). Off sends everything to one page.',
       hidden: ({ document }) => document?.matchType !== 'prefix',
       initialValue: false,
     }),
@@ -198,7 +204,7 @@ export const redirect = defineType({
       name: 'isActive',
       title: 'Active',
       type: 'boolean',
-      description: 'Inactive redirects are kept for reference but ignored by the engine.',
+      description: 'Inactive redirects are kept for reference but never applied.',
       initialValue: true,
     }),
   ],

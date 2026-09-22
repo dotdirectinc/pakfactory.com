@@ -90,8 +90,10 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'How many of these options a customer can pick at once. For example, Chipboards is One — a box is ' +
-        'made of a single board. Embossing & Debossing is Several — a design can carry both.',
+        
+          'How many of these options a customer can pick at once. E.g. Chipboards is One — a ' +
+          'box is made of a single board. Embossing & Debossing is Several — a design can carry ' +
+          'both.',
       options: {
         layout: 'radio',
         list: [
@@ -133,10 +135,11 @@ export const customizationType = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Product — each product lists which of these options it offers, under "Available customizations" ' +
-        'on the product. For example, Materials and Additional Customization. Another Customization — the ' +
-        'material or process it goes on decides instead, so these never appear under "Available ' +
-        'customizations". For example, most of Finishing and all of Printing.',
+        
+          'Product — each product lists which of these options it offers, under "Available ' +
+          'customizations" on the product. E.g. Materials and Additional Customization. Another ' +
+          'Customization — the material or process it goes on decides instead, so these never ' +
+          'appear under "Available customizations". E.g. most of Finishing and all of Printing.',
       options: {
         layout: 'radio',
         list: [
@@ -181,10 +184,12 @@ export const customizationType = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'The customizations a customer picks FIRST, which then decide what is left here. Choose a whole category ' +
-        'when anything in it decides — Printing Method is decided by Materials — or specific types when only some ' +
-        'do. Leave empty only while nobody has worked it out: an empty list means nothing narrows this type, so ' +
-        'every option stays available.',
+        
+          'The customizations a customer picks before this one, which then decide what is left ' +
+          'here. Choose a whole category when anything in it decides — Printing Method is ' +
+          'decided by Materials — or specific types when only some do. Leave empty only while ' +
+          'nobody has worked it out: an empty list means nothing narrows this type, so every ' +
+          'option stays available.',
       hidden: ({ parent }) => parent?.availabilityDecidedBy !== 'customization',
       of: [
         {

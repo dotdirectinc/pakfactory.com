@@ -111,8 +111,10 @@ export function seoFields({
             type: 'string',
             group,
             description:
-              'Leave blank almost always. For a duplicate on this domain, enter a relative path. For example, ' +
-              '/custom-box-guide. Use a full URL only for another PakFactory domain.',
+              
+                'Leave blank almost always. For a duplicate on this domain, enter a relative ' +
+                'path (e.g. /custom-box-guide). Use a full URL only for another PakFactory ' +
+                'domain.',
           }),
         ]
       : []),

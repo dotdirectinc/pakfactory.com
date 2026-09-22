@@ -70,7 +70,7 @@ export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
       title: 'External URL',
       type: 'url',
       description:
-        'A full URL. For example, https://www.pakfactory.com/about.',
+        'A full URL (e.g. https://www.pakfactory.com/about).',
       hidden: ({ parent }) => parent?.linkType !== 'external',
       validation: (Rule) =>
         Rule.custom((value, context) => {

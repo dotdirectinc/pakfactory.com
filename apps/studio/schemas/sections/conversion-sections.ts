@@ -70,7 +70,9 @@ export const linkCards = defineType({
               name: 'link',
               title: 'Link',
               type: 'object',
-              description: 'Internal reference or external URL — internal links keep working when a slug changes (replaces the old hard-coded URL).',
+              description: 
+                'Internal reference or external URL — internal links keep working when a slug ' +
+                'changes.',
               fields: linkTargetFields({ requireLinkType: false }),
             }),
           ],

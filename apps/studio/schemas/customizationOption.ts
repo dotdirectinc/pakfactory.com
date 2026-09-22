@@ -147,7 +147,7 @@ export const customizationOption = defineType({
       title: 'Status',
       type: 'string',
       group: 'content',
-      description: 'Lifecycle: Active (offered now), Coming soon, or Discontinued (retired).',
+      description: 'Lifecycle — Active (offered now), Coming soon or Discontinued.',
       options: {
         layout: 'radio',
         list: [
@@ -179,9 +179,10 @@ export const customizationOption = defineType({
       type: 'string',
       group: 'content',
       description:
-        'Does a customer pick this in the configurator? For example, Matte is Configurable. Matte ' +
-        'Lamination is Reference — a real process a customer never picks directly, reached through the ' +
-        'simplified option it achieves.',
+        
+          'Does a customer pick this in the configurator? E.g. Matte is Configurable. Matte ' +
+          'Lamination is Reference — a real process a customer never picks directly, reached ' +
+          'through the simplified option it achieves.',
       options: {
         layout: 'radio',
         list: [
@@ -400,9 +401,10 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        'Reference options only: which customer-facing option this one can deliver. For example, Matte ' +
-        'Lamination achieves Matte. Listing it here does not claim this one is enough on its own — the ' +
-        'actual combination is decided at quoting.',
+        
+          'Reference options only: which customer-facing option this one can deliver. E.g. ' +
+          'Matte Lamination achieves Matte. Listing it here does not claim this one is enough ' +
+          'on its own — the actual combination is decided at quoting.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       validation: (Rule) =>
         Rule.custom((value, context) => {
@@ -663,7 +665,7 @@ export const customizationOption = defineType({
       group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
-      description: 'Open Graph / social-share image. Falls back to the first media image when empty.',
+      description: 'Shown when this option is shared. 1200×630. Falls back to the first media image.',
       fields: [
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],

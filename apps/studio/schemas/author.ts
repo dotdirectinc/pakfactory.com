@@ -72,7 +72,9 @@ export const author = defineType({
       type: 'string',
       group: 'profile',
       description:
-        'One number-driven line. For example, "12+ years in packaging engineering · 600+ custom projects shipped".',
+        
+          'One number-driven line (e.g. "12+ years in packaging engineering · 600+ custom ' +
+          'projects shipped").',
     }),
     defineField({
       name: 'shortBio',
