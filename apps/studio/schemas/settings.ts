@@ -312,7 +312,10 @@ export const settings = defineType({
       rows: 8,
       group: 'crawlers',
       description:
-        'Leave EMPTY for the normal, auto-generated llms.txt (live case studies + blog posts, refreshed hourly). Anything entered here is served verbatim at pakfactory.com/llms.txt instead — emergency/editorial override only.',
+        
+          'Leave empty for the normal, auto-generated llms.txt (live case studies + blog posts, ' +
+          'refreshed hourly). Anything entered here is served verbatim at ' +
+          'pakfactory.com/llms.txt instead — emergency/editorial override only.',
     }),
     defineField({
       name: 'llmsTxtStorefront',
@@ -330,7 +333,7 @@ export const settings = defineType({
       title: 'GTM container ID',
       type: 'string',
       group: 'integrations',
-      description: 'e.g. GTM-XXXXXXX',
+      description: 'The Google Tag Manager container ID (e.g. GTM-XXXXXXX).',
     }),
     defineField({
       name: 'gscVerification',
