@@ -31,6 +31,18 @@
  * `adopt` refuses to touch it. That is deliberate: a guessed probe writes a false
  * ledger row, which is worse than an empty one.
  *
+ * ── `ticket` ───────────────────────────────────────────────────────────────────
+ *
+ * The PROD key a migration's OWN script header declares, or `null`. Never inferred.
+ *
+ * Six entries originally carried keys guessed from the migration's date and subject.
+ * Five pointed at real but unrelated tickets — blog i18n at "Follow up with Alek",
+ * the case-study gallery at a share-button bug, body-table at "Invoice Processor
+ * Upgrade". A plausible-looking wrong key is worse than a blank one: it reads as
+ * provenance and sends whoever follows it somewhere real and irrelevant.
+ *
+ * If the script does not name a ticket and Jira has no match, the answer is `null`.
+ *
  * ── `args` ─────────────────────────────────────────────────────────────────────
  *
  * `'flags'`      the script takes `--dataset/--confirm/--yes-production` (script-args.mjs).
@@ -50,7 +62,7 @@
 export const MIGRATIONS = [
   {
     id: '20260615-blog-i18n-en',
-    ticket: 'PROD-2119',
+    ticket: null,
     title: 'Backfill language:"en" on blog i18n documents',
     pkg: '@pakfactory/studio',
     task: 'migrate:blog-i18n-en',
@@ -60,7 +72,7 @@ export const MIGRATIONS = [
   },
   {
     id: '20260629-blog-navigation',
-    ticket: 'PROD-2126',
+    ticket: null,
     title: 'Build blogNavigation from legacy blogSettings.categoryOrder + footer hrefs',
     pkg: '@pakfactory/studio',
     task: 'migrate:blog-navigation',
@@ -70,7 +82,7 @@ export const MIGRATIONS = [
   },
   {
     id: '20260714-case-study-gallery',
-    ticket: 'PROD-2151',
+    ticket: null,
     title: 'Flatten legacy galleryImage objects into native image array members',
     pkg: '@pakfactory/studio',
     task: 'migrate:case-study-gallery',
@@ -83,7 +95,7 @@ export const MIGRATIONS = [
   },
   {
     id: '20260717-redirect-trailing-slashes',
-    ticket: 'PROD-2157',
+    ticket: null,
     title: 'Strip trailing slashes from redirect from/to',
     pkg: '@pakfactory/studio',
     task: 'migrate:redirect-slashes',
@@ -129,7 +141,7 @@ export const MIGRATIONS = [
   },
   {
     id: '20260722-redirect-groups',
-    ticket: 'PROD-2140',
+    ticket: null,
     title: 'Create redirectGroup documents and point every redirect at one',
     pkg: '@pakfactory/studio',
     task: 'migrate:redirect-groups',
@@ -163,7 +175,7 @@ export const MIGRATIONS = [
   },
   {
     id: '20260728-body-table',
-    ticket: 'PROD-2208',
+    ticket: 'PROD-2224',
     title: 'Reverse bodyTable from the column-major experiment back to headers → rows',
     pkg: '@pakfactory/studio',
     task: 'migrate:body-table',
