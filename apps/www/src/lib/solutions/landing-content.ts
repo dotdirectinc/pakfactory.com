@@ -72,6 +72,10 @@ export function buildSolutionLandingContent(
             bands?.caseStudies !== undefined
                 ? bands.caseStudies
                 : empty.caseStudies,
+        videoCaseStudies:
+            bands?.videoCaseStudies !== undefined
+                ? bands.videoCaseStudies
+                : empty.videoCaseStudies,
         testimonials:
             bands?.testimonials !== undefined
                 ? bands.testimonials
@@ -89,6 +93,7 @@ function emptyLandingBands(solution: SolutionPage): SolutionLandingContent {
         customizations: null,
         expertise: null,
         caseStudies: null,
+        videoCaseStudies: null,
         testimonials: null,
         faqs: null,
     };

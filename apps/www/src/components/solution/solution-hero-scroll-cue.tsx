@@ -9,15 +9,20 @@ import {Icon} from '@/components/ui/icon';
 
 export const HERO_SECTION_ID = 'solution-hero';
 
+/** Delay before fade+rise entrance (Option A). */
+const ENTRANCE_DELAY_MS = 500;
+
 type SolutionHeroScrollCueProps = {
     label: string;
 };
 
 /**
  * Fixed bottom-of-viewport primary Button — scroll cue past the hero.
+ * Enters with a delayed fade + rise (skipped when reduced motion).
  */
 export function SolutionHeroScrollCue({label}: SolutionHeroScrollCueProps) {
-    const [visible, setVisible] = useState(true);
+    const [heroInView, setHeroInView] = useState(true);
+    const [entered, setEntered] = useState(false);
     const [reduceMotion, setReduceMotion] = useState(false);
 
     useEffect(() => {
@@ -34,7 +39,7 @@ export function SolutionHeroScrollCue({label}: SolutionHeroScrollCueProps) {
         // Hide as the hero scrolls up and out of the viewport (user scrolls down).
         const syncVisibility = () => {
             const {bottom} = hero.getBoundingClientRect();
-            setVisible(bottom > window.innerHeight * 0.45);
+            setHeroInView(bottom > window.innerHeight * 0.45);
         };
         syncVisibility();
         window.addEventListener('scroll', syncVisibility, {passive: true});
@@ -46,6 +51,22 @@ export function SolutionHeroScrollCue({label}: SolutionHeroScrollCueProps) {
             window.removeEventListener('resize', syncVisibility);
         };
     }, []);
+
+    useEffect(() => {
+        if (reduceMotion) {
+            setEntered(true);
+            return;
+        }
+
+        setEntered(false);
+        const timer = window.setTimeout(() => {
+            setEntered(true);
+        }, ENTRANCE_DELAY_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [reduceMotion]);
+
+    const visible = entered && heroInView;
 
     function handleClick() {
         const hero = document.getElementById(HERO_SECTION_ID);
@@ -63,7 +84,7 @@ export function SolutionHeroScrollCue({label}: SolutionHeroScrollCueProps) {
     }
 
     return (
-        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center">
+        <div className="pointer-events-none fixed inset-x-0 bottom-12 z-40 flex justify-center">
             <Button
                 type="button"
                 variant="default"
@@ -72,21 +93,20 @@ export function SolutionHeroScrollCue({label}: SolutionHeroScrollCueProps) {
                 aria-hidden={!visible}
                 tabIndex={visible ? 0 : -1}
                 className={cn(
-                    'pointer-events-auto gap-3 rounded-full py-2 pr-2 pl-6 shadow-md',
+                    'pointer-events-auto h-auto gap-3 rounded-full py-3 pr-3 pl-8 text-lg shadow-md',
                     !reduceMotion &&
-                        'transition-opacity duration-[var(--motion-base)]',
+                        'transition-[opacity,translate] duration-[var(--motion-base)] ease-out',
                     visible
-                        ? 'opacity-100'
-                        : 'pointer-events-none opacity-0',
+                        ? 'translate-y-0 opacity-100'
+                        : 'pointer-events-none translate-y-2 opacity-0',
+                    reduceMotion && !heroInView && 'translate-y-0',
                 )}
             >
                 {label}
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
                     <Icon icon={ChevronDown} size="sm" />
                 </span>
             </Button>
         </div>
     );
 }
-
-export {HERO_SECTION_ID};

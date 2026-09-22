@@ -1,6 +1,9 @@
 import type {ReactNode} from 'react';
-
+import Link from 'next/link';
+import {ChevronRight} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
+
+import {Icon} from '@/components/ui/icon';
 
 /** Bracketed V5 kicker, e.g. `[ Specifications ]`. */
 export function formatSectionEyebrow(text: string): string {
@@ -9,6 +12,11 @@ export function formatSectionEyebrow(text: string): string {
     if (value.startsWith('[') && value.endsWith(']')) return value;
     return `[ ${value} ]`;
 }
+
+export type SectionHeadingCta = {
+    label: string;
+    href: string;
+};
 
 type SectionHeadingProps = {
     eyebrow?: string;
@@ -21,7 +29,34 @@ type SectionHeadingProps = {
     className?: string;
     /** Optional right-side slot (e.g. carousel controls). */
     actions?: ReactNode;
+    /** Built-in explore link — rendered when `showCta` is true. */
+    cta?: SectionHeadingCta;
+    /** When false, CTA is omitted even if `cta` is set. Default true. */
+    showCta?: boolean;
+    /**
+     * `bottom` = under description in the column (default).
+     * `end` = right-aligned beside the heading column.
+     */
+    ctaPlacement?: 'bottom' | 'end';
 };
+
+function SectionHeadingCtaLink({cta}: {cta: SectionHeadingCta}) {
+    return (
+        <Link
+            href={cta.href}
+            className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-foreground"
+        >
+            <span className="underline-offset-4 group-hover:underline">
+                {cta.label}
+            </span>
+            <Icon
+                icon={ChevronRight}
+                size="sm"
+                className="transition-transform duration-300 ease-out group-hover:translate-x-0.5"
+            />
+        </Link>
+    );
+}
 
 /**
  * Shared section header — V5 eyebrow / title / description rhythm.
@@ -37,7 +72,24 @@ export function SectionHeading({
     descriptionClassName,
     className,
     actions,
+    cta,
+    showCta = true,
+    ctaPlacement = 'bottom',
 }: SectionHeadingProps) {
+    const ctaNode =
+        showCta && cta && cta.label.trim() ? (
+            <SectionHeadingCtaLink cta={cta} />
+        ) : null;
+    const bottomCta = ctaNode && ctaPlacement === 'bottom' ? ctaNode : null;
+    const endCta = ctaNode && ctaPlacement === 'end' ? ctaNode : null;
+    const endCluster =
+        endCta || actions ? (
+            <div className="flex shrink-0 gap-2">
+                {endCta}
+                {actions}
+            </div>
+        ) : null;
+
     const heading = (
         <div
             className={cn(
@@ -76,10 +128,11 @@ export function SectionHeading({
                     {description}
                 </p>
             ) : null}
+            {bottomCta}
         </div>
     );
 
-    if (!actions) {
+    if (!endCluster) {
         return <div className={className}>{heading}</div>;
     }
 
@@ -91,7 +144,7 @@ export function SectionHeading({
             )}
         >
             {heading}
-            <div className="flex shrink-0 gap-2">{actions}</div>
+            {endCluster}
         </div>
     );
 }

@@ -22,9 +22,15 @@ import {
     isCompleteProduct,
 } from '@/lib/solutions/map-sanity';
 import {
+    beautyCosmeticsCaseStudies,
+    beautyCosmeticsCustomizations,
+    beautyCosmeticsExpertise,
+    beautyCosmeticsFaqs,
     beautyCosmeticsInspirations,
     beautyCosmeticsLogos,
     beautyCosmeticsSolutionPage,
+    beautyCosmeticsTestimonials,
+    beautyCosmeticsVideoCaseStudies,
 } from '@/lib/solutions/fixtures/beauty-cosmetics';
 import {
     buildSolutionLandingContent,
@@ -173,7 +179,8 @@ export async function getSolutionBySlug(
  * Industry Solution LP payload for `/solutions/[slug]`.
  * Hero is built from Sanity page fields for every hasPage solution.
  * Falls back to a minimal Beauty page when Sanity has no hasPage doc yet.
- * Beauty logos + inspirations use local fixtures until Sanity fields land.
+ * Beauty logos + inspirations + customizations + expertise + case studies +
+ * testimonials + faqs use local fixtures until Sanity fields land.
  */
 export async function getSolutionLandingContent(
     slug: string,
@@ -184,6 +191,12 @@ export async function getSolutionLandingContent(
         ? {
               logos: beautyCosmeticsLogos,
               inspirations: beautyCosmeticsInspirations,
+              customizations: beautyCosmeticsCustomizations,
+              expertise: beautyCosmeticsExpertise,
+              caseStudies: beautyCosmeticsCaseStudies,
+              videoCaseStudies: beautyCosmeticsVideoCaseStudies,
+              testimonials: beautyCosmeticsTestimonials,
+              faqs: beautyCosmeticsFaqs,
           }
         : undefined;
 

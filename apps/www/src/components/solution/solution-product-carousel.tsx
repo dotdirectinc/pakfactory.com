@@ -1,9 +1,11 @@
 'use client';
 
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import Image from 'next/image';
 import {gsap} from 'gsap';
 import {ScrollTrigger} from 'gsap/ScrollTrigger';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {SolutionProductPreview} from '@/components/solution/solution-product-preview';
@@ -19,12 +21,26 @@ gsap.registerPlugin(ScrollTrigger);
 const MAX_HERO_TILES_DESKTOP = 16;
 const MAX_HERO_TILES_TABLET = 8;
 const MAX_HERO_TILES_MOBILE = 4;
-/** Tile gap — 24px / `gap-6` (8pt). */
+/** Cards sized to fit in the viewport per row (track may hold more for scrub). */
+const VISIBLE_CARDS_PER_ROW_DESKTOP = 5;
+const VISIBLE_CARDS_PER_ROW_TABLET = 3;
+const VISIBLE_CARDS_PER_ROW_MOBILE = 2;
+/** Card gap — 24px / `gap-6` (8pt). */
 const TILE_GAP_PX = 24;
 /** Scroll-scrub travel ≈ two card strides. */
 const SCRUB_CARD_COUNT = 2;
-/** Portrait tile: width / height. */
+/** Tablet/desktop portrait card: width / height. */
 const TILE_ASPECT = 3 / 4;
+/** Mobile square card: width / height. */
+const TILE_ASPECT_MOBILE = 1;
+/** Wide cards share portrait height; width is this factor × unit. */
+const WIDE_WIDTH_FACTOR = 1.5;
+/** Every Nth card in a row is wide (0-based index === N - 1). */
+const WIDE_EVERY_N = 4;
+/** Shift row B variant index so wides don’t stack under row A. */
+const ROW_B_VARIANT_OFFSET = 2;
+
+type CardVariant = 'portrait' | 'wide';
 
 type SolutionProductCarouselProps = {
     tiles: SolutionHeroTile[];
@@ -36,6 +52,21 @@ type SolutionProductCarouselProps = {
 type SizedTile = SolutionHeroTile & {renderKey: string};
 
 type GalleryBreakpoint = 'mobile' | 'tablet' | 'desktop';
+
+function cardVariantForIndex(
+    indexInRow: number,
+    rowOffset: number,
+    breakpoint: GalleryBreakpoint,
+): CardVariant {
+    if (breakpoint === 'mobile') return 'portrait';
+    return (indexInRow + rowOffset) % WIDE_EVERY_N === WIDE_EVERY_N - 1
+        ? 'wide'
+        : 'portrait';
+}
+
+function cardWidthForVariant(unitWidth: number, variant: CardVariant): number {
+    return variant === 'wide' ? unitWidth * WIDE_WIDTH_FACTOR : unitWidth;
+}
 
 function useGalleryBreakpoint(): GalleryBreakpoint {
     const [bp, setBp] = useState<GalleryBreakpoint>('desktop');
@@ -73,12 +104,6 @@ function splitRowsForBreakpoint(
               : MAX_HERO_TILES_MOBILE;
 
     let usable = Math.min(maxTiles, tiles.length);
-
-    if (breakpoint === 'mobile') {
-        if (usable === 0) return {rowA: [], rowB: []};
-        return {rowA: tiles.slice(0, usable), rowB: []};
-    }
-
     usable -= usable % 2;
     if (usable === 0) return {rowA: [], rowB: []};
     const half = usable / 2;
@@ -101,6 +126,51 @@ function duplicateRow(
     );
 }
 
+/**
+ * Full-width height reservation before shellWidth is measured.
+ * Uses flex-1 + breakpoint aspect so row height matches live cards — no 100vw widths.
+ */
+function GallerySkeleton({
+    hasRowB,
+    visibleCardsPerRow,
+    aspectClass,
+}: {
+    hasRowB: boolean;
+    visibleCardsPerRow: number;
+    aspectClass: string;
+}) {
+    const slots = Math.max(1, visibleCardsPerRow);
+
+    return (
+        <div className="flex w-full flex-col gap-6" aria-hidden>
+            <div className="flex w-full" style={{gap: TILE_GAP_PX}}>
+                {Array.from({length: slots}, (_, index) => (
+                    <Skeleton
+                        key={`skeleton-a-${index}`}
+                        className={cn(
+                            'min-w-0 flex-1 rounded-[10px]',
+                            aspectClass,
+                        )}
+                    />
+                ))}
+            </div>
+            {hasRowB ? (
+                <div className="flex w-full" style={{gap: TILE_GAP_PX}}>
+                    {Array.from({length: slots}, (_, index) => (
+                        <Skeleton
+                            key={`skeleton-b-${index}`}
+                            className={cn(
+                                'min-w-0 flex-1 rounded-[10px]',
+                                aspectClass,
+                            )}
+                        />
+                    ))}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 function TileButton({
     tile,
     width,
@@ -112,6 +182,14 @@ function TileButton({
     height: number;
     onSelect: (tileId: string) => void;
 }) {
+    const image = tile.image;
+    const hasImage = Boolean(image?.src);
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    useEffect(() => {
+        setImageLoaded(false);
+    }, [image?.src]);
+
     return (
         <button
             type="button"
@@ -124,6 +202,21 @@ function TileButton({
             style={{width, height}}
             aria-label={tile.label ? `View ${tile.label}` : 'View product'}
         >
+            {hasImage && image ? (
+                <Image
+                    src={image.src}
+                    alt={image.alt || tile.label || ''}
+                    fill
+                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 33vw, 20vw"
+                    className={cn(
+                        'object-cover transition-opacity duration-[var(--motion-slow)] ease-in-out',
+                        imageLoaded ? 'opacity-100' : 'opacity-0',
+                        'motion-reduce:transition-none',
+                        'motion-reduce:opacity-100',
+                    )}
+                    onLoad={() => setImageLoaded(true)}
+                />
+            ) : null}
             <span
                 aria-hidden
                 className={cn(
@@ -142,8 +235,9 @@ function TileButton({
 }
 
 /**
- * Responsive dual-row (single-row on mobile) solution-product tiles with
- * fill-width sizing and opposite scroll scrub. Click opens preview.
+ * Responsive dual-row solution-product cards with fill-width sizing and
+ * opposite scroll scrub. Mobile uses square tiles (2 visible per row);
+ * tablet/desktop use portrait (+ occasional wide). Click opens preview.
  */
 export function SolutionProductCarousel({
     tiles,
@@ -164,14 +258,21 @@ export function SolutionProductCarousel({
     );
     const countPerRow = rowA.length;
     const hasRowB = rowB.length > 0;
-    // Mobile: one full-width tile in view; tablet/desktop fill the row.
-    const visiblePerRow = breakpoint === 'mobile' ? 1 : countPerRow;
+    const visibleCardsPerRow =
+        breakpoint === 'desktop'
+            ? VISIBLE_CARDS_PER_ROW_DESKTOP
+            : breakpoint === 'tablet'
+              ? VISIBLE_CARDS_PER_ROW_TABLET
+              : VISIBLE_CARDS_PER_ROW_MOBILE;
 
-    const tileWidth =
-        shellWidth > 0 && visiblePerRow > 0
-            ? (shellWidth - (visiblePerRow - 1) * TILE_GAP_PX) / visiblePerRow
+    const tileAspect =
+        breakpoint === 'mobile' ? TILE_ASPECT_MOBILE : TILE_ASPECT;
+    const unitWidth =
+        shellWidth > 0 && visibleCardsPerRow > 0
+            ? (shellWidth - (visibleCardsPerRow - 1) * TILE_GAP_PX) /
+              visibleCardsPerRow
             : 0;
-    const tileHeight = tileWidth > 0 ? tileWidth / TILE_ASPECT : 0;
+    const cardHeight = unitWidth > 0 ? unitWidth / tileAspect : 0;
 
     const rowATrack = useMemo(
         () => (countPerRow > 0 ? duplicateRow(rowA, 'a') : []),
@@ -199,7 +300,7 @@ export function SolutionProductCarousel({
     useLayoutEffect(() => {
         const shell = shellRef.current;
         const rowAEl = rowARef.current;
-        if (!shell || !rowAEl || tileWidth <= 0) return;
+        if (!shell || !rowAEl || unitWidth <= 0) return;
 
         const rowBEl = rowBRef.current;
         const targets = rowBEl ? [rowAEl, rowBEl] : [rowAEl];
@@ -209,7 +310,7 @@ export function SolutionProductCarousel({
             return;
         }
 
-        const scrubDistance = (tileWidth + TILE_GAP_PX) * SCRUB_CARD_COUNT;
+        const scrubDistance = (unitWidth + TILE_GAP_PX) * SCRUB_CARD_COUNT;
 
         const ctx = gsap.context(() => {
             const tl = gsap.timeline({
@@ -239,7 +340,7 @@ export function SolutionProductCarousel({
 
         ScrollTrigger.refresh();
         return () => ctx.revert();
-    }, [tileWidth, countPerRow, hasRowB, rowATrack.length, rowBTrack.length]);
+    }, [unitWidth, countPerRow, hasRowB, rowATrack.length, rowBTrack.length]);
 
     function handleTileClick(tileId: string) {
         const product = getMockSolutionProduct(tileId);
@@ -263,22 +364,32 @@ export function SolutionProductCarousel({
                         : 'bg-background',
                 )}
             >
-                {tileWidth > 0 ? (
-                    <>
+                {unitWidth > 0 ? (
+                    <div className="flex flex-col gap-6 animate-in fade-in-0 duration-[var(--motion-slow)] motion-reduce:animate-none">
                         <div
                             ref={rowARef}
                             className="flex w-max will-change-transform"
                             style={{gap: TILE_GAP_PX}}
                         >
-                            {rowATrack.map((tile) => (
-                                <TileButton
-                                    key={tile.renderKey}
-                                    tile={tile}
-                                    width={tileWidth}
-                                    height={tileHeight}
-                                    onSelect={handleTileClick}
-                                />
-                            ))}
+                            {rowATrack.map((tile, index) => {
+                                const variant = cardVariantForIndex(
+                                    index % countPerRow,
+                                    0,
+                                    breakpoint,
+                                );
+                                return (
+                                    <TileButton
+                                        key={tile.renderKey}
+                                        tile={tile}
+                                        width={cardWidthForVariant(
+                                            unitWidth,
+                                            variant,
+                                        )}
+                                        height={cardHeight}
+                                        onSelect={handleTileClick}
+                                    />
+                                );
+                            })}
                         </div>
                         {hasRowB ? (
                             <div
@@ -286,19 +397,39 @@ export function SolutionProductCarousel({
                                 className="flex w-max will-change-transform"
                                 style={{gap: TILE_GAP_PX}}
                             >
-                                {rowBTrack.map((tile) => (
-                                    <TileButton
-                                        key={tile.renderKey}
-                                        tile={tile}
-                                        width={tileWidth}
-                                        height={tileHeight}
-                                        onSelect={handleTileClick}
-                                    />
-                                ))}
+                                {rowBTrack.map((tile, index) => {
+                                    const variant = cardVariantForIndex(
+                                        index % countPerRow,
+                                        ROW_B_VARIANT_OFFSET,
+                                        breakpoint,
+                                    );
+                                    return (
+                                        <TileButton
+                                            key={tile.renderKey}
+                                            tile={tile}
+                                            width={cardWidthForVariant(
+                                                unitWidth,
+                                                variant,
+                                            )}
+                                            height={cardHeight}
+                                            onSelect={handleTileClick}
+                                        />
+                                    );
+                                })}
                             </div>
                         ) : null}
-                    </>
-                ) : null}
+                    </div>
+                ) : (
+                    <GallerySkeleton
+                        hasRowB={hasRowB}
+                        visibleCardsPerRow={visibleCardsPerRow}
+                        aspectClass={
+                            breakpoint === 'mobile'
+                                ? 'aspect-square'
+                                : 'aspect-[3/4]'
+                        }
+                    />
+                )}
             </div>
 
             <SolutionProductPreview
