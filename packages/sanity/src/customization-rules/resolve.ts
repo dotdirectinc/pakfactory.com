@@ -33,6 +33,14 @@ export interface DependencyGraph {
   dependsOn: Record<string, string[]>;
 }
 
+export interface EmptiedType {
+  typeId: string;
+  /** How many options it held before the dependencies were applied. */
+  had: number;
+  /** The dependency types that emptied it, in the order they were declared. */
+  unsatisfied: string[];
+}
+
 export interface RemovedOption {
   optionId: string;
   typeId: string;
@@ -53,6 +61,18 @@ export interface Resolution {
   unconstrainedTypes: string[];
   /** Dependencies naming a type that is not in the catalog. Ignored. */
   unknownDependencies: string[];
+  /**
+   * Types that had options to offer and ended with NONE — every one removed by a dependency.
+   *
+   * This is the loud version of the worst failure this file can produce. `availableByType`
+   * omits an empty type, which reads identically to a type that was never in the catalog, so
+   * without this a product that silently offers no Embossing at all looks exactly like a
+   * product with no Embossing configured. The usual cause is a dependency that should not be
+   * there: a type gated by a sibling it was never drawn against has nothing to pair with, so
+   * everything goes. Seeded-empty types (the product simply offers none) are NOT listed —
+   * those are ordinary.
+   */
+  emptiedTypes: EmptiedType[];
   /** Passes taken to settle. 1 means nothing cascaded. */
   iterations: number;
 }
@@ -103,6 +123,11 @@ export function resolveForProduct(
     if (deps.length === 0) unconstrainedTypes.push(type._id);
   }
 
+  // What each type held before any dependency was applied, so a type that ends empty can be
+  // told apart from one that started that way.
+  const seeded = new Map<string, number>();
+  for (const [typeId, set] of available) seeded.set(typeId, set.size);
+
   const removedBy = new Map<string, string[]>();
   let iterations = 0;
   // Each pass can only remove, and there are finitely many options, so this
@@ -152,11 +177,23 @@ export function resolveForProduct(
     }))
     .sort((a, b) => (order.get(a.optionId) ?? 0) - (order.get(b.optionId) ?? 0));
 
+  const emptiedTypes: EmptiedType[] = [];
+  for (const type of catalog.types) {
+    const had = seeded.get(type._id) ?? 0;
+    if (had === 0 || (available.get(type._id)?.size ?? 0) > 0) continue;
+    const deps = (graph.dependsOn[type._id] ?? []).filter((d) => typeById.has(d));
+    const unsatisfied = [...new Set(
+      (optionsOfType.get(type._id) ?? []).flatMap((id) => removedBy.get(id) ?? []),
+    )].sort((a, b) => deps.indexOf(a) - deps.indexOf(b));
+    emptiedTypes.push({ typeId: type._id, had, unsatisfied });
+  }
+
   return {
     availableByType,
     removed,
     unconstrainedTypes,
     unknownDependencies: [...unknownDependencies],
+    emptiedTypes,
     iterations,
   };
 }

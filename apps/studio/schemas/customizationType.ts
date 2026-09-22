@@ -224,6 +224,35 @@ export const customizationType = defineType({
           if (list.length > 0 || decidedBy !== 'customization') return true
           return 'Nothing decides which of these are available yet, so every option will stay available on every product. The configurator needs this filled in before launch.'
         }).warning(),
+        // NAMING YOUR OWN CATEGORY MEANS YOUR SIBLINGS (PROD-2558).
+        //
+        // It is a real answer sometimes — Colour System and Printing Method share the
+        // Printing category, and Printing Method genuinely gates Colour System. It is a
+        // disaster the rest of the time, and silently: a category expands to every type in
+        // it except this one, so "Embossing & Debossing depends on Finishing" means
+        // "Embossing depends on Foiling, Surface Finish and Spot Coating". Embossing has
+        // never been drawn against any of those, an option must find a partner in EVERY
+        // dependency, and the type empties out completely — offering nothing on any product.
+        //
+        // Crystal raised exactly this on 2026-09-22, asking whether two finishings she had
+        // not wired together would be read as incompatible. Drawn as the board states it
+        // they are independent and both survive. This is the one authoring choice that
+        // would make her fear come true, so it warns rather than waits to be discovered on
+        // a product page.
+        Rule.custom((value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const own = (context.document as { category?: { _ref?: string } } | undefined)?.category?._ref
+          if (!own || list.length === 0) return true
+          const namesOwn = list.some((e) => (e as { _ref?: string })?._ref === own)
+          if (!namesOwn) return true
+          return (
+            'This names its own category, which means every OTHER type in it — its siblings. ' +
+            'That is right when a sibling really does decide this one (Printing Method decides ' +
+            'Colour System), and wrong the rest of the time: if this type has not been drawn ' +
+            'against those siblings it will offer nothing at all, on every product. Name the ' +
+            'specific types that decide it instead, unless you mean the whole category.'
+          )
+        }).warning(),
       ],
     }),
     defineField({
