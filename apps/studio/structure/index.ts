@@ -11,6 +11,7 @@ import {
     WarningOutlineIcon,
     BulbOutlineIcon,
     CaseIcon,
+    CheckmarkCircleIcon,
     EnvelopeIcon,
     HelpCircleIcon,
     HomeIcon,
@@ -621,6 +622,28 @@ interface SettingsOptions {
     media?: boolean;
 }
 
+/**
+ * Ops › Migration Ledger — read-only view of `migrationRun`.
+ *
+ * The ledger answers "what has run against THIS dataset", which is otherwise only
+ * reachable from a terminal with a token. Pinned to the Admin workspace on purpose:
+ * it is operational provenance, not content, so it does not belong in the Blog or
+ * Website desks. Newest first, because the question is almost always about the last
+ * deploy. Documents are read-only at the schema level (see `schemas/migrationRun.ts`) —
+ * this pane shows the record, it does not offer to edit it.
+ */
+export function migrationLedgerItem(S: StructureBuilder): ListItemBuilder {
+    return S.listItem()
+        .title('Migration Ledger')
+        .icon(CheckmarkCircleIcon)
+        .schemaType('migrationRun')
+        .child(
+            S.documentTypeList('migrationRun')
+                .title('Migration Ledger')
+                .defaultOrdering([{field: 'ranAt', direction: 'desc'}]),
+        );
+}
+
 export function settingsItems(
     S: StructureBuilder,
     context: StructureResolverContext,
@@ -874,7 +897,7 @@ export const globalStructure = (
 ) =>
     S.list()
         .title('Global')
-        .items([...sitePreviewHint(S), ...globalItems(S)]);
+        .items([...sitePreviewHint(S), ...globalItems(S), migrationLedgerItem(S)]);
 
 /** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
  *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
