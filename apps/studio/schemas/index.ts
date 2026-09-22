@@ -36,7 +36,6 @@ import {
   pageSettings,
 } from './blogTypeSettings'
 import { blogPage } from './blogPage'
-import { page } from './page'
 import { homePage } from './homePage'
 import { listingPage } from './listingPage'
 import { contentPage } from './contentPage'
@@ -113,7 +112,6 @@ export const schemaTypes = [
   ...caseStudyInlineBlocks,
   contentWidget,
   widgetEmbed,
-  page,
   post,
   videoPost,
   redirect,
