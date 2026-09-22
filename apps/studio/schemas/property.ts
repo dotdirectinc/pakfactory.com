@@ -14,7 +14,7 @@ export const property = defineType({
       type: 'string',
       group: 'content',
       description:
-        'The property an editor picks a value under — e.g. "Finish Type", "Sustainability", "Thickness".',
+        'The property an editor picks a value under. For example, "Finish Type" or "Thickness".',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({

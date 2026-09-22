@@ -24,7 +24,7 @@ export const customizationOption = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The customization option name (e.g. "Matte Lamination").',
+      description: 'The customization option name. For example, "Matte Lamination".',
       // `uniqueTaxonomyTitle` was missing here while Category and Type both had it
       // (PROD-2462). Same type only, case- and punctuation-insensitive.
       //

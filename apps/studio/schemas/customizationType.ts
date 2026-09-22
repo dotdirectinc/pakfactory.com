@@ -20,7 +20,7 @@ export const customizationType = defineType({
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The customization type name (e.g. "Foil Stamping", "Window Patching").',
+      description: 'The customization type name. For example, "Foil Stamping" or "Window Patching".',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     // A configurator panel heading cannot carry "Surface Finish (non-paper)", but
