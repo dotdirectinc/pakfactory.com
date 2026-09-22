@@ -29,7 +29,7 @@ export const legalPage = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Internal Studio label (e.g. "Privacy Policy").',
+      description: 'Internal Studio label. For example, "Privacy Policy".',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
