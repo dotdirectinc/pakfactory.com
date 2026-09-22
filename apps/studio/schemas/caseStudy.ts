@@ -165,7 +165,7 @@ export const caseStudy = defineType({
           name: 'videoUrl',
           title: 'Video URL',
           type: 'url',
-          description: 'A YouTube link only. The page shows a thumbnail with a play button and loads the video when clicked.',
+          description: 'YouTube or Vimeo URL. Renders as a facade (thumbnail + play button); the iframe loads only on click.',
           hidden: ({ parent }) => (parent as { mediaType?: string })?.mediaType !== 'video',
         }),
         defineField({
@@ -199,9 +199,7 @@ export const caseStudy = defineType({
       type: 'text',
       rows: 2,
       group: 'content',
-      description:
-        'A 1–2 line summary for search engines. Not shown on the page; used when the ' +
-        'meta description is blank.',
+      description: '1–2 line summary shown on the listing card under the client name.',
     }),
 
     // ─── Story + Metrics (Content tab) ────────────────────────────────────────
