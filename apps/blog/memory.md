@@ -154,9 +154,12 @@ After the schema drop, existing posts/settings may still store the booleans. Stu
 Run **after** the schema change is deployed and stable (values are the rollback buffer until then):
 
 ```bash
-NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields
-NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --apply
-NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --apply
+pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --dataset development
+pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --dataset development --confirm
+pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --dataset production --confirm --yes-production
+
+# or, through the register (records the run in the dataset ledger):
+pnpm sanity:migrate up --dataset production --only 20260723-unset-ai-crawler-fields --confirm --yes-production
 ```
 
 Script: [`apps/studio/scripts/unset-ai-crawler-fields.mjs`](../../apps/studio/scripts/unset-ai-crawler-fields.mjs). Dry-run is the default.
@@ -298,13 +301,13 @@ Copies the current `blogSettings.*Defaults` values into the five singletons verb
 1. **Confirm the dataset** — Studio must show the `[DEVELOPMENT]` workspace suffix before seeding dev. Write token in `.env.local` / `apps/studio/.env.local` (`SANITY_API_WRITE_TOKEN`).
 2. **Dev first** (dry-run prints, `--apply` writes):
    ```bash
-   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings
-   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset development
+   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset development --confirm
    ```
 3. **Verify dev** — desk shows `Post ▸ Settings` etc.; diff a few author/category/post pages' `<head>` meta + the sitemaps before/after (should be identical — the query fell back to `blogSettings` pre-seed, reads the singleton post-seed, same values).
 4. **Promote to prod**:
    ```bash
-   NEXT_PUBLIC_SANITY_DATASET=production pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset production --confirm --yes-production
    ```
 5. **Update the Sanity revalidation webhook filter** (project `8293wrxp`) to also fire on the new `_type`s — add `postSettings`, `categorySettings`, `topicSettings`, `authorSettings`, `pageSettings` to the GROQ filter (the route handler already maps them → `blog-settings` cache tag). Otherwise editing a Settings singleton won't purge the cache.
 6. **Deploy Studio** (`pnpm --filter @pakfactory/studio run deploy`) so editors see the co-located Settings.
