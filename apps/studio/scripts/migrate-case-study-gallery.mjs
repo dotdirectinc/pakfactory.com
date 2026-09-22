@@ -59,6 +59,13 @@ const client = createClient({
   apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2025-01-01',
   token: TOKEN,
   useCdn: false,
+  // Drafts included, matching migrate-split-customization-role and
+  // migrate-unset-verified-deprecations. Without this the default perspective hides
+  // drafts, and on production that silently skipped a draft-only case study carrying
+  // five legacy gallery items — a document the migration is meant to cover, left in the
+  // old shape with nothing reporting it. The patch path already addresses documents by
+  // `_id`, so a `drafts.` id needs no special handling.
+  perspective: 'raw',
 })
 
 const PT_FIELDS = ['challenge', 'solution', 'result']
