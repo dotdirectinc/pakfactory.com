@@ -126,9 +126,9 @@ Two consequences worth knowing:
 - **`--dry-run` is still accepted** and is now a no-op with a warning, for the same reason
   `--apply` is accepted: it appears in runbooks and shell history. Rejecting it would fail
   a command whose whole intent was *"do not write"*.
-- **`seed:blog-dev` refuses `--dataset production` outright**, with no override. It deletes
-  four ids and `createOrReplace`s 25 fixture documents; `--yes-production` exists for
-  migrations that legitimately target prod, not for development fixtures.
+- **`seed:blog-dev` has since been deleted** along with `seed:demo` — both wrote mock
+  fixtures. The retrofit had given `seed:blog-dev` an outright refusal of
+  `--dataset production`, which is now moot.
 
 ---
 

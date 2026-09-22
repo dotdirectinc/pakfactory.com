@@ -121,7 +121,7 @@ async function migrate() {
     console.log(`  ✓  Primary nav already has ${navCategoryCount} categor${navCategoryCount === 1 ? 'y' : 'ies'}`)
   } else {
     console.log('  ⚠  No primary nav categories on blogNavigation or legacy blogSettings.categoryOrder')
-    console.log('     Configure Studio → Navigation → Primary Navigation, or run pnpm seed:blog-dev')
+    console.log('     Configure Studio → Navigation → Primary Navigation.')
   }
 
   if (needsFooterSeed) {

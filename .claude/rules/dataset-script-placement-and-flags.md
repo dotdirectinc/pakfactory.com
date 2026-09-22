@@ -10,7 +10,7 @@ of what follows was in place to stop it.
 | Kind of script | Home | Examples |
 |---|---|---|
 | **Content-model migration** — renaming/moving fields, backfilling a new required field, retyping documents | `packages/sanity/scripts/*.ts` (run via `tsx`) | `migrate-customization-applies-to.ts`, `migrate-product-style-line.ts`, `migrate-rename-commercial-types.ts` |
-| **Operational** — seeds, redirect maintenance, structure/parity checks | `apps/studio/scripts/*.mjs` | `seed-blog-dev.mjs`, `check-structure-types.mjs`, `migrate-redirect-groups.mjs` |
+| **Operational** — seeds, redirect maintenance, structure/parity checks | `apps/studio/scripts/*.mjs` | `seed-blog-singleton-pages.mjs`, `check-structure-types.mjs`, `migrate-redirect-groups.mjs` |
 
 **Before creating a script, look for its predecessor and sit next to it.** A migration that
 renames a field almost always has a sibling that *populated* that field; find it and match

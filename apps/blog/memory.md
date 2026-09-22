@@ -213,7 +213,7 @@ The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCatego
   When the singleton is missing or the list is empty, the strip is hidden (no fallback to all categories).
 
 - **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty. Existing category-only refs remain valid (no content migration).
-- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with dev category refs only (logo/CTA left unset). To test custom links locally, add a `primaryNavLink` object to the `categories` array in `seed-blog-dev.mjs` (see `footer-navigation-seed-data.mjs` `externalLink()` / `internalLink()` helpers).
+- **Local nav:** `blogNavigation` is authored in the Studio. The default footer columns live in `footer-navigation-seed-data.mjs` (`externalLink()` / `internalLink()` helpers), which `migrate-blog-navigation.mjs` consumes. (The `seed-blog-dev.mjs` fixture seed was deleted as mock data.)
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` / `blogCategory` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 - **Out of scope here:** `/all` browse sidebar, search, and 404 still use `fetchBlogCategories()` (all categories, alphabetical).
 
@@ -234,7 +234,7 @@ The footer (`SiteFooter` in root `layout.tsx`) reads `blogNavigation.footerNavig
 - **CMS scope:** footer blocks (`builder`) + link columns + social / AI answer links. Copyright lines stay in code.
 - **Human ops after schema change:** the old `footerNavigation.cta` object field was removed. Re-add the collaboration CTA as a `CTA — Text and Button` block in Studio if it was previously configured. Prefer seeding `builder` with a `ctaTextAndButton` block when updating [`footer-navigation-seed-data.mjs`](../../apps/studio/scripts/footer-navigation-seed-data.mjs). Migrate Contribute footer links from external/site-path → Internal → CMS document `blogContributePage` after seeding that singleton.
 - **Backfill / migrate:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` seeds default footer columns when empty and converts legacy href-based links to references.
-- **Local seed:** `pnpm seed:blog-dev` writes primary nav and reference-based footer columns on `blogNavigation`.
+- **Local nav:** primary nav and reference-based footer columns on `blogNavigation` are authored in the Studio; `migrate-blog-navigation.mjs` backfilled them.
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 
 ---
@@ -456,7 +456,7 @@ Pinned document ids imply `pageRole` (source of truth for Studio field visibilit
 - **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
 - **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
 - **Validation:** singletons skip `pageRole` required (role implied by id; see `blogPage.ts` custom rule).
-- **Seeds:** `seed-blog-singleton-pages.mjs` / `seed-blog-dev.mjs` must always set explicit `pageRole`.
+- **Seeds:** `seed-blog-singleton-pages.mjs` must always set explicit `pageRole`.
 - **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: patch the field; deploy schema with validation skip.
 
 ---
@@ -794,7 +794,7 @@ curl -sI http://localhost:3003/this-slug-does-not-exist | head -8
 - [ ] Set `NEWSLETTER_WEBHOOK_URL` in Vercel when S2.1 webhook is ready
 - [ ] Optional `NEXT_PUBLIC_WWW_URL` for quote CTA host
 - [x] Full seed: `pnpm --filter @pakfactory/studio run seed` → `development` dataset
-- [x] Blog dev supplement: `pnpm seed:blog-dev` → extra posts (3/category) + 5 industries
+- [x] Blog dev supplement (fixture seed since deleted as mock data)
 
 ---
 
@@ -919,7 +919,6 @@ Root `.env.example` defaults to `development`. Production dataset is for Vercel 
 
 | Command                                     | What it writes                                                                                                                                  |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm seed:blog-dev`                        | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries + nav + home/topics defaults. **Overwrites** singletons. Script: `apps/studio/scripts/seed-blog-dev.mjs`. |
 | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` | Home + topics page builders only (`blogHomePage`, `blogTopicsPage`). **No post changes.** Script: `apps/studio/scripts/seed-blog-singleton-pages.mjs`. |
 
 Token: `SANITY_API_WRITE_TOKEN`, `SANITY_TOKEN`, or `SANITY_API_READ_TOKEN` (repo scripts accept any of these for local dev).

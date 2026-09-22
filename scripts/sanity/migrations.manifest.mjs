@@ -364,10 +364,8 @@ export const HISTORIC = [
  * decision or an oversight. The runner never executes these.
  */
 export const TASKS = [
-  { task: 'seed:blog-dev', pkg: '@pakfactory/studio', why: 'dev-only blog fixtures' },
   { task: 'seed:blog-singleton-pages', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
   { task: 'seed:per-type-settings', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
-  { task: 'seed:demo', pkg: '@pakfactory/sanity', why: 'demo content' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },

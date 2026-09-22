@@ -13,8 +13,6 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "versions:apps": "pnpm --filter @pakfactory/www pkg get name version versionCode && pnpm --filter @pakfactory/blog pkg get name version versionCode && pnpm --filter @pakfactory/studio pkg get name version versionCode",
-    "seed:demo": "pnpm --filter @pakfactory/sanity run seed:demo",
-    "seed:blog-dev": "pnpm --filter @pakfactory/studio run seed:blog-dev",
     "migrate:product-single-refs": "pnpm --filter @pakfactory/sanity run migrate:product-single-refs",
     "clean": "turbo run clean && rm -rf node_modules",
     "env:status": "node scripts/env/switch-env.mjs status",

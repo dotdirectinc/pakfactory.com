@@ -28,7 +28,6 @@
     "test": "node --import tsx --test src/**/*.test.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "seed:demo": "tsx scripts/seed-demo.ts",
     "migrate:product-single-refs": "tsx scripts/migrate-product-to-single-refs.ts",
     "migrate:product-page-related-collections": "tsx scripts/migrate-product-page-related-collections.ts",
     "migrate:cutover": "tsx scripts/migrate-content-model-cutover.ts",
