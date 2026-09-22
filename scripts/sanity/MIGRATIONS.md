@@ -3,6 +3,9 @@
 Project `8293wrxp` · datasets `production` and `development` (the **staging Studio points at
 `development`** — there is no third dataset, and the ledger therefore has two rows, not three).
 
+The decision behind all of this is **[ADR-020](../../docs/adr/0020-sanity-migration-register.md)**;
+this file is the operating manual for it.
+
 For backup / restore / dataset ops see [`RUNBOOK.md`](./RUNBOOK.md). This file is about
 **one-shot content migrations**: which ones exist, which have run where, and how to run the
 rest.
