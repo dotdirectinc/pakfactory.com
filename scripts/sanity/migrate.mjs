@@ -166,7 +166,7 @@ async function cmdStatus() {
     `${rows.filter((r) => r.probe === 'unknown').length} unknown.`)
   if (pending.length) {
     console.log(`\n  Pending on ${dataset}:`)
-    for (const { m } of pending) console.log(`    ${m.id}  (${m.ticket})  ${m.title}`)
+    for (const { m } of pending) console.log(`    ${m.id}  ${m.ticket ? `(${m.ticket})  ` : ''}${m.title}`)
   }
   console.log(`\n  ${HISTORIC.length} historic packages/sanity migrations and ${TASKS.length} repeatable tasks are not tracked here.\n`)
 }
@@ -230,7 +230,7 @@ async function cmdUp() {
   }
 
   console.log(`  ${queue.length} pending on dataset=${dataset}:\n`)
-  for (const { m } of queue) console.log(`    ${m.id}  (${m.ticket})  ${m.title}`)
+  for (const { m } of queue) console.log(`    ${m.id}  ${m.ticket ? `(${m.ticket})  ` : ''}${m.title}`)
   console.log()
 
   for (const { m } of queue) {
