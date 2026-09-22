@@ -36,7 +36,7 @@ export const TARGETS = {
     // apps' own dev scripts, not from habit: `apps/www` runs on **3003** and
     // `apps/blog` on **3004** (`next dev --port …` in each package.json). The
     // earlier values here said blog 3003 / www 3000 — inherited from stale
-    // fallbacks in sanity.config.ts, and 3000 has nothing on it at all. Caught
+// fallbacks in sanity.config.ts, and 3000 has nothing on it at all. Caught
     // when `www-new-release` merged, because its .env.example says so plainly.
     previews: {
       BLOG: "http://localhost:3004/",

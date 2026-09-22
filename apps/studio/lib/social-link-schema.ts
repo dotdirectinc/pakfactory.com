@@ -95,7 +95,9 @@ export const socialLink = defineType({
       title: "Display label",
       type: "string",
       description:
-        "Shown next to the icon on the author profile (e.g. author name for LinkedIn, domain for a personal site).",
+        
+          'Shown next to the icon on the author profile. E.g. the author name for LinkedIn, or ' +
+          'the domain for a personal site.',
     }),
   ],
   preview: {

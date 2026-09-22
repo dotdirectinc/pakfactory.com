@@ -27,9 +27,12 @@
  * the answer and the model had no field for it.
  *
  * ⚠️ ADDITIVE ONLY. `role` is NOT unset here. Conventions §4.3: never remove a
- * populated field in the change that stops using it. It stays deployed, read-only
- * and deprecated, until the split is verified; removal is a later sweep through
- * `migrate:unset-removed-deprecated`.
+ * populated field in the change that stops using it.
+ *
+ * ✅ That sweep has since happened (PROD-2538). The split was verified — 126 of
+ * 126 carried both successors with zero disagreements — and
+ * `migrate:unset-verified-deprecations` removed the field and unset the key.
+ * This script is a record of step 2, not outstanding work.
  *
  * Drafts included (`perspective: 'raw'`) — publishing a stale draft would otherwise
  * restore the pre-split shape on a document this script had already fixed.
@@ -258,7 +261,7 @@ async function main() {
   )
   const expected = new Set(docs.map((d) => publishedId(d._id))).size
   console.log(`    ${after} document(s) now carry both fields (${docs.length} incl. drafts, ${expected} published ids).`)
-  console.log(`    \`role\` is untouched and still deployed — removal is a later sweep.`)
+  console.log(`    \`role\` is untouched by this script — its removal shipped separately.`)
   console.log(`    Re-run with \`--verify\` to compare values rather than counts.\n`)
 }
 

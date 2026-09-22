@@ -40,10 +40,13 @@
     "studio:staging": "node scripts/sanity/studio-target.mjs staging",
     "studio:prod": "node scripts/sanity/studio-target.mjs prod",
     "sanity:deploy:prod": "node scripts/sanity/studio-deploy.mjs prod",
-    "sanity:deploy:staging": "node scripts/sanity/studio-deploy.mjs staging"
+    "sanity:deploy:staging": "node scripts/sanity/studio-deploy.mjs staging",
+    "sanity:migrate": "node scripts/sanity/migrate.mjs"
   },
   "devDependencies": {
     "@pakfactory/sanity": "workspace:^",
+    "@sanity/client": "^7.20.0",
+    "dotenv": "^16.6.1",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"
   },

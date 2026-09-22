@@ -29,7 +29,9 @@ export const bodyQuote = defineType({
       title: 'Attribution',
       type: 'string',
       description:
-        'Optional source line shown below the quote (e.g. "Analyst quote • Contact for sourcing"). Rendered uppercase with a leading dash.',
+        
+          'Optional source line shown below the quote (e.g. "Jane Smith, Head of Packaging"). ' +
+          'Rendered uppercase with a leading dash.',
     }),
   ],
   preview: {

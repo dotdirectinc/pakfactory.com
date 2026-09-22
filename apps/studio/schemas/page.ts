@@ -6,7 +6,7 @@ export const page = defineType({
   title: 'Page',
   type: 'document',
   groups: [
-    { name: 'basic', title: 'Basic', default: true },
+    { name: 'basic', title: 'Basic' },
     { name: 'content', title: 'Content' },
     { name: 'seo', title: 'SEO' },
   ],
@@ -68,7 +68,7 @@ export const page = defineType({
       title: 'Meta title',
       type: 'string',
       group: 'seo',
-      validation: (Rule) => Rule.max(60),
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -76,7 +76,7 @@ export const page = defineType({
       type: 'text',
       rows: 3,
       group: 'seo',
-      validation: (Rule) => Rule.max(160),
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     defineField(taggedImageField({
       name: 'ogImage',

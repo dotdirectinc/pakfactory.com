@@ -120,7 +120,14 @@ export const CustomizationOptionUsedByView = createReferencedByView({
     {
       title: 'Products',
       type: 'product',
-      filter: '$id in availableCustomizations[].customization._ref',
+      // Both halves are load-bearing. A standard product names what it offers;
+      // a preset names only its pre-selections and inherits the rest from
+      // `basedOn` (PROD-2530). Matching the first clause alone would report an
+      // option used by no presets when it is offered on forty of them — and
+      // this tab exists to answer "can I retire this?", where under-reporting
+      // is the direction that loses data.
+      filter:
+        '$id in availableCustomizations[].customization._ref || $id in basedOn->availableCustomizations[].customization._ref',
       subtitle: 'sku',
     },
     {

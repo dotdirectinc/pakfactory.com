@@ -48,6 +48,7 @@ import { videoPost } from './videoPost'
 import { redirect } from './redirect'
 import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
+import { migrationRun } from './migrationRun'
 import {
   pageBuilderBlocks,
   pageBuilderHome,
@@ -126,6 +127,7 @@ export const schemaTypes = [
 
   // Singletons
   settings,
+  migrationRun,
   blogNavigation,
   postSettings,
   categorySettings,

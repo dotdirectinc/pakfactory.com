@@ -6,19 +6,17 @@ import {
     DocumentsIcon,
     FolderIcon,
     PackageIcon,
-    ColorWheelIcon,
     TagIcon,
     UserIcon,
     WarningOutlineIcon,
-    BookIcon,
     BulbOutlineIcon,
     CaseIcon,
+    CheckmarkCircleIcon,
     EnvelopeIcon,
     HelpCircleIcon,
     HomeIcon,
     ImagesIcon,
     LockIcon,
-    StarIcon,
     ThLargeIcon,
     AddIcon,
     PlayIcon,
@@ -207,36 +205,6 @@ function blogNavigationItem(S: StructureBuilder): ListItemBuilder {
                 .schemaType('blogNavigation')
                 .documentId('blogNavigation')
                 .title('Blog Navigation'),
-        );
-}
-
-/**
- * Global (Admin) navigation grouping — lists every channel's navigation
- * singleton by the "<Channel> Navigation" convention. Only Blog Navigation
- * exists today; when the Marketing Website / Academy nav singletons are built,
- * add them here (and expose each directly in its own lens like blogNavigationItem).
- */
-function globalNavigationItem(S: StructureBuilder): ListItemBuilder {
-    return S.listItem()
-        .id('navigation')
-        .title('Navigation')
-        .icon(ThLargeIcon)
-        .child(
-            S.list()
-                .title('Navigation')
-                .items([
-                    S.listItem()
-                        .id('blogNavigation')
-                        .title('Blog Navigation')
-                        .child(
-                            S.document()
-                                .schemaType('blogNavigation')
-                                .documentId('blogNavigation')
-                                .title('Blog Navigation'),
-                        ),
-                    // Marketing Website Navigation → add when websiteNavigation exists
-                    // Academy Navigation → add when academyNavigation exists
-                ]),
         );
 }
 
@@ -642,716 +610,38 @@ export function blogItems(
     ];
 }
 
-export function websiteItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title('Website'),
-
-        S.listItem()
-            .title('Pages')
-            .child(
-                S.list()
-                    .title('Pages')
-                    .items([
-                        S.listItem()
-                            .title('Home')
-                            .child(
-                                S.documentTypeList('page')
-                                    .title('Home')
-                                    .filter('pageType == "home"'),
-                            ),
-                        S.listItem()
-                            .title('Category Landing Pages')
-                            .child(
-                                S.documentTypeList('page')
-                                    .title('Category Landing Pages')
-                                    .filter('pageType == "landing-category"'),
-                            ),
-                        S.listItem()
-                            .title('Type Landing Pages')
-                            .child(
-                                S.documentTypeList('page')
-                                    .title('Type Landing Pages')
-                                    .filter('pageType == "landing-type"'),
-                            ),
-                        S.listItem()
-                            .title('Industry Pages')
-                            .child(
-                                S.documentTypeList('page')
-                                    .title('Industry Pages')
-                                    .filter('pageType == "landing-industry"'),
-                            ),
-                        S.listItem()
-                            .title('Service Pages')
-                            .child(
-                                S.documentTypeList('page')
-                                    .title('Service Pages')
-                                    .filter('pageType == "landing-service"'),
-                            ),
-                        S.listItem()
-                            .title('Static Pages')
-                            .child(
-                                S.documentTypeList('page')
-                                    .title('Static Pages')
-                                    .filter('pageType == "static"'),
-                            ),
-                    ]),
-            ),
-    ];
-}
-
-export function knowledgeLibraryItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title('Knowledge Library'),
-
-        // ── Customization ─────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Customization')
-            .icon(ColorWheelIcon)
-            .child(
-                S.list()
-                    .title('Customization')
-                    .items([
-                        S.listItem()
-                            .title('Browse by Category')
-                            .child(
-                                S.documentTypeList('customizationCategory')
-                                    .title('Categories')
-                                    .child((categoryId) =>
-                                        S.documentTypeList('customizationType')
-                                            .title('Types')
-                                            .filter(
-                                                'category._ref == $categoryId',
-                                            )
-                                            .params({categoryId})
-                                            .child((typeId) =>
-                                                S.documentTypeList('customizationOption')
-                                                    .title('Customizations')
-                                                    .filter(
-                                                        'type._ref == $typeId',
-                                                    )
-                                                    .params({typeId}),
-                                            ),
-                                    ),
-                            ),
-
-                        S.listItem()
-                            .title('All Customizations')
-                            .schemaType('customizationOption')
-                            .child(
-                                S.documentTypeList('customizationOption').title(
-                                    'All Customizations',
-                                ),
-                            ),
-
-                        S.divider(),
-
-                        S.listItem()
-                            .title('Taxonomy')
-                            .child(
-                                S.list()
-                                    .title('Customization Taxonomy')
-                                    .items([
-                                        S.listItem()
-                                            .title('Customization Categories')
-                                            .schemaType('customizationCategory')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'customizationCategory',
-                                                ).title(
-                                                    'Customization Categories',
-                                                ),
-                                            ),
-                                        S.listItem()
-                                            .title('Customization Types')
-                                            .schemaType('customizationType')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'customizationType',
-                                                ).title('Customization Types'),
-                                            ),
-                                        S.listItem()
-                                            .title('Attribute Groups')
-                                            .schemaType('property')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'property',
-                                                ).title('Attribute Groups'),
-                                            ),
-                                        S.listItem()
-                                            .title('Attributes')
-                                            .schemaType('propertyValue')
-                                            .child(
-                                                S.documentTypeList('propertyValue')
-                                                    .title('Attributes')
-                                                    .defaultOrdering([
-                                                        {
-                                                            field: 'property.title',
-                                                            direction: 'asc',
-                                                        },
-                                                        {
-                                                            field: 'title',
-                                                            direction: 'asc',
-                                                        },
-                                                    ]),
-                                            ),
-                                    ]),
-                            ),
-                    ]),
-            ),
-
-        // ── Products ──────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Products')
-            .icon(PackageIcon)
-            .child(
-                S.list()
-                    .title('Products')
-                    .items([
-                        S.listItem()
-                            .title('All')
-                            .schemaType('product')
-                            .child(
-                                S.documentTypeList('product').title(
-                                    'All Products',
-                                ),
-                            ),
-
-                        S.listItem()
-                            .title('Standard')
-                            .child(
-                                S.documentTypeList('productLine')
-                                    .title('Product Lines')
-                                    .child((categoryId) =>
-                                        S.documentTypeList(
-                                            'productStyle',
-                                        )
-                                            .title('Product Styles')
-                                            .filter(
-                                                'productLine._ref == $categoryId',
-                                            )
-                                            .params({categoryId})
-                                            .child((styleId) =>
-                                                S.documentTypeList('product')
-                                                    .title('Products')
-                                                    .filter(
-                                                        '$styleId in productStyle[]._ref && (kind == "standard" || kind == "both")',
-                                                    )
-                                                    .params({styleId}),
-                                            ),
-                                    ),
-                            ),
-
-
-                        S.divider(),
-
-                        S.listItem()
-                            .title('Taxonomy')
-                            .child(
-                                S.list()
-                                    .title('Taxonomy')
-                                    .items([
-                                        S.listItem()
-                                            .title('Categories')
-                                            .child(
-                                                S.list()
-                                                    .title('Categories')
-                                                    .items([
-                                                        S.listItem()
-                                                            .title(
-                                                                'Product Lines',
-                                                            )
-                                                            .schemaType(
-                                                                'productLine',
-                                                            )
-                                                            .child(
-                                                                S.documentTypeList(
-                                                                    'productLine',
-                                                                ).title(
-                                                                    'Product Lines',
-                                                                ),
-                                                            ),
-                                                        S.listItem()
-                                                            .title(
-                                                                'Product Styles',
-                                                            )
-                                                            .schemaType(
-                                                                'productStyle',
-                                                            )
-                                                            .child(
-                                                                S.documentTypeList(
-                                                                    'productStyle',
-                                                                ).title(
-                                                                    'Product Styles',
-                                                                ),
-                                                            ),
-                                                    ]),
-                                            ),
-
-                                    ]),
-                            ),
-                    ]),
-            ),
-    ];
-}
-
-export function solutionItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title('Solutions'),
-
-        S.listItem()
-            .title('Solutions')
-            .icon(BulbOutlineIcon)
-            .schemaType('solution')
-            .child(
-                S.documentTypeList('solution')
-                    .title('Solutions')
-                    .defaultOrdering([
-                        {field: 'title', direction: 'asc'},
-                    ]),
-            ),
-
-        S.listItem()
-            .title('Solution Styles')
-            .icon(ThLargeIcon)
-            .schemaType('solutionStyle')
-            .child(
-                S.documentTypeList('solutionStyle')
-                    .title('Solution Styles')
-                    .defaultOrdering([
-                        {field: 'title', direction: 'asc'},
-                    ]),
-            ),
-    ];
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// ADMIN-SPECIFIC BUILDING BLOCKS
-// Used only in adminStructure. Individual workspaces use their own flat items.
+// SHARED BUILDING BLOCKS
+// Composed into the workspace roots below.
 // ─────────────────────────────────────────────────────────────────────────────
-
-interface CoreEntitiesOptions {
-    hideCaseStudies?: boolean;
-    label?: string;
-}
-
-export function coreEntitiesItems(
-    S: StructureBuilder,
-    options: CoreEntitiesOptions = {},
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title(options.label ?? 'Core Entities'),
-
-        // ── Products ──────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Products')
-            .icon(PackageIcon)
-            .child(
-                S.list()
-                    .title('Products')
-                    .items([
-                        S.listItem()
-                            .title('All')
-                            .schemaType('product')
-                            .child(
-                                S.documentTypeList('product').title(
-                                    'All Products',
-                                ),
-                            ),
-                        S.listItem()
-                            .title('Standard')
-                            .child(
-                                S.documentTypeList('productLine')
-                                    .title('Product Lines')
-                                    .child((categoryId) =>
-                                        S.documentTypeList(
-                                            'productStyle',
-                                        )
-                                            .title('Product Styles')
-                                            .filter(
-                                                'productLine._ref == $categoryId',
-                                            )
-                                            .params({categoryId})
-                                            .child((styleId) =>
-                                                S.documentTypeList('product')
-                                                    .title('Products')
-                                                    .filter(
-                                                        '$styleId in productStyle[]._ref && (kind == "standard" || kind == "both")',
-                                                    )
-                                                    .params({styleId}),
-                                            ),
-                                    ),
-                            ),
-                        S.divider(),
-                        S.listItem()
-                            .title('Taxonomy')
-                            .child(
-                                S.list()
-                                    .title('Taxonomy')
-                                    .items([
-                                        S.listItem()
-                                            .title('Product Lines')
-                                            .schemaType('productLine')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'productLine',
-                                                ).title('Product Lines'),
-                                            ),
-                                        S.listItem()
-                                            .title('Product Styles')
-                                            .schemaType('productStyle')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'productStyle',
-                                                ).title('Product Styles'),
-                                            ),
-                                    ]),
-                            ),
-                    ]),
-            ),
-
-        // ── Solutions ─────────────────────────────────────────────────────────────
-        // Flat model: one `solution` document type, pre-organized by `solutionType`.
-        // Each folder is the same document set filtered by type — mirrors Products.
-        S.listItem()
-            .title('Solutions')
-            .icon(BulbOutlineIcon)
-            .child(
-                S.list()
-                    .title('Solutions')
-                    .items([
-                        S.listItem()
-                            .title('All')
-                            .schemaType('solution')
-                            .child(
-                                S.documentTypeList('solution')
-                                    .title('All Solutions')
-                                    .defaultOrdering([
-                                        {
-                                            field: 'title',
-                                            direction: 'asc',
-                                        },
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Industries')
-                            .schemaType('solution')
-                            .child(
-                                S.documentTypeList('solution')
-                                    .title('Industry Solutions')
-                                    .filter(
-                                        '_type == "solution" && solutionType == "industry"',
-                                    )
-                                    .defaultOrdering([
-                                        {
-                                            field: 'title',
-                                            direction: 'asc',
-                                        },
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Channels')
-                            .schemaType('solution')
-                            .child(
-                                S.documentTypeList('solution')
-                                    .title('Channel Solutions')
-                                    .filter(
-                                        '_type == "solution" && solutionType == "channel"',
-                                    )
-                                    .defaultOrdering([
-                                        {
-                                            field: 'title',
-                                            direction: 'asc',
-                                        },
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Focus')
-                            .schemaType('solution')
-                            .child(
-                                S.documentTypeList('solution')
-                                    .title('Focus Solutions')
-                                    .filter(
-                                        '_type == "solution" && solutionType == "focus"',
-                                    )
-                                    .defaultOrdering([
-                                        {
-                                            field: 'title',
-                                            direction: 'asc',
-                                        },
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Use Cases')
-                            .schemaType('solution')
-                            .child(
-                                S.documentTypeList('solution')
-                                    .title('Use Case Solutions')
-                                    .filter(
-                                        '_type == "solution" && solutionType == "use-case"',
-                                    )
-                                    .defaultOrdering([
-                                        {
-                                            field: 'title',
-                                            direction: 'asc',
-                                        },
-                                    ]),
-                            ),
-                    ]),
-            ),
-
-        // ── Expertise ─────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Expertise')
-            .icon(StarIcon)
-            .schemaType('expertiseStage')
-            .child(
-                S.documentTypeList('expertiseStage')
-                    .title('Expertise Stages')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
-            ),
-
-        // ── Customization ─────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Customization')
-            .icon(ColorWheelIcon)
-            .child(
-                S.list()
-                    .title('Customization')
-                    .items([
-                        S.listItem()
-                            .title('Browse by Category')
-                            .child(
-                                S.documentTypeList('customizationCategory')
-                                    .title('Categories')
-                                    .child((categoryId) =>
-                                        S.documentTypeList('customizationType')
-                                            .title('Types')
-                                            .filter(
-                                                'category._ref == $categoryId',
-                                            )
-                                            .params({categoryId})
-                                            .child((typeId) =>
-                                                S.documentTypeList('customizationOption')
-                                                    .title('Customizations')
-                                                    .filter(
-                                                        'type._ref == $typeId',
-                                                    )
-                                                    .params({typeId}),
-                                            ),
-                                    ),
-                            ),
-                        S.listItem()
-                            .title('All Customizations')
-                            .schemaType('customizationOption')
-                            .child(
-                                S.documentTypeList('customizationOption').title(
-                                    'All Customizations',
-                                ),
-                            ),
-                        S.divider(),
-                        S.listItem()
-                            .title('Taxonomy')
-                            .child(
-                                S.list()
-                                    .title('Customization Taxonomy')
-                                    .items([
-                                        S.listItem()
-                                            .title('Categories')
-                                            .schemaType('customizationCategory')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'customizationCategory',
-                                                ).title('Categories'),
-                                            ),
-                                        S.listItem()
-                                            .title('Types')
-                                            .schemaType('customizationType')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'customizationType',
-                                                ).title('Types'),
-                                            ),
-                                        S.listItem()
-                                            .title('Attribute Groups')
-                                            .schemaType('property')
-                                            .child(
-                                                S.documentTypeList(
-                                                    'property',
-                                                ).title('Attribute Groups'),
-                                            ),
-                                        S.listItem()
-                                            .title('Attributes')
-                                            .schemaType('propertyValue')
-                                            .child(
-                                                S.documentTypeList('propertyValue')
-                                                    .title('Attributes')
-                                                    .defaultOrdering([
-                                                        {
-                                                            field: 'property.title',
-                                                            direction: 'asc',
-                                                        },
-                                                        {
-                                                            field: 'title',
-                                                            direction: 'asc',
-                                                        },
-                                                    ]),
-                                            ),
-                                    ]),
-                            ),
-                    ]),
-            ),
-
-        // ── Clients ───────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Clients')
-            .icon(UserIcon)
-            .schemaType('client')
-            .child(
-                S.documentTypeList('client')
-                    .title('Clients')
-                    .defaultOrdering([{field: 'name', direction: 'asc'}]),
-            ),
-
-        // ── Case Studies ──────────────────────────────────────────────────────────
-        ...(options.hideCaseStudies
-            ? []
-            : [
-                  S.listItem()
-                      .title('Case Studies')
-                      .icon(CaseIcon)
-                      .child(
-                          S.list()
-                              .title('Case Studies')
-                              .items([
-                                  S.listItem()
-                                      .title('Studies')
-                                      .icon(CaseIcon)
-                                      .schemaType('caseStudy')
-                                      .child(
-                                          S.documentTypeList('caseStudy')
-                                              .title('Case Studies')
-                                              .defaultOrdering([
-                                                  {field: 'publishedAt', direction: 'desc'},
-                                              ]),
-                                      ),
-                                  S.listItem()
-                                      .title('Page Settings')
-                                      .icon(CogIcon)
-                                      .child(
-                                          S.editor()
-                                              .id('caseStudiesPage')
-                                              .schemaType('listingPage')
-                                              .documentId('caseStudiesPage'),
-                                      ),
-                              ]),
-                      ),
-              ]),
-    ];
-}
-
-export function resourcesItems(
-    S: StructureBuilder,
-): (ListItemBuilder | DividerBuilder)[] {
-    return [
-        S.divider().title('Resources'),
-
-        // ── Blog (grouped for Admin overview) ────────────────────────────────────
-        S.listItem()
-            .title('Blog')
-            .icon(DocumentTextIcon)
-            .child(
-                S.list()
-                    .title('Blog')
-                    .items([
-                        S.listItem()
-                            .title('Post')
-                            .icon(DocumentTextIcon)
-                            .schemaType('post')
-                            .child(
-                                S.documentTypeList('post')
-                                    .title('Post')
-                                    .defaultOrdering([
-                                        {
-                                            field: 'publishedAt',
-                                            direction: 'desc',
-                                        },
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Category')
-                            .icon(FolderIcon)
-                            .schemaType('blogCategory')
-                            .child(
-                                S.documentTypeList('blogCategory')
-                                    .title('Category')
-                                    .defaultOrdering([
-                                        {field: 'title', direction: 'asc'},
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Topic')
-                            .icon(TagIcon)
-                            .child(
-                                S.documentTypeList('blogTag')
-                                    .title('Topic')
-                                    .defaultOrdering([
-                                        {field: 'title', direction: 'asc'},
-                                    ]),
-                            ),
-                        S.listItem()
-                            .title('Author')
-                            .icon(UserIcon)
-                            .schemaType('author')
-                            .child(
-                                S.documentTypeList('author').title('Author'),
-                            ),
-                        S.listItem()
-                            .title('Widget')
-                            .icon(ComponentIcon)
-                            .child(
-                                S.documentTypeList('contentWidget').title(
-                                    'Widget',
-                                ),
-                            ),
-                    ]),
-            ),
-
-        // ── Glossary ──────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Glossary')
-            .icon(BookIcon)
-            .schemaType('glossaryTerm')
-            .child(
-                S.documentTypeList('glossaryTerm')
-                    .title('Glossary')
-                    .defaultOrdering([{field: 'term', direction: 'asc'}]),
-            ),
-
-        // ── Guides ────────────────────────────────────────────────────────────────
-        S.listItem()
-            .title('Guides')
-            .icon(DocumentTextIcon)
-            .schemaType('guide')
-            .child(
-                S.documentTypeList('guide')
-                    .title('Guides')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
-            ),
-
-    ];
-}
 
 interface SettingsOptions {
     blog?: boolean;
     solutions?: boolean;
     /** Show the Media Library inside the Settings section (under the divider). */
     media?: boolean;
+}
+
+/**
+ * Ops › Migration Ledger — read-only view of `migrationRun`.
+ *
+ * The ledger answers "what has run against THIS dataset", which is otherwise only
+ * reachable from a terminal with a token. Pinned to the Admin workspace on purpose:
+ * it is operational provenance, not content, so it does not belong in the Blog or
+ * Website desks. Newest first, because the question is almost always about the last
+ * deploy. Documents are read-only at the schema level (see `schemas/migrationRun.ts`) —
+ * this pane shows the record, it does not offer to edit it.
+ */
+export function migrationLedgerItem(S: StructureBuilder): ListItemBuilder {
+    return S.listItem()
+        .title('Migration Ledger')
+        .icon(CheckmarkCircleIcon)
+        .schemaType('migrationRun')
+        .child(
+            S.documentTypeList('migrationRun')
+                .title('Migration Ledger')
+                .defaultOrdering([{field: 'ranAt', direction: 'desc'}]),
+        );
 }
 
 export function settingsItems(
@@ -1383,20 +673,6 @@ export function settingsItems(
 // Compose the building blocks per workspace.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Admin — sees everything, organized by platform architecture */
-export const adminStructure = (
-    S: StructureBuilder,
-    context: StructureResolverContext,
-) =>
-    S.list()
-        .title('PakFactory')
-        .items([
-            ...coreEntitiesItems(S),
-            ...resourcesItems(S),
-            globalNavigationItem(S),
-            ...settingsItems(S, context, {blog: true, solutions: true}),
-        ]);
-
 /** Blog — editorial team */
 export const blogStructure = (
     S: StructureBuilder,
@@ -1408,45 +684,6 @@ export const blogStructure = (
             ...blogItems(S, context),
             ...settingsItems(S, context, {blog: true}),
         ]);
-
-/** Website — all content that makes up the website */
-export const websiteStructure = (
-    S: StructureBuilder,
-    context: StructureResolverContext,
-) =>
-    S.list()
-        .title('Website')
-        .items([
-            ...coreEntitiesItems(S, {
-                // Case Studies shown here (under Core Pages) for the Marketing
-                // Website workspace. TODO: drop the "Core Pages" label later.
-                label: 'Core Pages',
-            }),
-            mediaLibraryItem(S),
-            ...settingsItems(S, context),
-        ]);
-
-/** Solutions — industry and use-case solution pages */
-export const solutionsStructure = (
-    S: StructureBuilder,
-    context: StructureResolverContext,
-) =>
-    S.list()
-        .title('Solutions')
-        .items([
-            ...solutionItems(S),
-            ...knowledgeLibraryItems(S),
-            ...settingsItems(S, context, {solutions: true}),
-        ]);
-
-/** Academy — placeholder until Academy schema is built */
-export const academyStructure = (
-    S: StructureBuilder,
-    context: StructureResolverContext,
-) =>
-    S.list()
-        .title('Academy')
-        .items([...settingsItems(S, context)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCTS & CUSTOMIZATION workspaces (PROD-2309 / D39)
@@ -1478,11 +715,31 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
         S.listItem()
             .title('Product Styles')
             .schemaType('productStyle')
-            .child(S.documentTypeList('productStyle').title('Product Styles')),
+            // Title, not Last Edited (PROD-2546) — same reasoning as the Customization
+            // lists. Grouping by Line is the sort editors want, but a reference path
+            // cannot be a list default; it ships as a menu entry on `productStyle.ts`.
+            .child(
+                S.documentTypeList('productStyle')
+                    .title('Product Styles')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.listItem()
-            .title('Products')
+            .title('Standard Products')
             .schemaType('product')
-            .child(S.documentTypeList('product').title('Products')),
+            // Split by `kind` (PROD-2547). Inspiration presets live in the Solutions
+            // workspace, because Solutions is the surface they hang off; this list is
+            // the fully-configurable line/style products only.
+            //
+            // ⚠ `.filter()` REPLACES the `_type == $type` that `documentTypeList`
+            // sets for itself — it does not append — so the type clause is restated
+            // here. Drop it and the list queries every document type in the dataset
+            // and merely happens to look right.
+            .child(
+                S.documentTypeList('product')
+                    .title('Standard Products')
+                    .filter('_type == $type && kind == $kind')
+                    .params({type: 'product', kind: 'standard'}),
+            ),
         S.listItem()
             .title('Bundles')
             .schemaType('bundle')
@@ -1501,11 +758,34 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
         S.listItem()
             .title('Types')
             .schemaType('customizationType')
-            .child(S.documentTypeList('customizationType').title('Customization Types')),
+            // Title, not Last Edited (PROD-2545) — same reasoning as Options below.
+            // Grouping by Category is the sort editors want, but a reference path cannot
+            // be a list default; it ships as a menu entry on `customizationType.ts`.
+            .child(
+                S.documentTypeList('customizationType')
+                    .title('Customization Types')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.listItem()
             .title('Options')
             .schemaType('customizationOption')
-            .child(S.documentTypeList('customizationOption').title('Customization Options')),
+            // Title, not Last Edited (PROD-2544). Last Edited is the Studio's own default
+            // and it reshuffles underfoot: editing any option throws it to the top while
+            // an editor is working a Type at a time. Alphabetical holds still.
+            //
+            // Grouping by Type is what editors actually want, and it is NOT settable here.
+            // `defaultOrdering` takes a bare `SortOrderingItem[]`, and `PaneContainer`
+            // builds the default as `{by: defaultOrdering}` — no slot for the extended
+            // projection that makes a reference path like `type.title` resolve. Setting it
+            // here does not error; it silently sorts by the next key, which is why this
+            // reads `title` and not `type.title`. The Type grouping ships as a sort-MENU
+            // entry instead (`orderings` in `customizationOption.ts`, which explains the
+            // mechanism); an editor picks it once and it persists per user.
+            .child(
+                S.documentTypeList('customizationOption')
+                    .title('Customization Options')
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
         S.divider().title('Global'),
         ...propertyGlobalItems(S),
     ];
@@ -1617,7 +897,7 @@ export const globalStructure = (
 ) =>
     S.list()
         .title('Global')
-        .items([...sitePreviewHint(S), ...globalItems(S)]);
+.items([...sitePreviewHint(S), ...globalItems(S), migrationLedgerItem(S)]);
 
 /** Solutions workspace (PROD-2330 / D2) — the `solution` type has 30 docs, so it
  *  earns a home. Its settings singleton lives with it (§3.1). Expertise,
@@ -1650,6 +930,30 @@ export const solutionsWorkspaceStructure = (
                     S.documentTypeList('solutionStyle')
                         .title('Solution Styles')
                         .defaultOrdering([{field: 'title', direction: 'asc'}]),
+                ),
+            // Inspiration presets are `product` documents, but their breadcrumb runs
+            // through Solutions, so this is where they are edited (PROD-2547). The
+            // Products workspace holds the standard products; neither list shows the
+            // other's rows.
+            //
+            // The template is load-bearing, not decoration: `kind` has
+            // `initialValue: 'standard'`, so a plain `+` here would create a document
+            // that immediately vanishes from the list it was created in.
+            //
+            // No `.icon()`: `product.ts` already declares `icon: PackageIcon` and
+            // `.schemaType()` picks it up. Setting it again costs a type error against
+            // the 227 baseline for an icon that already renders.
+            S.listItem()
+                .title('Inspiration Products')
+                .schemaType('product')
+                .child(
+                    S.documentTypeList('product')
+                        .title('Inspiration Products')
+                        .filter('_type == $type && kind == $kind')
+                        .params({type: 'product', kind: 'inspiration'})
+                        .initialValueTemplates([
+                            S.initialValueTemplateItem('product-inspiration'),
+                        ]),
                 ),
         ]);
 
@@ -1752,5 +1056,3 @@ export const mainWebsiteStructure = (
 // unfiled type is still reachable by search / reference pickers and audited via
 // Vision (array::unique(*[]._type)). See sanity.config.ts.
 
-// Default export — Admin (backwards-compatible fallback)
-export const structure = adminStructure;

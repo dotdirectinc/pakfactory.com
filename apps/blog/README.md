@@ -32,7 +32,7 @@ pnpm dev:studio        # Sanity Studio (apps/studio)
 | Production build | `pnpm build:blog` |
 | Type-check | `pnpm --filter @pakfactory/blog typecheck` |
 | Lint | `pnpm --filter @pakfactory/blog lint` |
-| Seed dev content | `pnpm --filter @pakfactory/studio run seed` then `pnpm seed:blog-dev` (see [Content vs seed](#content-vs-seed-workflow) — seeds **push** fixtures into Sanity; they are not a content pull) |
+| Seed dev content | `pnpm seed:blog-dev` (see [Content vs seed](#content-vs-seed-workflow) — seeds **push** fixtures into Sanity; they are not a content pull) |
 
 After seeding, open Studio → **Pages → Homepage** → **Page blocks** tab to reorder blocks.
 
@@ -92,9 +92,10 @@ Server Components by default; `export const revalidate = 60` unless a route need
 
 **Seeding pushes the other way** — fixture scripts overwrite known document IDs in Sanity. Use seeds only when the dataset is empty or you need repeatable QA data; avoid running them while editors are working on the same dataset. **AI agents do not run seeds** — humans only ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
 
+The full catalog seed (`apps/studio/scripts/seed.mjs`) was deleted on 2026-09-21: it had drifted from the schema since 2026-08-27 and wrote fields and enum values that no longer exist. The blog fixtures below assume a dataset that already has categories, authors and tags — `development` and `production` both do.
+
 | When | Command |
 | ---- | ------- |
-| Fresh clone / empty dataset | `pnpm --filter @pakfactory/studio run seed` |
 | Home rows need posts + full blog fixtures | `pnpm seed:blog-dev` |
 | Empty homepage/topics page builder only | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` |
 

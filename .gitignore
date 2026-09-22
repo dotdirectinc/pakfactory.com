@@ -54,3 +54,5 @@ docs/*
 
 apps/studio/backup
 backups/
+.vercel
+.env*

@@ -38,6 +38,7 @@ import { RelatedPostsByTagView } from './components/RelatedPostsByTagView'
 import { RelatedPostsByAuthorView } from './components/RelatedPostsByAuthorView'
 import { ProductStyleCategoryProductsView } from './components/ProductStyleCategoryProductsView'
 import { ProductAvailableCustomizationsView } from './components/ProductAvailableCustomizationsView'
+import { ProductInspirationView } from './components/productViews'
 import { SolutionStyleMatchesView } from './components/SolutionStyleMatchesView'
 import { SolutionStylesView } from './components/SolutionStylesView'
 import {
@@ -97,6 +98,8 @@ const BLOG_PREVIEW_BASE = BLOG_PREVIEW_RAW.endsWith('/')
 // released — see the release switch below and TARGETS in
 // scripts/sanity/studio-targets.mjs.
 //
+// Env-driven, with no fallback (PROD-2494 AC: "no hard-coded host"). Trailing
+// slash required, as for the other two bases.
 // Presence of this variable is the RELEASE SWITCH for the seven site-root
 // workspaces. No fallback on purpose: when it is unset, those workspaces get no
 // Presentation tab at all.
@@ -164,6 +167,19 @@ const productTemplates: Template[] = [
   // The 'product-industry' template was removed in PROD-2284: it pre-filled the
   // retired `industries` / `industryCategories` reference arrays. Industry-typed
   // products now tag via Solutions.
+  //
+  // Unparameterised, unlike `product-standard` above, because the Solutions
+  // workspace's Inspiration Products list needs a plain `+` (PROD-2547). That list
+  // filters on `kind == "inspiration"` while the schema's initialValue is
+  // 'standard', so without this the create button would make a document that
+  // vanishes from the list it was created in. Being unparameterised also puts it
+  // in the global + menu as "Product (Inspiration)", which is wanted.
+  {
+    id: 'product-inspiration',
+    title: 'Product (Inspiration)',
+    schemaType: 'product',
+    value: { kind: 'inspiration' },
+  },
 ]
 
 const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => {
@@ -191,10 +207,15 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
       S.view.component(ProductStyleCategoryProductsView).title('Products'),
     ])
   }
+  // `basedOn` points from an inspiration product to the standard it was built
+  // from, and PROD-2547 put the two kinds in different workspaces whose lists do
+  // not show each other's rows — so neither end of that relationship is reachable
+  // from the other without this tab.
   if (schemaType === 'product') {
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(ProductAvailableCustomizationsView).title('Customization'),
+      S.view.component(ProductInspirationView).title('Inspiration'),
     ])
   }
   // Solution Styles are listed flat in the Solutions workspace, so this tab is
@@ -405,7 +426,7 @@ const sitePresentation = () =>
     title: 'Presentation',
     previewUrl: {
       initial: SITE_PREVIEW_BASE,
-      // ABSOLUTE, with a leading slash — and that slash is the whole fix.
+// ABSOLUTE, with a leading slash — and that slash is the whole fix.
       //
       // Presentation resolves a RELATIVE `enable` against the iframe's CURRENT
       // pathname, not against `initial`. From /products/custom-book-style-…,
