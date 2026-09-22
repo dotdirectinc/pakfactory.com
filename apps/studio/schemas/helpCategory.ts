@@ -32,8 +32,7 @@ export const helpCategory = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description:
-        'The section name — e.g. Pricing, MOQ & Lead Times · Ordering & Quotes · Artwork & Files · Shipping & Delivery.',
+      description: 'The section name. For example, Pricing, MOQ & Lead Times, or Artwork & Files.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
@@ -59,7 +58,8 @@ export const helpCategory = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Optional — pin a few answers to the top of the category page, in this order. Empty means nothing pinned and the derived list stands on its own. The full listing is derived from every general FAQ pointing here; you never maintain it by hand.',
+        'Optional — pin a few answers to the top of the category page, in this order. The rest ' +
+        'of the listing builds itself from every general answer pointing here.',
       of: [{ type: 'reference', to: [{ type: 'faq' }] }],
       validation: (Rule) => Rule.unique(),
     }),
