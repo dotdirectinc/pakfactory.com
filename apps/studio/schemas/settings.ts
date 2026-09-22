@@ -295,7 +295,7 @@ export const settings = defineType({
       title: 'Brand X/Twitter handle',
       type: 'string',
       group: 'socialDefaults',
-      description: 'e.g. @pakfactory — emits twitter:site.',
+      description: 'The brand handle (e.g. @pakfactory), used for the twitter:site tag.',
     }),
 
     // ── Crawlers & AI ─────────────────────────────────────────────────────────
