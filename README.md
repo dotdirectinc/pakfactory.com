@@ -45,7 +45,7 @@ After `git pull`, ask your assistant:
 | “Write a new blog post page.” | Use `@pakfactory/sanity/queries`, `getSanityClient()`, Server Components; `generateMetadata` + **`BlogPosting`** JSON-LD via `@pakfactory/seo`; URLs via `getSiteUrl()` with `/blog` prefix per [`apps/blog/CLAUDE.md`](./apps/blog/CLAUDE.md). |
 | “Should page 2 of a category archive be indexed?” | Unfiltered paginated listings are **`index, follow`** with a self-canonical; filters / odd `perPage` still **`noindex, follow`** via `getBlogRobotsDirective` in `apps/blog/src/lib/seo.ts` (PROD-1495). |
 | “Run `npm run dev`.” | Use **`pnpm dev`** from the repo root. |
-| “Run `pnpm seed:blog-dev` to fix the homepage.” | Refuse autonomous seed/content writes; may edit schemas or tell the human which command to run manually ([`AGENTS.md`](./AGENTS.md) § Sanity content — agent guardrails). |
+| “Seed content to fix the homepage.” | Refuse autonomous seed/content writes; may edit schemas or tell the human which command to run manually ([`AGENTS.md`](./AGENTS.md) § Sanity content — agent guardrails). |
 
 ## Prerequisites
 
@@ -193,7 +193,6 @@ All commands run from the **repository root**.
 | `pnpm dev` | Starts **all** dev tasks via Turborepo (www, blog, studio). |
 | `pnpm dev:www` | Next.js main site → [http://localhost:3000](http://localhost:3000) |
 | `pnpm dev:blog` | Blog → [http://localhost:3003](http://localhost:3003) (default port **3003**; set `PORT` to override) |
-| `pnpm seed:blog-dev` | Extra blog test posts + industries into Sanity **`development`** (after full studio seed) |
 | `pnpm dev:studio` | Sanity Studio → [http://localhost:3333](http://localhost:3333) |
 
 Production-style serve (after build): each app has `pnpm run start` inside its workspace; from root, build first then start the app you need.
@@ -262,7 +261,6 @@ pnpm run versions:apps
 
 | Command | What it does |
 |---------|----------------|
-| `pnpm run seed:demo` | Seeds demo documents (requires `SANITY_API_WRITE_TOKEN` and project/dataset env). |
 | `pnpm run migrate:product-single-refs` | Data migration helper in `@pakfactory/sanity`. |
 
 Additional migration scripts may exist under `packages/sanity/scripts`; see `packages/sanity/package.json` for the full list.

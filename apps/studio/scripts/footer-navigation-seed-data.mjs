@@ -1,6 +1,7 @@
 /**
  * Default footer link columns for blogNavigation.footerNavigation.
- * Shared by seed-blog-dev.mjs and migrate-blog-navigation.mjs.
+ * Used by migrate-blog-navigation.mjs. (It was also shared with seed-blog-dev.mjs,
+ * the development fixture seed, which was deleted as mock data.)
  *
  * Human follow-up: when reseeding, prefer seeding
  * `footerNavigation.builder` with a `ctaTextAndButton` block

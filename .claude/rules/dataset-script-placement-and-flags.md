@@ -10,7 +10,7 @@ of what follows was in place to stop it.
 | Kind of script | Home | Examples |
 |---|---|---|
 | **Content-model migration** — renaming/moving fields, backfilling a new required field, retyping documents | `packages/sanity/scripts/*.ts` (run via `tsx`) | `migrate-customization-applies-to.ts`, `migrate-product-style-line.ts`, `migrate-rename-commercial-types.ts` |
-| **Operational** — seeds, redirect maintenance, structure/parity checks | `apps/studio/scripts/*.mjs` | `seed-blog-dev.mjs`, `check-structure-types.mjs`, `migrate-redirect-groups.mjs` |
+| **Operational** — seeds, redirect maintenance, structure/parity checks | `apps/studio/scripts/*.mjs` | `seed-blog-singleton-pages.mjs`, `check-structure-types.mjs`, `migrate-redirect-groups.mjs` |
 
 **Before creating a script, look for its predecessor and sit next to it.** A migration that
 renames a field almost always has a sibling that *populated* that field; find it and match
@@ -86,15 +86,30 @@ A tick is a claim about the dataset the script *used*, not the one you *meant*. 
 banner's `dataset=` before believing the result — that line was on screen and correct
 during BUG-0032, and lost to three ✅ characters beneath it.
 
-## Known gap
+## Known gap — closed
 
-The env-var-only scripts in `apps/studio/scripts/` predate this rule and have not been
-retrofitted. Treat any of them that writes as carrying the same hazard.
+The env-var-only scripts in `apps/studio/scripts/` predated this rule. **All 15 have now
+been retrofitted**; no script in the repo reads `NEXT_PUBLIC_SANITY_DATASET` or
+`SANITY_STUDIO_DATASET` to decide what it writes to.
 
-`pnpm sanity:migrate status --dataset <name>` now names them individually — each is marked
-*needs --dataset retrofit* — and the runner **refuses to execute them** rather than setting
-`NEXT_PUBLIC_SANITY_DATASET` on their behalf, which would rebuild the ambient default this
-rule removes. That list is the retrofit worklist.
+The retrofit found the hazard was worse than this section described. The 15 did not share
+one convention — they had two **opposite** defaults:
+
+- 7 took `--apply`, so a bare run was a safe dry run;
+- **4 took `--dry-run`, so a bare run WROTE**;
+- **2 seeds had no dry-run mode at all** and wrote the instant they were invoked.
+
+Combined with the `'development'` fallback, `pnpm --filter @pakfactory/studio run
+migrate:body-table` with no arguments wrote to whatever the ambient variable named. That is
+a worse shape than BUG-0032, which at least required someone to type a write flag.
+
+All 15 are now dry-run-by-default behind `--confirm`. `--dry-run` and `--apply` are both
+still accepted as deprecated spellings — they appear in runbooks, and rejecting `--dry-run`
+would fail a command whose intent was *"do not write"*.
+
+The runner still **refuses** to execute anything marked `legacy-env`. Nothing carries that
+marker today; it stays because the hazard is a property of the script shape, and the next
+script copied from an old template will need catching.
 
 **The placement table above is still the two-directory split.** Consolidating every Sanity
 script under `scripts/sanity/` — and re-cutting the axis from *content-model vs operational*

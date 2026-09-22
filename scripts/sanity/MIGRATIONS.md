@@ -83,7 +83,7 @@ Three rules keep probes trustworthy:
 
 | Refusal | Why |
 |---|---|
-| Execute a `legacy-env` script | It resolves its own dataset from `NEXT_PUBLIC_SANITY_DATASET`, so the runner cannot honour `--dataset` on its behalf. Setting that variable for it would rebuild the ambient default the rule exists to remove. Run it by hand, then `adopt`. |
+| Execute a `legacy-env` script | It resolves its own dataset from `NEXT_PUBLIC_SANITY_DATASET`, so the runner cannot honour `--dataset` on its behalf. Setting that variable for it would rebuild the ambient default the rule exists to remove. No script carries this any more — the refusal stays because the hazard belongs to the shape, not to those files. |
 | Run a migration whose `after:` is unapplied | Order is declared in the manifest and nowhere else. |
 | Record a run whose probe still says `pending` | An exit code is a claim about a process; the probe is a fact about the dataset. A script that exits 0 without changing anything is the BUG-0032 shape. |
 | Run anything without `--dataset` | No fallback, not even for a dry run. |
@@ -105,10 +105,37 @@ register is visibly a decision rather than an oversight.
 
 ---
 
+## Default polarity — what the retrofit changed
+
+The 15 retrofitted scripts did not share a convention. They had **two opposite defaults**:
+
+| Group | Old behaviour with no flags | Now |
+|---|---|---|
+| 7 `--apply` scripts | dry run — safe | dry run, `--confirm` writes |
+| **4 `--dry-run` migrations** | **WROTE IMMEDIATELY** | dry run, `--confirm` writes |
+| **2 seeds** | **WROTE IMMEDIATELY, no dry run existed** | dry run, `--confirm` writes |
+| 1 parity check | read-only | read-only, still needs `--dataset` |
+
+All of them resolved the dataset from `NEXT_PUBLIC_SANITY_DATASET` with a `'development'`
+fallback. So `pnpm --filter @pakfactory/studio run migrate:body-table`, with no flags at
+all, wrote to whatever that ambient variable happened to name — a strictly worse version
+of BUG-0032, because BUG-0032 at least required someone to type `--confirm`.
+
+Two consequences worth knowing:
+
+- **`--dry-run` is still accepted** and is now a no-op with a warning, for the same reason
+  `--apply` is accepted: it appears in runbooks and shell history. Rejecting it would fail
+  a command whose whole intent was *"do not write"*.
+- **`seed:blog-dev` has since been deleted** along with `seed:demo` — both wrote mock
+  fixtures. The retrofit had given `seed:blog-dev` an outright refusal of
+  `--dataset production`, which is now moot.
+
+---
+
 ## Known gaps (the honest list)
 
-- **16 scripts are `legacy-env`** and cannot be driven by the runner until they take
-  `--dataset`. `status` marks each one. That retrofit is Phase 2.
+- ~~15 scripts are `legacy-env`~~ **Done.** All 15 now take `--dataset`/`--confirm`/`--yes-production`.
+  See *Default polarity* below for what that changed.
 - **Two migrations have no probe** — `20260717-redirect-trailing-slashes` (a bare `/` is a
   legal `from`, so "already stripped" is indistinguishable from "never had one") and
   `20260826-split-coating-customization-type` (needs the script's own slug constants).

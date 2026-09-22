@@ -36,8 +36,13 @@
  * `'flags'`      the script takes `--dataset/--confirm/--yes-production` (script-args.mjs).
  * `'legacy-env'` the script predates that rule and resolves its dataset from
  *                NEXT_PUBLIC_SANITY_DATASET. The runner REFUSES to execute these — see
- *                BUG-0032 — and `status` lists them as needing the Phase-2 retrofit.
+ *                BUG-0032 — and `status` lists them as needing the retrofit.
  *                They can still be adopted, because reading a probe is safe.
+ *
+ *                NO ENTRY CARRIES THIS ANY MORE. All 15 were retrofitted; the value and
+ *                the runner's refusal stay because the hazard is a property of the shape,
+ *                not of those particular files, and the next script written from an old
+ *                template will need catching.
  */
 
 /** @typedef {'flags'|'legacy-env'} ArgStyle */
@@ -50,7 +55,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'migrate:blog-i18n-en',
     script: 'apps/studio/scripts/migrate-blog-i18n-en.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type in ["post","blogPage","blogCategory","blogTag"] && !defined(language)]) == 0`,
   },
   {
@@ -60,7 +65,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'migrate:blog-navigation',
     script: 'apps/studio/scripts/migrate-blog-navigation.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "blogNavigation"]) > 0`,
   },
   {
@@ -70,7 +75,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'migrate:case-study-gallery',
     script: 'apps/studio/scripts/migrate-case-study-gallery.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "caseStudy" && (
       count(challenge[_type == "caseStudyGalleryBlock"].images[_type == "galleryImage"]) > 0 ||
       count(solution[_type == "caseStudyGalleryBlock"].images[_type == "galleryImage"]) > 0
@@ -83,7 +88,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'migrate:redirect-slashes',
     script: 'apps/studio/scripts/strip-redirect-trailing-slashes.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     // No honest probe: "/" is itself a legal `from`, and distinguishing a stripped
     // path from one that never had a slash needs the script's own normalisation rules.
     probe: null,
@@ -95,7 +100,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'cleanup:blogsettings-defaults',
     script: 'apps/studio/scripts/unset-legacy-blogsettings-defaults.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_id in ["blogSettings","drafts.blogSettings"] && (
       defined(postDefaults) || defined(categoryDefaults) || defined(tagDefaults) ||
       defined(authorDefaults) || defined(pageDefaults)
@@ -108,7 +113,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'backfill:redirect-fields',
     script: 'apps/studio/scripts/backfill-redirect-match-behaviour.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "redirect" && (!defined(matchType) || !defined(behaviour))]) == 0`,
   },
   {
@@ -118,7 +123,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'unset:redirect-type',
     script: 'apps/studio/scripts/unset-redirect-type.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     after: ['20260721-backfill-redirect-match-behaviour'],
     probe: `count(*[_type == "redirect" && defined(type)]) == 0`,
   },
@@ -129,7 +134,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'migrate:redirect-groups',
     script: 'apps/studio/scripts/migrate-redirect-groups.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "redirectGroup"]) > 0 && count(*[_type == "redirect" && !defined(group)]) == 0`,
   },
   {
@@ -139,7 +144,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'cleanup:sitemap-hints',
     script: 'apps/studio/scripts/unset-sitemap-hint-fields.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_id in [
       "postSettings","categorySettings","topicSettings","authorSettings","pageSettings",
       "drafts.postSettings","drafts.categorySettings","drafts.topicSettings","drafts.authorSettings","drafts.pageSettings"
@@ -152,7 +157,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'cleanup:ai-crawler-fields',
     script: 'apps/studio/scripts/unset-ai-crawler-fields.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "post" && (defined(aiTraining) || defined(aiAnswering))]) == 0 &&
       count(*[_id in ["settings","drafts.settings"] && (defined(aiTrainingDefault) || defined(aiAnsweringDefault))]) == 0`,
   },
@@ -163,7 +168,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'migrate:body-table',
     script: 'apps/studio/scripts/migrate-body-table.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[defined(body) && count(body[_type == "bodyTable" && defined(columns[0].header)]) > 0]) == 0`,
   },
   {
@@ -359,10 +364,8 @@ export const HISTORIC = [
  * decision or an oversight. The runner never executes these.
  */
 export const TASKS = [
-  { task: 'seed:blog-dev', pkg: '@pakfactory/studio', why: 'dev-only blog fixtures' },
   { task: 'seed:blog-singleton-pages', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
   { task: 'seed:per-type-settings', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
-  { task: 'seed:demo', pkg: '@pakfactory/sanity', why: 'demo content' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },

@@ -3,8 +3,9 @@
  * and legacy footer href strings → reference-based links.
  *
  * From repo root:
- *   pnpm --filter @pakfactory/studio run migrate:blog-navigation
- *   pnpm --filter @pakfactory/studio run migrate:blog-navigation -- --dry-run
+ *   pnpm --filter @pakfactory/studio run migrate:blog-navigation -- --dataset development
+ *   pnpm --filter @pakfactory/studio run migrate:blog-navigation -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run migrate:blog-navigation -- --dataset production --confirm --yes-production
  *
  * Requires write token in repo root `.env.local` or `apps/blog/.env.local`.
  */
@@ -19,6 +20,7 @@ import {
   footerNavigationHasLegacyLinks,
   migrateLegacyFooterNavigation,
 } from './footer-navigation-seed-data.mjs'
+import { parseScriptArgs } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -26,16 +28,21 @@ loadEnv({ path: join(repoRoot, '.env.local') })
 loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/blog/.env.local'), override: true })
 
-const dryRun = process.argv.includes('--dry-run')
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run migrate:blog-navigation -- --dataset <development|production> [--confirm] [--yes-production]
+
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
+const args = parseScriptArgs({ usage: USAGE })
+
+const dryRun = !args.confirm
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
   process.env.SANITY_STUDIO_PROJECT_ID ||
   '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  'development'
+const DATASET = args.dataset
 const TOKEN =
   process.env.SANITY_API_READ_TOKEN ||
   process.env.SANITY_API_WRITE_TOKEN ||
@@ -114,7 +121,7 @@ async function migrate() {
     console.log(`  ✓  Primary nav already has ${navCategoryCount} categor${navCategoryCount === 1 ? 'y' : 'ies'}`)
   } else {
     console.log('  ⚠  No primary nav categories on blogNavigation or legacy blogSettings.categoryOrder')
-    console.log('     Configure Studio → Navigation → Primary Navigation, or run pnpm seed:blog-dev')
+    console.log('     Configure Studio → Navigation → Primary Navigation.')
   }
 
   if (needsFooterSeed) {
