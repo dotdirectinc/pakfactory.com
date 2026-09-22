@@ -79,7 +79,11 @@ export const settings = defineType({
       group: 'identity',
       options: { accept: FAVICON_ACCEPT },
       description:
-        'Browser tab / bookmark icon for the website and blog (PROD-2200). Accepts .ico, .png or .svg. Upload a SQUARE icon — 512×512 for PNG (also used as the iOS touch icon), any size for SVG. The file is served exactly as uploaded, so keep it small (< 50 KB). Leave empty to keep the built-in PakFactory favicon.',
+        
+          'Browser tab and bookmark icon for the website and blog. Accepts .ico, .png or .svg — ' +
+          'square, 512×512 for PNG, which is also the iOS touch icon. The file is served ' +
+          'exactly as uploaded, so keep it under 50 KB. Leave empty to keep the built-in ' +
+          'PakFactory favicon.',
       validation: (Rule) =>
         Rule.custom((value) => {
           const extension = parseFileExtension(value)
@@ -96,7 +100,7 @@ export const settings = defineType({
       type: 'object',
       group: 'company',
       description:
-        'Company identity — used in the blog header logo and Organization JSON-LD.',
+        'Company identity. Used for the blog header logo and in structured data.',
       options: { collapsible: true, collapsed: false },
       fields: [
         defineField({
@@ -113,7 +117,9 @@ export const settings = defineType({
             mediaTags: [MEDIA_TAG.website],
             options: { hotspot: true },
             description:
-              'Used in the blog header (replaces the default PakFactory wordmark) and Organization JSON-LD.',
+              
+                'Shown in the blog header in place of the PakFactory wordmark, and in ' +
+                'structured data.',
             fields: [
               defineField({
                 name: 'alt',
