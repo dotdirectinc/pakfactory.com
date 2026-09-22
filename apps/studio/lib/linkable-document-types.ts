@@ -15,7 +15,6 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'author',
   'blogPage',
   // Website
-  'page',
   'product',
   'solution',
   'expertiseStage',
