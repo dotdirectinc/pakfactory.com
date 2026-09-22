@@ -184,10 +184,12 @@ export const customizationType = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'The customizations a customer picks FIRST, which then decide what is left here. Choose a whole category ' +
-        'when anything in it decides — Printing Method is decided by Materials — or specific types when only some ' +
-        'do. Leave empty only while nobody has worked it out: an empty list means nothing narrows this type, so ' +
-        'every option stays available.',
+        
+          'The customizations a customer picks before this one, which then decide what is left ' +
+          'here. Choose a whole category when anything in it decides — Printing Method is ' +
+          'decided by Materials — or specific types when only some do. Leave empty only while ' +
+          'nobody has worked it out: an empty list means nothing narrows this type, so every ' +
+          'option stays available.',
       hidden: ({ parent }) => parent?.availabilityDecidedBy !== 'customization',
       of: [
         {
