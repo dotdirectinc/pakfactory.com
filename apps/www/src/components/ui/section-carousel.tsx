@@ -22,6 +22,8 @@ type SectionCarouselProps = {
     prevLabel?: string;
     nextLabel?: string;
     className?: string;
+    /** Optional Embla API callback (e.g. reInit after slide size changes). */
+    setApi?: (api: CarouselApi) => void;
 };
 
 /**
@@ -35,10 +37,19 @@ export function SectionCarousel({
     prevLabel,
     nextLabel,
     className,
+    setApi: setApiProp,
 }: SectionCarouselProps) {
-    const [api, setApi] = useState<CarouselApi>();
+    const [api, setApiState] = useState<CarouselApi>();
     const [canPrev, setCanPrev] = useState(false);
     const [canNext, setCanNext] = useState(false);
+
+    const setApi = useCallback(
+        (carouselApi: CarouselApi) => {
+            setApiState(carouselApi);
+            setApiProp?.(carouselApi);
+        },
+        [setApiProp],
+    );
 
     const onSelect = useCallback((carouselApi: CarouselApi) => {
         if (!carouselApi) return;
@@ -61,39 +72,45 @@ export function SectionCarousel({
         <Carousel
             setApi={setApi}
             opts={{align: 'start', slidesToScroll: 1}}
-            className={cn('flex flex-col gap-8', className)}
+            className={cn(
+                'flex flex-col',
+                header ? 'gap-16' : undefined,
+                className,
+            )}
         >
             {header}
 
-            <div className="relative right-1/2 left-1/2 -mr-[50vw] -ml-[50vw] w-screen max-w-[100vw]">
-                <CarouselContent
+            <div className="flex flex-col gap-8">
+                <div className="relative right-1/2 left-1/2 -mr-[50vw] -ml-[50vw] w-screen max-w-[100vw]">
+                    <CarouselContent
+                        className={cn(
+                            '-ml-6',
+                            'pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))]',
+                            'pr-[var(--layout-gutter-outer)]',
+                        )}
+                    >
+                        {children}
+                    </CarouselContent>
+                </div>
+
+                <div
                     className={cn(
-                        '-ml-6',
-                        'pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))]',
-                        'pr-[var(--layout-gutter-outer)]',
+                        'flex items-center gap-4',
+                        footerStart ? 'justify-between' : 'justify-end',
                     )}
                 >
-                    {children}
-                </CarouselContent>
-            </div>
-
-            <div
-                className={cn(
-                    'flex items-center gap-4',
-                    footerStart ? 'justify-between' : 'justify-end',
-                )}
-            >
-                {footerStart ? (
-                    <div className="min-w-0">{footerStart}</div>
-                ) : null}
-                <CarouselNavButtons
-                    onPrev={() => api?.scrollPrev()}
-                    onNext={() => api?.scrollNext()}
-                    canPrev={canPrev}
-                    canNext={canNext}
-                    prevLabel={prevLabel}
-                    nextLabel={nextLabel}
-                />
+                    {footerStart ? (
+                        <div className="min-w-0">{footerStart}</div>
+                    ) : null}
+                    <CarouselNavButtons
+                        onPrev={() => api?.scrollPrev()}
+                        onNext={() => api?.scrollNext()}
+                        canPrev={canPrev}
+                        canNext={canNext}
+                        prevLabel={prevLabel}
+                        nextLabel={nextLabel}
+                    />
+                </div>
             </div>
         </Carousel>
     );

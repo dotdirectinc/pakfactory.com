@@ -1,5 +1,14 @@
 import type {PortableTextBlock} from '@portabletext/types';
-import type {Product} from '@/lib/catalog/types';
+import type {CaseStudiesRowContent} from '@/components/sections/case-studies-row';
+import type {VideoCaseStudiesRowContent} from '@/components/sections/video-case-studies-row';
+import type {
+    Product,
+    ProductFaq,
+    ProductTestimonial,
+    TestimonialsAggregate,
+} from '@/lib/catalog/types';
+
+export type {CaseStudiesRowContent, VideoCaseStudiesRowContent};
 
 export type SolutionCard = {
     slug: string;
@@ -137,9 +146,17 @@ export type SolutionCustomizationsContent = {
 
 export type SolutionExpertiseStage = {
     id: string;
+    /** Pill label (e.g. "Design"). */
     title: string;
+    /** Open-card lead line under the title. */
+    headline?: string;
     body?: string;
+    /** Optional chips inside the open card. */
+    points?: string[];
+    cta?: SolutionCta;
     media?: SolutionMedia | null;
+    /** Dashed MediaSlot label when `media` is missing. */
+    mediaPlaceholder?: string;
 };
 
 export type SolutionExpertiseManager = {
@@ -153,39 +170,38 @@ export type SolutionExpertiseContent = {
     eyebrow: string;
     headline: string;
     highlightSpans?: string[];
+    /** Band lead under the headline. */
+    description?: string;
     cta?: SolutionCta;
     journeyLabels: string[];
     stages: SolutionExpertiseStage[];
     manager?: SolutionExpertiseManager | null;
 };
 
-export type SolutionCaseStudyCard = {
-    id: string;
-    brand: string;
-    title: string;
-    href: string;
-    image?: SolutionMedia | null;
+/** Props for TestimonialsRow on the Industry Solution LP (Fork 8). */
+export type SolutionTestimonialsContent = {
+    items: ProductTestimonial[];
+    aggregate?: TestimonialsAggregate;
+    title?: string;
+    description?: string;
 };
 
-export type SolutionTestimonialCard = {
-    id: string;
-    quote: string;
-    author: string;
-    role?: string;
-    company?: string;
-    rating?: number;
-};
-
-export type SolutionFaqItem = {
-    id: string;
-    question: string;
-    answer: string;
+/** Props for FaqSection on the Industry Solution LP (Fork 9). */
+export type SolutionFaqsContent = {
+    items: ProductFaq[];
+    heading?: string;
+    description?: string;
+    footerHref?: string;
+    footerLabel?: string;
 };
 
 /**
  * Full Industry Solution LP payload (PROD-1541).
  * Section UIs land in later forks; Fork 0 defines the contract + fixtures.
  * Optional bands may be null until content/UI exists.
+ * `caseStudies` uses the Sanity-ready CaseStudiesRow content shape.
+ * `videoCaseStudies` is the Webflow-style portrait band under expand.
+ * `testimonials` / `faqs` match existing PDP section props.
  */
 export type SolutionLandingContent = {
     solution: SolutionPage;
@@ -194,7 +210,8 @@ export type SolutionLandingContent = {
     inspirations: SolutionInspirationsContent | null;
     customizations: SolutionCustomizationsContent | null;
     expertise: SolutionExpertiseContent | null;
-    caseStudies: SolutionCaseStudyCard[] | null;
-    testimonials: SolutionTestimonialCard[] | null;
-    faqs: SolutionFaqItem[] | null;
+    caseStudies: CaseStudiesRowContent | null;
+    videoCaseStudies: VideoCaseStudiesRowContent | null;
+    testimonials: SolutionTestimonialsContent | null;
+    faqs: SolutionFaqsContent | null;
 };

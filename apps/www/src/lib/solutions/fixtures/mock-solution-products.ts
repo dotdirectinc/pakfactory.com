@@ -82,12 +82,20 @@ export const MOCK_SOLUTION_PRODUCTS: SolutionProductMock[] =
         })),
     }));
 
-/** Empty carousel tiles (no images) keyed to mock products. */
+/** Carousel tiles keyed to mock products. Images optional until CMS wiring. */
 export const MOCK_SOLUTION_PRODUCT_TILES: SolutionHeroTile[] =
     MOCK_SOLUTION_PRODUCTS.map((product, index) => ({
         id: product.id,
         label: product.title,
         width: TILE_WIDTHS[index % TILE_WIDTHS.length],
+        ...(index === 0
+            ? {
+                  image: {
+                      src: '/solutions/beauty-cosmetics/hero/tile-caudalie.png',
+                      alt: product.title,
+                  },
+              }
+            : {}),
     }));
 
 export function getMockSolutionProduct(

@@ -6,12 +6,18 @@ import {
     type ProductCardData,
 } from '@/components/product/product-card';
 import {SolutionHero} from '@/components/solution/solution-hero';
+import {SolutionExpertise} from '@/components/solution/solution-expertise';
 import {SolutionInspirations} from '@/components/solution/solution-inspirations';
+import {CaseStudiesRow} from '@/components/sections/case-studies-row';
+import {VideoCaseStudiesRow} from '@/components/sections/video-case-studies-row';
+import {FaqSection} from '@/components/sections/faq-section';
+import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {CatalogCard} from '@/components/ui/catalog-card';
 import {
     LogoMarquee,
     type LogoMarqueeItem,
 } from '@/components/ui/logo-marquee';
+import {TextWithImage} from '@/components/ui/text-with-image';
 import type {Product} from '@/lib/catalog/types';
 import type {
     SolutionCard,
@@ -74,13 +80,11 @@ function SolutionLogosBand({logos}: {logos: SolutionLogosContent}) {
     return (
         <PageDielineSection
             as="section"
-            bleed
-            borderBottom
             aria-labelledby={
                 logos.heading ? 'solution-logos-heading' : undefined
             }
             className="bg-background"
-            innerClassName="pb-16 pt-16"
+            innerClassName="border-b border-dashed border-border pb-16 pt-16"
         >
             {logos.heading ? (
                 <h2 id="solution-logos-heading" className="sr-only">
@@ -137,13 +141,30 @@ export function SolutionCatalogView({
  * Hero (Fork 2) when `content.hero` is set; otherwise thin heading.
  * Logos band (Fork 3) when `content.logos` is set.
  * Inspirations grid (Fork 4) when `content.inspirations` is set.
+ * Customizations TextWithImage (Fork 5) when `content.customizations` is set.
+ * Expertise StagesBoard (Fork 6) when `content.expertise` is set.
+ * Case studies CaseStudiesRow (Fork 7) when `content.caseStudies` is set.
+ * Video case studies VideoCaseStudiesRow when `content.videoCaseStudies` is set (under expand).
+ * Testimonials TestimonialsRow (Fork 8) when `content.testimonials` is set.
+ * FAQs FaqSection (Fork 9) when `content.faqs` is set.
  */
 export function SolutionLandingView({
     content,
 }: {
     content: SolutionLandingContent;
 }) {
-    const {solution, hero, logos, inspirations} = content;
+    const {
+        solution,
+        hero,
+        logos,
+        inspirations,
+        customizations,
+        expertise,
+        caseStudies,
+        videoCaseStudies,
+        testimonials,
+        faqs,
+    } = content;
 
     return (
         <>
@@ -168,22 +189,44 @@ export function SolutionLandingView({
             {inspirations ? (
                 <SolutionInspirations content={inspirations} />
             ) : null}
-            {solution.relatedProducts.length > 0 ? (
-                <PageDielineSection innerClassName="pb-24 pt-8">
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                            Related products
-                        </h2>
-                    </div>
-                    <div className={PRODUCT_GRID_CLASS}>
-                        {solution.relatedProducts.map((product) => (
-                            <ProductCard
-                                key={product.slug}
-                                data={toProductCardData(product)}
-                            />
-                        ))}
-                    </div>
-                </PageDielineSection>
+            {customizations ? (
+                <TextWithImage
+                    id="customizations"
+                    eyebrow={customizations.eyebrow}
+                    title={customizations.headline}
+                    body={customizations.body}
+                    cta={customizations.cta}
+                    image={customizations.image}
+                />
+            ) : null}
+            {expertise ? (
+                <SolutionExpertise content={expertise} />
+            ) : null}
+            {caseStudies ? (
+                <CaseStudiesRow content={caseStudies} />
+            ) : null}
+            {videoCaseStudies ? (
+                <VideoCaseStudiesRow content={videoCaseStudies} />
+            ) : null}
+            {testimonials ? (
+                <TestimonialsRow
+                    sectionId="solution-testimonials"
+                    items={testimonials.items}
+                    aggregate={testimonials.aggregate}
+                    title={testimonials.title}
+                    description={testimonials.description}
+                />
+            ) : null}
+            {faqs ? (
+                <FaqSection
+                    sectionId="solution-faqs"
+                    items={faqs.items}
+                    heading={faqs.heading}
+                    description={faqs.description}
+                    footerHref={faqs.footerHref}
+                    footerLabel={faqs.footerLabel}
+                    borderBottom={false}
+                />
             ) : null}
         </>
     );

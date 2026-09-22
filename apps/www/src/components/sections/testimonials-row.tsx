@@ -33,6 +33,8 @@ type TestimonialsRowProps = {
     className?: string;
     /** Section color band (not app dark/light mode). */
     theme?: SectionTheme;
+    /** Anchor id for in-page nav (PDP default). */
+    sectionId?: string;
 };
 
 /**
@@ -46,6 +48,7 @@ export function TestimonialsRow({
     description = DEFAULT_DESCRIPTION,
     className,
     theme = 'default',
+    sectionId = 'pdp-testimonials',
 }: TestimonialsRowProps) {
     const shell = sectionThemeShell(theme);
 
@@ -53,7 +56,7 @@ export function TestimonialsRow({
 
     return (
         <section
-            id="pdp-testimonials"
+            id={sectionId}
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32 overflow-x-clip', shell.bandClass, className)}
         >

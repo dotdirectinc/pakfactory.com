@@ -1,11 +1,7 @@
-import Link from 'next/link';
-import {ChevronRight} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
-import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {CatalogCard} from '@/components/ui/catalog-card';
-import {Icon} from '@/components/ui/icon';
 import {SectionHeading} from '@/components/ui/section-heading';
 import type {SolutionInspirationsContent} from '@/lib/solutions/types';
 import {sectionThemeShell} from '@/lib/ui/section-theme';
@@ -29,15 +25,6 @@ export function SolutionInspirations({
     if (cards.length === 0) return null;
 
     const shell = sectionThemeShell('muted');
-    const ctaAction =
-        cta && cta.label.trim() ? (
-            <Button asChild variant="ghost" size="lg">
-                <Link href={cta.href}>
-                    {cta.label}
-                    <Icon icon={ChevronRight} size="sm" />
-                </Link>
-            </Button>
-        ) : null;
 
     return (
         <section
@@ -48,9 +35,7 @@ export function SolutionInspirations({
         >
             <PageDielineSection
                 as="div"
-                bleed
-                borderBottom
-                innerClassName="py-16 sm:py-24"
+                innerClassName="border-b border-dashed border-border py-16 sm:py-24"
             >
                 <SectionHeading
                     eyebrow={eyebrow}
@@ -59,7 +44,8 @@ export function SolutionInspirations({
                     }
                     description={description}
                     descriptionClassName="text-base leading-6"
-                    actions={ctaAction}
+                    cta={cta}
+                    ctaPlacement="end"
                     className="mb-16"
                 />
                 <ul className="grid list-none grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">

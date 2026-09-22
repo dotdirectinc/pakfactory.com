@@ -32,6 +32,8 @@ type FaqSectionProps = {
     theme?: SectionTheme;
     /** Anchor id for in-page nav (PDP default). */
     sectionId?: string;
+    /** Outer full-bleed dashed bottom border. Defaults on for PDP. */
+    borderBottom?: boolean;
 };
 
 /**
@@ -47,6 +49,7 @@ export function FaqSection({
     className,
     theme = 'default',
     sectionId = 'pdp-faqs',
+    borderBottom = true,
 }: FaqSectionProps) {
     const shell = sectionThemeShell(theme);
 
@@ -60,7 +63,13 @@ export function FaqSection({
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32', shell.bandClass, className)}
         >
-            <PageDielineSection borderBottom paddingBlock="md">
+            <PageDielineSection
+                borderBottom={borderBottom}
+                paddingBlock="md"
+                innerClassName={cn(
+                    !borderBottom && 'border-b border-dashed border-border',
+                )}
+            >
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
                     <SectionHeading
                         align="center"

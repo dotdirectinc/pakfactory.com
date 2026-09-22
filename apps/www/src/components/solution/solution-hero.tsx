@@ -67,7 +67,7 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
             className={cn(
                 pageDielineOuterClass(),
                 pageDielineBorderYClass({borderBottom: true}),
-                'relative',
+                'relative overflow-x-clip',
             )}
         >
             <div className={pageDielineInnerClass('pt-12')}>
