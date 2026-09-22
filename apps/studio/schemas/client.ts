@@ -25,13 +25,17 @@ export const client = defineType({
       title: 'Logo',
       type: 'image',
       options: { hotspot: true },
-      description: 'Brand logo — used on cards, sidebars, and logo walls.',
+      description:
+        'The brand logo, shown on case studies and anywhere clients are listed. ' +
+        'Without one, the name shows instead.',
     }),
     defineField({
       name: 'website',
       title: 'Website',
       type: 'url',
-      description: 'Canonical outbound URL. Used for the Client-link annotation in case study hero text.',
+      description:
+        'The client\'s own website. Their logo links to it, and the "Client link" button in the ' +
+        'intro uses it.',
     }),
     defineField({
       name: 'industry',
@@ -42,7 +46,8 @@ export const client = defineType({
         filter: 'solutionType == "industry"',
       },
       description:
-        "The client's primary vertical — a Solutions → Industries document. Optional. After migrating from the legacy industry taxonomy, re-select from the Solutions picker.",
+        "The client's industry, chosen from Solutions. Optional. It filters the case-study " +
+        "listing and shows as a chip on the study.",
     }),
   ],
   preview: {
