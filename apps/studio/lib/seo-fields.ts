@@ -37,6 +37,34 @@ type SeoOptions = {
 }
 
 /**
+ * Studio titles of the per-type settings singletons, keyed by the id callers pass
+ * as `typeSettingsId`. These five are the only types whose blank meta fields are
+ * filled from a format an editor can see and change; every other caller gets the
+ * generic sentence, because no settings screen governs its meta fields.
+ */
+const TYPE_SETTINGS_TITLES: Record<string, string> = {
+  postSettings: 'Post Settings',
+  categorySettings: 'Category Settings',
+  topicSettings: 'Topic Settings',
+  authorSettings: 'Author Settings',
+  pageSettings: 'Page Settings',
+}
+
+/**
+ * Trailing sentence shared by `metaTitle` and `metaDescription`.
+ *
+ * Names the settings screen rather than the field it currently points at: the
+ * format is editable, so naming today's value (e.g. the excerpt) would go stale
+ * the moment someone edits it.
+ */
+function metaFallbackSentence(typeSettingsId: string | undefined): string {
+  const settingsTitle = typeSettingsId ? TYPE_SETTINGS_TITLES[typeSettingsId] : undefined
+  return settingsTitle
+    ? `When blank, the format set in ${settingsTitle} is used.`
+    : 'When blank, one is filled in automatically.'
+}
+
+/**
  * Starting value for a robots toggle on a NEW document.
  *
  * Read from the type's settings singleton at creation time only. Sanity runs
@@ -79,6 +107,8 @@ export function seoFields({
   typeSettingsId,
   meta = true,
 }: SeoOptions) {
+  const metaFallback = metaFallbackSentence(typeSettingsId)
+
   return [
     ...(!meta ? [] : [
       defineField({
@@ -88,8 +118,8 @@ export function seoFields({
         group,
         validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
         description:
-          'Shown in search results and the browser tab. Best kept under 60 characters. When blank, the ' +
-          'Blog Settings format applies, then the page title.',
+          'Shown in search results and the browser tab. Best kept under 60 characters. ' +
+          metaFallback,
       }),
       defineField({
         name: 'metaDescription',
@@ -99,8 +129,8 @@ export function seoFields({
         group,
         validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
         description:
-          'The snippet shown under the title in search results. Best kept under 160 characters. When ' +
-          'blank, the Blog Settings format applies, then the excerpt.',
+          'The snippet shown under the title in search results. Best kept under 160 characters. ' +
+          metaFallback,
       }),
     ]),
     ...(canonical
