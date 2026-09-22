@@ -154,7 +154,7 @@ export const websiteNavigation = defineType({
       title: 'AI answer links',
       type: 'array',
       group: 'footer',
-      description: 'Pre-built query URLs for answer engines — an answer-engine surface built for the blog.',
+      description: 'Pre-built query URLs — the same answer-engine row the blog already has.',
       of: [
         defineArrayMember({
           type: 'object',
