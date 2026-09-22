@@ -55,6 +55,31 @@ a plausible substitute and a confident, wrong success message.
 4. Reuse `apps/studio/scripts/lib/script-args.mjs` (`parseScriptArgs`, `describeMode`)
    rather than re-rolling `process.argv.includes`.
 
+## 3. Register it — every one-shot migration goes in the manifest
+
+A script that exists but is not in the register is invisible to the one command that answers
+"what still needs to run against production?". Add an entry to
+[`scripts/sanity/migrations.manifest.mjs`](../../scripts/sanity/migrations.manifest.mjs) in
+the same change as the script:
+
+```
+pnpm sanity:migrate status --dataset production
+pnpm sanity:migrate up     --dataset development --only <id> --confirm
+```
+
+Each entry needs a **probe** — a GROQ expression that is `true` once the migration's effect
+is visible in the dataset. Write it to assert *the old shape is gone*, not that the new field
+is populated: a later migration may remove the successor, and a probe that breaks is worse
+than no probe. If you cannot write one honestly, set `probe: null` and say why in a comment —
+`status` will print `unknown` and refuse to adopt it.
+
+Seeds, imports and parity checks are **repeatable tasks**, not migrations. They are listed
+under `TASKS` in the manifest and are never run by the runner.
+
+See [`scripts/sanity/MIGRATIONS.md`](../../scripts/sanity/MIGRATIONS.md) for the full model —
+why the ledger is a Sanity document rather than a file in git, and what the runner refuses
+to do.
+
 ## Reviewing your own run
 
 A tick is a claim about the dataset the script *used*, not the one you *meant*. Read the
@@ -63,5 +88,15 @@ during BUG-0032, and lost to three ✅ characters beneath it.
 
 ## Known gap
 
-The 18 other env-var-only scripts in `apps/studio/scripts/` predate this rule and have not
-been retrofitted. Treat any of them that writes as carrying the same hazard.
+The env-var-only scripts in `apps/studio/scripts/` predate this rule and have not been
+retrofitted. Treat any of them that writes as carrying the same hazard.
+
+`pnpm sanity:migrate status --dataset <name>` now names them individually — each is marked
+*needs --dataset retrofit* — and the runner **refuses to execute them** rather than setting
+`NEXT_PUBLIC_SANITY_DATASET` on their behalf, which would rebuild the ambient default this
+rule removes. That list is the retrofit worklist.
+
+**The placement table above is still the two-directory split.** Consolidating every Sanity
+script under `scripts/sanity/` — and re-cutting the axis from *content-model vs operational*
+to *one-shot vs repeatable*, which is the axis the register cares about — is a later change
+and will supersede §1 here.

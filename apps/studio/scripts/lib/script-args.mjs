@@ -43,20 +43,42 @@ function fail(msg, usage) {
 
 /**
  * @param {object}   opts
- * @param {string[]} [opts.flags]  extra boolean flags beyond --confirm / --yes-production
- * @param {string}   [opts.usage]  usage text printed on an argument error
- * @param {string[]} [opts.argv]   defaults to process.argv.slice(2)
- * @returns {{ dataset: string, confirm: boolean, yesProduction: boolean } & Record<string, boolean>}
+ * @param {string[]} [opts.flags]   extra boolean flags beyond --confirm / --yes-production
+ * @param {string[]} [opts.values]  extra flags that TAKE a value, e.g. ['only'] → --only <id>
+ * @param {string[]} [opts.commands] positional sub-commands to accept, e.g. ['status','up'].
+ *                                   Exactly one must be given; it is returned as `command`.
+ * @param {string}   [opts.usage]   usage text printed on an argument error
+ * @param {string[]} [opts.argv]    defaults to process.argv.slice(2)
+ * @returns {{ dataset: string, confirm: boolean, yesProduction: boolean, command?: string } & Record<string, boolean|string>}
  */
-export function parseScriptArgs({ flags = [], usage, argv = process.argv.slice(2) } = {}) {
+export function parseScriptArgs({
+  flags = [],
+  values = [],
+  commands = [],
+  usage,
+  argv = process.argv.slice(2),
+} = {}) {
   const booleans = new Set(['confirm', 'yes-production', ...flags])
+  const valued = new Set(values)
   const out = { dataset: undefined }
   for (const f of booleans) out[camel(f)] = false
+  for (const f of valued) out[camel(f)] = undefined
+  if (commands.length) out.command = undefined
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--') continue // pnpm forwards this verbatim
     if (!arg.startsWith('--')) {
+      // A bare word is only ever a sub-command, and only where one was declared.
+      // Everywhere else it stays an error — rule 1: never shrug at an argument.
+      if (commands.length) {
+        if (!commands.includes(arg)) {
+          fail(`Unknown command \`${arg}\`. Known commands: ${commands.join(', ')}.`, usage)
+        }
+        if (out.command) fail(`Two commands given (\`${out.command}\`, \`${arg}\`) — pass one.`, usage)
+        out.command = arg
+        continue
+      }
       fail(`Unexpected argument \`${arg}\` — these scripts take flags only.`, usage)
     }
     const eq = arg.indexOf('=')
@@ -79,15 +101,27 @@ export function parseScriptArgs({ flags = [], usage, argv = process.argv.slice(2
       out.confirm = true
       continue
     }
+    if (valued.has(name)) {
+      const value = inline ?? argv[++i]
+      if (!value || value.startsWith('--')) fail(`\`--${name}\` needs a value.`, usage)
+      out[camel(name)] = value
+      continue
+    }
     if (booleans.has(name)) {
       if (inline !== undefined) fail(`\`--${name}\` is a switch and takes no value.`, usage)
       out[camel(name)] = true
       continue
     }
     fail(
-      `Unknown flag \`${arg}\`. Known flags: --dataset <name>, ${[...booleans].map((f) => `--${f}`).join(', ')}.`,
+      `Unknown flag \`${arg}\`. Known flags: --dataset <name>, ` +
+        [...[...valued].map((f) => `--${f} <value>`), ...[...booleans].map((f) => `--${f}`)].join(', ') +
+        '.',
       usage,
     )
+  }
+
+  if (commands.length && !out.command) {
+    fail(`A command is required: ${commands.join(', ')}.`, usage)
   }
 
   if (!out.dataset) {
