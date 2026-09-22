@@ -111,7 +111,8 @@ The runner still **refuses** to execute anything marked `legacy-env`. Nothing ca
 marker today; it stays because the hazard is a property of the script shape, and the next
 script copied from an old template will need catching.
 
-**The placement table above is still the two-directory split.** Consolidating every Sanity
-script under `scripts/sanity/` — and re-cutting the axis from *content-model vs operational*
-to *one-shot vs repeatable*, which is the axis the register cares about — is a later change
-and will supersede §1 here.
+**The placement table above is still the two-directory split, and is superseded in
+principle.** [ADR-020](../../docs/adr/0020-sanity-migration-register.md) § Decision 5 settles
+that Sanity scripts consolidate under `scripts/sanity/`, split *one-shot vs repeatable vs
+dataset ops* rather than *content-model vs operational*. Until that move lands, keep following
+§1 so new scripts sit with their predecessors rather than in a third arrangement.
