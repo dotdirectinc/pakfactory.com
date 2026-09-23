@@ -334,6 +334,20 @@ export const MIGRATIONS = [
       count(*[_type == "customizationType" && defined(cardinality)]) == 0 &&
       count(*[_type == "product" && defined(primarySolution)]) == 0`,
   },
+  {
+    id: '20260923-unset-values-per-item',
+    ticket: 'PROD-2585',
+    title: 'Unset property.valuesPerItem, whose field leaves the schema in the same PR',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:unset-values-per-item',
+    script: 'apps/studio/scripts/migrate-unset-values-per-item.mjs',
+    args: 'flags',
+    // Destructive with no successor — unlike every other unset here, the values are
+    // not preserved anywhere, so the script prints each one before deleting it and the
+    // run log is the only record. `production` carries the key on 0 of 9 Properties, so
+    // a run there is a clean no-op; `development` holds 10 of 12.
+    probe: `count(*[_type == "property" && defined(valuesPerItem)]) == 0`,
+  },
 ]
 
 /**

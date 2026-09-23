@@ -438,8 +438,9 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'specs',
       description:
-        'What this option is, in property values. The choices come from its customization type — if this ' +
-        'is empty, add the property to the type first.',
+        'The property values on this option. For a property its type marks Stated, these are facts about ' +
+        'the option. For one marked Selectable, these are the choices a customer picks one from. The ' +
+        'choices come from its customization type — if this is empty, add the property to the type first.',
       of: [{
         type: 'reference',
         to: [{ type: 'propertyValue' }],
@@ -457,21 +458,18 @@ export const customizationOption = defineType({
           },
         },
       }],
-      // Two checks the Product side got in PROD-2539, adapted — and the
-      // adaptation is the whole point, because the two sides are NOT symmetric.
+      // One check, adapted from the Product side in PROD-2539: a value whose
+      // property this option's Type never declared.
       //
-      // 🔴 `valuesPerItem` applies to STATED properties only. A Type may declare
-      // a property SELECTABLE, and then this list is the menu a customer picks
-      // from rather than a claim about the option: Corrugated Board declares
-      // Color selectable, so White Lined Corrugated Board offering White, Natural
-      // Brown and Black is correct, not three colours at once. Measured before
-      // this was written — every multi-value property in the dataset is
-      // selectable, so a rule without this test would have warned on the only
-      // two populated options and been wrong on both.
+      // The second check — more values than `valuesPerItem` allowed — went with
+      // that field in PROD-2585. It had only ever applied to STATED properties,
+      // because a SELECTABLE one makes this list the menu a customer picks from
+      // rather than a claim about the option. That distinction still governs how
+      // an editor READS this list; it no longer governs how it validates.
       //
-      // Warning, not error, for the same reason as the Product side: an editor
-      // opening an option cannot always fix data that arrived before the picker
-      // filter existed, and two options are in exactly that state today.
+      // Warning, not error: an editor opening an option cannot always fix data
+      // that arrived before the picker filter existed, and two options are in
+      // exactly that state today.
       validation: (Rule) => [
         Rule.unique(),
         Rule.custom(async (value, context) => {
@@ -483,24 +481,22 @@ export const customizationOption = defineType({
 
           const client = context.getClient({ apiVersion: '2024-01-01' })
           const { declared, values } = await client.fetch<{
-            declared: { ref: string | null; usage: string | null }[] | null
+            declared: { ref: string | null }[] | null
             values:
               | {
                   _id: string
                   title: string | null
                   propRef: string | null
                   propTitle: string | null
-                  perItem: string | null
                 }[]
               | null
           }>(
             `{
-              "declared": *[_id == $typeRef][0].properties[]{ "ref": property._ref, usage },
+              "declared": *[_id == $typeRef][0].properties[]{ "ref": property._ref },
               "values": *[_id in $refs]{
                 _id, title,
                 "propRef": property._ref,
-                "propTitle": property->title,
-                "perItem": property->valuesPerItem
+                "propTitle": property->title
               }
             }`,
             { typeRef, refs },
@@ -508,39 +504,31 @@ export const customizationOption = defineType({
 
           const declaredList = declared ?? []
           const valueList = values ?? []
-          const usageOf = new Map(declaredList.map((d) => [d.ref, d.usage]))
+          const declaredRefs = new Set(declaredList.map((d) => d.ref))
           const problems: string[] = []
 
           // The flat array carries no grouping, so it is grouped here: the
           // Product side stores one row per property and gets this for free.
-          const byProperty = new Map<string, { title: string; perItem: string | null; names: string[] }>()
+          const byProperty = new Map<string, { title: string; names: string[] }>()
           for (const v of valueList) {
             if (!v.propRef) continue
             const group = byProperty.get(v.propRef) ?? {
               title: v.propTitle ?? 'This property',
-              perItem: v.perItem,
               names: [],
             }
             group.names.push(v.title ?? 'Untitled value')
             byProperty.set(v.propRef, group)
           }
 
-          // 1 — a property the Type never declared. Silent when the Type declares
+          // A property the Type never declared. Silent when the Type declares
           // nothing: that is an unfinished Type, not a wrong option.
           if (declaredList.length) {
             for (const [ref, group] of byProperty) {
-              if (usageOf.has(ref)) continue
+              if (declaredRefs.has(ref)) continue
               problems.push(
                 `${group.title} is not declared by this customization type — remove ${group.names.join(', ')}, or add the property to the type.`,
               )
             }
-          }
-
-          // 2 — more values than the Property allows, stated properties only.
-          for (const [ref, group] of byProperty) {
-            if (usageOf.get(ref) !== 'stated') continue
-            if (group.perItem !== 'one' || group.names.length <= 1) continue
-            problems.push(`${group.title} allows one value — ${group.names.join(', ')}.`)
           }
 
           return problems.length ? problems.join(' ') : true
