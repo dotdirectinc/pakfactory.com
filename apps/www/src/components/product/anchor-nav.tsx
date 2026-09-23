@@ -185,7 +185,7 @@ export function AnchorNav({items, className, embedded = false}: AnchorNavProps) 
 
     return (
         <div className={cn('sticky top-0 z-40 bg-background', className)}>
-            <PageDielineSection borderBottom band="default">
+            <PageDielineSection borderBottom band="default" paddingBlock="none">
                 {nav}
             </PageDielineSection>
         </div>
