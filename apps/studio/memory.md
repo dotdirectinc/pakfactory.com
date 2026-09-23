@@ -47,9 +47,20 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 
 ## Solution Industry Page template
 
-Industry LP **order + chrome** live on the pinned singleton `solutionIndustryPage` (Main Website → Listing Pages → Solution Industry Page). Each industry `solution` with `hasPage` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). Logo wall may also carry a **shared default** client list on the template (Beauty seed); per-solution curatedItems override when set.
+Industry LP **order + chrome** live on the pinned singleton `solutionIndustryPage` (Main Website → Solution Pages → Solution Industry Page). Each industry `solution` with `hasPage` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). Logo wall may also carry a **shared default** client list on the template (Beauty seed); per-solution curatedItems override when set.
 
 **Human seed:** run Beauty seed below with `--confirm` (creates template + Beauty wiring + solutionStyles). Agents author the script only — never `--confirm`.
+
+## Product / Customization catalog pages (PROD-2589)
+
+Pinned singletons mirror `solutionIndustryPage` (title + sections only; fixed id = type name):
+
+| Doc | Studio path | Route |
+| --- | --- | --- |
+| `productCatalogPage` | Main Website → Product Pages → Product Catalog Page | `/products` |
+| `customizationCatalogPage` | Main Website → Customization Pages → Customization Catalog Page | `/customizations` |
+
+The faceted grids stay route-owned. CMS `sections[]` render **below** the grid. H1 / intro / SEO stay hardcoded on www until a follow-up. Humans open each pin, add sections, publish — agents do not create documents.
 
 ## Beauty Solution LP seed (WP4 / Phase B)
 
@@ -68,7 +79,7 @@ pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset produc
 
 After `--confirm`:
 
-1. Studio → Main Website → Listing Pages → **Solution Industry Page** → publish if draft; confirm 8 sections; **Logo wall** shows 6 clients (shared default).
+1. Studio → Main Website → Solution Pages → **Solution Industry Page** → publish if draft; confirm 8 sections; **Logo wall** shows 6 clients (shared default).
 2. Studio → Solutions → Beauty & Cosmetics → **Template** tab → Solution Industry Page; **Solution Styles** tab → 6 styles; **Sections** → content with matching keys (inspirations = style refs; logo wall = clients; Reviews = chrome-only); publish if draft.
 3. Reorder a section on Solution Industry Page → `/solutions/beauty-cosmetics` order updates without editing Beauty’s section order.
 4. FAQ band: empty section FAQs → uses Categorization `faqs`; section FAQs filled → those only (override).

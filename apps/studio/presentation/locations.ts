@@ -250,6 +250,24 @@ export const siteLocations: DocumentLocationResolvers = {
     }),
   }),
 
+  productCatalogPage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        { title: doc?.title || 'Products', href: '/products' },
+      ],
+    }),
+  }),
+
+  customizationCatalogPage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        { title: doc?.title || 'Customizations', href: '/customizations' },
+      ],
+    }),
+  }),
+
   // `/products/{slug}` resolves a LINE first, then a product
   // (`getByProductsSegment` in lib/catalog/catalog.ts). Both types therefore
   // share one namespace: a product whose slug equals a line's slug is

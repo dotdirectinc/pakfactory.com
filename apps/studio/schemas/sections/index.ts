@@ -112,6 +112,20 @@ export const SECTION_ALLOW = {
     'quoteCta',
     'richText',
   ],
+  // Product / Customization catalog indexes (PROD-2589) — sections below the
+  // route-owned faceted grid. Exclude `customizationsCatalog` so editors cannot
+  // nest a second full library under the fixed grid.
+  catalogIndex: [
+    ...FAMILY.product,
+    'customizationsRow',
+    ...FAMILY.caseStudy,
+    ...FAMILY.client,
+    ...FAMILY.solution,
+    ...FAMILY.expertise,
+    ...FAMILY.resource,
+    ...FAMILY.layout,
+    ...FAMILY.cta,
+  ],
   // Company pages: layout · proof-ish rows · CTAs — NO catalogue product strips.
   content: [
     ...FAMILY.layout,

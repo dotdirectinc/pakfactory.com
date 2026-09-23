@@ -1020,9 +1020,9 @@ export const resourcesWorkspaceStructure = (
                 .child(S.documentTypeList('dieline').title('Dielines')),
         ]);
 
-/** Main Website workspace (PROD-2330 / D2) — the pages no content area owns.
- *  Today: the four static-page singletons. Home / Content / Legal Page and
- *  Website Navigation wait on Questions for Dev #1 (shared types vs per-page). */
+/** Main Website workspace (PROD-2330 / D2 · PROD-2589) — pages no content area
+ *  owns, plus domain folders for listing/template singletons. Expertise folder
+ *  is an empty placeholder until its singleton lands. */
 export const mainWebsiteStructure = (
     S: StructureBuilder,
     _context: StructureResolverContext,
@@ -1031,19 +1031,62 @@ export const mainWebsiteStructure = (
         .title('Main Website')
         .items([
             ...sitePreviewHint(S),
-            // Platform pages (PROD-2292) — four shared types. The old static
-            // singletons (aboutPage/contactPage/privacyPolicy/termsOfService)
-            // folded into Content Page / Legal Page and were removed in pt 3.
+            // Platform pages (PROD-2292) — shared types. Old static singletons
+            // (aboutPage/contactPage/privacyPolicy/termsOfService) folded into
+            // Content Page / Legal Page and were removed in pt 3.
             S.listItem()
                 .title('Home Page')
                 .icon(HomeIcon)
                 .child(S.editor().id('homePage').schemaType('homePage').documentId('homePage')),
+            // Domain page folders (PROD-2589). Empty Expertise folder reserves
+            // IA for a future singleton; Product / Customization / Solution /
+            // Case Study pins are live.
             S.listItem()
-                .title('Listing Pages')
-                .icon(ThLargeIcon)
+                .title('Product Pages')
+                .icon(PackageIcon)
                 .child(
                     S.list()
-                        .title('Listing Pages')
+                        .title('Product Pages')
+                        .items([
+                            S.listItem()
+                                .title('Product Catalog Page')
+                                .icon(PackageIcon)
+                                .child(
+                                    S.editor()
+                                        .id('productCatalogPage')
+                                        .schemaType('productCatalogPage')
+                                        .documentId('productCatalogPage'),
+                                ),
+                        ]),
+                ),
+            S.listItem()
+                .title('Solution Pages')
+                .icon(BulbOutlineIcon)
+                .child(
+                    S.list()
+                        .title('Solution Pages')
+                        .items([
+                            S.listItem()
+                                .title('Solution Industry Page')
+                                .icon(BulbOutlineIcon)
+                                .child(
+                                    S.editor()
+                                        .id('solutionIndustryPage')
+                                        .schemaType('solutionIndustryPage')
+                                        .documentId('solutionIndustryPage'),
+                                ),
+                        ]),
+                ),
+            S.listItem()
+                .title('Expertise Pages')
+                .icon(CheckmarkCircleIcon)
+                .child(S.list().title('Expertise Pages').items([])),
+            S.listItem()
+                .title('Case Study Pages')
+                .icon(CaseIcon)
+                .child(
+                    S.list()
+                        .title('Case Study Pages')
                         .items([
                             S.listItem()
                                 .title('Case Studies Page')
@@ -1054,14 +1097,23 @@ export const mainWebsiteStructure = (
                                         .schemaType('listingPage')
                                         .documentId('caseStudiesPage'),
                                 ),
+                        ]),
+                ),
+            S.listItem()
+                .title('Customization Pages')
+                .icon(ComponentIcon)
+                .child(
+                    S.list()
+                        .title('Customization Pages')
+                        .items([
                             S.listItem()
-                                .title('Solution Industry Page')
-                                .icon(BulbOutlineIcon)
+                                .title('Customization Catalog Page')
+                                .icon(ComponentIcon)
                                 .child(
                                     S.editor()
-                                        .id('solutionIndustryPage')
-                                        .schemaType('solutionIndustryPage')
-                                        .documentId('solutionIndustryPage'),
+                                        .id('customizationCatalogPage')
+                                        .schemaType('customizationCatalogPage')
+                                        .documentId('customizationCatalogPage'),
                                 ),
                         ]),
                 ),
