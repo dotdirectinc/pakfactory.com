@@ -86,14 +86,14 @@ export const customizationType = defineType({
     // the conversation was.
     defineField({
       name: 'customerSelects',
-      title: 'How many can a customer choose?',
+      title: 'How many customization options can a customer choose?',
       type: 'string',
       group: 'content',
       description:
         
-          'How many of these options a customer can pick at once. E.g. Chipboards is One — a ' +
-          'box is made of a single board. Embossing & Debossing is Several — a design can carry ' +
-          'both.',
+          "How many of this type's options a customer can pick at once. E.g. Chipboards is One — " +
+          'a box is made of a single board. Embossing & Debossing is Several — a design can carry ' +
+          'both. This counts customization options, not the property values on them.',
       options: {
         layout: 'radio',
         list: [
@@ -285,7 +285,7 @@ export const customizationType = defineType({
 
     defineField({
       name: 'properties',
-      title: 'Properties',
+      title: 'Properties declared',
       type: 'array',
       group: 'specs',
       description:
@@ -305,10 +305,10 @@ export const customizationType = defineType({
           }),
           defineField({
             name: 'usage',
-            title: 'How it is used',
+            title: 'Fact or customer choice?',
             type: 'string',
             description:
-              'Stated — the option asserts this as a fact about itself. Selectable — the customer chooses a value for it when configuring.',
+              'Stated — the options under this type describe themselves with it, and it never reaches the customer. E.g. a board states it is Recyclable. Selectable — the customer picks one value for it while configuring. E.g. a board offers White, Brown or Black and the customer picks one.',
             options: {
               layout: 'radio',
               list: [

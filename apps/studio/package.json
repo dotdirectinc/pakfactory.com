@@ -33,6 +33,7 @@
     "migrate:unset-verified-deprecations": "node scripts/migrate-unset-verified-deprecations.mjs",
     "migrate:split-customization-role": "node scripts/migrate-split-customization-role.mjs",
     "migrate:product-tree-featured-image": "node scripts/migrate-product-tree-featured-image.mjs",
+    "migrate:unset-values-per-item": "node scripts/migrate-unset-values-per-item.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"
