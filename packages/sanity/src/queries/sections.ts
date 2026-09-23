@@ -83,7 +83,7 @@ const INSPIRATIONS_CARD = /* groq */ `{
 
 /**
  * Mixed video case-study cards — typed `videoCaseStudyCard` or caseStudy ref.
- * Hover MP4 is typed-only; caseStudy refs use heroMedia.videoUrl (YouTube).
+ * Hover MP4: typed `video` file, or caseStudy `previewVideo`. No YouTube on cards.
  */
 const VIDEO_CASE_STUDY_CARD = /* groq */ `{
   _key,
@@ -97,7 +97,6 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
     "logoSrc": logo.asset->url,
     "logoAlt": coalesce(logo.alt, brand),
     "videoSrc": video.asset->url,
-    "youtubeUrl": null,
     link ${LINK_OBJECT},
     metric {
       title,
@@ -118,10 +117,7 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
     "imageAlt": coalesce(cardImageAlt, cardImage.asset->altText, title),
     "logoSrc": client->logo.asset->url,
     "logoAlt": client->name,
-    "videoSrc": null,
-    "youtubeUrl": select(
-      heroMedia.mediaType == "video" => heroMedia.videoUrl
-    ),
+    "videoSrc": previewVideo.asset->url,
     "metricTitle": highlights[0].title,
     "metricBody": highlights[0].description
   }
@@ -395,9 +391,8 @@ export type PageSectionVideoCaseStudyCardDoc = {
     imageAlt?: string | null;
     logoSrc?: string | null;
     logoAlt?: string | null;
+    /** Hosted MP4 for muted hover (typed `video` or caseStudy `previewVideo`). */
     videoSrc?: string | null;
-    /** caseStudy `heroMedia.videoUrl` when mediaType is video (YouTube). */
-    youtubeUrl?: string | null;
     link?: PageSectionLinkDoc | null;
     metric?: PageSectionVideoCaseStudyMetricDoc | null;
     metricTitle?: string | null;

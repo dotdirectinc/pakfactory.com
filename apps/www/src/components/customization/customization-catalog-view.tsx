@@ -47,6 +47,7 @@ export function CustomizationCatalogView({
                     <PageHeadingSection
                         title={title}
                         description={description}
+                        borderBottom={false}
                     />
                 </>
             ) : heading || intro ? (

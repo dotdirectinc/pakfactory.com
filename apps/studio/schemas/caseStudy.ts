@@ -194,6 +194,18 @@ export const caseStudy = defineType({
       description: 'Describe the card image for accessibility.',
     }),
     defineField({
+      name: 'previewVideo',
+      title: 'Preview video',
+      type: 'file',
+      group: 'content',
+      options: { accept: 'video/*' },
+      description:
+        'Optional muted MP4 for hover/b-roll on video case study cards. Leave blank to show the thumbnail image only (YouTube is not used for card hover).',
+      hidden: ({ document }) =>
+        (document as { heroMedia?: { mediaType?: string } })?.heroMedia
+          ?.mediaType !== 'video',
+    }),
+    defineField({
       name: 'cardSummary',
       title: 'Card summary',
       type: 'text',

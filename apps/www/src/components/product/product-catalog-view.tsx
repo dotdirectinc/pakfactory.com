@@ -92,6 +92,7 @@ export function ProductCatalogView({
                     <PageHeadingSection
                         title={title}
                         description={description}
+                        borderBottom={false}
                     />
                 </>
             ) : heading || intro ? (
@@ -139,8 +140,9 @@ export function ProductLineView({line}: {line: ProductLine}) {
             <PageHeadingSection
                 title={line.title}
                 description={line.description}
+                borderBottom={false}
             />
-            <PageDielineSection innerClassName="pb-24 pt-8">
+            <PageDielineSection paddingBlock="none" innerClassName="pb-24">
                 <div className={TILE_GRID_CLASS}>
                     {line.styles.map((style) => {
                         const firstProductImage = line.products.find(
@@ -190,8 +192,9 @@ export function ProductStyleView({
             <PageHeadingSection
                 title={style.title}
                 description={style.description}
+                borderBottom={false}
             />
-            <PageDielineSection innerClassName="pb-24 pt-8">
+            <PageDielineSection paddingBlock="none" innerClassName="pb-24">
                 <div className={PRODUCT_GRID_CLASS}>
                     {products.map((product) => (
                         <ProductCard
