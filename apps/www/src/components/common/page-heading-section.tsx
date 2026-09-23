@@ -276,17 +276,12 @@ export function PageHeadingSection({
     variant = 'default',
     ...contentProps
 }: PageHeadingSectionProps) {
-    const isCompact = variant === 'compact';
-
     return (
         <PageDielineSection
             borderBottom={borderBottom}
+            paddingBlock="lg"
             className={className}
-            innerClassName={cn(
-                'border-border pb-12 pt-24',
-                isCompact && 'pb-8',
-                innerClassName,
-            )}
+            innerClassName={innerClassName}
         >
             <PageHeadingContent variant={variant} {...contentProps} />
         </PageDielineSection>
@@ -319,18 +314,14 @@ export function PageHeadingWithMedia({
     variant = 'default',
     ...contentProps
 }: PageHeadingWithMediaProps) {
-    const isCompact = variant === 'compact';
     const hasMedia = Boolean(media?.src);
 
     return (
         <PageDielineSection
             borderBottom={borderBottom}
+            paddingBlock="lg"
             className={className}
-            innerClassName={cn(
-                'border-border pb-12 pt-24',
-                isCompact && 'pb-8',
-                innerClassName,
-            )}
+            innerClassName={innerClassName}
         >
             <div
                 className={cn(

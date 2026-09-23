@@ -48,7 +48,6 @@ function mapCard(
 
     const logoSrc = card.logoSrc?.trim();
     const videoSrc = card.videoSrc?.trim();
-    const youtubeUrl = card.youtubeUrl?.trim();
 
     const metricTitle =
         card.metric?.title?.trim() || card.metricTitle?.trim();
@@ -73,7 +72,6 @@ function mapCard(
               }
             : {}),
         ...(videoSrc ? {videoSrc} : {}),
-        ...(youtubeUrl ? {youtubeUrl} : {}),
         ...(metricTitle && metricBody
             ? {metric: {title: metricTitle, body: metricBody}}
             : {}),

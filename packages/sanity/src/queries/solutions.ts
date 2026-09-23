@@ -44,10 +44,7 @@ const RELATED_VIDEO_CASE_STUDY_CARD = /* groq */ `{
   "imageAlt": coalesce(cardImageAlt, cardImage.asset->altText, title),
   "logoSrc": client->logo.asset->url,
   "logoAlt": client->name,
-  "videoSrc": null,
-  "youtubeUrl": select(
-    heroMedia.mediaType == "video" => heroMedia.videoUrl
-  ),
+  "videoSrc": previewVideo.asset->url,
   "metricTitle": highlights[0].title,
   "metricBody": highlights[0].description
 }`;

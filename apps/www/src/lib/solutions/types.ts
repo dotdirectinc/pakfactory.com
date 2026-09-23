@@ -1,5 +1,6 @@
 import type {PortableTextBlock} from '@portabletext/types';
 import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+import type {PageDielinePaddingBlock} from '@pakfactory/ui/components/page-dieline-section';
 import type {
     Product,
     ProductLibraryResult,
@@ -107,7 +108,7 @@ export type SectionBandChrome = {
     borderTop?: boolean;
     borderBottom?: boolean;
     /** PageDielineSection vertical rhythm. Default md when unset. */
-    paddingBlock?: 'xs' | 'sm' | 'md' | 'lg';
+    paddingBlock?: PageDielinePaddingBlock;
 };
 
 export type SolutionMedia = {

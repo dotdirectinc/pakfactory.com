@@ -1,16 +1,14 @@
 'use client';
 
-import {useEffect, useRef, useState, type MouseEvent} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import {Pause} from 'lucide-react';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {Icon} from '@/components/ui/icon';
-import {getYouTubeId, youtubeHoverEmbedSrc} from '@/lib/youtube';
-
 const CARD_WIDTH = 550;
+/** Match `--motion-slow` — fade out before pause/reset. */
+const VIDEO_FADE_MS = 500;
 
 export type VideoCaseStudyMetric = {
     title: string;
@@ -24,11 +22,9 @@ export type VideoCaseStudyCardData = {
     href: string;
     image: {src: string; alt: string};
     logo?: {src: string; alt: string} | null;
-    /** Hosted MP4 for muted hover loop (typed cards). */
+    /** Hosted MP4 for muted hover loop (typed card or caseStudy previewVideo). */
     videoSrc?: string | null;
-    /** caseStudy heroMedia.videoUrl — muted controls-free YouTube hover. */
-    youtubeUrl?: string | null;
-    /** Single highlighted outcome shown in the glass footer. */
+    /** Single highlighted outcome shown in the footer. */
     metric?: VideoCaseStudyMetric | null;
 };
 
@@ -38,38 +34,47 @@ type VideoCaseStudyCardProps = {
 };
 
 /**
- * Webflow-style portrait case-study card — poster, optional hover video
- * (MP4 or muted controls-free YouTube), centered brand, PakFactory mark,
- * glass footer.
+ * Portrait case-study card — poster, optional muted MP4 hover, catalog-style
+ * PakFactory mark reveal, soft black gradient footer. No YouTube on the card.
  */
 export function VideoCaseStudyCard({
     card,
     className,
 }: VideoCaseStudyCardProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const fadeOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [playing, setPlaying] = useState(false);
-    const [userPaused, setUserPaused] = useState(false);
 
     const mp4Src = card.videoSrc?.trim() || null;
-    const youtubeId =
-        !mp4Src && card.youtubeUrl?.trim()
-            ? getYouTubeId(card.youtubeUrl.trim())
-            : null;
-    const hasVideo = Boolean(mp4Src || youtubeId);
+    const hasVideo = Boolean(mp4Src);
     const metric = card.metric;
 
-    const stopVideo = () => {
+    const clearFadeOutTimer = () => {
+        if (fadeOutTimerRef.current != null) {
+            clearTimeout(fadeOutTimerRef.current);
+            fadeOutTimerRef.current = null;
+        }
+    };
+
+    const resetVideoEl = () => {
         const el = videoRef.current;
         if (el) {
             el.pause();
             el.currentTime = 0;
         }
+    };
+
+    const stopVideo = () => {
         setPlaying(false);
-        setUserPaused(false);
+        clearFadeOutTimer();
+        fadeOutTimerRef.current = setTimeout(() => {
+            resetVideoEl();
+            fadeOutTimerRef.current = null;
+        }, VIDEO_FADE_MS);
     };
 
     const startVideo = () => {
-        if (!hasVideo || userPaused) return;
+        if (!hasVideo) return;
         if (
             typeof window !== 'undefined' &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -77,11 +82,7 @@ export function VideoCaseStudyCard({
             return;
         }
 
-        if (youtubeId) {
-            setPlaying(true);
-            return;
-        }
-
+        clearFadeOutTimer();
         const el = videoRef.current;
         if (!el) return;
         void el.play().then(
@@ -90,19 +91,13 @@ export function VideoCaseStudyCard({
         );
     };
 
-    const handlePauseClick = (event: MouseEvent<HTMLButtonElement>) => {
-        event.preventDefault();
-        event.stopPropagation();
-        setUserPaused(true);
-        const el = videoRef.current;
-        if (el) {
-            el.pause();
-            el.currentTime = 0;
-        }
-        setPlaying(false);
-    };
-
-    useEffect(() => () => stopVideo(), []);
+    useEffect(
+        () => () => {
+            clearFadeOutTimer();
+            resetVideoEl();
+        },
+        [],
+    );
 
     return (
         <Link
@@ -128,10 +123,7 @@ export function VideoCaseStudyCard({
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
                 aria-hidden
-                className={cn(
-                    'object-cover transition-opacity duration-300 ease-out',
-                    playing ? 'opacity-0' : 'opacity-100',
-                )}
+                className="object-cover"
             />
 
             {mp4Src ? (
@@ -144,27 +136,11 @@ export function VideoCaseStudyCard({
                     preload="none"
                     aria-hidden
                     className={cn(
-                        'absolute inset-0 size-full object-cover transition-opacity duration-300 ease-out',
+                        'absolute inset-0 size-full object-cover transition-opacity duration-[var(--motion-slow)] ease-in-out',
+                        'motion-reduce:transition-none',
                         playing ? 'opacity-100' : 'opacity-0',
                     )}
                 />
-            ) : null}
-
-            {youtubeId && playing ? (
-                <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                    {/*
-                      Cover a 16:9 embed inside aspect-[3/4]: height = 100% of
-                      card, width = height × 16/9 = 237.037% of card width.
-                    */}
-                    <iframe
-                        src={youtubeHoverEmbedSrc(youtubeId)}
-                        title=""
-                        aria-hidden
-                        allow="autoplay; encrypted-media"
-                        tabIndex={-1}
-                        className="absolute top-0 left-1/2 h-full w-[237.037%] max-w-none -translate-x-1/2 border-0"
-                    />
-                </div>
             ) : null}
 
             <div className="relative z-10 flex justify-center p-6">
@@ -173,8 +149,8 @@ export function VideoCaseStudyCard({
                         src={card.logo.src}
                         alt={card.logo.alt || card.brand}
                         width={280}
-                        height={64}
-                        className="h-16 w-auto max-w-[280px] object-contain brightness-0 invert"
+                        height={80}
+                        className="h-20 w-auto max-w-[280px] object-contain brightness-0 invert"
                     />
                 ) : (
                     <p className="text-center text-sm font-semibold uppercase tracking-[0.08em] text-white">
@@ -183,53 +159,38 @@ export function VideoCaseStudyCard({
                 )}
             </div>
 
-            <span className="absolute top-3 right-3 z-10 flex size-14 items-center justify-center">
-                <PakFactoryMarkIcon
-                    size={36}
-                    aria-hidden
-                    className={cn(
-                        'pointer-events-none -rotate-15 text-white transition-opacity duration-200 ease-out',
-                        'motion-reduce:transition-none',
-                        playing ? 'opacity-0' : 'opacity-30',
-                    )}
-                />
-                {hasVideo ? (
-                    <button
-                        type="button"
-                        aria-label="Pause video"
-                        tabIndex={playing ? 0 : -1}
-                        onClick={handlePauseClick}
-                        className={cn(
-                            'absolute inset-0 flex items-center justify-center transition-opacity duration-200 ease-out',
-                            'motion-reduce:transition-none',
-                            playing
-                                ? 'pointer-events-auto opacity-100'
-                                : 'pointer-events-none opacity-0',
-                        )}
-                    >
-                        <Icon
-                            icon={Pause}
-                            size="lg"
-                            className="size-9 text-white"
-                        />
-                    </button>
-                ) : null}
-            </span>
+            {/* Detail affordance: faint at rest, catalog settle on hover */}
+            <div
+                aria-hidden
+                className={cn(
+                    'pointer-events-none absolute right-4 top-4 z-30 text-white',
+                    'translate-x-[-5px] translate-y-[5px] opacity-15 delay-0',
+                    'transition-[opacity,translate] duration-[var(--motion-slow)] ease-in-out',
+                    'group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 group-hover:delay-75',
+                    'group-focus-within:translate-x-0 group-focus-within:translate-y-0 group-focus-within:opacity-100 group-focus-within:delay-75',
+                    'motion-reduce:translate-x-0 motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none motion-reduce:delay-0',
+                )}
+            >
+                <PakFactoryMarkIcon size={28} className="-rotate-15" />
+            </div>
 
-            <div className="relative z-10 mt-auto flex min-h-[42%] flex-col justify-end">
+            <div className="relative z-10 mt-auto flex flex-col justify-end">
                 <div
                     aria-hidden
                     className={cn(
-                        'pointer-events-none absolute inset-0',
-                        'backdrop-blur-xl backdrop-saturate-150',
-                        '[mask-image:linear-gradient(to_top,black_55%,transparent)]',
-                        '[-webkit-mask-image:linear-gradient(to_top,black_55%,transparent)]',
+                        'pointer-events-none absolute inset-0 backdrop-blur-sm',
+                        '[mask-image:linear-gradient(to_top,black_75%,transparent)]',
+                        '[-webkit-mask-image:linear-gradient(to_top,black_75%,transparent)]',
                     )}
+                />
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/35 to-transparent"
                 />
                 <div className="relative flex flex-col gap-2 p-6 pt-16">
                     {metric ? (
                         <>
-                            <p className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[32px]">
+                            <p className="text-2xl font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">
                                 {metric.title}
                             </p>
                             <p className="text-base leading-6 text-white/70">
@@ -237,7 +198,7 @@ export function VideoCaseStudyCard({
                             </p>
                         </>
                     ) : (
-                        <h3 className="text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[32px]">
+                        <h3 className="text-2xl font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[28px]">
                             {card.title}
                         </h3>
                     )}
