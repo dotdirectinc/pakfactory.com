@@ -9,6 +9,17 @@
  * the coalesce fallback would read them again. Unsetting removes that buffer.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
+ * 🔴 Run it through the register, not the command below:
+ *   pnpm sanity:migrate up --dataset <development|production> \
+ *     --only 20260720-unset-legacy-blogsettings-defaults --confirm
+ *
+ * `migrate.mjs` writes the ledger row; this script does not, and never has.
+ * A direct run applies the same changes but records NOTHING — no ranAt, no
+ * gitSha, no checksum and no run log — and someone has to notice and `adopt`
+ * it afterwards. See MIGRATIONS.md.
+ *
+ * The invocation below is this script's own interface. It is what the runner
+ * calls, and it is still the right way to take a dry run:
  *   pnpm --filter @pakfactory/studio run cleanup:blogsettings-defaults -- --dataset development
  *   pnpm --filter @pakfactory/studio run cleanup:blogsettings-defaults -- --dataset development --confirm
  *   pnpm --filter @pakfactory/studio run cleanup:blogsettings-defaults -- --dataset production --confirm --yes-production

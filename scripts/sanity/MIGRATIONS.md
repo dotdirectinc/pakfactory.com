@@ -54,6 +54,30 @@ scrollback is not a record. The ledger is.
 
 ---
 
+## Always run through `migrate.mjs`, never the script directly
+
+Every registered script can be invoked on its own — that is how they were all written, and it is
+still how the runner calls them. **Do not.** `migrate.mjs` is what writes the ledger row; the
+scripts never touch `lib/ledger.mjs` and never have. A direct run applies exactly the same changes
+and records **nothing**: no `ranAt`, no `ranBy`, no `gitSha`, no checksum, and **no run log**.
+
+```
+pnpm sanity:migrate up --dataset development --only <migration id> --confirm
+```
+
+🔴 **This is not theoretical.** On 2026-09-23 `20260923-unset-values-per-item` was run directly. The
+data change was correct and the probe agreed, so `adopt` could seed a row afterwards — but an adopted
+row verifies the dataset, it does not witness the run. That particular script's entire safety model
+was *"there is no gate to skip: the printed list IS the gate"* — and the printed list went to a
+terminal and nowhere else. The values it deleted survive only because they were copied by hand onto
+the ticket.
+
+Every registered script's header now says this, with its own `--only` id. The `pnpm --filter …`
+invocation each one documents below that line is the script's own interface, kept because it is
+what the runner calls and what a dry run uses.
+
+---
+
 ## Why every migration also carries a probe
 
 A ledger on its own is *trusted* state — it says what somebody recorded, not what is true.
