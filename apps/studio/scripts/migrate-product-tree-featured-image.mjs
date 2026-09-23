@@ -9,6 +9,15 @@
  * (`media`) is untouched. What changes on Product is only the RULE — the first
  * gallery image no longer silently doubles as the card.
  *
+ * 🔴 Run it through the register, not the USAGE line below:
+ *   pnpm sanity:migrate up --dataset <development|production> \
+ *     --only 20260915-product-tree-featured-image --confirm
+ *
+ * `migrate.mjs` writes the ledger row; this script does not, and never has.
+ * A direct run applies the same changes but records NOTHING — no ranAt, no
+ * gitSha, no checksum and no run log — and someone has to notice and `adopt`
+ * it afterwards. See MIGRATIONS.md.
+ *
  * ── Why this rename ─────────────────────────────────────────────────────────
  *
  * D33: a field is never named for its render slot. `bannerImage` named a shape and
