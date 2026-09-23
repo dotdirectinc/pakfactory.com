@@ -1,6 +1,7 @@
 import type {
     CustomizationFacetDef,
     CustomizationFacetOption,
+    ProductKind,
     ProductLibraryItem,
     ProductLibraryLineMeta,
     ProductLibraryResult,
@@ -8,8 +9,16 @@ import type {
 import {
     PRODUCT_CATALOG_INDUSTRY_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
 } from '@/lib/catalog/types';
 import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
+
+const PRODUCT_TYPE_LABELS: Record<ProductKind, string> = {
+    standard: 'Standard',
+    inspiration: 'Inspiration',
+};
+
+const PRODUCT_TYPE_ORDER: ProductKind[] = ['standard', 'inspiration'];
 
 function upsertOption(
     map: Map<string, CustomizationFacetOption>,
@@ -51,6 +60,7 @@ export function buildProductLibraryResult(
 ): ProductLibraryResult {
     const omit = new Set(options?.omitFacetIds ?? []);
     const productLineOptions = new Map<string, CustomizationFacetOption>();
+    const productTypeKinds = new Set<ProductKind>();
     const industryOptions = new Map<string, CustomizationFacetOption>();
     const sustainabilityOptions = new Map<string, CustomizationFacetOption>();
     const linesBySlug: Record<string, ProductLibraryLineMeta> = {};
@@ -71,6 +81,7 @@ export function buildProductLibraryResult(
             lineSlug,
             item.productLine.title,
         );
+        productTypeKinds.add(item.kind);
 
         if (!linesBySlug[lineSlug]) {
             linesBySlug[lineSlug] = {
@@ -111,15 +122,31 @@ export function buildProductLibraryResult(
         }
     }
 
-    const shared: CustomizationFacetDef[] = [
-        {
-            id: PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
-            title: 'Product Line',
-            options: [...productLineOptions.values()].sort((a, b) =>
-                a.label.localeCompare(b.label),
-            ),
-        },
-    ];
+    const shared: CustomizationFacetDef[] = [];
+
+    if (
+        productTypeKinds.size > 0 &&
+        !omit.has(PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID)
+    ) {
+        shared.push({
+            id: PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
+            title: 'Product type',
+            options: PRODUCT_TYPE_ORDER.filter((kind) =>
+                productTypeKinds.has(kind),
+            ).map((kind) => ({
+                value: kind,
+                label: PRODUCT_TYPE_LABELS[kind],
+            })),
+        });
+    }
+
+    shared.push({
+        id: PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+        title: 'Product Line',
+        options: [...productLineOptions.values()].sort((a, b) =>
+            a.label.localeCompare(b.label),
+        ),
+    });
 
     if (
         industryOptions.size > 0 &&

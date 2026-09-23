@@ -32,11 +32,12 @@ Active products only (`status == "active"` or unset), ordered by title.
 | --- | --- |
 | Card title / slug / SKU / media | `product` fields |
 | Product Line facet | `productLine` (or `basedOn->productLine`) |
+| Product type facet | `kind` (`standard` \| `inspiration`) |
 | Industries facet | `solutions[]` where `solutionType == "industry"` |
 | Sustainability facet | `properties[]` → property + values (when property is sustainability) |
 | Search | title, SKU, line title, style title |
 
-Facet URL keys use `product-line`, `industry`, and `property.slug`. Shared rail: Product Line + Industries (when tagged) + Sustainability (when values exist).
+Facet URL keys use `product-line`, `product-type`, `industry`, and `property.slug`. Shared rail: Product type (when kinds exist) + Product Line + Industries (when tagged) + Sustainability (when values exist).
 
 ## Component naming
 
@@ -71,7 +72,7 @@ When zero or multiple Product Lines are selected, the entry card is omitted.
 - **Route:** `urlSync` (default true) — `q` plus facet ids as comma-separated query params (no `category`; load-more depth is session-only)
 - **Section deep links:** Prefer Site path `/products` + freeform `link.query` (e.g. `industry=%slug%` on a Solution LP) — see [ADR-020](../../../docs/adr/0020-component-to-section-playbook.md) § Section link → catalog query
 
-- **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line, Industries, and other properties = **OR** (same taxonomy as customizations)
+- **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line, Product type, Industries, and other properties = **OR** (same taxonomy as customizations)
 - **Zero-count options:** disabled in the rail (still uncheckable if already selected)
 
 ## Out of scope (this ticket)

@@ -25,8 +25,8 @@ import { sectionFieldGroups } from '../../lib/section-field-groups'
  * (`rowSectionFields`). Distinct in the insert menu (own icon + `{Entity} row`
  * title), identical underneath. Theme/columns stay in React (D35).
  *
- * Deferred: Testimonials — joins Clients tab in PROD-2293. Video case studies
- * live in `video-case-studies-row.ts` (mixed ref | typed).
+ * Video case studies live in `video-case-studies-row.ts` (mixed ref | typed).
+ * Reviews (`testimonialsRow`) is a Layout section — chrome-only until item CMS.
  */
 
 type RowSpec = {

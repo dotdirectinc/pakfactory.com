@@ -4,8 +4,8 @@ import type {
 } from '@/lib/catalog/types';
 
 /**
- * Temporary PDP fixtures so TestimonialsRow renders before Sanity mapping.
- * TODO(PROD-2293): remove when Sanity testimonials map through.
+ * Temporary fixtures so TestimonialsRow / `testimonialsRow` render before
+ * shared `testimonial` docs map through.
  */
 export const MOCK_PRODUCT_TESTIMONIALS: ProductTestimonial[] = [
     {

@@ -1,11 +1,13 @@
 import type {ElementType, ReactNode} from "react";
 import {cn} from "@pakfactory/ui/lib/utils";
 
-export type PageDielinePaddingBlock = "sm" | "md" | "lg";
+export type PageDielinePaddingBlock = "none" | "xs" | "sm" | "md" | "lg";
 export type PageDielineBand = "default" | "muted";
 export type PageDielineAs = "div" | "section" | "header" | "footer" | "nav";
 
 const PADDING_BLOCK_CLASS: Record<PageDielinePaddingBlock, string> = {
+  none: "",
+  xs: "py-2",
   sm: "py-8 sm:py-12",
   md: "py-16 sm:py-20",
   lg: "py-20 sm:py-24",
@@ -106,7 +108,7 @@ type PageDielineSectionProps = {
   /** Vertical dieline guides on the inner column. Default true. */
   borderX?: boolean;
 
-  /** Vertical section rhythm on the inner column. */
+  /** Vertical section rhythm on the inner column. Default `md`. */
   paddingBlock?: PageDielinePaddingBlock;
 
   /** Section band background on the outer (or bleed) row. */
@@ -138,7 +140,7 @@ export function PageDielineSection({
   borderTop = false,
   borderBottom = false,
   borderX = true,
-  paddingBlock,
+  paddingBlock = "md",
   band,
   bleed = false,
   flush = false,
@@ -215,7 +217,7 @@ export function PageDielineFullBleedSection({
   borderTop = false,
   borderBottom = false,
   borderX = true,
-  paddingBlock,
+  paddingBlock = "md",
   band,
   flush = false,
   "aria-labelledby": ariaLabelledBy,

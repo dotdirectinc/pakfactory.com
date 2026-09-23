@@ -15,8 +15,8 @@ import {
  * hover video. Mixed: reference a caseStudy when one exists, or type a card
  * inline (poster, optional hosted video, metric) until the study is seeded.
  *
- * Testimonials stay deferred until the shared `testimonial` doc (PROD-2293)
- * joins the Clients tab.
+ * Reviews (`testimonialsRow`) is a separate Layout section (chrome-only until
+ * shared `testimonial` docs land).
  */
 
 const videoCaseStudyCardMember = defineArrayMember({

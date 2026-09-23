@@ -152,3 +152,22 @@ html:has(body[data-scroll-locked]) {
   overflow: hidden;
 }
 
+/*
+  (site)/template.tsx remount enter — opacity + 8px settle.
+  Keep www-only; do not promote to @pakfactory/ui until another app needs it.
+*/
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-page-enter {
+  animation: page-enter var(--motion-slow) ease-out;
+}
+

@@ -40,8 +40,10 @@ Section schemas store **meaning** (heading, intro, references, typed content) �
 
 **Documented exceptions** (shared via `sectionHeaderFields()`):
 
-1. **Header alignment** — `align` (`left` | `center`) controls how the section heading/intro read.
-2. **Dieline border toggles** — `showTopBorder` / `showBottomBorder` avoid double-dash when stacking bands (same pattern as blog page-builder blocks).
+1. **Label above heading** — optional `eyebrow` string (Studio title: “Label above heading”); content kicker rendered by `SectionHeading` as `[ Label ]`.
+2. **Header alignment** — `align` (`left` | `center`) controls how the section heading/intro read.
+3. **Vertical padding** — `paddingBlock` (`xs` | `sm` | `md` | `lg`, default `md`) maps to `PageDielineSection` rhythm. Code-only `none` opts out of vertical padding.
+4. **Dieline border toggles** — `showTopBorder` / `showBottomBorder` avoid double-dash when stacking bands (same pattern as blog page-builder blocks).
 
 Do **not** add theme, column counts, gap, or band background fields to section schemas.
 
@@ -131,8 +133,8 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `customization` | Customizations | `customizationsRow`, `customizationsCatalog` |
 | `expertise` | Expertise | `expertiseSequence` |
 | `resource` | Resources | `guidesRow`, `dielinesRow`, `glossaryStrip`, `postsRow` |
-| `client` | Clients | `logoWall` (+ testimonials later) |
-| `layout` | Layout | `richText`, `mediaFeature`, `stats`, `steps`, `faqSection` |
+| `client` | Clients | `logoWall` |
+| `layout` | Layout | `richText`, `mediaFeature`, `stats`, `steps`, `faqSection`, `testimonialsRow` |
 | `cta` | CTAs | `quoteCta`, `newsletterCta`, `linkCards`, `contactForm` |
 
 **Studio `title` patterns** (editor chrome only — `_type` stays stable per [ADR-014](0014-sanity-studio-naming.md)):
@@ -175,13 +177,13 @@ When editing a section in the array modal, tabs are **All (default) · Heading �
 
 | Tab | Fields |
 | --- | ------ |
-| Heading | `heading`, `intro`, `link` |
+| Heading | `eyebrow`, `heading`, `intro`, `link` |
 | Content | Section payload (cards, curatedItems, body, …) |
-| Layout | `align`, dieline borders (D35 exceptions only) |
+| Layout | `align`, `paddingBlock`, dieline borders (D35 exceptions only) |
 
 #### Heading / intro / link-query page-field chips
 
-`heading`, `intro`, and section `link.query` use [`SectionTokenStringInput`](../../apps/studio/components/SectionTokenStringInput.tsx). Editors insert chips that store `%tokens%`; www resolves them from the **host page** at render ([`resolveSectionTokens`](../../apps/www/src/lib/sections/resolve-section-tokens.ts)).
+`eyebrow`, `heading`, `intro`, and section `link.query` use [`SectionTokenStringInput`](../../apps/studio/components/SectionTokenStringInput.tsx). Editors insert chips that store `%tokens%`; www resolves them from the **host page** at render ([`resolveSectionTokens`](../../apps/www/src/lib/sections/resolve-section-tokens.ts)).
 
 | Chip | Token | Resolves |
 | ---- | ----- | -------- |
@@ -236,12 +238,12 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 | 4 | `SolutionExpertise` / `StagesBoard` | `expertiseSequence`; UI `ExpertiseRow` | Wired (WP2) |
 | 5 | `CaseStudiesRow` | `caseStudiesRow` | Wired (WP2) |
 | 6 | `VideoCaseStudiesRow` | **`videoCaseStudiesRow`** | Wired (WP3) |
-| 7 | `TestimonialsRow` | **Defer** until shared `testimonial` doc (see sections inventory note / PROD-2293) | Keep fixture |
+| 7 | `TestimonialsRow` | **`testimonialsRow`** (Layout · chrome-only; quote items still mock) | Wired interim |
 | 8 | `FaqSection` | `faqSection` | Wired (WP2) |
 ## Component → Section checklist (reviewers)
 
 1. Passes the **route gate** (not chrome / not URL skeleton / not presentation-only).
-2. Schema is **D35** — no theme/columns/band styling; shared chrome via `sectionHeaderFields()` is allowed (heading · intro · align · link(+label) · dieline borders).
+2. Schema is **D35** — no theme/columns/band styling; shared chrome via `sectionHeaderFields()` is allowed (eyebrow · heading · intro · align · paddingBlock · link(+label) · dieline borders).
 3. **Allowlist** + **entity insert tab** updated (`SECTION_ALLOW` + `FAMILY`).
 4. Studio **title** follows §10 (entity row / job name); distinct icon; no casual `_type` rename.
 5. Prefer **existing `_type`**; else new type with one job.
@@ -253,7 +255,7 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 ## Consequences
 
 - Later Solution LP work packages share one inventory and naming lock — no competing `_type` guesses.
-- `inspirationsGrid` and `videoCaseStudiesRow` are wired (schema + GROQ + renderer); testimonials stay fixture until the Clients-tab entity exists.
+- `inspirationsGrid`, `videoCaseStudiesRow`, and `testimonialsRow` are wired (schema + GROQ + renderer); Reviews quote **items** stay mock until a shared `testimonial` document exists.
 - Insert menu is entity-tabbed (Solutions · Case studies · Products · …) with Row/job Studio titles and optional thumbnails.
 - Reviewers reject PRs that encode presentation in CMS, skip the allowlist/entity tab, force catalogue rows into the wrong Section type, require curated lists on both document **and** section, or casually rename `_type` / React outside the locked list.
 - New curated bands default to **§8** (document default + section override) when a page-level list already exists.
@@ -265,4 +267,4 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 - Making `SolutionHero` a reorderable Section.
 - Converting all solutions or the home page in the same change.
 - Blog block rename / ADR-012 dataset migration.
-- Testimonials Section until PROD-2293 extracts the shared `testimonial` type.
+- Shared `testimonial` document + curated Reviews items (chrome-only `testimonialsRow` is already in Layout).

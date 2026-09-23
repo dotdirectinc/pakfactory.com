@@ -141,7 +141,7 @@ export function SiteFooter({
 
   return (
     <footer className="bg-muted">
-      <PageDielineSection innerClassName="px-0 sm:px-0">
+      <PageDielineSection paddingBlock="none" innerClassName="px-0 sm:px-0">
         <div className="px-layout-gutter-inner py-16 text-center">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Let&apos;s collaborate and craft <br /> your vision

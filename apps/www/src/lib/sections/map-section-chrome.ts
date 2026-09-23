@@ -1,4 +1,5 @@
 import type {PageSectionLinkDoc} from '@pakfactory/sanity/queries';
+import type {PageDielinePaddingBlock} from '@pakfactory/ui/components/page-dieline-section';
 
 import {
     resolveDielineBorders,
@@ -12,6 +13,8 @@ export type SectionChromeMapped = {
     align: SectionAlign;
     borderTop: boolean;
     borderBottom: boolean;
+    paddingBlock: PageDielinePaddingBlock;
+    eyebrow?: string;
     cta?: {label: string; href: string};
 };
 
@@ -19,6 +22,19 @@ export function mapSectionAlign(
     align: string | null | undefined,
 ): SectionAlign {
     return align === 'center' ? 'center' : 'left';
+}
+
+export function mapSectionPaddingBlock(
+    paddingBlock: string | null | undefined,
+): PageDielinePaddingBlock {
+    if (
+        paddingBlock === 'xs' ||
+        paddingBlock === 'sm' ||
+        paddingBlock === 'lg'
+    ) {
+        return paddingBlock;
+    }
+    return 'md';
 }
 
 export function mapSectionCta(
@@ -48,7 +64,9 @@ function appendQuery(
  */
 export function mapSectionChrome(
     section: {
+        eyebrow?: string | null;
         align?: string | null;
+        paddingBlock?: string | null;
         link?: PageSectionLinkDoc | null;
         showTopBorder?: boolean | null;
         showBottomBorder?: boolean | null;
@@ -60,11 +78,14 @@ export function mapSectionChrome(
         SECTION_DIELINE_BORDER_DEFAULTS,
     );
     const cta = mapSectionCta(section.link);
+    const eyebrow = section.eyebrow?.trim();
 
     return {
         align: mapSectionAlign(section.align),
         borderTop,
         borderBottom,
+        paddingBlock: mapSectionPaddingBlock(section.paddingBlock),
+        ...(eyebrow ? {eyebrow} : {}),
         ...(cta ? {cta} : {}),
     };
 }

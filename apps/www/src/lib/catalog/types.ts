@@ -191,12 +191,17 @@ export const PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID =
 /** Industries facet — Sanity `solution` with `solutionType == "industry"`. */
 export const PRODUCT_CATALOG_INDUSTRY_FACET_ID = 'industry';
 
+/** Product type facet — Sanity `product.kind` (`standard` | `inspiration`). */
+export const PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID = 'product-type';
+
 /** Enriched product card for the faceted `/products` library (PROD-1845). */
 export type ProductLibraryItem = {
     _id: string;
     title: string;
     slug: string;
     sku: string;
+    /** Sanity `product.kind` — drives the Product type facet. */
+    kind: ProductKind;
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;
     imageUrl?: string | null;
@@ -225,7 +230,7 @@ export type ProductLibraryResult = {
     /** Unique product lines in the library, keyed by slug. */
     linesBySlug: Record<string, ProductLibraryLineMeta>;
     facetCatalog: {
-        /** Always-on: Product Line + Industries + Sustainability (when present). */
+        /** Always-on: Product type + Product Line + Industries + Sustainability (when present). */
         shared: CustomizationFacetDef[];
     };
 };

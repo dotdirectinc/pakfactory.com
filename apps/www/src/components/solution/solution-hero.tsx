@@ -70,18 +70,20 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
                 'relative overflow-x-clip',
             )}
         >
-            <div className={pageDielineInnerClass('pt-12')}>
-                <PageHeadingContent
-                    align="center"
-                    eyebrow={eyebrow}
-                    title={title}
-                    titleId={HERO_HEADING_ID}
-                    description={content.subtitle || undefined}
-                    primaryCta={isMobile ? content.cta : undefined}
-                    titleClassName="max-w-[1066px] text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.1] tracking-[-0.82px]"
-                    descriptionClassName="max-w-[732px] text-xl leading-7 text-foreground"
-                />
-                <div className="mt-12 pb-12">
+            <div className={pageDielineInnerClass()}>
+                <div className="py-16 sm:py-24">
+                    <PageHeadingContent
+                        align="center"
+                        eyebrow={eyebrow}
+                        title={title}
+                        titleId={HERO_HEADING_ID}
+                        description={content.subtitle || undefined}
+                        primaryCta={isMobile ? content.cta : undefined}
+                        titleClassName="max-w-[1066px] text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.1] tracking-[-0.82px]"
+                        descriptionClassName="max-w-[732px] text-xl leading-7 text-foreground"
+                    />
+                </div>
+                <div className="pb-12">
                     <SolutionProductCarousel
                         tiles={content.tiles}
                         background="transparent"

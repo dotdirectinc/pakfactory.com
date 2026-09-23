@@ -7,6 +7,7 @@ export type MediaFeatureMapped = {
     title: string;
     body?: string;
     image: {src: string; alt: string};
+    eyebrow?: string;
     cta?: {label: string; href: string};
     align: SectionAlign;
     borderTop: boolean;
@@ -34,6 +35,7 @@ export function mapMediaFeature(
         align: chrome.align,
         borderTop: chrome.borderTop,
         borderBottom: chrome.borderBottom,
+        ...(chrome.eyebrow ? {eyebrow: chrome.eyebrow} : {}),
         ...(chrome.cta ? {cta: chrome.cta} : {}),
     };
 }

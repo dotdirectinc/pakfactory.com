@@ -53,7 +53,7 @@ export default async function RootLayout({
     const gtmId = resolveGtmId(globalSettings?.gtmId);
     const watermark = toWatermarkConfig(globalSettings?.watermark, '/api/wm');
     return (
-        <html lang="en" className="scroll-smooth">
+        <html lang="en">
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
                 <WatermarkProvider value={watermark}>

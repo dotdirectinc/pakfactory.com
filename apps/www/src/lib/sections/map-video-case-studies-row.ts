@@ -97,7 +97,7 @@ export function mapVideoCaseStudiesRow(
     const description = section.intro?.trim();
 
     return {
-        eyebrow: 'On camera',
+        eyebrow: chrome.eyebrow ?? 'On camera',
         headline,
         align: chrome.align,
         borderTop: chrome.borderTop,

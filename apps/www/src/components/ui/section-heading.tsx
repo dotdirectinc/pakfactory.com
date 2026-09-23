@@ -93,8 +93,8 @@ export function SectionHeading({
     const heading = (
         <div
             className={cn(
-                'flex min-w-0 flex-1 flex-col gap-6',
-                align === 'center' && 'items-center text-center',
+                'flex min-w-0 w-full max-w-full flex-1 flex-col gap-6 md:max-w-[66.666%]',
+                align === 'center' && 'mx-auto items-center text-center',
             )}
         >
             {eyebrow ? (
@@ -120,7 +120,7 @@ export function SectionHeading({
             {description ? (
                 <p
                     className={cn(
-                        'max-w-140 text-sm leading-6 text-muted-foreground',
+                        'text-sm leading-6 text-muted-foreground',
                         align === 'center' && 'mx-auto',
                         descriptionClassName,
                     )}
@@ -139,7 +139,7 @@ export function SectionHeading({
     return (
         <div
             className={cn(
-                'flex w-full flex-wrap items-end justify-between gap-4',
+                'flex w-full flex-col items-stretch gap-6 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4',
                 className,
             )}
         >

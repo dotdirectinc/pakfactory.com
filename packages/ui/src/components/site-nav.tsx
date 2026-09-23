@@ -76,7 +76,10 @@ export function SiteNav({
 
   return (
     <header className="relative z-50 border-b border-dashed border-border bg-background">
-      <PageDielineSection innerClassName="flex h-16 items-center justify-between">
+      <PageDielineSection
+        paddingBlock="xs"
+        innerClassName="flex items-center justify-between"
+      >
         <Link
           href={homeHref}
           className="flex shrink-0 items-center gap-3 no-underline"

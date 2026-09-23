@@ -175,6 +175,7 @@ export {
     type PageSectionLogoWallItemDoc,
     type PageSectionMediaFeatureDoc,
     type PageSectionStubDoc,
+    type PageSectionTestimonialsRowDoc,
     type PageSectionVideoCaseStudiesRowDoc,
     type PageSectionVideoCaseStudyCardDoc,
     type PageSectionVideoCaseStudyMetricDoc,
