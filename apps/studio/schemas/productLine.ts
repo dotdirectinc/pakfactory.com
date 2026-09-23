@@ -169,7 +169,7 @@ export const productLine = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Declares which properties products in this line state — never their values. This list is what a product\'s Properties picker offers, so a product cannot state anything left out of it. Marking one Required warns on any product in this line that does not state it.',
+        'A list of property + Required pairs. Declares which properties products in this line can state — never their values; each product states its own. This list is exactly what a product\'s Properties picker offers, so a product cannot state anything left out of it. Required on means every product in the line must state that property; Required off means they may state it but don\'t have to.',
       of: [
         {
           type: 'object',
@@ -187,7 +187,8 @@ export const productLine = defineType({
               name: 'required',
               title: 'Required',
               type: 'boolean',
-              description: 'Products in this line that do not state a value for this property are flagged.',
+              description:
+                'On — every product in this line must state a value for this property, and any that doesn\'t shows a warning. Off — a product may state it or leave it out, and nothing is flagged. It\'s a warning rather than a block because these products arrive from the product data source, so an editor often can\'t fix what the sync sent.',
               initialValue: false,
             }),
           ],

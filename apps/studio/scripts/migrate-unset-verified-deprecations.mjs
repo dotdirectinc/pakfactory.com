@@ -45,6 +45,17 @@
  * No override flag on the gates. A gate you can skip is a comment.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
+ * 🔴 Run it through the register, not the command below:
+ *   pnpm sanity:migrate up --dataset <development|production> \
+ *     --only 20260917-unset-verified-deprecations --confirm
+ *
+ * `migrate.mjs` writes the ledger row; this script does not, and never has.
+ * A direct run applies the same changes but records NOTHING — no ranAt, no
+ * gitSha, no checksum and no run log — and someone has to notice and `adopt`
+ * it afterwards. See MIGRATIONS.md.
+ *
+ * The invocation below is this script's own interface. It is what the runner
+ * calls, and it is still the right way to take a dry run:
  *   pnpm --filter @pakfactory/studio run migrate:unset-verified-deprecations -- --dataset development
  *   pnpm --filter @pakfactory/studio run migrate:unset-verified-deprecations -- --dataset development --confirm
  *   pnpm --filter @pakfactory/studio run migrate:unset-verified-deprecations -- --dataset production --confirm --yes-production

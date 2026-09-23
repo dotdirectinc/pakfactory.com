@@ -111,13 +111,13 @@ Editorial documents (posts, pages, singletons, navigation, etc.) live in the **S
 
 **Agents must never:**
 
-- Run seed scripts (`seed.mjs`, `seed-blog-dev.mjs`, `seed-blog-singleton-pages.mjs`, etc.)
+- Run seed scripts (`seed-blog-singleton-pages.mjs`, `seed-per-type-settings.mjs`, etc.)
 - Use Sanity MCP or `@sanity/client` to **create, patch, replace, delete, or publish** documents
 - Mutate editorial content on **any** dataset (`development` or `production`)
 
 **Humans** own document writes: Studio UI, explicit seed runs, approved migrations, and dataset export/import.
 
-When a feature needs example data, document **what humans should seed** in [`apps/blog/memory.md`](apps/blog/memory.md) or the PR — do not execute seeds or patch documents. Refuse requests such as “run `pnpm seed:blog-dev`”, “patch `blogHomePage` via MCP”, or “publish this post” unless the user will run the write themselves; agents may only implement schema/code and state the human command.
+When a feature needs example data, document **what humans should seed** in [`apps/blog/memory.md`](apps/blog/memory.md) or the PR — do not execute seeds or patch documents. Refuse requests such as “run a seed script”, “patch `blogHomePage` via MCP”, or “publish this post” unless the user will run the write themselves; agents may only implement schema/code and state the human command.
 
 Human workflow (no agent writes): [`apps/blog/memory.md`](apps/blog/memory.md) § Content vs seed workflow.
 

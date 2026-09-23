@@ -26,6 +26,7 @@ Primary index axis is **decision domain** (below). Surfaces are a **second colum
 | **Design system / tokens** | `all` | [`DESIGN.md`](../../DESIGN.md) + [`packages/ui/src/globals.css`](../../packages/ui/src/globals.css) | 006 |
 | **Page-composition terminology** | `blog` until 015; `all` after ratification | **012** until **015** ratified | 012 Accepted; **015 Proposed** |
 | **www Sections playbook** | `www`, `studio` | **020** (route gate, D35, Beauty inventory, document default + section override) | **020 Proposed**; trail 015 → 013 → **020** |
+| **Sanity migration register** | `studio` (+ datasets) | **021** (ledger in dataset, probe per migration) | **021** |
 | **Blog content / i18n** | `blog` | [`apps/blog/CLAUDE.md`](../../apps/blog/CLAUDE.md) | 009, 010 |
 | **CMS / Studio contracts** | `studio` + consumers (`blog`, `www`) | [`apps/studio/CLAUDE.md`](../../apps/studio/CLAUDE.md) | 004, 014, 016 |
 | **Redirects** | `blog` | — | 003 |
@@ -58,5 +59,6 @@ Primary index axis is **decision domain** (below). Surfaces are a **second colum
 | 018 | **Admin search foundation** — dual Algolia corpora (ops `admin_*` vs content `posts` / `content_*`); BFF-only search; owner-forced ops filter; V1 types Requests + Sanity product / customizationOption / post / caseStudy; Shopify open + Mobbin body; extension rule for later types. | Accepted | `admin` (+ `studio` sync) | [`0018-admin-search-foundation.md`](0018-admin-search-foundation.md) |
 | 019 | **Workspace package taxonomy** — Turborepo apps/packages + platform / domain / infra / feature roles; promotion rules; `@pakfactory/components` retired → `ui` / `utilities`. | Accepted | `all` | [`0019-workspace-package-taxonomy.md`](0019-workspace-package-taxonomy.md) |
 | 020 | **Component → Section playbook** — when a www band may become a CMS Section (route gate, D35, allowlists, ADR-013 renames); Beauty LP inventory; mixed ref\|typed cards; **document default + section override** for curated lists. | **Proposed** (pending Eric) | `www`, `studio` | [`0020-component-to-section-playbook.md`](0020-component-to-section-playbook.md) |
+| 021 | **Sanity migration register** — applied-migration state is a `migrationRun` document **in each dataset**, not a file in git; every one-shot migration carries a GROQ **probe** asserting the old shape is gone, so `status` flags ledger/reality disagreement instead of assuming; repeatable tasks stay out of the register; scripts consolidate under `scripts/sanity/` split one-shot vs repeatable, superseding the placement rule's content-model vs operational axis. | Accepted | `studio` | [`0021-sanity-migration-register.md`](0021-sanity-migration-register.md) |
 
 > Foundational platform decisions that predate this register (Turborepo monorepo, Sanity CMS, Next.js App Router, `@pakfactory/ui` shared primitives, pnpm) are summarized in [`AGENTS.md`](../../AGENTS.md) § "ADR summary".

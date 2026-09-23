@@ -3,6 +3,9 @@
 Project `8293wrxp` · datasets `production` and `development` (the **staging Studio points at
 `development`** — there is no third dataset, and the ledger therefore has two rows, not three).
 
+The decision behind all of this is **[ADR-021](../../docs/adr/0021-sanity-migration-register.md)**;
+this file is the operating manual for it.
+
 For backup / restore / dataset ops see [`RUNBOOK.md`](./RUNBOOK.md). This file is about
 **one-shot content migrations**: which ones exist, which have run where, and how to run the
 rest.
@@ -51,6 +54,30 @@ scrollback is not a record. The ledger is.
 
 ---
 
+## Always run through `migrate.mjs`, never the script directly
+
+Every registered script can be invoked on its own — that is how they were all written, and it is
+still how the runner calls them. **Do not.** `migrate.mjs` is what writes the ledger row; the
+scripts never touch `lib/ledger.mjs` and never have. A direct run applies exactly the same changes
+and records **nothing**: no `ranAt`, no `ranBy`, no `gitSha`, no checksum, and **no run log**.
+
+```
+pnpm sanity:migrate up --dataset development --only <migration id> --confirm
+```
+
+🔴 **This is not theoretical.** On 2026-09-23 `20260923-unset-values-per-item` was run directly. The
+data change was correct and the probe agreed, so `adopt` could seed a row afterwards — but an adopted
+row verifies the dataset, it does not witness the run. That particular script's entire safety model
+was *"there is no gate to skip: the printed list IS the gate"* — and the printed list went to a
+terminal and nowhere else. The values it deleted survive only because they were copied by hand onto
+the ticket.
+
+Every registered script's header now says this, with its own `--only` id. The `pnpm --filter …`
+invocation each one documents below that line is the script's own interface, kept because it is
+what the runner calls and what a dry run uses.
+
+---
+
 ## Why every migration also carries a probe
 
 A ledger on its own is *trusted* state — it says what somebody recorded, not what is true.
@@ -83,7 +110,7 @@ Three rules keep probes trustworthy:
 
 | Refusal | Why |
 |---|---|
-| Execute a `legacy-env` script | It resolves its own dataset from `NEXT_PUBLIC_SANITY_DATASET`, so the runner cannot honour `--dataset` on its behalf. Setting that variable for it would rebuild the ambient default the rule exists to remove. Run it by hand, then `adopt`. |
+| Execute a `legacy-env` script | It resolves its own dataset from `NEXT_PUBLIC_SANITY_DATASET`, so the runner cannot honour `--dataset` on its behalf. Setting that variable for it would rebuild the ambient default the rule exists to remove. No script carries this any more — the refusal stays because the hazard belongs to the shape, not to those files. |
 | Run a migration whose `after:` is unapplied | Order is declared in the manifest and nowhere else. |
 | Record a run whose probe still says `pending` | An exit code is a claim about a process; the probe is a fact about the dataset. A script that exits 0 without changing anything is the BUG-0032 shape. |
 | Run anything without `--dataset` | No fallback, not even for a dry run. |
@@ -105,10 +132,37 @@ register is visibly a decision rather than an oversight.
 
 ---
 
+## Default polarity — what the retrofit changed
+
+The 15 retrofitted scripts did not share a convention. They had **two opposite defaults**:
+
+| Group | Old behaviour with no flags | Now |
+|---|---|---|
+| 7 `--apply` scripts | dry run — safe | dry run, `--confirm` writes |
+| **4 `--dry-run` migrations** | **WROTE IMMEDIATELY** | dry run, `--confirm` writes |
+| **2 seeds** | **WROTE IMMEDIATELY, no dry run existed** | dry run, `--confirm` writes |
+| 1 parity check | read-only | read-only, still needs `--dataset` |
+
+All of them resolved the dataset from `NEXT_PUBLIC_SANITY_DATASET` with a `'development'`
+fallback. So `pnpm --filter @pakfactory/studio run migrate:body-table`, with no flags at
+all, wrote to whatever that ambient variable happened to name — a strictly worse version
+of BUG-0032, because BUG-0032 at least required someone to type `--confirm`.
+
+Two consequences worth knowing:
+
+- **`--dry-run` is still accepted** and is now a no-op with a warning, for the same reason
+  `--apply` is accepted: it appears in runbooks and shell history. Rejecting it would fail
+  a command whose whole intent was *"do not write"*.
+- **`seed:blog-dev` has since been deleted** along with `seed:demo` — both wrote mock
+  fixtures. The retrofit had given `seed:blog-dev` an outright refusal of
+  `--dataset production`, which is now moot.
+
+---
+
 ## Known gaps (the honest list)
 
-- **16 scripts are `legacy-env`** and cannot be driven by the runner until they take
-  `--dataset`. `status` marks each one. That retrofit is Phase 2.
+- ~~15 scripts are `legacy-env`~~ **Done.** All 15 now take `--dataset`/`--confirm`/`--yes-production`.
+  See *Default polarity* below for what that changed.
 - **Two migrations have no probe** — `20260717-redirect-trailing-slashes` (a bare `/` is a
   legal `from`, so "already stripped" is indistinguishable from "never had one") and
   `20260826-split-coating-customization-type` (needs the script's own slug constants).

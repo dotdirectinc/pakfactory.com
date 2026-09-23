@@ -101,6 +101,15 @@ export function parseScriptArgs({
       out.confirm = true
       continue
     }
+    // `--dry-run` was the OPPOSITE convention: four blog/case-study migrations wrote by
+    // DEFAULT and took `--dry-run` to be safe. The retrofit inverted them, so the flag is
+    // now a no-op — but it is accepted rather than rejected because it appears in runbooks
+    // and shell history, and the failure modes are not symmetric. Rejecting it would fail
+    // a command whose intent was "do not write"; accepting it does exactly what was asked.
+    if (name === 'dry-run') {
+      console.warn('⚠️  `--dry-run` is now the DEFAULT and this flag does nothing — pass `--confirm` to write.')
+      continue
+    }
     if (valued.has(name)) {
       const value = inline ?? argv[++i]
       if (!value || value.startsWith('--')) fail(`\`--${name}\` needs a value.`, usage)

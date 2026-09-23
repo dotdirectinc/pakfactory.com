@@ -32,7 +32,6 @@ pnpm dev:studio        # Sanity Studio (apps/studio)
 | Production build | `pnpm build:blog` |
 | Type-check | `pnpm --filter @pakfactory/blog typecheck` |
 | Lint | `pnpm --filter @pakfactory/blog lint` |
-| Seed dev content | `pnpm seed:blog-dev` (see [Content vs seed](#content-vs-seed-workflow) — seeds **push** fixtures into Sanity; they are not a content pull) |
 
 After seeding, open Studio → **Pages → Homepage** → **Page blocks** tab to reorder blocks.
 
@@ -96,7 +95,7 @@ The full catalog seed (`apps/studio/scripts/seed.mjs`) was deleted on 2026-09-21
 
 | When | Command |
 | ---- | ------- |
-| Home rows need posts + full blog fixtures | `pnpm seed:blog-dev` |
+| Home rows need posts | Author them in the Studio, or `pnpm sanity:sync-prod-to-dev` to pull production content into `development` |
 | Empty homepage/topics page builder only | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` |
 
 Full workflow (draft preview, export/import, rules of thumb): [`memory.md` § Content vs seed workflow](./memory.md#content-vs-seed-workflow).

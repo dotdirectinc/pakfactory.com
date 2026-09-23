@@ -31,13 +31,30 @@
  * `adopt` refuses to touch it. That is deliberate: a guessed probe writes a false
  * ledger row, which is worse than an empty one.
  *
+ * ── `ticket` ───────────────────────────────────────────────────────────────────
+ *
+ * The PROD key a migration's OWN script header declares, or `null`. Never inferred.
+ *
+ * Six entries originally carried keys guessed from the migration's date and subject.
+ * Five pointed at real but unrelated tickets — blog i18n at "Follow up with Alek",
+ * the case-study gallery at a share-button bug, body-table at "Invoice Processor
+ * Upgrade". A plausible-looking wrong key is worse than a blank one: it reads as
+ * provenance and sends whoever follows it somewhere real and irrelevant.
+ *
+ * If the script does not name a ticket and Jira has no match, the answer is `null`.
+ *
  * ── `args` ─────────────────────────────────────────────────────────────────────
  *
  * `'flags'`      the script takes `--dataset/--confirm/--yes-production` (script-args.mjs).
  * `'legacy-env'` the script predates that rule and resolves its dataset from
  *                NEXT_PUBLIC_SANITY_DATASET. The runner REFUSES to execute these — see
- *                BUG-0032 — and `status` lists them as needing the Phase-2 retrofit.
+ *                BUG-0032 — and `status` lists them as needing the retrofit.
  *                They can still be adopted, because reading a probe is safe.
+ *
+ *                NO ENTRY CARRIES THIS ANY MORE. All 15 were retrofitted; the value and
+ *                the runner's refusal stay because the hazard is a property of the shape,
+ *                not of those particular files, and the next script written from an old
+ *                template will need catching.
  */
 
 /** @typedef {'flags'|'legacy-env'} ArgStyle */
@@ -45,32 +62,32 @@
 export const MIGRATIONS = [
   {
     id: '20260615-blog-i18n-en',
-    ticket: 'PROD-2119',
+    ticket: null,
     title: 'Backfill language:"en" on blog i18n documents',
     pkg: '@pakfactory/studio',
     task: 'migrate:blog-i18n-en',
     script: 'apps/studio/scripts/migrate-blog-i18n-en.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type in ["post","blogPage","blogCategory","blogTag"] && !defined(language)]) == 0`,
   },
   {
     id: '20260629-blog-navigation',
-    ticket: 'PROD-2126',
+    ticket: null,
     title: 'Build blogNavigation from legacy blogSettings.categoryOrder + footer hrefs',
     pkg: '@pakfactory/studio',
     task: 'migrate:blog-navigation',
     script: 'apps/studio/scripts/migrate-blog-navigation.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "blogNavigation"]) > 0`,
   },
   {
     id: '20260714-case-study-gallery',
-    ticket: 'PROD-2151',
+    ticket: null,
     title: 'Flatten legacy galleryImage objects into native image array members',
     pkg: '@pakfactory/studio',
     task: 'migrate:case-study-gallery',
     script: 'apps/studio/scripts/migrate-case-study-gallery.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "caseStudy" && (
       count(challenge[_type == "caseStudyGalleryBlock"].images[_type == "galleryImage"]) > 0 ||
       count(solution[_type == "caseStudyGalleryBlock"].images[_type == "galleryImage"]) > 0
@@ -78,12 +95,12 @@ export const MIGRATIONS = [
   },
   {
     id: '20260717-redirect-trailing-slashes',
-    ticket: 'PROD-2157',
+    ticket: null,
     title: 'Strip trailing slashes from redirect from/to',
     pkg: '@pakfactory/studio',
     task: 'migrate:redirect-slashes',
     script: 'apps/studio/scripts/strip-redirect-trailing-slashes.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     // No honest probe: "/" is itself a legal `from`, and distinguishing a stripped
     // path from one that never had a slash needs the script's own normalisation rules.
     probe: null,
@@ -95,7 +112,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'cleanup:blogsettings-defaults',
     script: 'apps/studio/scripts/unset-legacy-blogsettings-defaults.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_id in ["blogSettings","drafts.blogSettings"] && (
       defined(postDefaults) || defined(categoryDefaults) || defined(tagDefaults) ||
       defined(authorDefaults) || defined(pageDefaults)
@@ -108,7 +125,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'backfill:redirect-fields',
     script: 'apps/studio/scripts/backfill-redirect-match-behaviour.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "redirect" && (!defined(matchType) || !defined(behaviour))]) == 0`,
   },
   {
@@ -118,18 +135,18 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'unset:redirect-type',
     script: 'apps/studio/scripts/unset-redirect-type.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     after: ['20260721-backfill-redirect-match-behaviour'],
     probe: `count(*[_type == "redirect" && defined(type)]) == 0`,
   },
   {
     id: '20260722-redirect-groups',
-    ticket: 'PROD-2140',
+    ticket: null,
     title: 'Create redirectGroup documents and point every redirect at one',
     pkg: '@pakfactory/studio',
     task: 'migrate:redirect-groups',
     script: 'apps/studio/scripts/migrate-redirect-groups.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "redirectGroup"]) > 0 && count(*[_type == "redirect" && !defined(group)]) == 0`,
   },
   {
@@ -139,7 +156,7 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'cleanup:sitemap-hints',
     script: 'apps/studio/scripts/unset-sitemap-hint-fields.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_id in [
       "postSettings","categorySettings","topicSettings","authorSettings","pageSettings",
       "drafts.postSettings","drafts.categorySettings","drafts.topicSettings","drafts.authorSettings","drafts.pageSettings"
@@ -152,18 +169,18 @@ export const MIGRATIONS = [
     pkg: '@pakfactory/studio',
     task: 'cleanup:ai-crawler-fields',
     script: 'apps/studio/scripts/unset-ai-crawler-fields.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[_type == "post" && (defined(aiTraining) || defined(aiAnswering))]) == 0 &&
       count(*[_id in ["settings","drafts.settings"] && (defined(aiTrainingDefault) || defined(aiAnsweringDefault))]) == 0`,
   },
   {
     id: '20260728-body-table',
-    ticket: 'PROD-2208',
+    ticket: 'PROD-2224',
     title: 'Reverse bodyTable from the column-major experiment back to headers → rows',
     pkg: '@pakfactory/studio',
     task: 'migrate:body-table',
     script: 'apps/studio/scripts/migrate-body-table.mjs',
-    args: 'legacy-env',
+    args: 'flags',
     probe: `count(*[defined(body) && count(body[_type == "bodyTable" && defined(columns[0].header)]) > 0]) == 0`,
   },
   {
@@ -317,6 +334,20 @@ export const MIGRATIONS = [
       count(*[_type == "customizationType" && defined(cardinality)]) == 0 &&
       count(*[_type == "product" && defined(primarySolution)]) == 0`,
   },
+  {
+    id: '20260923-unset-values-per-item',
+    ticket: 'PROD-2585',
+    title: 'Unset property.valuesPerItem, whose field leaves the schema in the same PR',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:unset-values-per-item',
+    script: 'apps/studio/scripts/migrate-unset-values-per-item.mjs',
+    args: 'flags',
+    // Destructive with no successor — unlike every other unset here, the values are
+    // not preserved anywhere, so the script prints each one before deleting it and the
+    // run log is the only record. `production` carries the key on 0 of 9 Properties, so
+    // a run there is a clean no-op; `development` holds 10 of 12.
+    probe: `count(*[_type == "property" && defined(valuesPerItem)]) == 0`,
+  },
 ]
 
 /**
@@ -359,10 +390,8 @@ export const HISTORIC = [
  * decision or an oversight. The runner never executes these.
  */
 export const TASKS = [
-  { task: 'seed:blog-dev', pkg: '@pakfactory/studio', why: 'dev-only blog fixtures' },
   { task: 'seed:blog-singleton-pages', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
   { task: 'seed:per-type-settings', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
-  { task: 'seed:demo', pkg: '@pakfactory/sanity', why: 'demo content' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },

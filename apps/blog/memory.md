@@ -156,9 +156,12 @@ After the schema drop, existing posts/settings may still store the booleans. Stu
 Run **after** the schema change is deployed and stable (values are the rollback buffer until then):
 
 ```bash
-NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields
-NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --apply
-NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --apply
+pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --dataset development
+pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --dataset development --confirm
+pnpm --filter @pakfactory/studio run cleanup:ai-crawler-fields -- --dataset production --confirm --yes-production
+
+# or, through the register (records the run in the dataset ledger):
+pnpm sanity:migrate up --dataset production --only 20260723-unset-ai-crawler-fields --confirm --yes-production
 ```
 
 Script: [`apps/studio/scripts/unset-ai-crawler-fields.mjs`](../../apps/studio/scripts/unset-ai-crawler-fields.mjs). Dry-run is the default.
@@ -215,7 +218,7 @@ The sticky header (`SiteNav` in root `layout.tsx`) reads via `fetchBlogNavCatego
   When the singleton is missing or the list is empty, the strip is hidden (no fallback to all categories).
 
 - **Backfill legacy data:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` copies `blogSettings.categoryOrder` when `blogNavigation` is empty. Existing category-only refs remain valid (no content migration).
-- **Local seed:** `pnpm seed:blog-dev` writes `blogNavigation` with dev category refs only (logo/CTA left unset). To test custom links locally, add a `primaryNavLink` object to the `categories` array in `seed-blog-dev.mjs` (see `footer-navigation-seed-data.mjs` `externalLink()` / `internalLink()` helpers).
+- **Local nav:** `blogNavigation` is authored in the Studio. The default footer columns live in `footer-navigation-seed-data.mjs` (`externalLink()` / `internalLink()` helpers), which `migrate-blog-navigation.mjs` consumes. (The `seed-blog-dev.mjs` fixture seed was deleted as mock data.)
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` / `blogCategory` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 - **Out of scope here:** `/all` browse sidebar, search, and 404 still use `fetchBlogCategories()` (all categories, alphabetical).
 
@@ -236,7 +239,7 @@ The footer (`SiteFooter` in root `layout.tsx`) reads `blogNavigation.footerNavig
 - **CMS scope:** footer blocks (`builder`) + link columns + social / AI answer links. Copyright lines stay in code.
 - **Human ops after schema change:** the old `footerNavigation.cta` object field was removed. Re-add the collaboration CTA as a `CTA — Text and Button` block in Studio if it was previously configured. Prefer seeding `builder` with a `ctaTextAndButton` block when updating [`footer-navigation-seed-data.mjs`](../../apps/studio/scripts/footer-navigation-seed-data.mjs). Migrate Contribute footer links from external/site-path → Internal → CMS document `blogContributePage` after seeding that singleton.
 - **Backfill / migrate:** `pnpm --filter @pakfactory/studio run migrate:blog-navigation` seeds default footer columns when empty and converts legacy href-based links to references.
-- **Local seed:** `pnpm seed:blog-dev` writes primary nav and reference-based footer columns on `blogNavigation`.
+- **Local nav:** primary nav and reference-based footer columns on `blogNavigation` are authored in the Studio; `migrate-blog-navigation.mjs` backfilled them.
 - **Cache:** `BLOG_SETTINGS_CACHE_TAG`; revalidate on `blogNavigation` webhook updates (`apps/blog/src/app/api/revalidate/route.ts`).
 
 ---
@@ -300,13 +303,13 @@ Copies the current `blogSettings.*Defaults` values into the five singletons verb
 1. **Confirm the dataset** — Studio must show the `[DEVELOPMENT]` workspace suffix before seeding dev. Write token in `.env.local` / `apps/studio/.env.local` (`SANITY_API_WRITE_TOKEN`).
 2. **Dev first** (dry-run prints, `--apply` writes):
    ```bash
-   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings
-   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset development
+   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset development --confirm
    ```
 3. **Verify dev** — desk shows `Post ▸ Settings` etc.; diff a few author/category/post pages' `<head>` meta + the sitemaps before/after (should be identical — the query fell back to `blogSettings` pre-seed, reads the singleton post-seed, same values).
 4. **Promote to prod**:
    ```bash
-   NEXT_PUBLIC_SANITY_DATASET=production pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset production --confirm --yes-production
    ```
 5. **Update the Sanity revalidation webhook filter** (project `8293wrxp`) to also fire on the new `_type`s — add `postSettings`, `categorySettings`, `topicSettings`, `authorSettings`, `pageSettings` to the GROQ filter (the route handler already maps them → `blog-settings` cache tag). Otherwise editing a Settings singleton won't purge the cache.
 6. **Deploy Studio** (`pnpm --filter @pakfactory/studio run deploy`) so editors see the co-located Settings.
@@ -458,7 +461,7 @@ Pinned document ids imply `pageRole` (source of truth for Studio field visibilit
 - **Schema:** `pageRole` is hidden/read-only on singletons (`apps/studio/lib/blog-page-singletons.ts`).
 - **New docs:** async `initialValue` in `blogPage.ts` sets role from `_id` (create only — does not backfill existing docs).
 - **Validation:** singletons skip `pageRole` required (role implied by id; see `blogPage.ts` custom rule).
-- **Seeds:** `seed-blog-singleton-pages.mjs` / `seed-blog-dev.mjs` must always set explicit `pageRole`.
+- **Seeds:** `seed-blog-singleton-pages.mjs` must always set explicit `pageRole`.
 - **Troubleshooting:** "Page role Required" on a singleton → doc missing `pageRole` (created manually before role existed). Fix: patch the field; deploy schema with validation skip.
 
 ---
@@ -796,7 +799,7 @@ curl -sI http://localhost:3004/this-slug-does-not-exist | head -8
 - [ ] Set `NEWSLETTER_WEBHOOK_URL` in Vercel when S2.1 webhook is ready
 - [ ] Optional `NEXT_PUBLIC_WWW_URL` for quote CTA host
 - [x] Full seed: `pnpm --filter @pakfactory/studio run seed` → `development` dataset
-- [x] Blog dev supplement: `pnpm seed:blog-dev` → extra posts (3/category) + 5 industries
+- [x] Blog dev supplement (fixture seed since deleted as mock data)
 
 ---
 
@@ -921,7 +924,6 @@ Root `.env.example` defaults to `development`. Production dataset is for Vercel 
 
 | Command                                     | What it writes                                                                                                                                  |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm seed:blog-dev`                        | Supplement: 12 extra posts (≥3 per category for home rows) + 5 industries + nav + home/topics defaults. **Overwrites** singletons. Script: `apps/studio/scripts/seed-blog-dev.mjs`. |
 | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` | Home + topics page builders only (`blogHomePage`, `blogTopicsPage`). **No post changes.** Script: `apps/studio/scripts/seed-blog-singleton-pages.mjs`. |
 
 Token: `SANITY_API_WRITE_TOKEN`, `SANITY_TOKEN`, or `SANITY_API_READ_TOKEN` (repo scripts accept any of these for local dev).

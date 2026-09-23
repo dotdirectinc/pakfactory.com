@@ -5,8 +5,20 @@
  *   rows: [{ cells: string[] }]
  *
  * From repo root (humans only — agents must not run content writes):
- *   pnpm --filter @pakfactory/studio run migrate:body-table -- --dry-run
- *   pnpm --filter @pakfactory/studio run migrate:body-table
+ * 🔴 Run it through the register, not the command below:
+ *   pnpm sanity:migrate up --dataset <development|production> \
+ *     --only 20260728-body-table --confirm
+ *
+ * `migrate.mjs` writes the ledger row; this script does not, and never has.
+ * A direct run applies the same changes but records NOTHING — no ranAt, no
+ * gitSha, no checksum and no run log — and someone has to notice and `adopt`
+ * it afterwards. See MIGRATIONS.md.
+ *
+ * The invocation below is this script's own interface. It is what the runner
+ * calls, and it is still the right way to take a dry run:
+ *   pnpm --filter @pakfactory/studio run migrate:body-table -- --dataset development
+ *   pnpm --filter @pakfactory/studio run migrate:body-table -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run migrate:body-table -- --dataset production --confirm --yes-production
  *
  * Requires a write token in repo root `.env.local` or `apps/studio/.env.local`
  * (`SANITY_API_WRITE_TOKEN` / `SANITY_API_READ_TOKEN` / `SANITY_TOKEN`).
@@ -21,6 +33,7 @@ import { config as loadEnv } from 'dotenv'
 import { randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseScriptArgs } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -29,16 +42,21 @@ loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 loadEnv({ path: join(repoRoot, 'apps/www/.env.local'), override: true })
 
-const dryRun = process.argv.includes('--dry-run')
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run migrate:body-table -- --dataset <development|production> [--confirm] [--yes-production]
+
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
+const args = parseScriptArgs({ usage: USAGE })
+
+const dryRun = !args.confirm
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
   process.env.SANITY_STUDIO_PROJECT_ID ||
   '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  'development'
+const DATASET = args.dataset
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN ||
   process.env.SANITY_API_READ_TOKEN ||
@@ -166,7 +184,7 @@ async function main() {
 
   console.log(
     dryRun
-      ? '\nDry run complete — re-run without --dry-run to apply.\n'
+      ? `\nDRY-RUN on dataset=${DATASET} — nothing written. Re-run with --confirm.\n`
       : '\n✅  Migration complete. Reload Studio — Data tables edit as headers → rows.\n',
   )
 }

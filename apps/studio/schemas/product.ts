@@ -519,23 +519,14 @@ export const product = defineType({
           const basedOnRef = doc?.basedOn?._ref ?? ''
           if (!lineRef && !basedOnRef && statedRefs.length === 0) return true
 
-          // The Property Values themselves, so a message can name them rather
-          // than only counting. `stated` resolves PROPERTY documents (the refs
-          // come from `row.property`); these are one level down.
-          const valueRefs = rows
-            .flatMap((row) => (row?.values ?? []) as { _ref?: string }[])
-            .map((v) => v?._ref)
-            .filter((ref): ref is string => Boolean(ref))
-
           const client = context.getClient({ apiVersion: '2024-01-01' })
 
           // Every half in one round trip. A preset resolves its declaration
           // through `basedOn`, the same fallback the picker above uses. Every
           // filter is `_id ==` or `_id in`, so this stays index-backed.
-          const { declared, stated, values } = await client.fetch<{
+          const { declared, stated } = await client.fetch<{
             declared: { ref: string | null; title: string | null; required: boolean | null }[] | null
-            stated: { _id: string; title: string | null; valuesPerItem: string | null }[] | null
-            values: { _id: string; title: string | null }[] | null
+            stated: { _id: string; title: string | null }[] | null
           }>(
             `{
               "declared": coalesce(
@@ -543,10 +534,9 @@ export const product = defineType({
                 *[_id == *[_id == $basedOnRef][0].productLine._ref][0].properties,
                 []
               )[]{ "ref": property._ref, "title": property->title, required },
-              "stated": *[_id in $statedRefs]{ _id, title, valuesPerItem },
-              "values": *[_id in $valueRefs]{ _id, title }
+              "stated": *[_id in $statedRefs]{ _id, title }
             }`,
-            { lineRef, basedOnRef, statedRefs, valueRefs },
+            { lineRef, basedOnRef, statedRefs },
           )
 
           const declaredList = declared ?? []
@@ -590,36 +580,6 @@ export const product = defineType({
             )
           }
 
-          // 4 — more values than the Property allows. `valuesPerItem` is the
-          // Property's own answer to "can one thing carry several of these at
-          // once", and before this nothing in the repo read it anywhere.
-          //
-          // No `usage` test here, unlike the Customization side. A Customization
-          // Type can declare a property SELECTABLE, meaning its options list the
-          // menu a customer chooses from, and several values are then correct. A
-          // Product has no such mode: `properties` is what this product IS, and
-          // what it OFFERS lives in `availableCustomizations`. So on this side a
-          // second value always contradicts `one`.
-          const valueTitleOf = new Map(
-            (values ?? []).map((v) => [v._id, v.title ?? 'Untitled value']),
-          )
-          const perItemOf = new Map((stated ?? []).map((p) => [p._id, p.valuesPerItem]))
-          const overLimit = rows
-            .filter((row) => {
-              const ref = row?.property?._ref
-              if (!ref || perItemOf.get(ref) !== 'one') return false
-              return ((row.values ?? []) as unknown[]).length > 1
-            })
-            .map((row) => {
-              const ref = row.property!._ref!
-              const names = ((row.values ?? []) as { _ref?: string }[])
-                .map((v) => (v?._ref ? valueTitleOf.get(v._ref) : undefined))
-                .filter(Boolean)
-              return `${titleOf.get(ref) ?? 'This property'} allows one value${
-                names.length ? ` — ${names.join(', ')}` : ''
-              }.`
-            })
-          if (overLimit.length) problems.push(overLimit.join(' '))
 
           return problems.length ? problems.join(' ') : true
         }).warning(),
