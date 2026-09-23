@@ -13,17 +13,28 @@ import {
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
 import {Icon} from '@/components/ui/icon';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
-import type {SolutionProductMock} from '@/lib/solutions/fixtures/mock-solution-products';
+import type {
+    SolutionHeroCustomization,
+    SolutionMedia,
+} from '@/lib/solutions/types';
+
+export type SolutionHeroPreviewProduct = {
+    id: string;
+    title: string;
+    detailHref: string;
+    image?: SolutionMedia | null;
+    customizations: SolutionHeroCustomization[];
+};
 
 type SolutionProductPreviewProps = {
-    product: SolutionProductMock | null;
+    product: SolutionHeroPreviewProduct | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
 /**
- * Pre-customized solution product preview — image + customizations list.
- * Props-only; mock or future CMS payload via `product`.
+ * Solution LP hero product preview — image + customizations list.
+ * Props-only; CMS tiles supply the payload.
  */
 export function SolutionProductPreview({
     product,
@@ -48,7 +59,7 @@ export function SolutionProductPreview({
                             <div className="flex min-w-0 flex-col gap-4">
                                 <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
                                     {product.image?.src ? (
-                                        // eslint-disable-next-line @next/next/no-img-element -- mock/local until CMS
+                                        // eslint-disable-next-line @next/next/no-img-element -- CMS CDN URLs
                                         <img
                                             src={product.image.src}
                                             alt={product.image.alt}
@@ -79,43 +90,50 @@ export function SolutionProductPreview({
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     Customizations
                                 </p>
-                                <ul className="flex flex-col">
-                                    {product.customizations.map((item) => (
-                                        <li
-                                            key={item.id}
-                                            className="flex gap-4 border-b border-border py-4 first:pt-0 last:border-b-0 last:pb-0"
-                                        >
-                                            <span
-                                                className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted"
-                                                aria-hidden
-                                            />
-                                            <div className="flex min-w-0 flex-1 flex-col gap-2">
-                                                <div className="flex flex-col gap-1">
-                                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                        {item.category}
-                                                    </p>
-                                                    <h3 className="text-sm font-semibold tracking-tight text-foreground">
-                                                        {item.title}
-                                                    </h3>
-                                                    <p className="text-sm leading-6 text-muted-foreground">
-                                                        {item.description}
-                                                    </p>
+                                {product.customizations.length > 0 ? (
+                                    <ul className="flex flex-col">
+                                        {product.customizations.map((item) => (
+                                            <li
+                                                key={item.id}
+                                                className="flex gap-4 border-b border-border py-4 first:pt-0 last:border-b-0 last:pb-0"
+                                            >
+                                                <span
+                                                    className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted"
+                                                    aria-hidden
+                                                />
+                                                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                                    <div className="flex flex-col gap-1">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                            {item.category}
+                                                        </p>
+                                                        <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                                                            {item.title}
+                                                        </h3>
+                                                        <p className="text-sm leading-6 text-muted-foreground">
+                                                            {item.description}
+                                                        </p>
+                                                    </div>
+                                                    <Link
+                                                        href={item.learnMoreHref}
+                                                        className="inline-block text-sm font-medium text-foreground underline underline-offset-4 hover:text-foreground/80"
+                                                    >
+                                                        Learn More
+                                                    </Link>
                                                 </div>
-                                                <Link
-                                                    href={item.learnMoreHref}
-                                                    className="inline-block text-sm font-medium text-foreground underline underline-offset-4 hover:text-foreground/80"
-                                                >
-                                                    Learn More
-                                                </Link>
-                                            </div>
-                                            <BookmarkIconButton
-                                                className="shrink-0"
-                                                ariaLabel={`Bookmark ${item.title}`}
-                                                onClick={stubBookmarkAction}
-                                            />
-                                        </li>
-                                    ))}
-                                </ul>
+                                                <BookmarkIconButton
+                                                    className="shrink-0"
+                                                    ariaLabel={`Bookmark ${item.title}`}
+                                                    onClick={stubBookmarkAction}
+                                                />
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        Open the product page for customization
+                                        details.
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </>

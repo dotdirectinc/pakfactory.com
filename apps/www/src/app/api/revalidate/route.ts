@@ -34,7 +34,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "productLine", "expertiseStage", "customizationOption",
+ *     "solution", "solutionIndustryPage", "productLine", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "websiteNavigation", "settings"
  *   ]
@@ -178,9 +178,11 @@ export async function POST(request: Request) {
   }
 
   // Solution LPs + nested line catalogs (product/line edits change filtered grids).
+  // solutionIndustryPage edits reorder every industry LP that references the template.
   const touchesSolutions =
     !type ||
     type === "solution" ||
+    type === "solutionIndustryPage" ||
     CATALOG_PRODUCT_TYPES.has(type);
   if (touchesSolutions) {
     tags.add(WWW_SOLUTIONS_CACHE_TAG);
@@ -256,6 +258,7 @@ export async function POST(request: Request) {
     CATALOG_PRODUCT_TYPES.has(type) ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
     type === "solution" ||
+    type === "solutionIndustryPage" ||
     type === "websiteNavigation" ||
     type === "settings";
 

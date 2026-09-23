@@ -2,7 +2,6 @@ import type {PortableTextBlock} from '@portabletext/types';
 import type {
     SolutionBySlugDoc,
     SolutionFormatRefDoc,
-    SolutionRelatedRefDoc,
     SolutionWithPageDoc,
 } from '@pakfactory/sanity/queries';
 import {mapSanityProduct} from '@/lib/catalog/map-sanity';
@@ -29,7 +28,10 @@ export function isCompleteProduct(product: Product): boolean {
 }
 
 function mapRelated(
-    items: SolutionRelatedRefDoc[] | null | undefined,
+    items:
+        | Array<{title?: string | null; slug?: string | null}>
+        | null
+        | undefined,
 ): SolutionRelatedLink[] {
     if (!items?.length) return [];
     return items

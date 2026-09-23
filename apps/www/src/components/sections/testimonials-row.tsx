@@ -60,7 +60,10 @@ export function TestimonialsRow({
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32 overflow-x-clip', shell.bandClass, className)}
         >
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection
+                borderBottom
+                innerClassName="py-16 sm:py-20"
+            >
                 <SectionCarousel
                     prevLabel="Previous reviews"
                     nextLabel="Next reviews"

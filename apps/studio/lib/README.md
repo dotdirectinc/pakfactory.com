@@ -17,10 +17,16 @@ true`, or an insert menu by hand — stop and import instead.
 | **SEO + Social fields** — meta, robots toggles (defaulted from the type's settings singleton), OG | `seoFields()`, `socialFields()` | `./seo-fields` |
 | **Settings singleton** — per-type metadata formats + indexation defaults | `typeDefaultFields()` | `./type-default-fields` |
 | **Internal/external link** — reference or URL, picker filtered to routable types | `linkTargetFields()` | `./link-target-fields` |
+| **Section chrome link** — Internal · Site path · External (+ freeform `query`) | `sectionLinkTargetFields()` | `./section-link-target-fields` |
 | **Linkable-type list / picker filter** | `LINKABLE_DOCUMENT_TYPES`, `LINKABLE_TYPE_FILTER` | `./linkable-document-types` |
 | **Social links array** (author / footer) | `socialLinksField()`, `socialLinkArrayMember()` | `./social-link-schema` |
-| **Sections framework** — one `sections` array + grouped insert menu, **no presentation fields** | `sectionsField()`, `sectionInsertMenu()` | `./sections` |
-| **Row section** — heading · intro · source · count · curated override (derive fallback) | `rowSectionFields()` | `./row-section-fields` |
+| **Sections framework** — one `sections` array + **entity-tab** insert menu, **no presentation fields** | `sectionsField()`, `sectionInsertMenu()`; page types use `pageSectionsField(SECTION_ALLOW.*)` from `schemas/sections` | `./sections` + `../schemas/sections` |
+| **Section insert thumbnails** — optional grid art (`{_type}.webp`) | `sectionPreviewUrl` / `SECTION_PREVIEW_TYPES` | `../schemas/sections/section-preview` |
+| **Section chrome** — heading · intro · link · align · borders; chip tokens on heading/intro/query | `sectionHeaderFields()`, `sectionFieldGroups()`, `SECTION_GROUPS` | `./section-header-fields`, `./section-field-groups` |
+| **Section page-field tokens** — chip labels ↔ `%h1%` / `%slug%` etc. | `SECTION_PAGE_FIELD_TOKENS` | `./section-page-field-tokens` |
+| **Row section** — section chrome + source · count · curated override (derive fallback) | `rowSectionFields()` | `./row-section-fields` |
+| **Document default + section override** — page-level curated list (Categorization) + optional empty section list; www merge inherits when section empty ([ADR-020 §8](../../../docs/adr/0020-component-to-section-playbook.md)) | schema descriptions + `apply*Inherit` in www | see ADR-020; shipped for FAQs / case studies |
+| **Dieline borders** — top/bottom dashed edge toggles (stacking) | `dielineBorderFields()` | `./dieline-border-fields` |
 | **Source-owned / deprecate / max-curated / warn-range / taxonomy picker** — §2.6 | `sourceOwned()`, `deprecateField()`, `maxCurated()`, `warnOutOfRange()`, `taxonomyPickerOptions` | `./schema-guards` |
 | **Taxonomy title uniqueness** (ignoring case + punctuation, §4.2) | `uniqueTaxonomyTitle()` | `./taxonomy-rules` |
 | **Slug uniqueness across types** sharing a URL segment | `uniqueSlugAcross([...])` | `./slug-rules` |
@@ -55,6 +61,15 @@ export const thing = defineType({
 > **Terminology note:** the page-composition concept is **"Sections"** platform-wide
 > (ADR-015, superseding ADR-012's "block") — pending Eric's ratification. The blog's
 > `pageBuilder` field keeps its name until PROD-2293 renames it.
+>
+> **Insert menu (www):** tabs are **entity-named** (Solutions · Case studies · Products ·
+> Customizations · Expertise · Resources · Clients · Layout · CTAs) per [ADR-020 §10](../../../docs/adr/0020-component-to-section-playbook.md).
+> Do not hand-roll insert menus or revive Proof / Catalogue / Market family labels.
+> Studio `title`s are editor chrome only — never casually rename `_type`.
+>
+> **In-section form tabs:** every www section object uses `groups: sectionFieldGroups()` →
+> **All · Heading · Content · Layout** (All selected by default). Heading/intro use
+> `SectionTokenStringInput` chips (`%h1%`, `%title%`, …) resolved on www from the host page.
 
 ## The §2.3 non-negotiables (not enforced by import — still on you)
 

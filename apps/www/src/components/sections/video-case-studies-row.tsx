@@ -35,6 +35,9 @@ export type VideoCaseStudiesRowContent = {
     description?: string;
     cta?: VideoCaseStudiesRowCta;
     cards: VideoCaseStudiesRowCard[];
+    align?: 'left' | 'center';
+    borderTop?: boolean;
+    borderBottom?: boolean;
 };
 
 type VideoCaseStudiesRowProps = {
@@ -54,7 +57,16 @@ export function VideoCaseStudiesRow({
     className,
     theme = 'default',
 }: VideoCaseStudiesRowProps) {
-    const {eyebrow, headline, description, cta, cards} = content;
+    const {
+        eyebrow,
+        headline,
+        description,
+        cta,
+        cards,
+        align = 'left',
+        borderTop = false,
+        borderBottom = true,
+    } = content;
     const shell = sectionThemeShell(theme);
 
     if (cards.length === 0) return null;
@@ -72,7 +84,9 @@ export function VideoCaseStudiesRow({
         >
             <PageDielineSection
                 as="div"
-                innerClassName="border-b border-dashed border-border py-16 sm:py-24"
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                innerClassName="py-16 sm:py-24"
             >
                 <SectionCarousel
                     prevLabel="Previous video case studies"
@@ -85,6 +99,7 @@ export function VideoCaseStudiesRow({
                             }
                             description={description}
                             descriptionClassName="text-base leading-6"
+                            align={align}
                             cta={cta}
                             ctaPlacement="end"
                         />

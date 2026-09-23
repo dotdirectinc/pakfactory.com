@@ -3,39 +3,53 @@ import {cn} from '@pakfactory/ui/lib/utils';
 
 import {CatalogCard} from '@/components/ui/catalog-card';
 import {SectionHeading} from '@/components/ui/section-heading';
-import type {SolutionInspirationsContent} from '@/lib/solutions/types';
+import type {InspirationGalleryContent} from '@/lib/solutions/types';
 import {sectionThemeShell} from '@/lib/ui/section-theme';
 
-const INSPIRATIONS_HEADING_ID = 'solution-inspirations-heading';
+const INSPIRATIONS_HEADING_ID = 'inspiration-gallery-heading';
 
-type SolutionInspirationsProps = {
-    content: SolutionInspirationsContent;
+type InspirationGalleryProps = {
+    content: InspirationGalleryContent;
     className?: string;
+    /** Section landmark id. Default `inspirations`. */
+    id?: string;
 };
 
 /**
- * Industry Solution LP inspirations band — SectionHeading + CatalogCard grid.
- * Props-only; maps fixture/CMS content onto shared UI (ADR-013).
+ * Inspiration Gallery — SectionHeading + CatalogCard grid (ADR-020).
+ * Props-only; CMS path via `inspirationsGrid` (WP3).
  */
-export function SolutionInspirations({
+export function InspirationGallery({
     content,
     className,
-}: SolutionInspirationsProps) {
-    const {eyebrow, headline, description, cta, cards} = content;
+    id = 'inspirations',
+}: InspirationGalleryProps) {
+    const {
+        eyebrow,
+        headline,
+        description,
+        cta,
+        cards,
+        align = 'left',
+        borderTop = false,
+        borderBottom = true,
+    } = content;
     if (cards.length === 0) return null;
 
     const shell = sectionThemeShell('muted');
 
     return (
         <section
-            id="inspirations"
+            id={id}
             aria-labelledby={INSPIRATIONS_HEADING_ID}
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32', shell.bandClass, className)}
         >
             <PageDielineSection
                 as="div"
-                innerClassName="border-b border-dashed border-border py-16 sm:py-24"
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                innerClassName="py-16 sm:py-24"
             >
                 <SectionHeading
                     eyebrow={eyebrow}
@@ -44,11 +58,11 @@ export function SolutionInspirations({
                     }
                     description={description}
                     descriptionClassName="text-base leading-6"
+                    align={align}
                     cta={cta}
                     ctaPlacement="end"
-                    className="mb-16"
                 />
-                <ul className="grid list-none grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="mt-12 grid list-none grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
                     {cards.map((card) => (
                         <li key={card.id}>
                             <CatalogCard
@@ -57,7 +71,6 @@ export function SolutionInspirations({
                                 description={card.description}
                                 imageSrc={card.image.src}
                                 imageAlt={card.image.alt}
-                                surface={shell.cardSurface}
                             />
                         </li>
                     ))}

@@ -4,6 +4,8 @@ import {
   UsersIcon,
   PackageIcon,
   ThLargeIcon,
+  CubeIcon,
+  StackCompactIcon,
   ComponentIcon,
   BulbOutlineIcon,
   StarIcon,
@@ -12,22 +14,19 @@ import {
   BookIcon,
   DocumentsIcon,
 } from '@sanity/icons'
+import { SectionItemPreview } from '../../components/SectionItemPreview'
 import { rowSectionFields } from '../../lib/row-section-fields'
+import { sectionFieldGroups } from '../../lib/section-field-groups'
 
 /**
- * Row sections (Section inventory → Proof · Catalogue · Market & resources). Each
- * shows a strip of documents and shares ONE field-set — heading · intro · source ·
- * count · curated override with derive fallback (`rowSectionFields`, Foundations).
- * Distinct in the insert menu (own icon + label), identical underneath, so they
- * can't drift. No presentation fields (D35).
+ * Row sections — entity insert tabs (ADR-020 §10). Each shows a strip of
+ * documents and shares ONE field-set — section chrome (heading · intro · align ·
+ * link · borders) plus source · count · curated override with derive fallback
+ * (`rowSectionFields`). Distinct in the insert menu (own icon + `{Entity} row`
+ * title), identical underneath. Theme/columns stay in React (D35).
  *
- * `sourceTo` omitted = the row derives from the page's own subject / all items
- * (Case studies, Product lines, Bundles, Solutions, Glossary, the Expertise
- * sequence). Where a source is given, the editor names the source and the count,
- * not the items, so the section never goes stale.
- *
- * Deferred: the Testimonials row — its `testimonial` type is extracted in
- * PROD-2293. It joins this file then.
+ * Deferred: Testimonials — joins Clients tab in PROD-2293. Video case studies
+ * live in `video-case-studies-row.ts` (mixed ref | typed).
  */
 
 type RowSpec = {
@@ -47,6 +46,7 @@ function rowSection(spec: RowSpec) {
     title: spec.title,
     type: 'object',
     icon: spec.icon,
+    groups: sectionFieldGroups(),
     fields: rowSectionFields({
       sourceTo: spec.sourceTo,
       curatedTo: spec.curatedTo,
@@ -61,68 +61,75 @@ function rowSection(spec: RowSpec) {
         return { title: title || spec.title, subtitle: n ? `${n} pinned` : spec.title }
       },
     },
+    components: { preview: SectionItemPreview },
   })
 }
 
-// ── Proof ────────────────────────────────────────────────────────────────────
-export const caseStudiesRow = rowSection({
-  name: 'caseStudiesRow', title: 'Case studies', icon: CaseIcon,
-  curatedTo: [{ type: 'caseStudy' }], itemNoun: 'case studies',
-})
+// ── Clients ──────────────────────────────────────────────────────────────────
 export const logoWall = rowSection({
   name: 'logoWall', title: 'Logo wall', icon: UsersIcon,
   curatedTo: [{ type: 'client' }], itemNoun: 'clients',
 })
 
-// ── Catalogue ────────────────────────────────────────────────────────────────
+// ── Case studies ─────────────────────────────────────────────────────────────
+export const caseStudiesRow = rowSection({
+  name: 'caseStudiesRow', title: 'Case study row', icon: CaseIcon,
+  curatedTo: [{ type: 'caseStudy' }], itemNoun: 'case studies',
+})
+
+// ── Products ─────────────────────────────────────────────────────────────────
 export const productLinesRow = rowSection({
-  name: 'productLinesRow', title: 'Product lines', icon: PackageIcon,
+  name: 'productLinesRow', title: 'Product line row', icon: StackCompactIcon,
   curatedTo: [{ type: 'productLine' }], itemNoun: 'lines',
 })
 export const productStylesRow = rowSection({
-  name: 'productStylesRow', title: 'Product styles', icon: ThLargeIcon,
+  name: 'productStylesRow', title: 'Product style row', icon: ThLargeIcon,
   sourceTo: [{ type: 'productLine' }], curatedTo: [{ type: 'productStyle' }], itemNoun: 'styles',
 })
 export const productsRow = rowSection({
-  name: 'productsRow', title: 'Products', icon: PackageIcon,
+  name: 'productsRow', title: 'Product row', icon: PackageIcon,
   sourceTo: [{ type: 'productLine' }, { type: 'productStyle' }, { type: 'solution' }],
   curatedTo: [{ type: 'product' }], itemNoun: 'products',
 })
 export const bundlesRow = rowSection({
-  name: 'bundlesRow', title: 'Bundles', icon: PackageIcon,
+  name: 'bundlesRow', title: 'Bundle row', icon: CubeIcon,
   curatedTo: [{ type: 'bundle' }], itemNoun: 'bundles',
 })
+
+// ── Customizations ───────────────────────────────────────────────────────────
 export const customizationsRow = rowSection({
-  name: 'customizationsRow', title: 'Customizations', icon: ComponentIcon,
+  name: 'customizationsRow', title: 'Customization row', icon: ComponentIcon,
   sourceTo: [{ type: 'customizationCategory' }], curatedTo: [{ type: 'customizationOption' }], itemNoun: 'customizations',
 })
 
-// ── Market & resources ───────────────────────────────────────────────────────
+// ── Solutions / Expertise ────────────────────────────────────────────────────
 export const solutionsRow = rowSection({
-  name: 'solutionsRow', title: 'Solutions', icon: BulbOutlineIcon,
+  name: 'solutionsRow', title: 'Solution row', icon: BulbOutlineIcon,
   curatedTo: [{ type: 'solution' }], itemNoun: 'solutions',
 })
 export const expertiseSequence = rowSection({
-  name: 'expertiseSequence', title: 'Expertise sequence', icon: StarIcon,
+  name: 'expertiseSequence', title: 'Expertise stages', icon: StarIcon,
   curatedTo: [{ type: 'expertiseStage' }], itemNoun: 'stages',
   curatedTitle: 'The ordered stages', defaultCount: 6,
 })
+
+// ── Resources ────────────────────────────────────────────────────────────────
 export const guidesRow = rowSection({
-  name: 'guidesRow', title: 'Guides', icon: DocumentTextIcon,
+  name: 'guidesRow', title: 'Guide row', icon: DocumentTextIcon,
   sourceTo: [{ type: 'productLine' }, { type: 'productStyle' }, { type: 'solution' }, { type: 'expertiseStage' }, { type: 'customizationType' }],
   curatedTo: [{ type: 'guide' }], itemNoun: 'guides',
 })
 export const dielinesRow = rowSection({
-  name: 'dielinesRow', title: 'Dielines', icon: DownloadIcon,
+  name: 'dielinesRow', title: 'Dieline row', icon: DownloadIcon,
   sourceTo: [{ type: 'productStyle' }, { type: 'productLine' }, { type: 'expertiseStage' }, { type: 'solution' }],
   curatedTo: [{ type: 'dieline' }], itemNoun: 'dielines',
 })
 export const glossaryStrip = rowSection({
-  name: 'glossaryStrip', title: 'Glossary strip', icon: BookIcon,
+  name: 'glossaryStrip', title: 'Glossary row', icon: BookIcon,
   curatedTo: [{ type: 'glossaryTerm' }], itemNoun: 'terms',
 })
 export const postsRow = rowSection({
-  name: 'postsRow', title: 'Posts', icon: DocumentsIcon,
+  name: 'postsRow', title: 'Post row', icon: DocumentsIcon,
   sourceTo: [{ type: 'blogCategory' }], curatedTo: [{ type: 'post' }], itemNoun: 'posts',
 })
 

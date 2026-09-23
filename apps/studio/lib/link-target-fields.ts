@@ -11,15 +11,21 @@ export type LinkTargetFieldsOptions = {
    * When false (optional CTA links), editors may leave linkType unset for app fallbacks.
    */
   requireLinkType?: boolean
+  /**
+   * When true (section CTAs), External accepts site-relative paths like `/products`.
+   * Footer/nav keep absolute URLs only.
+   */
+  allowRelativeExternal?: boolean
 }
 
 /**
  * Shared Internal / External link fields for Studio schemas.
- * Internal always means a CMS document reference; External is a full URL.
+ * Internal always means a CMS document reference; External is a full URL
+ * (or site-relative path when `allowRelativeExternal` is set).
  * Reuse anywhere editors pick a destination (footer links, CTA blocks, future nav).
  */
 export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
-  const { requireLinkType = true } = options
+  const { requireLinkType = true, allowRelativeExternal = false } = options
 
   const linkTypeField = defineField({
     name: 'linkType',
@@ -67,16 +73,20 @@ export function linkTargetFields(options: LinkTargetFieldsOptions = {}) {
     }),
     defineField({
       name: 'externalUrl',
-      title: 'External URL',
+      title: allowRelativeExternal ? 'URL or path' : 'External URL',
       type: 'url',
-      description:
-        'A full URL (e.g. https://www.pakfactory.com/about).',
+      description: allowRelativeExternal
+        ? 'Full URL (https://…) or site path (e.g. /products). Prefer Internal when a CMS page exists.'
+        : 'A full URL (e.g. https://www.pakfactory.com/about).',
+      ...(allowRelativeExternal ? {options: {allowRelative: true}} : {}),
       hidden: ({ parent }) => parent?.linkType !== 'external',
       validation: (Rule) =>
         Rule.custom((value, context) => {
           const parent = context.parent as { linkType?: string } | undefined
           if (parent?.linkType === 'external' && !value) {
-            return 'External URL is required.'
+            return allowRelativeExternal
+              ? 'URL or path is required.'
+              : 'External URL is required.'
           }
           return true
         }),

@@ -69,6 +69,7 @@ When zero or multiple Product Lines are selected, the entry card is omitted.
 - **Server:** one library fetch + shared facet catalog in `ProductLibraryResult`
 - **Client:** filter in memory via `matchesProductItem`; facet option counts via `buildProductFacetCounts` — **disjunctive (except-self)**: for facet F, count options against items that match query + all selections **except F** (so selecting one Product Line does not zero sibling lines); header **“N of M”** stays based on the fully filtered result set; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button)
 - **Route:** `urlSync` (default true) — `q` plus facet ids as comma-separated query params (no `category`; load-more depth is session-only)
+- **Section deep links:** Prefer Site path `/products` + freeform `link.query` (e.g. `industry=%slug%` on a Solution LP) — see [ADR-020](../../../docs/adr/0020-component-to-section-playbook.md) § Section link → catalog query
 
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line, Industries, and other properties = **OR** (same taxonomy as customizations)
 - **Zero-count options:** disabled in the rail (still uncheckable if already selected)

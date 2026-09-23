@@ -6,24 +6,13 @@ import {
     type ProductCardData,
 } from '@/components/product/product-card';
 import {SolutionHero} from '@/components/solution/solution-hero';
-import {SolutionExpertise} from '@/components/solution/solution-expertise';
-import {SolutionInspirations} from '@/components/solution/solution-inspirations';
-import {CaseStudiesRow} from '@/components/sections/case-studies-row';
-import {VideoCaseStudiesRow} from '@/components/sections/video-case-studies-row';
-import {FaqSection} from '@/components/sections/faq-section';
-import {TestimonialsRow} from '@/components/sections/testimonials-row';
+import {SectionRenderer} from '@/components/sections/section-renderer';
 import {CatalogCard} from '@/components/ui/catalog-card';
-import {
-    LogoMarquee,
-    type LogoMarqueeItem,
-} from '@/components/ui/logo-marquee';
-import {TextWithImage} from '@/components/ui/text-with-image';
 import type {Product} from '@/lib/catalog/types';
 import type {
     SolutionCard,
     SolutionLandingContent,
     SolutionLineCatalog,
-    SolutionLogosContent,
 } from '@/lib/solutions/types';
 import {
     productHref,
@@ -57,48 +46,6 @@ function toProductCardData(product: Product): ProductCardData {
         images: images.length > 0 ? images : undefined,
         moq: product.moq,
     };
-}
-
-function toLogoMarqueeItems(
-    logos: SolutionLogosContent,
-): LogoMarqueeItem[] {
-    return logos.items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        imageSrc: item.imageSrc,
-        href: item.href,
-        linkLabel: item.linkLabel,
-        width: item.width,
-        height: item.height,
-    }));
-}
-
-function SolutionLogosBand({logos}: {logos: SolutionLogosContent}) {
-    const items = toLogoMarqueeItems(logos);
-    if (items.length === 0) return null;
-
-    return (
-        <PageDielineSection
-            as="section"
-            aria-labelledby={
-                logos.heading ? 'solution-logos-heading' : undefined
-            }
-            className="bg-background"
-            innerClassName="border-b border-dashed border-border pb-16 pt-16"
-        >
-            {logos.heading ? (
-                <h2 id="solution-logos-heading" className="sr-only">
-                    {logos.heading}
-                </h2>
-            ) : null}
-            {logos.subhead ? (
-                <p className="mb-10 max-w-[720px] text-[15px] leading-[1.5] text-muted-foreground">
-                    {logos.subhead}
-                </p>
-            ) : null}
-            <LogoMarquee items={items} />
-        </PageDielineSection>
-    );
 }
 
 export function SolutionCatalogView({
@@ -137,34 +84,16 @@ export function SolutionCatalogView({
 }
 
 /**
- * Industry Solution LP shell (PROD-1541).
- * Hero (Fork 2) when `content.hero` is set; otherwise thin heading.
- * Logos band (Fork 3) when `content.logos` is set.
- * Inspirations grid (Fork 4) when `content.inspirations` is set.
- * Customizations TextWithImage (Fork 5) when `content.customizations` is set.
- * Expertise StagesBoard (Fork 6) when `content.expertise` is set.
- * Case studies CaseStudiesRow (Fork 7) when `content.caseStudies` is set.
- * Video case studies VideoCaseStudiesRow when `content.videoCaseStudies` is set (under expand).
- * Testimonials TestimonialsRow (Fork 8) when `content.testimonials` is set.
- * FAQs FaqSection (Fork 9) when `content.faqs` is set.
+ * Industry Solution LP shell.
+ * Breadcrumb + hero are route-owned. Body is CMS sections via SectionRenderer
+ * (merged Solution Industry Page template × solution content).
  */
 export function SolutionLandingView({
     content,
 }: {
     content: SolutionLandingContent;
 }) {
-    const {
-        solution,
-        hero,
-        logos,
-        inspirations,
-        customizations,
-        expertise,
-        caseStudies,
-        videoCaseStudies,
-        testimonials,
-        faqs,
-    } = content;
+    const {solution, hero, sections} = content;
 
     return (
         <>
@@ -185,48 +114,8 @@ export function SolutionLandingView({
                     }
                 />
             )}
-            {logos ? <SolutionLogosBand logos={logos} /> : null}
-            {inspirations ? (
-                <SolutionInspirations content={inspirations} />
-            ) : null}
-            {customizations ? (
-                <TextWithImage
-                    id="customizations"
-                    eyebrow={customizations.eyebrow}
-                    title={customizations.headline}
-                    body={customizations.body}
-                    cta={customizations.cta}
-                    image={customizations.image}
-                />
-            ) : null}
-            {expertise ? (
-                <SolutionExpertise content={expertise} />
-            ) : null}
-            {caseStudies ? (
-                <CaseStudiesRow content={caseStudies} />
-            ) : null}
-            {videoCaseStudies ? (
-                <VideoCaseStudiesRow content={videoCaseStudies} />
-            ) : null}
-            {testimonials ? (
-                <TestimonialsRow
-                    sectionId="solution-testimonials"
-                    items={testimonials.items}
-                    aggregate={testimonials.aggregate}
-                    title={testimonials.title}
-                    description={testimonials.description}
-                />
-            ) : null}
-            {faqs ? (
-                <FaqSection
-                    sectionId="solution-faqs"
-                    items={faqs.items}
-                    heading={faqs.heading}
-                    description={faqs.description}
-                    footerHref={faqs.footerHref}
-                    footerLabel={faqs.footerLabel}
-                    borderBottom={false}
-                />
+            {sections && sections.length > 0 ? (
+                <SectionRenderer sections={sections} />
             ) : null}
         </>
     );

@@ -393,7 +393,14 @@ const makeNewDocumentOptions =
     // Singleton / pinned-ID page types are not creatable from "create new"
     // (§3.2) — they are reached only through their structure entries. contentPage
     // stays creatable (new company pages). PROD-2292.
-    const NON_CREATABLE = new Set(['blogCategory', 'homePage', 'listingPage', 'legalPage', 'websiteNavigation'])
+    const NON_CREATABLE = new Set([
+      'blogCategory',
+      'homePage',
+      'listingPage',
+      'legalPage',
+      'websiteNavigation',
+      'solutionIndustryPage',
+    ])
     let opts = prev.filter((item) => !NON_CREATABLE.has(item.templateId))
     if (channel) {
       // keep only this channel's video template; drop the bare + other channels'

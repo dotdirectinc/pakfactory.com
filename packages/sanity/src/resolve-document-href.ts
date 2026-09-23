@@ -48,8 +48,8 @@ const BLOG_SURFACE_TYPES = new Set([
 /**
  * Fixed routes for the shared page types (PROD-2292), keyed by the document's
  * semantic `_id`. homePage/listingPage/legalPage carry no slug, so the id is the
- * route. Only `homePage`, `privacyPage` and `caseStudiesPage` exist today; the
- * others resolve once their documents are created.
+ * route. `productsPage` maps to `/products` once that listing doc exists; other
+ * ids resolve once their documents are created.
  */
 const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   homePage: "/",
@@ -59,6 +59,8 @@ const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   privacyPage: "/privacy",
   termsPage: "/terms",
   caseStudiesPage: "/case-studies",
+  /** Products catalog index — create `listingPage` id `productsPage` for Internal refs. */
+  productsPage: "/products",
 };
 
 /** Pinned blogPage singleton ids → public paths (role implied by id when pageRole is unset). */

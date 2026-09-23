@@ -18,6 +18,9 @@ type TextWithImageProps = {
     theme?: SectionTheme;
     id?: string;
     className?: string;
+    align?: 'left' | 'center';
+    borderTop?: boolean;
+    borderBottom?: boolean;
 };
 
 /**
@@ -33,6 +36,9 @@ export function TextWithImage({
     theme = 'default',
     id,
     className,
+    align = 'left',
+    borderTop = false,
+    borderBottom = true,
 }: TextWithImageProps) {
     if (!image.src.trim()) return null;
 
@@ -48,7 +54,9 @@ export function TextWithImage({
         >
             <PageDielineSection
                 as="div"
-                innerClassName="border-b border-dashed border-border py-16 sm:py-24"
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                innerClassName="py-16 sm:py-24"
             >
                 <SectionHeading
                     eyebrow={eyebrow}
@@ -56,6 +64,7 @@ export function TextWithImage({
                     titleClassName="max-w-[745px]"
                     description={body}
                     descriptionClassName="max-w-[726px] text-base leading-6"
+                    align={align}
                     cta={cta}
                     ctaPlacement="end"
                 />
