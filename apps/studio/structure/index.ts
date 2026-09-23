@@ -957,8 +957,7 @@ export const solutionsWorkspaceStructure = (
                 ),
         ]);
 
-/** Expertise workspace (PROD-2330 / D2) — Expertise Stage today; Expertise
- *  Service joins when that type is built. */
+/** Expertise workspace (PROD-2330 / D2) — listing singleton + stages + services. */
 export const expertiseStructure = (
     S: StructureBuilder,
     _context: StructureResolverContext,
@@ -967,6 +966,15 @@ export const expertiseStructure = (
         .title('Expertise')
         .items([
             ...sitePreviewHint(S),
+            S.listItem()
+                .title('Expertise Page')
+                .icon(CogIcon)
+                .child(
+                    S.editor()
+                        .id('expertisePage')
+                        .schemaType('listingPage')
+                        .documentId('expertisePage'),
+                ),
             S.listItem()
                 .title('Expertise Stages')
                 .schemaType('expertiseStage')

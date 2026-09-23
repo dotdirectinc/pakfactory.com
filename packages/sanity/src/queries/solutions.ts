@@ -1,9 +1,10 @@
 /**
  * Solutions GROQ for www rebuild — LPs at `/solutions/[slug]` and
- * pre-filtered catalogs at `/solutions/[slug]/[lineSlug]`.
- * Field names mirror `solution` / `product` / `productLine` Studio schemas.
+ * Solution Style catalogues at `/solutions/[slug]/[styleSlug]` (PROD-2520 FE).
+ * Field names mirror `solution` / `solutionStyle` / `product` Studio schemas.
  */
 
+import type {SolutionStyleFilter} from '../solution-style-filter';
 import {CATALOG_PRODUCT_CARD_FIELDS} from './catalog';
 import {
     PAGE_SECTIONS_PROJECTION,
@@ -284,4 +285,133 @@ export type SolutionWithPageDoc = {
     shortDescription?: string | null;
     slug: string | null;
     featuredImage?: unknown | null;
+};
+
+const SOLUTION_STYLE_FILTER_FIELDS = /* groq */ `
+  filter{
+    productLines[]{_ref},
+    productStyles[]{_ref},
+    keywords
+  },
+  excludedProducts[]{_ref}
+`;
+
+/**
+ * Solution Style by parent + style slug. Parent must have `hasPage` (PROD-2520).
+ * Filter refs feed `@pakfactory/sanity/solution-style-filter` on the FE.
+ */
+export const SOLUTION_STYLE_BY_SLUGS_QUERY = /* groq */ `*[
+  _type == "solutionStyle" &&
+  slug.current == $styleSlug &&
+  solution->slug.current == $solutionSlug &&
+  solution->hasPage == true
+][0]{
+  _id,
+  title,
+  h1,
+  shortName,
+  "slug": slug.current,
+  shortDescription,
+  description,
+  "descriptionText": pt::text(description),
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  ${SOLUTION_STYLE_FILTER_FIELDS},
+  "solution": solution->{
+    _id,
+    title,
+    shortName,
+    hasPage,
+    "slug": slug.current,
+    allowIndex,
+    allowFollow
+  },
+  metaTitle,
+  metaDescription,
+  allowIndex,
+  allowFollow,
+  noImageIndex,
+  canonicalUrl
+}`;
+
+/** Style cards under a hasPage parent (collection band on the solution LP). */
+export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
+  _type == "solutionStyle" &&
+  defined(slug.current) &&
+  solution->slug.current == $solutionSlug &&
+  solution->hasPage == true
+] | order(title asc) {
+  _id,
+  title,
+  h1,
+  shortName,
+  "slug": slug.current,
+  shortDescription,
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  }
+}`;
+
+/** Static params for `/solutions/[slug]/[styleSlug]`. */
+export const SOLUTION_STYLE_PAGE_PARAMS_QUERY = /* groq */ `*[
+  _type == "solutionStyle" &&
+  defined(slug.current) &&
+  defined(solution->slug.current) &&
+  solution->hasPage == true
+]{
+  "solutionSlug": solution->slug.current,
+  "styleSlug": slug.current
+}`;
+
+export type SolutionStyleParentDoc = {
+    _id: string;
+    title: string;
+    shortName?: string | null;
+    hasPage?: boolean | null;
+    slug: string | null;
+    allowIndex?: boolean | null;
+    allowFollow?: boolean | null;
+};
+
+export type SolutionStyleRefDoc = {
+    _ref: string;
+};
+
+export type SolutionStyleBySlugsDoc = {
+    _id: string;
+    title: string;
+    h1?: string | null;
+    shortName?: string | null;
+    slug: string | null;
+    shortDescription?: string | null;
+    description?: unknown[] | null;
+    descriptionText?: string | null;
+    featuredImage?: unknown | null;
+    filter?: SolutionStyleFilter | null;
+    excludedProducts?: SolutionStyleRefDoc[] | null;
+    solution: SolutionStyleParentDoc | null;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    allowIndex?: boolean | null;
+    allowFollow?: boolean | null;
+    noImageIndex?: boolean | null;
+    canonicalUrl?: string | null;
+};
+
+export type SolutionStyleCardDoc = {
+    _id: string;
+    title: string;
+    h1?: string | null;
+    shortName?: string | null;
+    slug: string | null;
+    shortDescription?: string | null;
+    featuredImage?: unknown | null;
+};
+
+export type SolutionStylePageParamDoc = {
+    solutionSlug: string | null;
+    styleSlug: string | null;
 };

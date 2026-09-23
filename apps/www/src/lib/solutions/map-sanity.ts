@@ -2,6 +2,8 @@ import type {PortableTextBlock} from '@portabletext/types';
 import type {
     SolutionBySlugDoc,
     SolutionFormatRefDoc,
+    SolutionStyleBySlugsDoc,
+    SolutionStyleCardDoc,
     SolutionWithPageDoc,
 } from '@pakfactory/sanity/queries';
 import {mapSanityProduct} from '@/lib/catalog/map-sanity';
@@ -15,6 +17,8 @@ import type {
     SolutionFormat,
     SolutionPage,
     SolutionRelatedLink,
+    SolutionStyleCard,
+    SolutionStylePage,
 } from '@/lib/solutions/types';
 
 /** Drop partial/stale related entries that lack line+style for ProductCard. */
@@ -135,6 +139,72 @@ export function mapSanitySolution(doc: SolutionBySlugDoc): SolutionPage | null {
         relatedProducts,
         relatedCaseStudies: mapRelated(doc.relatedCaseStudies),
         relatedSolutions: mapRelated(doc.relatedSolutions),
+        ...(metaTitle ? {metaTitle} : {}),
+        ...(metaDescription ? {metaDescription} : {}),
+        allowIndex: doc.allowIndex !== false,
+        allowFollow: doc.allowFollow !== false,
+        noImageIndex: doc.noImageIndex === true,
+        ...(canonicalUrl ? {canonicalUrl} : {}),
+    };
+}
+
+export function mapSanitySolutionStyleCard(
+    doc: SolutionStyleCardDoc,
+): SolutionStyleCard | null {
+    const slug = doc.slug?.trim();
+    const title =
+        doc.shortName?.trim() || doc.title?.trim() || undefined;
+    if (!slug || !title) return null;
+
+    const description = doc.shortDescription?.trim() || undefined;
+    const imageUrl = doc.featuredImage
+        ? (sanityImageBaseUrl(doc.featuredImage) ?? null)
+        : null;
+    const imageAlt = doc.featuredImage
+        ? resolveImageAlt(doc.featuredImage, title)
+        : title;
+
+    return {
+        slug,
+        title,
+        ...(description ? {description} : {}),
+        ...(imageUrl ? {imageUrl, imageAlt} : {}),
+    };
+}
+
+export function mapSanitySolutionStylePage(
+    doc: SolutionStyleBySlugsDoc,
+): SolutionStylePage | null {
+    const slug = doc.slug?.trim();
+    const title = doc.title?.trim();
+    if (!slug || !title) return null;
+
+    const h1 = doc.h1?.trim() || title;
+    const shortName = doc.shortName?.trim() || title;
+    const shortDescription = doc.shortDescription?.trim() || '';
+    const descriptionText =
+        doc.descriptionText?.trim() || shortDescription;
+
+    const featuredImageUrl = doc.featuredImage
+        ? (sanityImageBaseUrl(doc.featuredImage) ?? null)
+        : null;
+    const featuredImageAlt = doc.featuredImage
+        ? resolveImageAlt(doc.featuredImage, h1)
+        : h1;
+
+    const metaTitle = doc.metaTitle?.trim();
+    const metaDescription = doc.metaDescription?.trim();
+    const canonicalUrl = doc.canonicalUrl?.trim();
+
+    return {
+        slug,
+        title,
+        h1,
+        shortName,
+        shortDescription,
+        descriptionText,
+        featuredImageUrl,
+        featuredImageAlt,
         ...(metaTitle ? {metaTitle} : {}),
         ...(metaDescription ? {metaDescription} : {}),
         allowIndex: doc.allowIndex !== false,

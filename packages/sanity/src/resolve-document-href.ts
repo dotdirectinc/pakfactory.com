@@ -61,6 +61,7 @@ const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   caseStudiesPage: "/case-studies",
   /** Products catalog index — create `listingPage` id `productsPage` for Internal refs. */
   productsPage: "/products",
+  expertisePage: "/expertise",
 };
 
 /** Pinned blogPage singleton ids → public paths (role implied by id when pageRole is unset). */

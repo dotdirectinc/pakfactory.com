@@ -40,9 +40,7 @@ import { uniqueSlugWithinParent } from '../lib/slug-rules'
  * and per-collection pinning is the answer WHEN merchandising order starts to
  * matter, deferred on purpose until then.
  *
- * ⚠️ Schema ahead of surface: there is no /solutions route yet. This type and its
- * Studio experience are real; the card grid and the collection page are front-end
- * work that does not exist.
+ * Schema + Studio experience are real; the catalogue page is the PROD-2584 FE.
  */
 
 export const solutionStyle = defineType({
