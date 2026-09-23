@@ -5,10 +5,20 @@ import {
   linkableTypeFilterParams,
 } from './linkable-document-types'
 
+type SectionLinkParent = {
+  linkType?: string
+  label?: string
+}
+
+function hasButtonLabel(parent: SectionLinkParent | undefined): boolean {
+  return Boolean(parent?.label?.trim())
+}
+
 /**
  * Section-chrome link targets only (ADR-020).
  * Internal · Site path · External — Site path stays root-relative so staging
  * and production use the current host (never hardcode a domain).
+ * Destination is required only when Button label is set (optional CTA).
  * Footer / nav / in-card links keep {@link linkTargetFields}.
  */
 export function sectionLinkTargetFields() {
@@ -25,6 +35,13 @@ export function sectionLinkTargetFields() {
         ],
         layout: 'radio',
       },
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const parent = context.parent as SectionLinkParent | undefined
+          if (!hasButtonLabel(parent)) return true
+          if (!value) return 'Choose a link type for the button.'
+          return true
+        }),
     }),
     defineField({
       name: 'internalLink',
@@ -39,7 +56,8 @@ export function sectionLinkTargetFields() {
       hidden: ({parent}) => parent?.linkType !== 'internal',
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          const parent = context.parent as {linkType?: string} | undefined
+          const parent = context.parent as SectionLinkParent | undefined
+          if (!hasButtonLabel(parent)) return true
           if (parent?.linkType === 'internal' && !value) {
             return 'Select a CMS document for internal links.'
           }
@@ -55,8 +73,10 @@ export function sectionLinkTargetFields() {
       hidden: ({parent}) => parent?.linkType !== 'path',
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          const parent = context.parent as {linkType?: string} | undefined
-          if (parent?.linkType !== 'path') return true
+          const parent = context.parent as SectionLinkParent | undefined
+          if (!hasButtonLabel(parent) || parent?.linkType !== 'path') {
+            return true
+          }
           const raw = typeof value === 'string' ? value.trim() : ''
           if (!raw) return 'Site path is required.'
           if (/^https?:\/\//i.test(raw)) {
@@ -76,7 +96,8 @@ export function sectionLinkTargetFields() {
       hidden: ({parent}) => parent?.linkType !== 'external',
       validation: (Rule) =>
         Rule.custom((value, context) => {
-          const parent = context.parent as {linkType?: string} | undefined
+          const parent = context.parent as SectionLinkParent | undefined
+          if (!hasButtonLabel(parent)) return true
           if (parent?.linkType === 'external' && !value) {
             return 'External URL is required.'
           }

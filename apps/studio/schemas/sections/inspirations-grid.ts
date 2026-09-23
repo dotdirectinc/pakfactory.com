@@ -5,6 +5,10 @@ import { linkTargetFields } from '../../lib/link-target-fields'
 import { maxCurated } from '../../lib/schema-guards'
 import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
 import { sectionHeaderFields } from '../../lib/section-header-fields'
+import {
+  hideUnlessCustomList,
+  sectionListSourceField,
+} from '../../lib/section-list-source-fields'
 
 /**
  * Inspiration gallery (ADR-020) — Solutions tab; mixed ref | typed cards.
@@ -83,27 +87,35 @@ export const inspirationsGrid = defineType({
   groups: sectionFieldGroups(),
   fields: [
     ...sectionHeaderFields(),
+    sectionListSourceField({
+      mode: 'page',
+      chipLabel: 'Related styles',
+    }),
     defineField({
       name: 'cards',
       title: 'Cards',
       type: 'array',
       group: SECTION_GROUPS.content,
       description:
-        'Optional override. Leave empty to use solution styles under this ' +
-        'solution. Prefer catalogue refs (solutionStyle first). Typed cards only ' +
-        'when the tile is not reusable yet — migrate to a ref when the entity lands.',
+        'Custom cards when List source is Custom. Prefer catalogue refs (solutionStyle first).',
       of: [inspirationsRefMember, inspirationsCardMember],
       validation: maxCurated(12),
+      hidden: hideUnlessCustomList,
     }),
   ],
   preview: {
-    select: { title: 'heading', cards: 'cards' },
-    prepare: ({ title, cards }) => {
+    select: { title: 'heading', cards: 'cards', listSource: 'listSource' },
+    prepare: ({ title, cards, listSource }) => {
       const count = Array.isArray(cards) ? cards.length : 0
+      let subtitle = 'Related styles'
+      if (listSource === 'custom') {
+        subtitle = count > 0 ? `${count} card(s)` : 'Custom (empty)'
+      } else if (listSource === 'page' || !listSource) {
+        subtitle = 'Related styles'
+      }
       return {
         title: title || 'Inspiration gallery',
-        subtitle:
-          count > 0 ? `${count} card(s)` : 'Uses related solution styles',
+        subtitle,
       }
     },
   },

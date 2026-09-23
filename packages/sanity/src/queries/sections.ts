@@ -42,6 +42,8 @@ const SECTION_CHROME = /* groq */ `
   align,
   showTopBorder,
   showBottomBorder,
+  listSource,
+  curatedSource,
   link ${LINK_OBJECT}
 `;
 
@@ -271,6 +273,10 @@ export type PageSectionChromeFields = {
     align?: 'left' | 'center' | string | null;
     showTopBorder?: boolean | null;
     showBottomBorder?: boolean | null;
+    /** Host list inherit: `page` | `custom` (ADR-020 §8). */
+    listSource?: string | null;
+    /** Row derive: `derive` | `custom`. */
+    curatedSource?: string | null;
     link?: PageSectionLinkDoc | null;
 };
 

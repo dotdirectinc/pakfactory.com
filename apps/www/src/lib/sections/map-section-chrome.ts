@@ -24,9 +24,10 @@ export function mapSectionAlign(
 export function mapSectionCta(
     link: PageSectionLinkDoc | null | undefined,
 ): {label: string; href: string} | undefined {
+    const label = link?.label?.trim();
+    if (!label) return undefined;
     const resolved = resolveSectionLinkHref(link);
     if (!resolved) return undefined;
-    const label = link?.label?.trim() || 'Learn more';
     const href = appendQuery(resolved.href, link?.query);
     return {label, href};
 }

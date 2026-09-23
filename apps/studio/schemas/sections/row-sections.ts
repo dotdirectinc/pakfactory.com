@@ -34,6 +34,8 @@ type RowSpec = {
   title: string
   icon: ObjectDefinition['icon']
   sourceTo?: { type: string }[]
+  /** Host-document list inherit chip (e.g. Related case studies). */
+  pageListChip?: { label: string }
   curatedTo: { type: string }[]
   itemNoun: string
   curatedTitle?: string
@@ -49,16 +51,23 @@ function rowSection(spec: RowSpec) {
     groups: sectionFieldGroups(),
     fields: rowSectionFields({
       sourceTo: spec.sourceTo,
+      pageListChip: spec.pageListChip,
       curatedTo: spec.curatedTo,
       itemNoun: spec.itemNoun,
       curatedTitle: spec.curatedTitle,
       defaultCount: spec.defaultCount,
     }),
     preview: {
-      select: { title: 'heading', items: 'curatedItems' },
-      prepare({ title, items }) {
+      select: { title: 'heading', items: 'curatedItems', listSource: 'listSource', curatedSource: 'curatedSource' },
+      prepare({ title, items, listSource, curatedSource }) {
         const n = Array.isArray(items) ? items.length : 0
-        return { title: title || spec.title, subtitle: n ? `${n} pinned` : spec.title }
+        const source = listSource ?? curatedSource
+        let subtitle = spec.title
+        if (source === 'page') subtitle = 'Page list'
+        else if (source === 'derive') subtitle = 'Derive from source'
+        else if (n) subtitle = `${n} pinned`
+        else if (source === 'custom') subtitle = 'Custom (empty)'
+        return { title: title || spec.title, subtitle }
       },
     },
     components: { preview: SectionItemPreview },
@@ -75,6 +84,7 @@ export const logoWall = rowSection({
 export const caseStudiesRow = rowSection({
   name: 'caseStudiesRow', title: 'Case study row', icon: CaseIcon,
   curatedTo: [{ type: 'caseStudy' }], itemNoun: 'case studies',
+  pageListChip: { label: 'Related case studies' },
 })
 
 // ── Products ─────────────────────────────────────────────────────────────────

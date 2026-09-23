@@ -88,7 +88,7 @@ Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudi
 
 **Insert menu:** Studio tabs are entity-named (Solutions · Case studies · Products · …). Editor titles may say “Case study row” / “Image with text” while `_type` / React names stay as above — three-layer drift is intentional ([ADR-020 §10](../../docs/adr/0020-component-to-section-playbook.md)).
 
-**Heading tokens:** section `heading` / `intro` / `link.query` may include `%h1%` / `%title%` / `%description%` / `%shortName%` / `%shortDescription%` / `%slug%`; `applySectionTokens` runs after template merge using the host solution (`descriptionText` + `slug` from GROQ). Catalog CTAs: Site path `/products` + Query `industry=%slug%` (root-relative — current host on staging or prod).
+**Heading tokens:** section `heading` / `intro` / `link.query` may include `%h1%` / `%title%` / `%description%` / `%shortName%` / `%shortDescription%` / `%slug%`; `applySectionTokens` runs after template merge using the host solution (`descriptionText` + `slug` from GROQ). Catalog CTAs: Site path `/products` + Query `industry=%slug%` (root-relative — current host on staging or prod). **List inherit:** `listSource` / `curatedSource` — `shouldInheritSectionList` skips fill when `custom`; host-agnostic for Product LPs later.
 
 **Seed:** [`apps/studio/memory.md`](../studio/memory.md) § Beauty Solution LP seed.
 

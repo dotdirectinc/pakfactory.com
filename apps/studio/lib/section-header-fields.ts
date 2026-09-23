@@ -77,7 +77,7 @@ export function sectionHeaderFields({
             name: 'label',
             title: 'Button label',
             type: 'string',
-            description: 'Defaults to Learn more when empty.',
+            description: 'Leave empty for no button.',
           }),
           ...sectionLinkTargetFields(),
           defineField({

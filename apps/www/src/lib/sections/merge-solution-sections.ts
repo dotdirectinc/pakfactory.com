@@ -28,12 +28,27 @@ function isNonEmptyContent(value: unknown): boolean {
 }
 
 /**
+ * Whether to fill an empty section list from the host (ADR-020 §8).
+ * `custom` never inherits. Non-empty lists never inherit.
+ * Unset + empty = legacy inherit.
+ */
+export function shouldInheritSectionList(
+    source: string | null | undefined,
+    list: unknown[] | null | undefined,
+): boolean {
+    if (source === 'custom') return false;
+    if ((list?.length ?? 0) > 0) return false;
+    return source === 'page' || source === 'derive' || source == null;
+}
+
+/**
  * Merge template section order/chrome with per-solution band content.
  * Template wins on chrome; solution wins on content fields when non-empty.
  * Match by `_key`, else first unused section of the same `_type`.
  *
  * After merge: empty case studies / video case studies / FAQs / inspirations
- * inherit from document defaults (section override wins). ADR-020 §8.
+ * inherit from document defaults when listSource allows (section override wins).
+ * ADR-020 §8.
  */
 export function mergeSolutionSections(
     templateSections: PageSectionDoc[] | null | undefined,
@@ -116,14 +131,13 @@ function applyCaseStudyInherit(
         if (section._type !== 'caseStudiesRow') return section;
         const row = section as PageSectionCaseStudiesRowDoc;
         const items = row.items ?? [];
-        if (items.length > 0) return section;
+        if (!shouldInheritSectionList(row.listSource, items)) return section;
         return {...row, items: fallback};
     });
 }
 
 /**
- * Fill empty `faqSection.faqs` from document-level `solution.faqs`.
- * Section refs win when non-empty (override).
+ * Fill empty `faqSection.faqs` from host document FAQs when listSource allows.
  */
 export function applyFaqInherit(
     sections: PageSectionDoc[],
@@ -139,14 +153,13 @@ export function applyFaqInherit(
         if (section._type !== 'faqSection') return section;
         const row = section as PageSectionFaqSectionDoc;
         const faqs = row.faqs ?? [];
-        if (faqs.length > 0) return section;
+        if (!shouldInheritSectionList(row.listSource, faqs)) return section;
         return {...row, faqs: fallback};
     });
 }
 
 /**
- * Fill empty `inspirationsGrid.cards` from related `solutionStyle` children.
- * Section cards win when non-empty (override). ADR-020 §8.
+ * Fill empty `inspirationsGrid.cards` from related styles when listSource allows.
  */
 export function applyInspirationsInherit(
     sections: PageSectionDoc[],
@@ -167,14 +180,14 @@ export function applyInspirationsInherit(
         if (section._type !== 'inspirationsGrid') return section;
         const row = section as PageSectionInspirationsGridDoc;
         const cards = row.cards ?? [];
-        if (cards.length > 0) return section;
+        if (!shouldInheritSectionList(row.listSource, cards)) return section;
         return {...row, cards: fallback};
     });
 }
 
 /**
- * Fill empty `videoCaseStudiesRow.cards` from document `relatedCaseStudies`
- * (video-shaped projection). Section cards win when non-empty. ADR-020 §8.
+ * Fill empty `videoCaseStudiesRow.cards` from host related case studies
+ * when listSource allows.
  */
 export function applyVideoCaseStudiesInherit(
     sections: PageSectionDoc[],
@@ -195,7 +208,7 @@ export function applyVideoCaseStudiesInherit(
         if (section._type !== 'videoCaseStudiesRow') return section;
         const row = section as PageSectionVideoCaseStudiesRowDoc;
         const cards = row.cards ?? [];
-        if (cards.length > 0) return section;
+        if (!shouldInheritSectionList(row.listSource, cards)) return section;
         return {...row, cards: fallback};
     });
 }

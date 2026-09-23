@@ -5,6 +5,10 @@ import { linkTargetFields } from '../../lib/link-target-fields'
 import { maxCurated } from '../../lib/schema-guards'
 import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
 import { sectionHeaderFields } from '../../lib/section-header-fields'
+import {
+  hideUnlessCustomList,
+  sectionListSourceField,
+} from '../../lib/section-list-source-fields'
 
 /**
  * Video case studies (ADR-020 · Case studies tab) — portrait cards with optional
@@ -122,27 +126,33 @@ export const videoCaseStudiesRow = defineType({
   groups: sectionFieldGroups(),
   fields: [
     ...sectionHeaderFields(),
+    sectionListSourceField({
+      mode: 'page',
+      chipLabel: 'Related case studies',
+    }),
     defineField({
       name: 'cards',
       title: 'Cards',
       type: 'array',
       group: SECTION_GROUPS.content,
       description:
-        'Optional override. Leave empty to use Categorization related case ' +
-        'studies. Reference a case study when one exists, or type a card inline ' +
-        'for poster / hover video / metric until the study is seeded.',
+        'Custom cards when List source is Custom. Reference a case study or type inline.',
       of: [videoCaseStudyRefMember, videoCaseStudyCardMember],
       validation: maxCurated(12),
+      hidden: hideUnlessCustomList,
     }),
   ],
   preview: {
-    select: { title: 'heading', cards: 'cards' },
-    prepare: ({ title, cards }) => {
+    select: { title: 'heading', cards: 'cards', listSource: 'listSource' },
+    prepare: ({ title, cards, listSource }) => {
       const count = Array.isArray(cards) ? cards.length : 0
+      let subtitle = 'Related case studies'
+      if (listSource === 'custom') {
+        subtitle = count > 0 ? `${count} card(s)` : 'Custom (empty)'
+      }
       return {
         title: title || 'Video case studies',
-        subtitle:
-          count > 0 ? `${count} card(s)` : 'Uses related case studies',
+        subtitle,
       }
     },
   },

@@ -88,26 +88,28 @@ Do **not** jam Beauty’s format tiles into `productsRow` / `productStylesRow` a
 
 When a band’s list can be curated **once on the page document** (Categorization / related fields) **and** optionally overridden **per section slot**:
 
-| Layer | Owns | Studio validation |
-| ----- | ---- | ----------------- |
+| Layer | Owns | Studio |
+| ----- | ---- | ------ |
 | **Document default** | Shared curated list for the page (e.g. `solution.faqs`, `relatedCaseStudies`) | Keep the conversion floor here (`min` / required when the band must show) |
-| **Section override** | Same list shape on the section object (e.g. `faqSection.faqs`, row `curatedItems`) | **Optional** — empty means “use document default”; do **not** require `min` on chrome-only template slots |
-| **Template** (`solutionIndustryPage`, etc.) | Order + chrome; may carry a **shared default** list for bands that are not per-solution (e.g. seeded logo wall clients) | Empty curated lists expected for per-solution bands (FAQs, inspirations) |
+| **Section list source** | Explicit `listSource`: **Page field** chip (`page`) or **Custom list** (`custom`) | Default new sections to `page`. Custom + empty = show nothing (no silent fill) |
+| **Section override array** | Same list shape (`faqSection.faqs`, `curatedItems`, …) | Hidden unless `listSource === 'custom'` |
+| **Template** | Order + chrome; may seed shared defaults (e.g. logo wall) | |
 
-**Priority (www merge):** section list non-empty → use it; else inherit document default (or reverse-linked children). Implement next to [`applyCaseStudyInherit` / `applyFaqInherit` / `applyInspirationsInherit`](../../apps/www/src/lib/sections/merge-solution-sections.ts). Same idea as row **curated override with derive fallback** in [`rowSectionFields()`](../../apps/studio/lib/row-section-fields.ts), scoped to **document → section** instead of **source → curated**.
+**Priority (www merge):** non-empty section array → use it; else if `listSource` is `page` or unset (legacy) → inherit host list; if `listSource === 'custom'` → never inherit. Helper: `shouldInheritSectionList` in [`merge-solution-sections.ts`](../../apps/www/src/lib/sections/merge-solution-sections.ts). Host-agnostic — Product LPs later pass `product.faqs` the same way.
 
-**Shipped defaults:**
+**Rows with derive:** `curatedSource` is `derive` (chip) or `custom`; same hide/show pattern via [`rowSectionFields()`](../../apps/studio/lib/row-section-fields.ts) + [`sectionListSourceField`](../../apps/studio/lib/section-list-source-fields.ts).
 
-- `relatedCaseStudies` → empty `caseStudiesRow`
-- `relatedCaseStudies` (video-shaped projection) → empty `videoCaseStudiesRow`
-- `solution.faqs` → empty `faqSection`
-- Reverse-linked `solutionStyle` children → empty `inspirationsGrid` (no curated array on `solution`)
-- Industry template may seed a shared `logoWall` curated list; per-solution `logoWall` curatedItems override when non-empty
+**Shipped defaults (host lists):**
+
+- `relatedCaseStudies` → `caseStudiesRow` / `videoCaseStudiesRow` when `listSource` is page
+- `solution.faqs` → `faqSection` when `listSource` is page
+- Reverse-linked `solutionStyle` children → `inspirationsGrid` when `listSource` is page
+- Industry template may seed a shared `logoWall` curated list; per-solution override when custom
 
 **When creating a new Section that shows a curated list:**
 
 1. Ask: is there a document-level list editors already maintain for this page type?
-2. If yes → document field is default; section field is optional override; wire GROQ + merge inherit; describe both fields for editors.
+2. If yes → document field is default; section gets `listSource` + Page field chip; wire GROQ + merge inherit.
 3. If no → section owns the list (and may use `min`); do not invent a second document field “just in case.”
 4. Never require the same `min` on both document and section — that forces duplicate authorship and red chrome on templates.
 

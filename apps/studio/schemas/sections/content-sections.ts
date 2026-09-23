@@ -2,6 +2,7 @@ import { defineArrayMember, defineField, defineType } from 'sanity'
 import { BlockContentIcon, ImageIcon, TrendUpwardIcon, ThListIcon, HelpCircleIcon } from '@sanity/icons'
 import { SectionItemPreview } from '../../components/SectionItemPreview'
 import { faqsField } from '../../lib/faq-field'
+import { sectionListSourceField, hideUnlessCustomList } from '../../lib/section-list-source-fields'
 import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
 import { sectionHeaderFields } from '../../lib/section-header-fields'
 
@@ -166,7 +167,7 @@ export const steps = defineType({
   components: { preview: SectionItemPreview },
 })
 
-/** FAQs — optional section override; empty → document Categorization FAQs. */
+/** FAQs — Page FAQs chip or custom refs (ADR-020 §8). */
 export const faqSection = defineType({
   name: 'faqSection',
   title: 'FAQs',
@@ -175,22 +176,31 @@ export const faqSection = defineType({
   groups: sectionFieldGroups(),
   fields: [
     ...sectionHeaderFields(),
+    sectionListSourceField({
+      mode: 'page',
+      chipLabel: 'Page FAQs',
+    }),
     faqsField({
       mode: 'reference',
       max: 6,
       group: SECTION_GROUPS.content,
-      description:
-        'Optional override for this band. Leave empty to use the document’s ' +
-        'Categorization FAQs. Fill only when this page needs a different set.',
+      description: 'Custom FAQs. Shown when List source is Custom.',
+      hidden: hideUnlessCustomList,
     }),
   ],
   preview: {
-    select: { title: 'heading', faqs: 'faqs' },
-    prepare: ({ title, faqs }) => {
+    select: { title: 'heading', faqs: 'faqs', listSource: 'listSource' },
+    prepare: ({ title, faqs, listSource }) => {
       const count = faqs?.length ?? 0
+      let subtitle = 'Choose list source'
+      if (listSource === 'page') subtitle = 'Page FAQs'
+      else if (listSource === 'custom') {
+        subtitle = count > 0 ? `${count} FAQ(s)` : 'Custom (empty)'
+      } else if (count > 0) subtitle = `${count} FAQ(s)`
+      else subtitle = 'Page FAQs'
       return {
         title: title || 'FAQs',
-        subtitle: count > 0 ? `${count} FAQ(s)` : 'Uses document FAQs',
+        subtitle,
       }
     },
   },

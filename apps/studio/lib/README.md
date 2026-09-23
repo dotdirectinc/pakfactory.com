@@ -24,8 +24,9 @@ true`, or an insert menu by hand — stop and import instead.
 | **Section insert thumbnails** — optional grid art (`{_type}.webp`) | `sectionPreviewUrl` / `SECTION_PREVIEW_TYPES` | `../schemas/sections/section-preview` |
 | **Section chrome** — heading · intro · link · align · borders; chip tokens on heading/intro/query | `sectionHeaderFields()`, `sectionFieldGroups()`, `SECTION_GROUPS` | `./section-header-fields`, `./section-field-groups` |
 | **Section page-field tokens** — chip labels ↔ `%h1%` / `%slug%` etc. | `SECTION_PAGE_FIELD_TOKENS` | `./section-page-field-tokens` |
-| **Row section** — section chrome + source · count · curated override (derive fallback) | `rowSectionFields()` | `./row-section-fields` |
-| **Document default + section override** — page-level curated list (Categorization) + optional empty section list; www merge inherits when section empty ([ADR-020 §8](../../../docs/adr/0020-component-to-section-playbook.md)) | schema descriptions + `apply*Inherit` in www | see ADR-020; shipped for FAQs / case studies |
+| **Section list source** — Page field / Derive chip vs Custom (`listSource` / `curatedSource`) | `sectionListSourceField()`, `hideUnlessCustomList` | `./section-list-source-fields` |
+| **Row section** — chrome + list source + source/count/curated | `rowSectionFields()` | `./row-section-fields` |
+| **Document default + section override** — host list + explicit `listSource` chip ([ADR-020 §8](../../../docs/adr/0020-component-to-section-playbook.md)) | `apply*Inherit` + `shouldInheritSectionList` | www `merge-solution-sections` |
 | **Dieline borders** — top/bottom dashed edge toggles (stacking) | `dielineBorderFields()` | `./dieline-border-fields` |
 | **Source-owned / deprecate / max-curated / warn-range / taxonomy picker** — §2.6 | `sourceOwned()`, `deprecateField()`, `maxCurated()`, `warnOutOfRange()`, `taxonomyPickerOptions` | `./schema-guards` |
 | **Taxonomy title uniqueness** (ignoring case + punctuation, §4.2) | `uniqueTaxonomyTitle()` | `./taxonomy-rules` |
