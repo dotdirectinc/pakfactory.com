@@ -2,6 +2,7 @@ import type {PortableTextBlock} from '@portabletext/types';
 import type {PageSectionDoc} from '@pakfactory/sanity/queries';
 import type {
     Product,
+    ProductLibraryResult,
 } from '@/lib/catalog/types';
 
 /** Sanity page section doc (www SectionRenderer). */
@@ -55,6 +56,43 @@ export type SolutionLineCatalog = {
     solution: SolutionPage;
     line: SolutionFormat;
     products: Product[];
+};
+
+export type SolutionStyleCard = {
+    slug: string;
+    title: string;
+    description?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type SolutionStylePage = {
+    slug: string;
+    title: string;
+    h1: string;
+    shortName: string;
+    shortDescription: string;
+    descriptionText: string;
+    featuredImageUrl: string | null;
+    featuredImageAlt: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    allowIndex: boolean;
+    allowFollow: boolean;
+    noImageIndex: boolean;
+    canonicalUrl?: string;
+};
+
+export type SolutionStyleCatalog = {
+    solution: {
+        slug: string;
+        title: string;
+        shortName: string;
+        allowIndex: boolean;
+        allowFollow: boolean;
+    };
+    style: SolutionStylePage;
+    library: ProductLibraryResult;
 };
 
 /** Shared link shape for CTAs across landing bands (Fork 0 → Sanity later). */

@@ -175,16 +175,26 @@ export const websiteLocations: DocumentLocationResolvers = {
   // addresses it — `listingPage` has no slug field at all.
   listingPage: defineLocations({
     select: { _id: '_id', title: 'title' },
-    resolve: (doc) =>
-      doc?._id === 'caseStudiesPage'
-        ? {
-            locations: [
-              { title: doc.title || 'Case Studies', href: '/case-studies' },
-            ],
-          }
-        : notOnSite(
-            'Only the Case Studies listing is previewable from this workspace.',
-          ),
+    resolve: (doc) => {
+      const id = doc?._id?.replace(/^drafts\./, '')
+      if (id === 'caseStudiesPage') {
+        return {
+          locations: [
+            { title: doc?.title || 'Case Studies', href: '/case-studies' },
+          ],
+        }
+      }
+      if (id === 'expertisePage') {
+        return {
+          locations: [
+            { title: doc?.title || 'Expertise', href: '/expertise' },
+          ],
+        }
+      }
+      return notOnSite(
+        'Only Case Studies and Expertise listings are previewable from this workspace.',
+      )
+    },
   }),
   // Was selecting `handle` / `primaryCollection` / `primaryLandingPage` — all
   // removed from the schema in the content-model rebuild, so it produced no
@@ -219,7 +229,7 @@ export const websiteLocations: DocumentLocationResolvers = {
 //     /customizations/{cat}          customizationCategory
 //     /customizations/{cat}/{handle} customizationOption, gated
 //     /solutions/{slug}              solution, gated by hasPage
-//     /solutions/{slug}/{lineSlug}   solution × product line pairing
+//     /solutions/{slug}/{styleSlug}  solutionStyle, gated by parent hasPage
 //     /case-studies[/{slug}]         caseStudy
 //
 // This branch's `apps/www` does **not** contain those routes (it still has
@@ -359,18 +369,28 @@ export const siteLocations: DocumentLocationResolvers = {
         : notOnSite('Add a slug to give this solution a URL.')
     },
   }),
-  // `/solutions/{slug}/{lineSlug}` exists, but its second segment is a PRODUCT
-  // LINE slug (`solutionLineHref`, fed by `page.lineSlugs`). Solution Style is
-  // newer than the deployed site (PROD-2520) and nothing routes it yet, so a
-  // `/solutions/{solution}/{style}` href would 404. Say so instead.
+  // Solution Style catalogue at `/solutions/{solution}/{style}` (PROD-2520 FE).
+  // Parent `hasPage` is enforced on the site; Presentation still shows the URL
+  // so editors can open the intended path while drafting.
   solutionStyle: defineLocations({
-    select: { title: 'title', solutionSlug: 'solution->slug.current' },
+    select: {
+      title: 'title',
+      slug: 'slug.current',
+      solutionSlug: 'solution->slug.current',
+    },
     resolve: (doc) =>
-      notOnSite(
-        doc?.solutionSlug
-          ? `No page yet. The site routes /solutions/${doc.solutionSlug}/{line} by product line, not by style.`
-          : 'No page yet — the site does not route Solution Styles.',
-      ),
+      doc?.slug && doc?.solutionSlug
+        ? {
+            locations: [
+              {
+                title: doc.title || 'Solution style',
+                href: `/solutions/${doc.solutionSlug}/${doc.slug}`,
+              },
+            ],
+          }
+        : notOnSite(
+            'A style is reachable only under its parent solution — both need a slug.',
+          ),
   }),
 
   caseStudy: defineLocations({
@@ -389,20 +409,29 @@ export const siteLocations: DocumentLocationResolvers = {
         : notOnSite('Add a slug to give this case study a URL.'),
   }),
   // Listing pages are pinned singletons addressed by _id, not by slug — the
-  // schema has no slug field at all. `caseStudiesPage` is the only one that
-  // exists today (structure/index.ts).
+  // schema has no slug field at all.
   listingPage: defineLocations({
     select: { _id: '_id', title: 'title' },
-    resolve: (doc) =>
-      doc?._id === 'caseStudiesPage'
-        ? {
-            locations: [
-              { title: doc.title || 'Case studies', href: '/case-studies' },
-            ],
-          }
-        : notOnSite(
-            'Only the Case Studies listing has a page on the site today.',
-          ),
+    resolve: (doc) => {
+      const id = doc?._id?.replace(/^drafts\./, '')
+      if (id === 'caseStudiesPage') {
+        return {
+          locations: [
+            { title: doc?.title || 'Case studies', href: '/case-studies' },
+          ],
+        }
+      }
+      if (id === 'expertisePage') {
+        return {
+          locations: [
+            { title: doc?.title || 'Expertise', href: '/expertise' },
+          ],
+        }
+      }
+      return notOnSite(
+        'Only Case Studies and Expertise listings have pages on the site today.',
+      )
+    },
   }),
 
   // ── Routes that exist but render a stub on the target ─────────────────────
@@ -415,8 +444,19 @@ export const siteLocations: DocumentLocationResolvers = {
     resolve: () => reservedRoute('/policies/{slug}'),
   }),
   expertiseStage: defineLocations({
-    select: { title: 'title' },
-    resolve: () => reservedRoute('/expertise'),
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) =>
+      doc?.slug
+        ? {
+            locations: [
+              {
+                title: doc.title || 'Expertise stage',
+                href: `/expertise/${doc.slug}`,
+              },
+              { title: 'All expertise', href: '/expertise' },
+            ],
+          }
+        : notOnSite('Add a slug to give this stage a URL.'),
   }),
   expertiseService: defineLocations({
     select: { title: 'title' },

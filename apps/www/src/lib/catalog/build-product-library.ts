@@ -47,7 +47,9 @@ function preferLineMeta(
 export function buildProductLibraryResult(
     items: ProductLibraryItem[],
     lineMetas: ProductLibraryLineMeta[] = [],
+    options?: {omitFacetIds?: string[]},
 ): ProductLibraryResult {
+    const omit = new Set(options?.omitFacetIds ?? []);
     const productLineOptions = new Map<string, CustomizationFacetOption>();
     const industryOptions = new Map<string, CustomizationFacetOption>();
     const sustainabilityOptions = new Map<string, CustomizationFacetOption>();
@@ -119,7 +121,10 @@ export function buildProductLibraryResult(
         },
     ];
 
-    if (industryOptions.size > 0) {
+    if (
+        industryOptions.size > 0 &&
+        !omit.has(PRODUCT_CATALOG_INDUSTRY_FACET_ID)
+    ) {
         shared.push({
             id: PRODUCT_CATALOG_INDUSTRY_FACET_ID,
             title: 'Industries',
@@ -129,7 +134,10 @@ export function buildProductLibraryResult(
         });
     }
 
-    if (sustainabilityOptions.size > 0) {
+    if (
+        sustainabilityOptions.size > 0 &&
+        !omit.has(sustainabilityFacetId)
+    ) {
         shared.push({
             id: sustainabilityFacetId,
             title: sustainabilityTitle,

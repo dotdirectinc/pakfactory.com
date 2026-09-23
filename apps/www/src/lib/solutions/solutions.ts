@@ -2,18 +2,26 @@ import 'server-only';
 
 import {unstable_cache} from 'next/cache';
 import {
+    CATALOG_PRODUCT_LIBRARY_FIELDS,
     SOLUTION_BY_SLUG_QUERY,
     SOLUTION_LINE_PRODUCTS_QUERY,
     SOLUTION_PAGE_SLUGS_QUERY,
+    SOLUTION_STYLE_BY_SLUGS_QUERY,
+    SOLUTION_STYLE_PAGE_PARAMS_QUERY,
     SOLUTION_STYLES_FILTER_QUERY,
+    SOLUTION_STYLES_FOR_SOLUTION_QUERY,
     SOLUTION_TAGGED_PRODUCTS_QUERY,
     SOLUTIONS_WITH_PAGES_QUERY,
     CATALOG_PRODUCT_FIELDS,
     type CatalogProductDoc,
+    type CatalogProductLibraryDoc,
     type PageSectionDoc,
     type SolutionBySlugDoc,
     type SolutionPageSlugDoc,
+    type SolutionStyleBySlugsDoc,
+    type SolutionStyleCardDoc,
     type SolutionStyleFilterDoc,
+    type SolutionStylePageParamDoc,
     type SolutionWithPageDoc,
 } from '@pakfactory/sanity/queries';
 import {
@@ -23,13 +31,26 @@ import {
     solutionStyleQueryParams,
     SOLUTION_STYLE_ORDER,
 } from '@pakfactory/sanity/solution-style-filter';
-import {mapSanityProduct} from '@/lib/catalog/map-sanity';
-import type {Product} from '@/lib/catalog/types';
+import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
+import {
+    mapSanityProduct,
+    mapSanityProductLibraryItem,
+    mapSanityProductLibraryLineMeta,
+} from '@/lib/catalog/map-sanity';
+import type {
+    Product,
+    ProductLibraryItem,
+    ProductLibraryLineMeta,
+    ProductLibraryResult,
+} from '@/lib/catalog/types';
+import {PRODUCT_CATALOG_INDUSTRY_FACET_ID} from '@/lib/catalog/types';
 import {draftAwareClient, readThrough} from '@/lib/sanity/draft-aware';
 import {isSanityConfigured} from '@/lib/sanity/env';
 import {
     mapSanitySolution,
     mapSanitySolutionCard,
+    mapSanitySolutionStyleCard,
+    mapSanitySolutionStylePage,
     isCompleteProduct,
 } from '@/lib/solutions/map-sanity';
 import {buildSolutionLandingContent} from '@/lib/solutions/landing-content';
@@ -48,6 +69,8 @@ import type {
     SolutionLandingContent,
     SolutionLineCatalog,
     SolutionPage,
+    SolutionStyleCard,
+    SolutionStyleCatalog,
 } from '@/lib/solutions/types';
 import {
     WWW_CONTENT_REVALIDATE_SECONDS,
@@ -353,6 +376,177 @@ export async function getSolutionLineCatalog(
     return {solution, line, products};
 }
 
+function emptyProductLibrary(): ProductLibraryResult {
+    return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+}
+
+async function fetchSolutionStylesForSolution(
+    solutionSlug: string,
+): Promise<SolutionStyleCard[]> {
+    if (!isSanityConfigured()) return [];
+    try {
+        const docs = await (await draftAwareClient()).fetch<
+            SolutionStyleCardDoc[]
+        >(SOLUTION_STYLES_FOR_SOLUTION_QUERY, {solutionSlug});
+        return (docs ?? [])
+            .map(mapSanitySolutionStyleCard)
+            .filter((item): item is SolutionStyleCard => item != null);
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error(
+                '[solutions] Sanity styles for solution failed:',
+                err,
+            );
+        }
+        return [];
+    }
+}
+
+async function fetchSolutionStylePageParams(): Promise<
+    SolutionStylePageParamDoc[]
+> {
+    if (!isSanityConfigured()) return [];
+    try {
+        return (
+            (await (
+                await draftAwareClient()
+            ).fetch<SolutionStylePageParamDoc[]>(
+                SOLUTION_STYLE_PAGE_PARAMS_QUERY,
+            )) ?? []
+        );
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error(
+                '[solutions] Sanity style page params failed:',
+                err,
+            );
+        }
+        return [];
+    }
+}
+
+async function fetchStyleProductLibrary(
+    doc: SolutionStyleBySlugsDoc,
+): Promise<ProductLibraryResult> {
+    const solutionId = doc.solution?._id;
+    if (!solutionId || !isSanityConfigured()) return emptyProductLibrary();
+
+    const params = filterParams(
+        solutionId,
+        doc.filter ?? undefined,
+        doc.excludedProducts ?? undefined,
+    );
+    const filter = solutionStyleProductFilter(params);
+    if (!filter) return emptyProductLibrary();
+
+    try {
+        const query = `*[${filter}] | ${SOLUTION_STYLE_ORDER} { ${CATALOG_PRODUCT_LIBRARY_FIELDS} }`;
+        const docs = await (await draftAwareClient()).fetch<
+            CatalogProductLibraryDoc[]
+        >(query, solutionStyleQueryParams(params));
+
+        const items: ProductLibraryItem[] = [];
+        const lineMetas: ProductLibraryLineMeta[] = [];
+        for (const productDoc of docs ?? []) {
+            const item = mapSanityProductLibraryItem(productDoc);
+            if (item) items.push(item);
+            const lineMeta = mapSanityProductLibraryLineMeta(productDoc);
+            if (lineMeta) lineMetas.push(lineMeta);
+        }
+
+        return buildProductLibraryResult(items, lineMetas, {
+            omitFacetIds: [PRODUCT_CATALOG_INDUSTRY_FACET_ID],
+        });
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error(
+                '[solutions] Sanity style product library failed:',
+                err,
+            );
+        }
+        return emptyProductLibrary();
+    }
+}
+
+async function fetchSolutionStyleCatalog(
+    solutionSlug: string,
+    styleSlug: string,
+): Promise<SolutionStyleCatalog | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        const doc = await (await draftAwareClient()).fetch<
+            SolutionStyleBySlugsDoc | null
+        >(SOLUTION_STYLE_BY_SLUGS_QUERY, {solutionSlug, styleSlug});
+        if (!doc?.solution?._id || doc.solution.hasPage !== true) return null;
+
+        const style = mapSanitySolutionStylePage(doc);
+        const parentSlug = doc.solution.slug?.trim();
+        const parentTitle = doc.solution.title?.trim();
+        if (!style || !parentSlug || !parentTitle) return null;
+
+        const library = await fetchStyleProductLibrary(doc);
+        const shortName =
+            doc.solution.shortName?.trim() || parentTitle;
+
+        return {
+            solution: {
+                slug: parentSlug,
+                title: parentTitle,
+                shortName,
+                allowIndex: doc.solution.allowIndex !== false,
+                allowFollow: doc.solution.allowFollow !== false,
+            },
+            style,
+            library,
+        };
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error(
+                '[solutions] Sanity style catalog failed:',
+                err,
+            );
+        }
+        return null;
+    }
+}
+
+export async function getSolutionStyleCatalog(
+    solutionSlug: string,
+    styleSlug: string,
+): Promise<SolutionStyleCatalog | null> {
+    const solutionKey = normalizeSlug(solutionSlug);
+    const styleKey = normalizeSlug(styleSlug);
+
+    return readThrough(
+        () => fetchSolutionStyleCatalog(solutionKey, styleKey),
+        unstable_cache(
+            () => fetchSolutionStyleCatalog(solutionKey, styleKey),
+            [`${wwwSolutionTag(solutionKey)}:style:${styleKey}`],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(solutionKey)],
+            },
+        ),
+    );
+}
+
+export async function listSolutionStylesForSolution(
+    solutionSlug: string,
+): Promise<SolutionStyleCard[]> {
+    const key = normalizeSlug(solutionSlug);
+    return readThrough(
+        () => fetchSolutionStylesForSolution(key),
+        unstable_cache(
+            () => fetchSolutionStylesForSolution(key),
+            [`${wwwSolutionTag(key)}:styles`],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(key)],
+            },
+        ),
+    );
+}
+
 export async function listSolutionsWithPages(): Promise<SolutionCard[]> {
     return readThrough(
         fetchSolutionsWithPages,
@@ -393,5 +587,32 @@ export async function listSolutionPageSlugs(): Promise<
         })
         .filter(
             (item): item is {slug: string; lineSlugs: string[]} => item != null,
+        );
+}
+
+export async function listSolutionStylePageParams(): Promise<
+    Array<{slug: string; styleSlug: string}>
+> {
+    const docs = await readThrough(
+        fetchSolutionStylePageParams,
+        unstable_cache(
+            fetchSolutionStylePageParams,
+            [WWW_SOLUTIONS_CACHE_TAG, 'style-page-params'],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_SOLUTIONS_CACHE_TAG],
+            },
+        ),
+    );
+
+    return docs
+        .map((doc) => {
+            const slug = doc.solutionSlug?.trim();
+            const styleSlug = doc.styleSlug?.trim();
+            if (!slug || !styleSlug) return null;
+            return {slug, styleSlug};
+        })
+        .filter(
+            (item): item is {slug: string; styleSlug: string} => item != null,
         );
 }

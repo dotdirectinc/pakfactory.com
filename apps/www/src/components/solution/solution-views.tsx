@@ -1,10 +1,14 @@
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
-import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {
+    PageHeadingSection,
+    PageHeadingWithMedia,
+} from '@/components/common/page-heading-section';
 import {
     ProductCard,
     type ProductCardData,
 } from '@/components/product/product-card';
+import {ProductCatalogView} from '@/components/product/product-catalog-view';
 import {SolutionHero} from '@/components/solution/solution-hero';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import {CatalogCard} from '@/components/ui/catalog-card';
@@ -13,6 +17,7 @@ import type {
     SolutionCard,
     SolutionLandingContent,
     SolutionLineCatalog,
+    SolutionStyleCatalog,
 } from '@/lib/solutions/types';
 import {
     productHref,
@@ -160,6 +165,51 @@ export function SolutionLineCatalogView({
                     </p>
                 )}
             </PageDielineSection>
+        </>
+    );
+}
+
+export function SolutionStyleCatalogView({
+    catalog,
+}: {
+    catalog: SolutionStyleCatalog;
+}) {
+    const {solution, style, library} = catalog;
+    const description =
+        style.descriptionText.trim() ||
+        style.shortDescription.trim() ||
+        undefined;
+
+    return (
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    {label: 'Home', href: WWW_ROUTES.home},
+                    {label: 'Solutions', href: WWW_ROUTES.solutions},
+                    {
+                        label: solution.shortName,
+                        href: solutionHref(solution.slug),
+                    },
+                    {label: style.shortName},
+                ]}
+            />
+            <PageHeadingWithMedia
+                title={style.h1}
+                description={description}
+                media={
+                    style.featuredImageUrl
+                        ? {
+                              src: style.featuredImageUrl,
+                              alt: style.featuredImageAlt,
+                          }
+                        : null
+                }
+            />
+            <ProductCatalogView
+                library={library}
+                urlSync
+                showPageChrome={false}
+            />
         </>
     );
 }

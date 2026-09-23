@@ -292,3 +292,69 @@ export function PageHeadingSection({
         </PageDielineSection>
     );
 }
+
+export type PageHeadingMedia = {
+    src: string;
+    alt: string;
+    /** Intrinsic width hint for next/image. Default 640. */
+    width?: number;
+    /** Intrinsic height hint for next/image. Default 480. */
+    height?: number;
+};
+
+type PageHeadingWithMediaProps = PageHeadingSectionProps & {
+    /** Larger featured image beside the heading (catalogue / collection pages). */
+    media?: PageHeadingMedia | null;
+};
+
+/**
+ * Catalogue heading with optional featured media — keeps {@link PageHeadingSection}
+ * free of layout changes for plain title/description pages (`/products`).
+ */
+export function PageHeadingWithMedia({
+    media,
+    borderBottom = false,
+    className,
+    innerClassName,
+    variant = 'default',
+    ...contentProps
+}: PageHeadingWithMediaProps) {
+    const isCompact = variant === 'compact';
+    const hasMedia = Boolean(media?.src);
+
+    return (
+        <PageDielineSection
+            borderBottom={borderBottom}
+            className={className}
+            innerClassName={cn(
+                'border-border pb-12 pt-24',
+                isCompact && 'pb-8',
+                innerClassName,
+            )}
+        >
+            <div
+                className={cn(
+                    'flex flex-col gap-8',
+                    hasMedia && 'lg:flex-row lg:items-start lg:justify-between lg:gap-12',
+                )}
+            >
+                <div className={cn(hasMedia && 'min-w-0 flex-1')}>
+                    <PageHeadingContent variant={variant} {...contentProps} />
+                </div>
+                {hasMedia && media ? (
+                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-lg bg-muted lg:max-w-md lg:flex-1">
+                        <Image
+                            src={media.src}
+                            alt={media.alt}
+                            width={media.width ?? 640}
+                            height={media.height ?? 480}
+                            className="size-full object-cover"
+                            sizes="(max-width: 1024px) 100vw, 448px"
+                            priority
+                        />
+                    </div>
+                ) : null}
+            </div>
+        </PageDielineSection>
+    );
+}

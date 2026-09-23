@@ -15,9 +15,11 @@ import {
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
+  WWW_EXPERTISE_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
+  wwwExpertiseTag,
   wwwProductTag,
   wwwSolutionTag,
 } from "@/lib/www-cache";
@@ -34,7 +36,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "solutionIndustryPage", "productLine", "expertiseStage", "customizationOption",
+ *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "websiteNavigation", "settings"
  *   ]
@@ -177,12 +179,13 @@ export async function POST(request: Request) {
     );
   }
 
-  // Solution LPs + nested line catalogs (product/line edits change filtered grids).
+  // Solution LPs + nested style catalogues (product/line edits change filtered grids).
   // solutionIndustryPage edits reorder every industry LP that references the template.
   const touchesSolutions =
     !type ||
     type === "solution" ||
     type === "solutionIndustryPage" ||
+    type === "solutionStyle" ||
     CATALOG_PRODUCT_TYPES.has(type);
   if (touchesSolutions) {
     tags.add(WWW_SOLUTIONS_CACHE_TAG);
@@ -191,12 +194,36 @@ export async function POST(request: Request) {
     if (type === "solution" && slug) {
       tags.add(wwwSolutionTag(slug));
       revalidatePath(`/solutions/${slug}`);
-      revalidatePath(`/solutions/${slug}/[lineSlug]`, "page");
-      revalidated.push(`/solutions/${slug}`, `/solutions/${slug}/[lineSlug]`);
+      revalidatePath(`/solutions/${slug}/[styleSlug]`, "page");
+      revalidated.push(`/solutions/${slug}`, `/solutions/${slug}/[styleSlug]`);
+    } else if (type === "solutionStyle" && slug) {
+      // Style slug alone is not enough for the nested path; bust all style pages.
+      revalidatePath("/solutions/[slug]", "page");
+      revalidatePath("/solutions/[slug]/[styleSlug]", "page");
+      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[styleSlug]");
     } else {
       revalidatePath("/solutions/[slug]", "page");
-      revalidatePath("/solutions/[slug]/[lineSlug]", "page");
-      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[lineSlug]");
+      revalidatePath("/solutions/[slug]/[styleSlug]", "page");
+      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[styleSlug]");
+    }
+  }
+
+  // Expertise landing grid + stage shells.
+  const touchesExpertise =
+    !type ||
+    type === "expertiseStage" ||
+    type === "listingPage";
+  if (touchesExpertise) {
+    tags.add(WWW_EXPERTISE_CACHE_TAG);
+    revalidatePath("/expertise");
+    revalidated.push("/expertise");
+    if (type === "expertiseStage" && slug) {
+      tags.add(wwwExpertiseTag(slug));
+      revalidatePath(`/expertise/${slug}`);
+      revalidated.push(`/expertise/${slug}`);
+    } else {
+      revalidatePath("/expertise/[slug]", "page");
+      revalidated.push("/expertise/[slug]");
     }
   }
 
@@ -259,6 +286,8 @@ export async function POST(request: Request) {
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
     type === "solution" ||
     type === "solutionIndustryPage" ||
+    type === "solutionStyle" ||
+    type === "expertiseStage" ||
     type === "websiteNavigation" ||
     type === "settings";
 

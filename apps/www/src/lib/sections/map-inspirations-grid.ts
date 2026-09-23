@@ -13,7 +13,7 @@ import type {
 import {
     productHref,
     productStyleHref,
-    solutionLineHref,
+    solutionStyleHref,
     WWW_ROUTES,
 } from '@/lib/www-routes';
 
@@ -25,7 +25,7 @@ function resolveCatalogueHref(
 
     if (docType === 'solutionStyle') {
         const solutionSlug = card.solutionSlug?.trim();
-        if (solutionSlug && slug) return solutionLineHref(solutionSlug, slug);
+        if (solutionSlug && slug) return solutionStyleHref(solutionSlug, slug);
         return null;
     }
 

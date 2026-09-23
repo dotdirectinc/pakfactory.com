@@ -109,6 +109,7 @@ export {
 export {
     CATALOG_PRODUCT_FIELDS,
     CATALOG_PRODUCT_CARD_FIELDS,
+    CATALOG_PRODUCT_LIBRARY_FIELDS,
     CATALOG_PRODUCT_PDP_FIELDS,
     CATALOG_PRODUCTS_QUERY,
     CATALOG_PRODUCT_LIBRARY_QUERY,
@@ -140,11 +141,19 @@ export {
     SOLUTION_PAGE_SLUGS_QUERY,
     SOLUTIONS_WITH_PAGES_QUERY,
     SOLUTION_STYLES_FILTER_QUERY,
+    SOLUTION_STYLE_BY_SLUGS_QUERY,
+    SOLUTION_STYLES_FOR_SOLUTION_QUERY,
+    SOLUTION_STYLE_PAGE_PARAMS_QUERY,
     type SolutionBySlugDoc,
     type SolutionFormatRefDoc,
     type SolutionPageSlugDoc,
     type SolutionRelatedRefDoc,
+    type SolutionStyleBySlugsDoc,
+    type SolutionStyleCardDoc,
     type SolutionStyleFilterDoc,
+    type SolutionStylePageParamDoc,
+    type SolutionStyleParentDoc,
+    type SolutionStyleRefDoc,
     type SolutionTemplateDoc,
     type SolutionWithPageDoc,
 } from './queries/solutions';
@@ -170,6 +179,18 @@ export {
     type PageSectionVideoCaseStudyCardDoc,
     type PageSectionVideoCaseStudyMetricDoc,
 } from './queries/sections';
+
+export {
+    EXPERTISE_STAGES_QUERY,
+    EXPERTISE_PAGE_FEATURED_QUERY,
+    EXPERTISE_STAGE_SLUGS_QUERY,
+    EXPERTISE_STAGE_BY_SLUG_QUERY,
+    orderExpertiseStages,
+    type ExpertiseStageCardDoc,
+    type ExpertisePageFeaturedDoc,
+    type ExpertiseStageSlugDoc,
+    type ExpertiseStageBySlugDoc,
+} from './queries/expertise';
 
 export {
     WEBSITE_NAVIGATION_QUERY,

@@ -1,15 +1,20 @@
-import {
-    ComingSoonPage,
-    comingSoonMetadata,
-} from '@/components/common/coming-soon-page';
+import type {Metadata} from 'next';
+import {ExpertiseCatalogView} from '@/components/expertise/expertise-views';
+import {listExpertiseStageCards} from '@/lib/expertise/expertise';
 
-export const metadata = comingSoonMetadata('Expertise');
+export const revalidate = 60;
 
-export default function ExpertisePage() {
-    return (
-        <ComingSoonPage
-            title="Expertise"
-            note="Reserved page for packaging expertise. Content is coming soon."
-        />
-    );
+export const metadata: Metadata = {
+    title: 'Expertise',
+    description:
+        'Packaging expertise across design, prototyping, manufacturing, strategy, logistics, and fulfillment.',
+    robots:
+        process.env.WWW_DISABLE_INDEXING === 'true'
+            ? {index: false, follow: false}
+            : {index: true, follow: true},
+};
+
+export default async function ExpertisePage() {
+    const stages = await listExpertiseStageCards();
+    return <ExpertiseCatalogView stages={stages} />;
 }
