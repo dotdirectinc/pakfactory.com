@@ -83,15 +83,12 @@ export function ProductSpecs({
                 <div className="-mx-layout-gutter-inner mt-16">
                     <table className="w-full border-collapse border-t border-dashed border-border">
                         <tbody>
-                            {rows.map((row, index) => {
+                            {rows.map((row) => {
                                 const Glyph = row.icon ?? CircleDot;
                                 return (
                                     <tr
                                         key={row.label}
-                                        className={cn(
-                                            index < rows.length - 1 &&
-                                                'border-b border-dashed border-border',
-                                        )}
+                                        className="border-b border-dashed border-border"
                                     >
                                         <th
                                             scope="row"

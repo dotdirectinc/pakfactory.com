@@ -86,10 +86,10 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     {label: product.title},
                 ]}
             />
-            <PageDielineSection>
+            <PageDielineSection paddingBlock="sm">
                 <article
                     id="pdp-overview"
-                    className="scroll-mt-32 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+                    className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
                 >
                     <ProductGallery
                         media={product.media}
