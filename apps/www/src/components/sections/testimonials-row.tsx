@@ -1,5 +1,6 @@
 'use client';
 
+import type {PageDielinePaddingBlock} from '@pakfactory/ui/components/page-dieline-section';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {CarouselItem} from '@pakfactory/ui/components/carousel';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -30,25 +31,39 @@ type TestimonialsRowProps = {
     aggregate?: TestimonialsAggregate;
     title?: string;
     description?: string;
+    /** Section kicker above the heading. Defaults to Reviews. */
+    eyebrow?: string;
     className?: string;
     /** Section color band (not app dark/light mode). */
     theme?: SectionTheme;
     /** Anchor id for in-page nav (PDP default). */
     sectionId?: string;
+    align?: 'left' | 'center';
+    borderTop?: boolean;
+    borderBottom?: boolean;
+    paddingBlock?: PageDielinePaddingBlock;
+    cta?: {label: string; href: string};
 };
 
 /**
  * Buyer reviews strip — SectionHeading + full-bleed carousel of TestimonialCards.
- * TODO(PROD-2293): wire Sanity testimonials; drop mock fallbacks in PDP.
+ * Maps to Studio `testimonialsRow` (Layout). Quote CMS still deferred;
+ * PDP and section mapper use mocks until then.
  */
 export function TestimonialsRow({
     items,
     aggregate,
     title = DEFAULT_TITLE,
     description = DEFAULT_DESCRIPTION,
+    eyebrow = 'Reviews',
     className,
     theme = 'default',
     sectionId = 'pdp-testimonials',
+    align = 'left',
+    borderTop = false,
+    borderBottom = true,
+    paddingBlock = 'md',
+    cta,
 }: TestimonialsRowProps) {
     const shell = sectionThemeShell(theme);
 
@@ -61,17 +76,20 @@ export function TestimonialsRow({
             className={cn('scroll-mt-32 overflow-x-clip', shell.bandClass, className)}
         >
             <PageDielineSection
-                borderBottom
-                innerClassName="py-16 sm:py-20"
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                paddingBlock={paddingBlock}
             >
                 <SectionCarousel
                     prevLabel="Previous reviews"
                     nextLabel="Next reviews"
                     header={
                         <SectionHeading
-                            eyebrow="Reviews"
+                            eyebrow={eyebrow}
                             title={title}
                             description={description}
+                            align={align}
+                            cta={cta}
                             descriptionClassName="text-base leading-6"
                         />
                     }

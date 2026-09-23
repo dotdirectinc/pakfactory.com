@@ -11,6 +11,7 @@ import type {SectionAlign} from '@/lib/sections/map-section-chrome';
 export function mapFaqSection(section: PageSectionFaqSectionDoc): {
     heading?: string;
     intro?: string;
+    eyebrow?: string;
     items: ProductFaq[];
     align: SectionAlign;
     borderTop: boolean;
@@ -36,6 +37,7 @@ export function mapFaqSection(section: PageSectionFaqSectionDoc): {
     return {
         ...(heading ? {heading} : {}),
         ...(intro ? {intro} : {}),
+        ...(chrome.eyebrow ? {eyebrow: chrome.eyebrow} : {}),
         items,
         align,
         borderTop: chrome.borderTop,

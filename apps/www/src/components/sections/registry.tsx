@@ -7,6 +7,7 @@ import type {
     PageSectionInspirationsGridDoc,
     PageSectionLogoWallDoc,
     PageSectionMediaFeatureDoc,
+    PageSectionTestimonialsRowDoc,
     PageSectionVideoCaseStudiesRowDoc,
 } from '@pakfactory/sanity/queries';
 
@@ -15,6 +16,7 @@ import {ExpertiseRow} from '@/components/sections/expertise-row';
 import {FaqSection} from '@/components/sections/faq-section';
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
+import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {VideoCaseStudiesRow} from '@/components/sections/video-case-studies-row';
 import {TextWithImage} from '@/components/ui/text-with-image';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
@@ -23,6 +25,7 @@ import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaFeature} from '@/lib/sections/map-media-feature';
+import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
 import {mapVideoCaseStudiesRow} from '@/lib/sections/map-video-case-studies-row';
 
 /**
@@ -42,6 +45,7 @@ function FaqSectionFromSanity(section: PageSectionFaqSectionDoc) {
             items={mapped.items}
             heading={mapped.heading}
             description={mapped.intro}
+            eyebrow={mapped.eyebrow}
             align={mapped.align}
             borderTop={mapped.borderTop}
             borderBottom={mapped.borderBottom}
@@ -67,6 +71,7 @@ function MediaFeatureFromSanity(section: PageSectionMediaFeatureDoc) {
     return (
         <TextWithImage
             id={`media-feature-${section._key}`}
+            eyebrow={mapped.eyebrow}
             title={mapped.title}
             body={mapped.body}
             cta={mapped.cta}
@@ -126,6 +131,25 @@ function VideoCaseStudiesRowFromSanity(
     );
 }
 
+function TestimonialsRowFromSanity(section: PageSectionTestimonialsRowDoc) {
+    const mapped = mapTestimonialsRow(section);
+    return (
+        <TestimonialsRow
+            sectionId={`section-reviews-${section._key}`}
+            items={mapped.items}
+            aggregate={mapped.aggregate}
+            title={mapped.heading}
+            description={mapped.intro}
+            eyebrow={mapped.eyebrow}
+            align={mapped.align}
+            borderTop={mapped.borderTop}
+            borderBottom={mapped.borderBottom}
+            paddingBlock={mapped.paddingBlock}
+            cta={mapped.cta}
+        />
+    );
+}
+
 /**
  * Components receive the GROQ section doc. Only wired types are registered;
  * unknown `_type`s are handled by SectionRenderer (no-op / dev alert).
@@ -143,4 +167,5 @@ export const SECTION_COMPONENTS: Record<
     inspirationsGrid: InspirationsGridFromSanity as ComponentType<PageSection>,
     videoCaseStudiesRow:
         VideoCaseStudiesRowFromSanity as ComponentType<PageSection>,
+    testimonialsRow: TestimonialsRowFromSanity as ComponentType<PageSection>,
 };

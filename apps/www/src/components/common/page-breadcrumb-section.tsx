@@ -35,8 +35,9 @@ export function PageBreadcrumbSection({
     return (
         <PageDielineSection
             band="default"
+            paddingBlock="none"
             className={className}
-            innerClassName="border-b border-dashed border-border py-6"
+            innerClassName="border-b border-dashed border-border py-4"
         >
             <Breadcrumb items={visible} />
         </PageDielineSection>

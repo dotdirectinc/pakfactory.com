@@ -162,7 +162,6 @@ export async function CaseStudiesListingPage({
         variant="compact"
         eyebrow={eyebrow}
         title={heading}
-        innerClassName="border-b border-dashed border-border"
         description={
           hasHeroIntro ? (
             <PortableText

@@ -7,7 +7,7 @@ import { SECTION_GROUPS } from './section-field-groups'
 type SectionHeaderFieldsOptions = {
   /**
    * When true (default for www sections), stamp Heading / Layout groups and
-   * wire the token chip input on heading + intro. Pass `false` to keep a flat
+   * wire the token chip input on eyebrow + heading + intro. Pass `false` to keep a flat
    * field list (e.g. if a caller needs the old single-bucket shape).
    */
   withSectionGroups?: boolean
@@ -25,8 +25,8 @@ const LINK_QUERY_HELP = 'No leading ?. Example: industry=%slug%'
 /**
  * Shared section chrome — Foundations (PROD-2286 / ADR-020).
  *
- * heading · intro · link → Heading tab
- * align · dieline borders → Layout tab (D35 exceptions)
+ * eyebrow · heading · intro · link → Heading tab
+ * align · paddingBlock · dieline borders → Layout tab (D35 exceptions)
  * Theme, columns, and band styling stay in React.
  */
 export function sectionHeaderFields({
@@ -47,6 +47,15 @@ export function sectionHeaderFields({
   )
 
   return [
+    defineField(
+      withGroup(headingGroup)({
+        name: 'eyebrow',
+        title: 'Label above heading',
+        type: 'string',
+        description: `Short line above the title. Shown as [ Label ]. Leave blank for none. ${TOKEN_HELP}`,
+        components: {input: SectionTokenStringInput},
+      }),
+    ),
     defineField(
       withGroup(headingGroup)({
         name: 'heading',
@@ -101,6 +110,25 @@ export function sectionHeaderFields({
           list: [
             {title: 'Left', value: 'left'},
             {title: 'Center', value: 'center'},
+          ],
+          layout: 'radio' as const,
+        },
+      }),
+    ),
+    defineField(
+      withGroup(layoutGroup)({
+        name: 'paddingBlock',
+        title: 'Vertical padding',
+        type: 'string',
+        description:
+          'Space above and below the section content (PageDielineSection). Default Medium.',
+        initialValue: 'md',
+        options: {
+          list: [
+            {title: 'Extra small', value: 'xs'},
+            {title: 'Small', value: 'sm'},
+            {title: 'Medium', value: 'md'},
+            {title: 'Large', value: 'lg'},
           ],
           layout: 'radio' as const,
         },

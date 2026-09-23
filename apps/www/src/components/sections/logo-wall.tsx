@@ -1,10 +1,12 @@
+import Link from 'next/link';
+import {ChevronRight} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 
 import {
     LogoMarquee,
     type LogoMarqueeItem,
 } from '@/components/ui/logo-marquee';
-import {SectionHeading} from '@/components/ui/section-heading';
+import {Icon} from '@/components/ui/icon';
 import type {SolutionLogosContent} from '@/lib/solutions/types';
 
 export type LogoWallContent = SolutionLogosContent;
@@ -28,7 +30,7 @@ function toLogoMarqueeItems(content: LogoWallContent): LogoMarqueeItem[] {
 }
 
 /**
- * Logo wall band — PageDielineSection + LogoMarquee (ADR-020 / WP2a).
+ * Logo wall band — PageDielineSection + inline label + LogoMarquee (ADR-020 / WP2a).
  * Props-only; fixture + CMS paths share this component.
  */
 export function LogoWall({
@@ -39,12 +41,14 @@ export function LogoWall({
     if (items.length === 0) return null;
 
     const {
-        align = 'left',
         borderTop = false,
         borderBottom = true,
+        paddingBlock = 'sm',
         cta,
         subhead,
     } = content;
+
+    const showLabel = Boolean(subhead?.trim() || cta?.label?.trim());
 
     return (
         <PageDielineSection
@@ -53,26 +57,42 @@ export function LogoWall({
             className="bg-background"
             borderTop={borderTop}
             borderBottom={borderBottom}
-            innerClassName="pb-16 pt-16"
+            paddingBlock={paddingBlock}
         >
             {content.heading ? (
                 <h2 id={headingId} className="sr-only">
                     {content.heading}
                 </h2>
             ) : null}
-            {subhead || cta ? (
-                <div className="mb-10">
-                    <SectionHeading
-                        title={<span className="sr-only">Partners</span>}
-                        description={subhead}
-                        descriptionClassName="max-w-[720px] text-[15px] leading-[1.5] text-muted-foreground"
-                        align={align}
-                        cta={cta}
-                        ctaPlacement="end"
-                    />
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-10">
+                {showLabel ? (
+                    <div className="flex shrink-0 flex-col gap-2 md:max-w-[280px] lg:max-w-[320px]">
+                        {subhead?.trim() ? (
+                            <p className="text-sm leading-snug text-muted-foreground">
+                                {subhead.trim()}
+                            </p>
+                        ) : null}
+                        {cta?.label?.trim() && cta.href ? (
+                            <Link
+                                href={cta.href}
+                                className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-foreground"
+                            >
+                                <span className="underline-offset-4 group-hover:underline">
+                                    {cta.label.trim()}
+                                </span>
+                                <Icon
+                                    icon={ChevronRight}
+                                    size="sm"
+                                    className="transition-transform duration-300 ease-out group-hover:translate-x-0.5"
+                                />
+                            </Link>
+                        ) : null}
+                    </div>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                    <LogoMarquee items={items} />
                 </div>
-            ) : null}
-            <LogoMarquee items={items} />
+            </div>
         </PageDielineSection>
     );
 }

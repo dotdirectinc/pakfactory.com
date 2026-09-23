@@ -24,6 +24,8 @@ const DEFAULT_DESCRIPTION =
 type FaqSectionProps = {
     heading?: string;
     description?: string;
+    /** Section kicker above the heading. Defaults to FAQs. */
+    eyebrow?: string;
     items: ProductFaq[];
     footerHref?: string;
     footerLabel?: string;
@@ -47,6 +49,7 @@ type FaqSectionProps = {
 export function FaqSection({
     heading = 'Questions & Answers',
     description = DEFAULT_DESCRIPTION,
+    eyebrow = 'FAQs',
     items,
     footerHref,
     footerLabel = "Let's chat",
@@ -78,7 +81,7 @@ export function FaqSection({
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
                     <SectionHeading
                         align={align}
-                        eyebrow="FAQs"
+                        eyebrow={eyebrow}
                         title={heading}
                         description={description}
                         cta={cta}

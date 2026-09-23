@@ -39,6 +39,7 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 | Full blog seed | `pnpm --filter @pakfactory/studio run seed` |
 | Blog singleton pages | `pnpm --filter @pakfactory/studio run seed:blog-singleton-pages` |
 | Beauty Solution LP + Solution Industry Page (WP4 / Phase B) | `pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset development` |
+| Beauty Pouches style products (catalog grid fixtures) | `pnpm --filter @pakfactory/studio run seed:beauty-style-products -- --dataset development` |
 
 **HTTP 431 on `:3333`:** Vite/Node rejects oversized cookies. `dev`/`start` set `NODE_OPTIONS=--max-http-header-size=128000`. If it still 431s, clear site data for `http://localhost:3333` (or use a private window) and restart Studio.
 
@@ -67,8 +68,8 @@ pnpm --filter @pakfactory/studio run seed:beauty-solution-lp -- --dataset produc
 
 After `--confirm`:
 
-1. Studio → Main Website → Listing Pages → **Solution Industry Page** → publish if draft; confirm 7 sections; **Logo wall** shows 6 clients (shared default).
-2. Studio → Solutions → Beauty & Cosmetics → **Template** tab → Solution Industry Page; **Solution Styles** tab → 6 styles; **Sections** → content with matching keys (inspirations = style refs; logo wall = clients); publish if draft.
+1. Studio → Main Website → Listing Pages → **Solution Industry Page** → publish if draft; confirm 8 sections; **Logo wall** shows 6 clients (shared default).
+2. Studio → Solutions → Beauty & Cosmetics → **Template** tab → Solution Industry Page; **Solution Styles** tab → 6 styles; **Sections** → content with matching keys (inspirations = style refs; logo wall = clients; Reviews = chrome-only); publish if draft.
 3. Reorder a section on Solution Industry Page → `/solutions/beauty-cosmetics` order updates without editing Beauty’s section order.
 4. FAQ band: empty section FAQs → uses Categorization `faqs`; section FAQs filled → those only (override).
 5. Inspirations: empty section cards → related `solutionStyle` children; section cards filled → those only.
@@ -76,6 +77,27 @@ After `--confirm`:
 7. www: `pnpm dev:www` → Beauty should render via merged template + content (`SectionRenderer`).
 
 Parity checklist: [`apps/www/memory.md`](../www/memory.md) § Solution LP sections / Beauty LP seed parity.
+
+## Beauty Pouches style products seed
+
+Fixture **inspiration** products for Beauty’s `beauty-pouches` `solutionStyle` keyword filter so `/solutions/beauty-cosmetics/beauty-pouches` shows a catalog grid. Does **not** create the style or industry LP — run Beauty LP seed first.
+
+Requires: `solution.beauty-cosmetics` + `solutionStyle.beauty-beauty-pouches`, and at least one **standard** product (for inspiration `basedOn`). Prefers a standard with ≥3 `availableCustomizations`.
+
+```bash
+pnpm --filter @pakfactory/studio run seed:beauty-style-products -- --dataset development
+pnpm --filter @pakfactory/studio run seed:beauty-style-products -- --dataset development --confirm
+```
+
+Creates 3 docs: `product.beauty-pouches-seed-1` … `-3` (titles `Beauty Pouches — Seed N`, sku `BEAUTY-POUCHES-00N`, Beauty in `solutions[]`).
+
+**Cleanup GROQ:**
+
+```
+*[_id match "product.beauty-pouches-seed-*" || sku match "BEAUTY-POUCHES-*"]
+```
+
+**Verify:** www → http://localhost:3003/solutions/beauty-cosmetics/beauty-pouches (revalidate ~60s or hard refresh).
 
 ## Section insert menu (entity tabs)
 

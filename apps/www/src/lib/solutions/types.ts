@@ -101,11 +101,13 @@ export type SolutionCta = {
     href: string;
 };
 
-/** Optional band chrome from Sanity sectionHeaderFields (align + dieline borders). */
+/** Optional band chrome from Sanity sectionHeaderFields (eyebrow · align · paddingBlock · dieline borders). */
 export type SectionBandChrome = {
     align?: 'left' | 'center';
     borderTop?: boolean;
     borderBottom?: boolean;
+    /** PageDielineSection vertical rhythm. Default md when unset. */
+    paddingBlock?: 'xs' | 'sm' | 'md' | 'lg';
 };
 
 export type SolutionMedia = {

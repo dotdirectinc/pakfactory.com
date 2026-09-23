@@ -5,6 +5,7 @@ import type {
 import {
     PRODUCT_CATALOG_INDUSTRY_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
 } from '@/lib/catalog/types';
 import {withinOpForFacet} from '@/lib/catalog/customization-filter-taxonomy';
 
@@ -20,6 +21,9 @@ function matchesFacet(
 ): boolean {
     if (facetId === PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID) {
         return selected.includes(item.productLine.slug);
+    }
+    if (facetId === PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID) {
+        return selected.includes(item.kind);
     }
     if (facetId === PRODUCT_CATALOG_INDUSTRY_FACET_ID) {
         return selected.some((slug) =>
@@ -47,8 +51,8 @@ export function productItemHasFacetValue(
  * Whether a library product matches search and facet selections.
  *
  * Search is AND with facets. Active facet groups combine with AND across groups;
- * within a group: Sustainability and Performance are AND; Product Line, Industries,
- * and other properties are OR (same taxonomy as customizations).
+ * within a group: Sustainability and Performance are AND; Product Line, Product
+ * type, Industries, and other properties are OR (same taxonomy as customizations).
  */
 export function matchesProductItem(
     item: ProductLibraryItem,

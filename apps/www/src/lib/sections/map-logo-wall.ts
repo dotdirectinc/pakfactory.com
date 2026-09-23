@@ -36,6 +36,7 @@ export function mapLogoWall(
         align: chrome.align,
         borderTop: chrome.borderTop,
         borderBottom: chrome.borderBottom,
+        paddingBlock: chrome.paddingBlock,
         ...(chrome.cta ? {cta: chrome.cta} : {}),
         items,
     };

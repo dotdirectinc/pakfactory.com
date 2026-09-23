@@ -35,11 +35,13 @@ const LINK_OBJECT = /* groq */ `{
   "internalLink": internalLink->${LINKABLE_DOC}
 }`;
 
-/** Shared section chrome (heading · intro · align · link · dieline borders). */
+/** Shared section chrome (eyebrow · heading · intro · align · paddingBlock · link · dieline borders). */
 const SECTION_CHROME = /* groq */ `
+  eyebrow,
   heading,
   intro,
   align,
+  paddingBlock,
   showTopBorder,
   showBottomBorder,
   listSource,
@@ -149,6 +151,9 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "steps" => {
+    ${SECTION_CHROME}
+  },
+  _type == "testimonialsRow" => {
     ${SECTION_CHROME}
   },
   _type == "logoWall" => {
@@ -268,9 +273,11 @@ export type PageSectionLinkDoc = {
 };
 
 export type PageSectionChromeFields = {
+    eyebrow?: string | null;
     heading?: string | null;
     intro?: string | null;
     align?: 'left' | 'center' | string | null;
+    paddingBlock?: 'xs' | 'sm' | 'md' | 'lg' | string | null;
     showTopBorder?: boolean | null;
     showBottomBorder?: boolean | null;
     /** Host list inherit: `page` | `custom` (ADR-020 §8). */
@@ -403,6 +410,12 @@ export type PageSectionVideoCaseStudiesRowDoc = PageSectionChromeFields & {
     cards?: PageSectionVideoCaseStudyCardDoc[] | null;
 };
 
+/** Chrome-only Reviews band; quote items still mock on www. */
+export type PageSectionTestimonialsRowDoc = PageSectionChromeFields & {
+    _type: 'testimonialsRow';
+    _key: string;
+};
+
 /** Shallow / unwired section until a renderer maps it. */
 export type PageSectionStubDoc = PageSectionChromeFields & {
     _type: string;
@@ -417,4 +430,5 @@ export type PageSectionDoc =
     | PageSectionCaseStudiesRowDoc
     | PageSectionInspirationsGridDoc
     | PageSectionVideoCaseStudiesRowDoc
+    | PageSectionTestimonialsRowDoc
     | PageSectionStubDoc;

@@ -21,7 +21,6 @@ function mapCustomizations(
         title: opt.label,
         description:
             opt.shortDescription?.trim() ||
-            opt.description?.trim() ||
             'Pre-selected on this inspiration product.',
         learnMoreHref: WWW_ROUTES.customizations,
     }));

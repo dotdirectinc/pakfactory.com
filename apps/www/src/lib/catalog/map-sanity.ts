@@ -377,6 +377,7 @@ export function mapSanityProductLibraryItem(
         title: product.title,
         slug: product.slug,
         sku: product.sku,
+        kind: product.kind,
         productLine: product.productLine,
         productStyle: product.productStyle,
         imageUrl: first?.src ?? null,

@@ -53,6 +53,7 @@ export function mapExpertiseSequence(
         align: chrome.align,
         borderTop: chrome.borderTop,
         borderBottom: chrome.borderBottom,
+        ...(chrome.eyebrow ? {eyebrow: chrome.eyebrow} : {}),
         ...(description ? {description} : {}),
         ...(chrome.cta ? {cta: chrome.cta} : {}),
         stages,

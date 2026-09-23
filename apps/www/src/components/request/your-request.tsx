@@ -139,7 +139,6 @@ export function YourRequest() {
             <PageHeadingSection
                 title={REQUEST_COPY.yourRequestHeading}
                 description={REQUEST_COPY.yourRequestSupporting}
-                innerClassName="border-b border-dashed border-border"
             />
 
             <PageDielineSection innerClassName="pb-24 pt-8">

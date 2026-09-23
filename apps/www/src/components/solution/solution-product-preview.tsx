@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {Package} from 'lucide-react';
+import {Package, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {
     Dialog,
@@ -44,19 +44,28 @@ export function SolutionProductPreview({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="max-h-[min(92vh,56rem)] w-[min(96vw,42rem)] max-w-none gap-0 overflow-y-auto p-0 sm:rounded-2xl md:min-w-[64rem]"
+                className="flex max-h-[min(92vh,56rem)] w-[min(96vw,42rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl md:min-w-[64rem]"
+                showCloseButton={false}
                 aria-describedby={undefined}
             >
                 {product ? (
                     <>
-                        <DialogHeader className="border-b border-border px-6 py-4 pr-14 text-left">
+                        <DialogHeader className="relative shrink-0 border-b border-border px-6 py-4 pr-14 text-left">
                             <DialogTitle className="text-xl font-semibold tracking-tight sm:text-2xl">
                                 {product.title}
                             </DialogTitle>
+                            <button
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                                className="absolute top-1/2 right-4 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden"
+                            >
+                                <Icon icon={X} size="sm" />
+                                <span className="sr-only">Close</span>
+                            </button>
                         </DialogHeader>
 
-                        <div className="grid gap-6 p-6 lg:grid-cols-2 lg:items-start lg:gap-8">
-                            <div className="flex min-w-0 flex-col gap-4">
+                        <div className="grid min-h-0 flex-1 gap-6 overflow-hidden p-6 lg:grid-cols-2 lg:gap-8">
+                            <div className="flex min-w-0 shrink-0 flex-col gap-4">
                                 <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
                                     {product.image?.src ? (
                                         // eslint-disable-next-line @next/next/no-img-element -- CMS CDN URLs
@@ -86,12 +95,12 @@ export function SolutionProductPreview({
                                 </Button>
                             </div>
 
-                            <div className="flex min-w-0 flex-col gap-4">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
+                                <p className="shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     Customizations
                                 </p>
                                 {product.customizations.length > 0 ? (
-                                    <ul className="flex flex-col">
+                                    <ul className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
                                         {product.customizations.map((item) => (
                                             <li
                                                 key={item.id}
@@ -109,7 +118,7 @@ export function SolutionProductPreview({
                                                         <h3 className="text-sm font-semibold tracking-tight text-foreground">
                                                             {item.title}
                                                         </h3>
-                                                        <p className="text-sm leading-6 text-muted-foreground">
+                                                        <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
                                                             {item.description}
                                                         </p>
                                                     </div>

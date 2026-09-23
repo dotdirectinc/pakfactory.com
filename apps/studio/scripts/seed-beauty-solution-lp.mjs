@@ -11,7 +11,7 @@
  *
  * Assets are uploaded from apps/www/public/solutions/beauty-cosmetics/**.
  * Expertise stages are resolved by existing CMS slugs (not invented).
- * Testimonials are intentionally omitted (PROD-2293).
+ * `testimonialsRow` is chrome-only (quotes still mock on www).
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -647,7 +647,7 @@ async function main() {
     `  1 logoWall → 2 inspirationsGrid → 3 mediaFeature → 4 expertiseSequence`,
   )
   console.log(
-    `  5 caseStudiesRow → 6 videoCaseStudiesRow → (skip testimonials) → 7 faqSection`,
+    `  5 caseStudiesRow → 6 videoCaseStudiesRow → 7 testimonialsRow → 8 faqSection`,
   )
   console.log(
     `\nTemplate: order + chrome; logoWall also gets shared default clients.`,
@@ -656,7 +656,10 @@ async function main() {
     `Beauty: band content (same _keys); inspirationsGrid → solutionStyle refs.`,
   )
   console.log(
-    `Known deltas vs fixture: no eyebrows/highlightSpans (D35); no testimonials (PROD-2293);`,
+    `Known deltas vs fixture: optional section eyebrow via sectionHeaderFields();`,
+  )
+  console.log(
+    `  testimonialsRow is chrome-only (quotes still mock on www);`,
   )
   console.log(
     `  case-study stubs use beauty-seed-* slugs; CTA labels may fall back to “Learn more”.`,
@@ -868,6 +871,13 @@ async function main() {
       }),
     },
     {
+      _type: 'testimonialsRow',
+      _key: 'beauty-testimonials',
+      heading: 'Real feedback from our customers.',
+      intro:
+        'Hear what our customers have to say about us after collaborating on their packaging!',
+    },
+    {
       _type: 'faqSection',
       _key: 'beauty-faqs',
       heading: 'Questions & Answers',
@@ -949,7 +959,9 @@ async function main() {
   console.log(
     `    Publish any drafts in Studio if Presentation still shows empty sections.\n`,
   )
-  console.log(`    Note: testimonials band is absent until PROD-2293.\n`)
+  console.log(
+    `    Note: testimonialsRow quotes are still mock on www until shared testimonial docs.\n`,
+  )
 }
 
 main().catch((err) => {

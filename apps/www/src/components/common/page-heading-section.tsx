@@ -55,7 +55,7 @@ export type PageHeadingContentProps = {
 };
 
 type PageHeadingSectionProps = PageHeadingContentProps & {
-    /** Full-bleed dashed bottom rule on the dieline outer. Default false. */
+    /** Full-bleed dashed bottom rule on the dieline outer. Default true. */
     borderBottom?: boolean;
     className?: string;
     innerClassName?: string;
@@ -270,7 +270,7 @@ export function PageHeadingContent({
 }
 
 export function PageHeadingSection({
-    borderBottom = false,
+    borderBottom = true,
     className,
     innerClassName,
     variant = 'default',
@@ -313,7 +313,7 @@ type PageHeadingWithMediaProps = PageHeadingSectionProps & {
  */
 export function PageHeadingWithMedia({
     media,
-    borderBottom = false,
+    borderBottom = true,
     className,
     innerClassName,
     variant = 'default',

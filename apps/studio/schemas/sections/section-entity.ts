@@ -26,6 +26,7 @@ export const SECTION_ENTITY = {
   stats: 'layout',
   steps: 'layout',
   faqSection: 'layout',
+  testimonialsRow: 'layout',
   quoteCta: 'cta',
   newsletterCta: 'cta',
   linkCards: 'cta',

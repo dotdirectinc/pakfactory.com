@@ -71,6 +71,7 @@ export function InspirationGallery({
                                 description={card.description}
                                 imageSrc={card.image.src}
                                 imageAlt={card.image.alt}
+                                surface={shell.cardSurface}
                             />
                         </li>
                     ))}

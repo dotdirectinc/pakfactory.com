@@ -75,13 +75,13 @@ export function ProductCatalogFilters({
 }
 
 type ProductCatalogFiltersSkeletonProps = {
-    /** Product Line + Sustainability (and any other shared facets). */
+    /** Product type + Product Line + Industries/Sustainability slots. */
     sharedGroupCount?: number;
 };
 
 /** Loading rail: shared facet slots only (no category groups). */
 export function ProductCatalogFiltersSkeleton({
-    sharedGroupCount = 2,
+    sharedGroupCount = 3,
 }: ProductCatalogFiltersSkeletonProps) {
     return (
         <aside

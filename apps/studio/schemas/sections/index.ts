@@ -7,6 +7,7 @@ import { rowSections } from './row-sections'
 import { conversionSections } from './conversion-sections'
 import { customizationsCatalog } from './customizations-catalog'
 import { inspirationsGrid } from './inspirations-grid'
+import { testimonialsRow } from './testimonials-row'
 import { videoCaseStudiesRow } from './video-case-studies-row'
 
 export {
@@ -25,8 +26,8 @@ export {
  * `pageSectionsField(allow)` returns the single `sections` field for a page,
  * scoped to the families that page may use — never two section fields on one form.
  *
- * ⚠️ Testimonials row is not here yet — its `testimonial` type is extracted in
- * PROD-2293; it joins the Clients tab then. Keep fixture testimonials until then.
+ * `testimonialsRow` (Layout · Reviews) is chrome-only for now — quote items
+ * still mock on www until a shared `testimonial` document lands.
  *
  * PROD-1288 adds `customizationsCatalog` (filterable library) alongside
  * `customizationsRow` (catalogue strip) — do not conflate them.
@@ -37,6 +38,7 @@ export const websiteSections = [
   ...rowSections,
   inspirationsGrid,
   videoCaseStudiesRow,
+  testimonialsRow,
   customizationsCatalog,
   ...conversionSections,
 ]
@@ -55,7 +57,14 @@ const FAMILY = {
   expertise: ['expertiseSequence'],
   resource: ['guidesRow', 'dielinesRow', 'glossaryStrip', 'postsRow'],
   client: ['logoWall'],
-  layout: ['richText', 'mediaFeature', 'stats', 'steps', 'faqSection'],
+  layout: [
+    'richText',
+    'mediaFeature',
+    'stats',
+    'steps',
+    'faqSection',
+    'testimonialsRow',
+  ],
   cta: ['quoteCta', 'newsletterCta', 'linkCards', 'contactForm'],
 } as const
 
