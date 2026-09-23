@@ -5,13 +5,24 @@ import {
     SOLUTION_BY_SLUG_QUERY,
     SOLUTION_LINE_PRODUCTS_QUERY,
     SOLUTION_PAGE_SLUGS_QUERY,
+    SOLUTION_STYLES_FILTER_QUERY,
     SOLUTION_TAGGED_PRODUCTS_QUERY,
     SOLUTIONS_WITH_PAGES_QUERY,
+    CATALOG_PRODUCT_FIELDS,
     type CatalogProductDoc,
+    type PageSectionDoc,
     type SolutionBySlugDoc,
     type SolutionPageSlugDoc,
+    type SolutionStyleFilterDoc,
     type SolutionWithPageDoc,
 } from '@pakfactory/sanity/queries';
+import {
+    filterParams,
+    hasAnyCondition,
+    solutionStyleProductFilter,
+    solutionStyleQueryParams,
+    SOLUTION_STYLE_ORDER,
+} from '@pakfactory/sanity/solution-style-filter';
 import {mapSanityProduct} from '@/lib/catalog/map-sanity';
 import type {Product} from '@/lib/catalog/types';
 import {draftAwareClient, readThrough} from '@/lib/sanity/draft-aware';
@@ -21,21 +32,17 @@ import {
     mapSanitySolutionCard,
     isCompleteProduct,
 } from '@/lib/solutions/map-sanity';
+import {buildSolutionLandingContent} from '@/lib/solutions/landing-content';
 import {
-    beautyCosmeticsCaseStudies,
-    beautyCosmeticsCustomizations,
-    beautyCosmeticsExpertise,
-    beautyCosmeticsFaqs,
-    beautyCosmeticsInspirations,
-    beautyCosmeticsLogos,
-    beautyCosmeticsSolutionPage,
-    beautyCosmeticsTestimonials,
-    beautyCosmeticsVideoCaseStudies,
-} from '@/lib/solutions/fixtures/beauty-cosmetics';
+    applyFaqInherit,
+    applyInspirationsInherit,
+    applyVideoCaseStudiesInherit,
+    mergeSolutionSections,
+} from '@/lib/sections/merge-solution-sections';
 import {
-    buildSolutionLandingContent,
-    isBeautyCosmeticsSlug,
-} from '@/lib/solutions/landing-content';
+    applySectionTokens,
+    sectionTokenContextFromHost,
+} from '@/lib/sections/resolve-section-tokens';
 import type {
     SolutionCard,
     SolutionLandingContent,
@@ -47,6 +54,9 @@ import {
     WWW_SOLUTIONS_CACHE_TAG,
     wwwSolutionTag,
 } from '@/lib/www-cache';
+
+/** Cap matches Industry LP hero desktop tile budget. */
+const MAX_HERO_STYLE_PRODUCTS = 16;
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -75,9 +85,80 @@ async function fetchTaggedProducts(
     }
 }
 
+/**
+ * Union of inspiration products matching any solutionStyle under this solution.
+ * Uses shared solution-style-filter (same membership as Studio match counts).
+ */
+async function fetchStyleMatchedHeroProducts(
+    solutionId: string,
+): Promise<Product[]> {
+    if (!isSanityConfigured() || !solutionId) return [];
+    try {
+        const client = await draftAwareClient();
+        const styles = await client.fetch<SolutionStyleFilterDoc[]>(
+            SOLUTION_STYLES_FILTER_QUERY,
+            {solutionId},
+        );
+        if (!styles?.length) return [];
+
+        const byId = new Map<string, Product>();
+
+        for (const style of styles) {
+            const raw = style.filter;
+            const authoredFilter = raw
+                ? {
+                      productLines: raw.productLines ?? undefined,
+                      productStyles: raw.productStyles ?? undefined,
+                      keywords: raw.keywords ?? undefined,
+                  }
+                : undefined;
+            const params = filterParams(
+                solutionId,
+                authoredFilter,
+                style.excludedProducts ?? undefined,
+            );
+            if (!hasAnyCondition(params)) continue;
+            const filter = solutionStyleProductFilter(params);
+            if (!filter) continue;
+
+            // CATALOG_PRODUCT_FIELDS includes availableCustomizations for hero preview.
+            const query = `*[${filter} && (status == "active" || !defined(status))] | ${SOLUTION_STYLE_ORDER} [0...${MAX_HERO_STYLE_PRODUCTS}] {
+  ${CATALOG_PRODUCT_FIELDS}
+}`;
+            const docs = await client.fetch<CatalogProductDoc[]>(
+                query,
+                solutionStyleQueryParams(params),
+            );
+            for (const doc of docs ?? []) {
+                const product = mapSanityProduct(doc);
+                if (!product?.slug || !product.title) continue;
+                if (!byId.has(product.slug)) {
+                    byId.set(product.slug, product);
+                }
+            }
+        }
+
+        return Array.from(byId.values()).slice(0, MAX_HERO_STYLE_PRODUCTS);
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error(
+                '[solutions] Style-matched hero products failed:',
+                err,
+            );
+        }
+        return [];
+    }
+}
+
+type SolutionBySlugResult = {
+    page: SolutionPage;
+    sections: PageSectionDoc[];
+    heroProducts: Product[];
+};
+
 async function fetchSolutionBySlug(
     slug: string,
-): Promise<SolutionPage | null> {
+): Promise<SolutionBySlugResult | null> {
     if (!isSanityConfigured()) return null;
     try {
         const doc = await (await draftAwareClient()).fetch<
@@ -87,13 +168,53 @@ async function fetchSolutionBySlug(
         const mapped = mapSanitySolution(doc);
         if (!mapped) return null;
 
-        const curated = mapped.relatedProducts.filter(isCompleteProduct);
-        if (curated.length > 0) {
-            return {...mapped, relatedProducts: curated};
-        }
+        const contentSections = (doc.sections ?? []).filter(
+            (section): section is PageSectionDoc =>
+                Boolean(section?._key && section?._type),
+        );
+        const templateSections = (doc.template?.sections ?? []).filter(
+            (section): section is PageSectionDoc =>
+                Boolean(section?._key && section?._type),
+        );
 
-        const tagged = await fetchTaggedProducts(slug);
-        return {...mapped, relatedProducts: tagged};
+        // Template path: merge order/chrome from template with content on the solution.
+        // Fallback: solution.sections alone (pre-seed dual-path) when no template stack.
+        // Inherit: FAQs / inspirations / video case studies from document defaults.
+        const sections =
+            templateSections.length > 0
+                ? mergeSolutionSections(
+                      templateSections,
+                      contentSections,
+                      doc.relatedCaseStudies,
+                      doc.faqs,
+                      doc.relatedSolutionStyles,
+                      doc.relatedVideoCaseStudies,
+                  )
+                : applyVideoCaseStudiesInherit(
+                      applyInspirationsInherit(
+                          applyFaqInherit(contentSections, doc.faqs),
+                          doc.relatedSolutionStyles,
+                      ),
+                      doc.relatedVideoCaseStudies,
+                  );
+
+        const tokenizedSections = applySectionTokens(
+            sections,
+            sectionTokenContextFromHost(doc),
+        );
+
+        const curated = mapped.relatedProducts.filter(isCompleteProduct);
+        const tagged =
+            curated.length > 0
+                ? curated
+                : await fetchTaggedProducts(slug);
+        const heroProducts = await fetchStyleMatchedHeroProducts(doc._id);
+
+        return {
+            page: {...mapped, relatedProducts: tagged},
+            sections: tokenizedSections,
+            heroProducts,
+        };
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[solutions] Sanity solution by slug failed:', err);
@@ -161,12 +282,19 @@ async function fetchSolutionsWithPages(): Promise<SolutionCard[]> {
 export async function getSolutionBySlug(
     slug: string,
 ): Promise<SolutionPage | null> {
+    const result = await getSolutionBySlugResult(slug);
+    return result?.page ?? null;
+}
+
+async function getSolutionBySlugResult(
+    slug: string,
+): Promise<SolutionBySlugResult | null> {
     const key = normalizeSlug(slug);
     return readThrough(
         () => fetchSolutionBySlug(key),
         unstable_cache(
             () => fetchSolutionBySlug(key),
-            [wwwSolutionTag(key), 'v2-related-products'],
+            [wwwSolutionTag(key), 'v7-hero-customizations'],
             {
                 revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
                 tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(key)],
@@ -177,41 +305,22 @@ export async function getSolutionBySlug(
 
 /**
  * Industry Solution LP payload for `/solutions/[slug]`.
- * Hero is built from Sanity page fields for every hasPage solution.
- * Falls back to a minimal Beauty page when Sanity has no hasPage doc yet.
- * Beauty logos + inspirations + customizations + expertise + case studies +
- * testimonials + faqs use local fixtures until Sanity fields land.
+ * Hero from Sanity page fields; body from merged template × content sections.
+ * Requires a hasPage solution in Sanity (no local fixture fallback).
  */
 export async function getSolutionLandingContent(
     slug: string,
 ): Promise<SolutionLandingContent | null> {
     const key = normalizeSlug(slug);
-    const fromSanity = await getSolutionBySlug(key);
-    const beautyBands = isBeautyCosmeticsSlug(key)
-        ? {
-              logos: beautyCosmeticsLogos,
-              inspirations: beautyCosmeticsInspirations,
-              customizations: beautyCosmeticsCustomizations,
-              expertise: beautyCosmeticsExpertise,
-              caseStudies: beautyCosmeticsCaseStudies,
-              videoCaseStudies: beautyCosmeticsVideoCaseStudies,
-              testimonials: beautyCosmeticsTestimonials,
-              faqs: beautyCosmeticsFaqs,
-          }
-        : undefined;
+    const fromSanity = await getSolutionBySlugResult(key);
+    if (!fromSanity) return null;
 
-    if (fromSanity) {
-        return buildSolutionLandingContent(fromSanity, beautyBands);
-    }
-
-    if (isBeautyCosmeticsSlug(key)) {
-        return buildSolutionLandingContent(
-            beautyCosmeticsSolutionPage,
-            beautyBands,
-        );
-    }
-
-    return null;
+    return buildSolutionLandingContent(
+        fromSanity.page,
+        fromSanity.sections,
+        undefined,
+        fromSanity.heroProducts,
+    );
 }
 
 export async function getSolutionLineCatalog(

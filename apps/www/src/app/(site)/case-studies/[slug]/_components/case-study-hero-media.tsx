@@ -5,16 +5,7 @@ import { useState } from "react";
 import type { CaseStudyHeroMedia as HeroMediaData } from "@pakfactory/sanity/queries";
 import { SanityImage } from "@/components/ui/sanity-image";
 import { isSanityCdnUrl } from "@/lib/sanity/image";
-
-function getYouTubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-    return u.searchParams.get("v");
-  } catch {
-    return null;
-  }
-}
+import { getYouTubeId } from "@/lib/youtube";
 
 type Props = {
   heroMedia: HeroMediaData;

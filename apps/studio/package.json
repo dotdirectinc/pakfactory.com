@@ -14,6 +14,8 @@
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
     "seed:corrugated-selectable-props": "node scripts/seed-corrugated-board-selectable-props.mjs",
     "seed:white-lined-detail-demo": "node scripts/seed-white-lined-detail-demo.mjs",
+    "seed:beauty-solution-lp": "node scripts/seed-beauty-solution-lp.mjs",
+    "seed:test-kids-solution-lp": "node scripts/seed-test-kids-solution-lp.mjs",
     "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
     "fill:catalog": "node scripts/fill-catalog-from-review.mjs",
     "cleanup:blogsettings-defaults": "node scripts/unset-legacy-blogsettings-defaults.mjs",

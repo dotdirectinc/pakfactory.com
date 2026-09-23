@@ -1,14 +1,11 @@
 import type {PortableTextBlock} from '@portabletext/types';
-import type {CaseStudiesRowContent} from '@/components/sections/case-studies-row';
-import type {VideoCaseStudiesRowContent} from '@/components/sections/video-case-studies-row';
+import type {PageSectionDoc} from '@pakfactory/sanity/queries';
 import type {
     Product,
-    ProductFaq,
-    ProductTestimonial,
-    TestimonialsAggregate,
 } from '@/lib/catalog/types';
 
-export type {CaseStudiesRowContent, VideoCaseStudiesRowContent};
+/** Sanity page section doc (www SectionRenderer). */
+export type PageSection = PageSectionDoc;
 
 export type SolutionCard = {
     slug: string;
@@ -66,6 +63,13 @@ export type SolutionCta = {
     href: string;
 };
 
+/** Optional band chrome from Sanity sectionHeaderFields (align + dieline borders). */
+export type SectionBandChrome = {
+    align?: 'left' | 'center';
+    borderTop?: boolean;
+    borderBottom?: boolean;
+};
+
 export type SolutionMedia = {
     src: string;
     alt: string;
@@ -78,6 +82,18 @@ export type SolutionHeroTile = {
     label?: string;
     /** Desktop width in px for masonry/carousel; height is uniform. */
     width?: number;
+    /** Preview dialog payload (CMS product). */
+    title?: string;
+    detailHref?: string;
+    customizations?: SolutionHeroCustomization[];
+};
+
+export type SolutionHeroCustomization = {
+    id: string;
+    category: string;
+    title: string;
+    description: string;
+    learnMoreHref: string;
 };
 
 export type SolutionHeroContent = {
@@ -107,15 +123,17 @@ export type SolutionLogoItem = {
     height?: number;
 };
 
-export type SolutionLogosContent = {
+export type SolutionLogosContent = SectionBandChrome & {
     /** Document outline / screen readers; not shown visibly. */
     heading?: string;
     /** Muted band lead under the hero. */
     subhead?: string;
+    /** Optional section CTA (from Studio section link). */
+    cta?: SolutionCta;
     items: SolutionLogoItem[];
 };
 
-export type SolutionInspirationCard = {
+export type InspirationGalleryCard = {
     id: string;
     title: string;
     description?: string;
@@ -124,16 +142,21 @@ export type SolutionInspirationCard = {
     countLabel?: string;
 };
 
-export type SolutionInspirationsContent = {
-    eyebrow: string;
+export type InspirationGalleryContent = SectionBandChrome & {
+    eyebrow?: string;
     headline: string;
     /** Substrings within `headline` that receive the highlight wipe. */
     highlightSpans?: string[];
     /** Band lead under the headline (POC/Figma description). */
     description?: string;
     cta?: SolutionCta;
-    cards: SolutionInspirationCard[];
+    cards: InspirationGalleryCard[];
 };
+
+/** @deprecated Use InspirationGalleryContent (ADR-020). */
+export type SolutionInspirationsContent = InspirationGalleryContent;
+/** @deprecated Use InspirationGalleryCard (ADR-020). */
+export type SolutionInspirationCard = InspirationGalleryCard;
 
 export type SolutionCustomizationsContent = {
     eyebrow: string;
@@ -144,7 +167,7 @@ export type SolutionCustomizationsContent = {
     cta: SolutionCta;
 };
 
-export type SolutionExpertiseStage = {
+export type ExpertiseRowStage = {
     id: string;
     /** Pill label (e.g. "Design"). */
     title: string;
@@ -159,59 +182,39 @@ export type SolutionExpertiseStage = {
     mediaPlaceholder?: string;
 };
 
-export type SolutionExpertiseManager = {
+export type ExpertiseRowManager = {
     name: string;
     role?: string;
     blurb?: string;
     avatar?: SolutionMedia | null;
 };
 
-export type SolutionExpertiseContent = {
-    eyebrow: string;
+export type ExpertiseRowContent = SectionBandChrome & {
+    eyebrow?: string;
     headline: string;
     highlightSpans?: string[];
     /** Band lead under the headline. */
     description?: string;
     cta?: SolutionCta;
-    journeyLabels: string[];
-    stages: SolutionExpertiseStage[];
-    manager?: SolutionExpertiseManager | null;
+    journeyLabels?: string[];
+    stages: ExpertiseRowStage[];
+    manager?: ExpertiseRowManager | null;
 };
 
-/** Props for TestimonialsRow on the Industry Solution LP (Fork 8). */
-export type SolutionTestimonialsContent = {
-    items: ProductTestimonial[];
-    aggregate?: TestimonialsAggregate;
-    title?: string;
-    description?: string;
-};
-
-/** Props for FaqSection on the Industry Solution LP (Fork 9). */
-export type SolutionFaqsContent = {
-    items: ProductFaq[];
-    heading?: string;
-    description?: string;
-    footerHref?: string;
-    footerLabel?: string;
-};
+/** @deprecated Use ExpertiseRowContent (ADR-020). */
+export type SolutionExpertiseContent = ExpertiseRowContent;
+/** @deprecated Use ExpertiseRowStage (ADR-020). */
+export type SolutionExpertiseStage = ExpertiseRowStage;
+/** @deprecated Use ExpertiseRowManager (ADR-020). */
+export type SolutionExpertiseManager = ExpertiseRowManager;
 
 /**
- * Full Industry Solution LP payload (PROD-1541).
- * Section UIs land in later forks; Fork 0 defines the contract + fixtures.
- * Optional bands may be null until content/UI exists.
- * `caseStudies` uses the Sanity-ready CaseStudiesRow content shape.
- * `videoCaseStudies` is the Webflow-style portrait band under expand.
- * `testimonials` / `faqs` match existing PDP section props.
+ * Full Industry Solution LP payload.
+ * Route-owned hero + CMS body via `sections` (merged template × content).
  */
 export type SolutionLandingContent = {
     solution: SolutionPage;
     hero: SolutionHeroContent | null;
-    logos: SolutionLogosContent | null;
-    inspirations: SolutionInspirationsContent | null;
-    customizations: SolutionCustomizationsContent | null;
-    expertise: SolutionExpertiseContent | null;
-    caseStudies: CaseStudiesRowContent | null;
-    videoCaseStudies: VideoCaseStudiesRowContent | null;
-    testimonials: SolutionTestimonialsContent | null;
-    faqs: SolutionFaqsContent | null;
+    /** Merged template + solution sections for SectionRenderer. */
+    sections: PageSection[] | null;
 };

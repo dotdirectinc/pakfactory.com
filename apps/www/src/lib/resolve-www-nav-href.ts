@@ -10,6 +10,13 @@ export type ResolvedWwwHref = {
   external: boolean;
 };
 
+export type SectionLinkHrefInput = {
+  linkType?: string | null;
+  externalUrl?: string | null;
+  relativePath?: string | null;
+  internalLink?: SanityLinkDocument | null;
+};
+
 function stripWwwOrigin(href: string): ResolvedWwwHref {
   const origin = getWwwUrl().replace(/\/+$/, '');
   if (href.startsWith(origin)) {
@@ -20,6 +27,24 @@ function stripWwwOrigin(href: string): ResolvedWwwHref {
     };
   }
   return {href, external: href.startsWith('http')};
+}
+
+/** Normalize a Studio site path to root-relative (no domain). */
+export function normalizeSitePath(
+  raw: string | null | undefined,
+): string | null {
+  let path = raw?.trim() ?? '';
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const url = new URL(path);
+      path = `${url.pathname}${url.search}${url.hash}` || '/';
+    } catch {
+      return null;
+    }
+  }
+  if (!path.startsWith('/')) path = `/${path}`;
+  return path;
 }
 
 /**
@@ -53,4 +78,26 @@ export function resolveWwwNavHref(
   }
 
   return null;
+}
+
+/**
+ * Resolve a section chrome link (Internal | Site path | External).
+ * Site path stays root-relative so the browser uses the current host.
+ */
+export function resolveSectionLinkHref(
+  raw: SectionLinkHrefInput | null | undefined,
+): ResolvedWwwHref | null {
+  if (!raw) return null;
+
+  if (raw.linkType === 'path') {
+    const path = normalizeSitePath(raw.relativePath);
+    if (!path) return null;
+    return {href: path, external: false};
+  }
+
+  return resolveWwwNavHref({
+    linkType: raw.linkType,
+    externalUrl: raw.externalUrl,
+    internalLink: raw.internalLink as WebsiteNavLinkDoc['internalLink'],
+  });
 }

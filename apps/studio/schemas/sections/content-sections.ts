@@ -1,12 +1,14 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
 import { BlockContentIcon, ImageIcon, TrendUpwardIcon, ThListIcon, HelpCircleIcon } from '@sanity/icons'
-import { linkTargetFields } from '../../lib/link-target-fields'
+import { SectionItemPreview } from '../../components/SectionItemPreview'
 import { faqsField } from '../../lib/faq-field'
+import { sectionListSourceField, hideUnlessCustomList } from '../../lib/section-list-source-fields'
+import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
+import { sectionHeaderFields } from '../../lib/section-header-fields'
 
 /**
- * Content sections (Section inventory → Content). Authored page copy — no source,
- * no derivation, and NO presentation fields (D35). Each is an object type used as
- * a member of a page's `sections` array.
+ * Layout-family content sections (ADR-020). Shared chrome with Heading/Layout
+ * tabs; payload on Content. Theme/columns stay in React (D35).
  */
 
 /** Rich text — harvested from the blog's `richTextBand`, minus presentation. */
@@ -15,44 +17,62 @@ export const richText = defineType({
   title: 'Rich text',
   type: 'object',
   icon: BlockContentIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string', description: 'Optional section heading.' }),
-    defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }], description: 'The prose.' }),
+    ...sectionHeaderFields(),
+    defineField({
+      name: 'body',
+      title: 'Body',
+      type: 'array',
+      of: [{ type: 'block' }],
+      description: 'The prose.',
+      group: SECTION_GROUPS.content,
+    }),
   ],
   preview: {
     select: { title: 'heading' },
     prepare: ({ title }) => ({ title: title || 'Rich text' }),
   },
+  components: { preview: SectionItemPreview },
 })
 
-/** Media feature — harvested from `ctaSpotlight`, minus its six presentation fields. */
+/** Image with text — harvested from `ctaSpotlight`, minus presentation fields. */
 export const mediaFeature = defineType({
   name: 'mediaFeature',
-  title: 'Media feature',
+  title: 'Image with text',
   type: 'object',
   icon: ImageIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
-    defineField({ name: 'body', title: 'Body', type: 'array', of: [{ type: 'block' }] }),
+    ...sectionHeaderFields(),
+    defineField({
+      name: 'body',
+      title: 'Body',
+      type: 'array',
+      of: [{ type: 'block' }],
+      group: SECTION_GROUPS.content,
+    }),
     defineField({
       name: 'media',
       title: 'Media',
       type: 'image',
       options: { hotspot: true },
-      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
-    }),
-    defineField({
-      name: 'link',
-      title: 'Link',
-      type: 'object',
-      description: 'Optional call-to-action link. Internal references keep working when a slug changes.',
-      fields: linkTargetFields({ requireLinkType: false }),
+      group: SECTION_GROUPS.content,
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
     }),
   ],
   preview: {
     select: { title: 'heading', media: 'media' },
-    prepare: ({ title, media }) => ({ title: title || 'Media feature', media }),
+    prepare: ({ title, media }) => ({ title: title || 'Image with text', media }),
   },
+  components: { preview: SectionItemPreview },
 })
 
 /** Stats — promoted from the blog body block `bodyStatStack` to a section. */
@@ -61,19 +81,32 @@ export const stats = defineType({
   title: 'Stats',
   type: 'object',
   icon: TrendUpwardIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
+    ...sectionHeaderFields(),
     defineField({
       name: 'items',
       title: 'Stats',
       type: 'array',
+      group: SECTION_GROUPS.content,
       of: [
         defineArrayMember({
           type: 'object',
           name: 'stat',
           fields: [
-            defineField({ name: 'value', title: 'Value', type: 'string', description: 'The figure itself (e.g. "500+" or "48h").', validation: (Rule) => Rule.required() }),
-            defineField({ name: 'label', title: 'Label', type: 'string', validation: (Rule) => Rule.required() }),
+            defineField({
+              name: 'value',
+              title: 'Value',
+              type: 'string',
+              description: 'The figure itself (e.g. "500+" or "48h").',
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'label',
+              title: 'Label',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
           ],
           preview: { select: { title: 'value', subtitle: 'label' } },
         }),
@@ -83,28 +116,39 @@ export const stats = defineType({
   ],
   preview: {
     select: { title: 'heading', items: 'items' },
-    prepare: ({ title, items }) => ({ title: title || 'Stats', subtitle: `${items?.length ?? 0} stat(s)` }),
+    prepare: ({ title, items }) => ({
+      title: title || 'Stats',
+      subtitle: `${items?.length ?? 0} stat(s)`,
+    }),
   },
+  components: { preview: SectionItemPreview },
 })
 
-/** Steps — "how it works", and the shape the Expertise/onboarding sequence uses. */
+/** Steps — "how it works" layout band. */
 export const steps = defineType({
   name: 'steps',
   title: 'Steps',
   type: 'object',
   icon: ThListIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
+    ...sectionHeaderFields(),
     defineField({
       name: 'items',
       title: 'Steps',
       type: 'array',
+      group: SECTION_GROUPS.content,
       of: [
         defineArrayMember({
           type: 'object',
           name: 'step',
           fields: [
-            defineField({ name: 'title', title: 'Title', type: 'string', validation: (Rule) => Rule.required() }),
+            defineField({
+              name: 'title',
+              title: 'Title',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
             defineField({ name: 'body', title: 'Body', type: 'text', rows: 3 }),
           ],
           preview: { select: { title: 'title' } },
@@ -115,24 +159,52 @@ export const steps = defineType({
   ],
   preview: {
     select: { title: 'heading', items: 'items' },
-    prepare: ({ title, items }) => ({ title: title || 'Steps', subtitle: `${items?.length ?? 0} step(s)` }),
+    prepare: ({ title, items }) => ({
+      title: title || 'Steps',
+      subtitle: `${items?.length ?? 0} step(s)`,
+    }),
   },
+  components: { preview: SectionItemPreview },
 })
 
-/** FAQs — the shared faqs field as a section, so it stops being retyped per type. */
+/** FAQs — Page FAQs chip or custom refs (ADR-020 §8). */
 export const faqSection = defineType({
   name: 'faqSection',
   title: 'FAQs',
   type: 'object',
   icon: HelpCircleIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
-    faqsField({ mode: 'reference', max: 6, min: 3 }),
+    ...sectionHeaderFields(),
+    sectionListSourceField({
+      mode: 'page',
+      chipLabel: 'Page FAQs',
+    }),
+    faqsField({
+      mode: 'reference',
+      max: 6,
+      group: SECTION_GROUPS.content,
+      description: 'Custom FAQs. Shown when List source is Custom.',
+      hidden: hideUnlessCustomList,
+    }),
   ],
   preview: {
-    select: { title: 'heading', faqs: 'faqs' },
-    prepare: ({ title, faqs }) => ({ title: title || 'FAQs', subtitle: `${faqs?.length ?? 0} FAQ(s)` }),
+    select: { title: 'heading', faqs: 'faqs', listSource: 'listSource' },
+    prepare: ({ title, faqs, listSource }) => {
+      const count = faqs?.length ?? 0
+      let subtitle = 'Choose list source'
+      if (listSource === 'page') subtitle = 'Page FAQs'
+      else if (listSource === 'custom') {
+        subtitle = count > 0 ? `${count} FAQ(s)` : 'Custom (empty)'
+      } else if (count > 0) subtitle = `${count} FAQ(s)`
+      else subtitle = 'Page FAQs'
+      return {
+        title: title || 'FAQs',
+        subtitle,
+      }
+    },
   },
+  components: { preview: SectionItemPreview },
 })
 
 export const contentSections = [richText, mediaFeature, stats, steps, faqSection]

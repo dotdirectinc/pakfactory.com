@@ -9,10 +9,7 @@ import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {SolutionProductPreview} from '@/components/solution/solution-product-preview';
-import {
-    getMockSolutionProduct,
-    type SolutionProductMock,
-} from '@/lib/solutions/fixtures/mock-solution-products';
+import type {SolutionHeroPreviewProduct} from '@/components/solution/solution-product-preview';
 import type {SolutionHeroTile} from '@/lib/solutions/types';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -244,7 +241,9 @@ export function SolutionProductCarousel({
     className,
     background = 'default',
 }: SolutionProductCarouselProps) {
-    const [selected, setSelected] = useState<SolutionProductMock | null>(null);
+    const [selected, setSelected] = useState<SolutionHeroPreviewProduct | null>(
+        null,
+    );
     const [open, setOpen] = useState(false);
     const [shellWidth, setShellWidth] = useState(0);
     const shellRef = useRef<HTMLDivElement>(null);
@@ -343,9 +342,15 @@ export function SolutionProductCarousel({
     }, [unitWidth, countPerRow, hasRowB, rowATrack.length, rowBTrack.length]);
 
     function handleTileClick(tileId: string) {
-        const product = getMockSolutionProduct(tileId);
-        if (!product) return;
-        setSelected(product);
+        const tile = tiles.find((item) => item.id === tileId);
+        if (!tile?.title || !tile.detailHref) return;
+        setSelected({
+            id: tile.id,
+            title: tile.title,
+            detailHref: tile.detailHref,
+            image: tile.image ?? null,
+            customizations: tile.customizations ?? [],
+        });
         setOpen(true);
     }
 

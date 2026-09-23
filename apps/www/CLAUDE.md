@@ -70,7 +70,7 @@ Do **not** collapse these layers:
 - Editorial layout that editors must reorder? → **section** type + shared renderer, allowlist updated.
 - New visual band that is only “grey background / 3 columns”? → reject (presentation in CMS); keep in design system / code.
 
-www prefers **Sections** language for page composition ([ADR-015](../../docs/adr/0015-page-composition-sections-terminology.md) Proposed). Blog still uses **block** / `pageBuilder` until ADR-015 Accepted + PROD-2293 — do not rename blog fields in www PRs.
+www prefers **Sections** language for page composition ([ADR-015](../../docs/adr/0015-page-composition-sections-terminology.md) Proposed). **When a Figma/React band may become a CMS Section** (route gate, D35, allowlists, Beauty inventory, mixed merchandising cards, **document default + section override**): [ADR-020](../../docs/adr/0020-component-to-section-playbook.md). Blog still uses **block** / `pageBuilder` until ADR-015 Accepted + PROD-2293 — do not rename blog fields in www PRs.
 
 **Blog:** no change required for www chrome or SectionRenderer work.
 

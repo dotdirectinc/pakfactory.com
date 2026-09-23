@@ -6,25 +6,37 @@ import {
     StagesBoard,
     type StagesBoardStage,
 } from '@/components/ui/stages-board';
-import type {SolutionExpertiseContent} from '@/lib/solutions/types';
+import type {ExpertiseRowContent} from '@/lib/solutions/types';
 import {sectionThemeShell} from '@/lib/ui/section-theme';
 
-const EXPERTISE_HEADING_ID = 'solution-expertise-heading';
+const EXPERTISE_HEADING_ID = 'expertise-row-heading';
 
-type SolutionExpertiseProps = {
-    content: SolutionExpertiseContent;
+type ExpertiseRowProps = {
+    content: ExpertiseRowContent;
     className?: string;
+    /** Section landmark id. Default `expertise`. */
+    id?: string;
 };
 
 /**
- * Industry Solution LP expertise band — section header + StagesBoard.
- * Props-only; first consumer of the shared StagesBoard primitive.
+ * Expertise Row — section header + StagesBoard (ADR-020).
+ * Props-only; CMS `expertiseSequence` and fixture path share this band.
  */
-export function SolutionExpertise({
+export function ExpertiseRow({
     content,
     className,
-}: SolutionExpertiseProps) {
-    const {eyebrow, headline, description, cta, stages} = content;
+    id = 'expertise',
+}: ExpertiseRowProps) {
+    const {
+        eyebrow,
+        headline,
+        description,
+        cta,
+        stages,
+        align = 'left',
+        borderTop = false,
+        borderBottom = true,
+    } = content;
     if (stages.length === 0) return null;
 
     const shell = sectionThemeShell('default');
@@ -44,16 +56,20 @@ export function SolutionExpertise({
         mediaPlaceholder: stage.mediaPlaceholder,
     }));
 
+    const initialStageId = boardStages[0]?.id;
+
     return (
         <section
-            id="expertise"
+            id={id}
             aria-labelledby={EXPERTISE_HEADING_ID}
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32', shell.bandClass, className)}
         >
             <PageDielineSection
                 as="div"
-                innerClassName="border-b border-dashed border-border py-16 sm:py-24"
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                innerClassName="py-16 sm:py-24"
             >
                 <SectionHeading
                     eyebrow={eyebrow}
@@ -63,14 +79,15 @@ export function SolutionExpertise({
                     titleClassName="max-w-[745px]"
                     description={description}
                     descriptionClassName="max-w-[726px] text-base leading-6"
+                    align={align}
                     cta={cta}
                     ctaPlacement="end"
                 />
                 <div className="mt-16 sm:mt-20">
                     <StagesBoard
-                        id="solution-expertise-stages"
+                        id={`${id}-stages`}
                         stages={boardStages}
-                        initialStageId="design"
+                        initialStageId={initialStageId}
                     />
                 </div>
             </PageDielineSection>

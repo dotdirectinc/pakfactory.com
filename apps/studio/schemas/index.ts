@@ -18,6 +18,7 @@ import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
 import { solutionStyle } from './solutionStyle'
+import { solutionIndustryPage } from './solutionIndustryPage'
 import { expertiseStage } from './expertiseStage'
 import { expertiseService } from './expertiseService'
 import { client } from './client'
@@ -80,6 +81,7 @@ export const schemaTypes = [
   // Solutions & Core Entities
   solution,
   solutionStyle,
+  solutionIndustryPage,
   expertiseStage,
   expertiseService,
   client,

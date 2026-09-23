@@ -1,36 +1,29 @@
 import {defineField, defineType} from 'sanity'
-import {ComponentIcon} from '@sanity/icons'
+import {ControlsIcon} from '@sanity/icons'
+import {SectionItemPreview} from '../../components/SectionItemPreview'
+import {sectionFieldGroups, SECTION_GROUPS} from '../../lib/section-field-groups'
+import {sectionHeaderFields} from '../../lib/section-header-fields'
 
 /**
- * Filterable customizations library section (PROD-1288).
- * Distinct from `customizationsRow` (catalogue strip with curated pins).
- * Presentation-free (D35): optional heading/intro + optional default category only.
+ * Filterable customizations library (PROD-1288 · Customizations tab).
+ * Distinct from `customizationsRow` (Customization row strip).
+ * Shared section chrome (ADR-020) + optional default category.
  */
 export const customizationsCatalog = defineType({
   name: 'customizationsCatalog',
-  title: 'Customizations catalog',
+  title: 'Customizations library',
   type: 'object',
-  icon: ComponentIcon,
+  icon: ControlsIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({
-      name: 'heading',
-      title: 'Heading',
-      type: 'string',
-      description: 'Optional. Overrides the default “Customizations” heading when set.',
-    }),
-    defineField({
-      name: 'intro',
-      title: 'Intro',
-      type: 'text',
-      rows: 3,
-      description: 'Optional supporting copy above the catalog.',
-    }),
+    ...sectionHeaderFields({introRows: 3}),
     defineField({
       name: 'defaultCategory',
       title: 'Default category',
       type: 'reference',
       to: [{type: 'customizationCategory'}],
       options: {disableNew: true},
+      group: SECTION_GROUPS.content,
       description:
         'Optional. Opens the catalog with this category tab selected. Leave empty for All.',
     }),
@@ -42,11 +35,12 @@ export const customizationsCatalog = defineType({
     },
     prepare({title, categoryTitle}) {
       return {
-        title: title || 'Customizations catalog',
+        title: title || 'Customizations library',
         subtitle: categoryTitle
           ? `Default category: ${categoryTitle}`
           : 'Full filterable library',
       }
     },
   },
+  components: {preview: SectionItemPreview},
 })

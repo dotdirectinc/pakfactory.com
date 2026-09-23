@@ -139,12 +139,37 @@ export {
     SOLUTION_TAGGED_PRODUCTS_QUERY,
     SOLUTION_PAGE_SLUGS_QUERY,
     SOLUTIONS_WITH_PAGES_QUERY,
+    SOLUTION_STYLES_FILTER_QUERY,
     type SolutionBySlugDoc,
     type SolutionFormatRefDoc,
     type SolutionPageSlugDoc,
     type SolutionRelatedRefDoc,
+    type SolutionStyleFilterDoc,
+    type SolutionTemplateDoc,
     type SolutionWithPageDoc,
 } from './queries/solutions';
+
+export {
+    PAGE_SECTIONS_PROJECTION,
+    type PageSectionCaseStudiesRowDoc,
+    type PageSectionCaseStudyItemDoc,
+    type PageSectionChromeFields,
+    type PageSectionDoc,
+    type PageSectionExpertiseSequenceDoc,
+    type PageSectionExpertiseStageDoc,
+    type PageSectionFaqDoc,
+    type PageSectionFaqSectionDoc,
+    type PageSectionInspirationsCardDoc,
+    type PageSectionInspirationsGridDoc,
+    type PageSectionLinkDoc,
+    type PageSectionLogoWallDoc,
+    type PageSectionLogoWallItemDoc,
+    type PageSectionMediaFeatureDoc,
+    type PageSectionStubDoc,
+    type PageSectionVideoCaseStudiesRowDoc,
+    type PageSectionVideoCaseStudyCardDoc,
+    type PageSectionVideoCaseStudyMetricDoc,
+} from './queries/sections';
 
 export {
     WEBSITE_NAVIGATION_QUERY,

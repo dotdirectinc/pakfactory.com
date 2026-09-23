@@ -1,76 +1,103 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
-import { RocketIcon, EnvelopeIcon, ThLargeIcon, DocumentIcon } from '@sanity/icons'
+import { RocketIcon, EnvelopeIcon, LinkIcon, DocumentIcon } from '@sanity/icons'
+import { SectionItemPreview } from '../../components/SectionItemPreview'
 import { linkTargetFields } from '../../lib/link-target-fields'
+import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
+import { sectionHeaderFields } from '../../lib/section-header-fields'
 
 /**
- * Conversion sections (Section inventory → Conversion). No presentation fields
- * (D35). The Quote CTA is the site-wide primary action; contact details never
- * live here — they render from Global Settings.
+ * CTA sections (ADR-020 §10 — CTAs insert tab). Shared chrome with
+ * Heading/Content/Layout field groups.
  */
 
-/** Quote CTA — harvested from `ctaRfq`. The site-wide primary action. */
+/** Get a quote — harvested from `ctaRfq`. The site-wide primary action. */
 export const quoteCta = defineType({
   name: 'quoteCta',
-  title: 'Quote CTA',
+  title: 'Get a quote',
   type: 'object',
   icon: RocketIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
-    defineField({ name: 'body', title: 'Body', type: 'text', rows: 2 }),
+    ...sectionHeaderFields(),
+    defineField({
+      name: 'body',
+      title: 'Body',
+      type: 'text',
+      rows: 2,
+      group: SECTION_GROUPS.content,
+    }),
     defineField({
       name: 'ctaLabel',
-      title: 'Button label',
+      title: 'Quote button label',
       type: 'string',
-      description: 'Defaults to the site-wide quote label when empty. The destination is the quote flow — not a link.',
+      group: SECTION_GROUPS.content,
+      description:
+        'Label for the quote-flow button (not the optional section link above). Defaults to the site-wide quote label when empty.',
     }),
   ],
   preview: {
     select: { title: 'heading' },
-    prepare: ({ title }) => ({ title: title || 'Quote CTA' }),
+    prepare: ({ title }) => ({ title: title || 'Get a quote' }),
   },
+  components: { preview: SectionItemPreview },
 })
 
-/** Newsletter CTA — harvested from `ctaNewsletter`. */
+/** Newsletter — harvested from `ctaNewsletter`. */
 export const newsletterCta = defineType({
   name: 'newsletterCta',
-  title: 'Newsletter CTA',
+  title: 'Newsletter',
   type: 'object',
   icon: EnvelopeIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
-    defineField({ name: 'body', title: 'Body', type: 'text', rows: 2 }),
+    ...sectionHeaderFields(),
+    defineField({
+      name: 'body',
+      title: 'Body',
+      type: 'text',
+      rows: 2,
+      group: SECTION_GROUPS.content,
+    }),
   ],
   preview: {
     select: { title: 'heading' },
-    prepare: ({ title }) => ({ title: title || 'Newsletter CTA' }),
+    prepare: ({ title }) => ({ title: title || 'Newsletter' }),
   },
+  components: { preview: SectionItemPreview },
 })
 
-/** Link cards — harvested from `ctaPillars`, with `href` replaced by the shared link object (bug 4). */
+/** Link cards — harvested from `ctaPillars`, with shared link object. */
 export const linkCards = defineType({
   name: 'linkCards',
   title: 'Link cards',
   type: 'object',
-  icon: ThLargeIcon,
+  icon: LinkIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
+    ...sectionHeaderFields(),
     defineField({
       name: 'items',
       title: 'Cards',
       type: 'array',
+      group: SECTION_GROUPS.content,
       of: [
         defineArrayMember({
           type: 'object',
           name: 'linkCard',
           fields: [
-            defineField({ name: 'title', title: 'Title', type: 'string', validation: (Rule) => Rule.required() }),
+            defineField({
+              name: 'title',
+              title: 'Title',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
             defineField({ name: 'description', title: 'Description', type: 'text', rows: 2 }),
             defineField({ name: 'label', title: 'Link label', type: 'string' }),
             defineField({
               name: 'link',
               title: 'Link',
               type: 'object',
-              description: 
+              description:
                 'Internal reference or external URL — internal links keep working when a slug ' +
                 'changes.',
               fields: linkTargetFields({ requireLinkType: false }),
@@ -84,24 +111,30 @@ export const linkCards = defineType({
   ],
   preview: {
     select: { title: 'heading', items: 'items' },
-    prepare: ({ title, items }) => ({ title: title || 'Link cards', subtitle: `${items?.length ?? 0} card(s)` }),
+    prepare: ({ title, items }) => ({
+      title: title || 'Link cards',
+      subtitle: `${items?.length ?? 0} card(s)`,
+    }),
   },
+  components: { preview: SectionItemPreview },
 })
 
-/** Contact form — form choice + intro. Contact details render from Global Settings, never retyped. */
+/** Contact form — form choice + intro. Contact details from Global Settings. */
 export const contactForm = defineType({
   name: 'contactForm',
   title: 'Contact form',
   type: 'object',
   icon: DocumentIcon,
+  groups: sectionFieldGroups(),
   fields: [
-    defineField({ name: 'heading', title: 'Heading', type: 'string' }),
-    defineField({ name: 'intro', title: 'Intro', type: 'text', rows: 2 }),
+    ...sectionHeaderFields(),
     defineField({
       name: 'form',
       title: 'Form',
       type: 'string',
-      description: 'Which form renders here. Contact details (address, email, phone) come from Global Settings — never entered here.',
+      group: SECTION_GROUPS.content,
+      description:
+        'Which form renders here. Contact details (address, email, phone) come from Global Settings — never entered here.',
       options: {
         layout: 'radio',
         list: [
@@ -118,6 +151,7 @@ export const contactForm = defineType({
     select: { title: 'heading', form: 'form' },
     prepare: ({ title, form }) => ({ title: title || 'Contact form', subtitle: form }),
   },
+  components: { preview: SectionItemPreview },
 })
 
 export const conversionSections = [quoteCta, newsletterCta, linkCards, contactForm]

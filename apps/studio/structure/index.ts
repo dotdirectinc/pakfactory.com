@@ -1033,8 +1033,30 @@ export const mainWebsiteStructure = (
             S.listItem()
                 .title('Listing Pages')
                 .icon(ThLargeIcon)
-                .schemaType('listingPage')
-                .child(S.documentTypeList('listingPage').title('Listing Pages')),
+                .child(
+                    S.list()
+                        .title('Listing Pages')
+                        .items([
+                            S.listItem()
+                                .title('Case Studies Page')
+                                .icon(ThLargeIcon)
+                                .child(
+                                    S.editor()
+                                        .id('caseStudiesPage')
+                                        .schemaType('listingPage')
+                                        .documentId('caseStudiesPage'),
+                                ),
+                            S.listItem()
+                                .title('Solution Industry Page')
+                                .icon(BulbOutlineIcon)
+                                .child(
+                                    S.editor()
+                                        .id('solutionIndustryPage')
+                                        .schemaType('solutionIndustryPage')
+                                        .documentId('solutionIndustryPage'),
+                                ),
+                        ]),
+                ),
             S.listItem()
                 .title('Content Pages')
                 .icon(DocumentTextIcon)

@@ -1,7 +1,6 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {SolutionLandingView} from '@/components/solution/solution-views';
-import {BEAUTY_COSMETICS_SLUG} from '@/lib/solutions/fixtures/beauty-cosmetics';
 import {
     getSolutionLandingContent,
     listSolutionPageSlugs,
@@ -17,10 +16,7 @@ type PageProps = {
 
 export async function generateStaticParams(): Promise<{slug: string}[]> {
     const pages = await listSolutionPageSlugs();
-    const slugs = new Set(pages.map((page) => page.slug));
-    // Fixture LP so beauty is always buildable before Sanity hasPage lands.
-    slugs.add(BEAUTY_COSMETICS_SLUG);
-    return [...slugs].map((slug) => ({slug}));
+    return pages.map((page) => ({slug: page.slug}));
 }
 
 export async function generateMetadata({

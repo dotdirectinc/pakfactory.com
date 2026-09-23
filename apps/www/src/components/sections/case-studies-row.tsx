@@ -34,11 +34,14 @@ export type CaseStudiesRowCta = {
 
 /** Props-only content for Studio `caseStudiesRow` / Industry LP Fork 7. */
 export type CaseStudiesRowContent = {
-    eyebrow: string;
+    eyebrow?: string;
     headline: string;
     description?: string;
     cta?: CaseStudiesRowCta;
     cards: CaseStudiesRowCard[];
+    align?: 'left' | 'center';
+    borderTop?: boolean;
+    borderBottom?: boolean;
 };
 
 type CaseStudiesRowProps = {
@@ -59,7 +62,16 @@ export function CaseStudiesRow({
     className,
     theme = 'default',
 }: CaseStudiesRowProps) {
-    const {eyebrow, headline, description, cta, cards} = content;
+    const {
+        eyebrow,
+        headline,
+        description,
+        cta,
+        cards,
+        align = 'left',
+        borderTop = false,
+        borderBottom = true,
+    } = content;
     const [hovered, setHovered] = useState<number | null>(null);
     const [api, setApi] = useState<CarouselApi>();
 
@@ -104,7 +116,9 @@ export function CaseStudiesRow({
         >
             <PageDielineSection
                 as="div"
-                innerClassName="border-b border-dashed border-border py-16 sm:py-24"
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                innerClassName="py-16 sm:py-24"
             >
                 <SectionCarousel
                     setApi={setApi}
@@ -118,6 +132,7 @@ export function CaseStudiesRow({
                             }
                             description={description}
                             descriptionClassName="text-base leading-6"
+                            align={align}
                             cta={cta}
                             ctaPlacement="end"
                         />

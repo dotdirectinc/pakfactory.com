@@ -32,13 +32,17 @@ type FaqSectionProps = {
     theme?: SectionTheme;
     /** Anchor id for in-page nav (PDP default). */
     sectionId?: string;
+    /** Heading alignment. Defaults to center (historical FAQ layout). */
+    align?: 'left' | 'center';
+    borderTop?: boolean;
     /** Outer full-bleed dashed bottom border. Defaults on for PDP. */
     borderBottom?: boolean;
+    cta?: {label: string; href: string};
 };
 
 /**
- * FAQ accordion — maps to Studio `faqSection` later.
- * Centered SectionHeading + separate muted Accordion cards.
+ * FAQ accordion — maps to Studio `faqSection`.
+ * Centered SectionHeading by default + separate muted Accordion cards.
  */
 export function FaqSection({
     heading = 'Questions & Answers',
@@ -49,7 +53,10 @@ export function FaqSection({
     className,
     theme = 'default',
     sectionId = 'pdp-faqs',
+    align = 'center',
+    borderTop = false,
     borderBottom = true,
+    cta,
 }: FaqSectionProps) {
     const shell = sectionThemeShell(theme);
 
@@ -64,18 +71,17 @@ export function FaqSection({
             className={cn('scroll-mt-32', shell.bandClass, className)}
         >
             <PageDielineSection
+                borderTop={borderTop}
                 borderBottom={borderBottom}
                 paddingBlock="md"
-                innerClassName={cn(
-                    !borderBottom && 'border-b border-dashed border-border',
-                )}
             >
                 <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
                     <SectionHeading
-                        align="center"
+                        align={align}
                         eyebrow="FAQs"
                         title={heading}
                         description={description}
+                        cta={cta}
                     />
 
                     <Accordion

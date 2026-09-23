@@ -9,8 +9,8 @@
  *
  * Two rules from §2.4 are enforced here, not left to reviewer memory:
  *
- * 1. **Closed vocabulary.** `GroupName` is a union of exactly eight ids. A typo
- *    or an invented ninth tab is a TypeScript error, not a runtime surprise.
+ * 1. **Closed vocabulary.** `GroupName` is a union of the ids below. A typo
+ *    or an invented tab id is a TypeScript error, not a runtime surprise.
  * 2. **Fixed order.** The order a type declares its groups in is ignored;
  *    `groupsFor` always returns them in `GROUP_ORDER`. "The order never varies."
  *
@@ -24,9 +24,10 @@
  * `post` / `caseStudy` / `blogPage` — so there is no content migration.
  */
 
-/** The eight tab ids, in the order an editor sees them. Closed set — §2.4. */
+/** Tab ids in the order an editor sees them. Closed set — §2.4. */
 export const GROUP_ORDER = [
   'content',
+  'template',
   'categorization',
   'publishing',
   'sections',
@@ -41,6 +42,7 @@ export type GroupName = (typeof GROUP_ORDER)[number]
 /** Human titles for each tab. `schemaAi` keeps the word "Schema" deliberately — §2.4. */
 const GROUP_TITLES: Record<GroupName, string> = {
   content: 'Content',
+  template: 'Template',
   categorization: 'Categorization',
   publishing: 'Publishing',
   sections: 'Sections',

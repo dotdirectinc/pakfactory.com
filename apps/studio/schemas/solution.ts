@@ -23,9 +23,10 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  *     gone as of PROD-2519 below; the rename is kept on the record because
  *     renaming first and removing second is the order that stays legible.
  *
- * `sections` is wired to SECTION_ALLOW.marketPage. (This block used to say the
- * field was deferred "until the shared section inventory exists" — it exists,
- * and 19 section types are live on this type in the deployed schema.)
+ * `sections` is wired to SECTION_ALLOW.marketPage. For industry LPs with a
+ * public page, **order + default chrome** live on the selected
+ * `solutionIndustryPage` template (`template` field); this document’s `sections`
+ * hold page-specific band **content**, matched by stable `_key`.
  *
  * PROD-2519 (2026-09-15) — four curated catalogue fields removed and one
  * renamed, all empty on every document in both datasets, so §4.3 had nothing to
@@ -61,7 +62,14 @@ export const solution = defineType({
   title: 'Solution',
   type: 'document',
   icon: BulbOutlineIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
+  groups: groupsFor([
+    'content',
+    'template',
+    'categorization',
+    'sections',
+    'seo',
+    'social',
+  ]),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -173,6 +181,31 @@ export const solution = defineType({
       ],
     }),
 
+    // ─── TEMPLATE (layout singleton) ──────────────────────────────────────────
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{type: 'solutionIndustryPage'}],
+      options: {disableNew: true},
+      description:
+        'Page layout — section order and default headings. Rearrange sections on ' +
+        'the template document (Main Website → Listing Pages → Solution Industry Page), ' +
+        'not on this solution. Band content stays on the Sections tab, matched by key.',
+      hidden: ({document}) => document?.hasPage !== true,
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const doc = ctx.document as
+            | {hasPage?: boolean; solutionType?: string}
+            | undefined
+          if (!doc?.hasPage || doc.solutionType !== 'industry') return true
+          return value
+            ? true
+            : 'Industry solutions with a landing page must select Solution Industry Page'
+        }),
+    }),
+
     // ─── CATEGORIZATION (references out + curated lists) ──────────────────────
     // The two curated lists that survive. The four that went — packagingFormats,
     // relevantCustomizations, relatedProducts, relatedSolutions — could all be
@@ -182,14 +215,25 @@ export const solution = defineType({
       title: 'Related case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated override — empty falls back to the most recent 3.',
+      description:
+        'Curated case studies for this solution. When the Case studies section on ' +
+        'the selected template has an empty curated list, the landing page uses these ' +
+        '(else the most recent studies). Fill curated items on the section to override.',
       // disableNew so curating a solution can't create a blank Case Study from
       // inside this form. The reference fields that had it were removed; this one
       // had been the odd one out.
-      of: [{ type: 'reference', to: [{ type: 'caseStudy' }], options: { disableNew: true } }],
+      of: [{type: 'reference', to: [{type: 'caseStudy'}], options: {disableNew: true}}],
       validation: (Rule) => Rule.max(6),
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Default FAQs for this solution’s landing page. Used when the FAQ ' +
+        'section override is empty. Fill the section’s FAQs to override per band.',
+    }),
 
     // ─── SEO ──────────────────────────────────────────────────────────────────
     defineField({
@@ -209,11 +253,17 @@ export const solution = defineType({
       description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
       validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
-    pageSectionsField(SECTION_ALLOW.marketPage),
-    ...seoFields({ group: GROUPS.seo, meta: false, indexDefault: true }),
+    pageSectionsField(
+      SECTION_ALLOW.marketPage,
+      'sections',
+      'Band content for this solution’s landing page (logos, inspirations, FAQs, …). ' +
+        'For industry pages, section **order** and default headings come from the ' +
+        'Template tab — keep matching section keys when filling content here.',
+    ),
+    ...seoFields({group: GROUPS.seo, meta: false, indexDefault: true}),
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
-    ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.solution }),
+    ...socialFields({group: GROUPS.social, channel: MEDIA_TAG.solution}),
   ],
 
   preview: {

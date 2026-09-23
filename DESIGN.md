@@ -68,7 +68,7 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 
 ### Designer / Figma handoff
 
-When implementing a marketing section from Figma (e.g. Industry Solution LP forks), clarify **before coding** whether each control maps to an existing `@pakfactory/ui` / app shared primitive (`Button`, `Dialog`, carousel nav, etc.) or is a **new** component ([ADR-006](docs/adr/0006-design-system-and-tokens.md), [ADR-013](docs/adr/0013-shared-core-vs-feature-composition.md)):
+When implementing a marketing section from Figma (e.g. Industry Solution LP forks), clarify **before coding** whether each control maps to an existing `@pakfactory/ui` / app shared primitive (`Button`, `Dialog`, carousel nav, etc.) or is a **new** component ([ADR-006](docs/adr/0006-design-system-and-tokens.md), [ADR-013](docs/adr/0013-shared-core-vs-feature-composition.md)). Separately ask whether the **band** is a CMS **Section** or route-owned chrome — [ADR-020](docs/adr/0020-component-to-section-playbook.md) (route gate, D35, allowlists, document default + section override).
 
 1. **Ask (or decide with design):** stock primitive vs new component.
 2. **Default:** stock primitives + tokens — do not invent one-off CTA chrome (custom fills, dashed borders, radii) when `Button` variants cover the job.

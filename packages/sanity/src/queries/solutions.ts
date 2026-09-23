@@ -5,6 +5,10 @@
  */
 
 import {CATALOG_PRODUCT_CARD_FIELDS} from './catalog';
+import {
+    PAGE_SECTIONS_PROJECTION,
+    type PageSectionDoc,
+} from './sections';
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
@@ -12,6 +16,75 @@ const RELATED_REF = /* groq */ `{
   title,
   "slug": slug.current
 }`;
+
+/** Case-study card fields — same shape as caseStudiesRow curated items. */
+const RELATED_CASE_STUDY_CARD = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "cardImageUrl": cardImage.asset->url,
+  "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText),
+  "clientName": client->name,
+  "tag": coalesce(products[0]->title, expertiseAreas[0]->title)
+}`;
+
+/** Same refs as relatedCaseStudies — shape for videoCaseStudiesRow inherit. */
+const RELATED_VIDEO_CASE_STUDY_CARD = /* groq */ `{
+  "kind": "ref",
+  _id,
+  _type,
+  title,
+  "slug": slug.current,
+  "brand": client->name,
+  "imageSrc": coalesce(
+    cardImage.asset->url,
+    heroMedia.videoThumbnail.asset->url
+  ),
+  "imageAlt": coalesce(cardImageAlt, cardImage.asset->altText, title),
+  "logoSrc": client->logo.asset->url,
+  "logoAlt": client->name,
+  "videoSrc": null,
+  "youtubeUrl": select(
+    heroMedia.mediaType == "video" => heroMedia.videoUrl
+  ),
+  "metricTitle": highlights[0].title,
+  "metricBody": highlights[0].description
+}`;
+
+/** Flattened solutionStyle — same shape as inspirationsGrid ref branch. */
+const SOLUTION_STYLE_INSPIRATION_CARD = /* groq */ `{
+  "kind": "ref",
+  _id,
+  _type,
+  "title": coalesce(shortName, title),
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText),
+  "slug": slug.current,
+  "solutionSlug": solution->slug.current,
+  "_key": slug.current
+}`;
+
+/** Style docs with authored filter — for hero product membership queries. */
+export const SOLUTION_STYLES_FILTER_QUERY = /* groq */ `*[
+  _type == "solutionStyle" &&
+  solution._ref == $solutionId &&
+  !(_id in path("drafts.**"))
+] | order(title asc) {
+  _id,
+  filter,
+  excludedProducts[]{ _ref }
+}`;
+
+export type SolutionStyleFilterDoc = {
+    _id: string;
+    filter?: {
+        productLines?: {_ref: string}[] | null;
+        productStyles?: {_ref: string}[] | null;
+        keywords?: string[] | null;
+    } | null;
+    excludedProducts?: {_ref: string}[] | null;
+};
 
 const FORMAT_REF = /* groq */ `{
   title,
@@ -33,6 +106,7 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   title,
   h1,
   shortName,
+  solutionType,
   hasPage,
   "slug": slug.current,
   shortDescription,
@@ -46,8 +120,30 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   "relatedProducts": relatedProducts[]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
-  "relatedCaseStudies": relatedCaseStudies[]->${RELATED_REF},
+  "relatedCaseStudies": relatedCaseStudies[]{
+    _key,
+    ...@->${RELATED_CASE_STUDY_CARD}
+  },
+  "relatedVideoCaseStudies": relatedCaseStudies[]{
+    _key,
+    ...@->${RELATED_VIDEO_CASE_STUDY_CARD}
+  },
   "relatedSolutions": relatedSolutions[]->${RELATED_REF},
+  "faqs": faqs[]->{
+    question,
+    "answerPlain": pt::text(answer)
+  },
+  "relatedSolutionStyles": *[
+    _type == "solutionStyle" &&
+    solution._ref == ^._id &&
+    !(_id in path("drafts.**"))
+  ] | order(title asc) ${SOLUTION_STYLE_INSPIRATION_CARD},
+  "sections": sections[]${PAGE_SECTIONS_PROJECTION},
+  "template": template->{
+    _id,
+    _type,
+    "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+  },
   metaTitle,
   metaDescription,
   allowIndex,
@@ -121,6 +217,12 @@ export const SOLUTIONS_WITH_PAGES_QUERY = /* groq */ `*[
 import type {
     CatalogProductDoc,
 } from './catalog';
+import type {
+    PageSectionCaseStudyItemDoc,
+    PageSectionFaqDoc,
+    PageSectionInspirationsCardDoc,
+    PageSectionVideoCaseStudyCardDoc,
+} from './sections';
 
 export type SolutionRelatedRefDoc = {
     title: string;
@@ -135,11 +237,18 @@ export type SolutionFormatRefDoc = {
     cardImage?: unknown | null;
 };
 
+export type SolutionTemplateDoc = {
+    _id: string;
+    _type: string;
+    sections?: PageSectionDoc[] | null;
+};
+
 export type SolutionBySlugDoc = {
     _id: string;
     title: string;
     h1?: string | null;
     shortName?: string | null;
+    solutionType?: string | null;
     hasPage?: boolean | null;
     slug: string | null;
     shortDescription?: string | null;
@@ -148,8 +257,13 @@ export type SolutionBySlugDoc = {
     featuredImage?: unknown | null;
     packagingFormats?: SolutionFormatRefDoc[] | null;
     relatedProducts?: CatalogProductDoc[] | null;
-    relatedCaseStudies?: SolutionRelatedRefDoc[] | null;
+    relatedCaseStudies?: PageSectionCaseStudyItemDoc[] | null;
+    relatedVideoCaseStudies?: PageSectionVideoCaseStudyCardDoc[] | null;
     relatedSolutions?: SolutionRelatedRefDoc[] | null;
+    faqs?: PageSectionFaqDoc[] | null;
+    relatedSolutionStyles?: PageSectionInspirationsCardDoc[] | null;
+    sections?: PageSectionDoc[] | null;
+    template?: SolutionTemplateDoc | null;
     metaTitle?: string | null;
     metaDescription?: string | null;
     allowIndex?: boolean | null;
