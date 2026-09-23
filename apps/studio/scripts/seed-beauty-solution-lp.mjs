@@ -951,7 +951,7 @@ async function main() {
   )
   console.log(`    Preview: /solutions/${SLUG}`)
   console.log(
-    `    Studio: Main Website → Listing Pages → Solution Industry Page (reorder + logo wall),`,
+    `    Studio: Main Website → Solution Pages → Solution Industry Page (reorder + logo wall),`,
   )
   console.log(
     `            Solutions → Beauty → Template tab + Solution Styles tab + Sections.`,

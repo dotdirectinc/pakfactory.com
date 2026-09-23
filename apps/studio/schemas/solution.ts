@@ -191,7 +191,7 @@ export const solution = defineType({
       options: {disableNew: true},
       description:
         'Page layout — section order and default headings. Rearrange sections on ' +
-        'the template document (Main Website → Listing Pages → Solution Industry Page), ' +
+        'the template document (Main Website → Solution Pages → Solution Industry Page), ' +
         'not on this solution. Band content stays on the Sections tab, matched by key.',
       hidden: ({document}) => document?.hasPage !== true,
       validation: (Rule) =>

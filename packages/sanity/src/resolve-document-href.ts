@@ -48,8 +48,8 @@ const BLOG_SURFACE_TYPES = new Set([
 /**
  * Fixed routes for the shared page types (PROD-2292), keyed by the document's
  * semantic `_id`. homePage/listingPage/legalPage carry no slug, so the id is the
- * route. `productsPage` maps to `/products` once that listing doc exists; other
- * ids resolve once their documents are created.
+ * route. Catalog indexes use dedicated types (`productCatalogPage`,
+ * `customizationCatalogPage` — PROD-2589).
  */
 const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   homePage: "/",
@@ -59,8 +59,10 @@ const PAGE_SINGLETON_ID_PATHS: Record<string, string> = {
   privacyPage: "/privacy",
   termsPage: "/terms",
   caseStudiesPage: "/case-studies",
-  /** Products catalog index — create `listingPage` id `productsPage` for Internal refs. */
+  /** @deprecated Prefer `productCatalogPage` (PROD-2589). Kept for old Internal refs. */
   productsPage: "/products",
+  productCatalogPage: "/products",
+  customizationCatalogPage: "/customizations",
   expertisePage: "/expertise",
 };
 
@@ -156,6 +158,8 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
       return "/";
     case "listingPage":
     case "legalPage":
+    case "productCatalogPage":
+    case "customizationCatalogPage":
       return idPath ?? null;
     case "contentPage":
       // Semantic-id singletons (about/contact/search/404) first, else by slug.

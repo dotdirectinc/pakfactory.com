@@ -7,10 +7,13 @@ How the filterable customizations library is wired for humans and AI agents. Bin
 | Surface | Path / type | Notes |
 | --- | --- | --- |
 | Route | `/customizations` → [`src/app/(site)/customizations/page.tsx`](../src/app/(site)/customizations/page.tsx) | Full page chrome; **URL sync** for filters |
-| Studio section | `_type` / section name **`customizationsCatalog`** | Embeddable library; **local** filter state (`urlSync={false}`) |
+| Studio singleton | `_type` / id **`customizationCatalogPage`** (Main Website → Customization Pages) | Owns `sections[]` **below** the fixed grid (PROD-2589). H1 / intro / SEO stay route fallbacks. `customizationsCatalog` is **not** allowlisted on this doc. |
+| Studio section | `_type` / section name **`customizationsCatalog`** | Embeddable library on other pages; **local** filter state (`urlSync={false}`) |
 | Catalogue strip (different) | **`customizationsRow`** | Curated row via `rowSectionFields` — **not** this catalog |
 
 Renderer for the section: [`src/components/sections/customizations-catalog.tsx`](../src/components/sections/customizations-catalog.tsx) (`CustomizationsCatalogSection`).
+
+The faceted grid on `/customizations` is **route-owned** (not a CMS section).
 
 ## Data seam (Sanity → UI)
 
@@ -18,7 +21,8 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 
 | Layer | Location |
 | --- | --- |
-| GROQ | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_CUSTOMIZATION_LIBRARY_QUERY` |
+| GROQ (library) | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_CUSTOMIZATION_LIBRARY_QUERY` |
+| GROQ (page sections) | [`packages/sanity/src/queries/catalog-pages.ts`](../../../packages/sanity/src/queries/catalog-pages.ts) — `CUSTOMIZATION_CATALOG_PAGE_QUERY` |
 | Mapper | [`src/lib/catalog/map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityLibraryOption` |
 | Facet assembly | [`src/lib/catalog/build-customization-library.ts`](../src/lib/catalog/build-customization-library.ts) |
 | Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem`, `buildCustomizationFacetCounts` |

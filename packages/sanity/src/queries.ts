@@ -135,6 +135,12 @@ export {
 } from './queries/catalog';
 
 export {
+    PRODUCT_CATALOG_PAGE_QUERY,
+    CUSTOMIZATION_CATALOG_PAGE_QUERY,
+    type CatalogIndexPageDoc,
+} from './queries/catalog-pages';
+
+export {
     SOLUTION_BY_SLUG_QUERY,
     SOLUTION_LINE_PRODUCTS_QUERY,
     SOLUTION_TAGGED_PRODUCTS_QUERY,

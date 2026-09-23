@@ -38,6 +38,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "caseStudy", "listingPage", "client",
  *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
+ *     "productCatalogPage", "customizationCatalogPage",
  *     "websiteNavigation", "settings"
  *   ]
  *
@@ -145,7 +146,10 @@ export async function POST(request: Request) {
   }
 
   const touchesProducts =
-    !type || CATALOG_PRODUCT_TYPES.has(type) || type === "customizationOption";
+    !type ||
+    CATALOG_PRODUCT_TYPES.has(type) ||
+    type === "customizationOption" ||
+    type === "productCatalogPage";
   if (touchesProducts) {
     tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);
     tags.add(WWW_CATALOG_LINES_CACHE_TAG);
@@ -163,7 +167,9 @@ export async function POST(request: Request) {
   }
 
   const touchesCustomizations =
-    !type || CATALOG_CUSTOMIZATION_TYPES.has(type);
+    !type ||
+    CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === "customizationCatalogPage";
   if (touchesCustomizations) {
     tags.add(WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG);
     // Product PDP embeds available customizations.

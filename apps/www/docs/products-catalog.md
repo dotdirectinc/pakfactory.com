@@ -7,9 +7,12 @@ How the filterable products library is wired for humans and AI agents. Binding p
 | Surface | Path / type | Notes |
 | --- | --- | --- |
 | Route | `/products` → [`src/app/(site)/products/page.tsx`](../src/app/(site)/products/page.tsx) | Full page chrome; **URL sync** for filters |
+| Studio singleton | `_type` / id **`productCatalogPage`** (Main Website → Product Pages) | Owns `sections[]` **below** the fixed grid (PROD-2589). H1 / intro / SEO stay route fallbacks. |
 | Line / style drill-down | `/products/[slug]`, `/products/[slug]/[styleSlug]` | Unchanged hierarchy (`ProductLineView` / `ProductStyleView`) |
 
 **No Categories panel** — unlike `/customizations`, there are no category tabs, no `category` URL param, and no category-dependent facets.
+
+The faceted grid is **route-owned** (not a CMS section). Do not put a products library into `sections[]` on this singleton.
 
 ## Data seam (Sanity → UI)
 
@@ -17,7 +20,8 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 
 | Layer | Location |
 | --- | --- |
-| GROQ | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_PRODUCT_LIBRARY_QUERY` |
+| GROQ (library) | [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) — `CATALOG_PRODUCT_LIBRARY_QUERY` |
+| GROQ (page sections) | [`packages/sanity/src/queries/catalog-pages.ts`](../../../packages/sanity/src/queries/catalog-pages.ts) — `PRODUCT_CATALOG_PAGE_QUERY` |
 | Mapper | [`src/lib/catalog/map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityProductLibraryItem` |
 | Facet assembly | [`src/lib/catalog/build-product-library.ts`](../src/lib/catalog/build-product-library.ts) |
 | Filter matching | [`src/lib/catalog/product-catalog-filter.ts`](../src/lib/catalog/product-catalog-filter.ts) — `matchesProductItem`, `buildProductFacetCounts` |

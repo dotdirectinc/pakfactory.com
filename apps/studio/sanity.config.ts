@@ -400,6 +400,8 @@ const makeNewDocumentOptions =
       'legalPage',
       'websiteNavigation',
       'solutionIndustryPage',
+      'productCatalogPage',
+      'customizationCatalogPage',
     ])
     let opts = prev.filter((item) => !NON_CREATABLE.has(item.templateId))
     if (channel) {

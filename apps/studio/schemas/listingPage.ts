@@ -7,9 +7,11 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 
 /**
  * Listing Page — the page that fronts a collection (Entities/Listing Page.md).
- * Ten pages, one shape, pinned by semantic ID: catalogPage · bundlesPage ·
+ * Ten pages, one shape, pinned by semantic ID: bundlesPage ·
  * solutionsPage · expertisePage · caseStudiesPage · resourcesPage · guidesPage ·
- * dielinesPage · glossaryPage · helpPage. What differs between them is which
+ * dielinesPage · glossaryPage · helpPage. Product and customization indexes use
+ * dedicated types (`productCatalogPage`, `customizationCatalogPage` — PROD-2589),
+ * not this shared listing type. What differs between listing pages is which
  * collection they query — keyed off the document ID and route, never a `pageRole`
  * enum (that was the blogPage.pageRole mistake). No slug: the ID is the route.
  *

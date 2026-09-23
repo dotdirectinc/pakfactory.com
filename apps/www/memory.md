@@ -63,11 +63,15 @@ Then confirm in Studio → Main Website → Navigation. If the doc is draft-only
 
 Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page** (`solutionIndustryPage`) for section **order + chrome**, selected on the solution’s **Template** tab. Band **content** stays on `solution.sections[]`, matched by `_key`. www merges via `mergeSolutionSections` → `SectionRenderer`. **No local Beauty fixture dual-path** (Phase C / WP5).
 
+## Product / Customization catalog sections (PROD-2589)
+
+`/products` and `/customizations` keep route-owned faceted grids. Optional below-grid bands come from pinned singletons `productCatalogPage` / `customizationCatalogPage` (Main Website → Product Pages / Customization Pages). Empty or missing doc → grid only (today’s UX).
+
 **Hero tiles:** union of inspiration products matching any child `solutionStyle` via `@pakfactory/sanity/solution-style-filter` (cap 16). No mock carousel. Empty styles / empty matches → empty hero grid. Test fixtures: [`apps/studio/memory.md`](../studio/memory.md) § Test Kids Packaging seed → `/solutions/test-kids-packaging`. Beauty Pouches catalog fixtures: [`apps/studio/memory.md`](../studio/memory.md) § Beauty Pouches style products seed → `/solutions/beauty-cosmetics/beauty-pouches`.
 
 **Studio**
 
-- Main Website → Listing Pages → **Solution Industry Page**
+- Main Website → Solution Pages → **Solution Industry Page**
 - Solution → Template tab → Solution Industry Page (**required** for industry + `hasPage`)
 - Solution → Sections tab → page-specific content (keys aligned with the template)
 
