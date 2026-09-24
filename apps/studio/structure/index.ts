@@ -741,6 +741,23 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
                     .params({type: 'product', kind: 'standard'}),
             ),
         S.listItem()
+            .title('Products with Exceptions')
+            .schemaType('product')
+            // PROD-2595. Every product whose `customizationExceptions` overrides the rules —
+            // the places the model and reality disagree, which is the list worth reviewing.
+            // A long list here means a rule is wrong, not that exceptions are working.
+            // Sanity cannot tell an impossible pairing from an undrawn one, so every Add
+            // exception belongs on this list until someone has checked it.
+            // (Admin gets its own report with PROD-2560.) `.filter()` replaces the type
+            // clause, so it is restated — see Standard Products above.
+            .child(
+                S.documentTypeList('product')
+                    .title('Products with Exceptions')
+                    .filter('_type == $type && count(customizationExceptions) > 0')
+                    .params({type: 'product'})
+                    .defaultOrdering([{field: 'title', direction: 'asc'}]),
+            ),
+        S.listItem()
             .title('Bundles')
             .schemaType('bundle')
             .child(S.documentTypeList('bundle').title('Bundles')),

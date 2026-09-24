@@ -716,6 +716,122 @@ export const product = defineType({
         },
       ],
     }),
+    // PROD-2595 / ADR-022 decision 7. The rules derive everything a customization decides
+    // (Finishing, Printing) from what the product lists. This is where one product disagrees
+    // with them, in either direction — as data, so it takes effect on publish and changes this
+    // product only. Editing `compatibleCustomizations` instead would change every product on
+    // the same material.
+    //
+    // Option-level only, and only for options another customization decides: a product-decided
+    // option is already the product's to list, under "Available customizations". One array
+    // with the direction and the reason on each entry — two arrays would answer one question
+    // in two places.
+    //
+    // Standard products only. A preset offers what its base offers; an exception belongs on
+    // the base, where every preset built from it inherits the answer.
+    defineField({
+      name: 'customizationExceptions',
+      title: 'Customization exceptions',
+      type: 'array',
+      group: GROUPS.specs,
+      hidden: ({ document }) => !isStandard(document),
+      description:
+        'Where this product differs from what the rules work out. "Add" offers an option the rules leave out; "Remove" takes away one they include. Only for Finishing and Printing-style options that another customization decides. Each needs a reason. Keep this list short: a long one means a rule is wrong.',
+      validation: (Rule) => [
+        Rule.custom((value) => {
+          const list = Array.isArray(value) ? value : []
+          const seen = new Set<string>()
+          const repeated = new Set<string>()
+          for (const entry of list as { customization?: { _ref?: string } }[]) {
+            const ref = entry?.customization?._ref
+            if (!ref) continue
+            if (seen.has(ref)) repeated.add(ref)
+            seen.add(ref)
+          }
+          if (repeated.size > 0) {
+            return `${repeated.size} option(s) appear more than once. Give each option one exception, either Add or Remove.`
+          }
+          return true
+        }),
+        // The picker filters these out; a script or data push does not go through the picker.
+        Rule.custom(async (value, context) => {
+          const list = Array.isArray(value) ? value : []
+          const ids = (list as { customization?: { _ref?: string } }[])
+            .map((e) => e?.customization?._ref?.replace(/^drafts\./, ''))
+            .filter(Boolean) as string[]
+          if (ids.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const rows = await client.fetch<{ _id: string; title: string | null }[]>(
+              `*[_id in $ids && type->availabilityDecidedBy != "customization"]{ _id, title }`,
+              { ids },
+            )
+            if (rows.length === 0) return true
+            const names = rows.map((r) => r.title || r._id).join(', ')
+            return `${names}: the product decides ${rows.length === 1 ? "this option's" : "these options'"} type, so list or remove ${rows.length === 1 ? 'it' : 'them'} under "Available customizations" instead of here.`
+          } catch {
+            return true // never block on a lookup failure
+          }
+        }),
+        // Sanity cannot tell a pairing that is physically impossible from one nobody has drawn —
+        // both are a missing pair in `compatibleCustomizations`. So an Add is never blocked; it
+        // is flagged every time, and the product shows on the exceptions list for review.
+        Rule.custom((value) => {
+          const adds = ((Array.isArray(value) ? value : []) as { mode?: string }[]).filter(
+            (e) => e?.mode === 'add',
+          ).length
+          if (adds === 0) return true
+          return `${adds} Add exception(s) override the compatibility rules. Confirm with production that this product can actually be made with ${adds === 1 ? 'it' : 'them'} — the rules may be recording a real limit.`
+        }).warning(),
+      ],
+      of: [
+        {
+          type: 'object',
+          name: 'customizationException',
+          fields: [
+            defineField({
+              name: 'customization',
+              title: 'Customization option',
+              type: 'reference',
+              to: [{ type: 'customizationOption' }],
+              options: {
+                disableNew: true,
+                filter: 'type->availabilityDecidedBy == "customization"',
+              },
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'mode',
+              title: 'Add or remove?',
+              type: 'string',
+              options: {
+                list: [
+                  { title: 'Add — this product offers it, though the rules leave it out', value: 'add' },
+                  { title: 'Remove — this product cannot take it, though the rules include it', value: 'remove' },
+                ],
+                layout: 'radio',
+              },
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'reason',
+              title: 'Reason',
+              type: 'text',
+              rows: 2,
+              description: 'Why this product differs. Nobody will remember in six months.',
+              validation: (Rule) => Rule.required(),
+            }),
+          ],
+          preview: {
+            select: { title: 'customization.title', mode: 'mode', reason: 'reason' },
+            prepare({ title, mode, reason }) {
+              const label = mode === 'add' ? 'Add' : mode === 'remove' ? 'Remove' : 'Add or remove?'
+              return { title: `${label}: ${title || 'Customization'}`, subtitle: reason || 'No reason given' }
+            },
+          },
+        },
+      ],
+    }),
     // The shape a customer measures this product in. It drives two things from one
     // value: which min/max pairs appear on `dimensionRange` below, and how many
     // input boxes the PDP renders. The map lives in @pakfactory/sanity so the
