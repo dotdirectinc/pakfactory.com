@@ -2,12 +2,17 @@ import {
     Breadcrumb,
     type Crumb,
 } from '@pakfactory/ui/components/breadcrumb-trail';
-import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {
+    PageDielineSection,
+    type PageDielineBand,
+} from '@pakfactory/ui/components/page-dieline-section';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 type PageBreadcrumbSectionProps = {
     items: Crumb[];
     className?: string;
+    /** Section band background; defaults to page background. */
+    band?: PageDielineBand;
 };
 
 function isHomeCrumb(item: Crumb): boolean {
@@ -27,6 +32,7 @@ function visibleBreadcrumbItems(items: Crumb[]): Crumb[] {
 export function PageBreadcrumbSection({
     items,
     className,
+    band = 'default',
 }: PageBreadcrumbSectionProps) {
     const visible = visibleBreadcrumbItems(items);
     if (visible.length < 2) return null;
@@ -34,7 +40,7 @@ export function PageBreadcrumbSection({
     // Inner-column border stays inside the dieline (not outer viewport bleed).
     return (
         <PageDielineSection
-            band="default"
+            band={band}
             paddingBlock="none"
             className={className}
             innerClassName="border-b border-dashed border-border py-4"

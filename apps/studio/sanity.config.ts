@@ -400,6 +400,7 @@ const makeNewDocumentOptions =
       'legalPage',
       'websiteNavigation',
       'solutionIndustryPage',
+      'productLinePage',
       'productCatalogPage',
       'customizationCatalogPage',
     ])
