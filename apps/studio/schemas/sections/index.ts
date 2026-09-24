@@ -7,6 +7,8 @@ import { rowSections } from './row-sections'
 import { conversionSections } from './conversion-sections'
 import { customizationsCatalog } from './customizations-catalog'
 import { inspirationsGrid } from './inspirations-grid'
+import { benefits } from './benefits'
+import { signatureSystem } from './signature-system'
 import { testimonialsRow } from './testimonials-row'
 import { videoCaseStudiesRow } from './video-case-studies-row'
 
@@ -29,6 +31,9 @@ export {
  * `testimonialsRow` (Layout · Reviews) is chrome-only for now — quote items
  * still mock on www until a shared `testimonial` document lands.
  *
+ * PROD-2577 adds `signatureSystem` (Expertise · a stage's named method + the
+ * problems it answers) and `benefits` (Layout · outcome statements).
+ *
  * PROD-1288 adds `customizationsCatalog` (filterable library) alongside
  * `customizationsRow` (catalogue strip) — do not conflate them.
  */
@@ -40,6 +45,8 @@ export const websiteSections = [
   videoCaseStudiesRow,
   testimonialsRow,
   customizationsCatalog,
+  signatureSystem,
+  benefits,
   ...conversionSections,
 ]
 
@@ -54,7 +61,7 @@ const FAMILY = {
     'bundlesRow',
   ],
   customization: ['customizationsRow', 'customizationsCatalog'],
-  expertise: ['expertiseSequence'],
+  expertise: ['expertiseSequence', 'signatureSystem'],
   resource: ['guidesRow', 'dielinesRow', 'glossaryStrip', 'postsRow'],
   client: ['logoWall'],
   layout: [
@@ -64,6 +71,7 @@ const FAMILY = {
     'steps',
     'faqSection',
     'testimonialsRow',
+    'benefits',
   ],
   cta: ['quoteCta', 'newsletterCta', 'linkCards', 'contactForm'],
 } as const

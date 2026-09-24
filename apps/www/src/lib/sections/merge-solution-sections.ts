@@ -117,7 +117,10 @@ function mergeOneSection(
     return next as PageSectionDoc;
 }
 
-function applyCaseStudyInherit(
+/**
+ * Fill empty `caseStudiesRow.items` from host case studies when listSource allows.
+ */
+export function applyCaseStudyInherit(
     sections: PageSectionDoc[],
     relatedCaseStudies?: PageSectionCaseStudyItemDoc[] | null,
 ): PageSectionDoc[] {

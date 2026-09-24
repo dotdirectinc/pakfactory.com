@@ -72,6 +72,14 @@ export const expertiseStage = defineType({
         'Short card summary — for the landing page and anywhere a stage is listed.',
     }),
     defineField({
+      name: 'heroCtaLabel',
+      title: 'Hero button label',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'The primary button in the hero, e.g. "Book a strategy consultation". It opens the quote request. Leave empty for "Get a quote".',
+    }),
+    defineField({
       name: 'intro',
       title: 'Intro',
       type: 'array',

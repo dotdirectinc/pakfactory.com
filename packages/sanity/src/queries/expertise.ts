@@ -1,13 +1,33 @@
 /**
- * Expertise GROQ for www — landing grid at `/expertise` and stage shells at
- * `/expertise/[slug]`. Display order lives on `expertisePage.featured`
+ * Expertise GROQ for www — landing grid at `/expertise` and stage detail pages at
+ * `/expertise/[slug]` (PROD-2577). Display order lives on `expertisePage.featured`
  * (ADR-017); do not revive `expertiseStage.order`.
  *
  * Eric’s canonical pin order for humans filling `featured`:
  * Design → Prototyping → Managed Manufacturing → Strategy → Logistics → Fulfillment.
  */
 
+import {
+  EXPERTISE_SERVICE_DIMENSION,
+  PAGE_SECTIONS_PROJECTION,
+  type ExpertiseServiceDimensionDoc,
+  type PageSectionCaseStudyItemDoc,
+  type PageSectionDoc,
+  type PageSectionFaqDoc,
+} from './sections';
+
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
+
+/** Case-study card — same shape as `caseStudiesRow.items` (inherit target). */
+const STAGE_CASE_STUDY_CARD = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "cardImageUrl": cardImage.asset->url,
+  "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText),
+  "clientName": client->name,
+  "tag": coalesce(products[0]->title, expertiseAreas[0]->title)
+}`;
 
 /** Card fields shared by listing + featured projections. */
 const EXPERTISE_STAGE_CARD_FIELDS = /* groq */ `
@@ -54,7 +74,12 @@ export const EXPERTISE_STAGE_SLUGS_QUERY = /* groq */ `*[
   "slug": slug.current
 }`;
 
-/** Stage detail shell by slug. */
+/**
+ * Stage detail page by slug — route-owned hero fields, body `sections[]`, and
+ * the host lists sections inherit from (ADR-020 §8): `services` →
+ * `signatureSystem`, `faqs` → `faqSection`, featured (else tagged) case
+ * studies → `caseStudiesRow`.
+ */
 export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "expertiseStage" &&
   slug.current == $slug &&
@@ -67,10 +92,32 @@ export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
   tagline,
   description,
   status,
+  heroCtaLabel,
   diagram{
     ...,
     "alt": ${IMAGE_ALT}
   },
+  "services": services[@->status != "discontinued"]->${EXPERTISE_SERVICE_DIMENSION},
+  "faqs": faqs[]->{
+    question,
+    "answerPlain": pt::text(answer)
+  },
+  "featuredStudies": featuredStudies[]{
+    _key,
+    ...@->${STAGE_CASE_STUDY_CARD}
+  },
+  "taggedStudies": *[
+    _type == "caseStudy" &&
+    ^._id in expertiseAreas[]._ref &&
+    !(_id in path("drafts.**"))
+  ] | order(_updatedAt desc)[0...6]{
+    "_key": _id,
+    ...${STAGE_CASE_STUDY_CARD}
+  },
+  "sections": sections[]${PAGE_SECTIONS_PROJECTION},
+  ogTitle,
+  ogDescription,
+  "ogImageUrl": ogImage.asset->url,
   metaTitle,
   metaDescription,
   allowIndex,
@@ -104,7 +151,17 @@ export type ExpertiseStageBySlugDoc = {
   tagline?: string | null;
   description?: string | null;
   status?: string | null;
+  heroCtaLabel?: string | null;
   diagram?: unknown | null;
+  services?: ExpertiseServiceDimensionDoc[] | null;
+  faqs?: PageSectionFaqDoc[] | null;
+  featuredStudies?: PageSectionCaseStudyItemDoc[] | null;
+  /** Case studies tagging this stage — fallback when `featuredStudies` is empty. */
+  taggedStudies?: PageSectionCaseStudyItemDoc[] | null;
+  sections?: PageSectionDoc[] | null;
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImageUrl?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   allowIndex?: boolean | null;

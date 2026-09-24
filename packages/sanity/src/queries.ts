@@ -166,7 +166,11 @@ export {
 } from './queries/solutions';
 
 export {
+    EXPERTISE_SERVICE_DIMENSION,
     PAGE_SECTIONS_PROJECTION,
+    type ExpertiseServiceDimensionDoc,
+    type PageSectionBenefitDoc,
+    type PageSectionBenefitsDoc,
     type PageSectionCaseStudiesRowDoc,
     type PageSectionCaseStudyItemDoc,
     type PageSectionChromeFields,
@@ -181,6 +185,9 @@ export {
     type PageSectionLogoWallDoc,
     type PageSectionLogoWallItemDoc,
     type PageSectionMediaFeatureDoc,
+    type PageSectionQuoteCtaDoc,
+    type PageSectionSignatureProblemDoc,
+    type PageSectionSignatureSystemDoc,
     type PageSectionStubDoc,
     type PageSectionTestimonialsRowDoc,
     type PageSectionVideoCaseStudiesRowDoc,

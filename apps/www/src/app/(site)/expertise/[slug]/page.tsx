@@ -1,10 +1,16 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
-import {ExpertiseStageShellView} from '@/components/expertise/expertise-views';
+import {ExpertiseStageView} from '@/components/expertise/expertise-views';
+import {
+    fetchDefaultOgImageUrl,
+    buildSocialMetadata,
+} from '@/lib/case-study-metadata';
 import {
     getExpertiseStage,
+    listExpertiseStageCards,
     listExpertiseStageSlugs,
 } from '@/lib/expertise/expertise';
+import {buildExpertiseStageJsonLd} from '@/lib/expertise/expertise-jsonld';
 import {absoluteUrl} from '@/lib/site';
 import {expertiseHref} from '@/lib/www-routes';
 
@@ -26,7 +32,10 @@ export async function generateMetadata({
     params,
 }: PageProps): Promise<Metadata> {
     const {slug} = await params;
-    const stage = await getExpertiseStage(slug);
+    const [stage, defaultOgImageUrl] = await Promise.all([
+        getExpertiseStage(slug),
+        fetchDefaultOgImageUrl(),
+    ]);
     if (!stage) return {title: 'Expertise'};
 
     const title = stage.metaTitle || stage.h1;
@@ -35,11 +44,25 @@ export async function generateMetadata({
     const canonical =
         stage.canonicalUrl || absoluteUrl(expertiseHref(stage.slug));
     const globalNoIndex = process.env.WWW_DISABLE_INDEXING === 'true';
+    // OG image: stage social image → stage diagram → Global Settings default.
+    const ogImageUrl =
+        stage.ogImageUrl ||
+        stage.diagramUrl ||
+        defaultOgImageUrl ||
+        undefined;
+    const ogDescription = stage.ogDescription || description;
 
     return {
         title,
         description,
         alternates: {canonical},
+        ...buildSocialMetadata({
+            title: stage.ogTitle || title,
+            ...(ogDescription ? {description: ogDescription} : {}),
+            canonical,
+            openGraphType: 'website',
+            ...(ogImageUrl ? {ogImageUrl} : {}),
+        }),
         robots: {
             index: !globalNoIndex && stage.allowIndex,
             follow: stage.allowFollow,
@@ -55,7 +78,20 @@ export async function generateMetadata({
 
 export default async function ExpertiseStagePage({params}: PageProps) {
     const {slug} = await params;
-    const stage = await getExpertiseStage(slug);
+    const [stage, orderedStages] = await Promise.all([
+        getExpertiseStage(slug),
+        listExpertiseStageCards(),
+    ]);
     if (!stage) notFound();
-    return <ExpertiseStageShellView stage={stage} />;
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: buildExpertiseStageJsonLd(stage),
+                }}
+            />
+            <ExpertiseStageView stage={stage} orderedStages={orderedStages} />
+        </>
+    );
 }

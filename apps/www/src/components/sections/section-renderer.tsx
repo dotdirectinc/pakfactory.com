@@ -5,9 +5,21 @@ import {
     type PageSection,
 } from '@/components/sections/registry';
 
+/** Host-supplied renderers for specific `_type`s (see {@link SectionRendererProps.components}). */
+export type SectionComponentOverrides = Partial<
+    Record<string, ComponentType<PageSection>>
+>;
+
 type SectionRendererProps = {
     /** Ordered `sections` array from a Sanity page document. */
     sections?: PageSection[] | null;
+    /**
+     * Per-host overrides, keyed by `_type`. Lets a feature render a Section
+     * with page context the page-agnostic registry cannot know (e.g. the
+     * expertise stage page shows `expertiseSequence` as a path with the current
+     * stage highlighted). Same data, different host — the CMS stores no variant.
+     */
+    components?: SectionComponentOverrides;
 };
 
 /**
@@ -15,13 +27,14 @@ type SectionRendererProps = {
  * Unregistered `_type` → null in production; amber placeholder in development.
  * `testimonialsRow` is Suspense-wrapped so Places fetch does not block above-fold.
  */
-export function SectionRenderer({sections}: SectionRendererProps) {
+export function SectionRenderer({sections, components}: SectionRendererProps) {
     if (!sections || sections.length === 0) return null;
 
     return (
         <>
             {sections.map((section) => {
-                const Component = SECTION_COMPONENTS[section._type] as
+                const Component = (components?.[section._type] ??
+                    SECTION_COMPONENTS[section._type]) as
                     | ComponentType<PageSection>
                     | undefined;
 

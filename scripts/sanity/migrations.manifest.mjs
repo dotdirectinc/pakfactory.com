@@ -404,6 +404,7 @@ export const HISTORIC = [
 export const TASKS = [
   { task: 'seed:blog-singleton-pages', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
   { task: 'seed:per-type-settings', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
+  { task: 'seed:expertise-strategy', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2577); fixed _ids, replaces the stage sections' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
   // Destructive, and paired with fill:catalog — the purge is only ever a prelude to a

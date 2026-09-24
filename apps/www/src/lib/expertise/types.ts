@@ -1,3 +1,5 @@
+import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+
 export type ExpertiseStageCard = {
     slug: string;
     title: string;
@@ -16,6 +18,13 @@ export type ExpertiseStagePage = {
     status?: string;
     diagramUrl?: string | null;
     diagramAlt?: string;
+    /** Hero primary button label; empty → site-wide quote label. */
+    heroCtaLabel?: string;
+    /** Resolved body sections (host inherit + page-field tokens applied). */
+    sections: PageSectionDoc[];
+    ogTitle?: string;
+    ogDescription?: string;
+    ogImageUrl?: string;
     metaTitle?: string;
     metaDescription?: string;
     allowIndex: boolean;

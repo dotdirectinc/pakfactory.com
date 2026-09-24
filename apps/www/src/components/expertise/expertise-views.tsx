@@ -1,8 +1,22 @@
-import Image from 'next/image';
+import type {PageSectionExpertiseSequenceDoc} from '@pakfactory/sanity/queries';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
-import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {
+    PageHeadingSection,
+    PageHeadingWithMedia,
+} from '@/components/common/page-heading-section';
+import {ExpertiseLifecycle} from '@/components/expertise/expertise-lifecycle';
+import type {PageSection} from '@/components/sections/registry';
+import {
+    SectionRenderer,
+    type SectionComponentOverrides,
+} from '@/components/sections/section-renderer';
 import {CatalogCard} from '@/components/ui/catalog-card';
+import {
+    applyStageSequenceInherit,
+    mapExpertiseLifecycle,
+} from '@/lib/expertise/lifecycle';
+import {QUOTE_CTA_DEFAULT_LABEL} from '@/lib/sections/map-quote-cta';
 import type {
     ExpertiseStageCard,
     ExpertiseStagePage,
@@ -54,12 +68,40 @@ export function ExpertiseCatalogView({
     );
 }
 
-/** Minimal stage shell — no sections, services, or FAQs (Phase 1). */
-export function ExpertiseStageShellView({
+/**
+ * Expertise stage detail page — the one template every stage renders through
+ * (PROD-1108 / PROD-2469, first used by PROD-2577 Strategy).
+ *
+ * Breadcrumb + hero are route-owned (ADR-020 §2): H1, tagline, description and
+ * diagram come from the stage; the hero button opens the quote request. The
+ * body is the stage's `sections[]` in editor order. On this host
+ * `expertiseSequence` renders as the lifecycle path with this stage current,
+ * inheriting every stage in hub order when its list is empty.
+ */
+export function ExpertiseStageView({
     stage,
+    orderedStages,
 }: {
     stage: ExpertiseStagePage;
+    /** All stages in hub order (featured pins, then title). */
+    orderedStages: ExpertiseStageCard[];
 }) {
+    const sections = applyStageSequenceInherit(stage.sections, orderedStages);
+    const components: SectionComponentOverrides = {
+        expertiseSequence: (section: PageSection) => {
+            const mapped = mapExpertiseLifecycle(
+                section as PageSectionExpertiseSequenceDoc,
+                stage.slug,
+            );
+            return mapped ? (
+                <ExpertiseLifecycle
+                    content={mapped}
+                    id={`lifecycle-${section._key}`}
+                />
+            ) : null;
+        },
+    };
+
     return (
         <>
             <PageBreadcrumbSection
@@ -69,28 +111,26 @@ export function ExpertiseStageShellView({
                     {label: stage.title},
                 ]}
             />
-            <PageHeadingSection
+            <PageHeadingWithMedia
                 title={stage.h1}
-                {...(stage.tagline
-                    ? {eyebrow: stage.tagline}
-                    : {})}
+                {...(stage.tagline ? {eyebrow: stage.tagline} : {})}
                 {...(stage.description
                     ? {description: stage.description}
                     : {})}
+                primaryCta={{
+                    label: stage.heroCtaLabel ?? QUOTE_CTA_DEFAULT_LABEL,
+                    href: WWW_ROUTES.request,
+                }}
+                media={
+                    stage.diagramUrl
+                        ? {
+                              src: stage.diagramUrl,
+                              alt: stage.diagramAlt ?? stage.title,
+                          }
+                        : null
+                }
             />
-            {stage.diagramUrl ? (
-                <PageDielineSection innerClassName="pb-24 pt-8">
-                    <div className="relative aspect-[16/9] w-full max-w-3xl overflow-hidden rounded-lg bg-muted">
-                        <Image
-                            src={stage.diagramUrl}
-                            alt={stage.diagramAlt ?? stage.title}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 100vw, 768px"
-                        />
-                    </div>
-                </PageDielineSection>
-            ) : null}
+            <SectionRenderer sections={sections} components={components} />
         </>
     );
 }

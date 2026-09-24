@@ -15,7 +15,7 @@ type QuoteCtaProps = {
     ctaLabel?: string;
     href: string;
     className?: string;
-    /** Section landmark id. Default `pdp-quote-cta`. */
+    /** Section landmark id — unique per page when rendered from `sections[]`. */
     id?: string;
     /**
      * Section color band (not app dark/light mode).

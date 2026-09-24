@@ -131,10 +131,10 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `caseStudy` | Case studies | `caseStudiesRow`, `videoCaseStudiesRow` |
 | `product` | Products | `productLinesRow`, `productStylesRow`, `productsRow`, `bundlesRow` |
 | `customization` | Customizations | `customizationsRow`, `customizationsCatalog` |
-| `expertise` | Expertise | `expertiseSequence` |
+| `expertise` | Expertise | `expertiseSequence`, `signatureSystem` |
 | `resource` | Resources | `guidesRow`, `dielinesRow`, `glossaryStrip`, `postsRow` |
 | `client` | Clients | `logoWall` |
-| `layout` | Layout | `richText`, `mediaFeature`, `stats`, `steps`, `faqSection`, `testimonialsRow` |
+| `layout` | Layout | `richText`, `mediaFeature`, `stats`, `steps`, `faqSection`, `testimonialsRow`, `benefits` |
 | `cta` | CTAs | `quoteCta`, `newsletterCta`, `linkCards`, `contactForm` |
 
 **Studio `title` patterns** (editor chrome only — `_type` stays stable per [ADR-014](0014-sanity-studio-naming.md)):
@@ -158,6 +158,8 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `caseStudiesRow` | `CaseStudiesRow` | Case study row |
 | `videoCaseStudiesRow` | `VideoCaseStudiesRow` | Video case studies |
 | `faqSection` | `FaqSection` | FAQs |
+| `signatureSystem` | `SignatureSystem` | Signature system |
+| `benefits` | `Benefits` | Benefits |
 | `solutionsRow` | (row inventory) | Solution row |
 | `productsRow` | (row inventory) | Product row |
 | `productLinesRow` | (row inventory) | Product line row |
@@ -167,7 +169,8 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `customizationsCatalog` | catalog UI | Customizations library |
 | `guidesRow` / `dielinesRow` / `glossaryStrip` / `postsRow` | (row inventory) | Guide / Dieline / Glossary / Post row |
 | `richText` / `stats` / `steps` | — | Rich text / Stats / Steps |
-| `quoteCta` / `newsletterCta` / `linkCards` / `contactForm` | — | Get a quote / Newsletter / Link cards / Contact form |
+| `quoteCta` | `QuoteCta` | Get a quote |
+| `newsletterCta` / `linkCards` / `contactForm` | — | Newsletter / Link cards / Contact form |
 
 Do **not** casually rename `_type` or drive-by rename React files outside the locked §6 list. Three-layer drift is intentional; editors only see Studio titles.
 
@@ -240,6 +243,23 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 | 6 | `VideoCaseStudiesRow` | **`videoCaseStudiesRow`** | Wired (WP3) |
 | 7 | `TestimonialsRow` | **`testimonialsRow`** (Layout · chrome CMS; quotes from live Google Places — PROD-2587) | Wired |
 | 8 | `FaqSection` | `faqSection` | Wired (WP2) |
+## Expertise stage band → Section inventory (PROD-2577)
+
+Second proof of the playbook: `/expertise/[slug]`, starting with Strategy (Consultative archetype). The breadcrumb and hero are route-owned fields on `expertiseStage`. The body is `expertiseStage.sections[]`, with no template singleton, because archetypes order their bodies differently. How-built: [`apps/www/docs/expertise-stage-page.md`](../../apps/www/docs/expertise-stage-page.md).
+
+| Order | Band (archetype spine) | CMS `_type` | Notes |
+| ----- | ---------------------- | ----------- | ----- |
+| — | Hero | Route fields on `expertiseStage` (`tagline`, `h1`, `description`, `diagram`, `heroCtaLabel`) | Not a Section |
+| 1 | Why it matters + Signature System | **`signatureSystem`** (new, Expertise tab) | Why-it-matters problems and the named method in **one** Section: each problem opens the dimension that answers it, so splitting them would let a reorder or delete break the link. Dimensions = `expertiseService` refs; §8 inherit from `expertiseStage.services` (new `expertiseService.points[]`) |
+| 2 | How an engagement starts | `mediaFeature` | Reuse |
+| 3 | What you walk away with | **`benefits`** (new, Layout tab) | Outcome statements. `symbol` is a closed vocabulary of what the benefit is *about*; www picks the icon |
+| 4 | Why it's certain | `caseStudiesRow` | §8 inherit: `featuredStudies`, else tagged case studies |
+| 5 | Where this fits | `expertiseSequence` | Host override: stage path with current stage (see below) |
+| 6 | FAQ | `faqSection` | §8 inherit from `expertiseStage.faqs`; FAQPage JSON-LD from rendered FAQs |
+| 7 | Final CTA | `quoteCta` | Now wired in www (`body`, `ctaLabel` projected) |
+
+**Host overrides.** `SectionRenderer` accepts `components` (by `_type`) so a host can render a Section with page context the page-agnostic registry cannot know. The data stays the same and the CMS stores no variant, so D35 is untouched. It is used by the expertise stage page for `expertiseSequence`. Use it sparingly: a second presentation of one Section on one host. It is not a way to fork a registry entry.
+
 ## Component → Section checklist (reviewers)
 
 1. Passes the **route gate** (not chrome / not URL skeleton / not presentation-only).
