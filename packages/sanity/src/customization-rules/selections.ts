@@ -15,7 +15,7 @@
  * different one, which can remove a colour system that needed one of those finishes.
  */
 import { buildCompatibilityIndex } from './index';
-import { resolveForProduct } from './resolve';
+import { dependencyGroups, resolveForProduct } from './resolve';
 import type { CompatibilityIndex, Catalog, ProductDoc } from './index';
 import type { DependencyGraph, Resolution } from './resolve';
 
@@ -83,16 +83,14 @@ export function resolveWithSelections(
     iterations++;
     let changed = false;
     for (const type of catalog.types) {
-      const deps = (graph.dependsOn[type._id] ?? []).filter((d) => effective.has(d));
-      if (deps.length === 0) continue;
+      // ALL-OF across dependency groups, ANY-OF within one (a category is one group).
+      const groups = dependencyGroups(graph, type._id, (d) => effective.has(d));
+      if (groups.length === 0) continue;
       const set = effective.get(type._id);
       if (!set) continue;
       for (const optionId of [...set]) {
         const partners = compatibility.pairs.get(optionId) ?? new Set<string>();
-        const gone = deps.some((dep) => {
-          for (const candidate of effective.get(dep) ?? []) if (partners.has(candidate)) return false;
-          return true;
-        });
+        const gone = groups.some((group) => !pairsInto(partners, group, effective));
         if (!gone) continue;
         set.delete(optionId);
         changed = true;
@@ -112,13 +110,10 @@ export function resolveWithSelections(
   // in each dependency's effective set. A type's own selection does not narrow its own list.
   const reported = new Map<string, Set<string>>();
   for (const [typeId, ids] of base.availableByType) {
-    const deps = (graph.dependsOn[typeId] ?? []).filter((d) => effective.has(d));
+    const groups = dependencyGroups(graph, typeId, (d) => effective.has(d));
     const survivors = ids.filter((optionId) => {
       const partners = compatibility.pairs.get(optionId) ?? new Set<string>();
-      return deps.every((dep) => {
-        for (const candidate of effective.get(dep) ?? []) if (partners.has(candidate)) return true;
-        return false;
-      });
+      return groups.every((group) => pairsInto(partners, group, effective));
     });
     if (survivors.length > 0) reported.set(typeId, new Set(survivors));
   }
@@ -128,17 +123,14 @@ export function resolveWithSelections(
   const invalidated: InvalidatedSelection[] = [];
   const selectionsOut: Selections = {};
   for (const [typeId, ids] of Object.entries(kept)) {
-    const deps = (graph.dependsOn[typeId] ?? []).filter((d) => effective.has(d));
+    const groups = dependencyGroups(graph, typeId, (d) => effective.has(d));
     for (const optionId of ids) {
       if (reported.get(typeId)?.has(optionId)) {
         (selectionsOut[typeId] ??= []).push(optionId);
         continue;
       }
       const partners = compatibility.pairs.get(optionId) ?? new Set<string>();
-      const unsatisfied = deps.filter((dep) => {
-        for (const candidate of effective.get(dep) ?? []) if (partners.has(candidate)) return false;
-        return true;
-      });
+      const unsatisfied = groups.filter((group) => !pairsInto(partners, group, effective)).flat();
       invalidated.push({ typeId, optionId, unsatisfied });
     }
   }
@@ -158,4 +150,10 @@ export function resolveWithSelections(
     notOffered,
     iterations,
   };
+}
+
+/** True when `partners` holds an option still live in ANY type of the group. */
+function pairsInto(partners: ReadonlySet<string>, group: string[], live: Map<string, Set<string>>): boolean {
+  for (const dep of group) for (const candidate of live.get(dep) ?? []) if (partners.has(candidate)) return true;
+  return false;
 }

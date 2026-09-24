@@ -146,7 +146,8 @@ export function ProductDerivedCustomizations({ documentId }: { documentId: strin
         compatibleCustomizations: (o.compatibleCustomizations ?? []).map(clean),
       }))
     const rulesCatalog = { types, options }
-    const { dependsOn } = buildDependencyGraph(rulesCatalog)
+    // `groups` is what makes a category dependency ("decided by Materials") mean ANY material.
+    const { dependsOn, groups } = buildDependencyGraph(rulesCatalog)
     const resolution = resolveForProduct(
       rulesCatalog,
       {
@@ -156,7 +157,7 @@ export function ProductDerivedCustomizations({ documentId }: { documentId: strin
           .filter((e) => e.optionId && (e.mode === 'add' || e.mode === 'remove'))
           .map((e) => ({ optionId: clean(e.optionId as string), mode: e.mode as 'add' | 'remove', reason: e.reason ?? undefined })),
       },
-      { dependsOn },
+      { dependsOn, groups },
     )
     return { doc, resolution }
   }, [catalog, docs])
