@@ -19,6 +19,7 @@ import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
 import { solutionStyle } from './solutionStyle'
 import { solutionIndustryPage } from './solutionIndustryPage'
+import { productLinePage } from './productLinePage'
 import { productCatalogPage } from './productCatalogPage'
 import { customizationCatalogPage } from './customizationCatalogPage'
 import { expertiseStage } from './expertiseStage'
@@ -83,6 +84,7 @@ export const schemaTypes = [
   solution,
   solutionStyle,
   solutionIndustryPage,
+  productLinePage,
   productCatalogPage,
   customizationCatalogPage,
   expertiseStage,

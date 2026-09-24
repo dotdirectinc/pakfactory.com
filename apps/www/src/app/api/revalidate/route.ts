@@ -36,7 +36,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "expertiseStage", "customizationOption",
+ *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "productLinePage", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "productCatalogPage", "customizationCatalogPage",
  *     "websiteNavigation", "settings"
@@ -145,11 +145,13 @@ export async function POST(request: Request) {
     }
   }
 
+  // productLinePage edits reorder every product-line LP that references the template.
   const touchesProducts =
     !type ||
     CATALOG_PRODUCT_TYPES.has(type) ||
     type === "customizationOption" ||
-    type === "productCatalogPage";
+    type === "productCatalogPage" ||
+    type === "productLinePage";
   if (touchesProducts) {
     tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);
     tags.add(WWW_CATALOG_LINES_CACHE_TAG);
@@ -292,6 +294,7 @@ export async function POST(request: Request) {
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
     type === "solution" ||
     type === "solutionIndustryPage" ||
+    type === "productLinePage" ||
     type === "solutionStyle" ||
     type === "expertiseStage" ||
     type === "websiteNavigation" ||

@@ -88,3 +88,121 @@ test('a self-reference that survived in the data is dropped', () => {
   const { dependsOn } = buildDependencyGraph(input);
   assert.deepEqual(dependsOn['t.colour'], ['t.method']);
 });
+
+// ── Groups: a category is ONE dependency, satisfied by any of its types ─────────────────────
+// Regression (2026-09-24): the category expanded to its member types and each became its own
+// requirement, so an option needed a partner in EVERY material type. No product offers every
+// material, so on the rebuilt dev catalog every Materials-decided type came out empty on
+// every product — the graph looked right and nothing resolved it against one material.
+
+import { resolveForProduct } from "./resolve.ts";
+
+test('a category reference becomes one group of its types; a type reference a group of one', () => {
+  const input = catalog();
+  input.types.push({
+    _id: 't.spot', title: 'Spot Coating', categoryId: 'c.finishing',
+    availabilityDecidedBy: 'customization', dependsOn: ['c.materials', 't.method'],
+  });
+  const { groups } = buildDependencyGraph(input);
+  assert.deepEqual(groups['t.method'], [['t.chipboard', 't.paperboard']]);
+  assert.deepEqual(groups['t.colour'], [['t.method']]);
+  assert.deepEqual(groups['t.spot'], [['t.chipboard', 't.paperboard'], ['t.method']]);
+});
+
+const withOptions = (): CatalogWithDependencies => ({
+  ...catalog(),
+  options: [
+    { _id: 'o.sbs', title: 'SBS', typeId: 't.paperboard' },
+    { _id: 'o.grey', title: 'Grey Chipboard', typeId: 't.chipboard' },
+    { _id: 'o.offset', title: 'Offset', typeId: 't.method', compatibleCustomizations: ['o.sbs', 'o.grey'] },
+    { _id: 'o.cmyk', title: 'CMYK', typeId: 't.colour', compatibleCustomizations: ['o.offset'] },
+  ],
+});
+
+test('a product offering ONE material type keeps what that material decides', () => {
+  const input = withOptions();
+  const graph = buildDependencyGraph(input);
+  const product = { _id: 'p', availableCustomizations: [{ optionId: 'o.grey' }] }; // chipboard only
+  const r = resolveForProduct(input, product, graph);
+  assert.deepEqual(r.availableByType.get('t.method'), ['o.offset'], 'Offset pairs with the chipboard it has');
+  assert.deepEqual(r.availableByType.get('t.colour'), ['o.cmyk'], 'and CMYK follows Offset');
+  assert.deepEqual(r.emptiedTypes, []);
+});
+
+test('the reason names only the material type that supplied the partner', () => {
+  const input = withOptions();
+  const r = resolveForProduct(input, { _id: 'p', availableCustomizations: [{ optionId: 'o.grey' }] }, buildDependencyGraph(input));
+  assert.deepEqual(r.derivedBecause.get('o.offset'), [{ typeId: 't.chipboard', partners: ['o.grey'] }]);
+});
+
+test('separate groups are still ALL required: a product with no partner in one loses the option', () => {
+  const input = withOptions();
+  input.types.push({
+    _id: 't.spot', title: 'Spot Coating', categoryId: 'c.finishing',
+    availabilityDecidedBy: 'customization', dependsOn: ['c.materials', 't.method'],
+  });
+  // Spot works on SBS only, and on Offset. A chipboard-only product has no SBS.
+  input.options.push({ _id: 'o.spotuv', title: 'Spot UV', typeId: 't.spot', compatibleCustomizations: ['o.sbs', 'o.offset'] });
+  const r = resolveForProduct(input, { _id: 'p', availableCustomizations: [{ optionId: 'o.grey' }] }, buildDependencyGraph(input));
+  assert.equal(r.availableByType.get('t.spot'), undefined, 'the Materials group has no partner');
+});
+
+// ── Requirements (PROD-2595): alternatives in one requirement, separate ones all required ────
+// The Rectangular Tin case: a metal box with non-paper finishes and no paper finish.
+
+const tinCatalog = (): CatalogWithDependencies => ({
+  types: [
+    { _id: 't.tin', title: 'Tin Box Material', categoryId: 'c.materials', availabilityDecidedBy: 'product' },
+    { _id: 't.fabric', title: 'Fabric', categoryId: 'c.materials', availabilityDecidedBy: 'product' },
+    { _id: 't.ink', title: 'Ink', categoryId: 'c.printing', availabilityDecidedBy: 'customization', requirements: [['c.materials']] },
+    { _id: 't.method', title: 'Printing Method', categoryId: 'c.printing', availabilityDecidedBy: 'customization',
+      requirements: [['c.materials'], ['t.ink']] },
+    { _id: 't.sf', title: 'Surface Finish', categoryId: 'c.finishing', availabilityDecidedBy: 'customization', requirements: [['c.materials']] },
+    { _id: 't.sfnp', title: 'Surface Finish (non-paper)', categoryId: 'c.finishing', availabilityDecidedBy: 'customization', requirements: [['c.materials']] },
+    { _id: 't.spot', title: 'Spot Coating', categoryId: 'c.finishing', availabilityDecidedBy: 'customization',
+      requirements: [['t.sf', 't.sfnp']] },
+  ],
+  options: [
+    { _id: 'o.tinplate', title: 'Tinplate', typeId: 't.tin' },
+    { _id: 'o.canvas', title: 'Canvas', typeId: 't.fabric' },
+    { _id: 'o.metallic', title: 'Metallic Ink', typeId: 't.ink', compatibleCustomizations: ['o.tinplate', 'o.canvas'] },
+    { _id: 'o.offset', title: 'Offset', typeId: 't.method', compatibleCustomizations: ['o.tinplate', 'o.metallic'] },
+    { _id: 'o.htp', title: 'Heat Transfer Printing', typeId: 't.method', compatibleCustomizations: ['o.canvas', 'o.metallic'] },
+    { _id: 'o.matte', title: 'Matte', typeId: 't.sf', compatibleCustomizations: ['o.canvas'] },
+    { _id: 'o.mattenp', title: 'Matte (for non-paper)', typeId: 't.sfnp', compatibleCustomizations: ['o.tinplate'] },
+    { _id: 'o.spotuv', title: 'Spot UV', typeId: 't.spot', compatibleCustomizations: ['o.matte', 'o.mattenp'] },
+  ],
+});
+const tin = { _id: 'p.tin', availableCustomizations: [{ optionId: 'o.tinplate' }] };
+
+test('each requirement is one group; entries within it merge, a category expanding to its types', () => {
+  const { groups, dependsOn } = buildDependencyGraph(tinCatalog());
+  assert.deepEqual(groups['t.method'], [['t.fabric', 't.tin'], ['t.ink']]);
+  assert.deepEqual(groups['t.spot'], [['t.sf', 't.sfnp']]);
+  assert.deepEqual(dependsOn['t.spot'], ['t.sf', 't.sfnp']);
+});
+
+test('ANY within a requirement: the tin gets Spot UV from its non-paper finish, with no paper finish', () => {
+  const r = resolveForProduct(tinCatalog(), tin, buildDependencyGraph(tinCatalog()));
+  assert.deepEqual(r.availableByType.get('t.spot'), ['o.spotuv']);
+  assert.deepEqual(r.derivedBecause.get('o.spotuv'), [{ typeId: 't.sfnp', partners: ['o.mattenp'] }]);
+});
+
+test('ALL across requirements: the tin does NOT get Heat Transfer Printing for its ink alone', () => {
+  const r = resolveForProduct(tinCatalog(), tin, buildDependencyGraph(tinCatalog()));
+  assert.deepEqual(r.availableByType.get('t.method'), ['o.offset'], 'Offset has a board AND an ink; Heat Transfer has only the ink');
+});
+
+test('the old flat shape still reads as one requirement per reference', () => {
+  const input = tinCatalog();
+  const spot = input.types.find((t) => t._id === 't.spot')!;
+  delete spot.requirements;
+  spot.dependsOn = ['t.sf', 't.sfnp'];
+  assert.deepEqual(buildDependencyGraph(input).groups['t.spot'], [['t.sf'], ['t.sfnp']]);
+});
+
+test('two identical requirements count once', () => {
+  const input = tinCatalog();
+  input.types.find((t) => t._id === 't.spot')!.requirements = [['t.sf', 't.sfnp'], ['t.sfnp', 't.sf']];
+  assert.deepEqual(buildDependencyGraph(input).groups['t.spot'], [['t.sf', 't.sfnp']]);
+});

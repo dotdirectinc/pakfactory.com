@@ -28,7 +28,8 @@ type CatalogResult = {
     title: string | null
     availabilityDecidedBy: 'product' | 'customization' | null
     categoryId: string | null
-    dependsOn: string[] | null
+    /** One entry per requirement: its refs (old flat entries read as a requirement of one). */
+    requirements: string[][] | null
   }[]
   options: { _id: string; title: string | null; typeId: string | null; compatibleCustomizations: string[] | null }[]
 }
@@ -44,7 +45,8 @@ type ProductResult = {
 const CATALOG = `{
   "categories": *[_type == "customizationCategory" && !(_id in path("drafts.**"))]{ _id, title },
   "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{
-    _id, title, availabilityDecidedBy, "categoryId": category._ref, "dependsOn": dependsOn[]._ref
+    _id, title, availabilityDecidedBy, "categoryId": category._ref,
+    "requirements": dependsOn[]{ "refs": coalesce(anyOf[]._ref, [_ref]) }.refs
   },
   "options": *[_type == "customizationOption" && !(_id in path("drafts.**"))]{
     _id, title, "typeId": type._ref, "compatibleCustomizations": compatibleCustomizations[]._ref
@@ -135,7 +137,7 @@ export function ProductDerivedCustomizations({ documentId }: { documentId: strin
         title: t.title ?? undefined,
         availabilityDecidedBy: t.availabilityDecidedBy as 'product' | 'customization',
         categoryId: t.categoryId ?? undefined,
-        dependsOn: t.dependsOn ?? [],
+        requirements: (t.requirements ?? []).filter((g): g is string[] => Array.isArray(g) && g.length > 0),
       }))
     const options = catalog.options
       .filter((o) => o.typeId)
@@ -146,7 +148,8 @@ export function ProductDerivedCustomizations({ documentId }: { documentId: strin
         compatibleCustomizations: (o.compatibleCustomizations ?? []).map(clean),
       }))
     const rulesCatalog = { types, options }
-    const { dependsOn } = buildDependencyGraph(rulesCatalog)
+    // `groups` is what makes a category dependency ("decided by Materials") mean ANY material.
+    const { dependsOn, groups } = buildDependencyGraph(rulesCatalog)
     const resolution = resolveForProduct(
       rulesCatalog,
       {
@@ -156,7 +159,7 @@ export function ProductDerivedCustomizations({ documentId }: { documentId: strin
           .filter((e) => e.optionId && (e.mode === 'add' || e.mode === 'remove'))
           .map((e) => ({ optionId: clean(e.optionId as string), mode: e.mode as 'add' | 'remove', reason: e.reason ?? undefined })),
       },
-      { dependsOn },
+      { dependsOn, groups },
     )
     return { doc, resolution }
   }, [catalog, docs])

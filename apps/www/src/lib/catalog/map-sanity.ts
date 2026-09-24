@@ -6,6 +6,7 @@ import {
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
     type CatalogPropertyValueDetailDoc,
+    type PageSectionDoc,
 } from '@pakfactory/sanity/queries';
 import {
     resolveImageAlt,
@@ -25,7 +26,11 @@ import type {
     ProductLibraryItem,
     ProductLibraryLineMeta,
     ProductLine,
+    ProductLineCaseStudyRef,
+    ProductLineExpertiseRef,
+    ProductLineFrame,
     ProductLineRef,
+    ProductLineRelatedRef,
     ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
@@ -435,12 +440,124 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
     }
 
     const {imageUrl, imageAlt} = cardImageFromSanity(doc.cardImage, doc.title);
+    const {imageUrl: kitMarkUrl, imageAlt: kitMarkAlt} = cardImageFromSanity(
+        doc.kitMark,
+        `${doc.title} kit mark`,
+    );
+
+    const frames: ProductLineFrame[] = [];
+    for (const item of doc.media ?? []) {
+        const src = sanityImageBaseUrl(item);
+        if (!src) continue;
+        frames.push({
+            src,
+            alt: resolveImageAlt(item, doc.title),
+        });
+    }
+
+    const expertise: ProductLineExpertiseRef[] = [];
+    for (const row of doc.expertise ?? []) {
+        if (!row) continue;
+        const stageSlug = row.slug?.trim();
+        const title = row.title?.trim();
+        if (!stageSlug || !title) continue;
+        const {imageUrl: stageImageUrl, imageAlt: stageImageAlt} =
+            cardImageFromSanity(row.diagram, title);
+        expertise.push({
+            slug: stageSlug,
+            title,
+            ...(row.description?.trim()
+                ? {description: row.description.trim()}
+                : {}),
+            ...(stageImageUrl
+                ? {imageUrl: stageImageUrl, imageAlt: stageImageAlt}
+                : {}),
+        });
+    }
+
+    const featuredStudies: ProductLineCaseStudyRef[] = [];
+    for (const row of doc.featuredStudies ?? []) {
+        if (!row) continue;
+        const studySlug = row.slug?.trim();
+        const title = row.title?.trim();
+        if (!studySlug || !title) continue;
+        const studyImageUrl = row.cardImageUrl?.trim() || null;
+        featuredStudies.push({
+            slug: studySlug,
+            title,
+            ...(row.cardSummary?.trim()
+                ? {cardSummary: row.cardSummary.trim()}
+                : {}),
+            ...(studyImageUrl
+                ? {
+                      imageUrl: studyImageUrl,
+                      imageAlt: row.cardImageAlt?.trim() || title,
+                  }
+                : {}),
+        });
+    }
+
+    const relatedLines: ProductLineRelatedRef[] = [];
+    for (const row of doc.relatedLines ?? []) {
+        if (!row) continue;
+        const relatedSlug = row.slug?.trim();
+        const title = row.title?.trim();
+        if (!relatedSlug || !title) continue;
+        const {imageUrl: relatedImageUrl, imageAlt: relatedImageAlt} =
+            cardImageFromSanity(row.cardImage, title);
+        relatedLines.push({
+            slug: relatedSlug,
+            title,
+            ...(row.shortDescription?.trim()
+                ? {shortDescription: row.shortDescription.trim()}
+                : {}),
+            ...(relatedImageUrl
+                ? {imageUrl: relatedImageUrl, imageAlt: relatedImageAlt}
+                : {}),
+        });
+    }
+
+    const faqs: ProductFaq[] = [];
+    for (const row of doc.faqs ?? []) {
+        const question = row?.question?.trim();
+        const answerPlain = row?.answerPlain?.trim();
+        if (!question || !answerPlain) continue;
+        faqs.push({question, answerPlain});
+    }
+
+    const h1 = doc.h1?.trim();
+    const shortDescription = doc.shortDescription?.trim();
+    const metaTitle = doc.metaTitle?.trim();
+    const metaDescription = doc.metaDescription?.trim();
+    const description =
+        doc.description?.trim() || shortDescription || '';
+
+    const sections = (doc.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
+    const templateSections = (doc.template?.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
 
     return {
         slug,
         title: doc.title,
-        description: doc.description?.trim() || doc.cardSummary?.trim() || '',
+        description,
+        ...(h1 ? {h1} : {}),
+        ...(shortDescription ? {shortDescription} : {}),
+        ...(metaTitle ? {metaTitle} : {}),
+        ...(metaDescription ? {metaDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
+        ...(kitMarkUrl ? {kitMarkUrl, kitMarkAlt} : {}),
+        ...(frames.length > 0 ? {frames} : {}),
+        ...(expertise.length > 0 ? {expertise} : {}),
+        ...(featuredStudies.length > 0 ? {featuredStudies} : {}),
+        ...(relatedLines.length > 0 ? {relatedLines} : {}),
+        ...(faqs.length > 0 ? {faqs} : {}),
+        ...(sections.length > 0 ? {sections} : {}),
+        ...(templateSections.length > 0 ? {templateSections} : {}),
         styles: [...stylesBySlug.values()],
         products,
     };

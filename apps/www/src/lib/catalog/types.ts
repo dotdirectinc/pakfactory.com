@@ -1,3 +1,5 @@
+import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+
 export type ProductKind = 'standard' | 'inspiration';
 
 /** Category slug from Sanity `customizationCategory.slug` (not a fixed union). */
@@ -137,12 +139,62 @@ export type Product = {
     testimonials?: ProductTestimonial[];
 };
 
+export type ProductLineExpertiseRef = {
+    slug: string;
+    title: string;
+    description?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLineCaseStudyRef = {
+    slug: string;
+    title: string;
+    cardSummary?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLineRelatedRef = {
+    slug: string;
+    title: string;
+    shortDescription?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLineFrame = {
+    src: string;
+    alt: string;
+};
+
 export type ProductLine = {
     slug: string;
     title: string;
     description: string;
+    /** Page H1 override; empty falls back to title in the landing assembler. */
+    h1?: string;
+    shortDescription?: string;
+    metaTitle?: string;
+    metaDescription?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    /** Kit-mark icon above the landing H1. */
+    kitMarkUrl?: string | null;
+    kitMarkAlt?: string;
+    /** Ordered hero frames from Sanity `media` (featured image is separate). */
+    frames?: ProductLineFrame[];
+    expertise?: ProductLineExpertiseRef[];
+    featuredStudies?: ProductLineCaseStudyRef[];
+    relatedLines?: ProductLineRelatedRef[];
+    faqs?: ProductFaq[];
+    /**
+     * Page-builder sections on this line (content). Merged with
+     * `templateSections` for the landing body.
+     */
+    sections?: PageSectionDoc[];
+    /** Sections from the selected Product Line Page template (order/chrome). */
+    templateSections?: PageSectionDoc[];
     styles: ProductStyleRef[];
     products: Product[];
 };

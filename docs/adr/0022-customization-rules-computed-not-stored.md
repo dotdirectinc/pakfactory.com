@@ -1,6 +1,6 @@
 # ADR-022: The customization model after the four-field retirement — rules are computed, not stored
 
-**Status:** **Proposed** (2026-09-24). Decisions **1–5 describe what has already shipped** and are settled in practice; **6–7 are implemented (PROD-2595) with Richard's answers to the four open questions, and await Eric's confirmation** before this moves to Accepted. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
+**Status:** **Accepted** (2026-09-24). Decisions **1–5 describe what shipped**; **6–7 were implemented in PROD-2595 (pakfactory.com #630) with Richard's answers to the four open questions, and confirmed 2026-09-24**. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
 
 ## Context
 
@@ -60,6 +60,8 @@ It has **no `initialValue`**, deliberately. No default is safe in both direction
 
 An entry may be a **Category or a Type**, because the board states it both ways: *"Material dictates Printing Method"* is all sixteen material types (naming them one by one would be wrong the day a seventeenth arrives), while *"Colour System depends on Printing Method"* is one type. Read **ALL-OF across entries, ANY-OF within one**.
 
+**Amended 2026-09-24 (PROD-2595, approved by Eric and Crystal): `dependsOn` is a list of requirements.** Each entry is `{ anyOf: [category | type, …] }`: every requirement must be met, and a partner in any one of its entries meets it. The flat list could not say which deciders are alternatives — Spot Coating's *Lamination, Surface Finish, Surface Finish (non-paper)* read as three requirements, so it needed a paper and a non-paper finish at once and was offered nowhere. The board already says which: lines drawn in **one frame** are alternatives, lines in **two frames** are two requirements — the rule the registry engine applies (`worksOnDimension`) — so the fill writes one requirement per frame. Printing Method = (Materials) and (Ink); Spot Coating = (Lamination or Surface Finish or Surface Finish (non-paper)). A category entry expands to its member types *within* its requirement, so "Materials" is met by whichever material the product has.
+
 **Which to emit is derived, not hand-written.** It follows from the *decider's* own `availabilityDecidedBy`: a product-decided axis is named by its **category**, a customization-decided one by that **type**. That single rule reproduces all three worked examples in the field's own description, and it is why a seventeenth material needs no edit here.
 
 Registry coverage is deliberately **not** the signal. Surface Coating is gated by Foam alone today — but that is which materials *permit* it, which the works-on rows already state. `dependsOn` says only *"ask the material first"*.
@@ -72,7 +74,7 @@ Resolution is a **fixpoint, not one pass** — removing an option can remove the
 
 ### 6. Availability is direct ∪ derived — and the derived half is displayed, never stored
 
-🟡 **Implemented 2026-09-24 (PROD-2595), awaiting Eric's confirmation.** The product's Customization tab shows a read-only **Derived** section, computed by `resolveForProduct`, with the partner that keeps each option. Nothing derived is stored.
+✅ **Accepted 2026-09-24 — implemented in PROD-2595 (#630).** The product's Customization tab shows a read-only **Derived** section, computed by `resolveForProduct`, with the partner that keeps each option. Nothing derived is stored.
 
 `availableCustomizations` stores **one hop only**. Everything following from it — a lamination the material allows, a printing method the ink allows — is computed.
 
@@ -82,7 +84,7 @@ This un-parks what PROD-2529 listed as out of scope (*"the derived read-only Fin
 
 ### 7. `customizationExceptions` overrides per product, in **both** directions
 
-🟡 **Implemented 2026-09-24 (PROD-2595), awaiting Eric's confirmation.** The four questions PROD-2595 left open were answered by Richard on 2026-09-24:
+✅ **Accepted 2026-09-24 — implemented in PROD-2595 (#630).** The four questions PROD-2595 left open were answered by Richard on 2026-09-24:
 
 | Question | Answer |
 |---|---|

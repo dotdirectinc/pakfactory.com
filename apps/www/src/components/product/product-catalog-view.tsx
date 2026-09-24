@@ -3,7 +3,6 @@ import {Suspense} from 'react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
-import {CatalogCard} from '@/components/ui/catalog-card';
 import {
     ProductCard,
     type ProductCardData,
@@ -19,15 +18,12 @@ import type {
     ProductLine,
     ProductStyleRef,
 } from '@/lib/catalog/types';
-import {productHref, productStyleHref, WWW_ROUTES} from '@/lib/www-routes';
+import {productHref, WWW_ROUTES} from '@/lib/www-routes';
 
 export {
     ProductCardSkeleton,
     ProductCatalogGridSkeleton,
 } from '@/components/product/product-card-skeleton';
-
-const TILE_GRID_CLASS =
-    'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:gap-8';
 
 const PRODUCT_GRID_CLASS =
     'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
@@ -123,48 +119,6 @@ export function ProductCatalogView({
             >
                 <ProductCatalogPanel library={library} urlSync={urlSync} />
             </Suspense>
-        </>
-    );
-}
-
-export function ProductLineView({line}: {line: ProductLine}) {
-    return (
-        <>
-            <PageBreadcrumbSection
-                items={[
-                    {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Products', href: WWW_ROUTES.products},
-                    {label: line.title},
-                ]}
-            />
-            <PageHeadingSection
-                title={line.title}
-                description={line.description}
-                borderBottom={false}
-            />
-            <PageDielineSection paddingBlock="none" innerClassName="pb-24">
-                <div className={TILE_GRID_CLASS}>
-                    {line.styles.map((style) => {
-                        const firstProductImage = line.products.find(
-                            (product) =>
-                                product.productStyle.slug === style.slug &&
-                                product.media[0]?.src,
-                        )?.media[0]?.src;
-                        return (
-                            <CatalogCard
-                                key={style.slug}
-                                href={productStyleHref(line.slug, style.slug)}
-                                title={style.title}
-                                description={
-                                    style.shortDescription || undefined
-                                }
-                                imageSrc={style.imageUrl ?? firstProductImage}
-                                imageAlt={style.imageAlt ?? style.title}
-                            />
-                        );
-                    })}
-                </div>
-            </PageDielineSection>
         </>
     );
 }

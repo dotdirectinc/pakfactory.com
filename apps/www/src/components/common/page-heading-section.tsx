@@ -1,6 +1,7 @@
 import type {ReactNode} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import {ChevronDown} from 'lucide-react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -204,8 +205,11 @@ export function PageHeadingContent({
     ) : null;
 
     const secondaryButton = secondaryCta ? (
-        <Button asChild size="xl" variant="ghost">
-            <Link href={secondaryCta.href}>{secondaryCta.label}</Link>
+        <Button asChild size="xl" variant="link" className="gap-2">
+            <Link href={secondaryCta.href}>
+                {secondaryCta.label}
+                <ChevronDown className="size-4" aria-hidden />
+            </Link>
         </Button>
     ) : null;
 

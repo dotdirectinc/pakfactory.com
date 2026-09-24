@@ -21,7 +21,7 @@ Three Sanity fields and nothing else:
 | `customizationType.availabilityDecidedBy` | PROD-2532 | `product` — each product lists which of these it offers. `customization` — the material or process it goes on decides instead |
 | `customizationOption.compatibleCustomizations` | PROD-2534 | one flat list of option ↔ option pairs, **read from both ends** |
 | `product.availableCustomizations` | PROD-2529 | what a standard product offers, option by option |
-| `customizationType.dependsOn` | PROD-2558 | which customizations are picked **before** this type and decide what is left in it |
+| `customizationType.dependsOn` | PROD-2558 · 2595 | which customizations are picked **before** this type and decide what is left in it — as **requirements**, each met by any one of its entries |
 | `product.customizationExceptions` | PROD-2595 | where one product disagrees with the rules: `add` an option they leave out, or `remove` one they include, each with a reason. Only for options another customization decides |
 
 `types.ts` mirrors those fields and **is deliberately not the documents**. Each caller projects
@@ -69,9 +69,27 @@ depended on it:
 > pass later.
 
 Read **ALL-OF across dependencies, ANY-OF within one**: an option must find a compatible partner
-in *every* entry of `dependsOn`, and any one partner within an entry is enough. Flattening that
-to "any pair anywhere" keeps an option alive on the strength of a relationship from a different
-axis entirely.
+in *every* entry of `dependsOn`, and any one partner within an entry is enough. **A category
+entry is ONE dependency**: `buildDependencyGraph` returns it as a group of its member types
+(`groups`), satisfied by a partner in any of them. Pass `groups` to `resolveForProduct`.
+Flattening the group into separate requirements, which this package did until 2026-09-24,
+demands a partner in every material type, which no product offers, and empties every
+Materials-decided type on every product.
+
+**Requirements, not a flat list (PROD-2595, 2026-09-24).** `dependsOn` holds
+`[{ _type: 'requirement', anyOf: [category | type, …] }]`. Every requirement must be met; a
+partner in ANY entry of one meets it. Callers pass them as `requirements: string[][]` on each
+type (the old flat `dependsOn: string[]` still reads as one requirement per entry).
+
+| Type | Requirements |
+|---|---|
+| Printing Method | (Materials) **and** (Ink) — a board it prints on and an ink it prints with |
+| Spot Coating | (Lamination **or** Surface Finish **or** Surface Finish (non-paper)) |
+
+The board is the source: lines drawn in **one frame** are alternatives, lines in **two frames**
+are two requirements, and the relationship fill writes one requirement per frame. Read as all
+required, Spot Coating needed a paper AND a non-paper finish and was empty everywhere; read as
+any, Heat Transfer Printing would be offered on a tin for its ink alone.
 
 ## Exceptions: one product, both directions
 
@@ -108,7 +126,7 @@ After that one-time fill, **Sanity owns the rules** and this package computes fr
 
 ## Tests
 
-58 tests, no Sanity, no network. They use **Node's built-in runner**, not vitest — vitest
+67 tests, no Sanity, no network. They use **Node's built-in runner**, not vitest — vitest
 reports "No test suite found" for these files, which is a runner mismatch and not a failure:
 
 ```bash

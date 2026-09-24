@@ -51,6 +51,12 @@ Industry LP **order + chrome** live on the pinned singleton `solutionIndustryPag
 
 **Human seed:** run Beauty seed below with `--confirm` (creates template + Beauty wiring + solutionStyles). Agents author the script only — never `--confirm`.
 
+## Product Line Page template
+
+Product Line LP **order + chrome** live on the pinned singleton `productLinePage` (Main Website → Product Pages → Product Line Page) — twin of `solutionIndustryPage`. Each customer-facing `productLine` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merge of template × line sections is a follow-up; Phase 2 landing bands stay code-owned until then.
+
+Humans open the pin (Studio creates id `productLinePage`), add sections, publish, then set `template` on each customer-facing line. Agents do not create documents.
+
 ## Product / Customization catalog pages (PROD-2589)
 
 Pinned singletons mirror `solutionIndustryPage` (title + sections only; fixed id = type name):
@@ -58,6 +64,7 @@ Pinned singletons mirror `solutionIndustryPage` (title + sections only; fixed id
 | Doc | Studio path | Route |
 | --- | --- | --- |
 | `productCatalogPage` | Main Website → Product Pages → Product Catalog Page | `/products` |
+| `productLinePage` | Main Website → Product Pages → Product Line Page | template (no public URL) |
 | `customizationCatalogPage` | Main Website → Customization Pages → Customization Catalog Page | `/customizations` |
 
 The faceted grids stay route-owned. CMS `sections[]` render **below** the grid. H1 / intro / SEO stay hardcoded on www until a follow-up. Humans open each pin, add sections, publish — agents do not create documents.

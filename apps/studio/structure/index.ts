@@ -1074,6 +1074,15 @@ export const mainWebsiteStructure = (
                                         .schemaType('productCatalogPage')
                                         .documentId('productCatalogPage'),
                                 ),
+                            S.listItem()
+                                .title('Product Line Page')
+                                .icon(PackageIcon)
+                                .child(
+                                    S.editor()
+                                        .id('productLinePage')
+                                        .schemaType('productLinePage')
+                                        .documentId('productLinePage'),
+                                ),
                         ]),
                 ),
             S.listItem()

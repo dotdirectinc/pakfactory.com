@@ -15,8 +15,15 @@
 import type { Catalog, CustomizationTypeDoc } from './types';
 
 export interface DependencyGraphResult {
-  /** type id → the type ids whose options gate it. Feeds `resolveForProduct`. */
+  /** type id → the type ids whose options gate it, flattened. For reporting. */
   dependsOn: Record<string, string[]>;
+  /**
+   * type id → one group per `dependsOn` entry: a type reference is a group of one, a
+   * category reference is the group of its member types. The rules need a partner in EVERY
+   * group and in ANY member of one. Pass it to `resolveForProduct` with `dependsOn` —
+   * without it each category member becomes its own requirement, which no product can meet.
+   */
+  groups: Record<string, string[][]>;
   /** References that name neither a type nor a category in the catalog. Ignored. */
   unknownReferences: string[];
   /**
@@ -36,7 +43,16 @@ export interface DependencyGraphResult {
 export interface CustomizationTypeWithDependencies extends CustomizationTypeDoc {
   /** The category this type belongs to. */
   categoryId?: string;
-  /** References to a customizationCategory or a customizationType. */
+  /**
+   * `customizationType.dependsOn` as REQUIREMENTS (PROD-2595): each inner list is one
+   * requirement, met by a partner in ANY of its entries; every requirement must be met.
+   * Entries are customizationCategory or customizationType ids.
+   */
+  requirements?: string[][];
+  /**
+   * The old flat shape: each reference its own requirement. Read only when `requirements` is
+   * absent — hand-stated catalogs and data not yet migrated.
+   */
   dependsOn?: string[];
 }
 
@@ -55,35 +71,49 @@ export function buildDependencyGraph(catalog: CatalogWithDependencies): Dependen
   }
 
   const dependsOn: Record<string, string[]> = {};
+  const groups: Record<string, string[][]> = {};
   const unknownReferences: string[] = [];
   const ignoredOnProductDecided: string[] = [];
   const resolvedToNothing: string[] = [];
 
   for (const type of catalog.types) {
-    const refs = type.dependsOn ?? [];
-    if (refs.length === 0) continue;
+    const requirements = type.requirements ?? (type.dependsOn ?? []).map((ref) => [ref]);
+    if (requirements.length === 0) continue;
     if (type.availabilityDecidedBy !== 'customization') {
       ignoredOnProductDecided.push(type._id);
       continue;
     }
 
-    // Naming your OWN category is meaningful — your siblings gate you — so it expands like
-    // any other; only the type itself drops out. A category whose sole member is this type
-    // therefore expands to nothing, which is the degenerate case reported below.
+    // Each requirement becomes ONE group: its entries expand (a type to itself, a category to
+    // its member types) and merge, because any of them is enough. Naming your OWN category is
+    // meaningful — your siblings gate you — so it expands like any other; only the type itself
+    // drops out. A requirement that expands to nothing is dropped, and a type left with none is
+    // the degenerate case reported below.
     const resolved = new Set<string>();
-    for (const ref of refs) {
-      if (typeIds.has(ref)) {
-        // A type depending on itself says nothing. The Studio field rejects it; a stale
-        // document could still carry one.
-        if (ref !== type._id) resolved.add(ref);
-        continue;
+    const typeGroups: string[][] = [];
+    const seen = new Set<string>();
+    for (const requirement of requirements) {
+      const group = new Set<string>();
+      for (const ref of requirement) {
+        if (typeIds.has(ref)) {
+          // A type depending on itself says nothing. The Studio field rejects it; a stale
+          // document could still carry one.
+          if (ref !== type._id) group.add(ref);
+          continue;
+        }
+        const members = typesByCategory.get(ref);
+        if (!members) {
+          unknownReferences.push(ref);
+          continue;
+        }
+        for (const member of members) if (member !== type._id) group.add(member);
       }
-      const members = typesByCategory.get(ref);
-      if (!members) {
-        unknownReferences.push(ref);
-        continue;
-      }
-      for (const member of members) if (member !== type._id) resolved.add(member);
+      const sorted = [...group].sort();
+      const signature = sorted.join('|');
+      if (sorted.length === 0 || seen.has(signature)) continue;
+      seen.add(signature);
+      for (const member of sorted) resolved.add(member);
+      typeGroups.push(sorted);
     }
 
     if (resolved.size === 0) {
@@ -91,7 +121,8 @@ export function buildDependencyGraph(catalog: CatalogWithDependencies): Dependen
       continue;
     }
     dependsOn[type._id] = [...resolved].sort();
+    groups[type._id] = typeGroups;
   }
 
-  return { dependsOn, unknownReferences, ignoredOnProductDecided, resolvedToNothing };
+  return { dependsOn, groups, unknownReferences, ignoredOnProductDecided, resolvedToNothing };
 }
