@@ -35,6 +35,13 @@
  * write unless --accept-dangling says you have read the list. The rebuild cannot repair
  * them; a person re-points them afterwards.
  *
+ * Sanity has no force-delete: a STRONG reference from outside blocks the delete outright.
+ * --detach-referrers clears the way. It walks each referrer (drafts included) for the exact
+ * reference paths that point into the delete set, records every one — referrer, path, old
+ * target, its title — in the --emit-map file, and only then unsets those paths and nothing
+ * else. It re-checks that no external reference remains before deleting anything. The map
+ * is what the post-rebuild re-point step reads to put each reference back.
+ *
  * ── ORDER ────────────────────────────────────────────────────────────────────────
  *
  * Everything in scope goes in one transaction per chunk, so references BETWEEN scoped
@@ -43,8 +50,8 @@
  *
  * From repo root (DRY RUN is the default — prints only, writes nothing):
  *   pnpm --filter @pakfactory/studio run purge:catalog -- --dataset development
- *   pnpm --filter @pakfactory/studio run purge:catalog -- --dataset development --confirm --accept-dangling
- *   pnpm --filter @pakfactory/studio run purge:catalog -- --dataset production --confirm --accept-dangling --yes-production
+ *   pnpm --filter @pakfactory/studio run purge:catalog -- --dataset development --emit-map <file> --confirm --accept-dangling --detach-referrers
+ *   pnpm --filter @pakfactory/studio run purge:catalog -- --dataset production --emit-map <file> --confirm --accept-dangling --detach-referrers --yes-production
  *
  * Requires a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN). A read token cannot --confirm.
  *
@@ -75,15 +82,18 @@ const USAGE = `Usage:
                      REQUIRED to --confirm when anything outside the catalog references it:
                      the rebuild recreates these documents under the SAME titles but NEW
                      ids, so this file is what lets the references be repaired afterwards.
+  --detach-referrers Unset the references outside documents hold into the catalog, so the
+                     delete is not blocked. Every unset path is recorded in --emit-map first.
+                     Required to --confirm when any of those references is STRONG.
   --with-categories  Also delete customizationCategory. The rebuild cannot recreate these.
   --yes-production   Second gate; required to write to production.`
 
 const args = parseScriptArgs({
-  flags: ['accept-dangling', 'with-categories'],
+  flags: ['accept-dangling', 'detach-referrers', 'with-categories'],
   values: ['emit-map'],
   usage: USAGE,
 })
-const { confirm: apply, acceptDangling, withCategories, yesProduction, emitMap } = args
+const { confirm: apply, acceptDangling, detachReferrers, withCategories, yesProduction, emitMap } = args
 
 /** The catalog, minus the one type the rebuild cannot recreate (see the header). */
 const SCOPE = [
@@ -146,6 +156,35 @@ const client = createClient({
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
+/**
+ * Every reference in `doc` that points into `targets`, as Sanity patch paths, in document
+ * order. Array items are addressed by `_key` where they have one (stable under reorder) and
+ * by index otherwise. System keys (`_id`, `_rev`, …) are skipped.
+ */
+function findRefPaths(doc, targets) {
+  const out = []
+  const walk = (value, path) => {
+    if (Array.isArray(value)) {
+      value.forEach((item, i) => {
+        const key = item && typeof item === 'object' && typeof item._key === 'string' ? item._key : null
+        walk(item, key ? `${path}[_key==${JSON.stringify(key)}]` : `${path}[${i}]`)
+      })
+      return
+    }
+    if (!value || typeof value !== 'object') return
+    if (typeof value._ref === 'string') {
+      if (targets.has(value._ref)) out.push({ path, ref: value._ref, weak: value._weak === true })
+      return
+    }
+    for (const [k, v] of Object.entries(value)) {
+      if (k.startsWith('_')) continue
+      walk(v, path ? `${path}.${k}` : k)
+    }
+  }
+  walk(doc, '')
+  return out
+}
+
 async function main() {
   console.log(`\n🗑  Purge catalog — ${describeMode({ confirm: apply, dataset: DATASET })}`)
   console.log(`   project ${PROJECT_ID} · dataset=${DATASET}`)
@@ -203,6 +242,52 @@ async function main() {
     console.log('\n   No documents outside the catalog reference it.')
   }
 
+  // ── 2b. The exact paths a detach would unset ─────────────────────────────────
+  // Planned in the dry run too, so the map shows what --detach-referrers will touch.
+  const targetIds = new Set(docs.map((d) => d._id))
+  const targetById = new Map(docs.map((d) => [d._id, d]))
+  const referrerIds = [...new Set(dangling.flatMap((d) => d.from.map((f) => f._id)))]
+  const referrers = referrerIds.length
+    ? await client.fetch(`*[_id in $ids]`, { ids: referrerIds })
+    : []
+  const detachPlan = referrers.map((doc) => ({ doc, refs: findRefPaths(doc, targetIds) }))
+
+  // Every (referrer, target) pair the reference query reported must have a path in the
+  // walk. A miss means the walk cannot see a shape it should; unsetting would leave the
+  // reference in place and the delete would fail half-way, so stop here instead.
+  const missing = []
+  for (const d of dangling) {
+    for (const f of d.from) {
+      const plan = detachPlan.find((p) => p.doc._id === f._id)
+      if (!plan?.refs.some((r) => r.ref === d._id)) missing.push(`${f._type} ${f._id} → ${d._id}`)
+    }
+  }
+  if (missing.length) {
+    console.error(`\n❌  ${plural(missing.length, 'reference')} could not be located inside the referrer:`)
+    for (const m of missing.slice(0, 20)) console.error(`     ${m}`)
+    console.error('    The detach walk does not understand these shapes. Nothing was written.')
+    process.exit(1)
+  }
+  const detachRows = detachPlan.flatMap(({ doc, refs }) =>
+    refs.map((r) => ({
+      referrer: { _id: doc._id, _type: doc._type, title: doc.title ?? doc.name ?? null },
+      path: r.path,
+      weak: r.weak,
+      target: {
+        _id: r.ref,
+        _type: targetById.get(r.ref)?._type ?? null,
+        title: targetById.get(r.ref)?.title ?? null,
+      },
+    })),
+  )
+  const strongCount = detachRows.filter((r) => !r.weak).length
+  if (detachRows.length) {
+    console.log(
+      `\n   Detach plan: ${plural(detachRows.length, 'reference path')} in ${plural(referrers.length, 'referrer')} `
+        + `(${strongCount} strong — these block the delete, ${detachRows.length - strongCount} weak).`,
+    )
+  }
+
   // ── 3. Capture what repair will need, BEFORE anything is deleted ─────────────
   // The rebuild recreates these under the same titles with new ids, so title is the
   // repair key. It only exists while the documents do.
@@ -229,6 +314,9 @@ async function main() {
           referencedBy: d.from.map((f) => ({ _id: f._id, _type: f._type, title: f.title ?? null })),
         }
       }),
+      // One row per reference path --detach-referrers unsets: the re-point step writes a
+      // reference to the successor back at `path` on `referrer._id`.
+      detached: detachRows,
     }
     const choices = map.referrers.filter((r) => r.repairBy === 'choice')
     if (choices.length) {
@@ -244,12 +332,13 @@ async function main() {
     if (counts.title) console.log(`     ${counts.title} repair by title  (${plural(refs('title'), 'reference')}) — the rebuild recreates the same title`)
     if (counts.alias) console.log(`     ${counts.alias} repair by alias  (${plural(refs('alias'), 'reference')}) — renamed in Notion, successor named in the map`)
     if (counts.choice) console.log(`     ${counts.choice} need a CHOICE   (${plural(refs('choice'), 'reference')}) — Notion splits these in two; a person picks`)
+    if (detachRows.length) console.log(`     ${plural(detachRows.length, 'reference path')} recorded for --detach-referrers`)
   }
 
   // ── 4. Write, or explain why not ─────────────────────────────────────────────
   if (!apply) {
     console.log(`\n🔍  DRY RUN — nothing deleted from dataset=${DATASET}.`)
-    console.log(`    Re-run with --confirm${dangling.length ? ' --accept-dangling' : ''}${DATASET === 'production' ? ' --yes-production' : ''} to delete.`)
+    console.log(`    Re-run with --confirm${dangling.length ? ' --accept-dangling' : ''}${strongCount ? ' --detach-referrers' : ''}${DATASET === 'production' ? ' --yes-production' : ''} to delete.`)
     return
   }
   if (dangling.length && !acceptDangling) {
@@ -268,6 +357,51 @@ async function main() {
     console.error('    Re-run with --emit-map <path> so the references can be repaired afterwards.')
     process.exit(1)
   }
+  // Sanity has no force-delete: a strong reference from outside fails the chunk holding
+  // its target. Known in advance, so refuse before writing rather than part-way through.
+  if (strongCount && !detachReferrers) {
+    console.error(`\n❌  ${plural(strongCount, 'strong reference')} from outside the catalog will block the delete.`)
+    console.error('    Re-run with --detach-referrers to unset them (every path is in the map first).')
+    process.exit(1)
+  }
+
+  // ── 5. Detach the referrers ──────────────────────────────────────────────────
+  // The map was written above, so every path unset here is already on disk. One
+  // transaction for all referrers: either every reference is detached or none is.
+  // Paths go in REVERSE document order, so removing an array item by index never shifts
+  // an index still to be removed. The first patch per document pins its revision, so an
+  // edit made since the fetch fails the whole transaction instead of being overwritten.
+  if (detachReferrers && detachRows.length) {
+    let tx = client.transaction()
+    for (const { doc, refs } of detachPlan) {
+      refs.slice().reverse().forEach((r, i) => {
+        tx = tx.patch(doc._id, (p) => {
+          const patch = p.unset([r.path])
+          return i === 0 ? patch.ifRevisionId(doc._rev) : patch
+        })
+      })
+    }
+    try {
+      await tx.commit({ visibility: 'sync' })
+    } catch (err) {
+      console.error(`\n❌  Detach failed: ${err.message}`)
+      console.error('    Nothing was detached and nothing was deleted (one transaction).')
+      process.exit(1)
+    }
+    console.log(`\n   detached ${plural(detachRows.length, 'reference path')} from ${plural(detachPlan.length, 'referrer')}`)
+
+    const left = await client.fetch(
+      `*[!(_type in $scope) && references($ids)]{_id, _type}`,
+      { scope: SCOPE, ids: [...targetIds] },
+    )
+    if (left.length) {
+      console.error(`\n❌  ${plural(left.length, 'document')} outside the catalog still reference it after the detach:`)
+      for (const l of left.slice(0, 20)) console.error(`     ${l._type} ${l._id}`)
+      console.error('    Refusing to delete. The detach above IS applied; its paths are in the map.')
+      process.exit(1)
+    }
+    console.log('   re-checked: no document outside the catalog references it')
+  }
 
   // One transaction per chunk: references BETWEEN scoped documents vanish together, so
   // they cannot block one another. A strong reference from OUTSIDE still can — that is
@@ -284,7 +418,14 @@ async function main() {
       process.stdout.write(`\r   deleted ${deleted}/${ids.length}`)
     } catch (err) {
       console.error(`\n❌  Chunk ${i / CHUNK + 1} failed: ${err.message}`)
-      console.error('    Nothing in that chunk was deleted. Earlier chunks are already gone.')
+      console.error(
+        deleted
+          ? `    Nothing in that chunk was deleted. The ${plural(deleted, 'document')} in earlier chunks are already gone.`
+          : '    Nothing was deleted — this was the first chunk.',
+      )
+      if (detachReferrers && detachRows.length) {
+        console.error('    The referrers WERE detached; the map holds every unset path.')
+      }
       process.exit(1)
     }
   }
