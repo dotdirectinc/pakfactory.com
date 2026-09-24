@@ -12,13 +12,10 @@ import {
 import {CustomizationGuidedView} from '@/components/customization-builder/customization-guided-view';
 import {CustomizationWorkspaceView} from '@/components/customization-builder/customization-workspace-view';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
-import {
-    filterOfferBySelections,
-    fromOfferOption,
-    resolveOffer,
-} from '@/lib/catalog/customization-availability';
-import type {CustomizationOption, ProductDimensionRange} from '@/lib/catalog/types';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
+import {narrowByRules} from '@/lib/customization-builder/rules-narrowing';
 import {
     buildStepsFromCatalog,
     clearStep,
@@ -55,6 +52,12 @@ export type CustomizationBuilderProps = {
     dimensionInput?: string;
     /** Sanity product dimensionRange in mm. */
     dimensionRange?: ProductDimensionRange;
+    /**
+     * The product's customization rules (PROD-2556). Narrows each step to what the other
+     * answers still allow. Absent (production before its rebuild, or an older request
+     * line) — the options are listed as given, with no narrowing.
+     */
+    customizationRules?: CustomizationRulesSnapshot | null;
 };
 
 function restoreTypeId(
@@ -85,20 +88,6 @@ function restoreOptionId(
     return null;
 }
 
-function selectionAnswersFromState(state: CustomizationBuilderState) {
-    const out: Record<string, {optionId?: string; typeId?: string}> = {};
-    for (const [key, answer] of Object.entries(state.answers)) {
-        if (!answer || answer.status !== 'set' || !('selection' in answer)) {
-            continue;
-        }
-        out[key] = {
-            optionId: answer.selection.optionId,
-            typeId: answer.selection.typeId,
-        };
-    }
-    return out;
-}
-
 export function CustomizationBuilder({
     open,
     onOpenChange,
@@ -109,6 +98,7 @@ export function CustomizationBuilder({
     initialStepKey,
     dimensionInput,
     dimensionRange,
+    customizationRules,
 }: CustomizationBuilderProps) {
     const dimensionAxisIds = useMemo(
         () =>
@@ -117,36 +107,31 @@ export function CustomizationBuilder({
         [dimensionInput, dimensionRange],
     );
 
-    const filteredCustomizations = useMemo(() => {
-        const asOptions = availableCustomizations as CustomizationOption[];
-        const offer = resolveOffer(asOptions);
-        const {offer: filtered} = filterOfferBySelections(
-            offer,
-            selectionAnswersFromState(value),
-        );
-        return filtered.map(fromOfferOption);
-    }, [availableCustomizations, value.answers]);
+    // One answer per category, as designed; the shared rules decide what each step still lists.
+    const narrowed = useMemo(
+        () => narrowByRules(availableCustomizations, customizationRules, value),
+        [availableCustomizations, customizationRules, value],
+    );
+    const filteredCustomizations = narrowed.available;
 
     const steps = useMemo(
         () => buildStepsFromCatalog(filteredCustomizations),
         [filteredCustomizations],
     );
 
-    // Clear derived answers that became invalid after a material change.
+    // Clear answers another choice has made impossible (e.g. a board the chosen printing
+    // method cannot print on). Silent, as designed; the step simply becomes unanswered.
     useEffect(() => {
-        const asOptions = availableCustomizations as CustomizationOption[];
-        const offer = resolveOffer(asOptions);
-        const {invalidAnswerKeys} = filterOfferBySelections(
-            offer,
-            selectionAnswersFromState(value),
-        );
-        if (invalidAnswerKeys.length === 0) return;
+        if (narrowed.invalidOptionIds.size === 0) return;
         let next = value;
-        for (const key of invalidAnswerKeys) {
-            next = clearStep(next, key);
+        for (const [key, answer] of Object.entries(value.answers)) {
+            if (answer?.status !== 'set' || !('selection' in answer)) continue;
+            if (narrowed.invalidOptionIds.has(answer.selection.optionId)) {
+                next = clearStep(next, key);
+            }
         }
         if (next !== value) onChange(next);
-    }, [availableCustomizations, value.answers]);
+    }, [narrowed, value, onChange]);
 
     const [mode, setMode] = useState<BuilderMode>('guided');
     const [activeKey, setActiveKey] = useState<BuilderStepKey>('dimensions');

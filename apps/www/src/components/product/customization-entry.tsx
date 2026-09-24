@@ -12,6 +12,7 @@ import type {
     CustomizationOption,
     ProductDimensionRange,
 } from '@/lib/catalog/types';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 import {
     buildStepsFromCatalog,
     createEmptyBuilderState,
@@ -35,6 +36,8 @@ const CustomizationBuilder = dynamic(
 
 type CustomizationEntryProps = {
     availableCustomizations: CustomizationOption[];
+    /** The product's customization rules (PROD-2556); the builder narrows on them. */
+    customizationRules?: CustomizationRulesSnapshot;
     builderState: CustomizationBuilderState;
     onBuilderStateChange: (next: CustomizationBuilderState) => void;
     productTitle?: string;
@@ -141,6 +144,7 @@ function SummaryGroup({
 
 export function CustomizationEntry({
     availableCustomizations,
+    customizationRules,
     builderState,
     onBuilderStateChange,
     productTitle,
@@ -238,6 +242,7 @@ export function CustomizationEntry({
                 initialStepKey={initialStepKey}
                 dimensionInput={dimensionInput}
                 dimensionRange={dimensionRange}
+                customizationRules={customizationRules}
             />
         </div>
     );

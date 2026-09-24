@@ -145,7 +145,6 @@ export type CatalogOptionLike = Pick<
     | 'label'
     | 'category'
     | 'categoryTitle'
-    | 'categoryOrder'
     | 'categoryDescription'
     | 'typeId'
     | 'typeSlug'
@@ -158,8 +157,6 @@ export type CatalogOptionLike = Pick<
     | 'description'
     | 'imageUrl'
     | 'preselected'
-    | 'worksOnIds'
-    | 'incompatibleIds'
     | 'configuratorRole'
     | 'role'
 >;

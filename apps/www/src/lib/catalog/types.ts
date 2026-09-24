@@ -1,4 +1,5 @@
 import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 
 export type ProductKind = 'standard' | 'inspiration';
 
@@ -11,8 +12,6 @@ export type CustomizationOption = {
     /** Sanity customizationCategory.slug */
     category: CustomizationCategory;
     categoryTitle?: string;
-    /** @deprecated Prefer policy sortIndex via customization-category-policy. */
-    categoryOrder?: number;
     categoryDescription?: string;
     typeId?: string;
     typeSlug?: string;
@@ -30,10 +29,6 @@ export type CustomizationOption = {
     role?: 'configurable' | 'reference';
     configuratorRole?: 'configurable' | 'reference';
     status?: string;
-    /** Option/type ids this finishing/printing works on (empty = unrestricted). */
-    worksOnIds?: string[];
-    /** Option/type ids this cannot combine with. */
-    incompatibleIds?: string[];
 };
 
 export type CatalogMedia = {
@@ -125,6 +120,11 @@ export type Product = {
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;
     availableCustomizations: CustomizationOption[];
+    /**
+     * The rules this product's options were resolved with (PROD-2556), for the builder to
+     * narrow on as the customer chooses. Absent when the dataset has no rules yet.
+     */
+    customizationRules?: CustomizationRulesSnapshot;
     primarySolution?: string;
     moq?: number;
     leadTimeDays?: number;

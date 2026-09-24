@@ -1,9 +1,5 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
-import {compareCategorySlugs} from '@/lib/catalog/customization-category-policy';
-import {
-    fromOfferOption,
-    type OfferOption,
-} from '@/lib/catalog/customization-availability';
+import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
@@ -203,14 +199,6 @@ function dimensionsStep(): BuilderStep {
         ],
         options: [],
     };
-}
-
-/**
- * Build guided/workspace steps from a resolved + expanded offer.
- * Categories follow www category policy order (not Studio category.order).
- */
-export function buildStepsFromOffer(offer: OfferOption[]): BuilderStep[] {
-    return buildStepsFromCatalog(offer.map(fromOfferOption));
 }
 
 /**
