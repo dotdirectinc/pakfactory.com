@@ -132,6 +132,8 @@ export const EXPERTISE_SERVICE_DIMENSION = /* groq */ `{
   title,
   "slug": slug.current,
   summary,
+  "imageSrc": image.asset->url,
+  "imageAlt": coalesce(image.alt, image.asset->altText),
   "points": points[]{
     label,
     gloss
@@ -162,7 +164,13 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "steps" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": items[]{
+      _key,
+      title,
+      body,
+      link ${LINK_OBJECT}
+    }
   },
   _type == "testimonialsRow" => {
     ${SECTION_CHROME},
@@ -454,6 +462,8 @@ export type ExpertiseServiceDimensionDoc = {
     title?: string | null;
     slug?: string | null;
     summary?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
     points?: {label?: string | null; gloss?: string | null}[] | null;
 };
 
@@ -488,6 +498,19 @@ export type PageSectionBenefitsDoc = PageSectionChromeFields & {
     _type: 'benefits';
     _key: string;
     items?: PageSectionBenefitDoc[] | null;
+};
+
+export type PageSectionStepDoc = {
+    _key?: string | null;
+    title?: string | null;
+    body?: string | null;
+    link?: PageSectionLinkDoc | null;
+};
+
+export type PageSectionStepsDoc = PageSectionChromeFields & {
+    _type: 'steps';
+    _key: string;
+    items?: PageSectionStepDoc[] | null;
 };
 
 export type PageSectionQuoteCtaDoc = PageSectionChromeFields & {
@@ -526,4 +549,5 @@ export type PageSectionDoc =
     | PageSectionSignatureSystemDoc
     | PageSectionBenefitsDoc
     | PageSectionQuoteCtaDoc
+    | PageSectionStepsDoc
     | PageSectionStubDoc;

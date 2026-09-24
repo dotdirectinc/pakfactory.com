@@ -13,6 +13,7 @@
     "seed:corrugated-selectable-props": "node scripts/seed-corrugated-board-selectable-props.mjs",
     "seed:white-lined-detail-demo": "node scripts/seed-white-lined-detail-demo.mjs",
     "seed:beauty-solution-lp": "node scripts/seed-beauty-solution-lp.mjs",
+    "seed:expertise-design": "node scripts/seed-expertise-design.mjs",
     "seed:expertise-strategy": "node scripts/seed-expertise-strategy.mjs",
     "seed:beauty-style-products": "node scripts/seed-beauty-style-products.mjs",
     "seed:test-kids-solution-lp": "node scripts/seed-test-kids-solution-lp.mjs",

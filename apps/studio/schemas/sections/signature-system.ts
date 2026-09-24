@@ -13,6 +13,8 @@ import {
  * (e.g. Strategy's "360° Strategic Framework"), framed by the problems it answers.
  *
  * One job: explain *why* this stage matters and *how* PakFactory approaches it.
+ * A stage with no named method (Design, PROD-2578) leaves System name empty and
+ * uses the same Section to list its services.
  * The "why" (heading · intro · body · problems) and the method (system name ·
  * dimensions) are one band on purpose — each problem opens the dimension that
  * answers it, so splitting them into two Sections would let an editor break that
@@ -101,8 +103,7 @@ export const signatureSystem = defineType({
       type: 'string',
       group: SECTION_GROUPS.content,
       description:
-        'The named method, exactly as the vocabulary locks it (e.g. "360° Strategic Framework").',
-      validation: (Rule) => Rule.required(),
+        'The named method, exactly as the vocabulary locks it (e.g. "360° Strategic Framework"). Leave empty when the stage has none (e.g. Design) — the section then lists its services, with each service\'s image beside the list instead of the ring.',
     }),
     defineField({
       name: 'systemHeading',

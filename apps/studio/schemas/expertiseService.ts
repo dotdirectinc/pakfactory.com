@@ -60,6 +60,23 @@ export const expertiseService = defineType({
       description: 'The sentence or two that renders on the stage page.',
     }),
     defineField({
+      name: 'image',
+      title: 'Image',
+      type: 'image',
+      group: GROUPS.content,
+      description:
+        'Optional — shown beside the service when its stage lists services without a named method (e.g. Design).',
+      options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
+    }),
+    defineField({
       name: 'points',
       title: 'Points',
       type: 'array',
