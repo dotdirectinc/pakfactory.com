@@ -1,6 +1,6 @@
 # ADR-022: The customization model after the four-field retirement — rules are computed, not stored
 
-**Status:** **Proposed** (2026-09-24). Decisions **1–5 describe what has already shipped** and are settled in practice; **6–7 await Eric** and are tracked as PROD-2595. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
+**Status:** **Proposed** (2026-09-24). Decisions **1–5 describe what has already shipped** and are settled in practice; **6–7 are implemented (PROD-2595) with Richard's answers to the four open questions, and await Eric's confirmation** before this moves to Accepted. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
 
 ## Context
 
@@ -72,7 +72,7 @@ Resolution is a **fixpoint, not one pass** — removing an option can remove the
 
 ### 6. Availability is direct ∪ derived — and the derived half is displayed, never stored
 
-⚠️ **Pending Eric — PROD-2595.**
+🟡 **Implemented 2026-09-24 (PROD-2595), awaiting Eric's confirmation.** The product's Customization tab shows a read-only **Derived** section, computed by `resolveForProduct`, with the partner that keeps each option. Nothing derived is stored.
 
 `availableCustomizations` stores **one hop only**. Everything following from it — a lamination the material allows, a printing method the ink allows — is computed.
 
@@ -82,7 +82,16 @@ This un-parks what PROD-2529 listed as out of scope (*"the derived read-only Fin
 
 ### 7. `customizationExceptions` overrides per product, in **both** directions
 
-⚠️ **Pending Eric — PROD-2595.**
+🟡 **Implemented 2026-09-24 (PROD-2595), awaiting Eric's confirmation.** The four questions PROD-2595 left open were answered by Richard on 2026-09-24:
+
+| Question | Answer |
+|---|---|
+| Shape | **One array** of `{customization, mode: 'add' \| 'remove', reason}`. Two arrays would answer one question in two places. The reason is required. |
+| Target | **Option only**, and only an option whose Type another customization decides. A product-decided option is already the product's to list in `availableCustomizations`; a Type-level exception would be the coarse enumeration D61 and D62 removed. |
+| Precedence against a hard exclude | **An Add is never blocked, and always flagged.** Sanity cannot tell a physically impossible pairing from one nobody has drawn: Crystal's exclude rules reached Sanity only as missing pairs in `compatibleCustomizations`, and the registry's rule API is paused. So every Add carries a Studio warning to confirm with production, and the product appears on the exceptions list. Bringing hard excludes into Sanity as their own field was considered and not taken: it would reintroduce an explicit incompatibility list, which D62 removed. |
+| Report | **Yes.** A Studio list, *Products with Exceptions*, in the Products workspace now; admin gets its own with PROD-2560. |
+
+How the rules apply it: a **Remove** comes out before the rules settle, so what depended on it cascades out too; an **Add** is pinned, so the rules never take it back and what depends on it can pair with it. Each exception reports its effect against the rules alone — `added`, `removed`, or `redundant` when the rules already agree — and an Add says why the rules left the option out.
 
 A per-product override for cases the rules get wrong. It must **subtract** (the rules derive an option this product cannot take) **and add** (the rules exclude one it does offer). A deny-list alone misses the second case; widening `availableCustomizations` is wrong for it, because a direct entry there asserts the product decides that type — false for a Finishing option the material decides.
 
@@ -105,9 +114,9 @@ This does **not** resurrect `exceptProducts`, which ADR-017 retired on the groun
 
 **Empty is dangerous in a way it was not.** With Sanity failing closed, an unfilled `compatibleCustomizations` means "combines with nothing" rather than "not yet authored" — so the fill must land before any configurator reads it, exactly as PROD-2529 flagged for its own field.
 
-**A rules change is a content edit.** No deploy, no migration; it recomputes. The cost moves to making sure the *computation* is right, which is what the shared package's 46 tests and the registry-derived `dependsOn` are for.
+**A rules change is a content edit.** No deploy, no migration; it recomputes. The cost moves to making sure the *computation* is right, which is what the shared package's 58 tests and the registry-derived `dependsOn` are for.
 
-**Three Sanity types have no registry attribute** — `Digital Printing`, `Flexography` and `Offset Printing` exist as Types in Sanity and as `printing_method` **values** in the registry. The `dependsOn` generator reports them and leaves them untouched rather than guessing. A real divergence, still unresolved.
+**Three Sanity types had no registry attribute** — `Digital Printing`, `Flexography` and `Offset Printing` existed as Types in Sanity and as `printing_method` **values** in the registry. The development catalog rebuilt from Notion on 2026-09-24 no longer has them; production still does until it is rebuilt the same way.
 
 ## References
 
