@@ -394,6 +394,10 @@ export const TASKS = [
   { task: 'seed:per-type-settings', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
+  // Destructive, and paired with fill:catalog — the purge is only ever a prelude to a
+  // rebuild from Notion + the Miro board. Dry-run by default; refuses to delete
+  // referenced documents without --emit-map, which is what makes the rebuild repairable.
+  { task: 'purge:catalog', pkg: '@pakfactory/studio', why: 'rebuild the catalog from source' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]
