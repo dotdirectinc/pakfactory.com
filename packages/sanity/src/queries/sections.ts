@@ -150,7 +150,9 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "testimonialsRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    layoutVariant,
+    aggregatePlacement
   },
   _type == "logoWall" => {
     ${SECTION_CHROME},
@@ -405,10 +407,14 @@ export type PageSectionVideoCaseStudiesRowDoc = PageSectionChromeFields & {
     cards?: PageSectionVideoCaseStudyCardDoc[] | null;
 };
 
-/** Chrome-only Reviews band; quote items still mock on www. */
+/** Reviews band — chrome from CMS; quotes from Google Places on www. */
 export type PageSectionTestimonialsRowDoc = PageSectionChromeFields & {
     _type: 'testimonialsRow';
     _key: string;
+    /** Carousel (arrows) vs dual-row marquee. Unset = carousel. */
+    layoutVariant?: 'carousel' | 'marquee' | null;
+    /** Where to show Google aggregate. Unset = footer. */
+    aggregatePlacement?: 'footer' | 'eyebrow' | null;
 };
 
 /** Shallow / unwired section until a renderer maps it. */

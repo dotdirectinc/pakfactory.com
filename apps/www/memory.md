@@ -86,7 +86,7 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 7. Logo wall: Industry Page may carry shared default clients; Beauty curatedItems override when set. After seed both show 6 mock clients.
 8. Confirm bands: `logoWall`, `inspirationsGrid`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `videoCaseStudiesRow`, `testimonialsRow`, `faqSection` (+ shared chrome on the template).
 9. Unwired type (e.g. `richText`) → page loads; dev shows amber placeholder; prod skips until wired.
-10. **Reviews** (`testimonialsRow`, Layout tab) — chrome from CMS; quote items still mock until shared `testimonial` docs.
+10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden. PDP still uses mocks until wired.
 
 Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
 
@@ -109,7 +109,7 @@ After a human runs `seed:beauty-solution-lp -- --dataset development --confirm`:
 5. After seed: Industry Page logo wall = 6 clients; Beauty Solution Styles tab = 6; inspirationsGrid cards = solutionStyle refs.
 6. **Known deltas vs fixture (expected):**
    - Optional section `eyebrow` (Studio: “Label above heading”) via `sectionHeaderFields()`; highlight spans stay React-only.
-   - `testimonialsRow` is chrome-only; carousel quotes still come from www mocks until shared `testimonial` docs.
+   - `testimonialsRow` chrome from CMS; carousel quotes from live Google Places (shared 24h cache). Set `GOOGLE_PLACES_PLACE_ID` on Vercel.
    - Case-study cards may use `beauty-seed-*` stub slugs until real studies replace them.
    - Expertise stage titles/slugs come from CMS taxonomy (`packaging-strategy`, etc.).
    - Section CTA labels use `link.label` when set; otherwise fall back to “Learn more”.
