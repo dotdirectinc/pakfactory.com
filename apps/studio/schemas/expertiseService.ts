@@ -1,4 +1,4 @@
-import { defineField, defineType } from 'sanity'
+import { defineArrayMember, defineField, defineType } from 'sanity'
 import { ComponentIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
@@ -15,7 +15,8 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * child pages in a later phase, and embedded content can't become a page without
  * being deleted and re-created (breaking every link). A document with `hasPage`
  * off costs nothing. At launch it renders as `title` + `summary` on its stage's
- * page; `intro`/`body`/`faqs`/SEO apply only once `hasPage` is on.
+ * page (plus `points`, PROD-2577); `intro`/`body`/`faqs`/SEO apply only once
+ * `hasPage` is on.
  *
  * Expect ZERO documents when this ships — that is the intended end state, not an
  * unfinished one. Nothing else in the model depends on it, and the service list
@@ -57,6 +58,38 @@ export const expertiseService = defineType({
       rows: 2,
       group: GROUPS.content,
       description: 'The sentence or two that renders on the stage page.',
+    }),
+    defineField({
+      name: 'points',
+      title: 'Points',
+      type: 'array',
+      group: GROUPS.content,
+      description:
+        'What this service covers, as short points (e.g. "Packaging audit"). Shown under the summary where the stage lists its services (the Signature system section). Add a gloss to explain a term in plain language on first use.',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'servicePoint',
+          title: 'Point',
+          fields: [
+            defineField({
+              name: 'label',
+              title: 'Label',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'gloss',
+              title: 'Gloss',
+              type: 'string',
+              description:
+                'Optional plain-language explanation (e.g. for LCA, EPR, TCO).',
+            }),
+          ],
+          preview: { select: { title: 'label', subtitle: 'gloss' } },
+        }),
+      ],
+      validation: (Rule) => Rule.max(6),
     }),
     defineField({
       name: 'hasPage',

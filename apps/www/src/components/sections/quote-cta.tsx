@@ -15,6 +15,8 @@ type QuoteCtaProps = {
     ctaLabel?: string;
     href: string;
     className?: string;
+    /** Section landmark id — unique per page when rendered from `sections[]`. */
+    id?: string;
     /**
      * Section color band (not app dark/light mode).
      * Defaults to `muted` for the conversion strip.
@@ -31,13 +33,14 @@ export function QuoteCta({
     ctaLabel = 'Start a request',
     href,
     className,
+    id = 'pdp-quote-cta',
     theme = 'muted',
 }: QuoteCtaProps) {
     const shell = sectionThemeShell(theme);
 
     return (
         <section
-            id="pdp-quote-cta"
+            id={id}
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-20', shell.bandClass, className)}
         >

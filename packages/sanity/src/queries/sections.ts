@@ -124,6 +124,21 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
 }`;
 
 /**
+ * Expertise Service as a signature-system dimension (PROD-2577). Also used by
+ * host documents so `signatureSystem` can inherit the stage's `services`.
+ */
+export const EXPERTISE_SERVICE_DIMENSION = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  summary,
+  "points": points[]{
+    label,
+    gloss
+  }
+}`;
+
+/**
  * Projection body for `sections[]{ … }` — use as:
  * `"sections": sections[]${PAGE_SECTIONS_PROJECTION}`
  */
@@ -213,8 +228,32 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
       "slug": slug.current,
       tagline,
       description,
+      status,
       "diagramSrc": diagram.asset->url,
       "diagramAlt": coalesce(diagram.alt, diagram.asset->altText)
+    }
+  },
+  _type == "signatureSystem" => {
+    ${SECTION_CHROME},
+    "bodyPlain": pt::text(body),
+    "problems": problems[]{
+      _key,
+      label,
+      "serviceId": service._ref
+    },
+    problemsCaption,
+    systemName,
+    systemHeading,
+    systemIntro,
+    "services": services[@->status != "discontinued"]->${EXPERTISE_SERVICE_DIMENSION}
+  },
+  _type == "benefits" => {
+    ${SECTION_CHROME},
+    "items": items[]{
+      _key,
+      title,
+      body,
+      symbol
     }
   },
   _type == "guidesRow" => {
@@ -230,7 +269,9 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "quoteCta" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    body,
+    ctaLabel
   },
   _type == "newsletterCta" => {
     ${SECTION_CHROME}
@@ -321,6 +362,7 @@ export type PageSectionExpertiseStageDoc = {
     slug?: string | null;
     tagline?: string | null;
     description?: string | null;
+    status?: string | null;
     diagramSrc?: string | null;
     diagramAlt?: string | null;
 };
@@ -405,6 +447,54 @@ export type PageSectionVideoCaseStudiesRowDoc = PageSectionChromeFields & {
     cards?: PageSectionVideoCaseStudyCardDoc[] | null;
 };
 
+export type ExpertiseServiceDimensionDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    summary?: string | null;
+    points?: {label?: string | null; gloss?: string | null}[] | null;
+};
+
+export type PageSectionSignatureProblemDoc = {
+    _key?: string | null;
+    label?: string | null;
+    /** `_ref` of the Expertise Service that answers this problem. */
+    serviceId?: string | null;
+};
+
+export type PageSectionSignatureSystemDoc = PageSectionChromeFields & {
+    _type: 'signatureSystem';
+    _key: string;
+    bodyPlain?: string | null;
+    problems?: PageSectionSignatureProblemDoc[] | null;
+    problemsCaption?: string | null;
+    systemName?: string | null;
+    systemHeading?: string | null;
+    systemIntro?: string | null;
+    /** Custom dimensions; empty + `listSource` page → host `services` (ADR-020 §8). */
+    services?: ExpertiseServiceDimensionDoc[] | null;
+};
+
+export type PageSectionBenefitDoc = {
+    _key?: string | null;
+    title?: string | null;
+    body?: string | null;
+    symbol?: string | null;
+};
+
+export type PageSectionBenefitsDoc = PageSectionChromeFields & {
+    _type: 'benefits';
+    _key: string;
+    items?: PageSectionBenefitDoc[] | null;
+};
+
+export type PageSectionQuoteCtaDoc = PageSectionChromeFields & {
+    _type: 'quoteCta';
+    _key: string;
+    body?: string | null;
+    ctaLabel?: string | null;
+};
+
 /** Chrome-only Reviews band; quote items still mock on www. */
 export type PageSectionTestimonialsRowDoc = PageSectionChromeFields & {
     _type: 'testimonialsRow';
@@ -426,4 +516,7 @@ export type PageSectionDoc =
     | PageSectionInspirationsGridDoc
     | PageSectionVideoCaseStudiesRowDoc
     | PageSectionTestimonialsRowDoc
+    | PageSectionSignatureSystemDoc
+    | PageSectionBenefitsDoc
+    | PageSectionQuoteCtaDoc
     | PageSectionStubDoc;
