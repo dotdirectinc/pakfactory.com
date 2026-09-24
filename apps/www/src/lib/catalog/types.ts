@@ -298,7 +298,7 @@ export type CustomizationDetail = {
 
 export type CustomizationDetailResult = {
     detail: CustomizationDetail;
-    /** Same-category peers for comparison (Slice G); empty until wired. */
+    /** Same-category library peers for the detail compare band (PROD-1534). */
     peers: CustomizationDetail[];
 };
 
