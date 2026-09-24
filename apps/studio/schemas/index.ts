@@ -36,7 +36,6 @@ import {
   pageSettings,
 } from './blogTypeSettings'
 import { blogPage } from './blogPage'
-import { page } from './page'
 import { homePage } from './homePage'
 import { listingPage } from './listingPage'
 import { contentPage } from './contentPage'
@@ -48,6 +47,7 @@ import { videoPost } from './videoPost'
 import { redirect } from './redirect'
 import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
+import { migrationRun } from './migrationRun'
 import {
   pageBuilderBlocks,
   pageBuilderHome,
@@ -112,7 +112,6 @@ export const schemaTypes = [
   ...caseStudyInlineBlocks,
   contentWidget,
   widgetEmbed,
-  page,
   post,
   videoPost,
   redirect,
@@ -126,6 +125,7 @@ export const schemaTypes = [
 
   // Singletons
   settings,
+  migrationRun,
   blogNavigation,
   postSettings,
   categorySettings,

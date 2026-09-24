@@ -18,7 +18,7 @@ workflow; it lives on `feature/sanity-studio-ux` in the studio worktree.
 ## Preconditions
 
 - **Worktree/branch:** `pakfactory.com-sanity-studio-ux` on `feature/sanity-studio-ux`. Schema work **never** rides on `feature/blog` (see `single-app-commits-and-branches.md`).
-- **Source of truth:** `apps/studio/schemas/` (registered in `schemas/index.ts`), desk in `apps/studio/structure/`, actions in `apps/studio/actions/`, seeds in `apps/studio/scripts/{seed,seed-blog-dev}.mjs`.
+- **Source of truth:** `apps/studio/schemas/` (registered in `schemas/index.ts`), desk in `apps/studio/structure/`, actions in `apps/studio/actions/`, seeds in `apps/studio/scripts/seed-blog-singleton-pages.mjs` / `seed-per-type-settings.mjs`.
 - **Scripts:** content-model **migrations** go in `packages/sanity/scripts/*.ts` (run via `tsx`) — that is where every field rename/backfill lives, e.g. `migrate-customization-applies-to.ts`. `apps/studio/scripts/` is for **operational** scripts only: seeds, redirect maintenance, structure/parity checks. Both take `--dataset` (required, no env fallback) / `--confirm` / `--yes-production`. See `.claude/rules/dataset-script-placement-and-flags.md` and BUG-0032 — this skill previously named only the seeds, and three migrations landed in the wrong directory as a result.
 - **Stack:** Sanity 5, TS 5, pnpm. Project `8293wrxp`; dev dataset **`development`**.
 - Read [`AGENTS.md`](../../AGENTS.md) § Sanity and GROQ (including **Sanity content — agent guardrails**), and the content-team checklist (PROD-1601).
@@ -36,7 +36,7 @@ workflow; it lives on `feature/sanity-studio-ux` in the studio worktree.
 
 1. **Plan against the checklist.** Map the target document's fields to PROD-1601; note which already exist (grep `apps/studio/schemas`). Prefer **additive** changes.
 2. **Edit the schema** with groups/validation/initialValue/preview. Register new types in `schemas/index.ts`.
-3. **Human follow-up (seeds):** document optional updates to `scripts/seed.mjs` / `seed-blog-dev.mjs` in the PR or ticket so a human can exercise the new field — **agents do not run seeds or write documents** ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
+3. **Human follow-up (seeds):** document optional updates to the remaining seed scripts in the PR or ticket so a human can exercise the new field — **agents do not run seeds or write documents** ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
 4. **Typegen:** keep `pnpm sanity typegen` clean (PROD-1490 AC). If typegen isn't wired yet, set up `sanity schema extract` + `sanity-typegen.json` as part of the ticket — downstream GROQ types depend on it.
 5. **Verify locally:** `pnpm dev:studio` (`:3333`), confirm the editor renders the groups/validation/preview as intended; run `pnpm --filter @pakfactory/studio build`.
 6. **Commit** on `feature/sanity-studio-ux` (`feat(studio): …`), schema + structure (+ seed script diffs if added for humans). Then **`pnpm sanity:deploy:staging`** so the staging Studio (`pakfactory-staging.sanity.studio`, `development` dataset) gets the schema and any document actions; `pnpm sanity:deploy:prod` promotes the same build to `pakfactory.sanity.studio` once it is approved. The bare `sanity deploy` has no script on purpose — the dataset is baked in at build time, so the target must be named. See `scripts/sanity/RUNBOOK.md` § Deployed studios.

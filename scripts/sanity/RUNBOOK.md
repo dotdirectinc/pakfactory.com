@@ -4,6 +4,10 @@ Project: `8293wrxp` · Datasets: `production` / `development`
 
 ---
 
+> **Content migrations live next door.** This runbook covers backup / restore / dataset ops.
+> For *which one-shot migrations have run against which dataset*, and the single command that
+> runs the rest, see [`MIGRATIONS.md`](./MIGRATIONS.md) (`pnpm sanity:migrate status --dataset <name>`).
+
 ## npm scripts (quick reference)
 
 | Command | What it does |

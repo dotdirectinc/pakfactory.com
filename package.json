@@ -13,8 +13,6 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "versions:apps": "pnpm --filter @pakfactory/www pkg get name version versionCode && pnpm --filter @pakfactory/blog pkg get name version versionCode && pnpm --filter @pakfactory/studio pkg get name version versionCode",
-    "seed:demo": "pnpm --filter @pakfactory/sanity run seed:demo",
-    "seed:blog-dev": "pnpm --filter @pakfactory/studio run seed:blog-dev",
     "migrate:product-single-refs": "pnpm --filter @pakfactory/sanity run migrate:product-single-refs",
     "clean": "turbo run clean && rm -rf node_modules",
     "env:status": "node scripts/env/switch-env.mjs status",
@@ -37,10 +35,13 @@
     "studio:staging": "node scripts/sanity/studio-target.mjs staging",
     "studio:prod": "node scripts/sanity/studio-target.mjs prod",
     "sanity:deploy:prod": "node scripts/sanity/studio-deploy.mjs prod",
-    "sanity:deploy:staging": "node scripts/sanity/studio-deploy.mjs staging"
+    "sanity:deploy:staging": "node scripts/sanity/studio-deploy.mjs staging",
+    "sanity:migrate": "node scripts/sanity/migrate.mjs"
   },
   "devDependencies": {
     "@pakfactory/sanity": "workspace:^",
+    "@sanity/client": "^7.20.0",
+    "dotenv": "^16.6.1",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"
   },

@@ -7,7 +7,6 @@
     "build": "sanity build",
     "deploy": "sanity deploy",
     "start": "sanity start --port 3333",
-    "seed:blog-dev": "node scripts/seed-blog-dev.mjs",
     "seed:blog-singleton-pages": "node scripts/seed-blog-singleton-pages.mjs",
     "seed:per-type-settings": "node scripts/seed-per-type-settings.mjs",
     "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
@@ -34,6 +33,7 @@
     "migrate:unset-verified-deprecations": "node scripts/migrate-unset-verified-deprecations.mjs",
     "migrate:split-customization-role": "node scripts/migrate-split-customization-role.mjs",
     "migrate:product-tree-featured-image": "node scripts/migrate-product-tree-featured-image.mjs",
+    "migrate:unset-values-per-item": "node scripts/migrate-unset-values-per-item.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",
     "check:structure-types": "node scripts/check-structure-types.mjs",
     "unset:redirect-type": "node scripts/unset-redirect-type.mjs"

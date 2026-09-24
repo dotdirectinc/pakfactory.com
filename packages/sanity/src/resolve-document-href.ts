@@ -117,9 +117,6 @@ export function resolveDocumentPath(doc: SanityLinkDocument): string | null {
       return slug ? `/topics/${slug}` : null;
     case "author":
       return slug ? `/author/${slug}` : null;
-    case "page":
-      if (doc.pageType === "home" || doc.pageRole === "home") return "/";
-      return slug ? `/${slug}` : null;
     case "product": {
       const handle = doc.handle?.trim();
       const collectionSlug = doc.collectionSlug?.trim();

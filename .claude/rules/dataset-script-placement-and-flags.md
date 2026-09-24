@@ -10,7 +10,7 @@ of what follows was in place to stop it.
 | Kind of script | Home | Examples |
 |---|---|---|
 | **Content-model migration** — renaming/moving fields, backfilling a new required field, retyping documents | `packages/sanity/scripts/*.ts` (run via `tsx`) | `migrate-customization-applies-to.ts`, `migrate-product-style-line.ts`, `migrate-rename-commercial-types.ts` |
-| **Operational** — seeds, redirect maintenance, structure/parity checks | `apps/studio/scripts/*.mjs` | `seed-blog-dev.mjs`, `check-structure-types.mjs`, `migrate-redirect-groups.mjs` |
+| **Operational** — seeds, redirect maintenance, structure/parity checks | `apps/studio/scripts/*.mjs` | `seed-blog-singleton-pages.mjs`, `check-structure-types.mjs`, `migrate-redirect-groups.mjs` |
 
 **Before creating a script, look for its predecessor and sit next to it.** A migration that
 renames a field almost always has a sibling that *populated* that field; find it and match
@@ -55,13 +55,64 @@ a plausible substitute and a confident, wrong success message.
 4. Reuse `apps/studio/scripts/lib/script-args.mjs` (`parseScriptArgs`, `describeMode`)
    rather than re-rolling `process.argv.includes`.
 
+## 3. Register it — every one-shot migration goes in the manifest
+
+A script that exists but is not in the register is invisible to the one command that answers
+"what still needs to run against production?". Add an entry to
+[`scripts/sanity/migrations.manifest.mjs`](../../scripts/sanity/migrations.manifest.mjs) in
+the same change as the script:
+
+```
+pnpm sanity:migrate status --dataset production
+pnpm sanity:migrate up     --dataset development --only <id> --confirm
+```
+
+Each entry needs a **probe** — a GROQ expression that is `true` once the migration's effect
+is visible in the dataset. Write it to assert *the old shape is gone*, not that the new field
+is populated: a later migration may remove the successor, and a probe that breaks is worse
+than no probe. If you cannot write one honestly, set `probe: null` and say why in a comment —
+`status` will print `unknown` and refuse to adopt it.
+
+Seeds, imports and parity checks are **repeatable tasks**, not migrations. They are listed
+under `TASKS` in the manifest and are never run by the runner.
+
+See [`scripts/sanity/MIGRATIONS.md`](../../scripts/sanity/MIGRATIONS.md) for the full model —
+why the ledger is a Sanity document rather than a file in git, and what the runner refuses
+to do.
+
 ## Reviewing your own run
 
 A tick is a claim about the dataset the script *used*, not the one you *meant*. Read the
 banner's `dataset=` before believing the result — that line was on screen and correct
 during BUG-0032, and lost to three ✅ characters beneath it.
 
-## Known gap
+## Known gap — closed
 
-The 18 other env-var-only scripts in `apps/studio/scripts/` predate this rule and have not
-been retrofitted. Treat any of them that writes as carrying the same hazard.
+The env-var-only scripts in `apps/studio/scripts/` predated this rule. **All 15 have now
+been retrofitted**; no script in the repo reads `NEXT_PUBLIC_SANITY_DATASET` or
+`SANITY_STUDIO_DATASET` to decide what it writes to.
+
+The retrofit found the hazard was worse than this section described. The 15 did not share
+one convention — they had two **opposite** defaults:
+
+- 7 took `--apply`, so a bare run was a safe dry run;
+- **4 took `--dry-run`, so a bare run WROTE**;
+- **2 seeds had no dry-run mode at all** and wrote the instant they were invoked.
+
+Combined with the `'development'` fallback, `pnpm --filter @pakfactory/studio run
+migrate:body-table` with no arguments wrote to whatever the ambient variable named. That is
+a worse shape than BUG-0032, which at least required someone to type a write flag.
+
+All 15 are now dry-run-by-default behind `--confirm`. `--dry-run` and `--apply` are both
+still accepted as deprecated spellings — they appear in runbooks, and rejecting `--dry-run`
+would fail a command whose intent was *"do not write"*.
+
+The runner still **refuses** to execute anything marked `legacy-env`. Nothing carries that
+marker today; it stays because the hazard is a property of the script shape, and the next
+script copied from an old template will need catching.
+
+**The placement table above is still the two-directory split, and is superseded in
+principle.** [ADR-020](../../docs/adr/0020-sanity-migration-register.md) § Decision 5 settles
+that Sanity scripts consolidate under `scripts/sanity/`, split *one-shot vs repeatable vs
+dataset ops* rather than *content-model vs operational*. Until that move lands, keep following
+§1 so new scripts sit with their predecessors rather than in a third arrangement.
