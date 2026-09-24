@@ -87,14 +87,30 @@ export type ProductTestimonial = {
     quote: string;
     attributionName: string;
     rating: number;
-    positives: string[];
+    /** Optional — Google reviews have no “positives” tags. */
+    positives?: string[];
     source: TestimonialSource;
+    avatarUrl?: string;
+    /** Author profile URL (Google attribution). */
+    authorProfileUrl?: string;
+    /** Individual review URL on Google Maps (Read more target). */
+    reviewUrl?: string;
 };
 
 export type TestimonialsAggregate = {
     source: 'google';
     label: string;
     score: number;
+    /** Google place-level total review count (not filtered subset). */
+    reviewCount?: number;
+};
+
+/** Live Google Reviews band payload (Places interim; GBP later). */
+export type GoogleReviewsBand = {
+    items: ProductTestimonial[];
+    aggregate?: TestimonialsAggregate;
+    /** Place-level Google Maps reviews profile (View all reviews). */
+    reviewsProfileUrl?: string;
 };
 
 export type Product = {
@@ -282,7 +298,7 @@ export type CustomizationDetail = {
 
 export type CustomizationDetailResult = {
     detail: CustomizationDetail;
-    /** Same-category peers for comparison (Slice G); empty until wired. */
+    /** Same-category library peers for the detail compare band (PROD-1534). */
     peers: CustomizationDetail[];
 };
 

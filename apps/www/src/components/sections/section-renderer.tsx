@@ -1,4 +1,4 @@
-import type {ComponentType} from 'react';
+import {Suspense, type ComponentType} from 'react';
 
 import {
     SECTION_COMPONENTS,
@@ -25,6 +25,7 @@ type SectionRendererProps = {
 /**
  * Renders an ordered page `sections` array (ADR-015, ADR-020).
  * Unregistered `_type` → null in production; amber placeholder in development.
+ * `testimonialsRow` is Suspense-wrapped so Places fetch does not block above-fold.
  */
 export function SectionRenderer({sections, components}: SectionRendererProps) {
     if (!sections || sections.length === 0) return null;
@@ -44,6 +45,14 @@ export function SectionRenderer({sections, components}: SectionRendererProps) {
                             type={section._type}
                         />
                     ) : null;
+                }
+
+                if (section._type === 'testimonialsRow') {
+                    return (
+                        <Suspense key={section._key} fallback={null}>
+                            <Component {...section} />
+                        </Suspense>
+                    );
                 }
 
                 return <Component key={section._key} {...section} />;

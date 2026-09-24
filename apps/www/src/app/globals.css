@@ -146,6 +146,12 @@
   background-color: var(--border);
 }
 
+/* Reserve scrollbar space so RemoveScroll / html overflow:hidden does not
+   shift fixed UI (e.g. CompareFloatDock) when a Select or Dialog opens. */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Radix RemoveScroll locks body; also lock html so the window scrollbar
    disappears and fixed dialogs stay visually centered. */
 html:has(body[data-scroll-locked]) {

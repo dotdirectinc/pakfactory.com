@@ -75,6 +75,44 @@ export interface Resolution {
   emptiedTypes: EmptiedType[];
   /** Passes taken to settle. 1 means nothing cascaded. */
   iterations: number;
+  /**
+   * Why each surviving customization-decided option is available: for every type it depends
+   * on, the options in that type it pairs with. Empty for an option of an unconstrained type
+   * (nothing narrows it) and for one pinned by an `add` exception (see `exceptions`).
+   * This is the "why it is derived" the product's Customization tab shows (PROD-2595).
+   */
+  derivedBecause: Map<string, DerivedReason[]>;
+  /** What each of the product's exceptions did, against what the rules alone would say. */
+  exceptions: ExceptionOutcome[];
+}
+
+export interface DerivedReason {
+  /** A type this option's type depends on. */
+  typeId: string;
+  /** The options still available in that type that this option pairs with. */
+  partners: string[];
+}
+
+export interface ExceptionOutcome {
+  optionId: string;
+  typeId: string;
+  mode: 'add' | 'remove';
+  reason?: string;
+  /**
+   * `added` / `removed` — it changed the answer.
+   * `redundant` — the rules already said the same; the exception does nothing.
+   * `conflict` — the same option is both added and removed; both are ignored.
+   * `product-decided` — the option's type is the product's to decide; use
+   *   `availableCustomizations` instead. Ignored.
+   * `unknown-option` — names no option in the catalog. Ignored.
+   */
+  effect: 'added' | 'removed' | 'redundant' | 'conflict' | 'product-decided' | 'unknown-option';
+  /**
+   * For an `add` the rules did not derive: why they did not. `unsatisfied` lists the types it
+   * found no partner in; `no-pairs` means it has no compatible options at all. This is what a
+   * reviewer checks — the rules may be recording a real impossibility.
+   */
+  rulesSaid?: { unsatisfied: string[] } | 'no-pairs';
 }
 
 export function resolveForProduct(
@@ -95,19 +133,40 @@ export function resolveForProduct(
     optionsOfType.set(option.typeId, list);
   }
 
+  // Exceptions (PROD-2595). Only a customization-decided option can take one; the same option
+  // both added and removed is a contradiction, so neither applies.
+  const optionTypeOf = new Map(catalog.options.map((o) => [o._id, o.typeId]));
+  const requested = product.customizationExceptions ?? [];
+  const modesOf = new Map<string, Set<string>>();
+  for (const e of requested) {
+    if (!modesOf.has(e.optionId)) modesOf.set(e.optionId, new Set());
+    modesOf.get(e.optionId)!.add(e.mode);
+  }
+  const classified = requested.map((e) => {
+    const typeId = optionTypeOf.get(e.optionId);
+    if (typeId === undefined || !typeById.has(typeId)) return { e, typeId: typeId ?? '', skip: 'unknown-option' as const };
+    if (typeById.get(typeId)!.availabilityDecidedBy !== 'customization') return { e, typeId, skip: 'product-decided' as const };
+    if (modesOf.get(e.optionId)!.size > 1) return { e, typeId, skip: 'conflict' as const };
+    return { e, typeId, skip: null };
+  });
+  const pinned = new Set(classified.filter((c) => !c.skip && c.e.mode === 'add').map((c) => c.e.optionId));
+  const excluded = new Set(classified.filter((c) => !c.skip && c.e.mode === 'remove').map((c) => c.e.optionId));
+
   // Seed. A product-decided type starts at what the product lists; a
   // customization-decided type starts at everything that could ever appear, and
-  // the loop below takes away.
+  // the loop below takes away. A `remove` exception is taken out BEFORE the loop, so what
+  // depended on it cascades out with it; an `add` is put in and pinned, so the loop never
+  // takes it back and what depends on it can pair with it.
   const available = new Map<string, Set<string>>();
   for (const type of catalog.types) {
     if (type.availabilityDecidedBy === 'product') {
       const offered = offers.find((o) => o.type._id === type._id);
       available.set(type._id, new Set(offered?.optionIds ?? []));
     } else {
-      available.set(
-        type._id,
-        new Set((optionsOfType.get(type._id) ?? []).filter((id) => eligible.has(id))),
+      const ids = (optionsOfType.get(type._id) ?? []).filter(
+        (id) => (eligible.has(id) || pinned.has(id)) && !excluded.has(id),
       );
+      available.set(type._id, new Set(ids));
     }
   }
 
@@ -142,6 +201,7 @@ export function resolveForProduct(
       if (deps.length === 0) continue;
       const set = available.get(type._id)!;
       for (const optionId of [...set]) {
+        if (pinned.has(optionId)) continue;
         const partners = compatibility.pairs.get(optionId) ?? new Set<string>();
         const unsatisfied = deps.filter((dep) => {
           const live = available.get(dep) ?? new Set<string>();
@@ -188,6 +248,48 @@ export function resolveForProduct(
     emptiedTypes.push({ typeId: type._id, had, unsatisfied });
   }
 
+  const derivedBecause = new Map<string, DerivedReason[]>();
+  for (const type of catalog.types) {
+    if (type.availabilityDecidedBy !== 'customization') continue;
+    const deps = (graph.dependsOn[type._id] ?? []).filter((d) => typeById.has(d));
+    for (const optionId of availableByType.get(type._id) ?? []) {
+      if (pinned.has(optionId)) {
+        derivedBecause.set(optionId, []);
+        continue;
+      }
+      const pairs = compatibility.pairs.get(optionId) ?? new Set<string>();
+      derivedBecause.set(
+        optionId,
+        deps.map((dep) => ({
+          typeId: dep,
+          partners: (availableByType.get(dep) ?? []).filter((p) => pairs.has(p)),
+        })),
+      );
+    }
+  }
+
+  // Each exception is judged against the rules alone, so "redundant" and "why the rules
+  // said no" are answers about the model rather than about the other exceptions.
+  let exceptions: ExceptionOutcome[] = [];
+  if (requested.length) {
+    const rulesOnly = resolveForProduct(catalog, { ...product, customizationExceptions: [] }, graph, compatibility);
+    const rulesHave = (optionId: string, typeId: string) =>
+      (rulesOnly.availableByType.get(typeId) ?? []).includes(optionId);
+    exceptions = classified.map(({ e, typeId, skip }) => {
+      const base = { optionId: e.optionId, typeId, mode: e.mode, ...(e.reason ? { reason: e.reason } : {}) };
+      if (skip) return { ...base, effect: skip };
+      const had = rulesHave(e.optionId, typeId);
+      if (e.mode === 'remove') return { ...base, effect: had ? 'removed' : 'redundant' };
+      if (had) return { ...base, effect: 'redundant' };
+      const blocked = rulesOnly.removed.find((r) => r.optionId === e.optionId);
+      return {
+        ...base,
+        effect: 'added',
+        rulesSaid: blocked ? { unsatisfied: blocked.unsatisfied } : 'no-pairs',
+      };
+    });
+  }
+
   return {
     availableByType,
     removed,
@@ -195,5 +297,7 @@ export function resolveForProduct(
     unknownDependencies: [...unknownDependencies],
     emptiedTypes,
     iterations,
+    derivedBecause,
+    exceptions,
   };
 }

@@ -56,4 +56,5 @@ export const MOCK_TESTIMONIALS_AGGREGATE: TestimonialsAggregate = {
     source: 'google',
     label: 'Customer Reviews',
     score: 4.8,
+    reviewCount: 128,
 };

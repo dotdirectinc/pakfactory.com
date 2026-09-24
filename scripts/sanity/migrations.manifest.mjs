@@ -395,6 +395,13 @@ export const TASKS = [
   { task: 'seed:expertise-strategy', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2577); fixed _ids, replaces the stage sections' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
+  // Destructive, and paired with fill:catalog — the purge is only ever a prelude to a
+  // rebuild from Notion + the Miro board. Dry-run by default; refuses to delete
+  // referenced documents without --emit-map, which is what makes the rebuild repairable.
+  { task: 'purge:catalog', pkg: '@pakfactory/studio', why: 'rebuild the catalog from source' },
+  // The purge's other half: writes back the references --detach-referrers unset, to the
+  // rebuilt successors, from the purge map. Idempotent — anything already in place is skipped.
+  { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]

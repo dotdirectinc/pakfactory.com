@@ -20,6 +20,7 @@ import type {
 export type {
   AvailabilityDecidedBy,
   Catalog,
+  CustomizationException,
   CustomizationOptionDoc,
   CustomizationTypeDoc,
   ProductAvailableCustomization,

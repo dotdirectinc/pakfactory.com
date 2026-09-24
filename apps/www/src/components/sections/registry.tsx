@@ -26,6 +26,7 @@ import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {VideoCaseStudiesRow} from '@/components/sections/video-case-studies-row';
 import {TextWithImage} from '@/components/ui/text-with-image';
 import {mapBenefits} from '@/lib/sections/map-benefits';
+import {getGooglePlaceReviews} from '@/lib/places/reviews';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
 import {mapExpertiseSequence} from '@/lib/sections/map-expertise-sequence';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
@@ -140,13 +141,19 @@ function VideoCaseStudiesRowFromSanity(
     );
 }
 
-function TestimonialsRowFromSanity(section: PageSectionTestimonialsRowDoc) {
+async function TestimonialsRowFromSanity(
+    section: PageSectionTestimonialsRowDoc,
+) {
     const mapped = mapTestimonialsRow(section);
+    const reviews = await getGooglePlaceReviews();
+    if (!reviews || reviews.items.length === 0) return null;
+
     return (
         <TestimonialsRow
             sectionId={`section-reviews-${section._key}`}
-            items={mapped.items}
-            aggregate={mapped.aggregate}
+            items={reviews.items}
+            aggregate={reviews.aggregate}
+            reviewsProfileUrl={reviews.reviewsProfileUrl}
             title={mapped.heading}
             description={mapped.intro}
             eyebrow={mapped.eyebrow}
@@ -155,6 +162,8 @@ function TestimonialsRowFromSanity(section: PageSectionTestimonialsRowDoc) {
             borderBottom={mapped.borderBottom}
             paddingBlock={mapped.paddingBlock}
             cta={mapped.cta}
+            layoutVariant={mapped.layoutVariant}
+            aggregatePlacement={mapped.aggregatePlacement}
         />
     );
 }

@@ -53,9 +53,29 @@ export interface ProductAvailableCustomization {
   preselected?: boolean;
 }
 
+/**
+ * A per-product override of what the rules derive (PROD-2595, ADR-022 decision 7).
+ *
+ * Only for options whose type ANOTHER customization decides: a product-decided option is
+ * already the product's to list or not, in `availableCustomizations`.
+ *
+ * `add`    — the rules do not derive this option, but this product does offer it.
+ * `remove` — the rules derive it, but this product cannot take it.
+ *
+ * Sanity cannot tell a physically impossible pairing from one nobody has drawn (both are a
+ * missing pair in `compatibleCustomizations`), so an `add` is never blocked here — it is
+ * reported, and Studio warns on every one.
+ */
+export interface CustomizationException {
+  optionId: string;
+  mode: 'add' | 'remove';
+  reason?: string;
+}
+
 export interface ProductDoc {
   _id: string;
   availableCustomizations?: ProductAvailableCustomization[];
+  customizationExceptions?: CustomizationException[];
 }
 
 export interface Catalog {

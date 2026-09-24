@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getPublishedId, useDocumentStore } from 'sanity'
 import type { UserViewComponent } from 'sanity/structure'
 import { IntentLink } from 'sanity/router'
+import { ProductDerivedCustomizations } from './ProductDerivedCustomizations'
 
 /**
  * The Product "Customization" tab.
@@ -250,6 +251,7 @@ export const ProductAvailableCustomizationsView: UserViewComponent = ({ document
             <strong>Available customizations</strong> on the Specs tab.
           </>
         )}
+        <ProductDerivedCustomizations documentId={documentId} />
       </div>
     )
   }
@@ -426,6 +428,8 @@ export const ProductAvailableCustomizationsView: UserViewComponent = ({ document
           this is a Standard product. Pre-selection only has an effect on an Inspiration product.
         </div>
       ) : null}
+
+      <ProductDerivedCustomizations documentId={documentId} />
     </div>
   )
 }

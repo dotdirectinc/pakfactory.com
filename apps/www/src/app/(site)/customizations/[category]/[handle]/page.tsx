@@ -48,5 +48,10 @@ export default async function CustomizationDetailPage({
         notFound();
     }
 
-    return <CustomizationDetailView detail={result.detail} />;
+    return (
+        <CustomizationDetailView
+            detail={result.detail}
+            peers={result.peers}
+        />
+    );
 }

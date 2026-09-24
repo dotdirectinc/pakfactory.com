@@ -7,6 +7,11 @@ Project: `8293wrxp` · Datasets: `production` / `development`
 > **Content migrations live next door.** This runbook covers backup / restore / dataset ops.
 > For *which one-shot migrations have run against which dataset*, and the single command that
 > runs the rest, see [`MIGRATIONS.md`](./MIGRATIONS.md) (`pnpm sanity:migrate status --dataset <name>`).
+>
+> **Rebuilding the catalog from source** — deleting products and customizations and refilling
+> them from Notion + the Miro board — is a third thing again, and has its own sequence and
+> hazards (strong references block deletes; the four customization categories must survive).
+> See [`CATALOG-REBUILD.md`](./CATALOG-REBUILD.md).
 
 ## npm scripts (quick reference)
 

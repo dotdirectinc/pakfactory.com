@@ -78,7 +78,7 @@ export function TestimonialSourceMark({
     }
 
     return (
-        <div className={cn('flex items-center gap-2', className)}>
+        <div className={cn('flex items-start gap-2', className)}>
             <Mark className="size-5 shrink-0" />
             <div className="flex flex-col gap-1 leading-none">
                 <span className="text-xs text-muted-foreground">Posted on</span>
