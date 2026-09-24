@@ -398,6 +398,9 @@ export const TASKS = [
   // rebuild from Notion + the Miro board. Dry-run by default; refuses to delete
   // referenced documents without --emit-map, which is what makes the rebuild repairable.
   { task: 'purge:catalog', pkg: '@pakfactory/studio', why: 'rebuild the catalog from source' },
+  // The purge's other half: writes back the references --detach-referrers unset, to the
+  // rebuilt successors, from the purge map. Idempotent — anything already in place is skipped.
+  { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]
