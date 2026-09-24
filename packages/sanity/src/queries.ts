@@ -123,6 +123,7 @@ export {
     type CatalogAvailableCustomizationDoc,
     type CatalogCategoryDoc,
     type CatalogCustomizationDetailDoc,
+    type CatalogCustomizationComparePeerDoc,
     type CatalogLibraryOptionDoc,
     type CatalogLineRefDoc,
     type CatalogOptionDoc,

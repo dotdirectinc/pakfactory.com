@@ -364,7 +364,41 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
 }`;
 
 /**
+ * Peer / compare-slot projection for the detail page (PROD-1534).
+ * Same stated-property shape as the current option; no FAQs or product lines.
+ */
+const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  "category": type->category->${CATEGORY_PROJ},
+  "type": type->{
+    _id,
+    title,
+    "slug": slug.current,
+    "declaredProperties": properties[]{
+      usage,
+      "property": property->{
+        _id,
+        title,
+        "slug": slug.current,
+        valuesPerItem
+      }
+    }
+  },
+  "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ}
+}`;
+
+/**
  * Customization detail page (PROD-1299). Same hasPage gate; richer property + copy fields.
+ * Same-category peers seed the detail compare band (PROD-1534).
  */
 export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
@@ -409,7 +443,15 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
       _type == "faqItem" => pt::text(answer),
       defined(@->answer) => pt::text(@->answer)
     )
-  }
+  },
+  "peers": *[
+    _type == "customizationOption" &&
+    hasPage == true &&
+    status == "active" &&
+    defined(slug.current) &&
+    slug.current != $handle &&
+    type->category->slug.current == $category
+  ] | order(title asc) ${CUSTOMIZATION_COMPARE_PEER_PROJ}
 }`;
 
 /**
@@ -668,6 +710,25 @@ export type CatalogDeclaredPropertyDoc = {
   }) | null;
 };
 
+/** Peer option for detail compare (no FAQs / product lines). */
+export type CatalogCustomizationComparePeerDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  metaDescription?: string | null;
+  glossaryPlain?: string | null;
+  benefitsPlain?: string | null;
+  media?: unknown[] | null;
+  category: CatalogCategoryDoc | null;
+  type?: {
+    _id: string;
+    title: string;
+    slug: string | null;
+    declaredProperties?: (CatalogDeclaredPropertyDoc | null)[] | null;
+  } | null;
+  properties?: (CatalogPropertyValueDetailDoc | null)[] | null;
+};
+
 export type CatalogCustomizationDetailDoc = {
   _id: string;
   title: string;
@@ -686,4 +747,6 @@ export type CatalogCustomizationDetailDoc = {
   properties?: (CatalogPropertyValueDetailDoc | null)[] | null;
   productLines?: (CatalogLineRefDoc | null)[] | null;
   faqs?: (CatalogProductFaqDoc | null)[] | null;
+  /** Same-category library options for the compare band (PROD-1534). */
+  peers?: (CatalogCustomizationComparePeerDoc | null)[] | null;
 };

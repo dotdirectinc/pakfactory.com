@@ -378,8 +378,16 @@ export async function getCustomizationDetail(
                     handle: handleKey,
                 });
                 const mapped = doc ? mapSanityCustomizationDetail(doc) : null;
-                if (!mapped) return null;
-                return {detail: mapped, peers: []};
+                if (!mapped || !doc) return null;
+                const peers = (doc.peers ?? [])
+                    .map((peer) =>
+                        peer ? mapSanityCustomizationDetail(peer) : null,
+                    )
+                    .filter(
+                        (item): item is NonNullable<typeof item> =>
+                            item != null,
+                    );
+                return {detail: mapped, peers};
             } catch (err) {
                 if (process.env.NODE_ENV === 'development') {
                     console.error(

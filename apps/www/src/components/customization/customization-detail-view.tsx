@@ -32,12 +32,16 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 type CustomizationDetailViewProps = {
     detail: CustomizationDetail;
+    peers?: CustomizationDetail[];
 };
 
 /**
  * Customization detail (PROD-1299: above-fold, Material Reference, comparison + Slice H chrome).
  */
-export function CustomizationDetailView({detail}: CustomizationDetailViewProps) {
+export function CustomizationDetailView({
+    detail,
+    peers = [],
+}: CustomizationDetailViewProps) {
     const categoryLabel = detail.categoryLabel || detail.categoryValue;
     const categoryListHref = `${WWW_ROUTES.customizations}?category=${encodeURIComponent(detail.categoryValue)}`;
     const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
@@ -136,7 +140,7 @@ export function CustomizationDetailView({detail}: CustomizationDetailViewProps) 
                 </PageDielineSection>
             ) : null}
 
-            <CustomizationComparison />
+            <CustomizationComparison detail={detail} peers={peers} />
             <CustomizationShowcase detail={detail} />
             <CustomizationFormed />
             <FaqSection
