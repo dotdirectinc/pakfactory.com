@@ -238,7 +238,7 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 | 4 | `SolutionExpertise` / `StagesBoard` | `expertiseSequence`; UI `ExpertiseRow` | Wired (WP2) |
 | 5 | `CaseStudiesRow` | `caseStudiesRow` | Wired (WP2) |
 | 6 | `VideoCaseStudiesRow` | **`videoCaseStudiesRow`** | Wired (WP3) |
-| 7 | `TestimonialsRow` | **`testimonialsRow`** (Layout · chrome-only; quote items still mock) | Wired interim |
+| 7 | `TestimonialsRow` | **`testimonialsRow`** (Layout · chrome CMS; quotes from live Google Places — PROD-2587) | Wired |
 | 8 | `FaqSection` | `faqSection` | Wired (WP2) |
 ## Component → Section checklist (reviewers)
 
@@ -255,7 +255,7 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 ## Consequences
 
 - Later Solution LP work packages share one inventory and naming lock — no competing `_type` guesses.
-- `inspirationsGrid`, `videoCaseStudiesRow`, and `testimonialsRow` are wired (schema + GROQ + renderer); Reviews quote **items** stay mock until a shared `testimonial` document exists.
+- `inspirationsGrid`, `videoCaseStudiesRow`, and `testimonialsRow` are wired (schema + GROQ + renderer); Reviews quotes come from live Google Places (PROD-2587), not a shared `testimonial` document.
 - Insert menu is entity-tabbed (Solutions · Case studies · Products · …) with Row/job Studio titles and optional thumbnails.
 - Reviewers reject PRs that encode presentation in CMS, skip the allowlist/entity tab, force catalogue rows into the wrong Section type, require curated lists on both document **and** section, or casually rename `_type` / React outside the locked list.
 - New curated bands default to **§8** (document default + section override) when a page-level list already exists.
