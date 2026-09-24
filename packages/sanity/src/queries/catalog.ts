@@ -5,20 +5,23 @@
  * these projections to retired productPage / handle shapes.
  */
 
+import {
+  PAGE_SECTIONS_PROJECTION,
+  type PageSectionDoc,
+} from './sections';
+
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
 /**
  * Card thumbnail.
  *
- * Style: `image` is its only image since PROD-2511 renamed `cardImage` and
- * dropped `hero` (a card is a render slot, not a field name). `cardImage` stays
- * as a fallback for the one legacy value until it is unset; `hero.image` was
- * empty on every style and is gone. The projection key stays `cardImage`
- * because it names what the consumer renders, not the schema field.
+ * Style: `featuredImage` is the current field (D33 role name). Legacy keys
+ * `image` (PROD-2511) and `cardImage` stay as fallbacks until content is unset.
+ * The projection key stays `cardImage` for the www consumer map.
  *
  * Line: unchanged, `cardImage` → `heroMedia`.
  */
-const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(image, cardImage){
+const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, image, cardImage){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
@@ -239,16 +242,75 @@ export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
 
+/**
+ * Line landing projection (PROD-1914). Reads current productLine fields
+ * (`featuredImage`, `shortDescription`, `description`) with legacy
+ * `cardImage` / `heroMedia` fallbacks until content is migrated.
+ * Do not reuse `LINE_CARD_IMAGE` / `LINE_REF_PROJ` here — those stay on the
+ * retired keys for product-library cards.
+ */
+const LINE_FEATURED_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, cardImage, heroMedia){
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
+const LINE_KIT_MARK = /* groq */ `kitMark{
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   _type == "productLine" &&
   defined(slug.current)
 ] | order(title asc) {
   _id,
   title,
+  h1,
   "slug": slug.current,
-  cardSummary,
-  "description": coalesce(cardSummary, pt::text(intro)),
-  ${LINE_CARD_IMAGE},
+  shortDescription,
+  "description": pt::text(description),
+  ${LINE_FEATURED_IMAGE},
+  ${LINE_KIT_MARK},
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  metaTitle,
+  metaDescription,
+  "expertise": expertise[]->{
+    _id,
+    title,
+    "slug": slug.current,
+    description,
+    diagram{
+      ...,
+      "alt": ${IMAGE_ALT}
+    }
+  },
+  "featuredStudies": featuredStudies[]->{
+    _id,
+    title,
+    "slug": slug.current,
+    cardSummary,
+    "cardImageUrl": cardImage.asset->url,
+    "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText)
+  },
+  "relatedLines": relatedLines[]->{
+    _id,
+    title,
+    "slug": slug.current,
+    shortDescription,
+    ${LINE_FEATURED_IMAGE}
+  },
+  "faqs": faqs[]->{
+    question,
+    "answerPlain": pt::text(answer)
+  },
+  "sections": sections[]${PAGE_SECTIONS_PROJECTION},
+  "template": template->{
+    _id,
+    "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+  },
   "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
     _id,
     title,
@@ -642,13 +704,55 @@ export type CatalogProductDoc = {
   relatedProducts?: CatalogProductDoc[] | null;
 };
 
-export type CatalogProductLineDoc = {
+export type CatalogProductLineExpertiseDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  description?: string | null;
+  diagram?: unknown | null;
+};
+
+export type CatalogProductLineStudyDoc = {
   _id: string;
   title: string;
   slug: string | null;
   cardSummary?: string | null;
-  description?: string | null;
+  cardImageUrl?: string | null;
+  cardImageAlt?: string | null;
+};
+
+export type CatalogProductLineRelatedDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  shortDescription?: string | null;
   cardImage?: unknown | null;
+};
+
+export type CatalogProductLineDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  h1?: string | null;
+  shortDescription?: string | null;
+  /** Plain text from `pt::text(description)`. */
+  description?: string | null;
+  /** Featured image cascade: featuredImage → cardImage → heroMedia. */
+  cardImage?: unknown | null;
+  /** Kit-mark icon above the landing H1. */
+  kitMark?: unknown | null;
+  media?: unknown[] | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  expertise?: (CatalogProductLineExpertiseDoc | null)[] | null;
+  featuredStudies?: (CatalogProductLineStudyDoc | null)[] | null;
+  relatedLines?: (CatalogProductLineRelatedDoc | null)[] | null;
+  faqs?: CatalogProductFaqDoc[] | null;
+  sections?: PageSectionDoc[] | null;
+  template?: {
+    _id?: string | null;
+    sections?: PageSectionDoc[] | null;
+  } | null;
   styles?: CatalogStyleRefDoc[] | null;
   products?: CatalogProductDoc[] | null;
 };

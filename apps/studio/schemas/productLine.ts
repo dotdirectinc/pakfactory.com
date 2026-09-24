@@ -16,6 +16,9 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
  * Declaring is not inheriting: the Line declares WHICH properties its products
  * state (`properties`), never their values — each product still states its own.
  *
+ * Layout template: customer-facing lines select `productLinePage` via `template`
+ * (Main Website → Product Pages → Product Line Page) — twin of solutionIndustryPage.
+ *
  * The styles grid is DERIVED, not listed. Every Style carries a required
  * `productLine` reference (97/97 in production), so membership is a query and the
  * Line never gates it.
@@ -38,7 +41,14 @@ export const productLine = defineType({
   title: 'Product Line',
   type: 'document',
   icon: PackageIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
+  groups: groupsFor([
+    'content',
+    'template',
+    'categorization',
+    'sections',
+    'seo',
+    'social',
+  ]),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -112,8 +122,22 @@ export const productLine = defineType({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'The one image that represents this line — the landing hero, catalog cards, nav and the social fallback.',
+      description:
+        'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
+    })),
+    // Icon above the H1 on the product-line landing (dieline / mark). Distinct from
+    // Featured image, which is the large hero photo and card art.
+    defineField(taggedImageField({
+      name: 'kitMark',
+      title: 'Kit mark',
+      type: 'image',
+      group: GROUPS.content,
+      mediaTags: [MEDIA_TAG.product],
+      options: { hotspot: true },
+      description:
+        'Icon above the H1 on the product-line landing (dieline / mark). Leave empty to use the placeholder.',
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the mark for screen readers and SEO.' })],
     })),
     defineField({
       name: 'media',
@@ -160,6 +184,29 @@ export const productLine = defineType({
       description:
         'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
+    }),
+
+    // ─── TEMPLATE (layout singleton) ──────────────────────────────────────────
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{type: 'productLinePage'}],
+      options: {disableNew: true},
+      description:
+        'Page layout — section order and default headings. Rearrange sections on ' +
+        'the template document (Main Website → Product Pages → Product Line Page), ' +
+        'not on this product line. Band content stays on the Sections tab, matched by key.',
+      hidden: ({document}) => document?.customerFacing !== true,
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const doc = ctx.document as {customerFacing?: boolean} | undefined
+          if (doc?.customerFacing !== true) return true
+          return value
+            ? true
+            : 'Customer-facing product lines must select Product Line Page'
+        }),
     }),
 
     // ─── CATEGORIZATION (declarations + references out) ───────────────────────
