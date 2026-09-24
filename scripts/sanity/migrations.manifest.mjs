@@ -348,6 +348,18 @@ export const MIGRATIONS = [
     // a run there is a clean no-op; `development` holds 10 of 12.
     probe: `count(*[_type == "property" && defined(valuesPerItem)]) == 0`,
   },
+  {
+    id: '20260924-depends-on-requirements',
+    ticket: 'PROD-2595',
+    title: 'Reshape customizationType.dependsOn into requirements (each old reference → a requirement of one)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:depends-on-requirements',
+    script: 'apps/studio/scripts/migrate-depends-on-requirements.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no Type still holds a bare reference in dependsOn. The
+    // relationship fill regroups afterwards; this probe stays true through that.
+    probe: `count(*[_type == "customizationType" && count(dependsOn[defined(_ref)]) > 0]) == 0`,
+  },
 ]
 
 /**

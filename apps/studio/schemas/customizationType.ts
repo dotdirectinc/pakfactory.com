@@ -1,6 +1,21 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
+/** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
+ *  reference reads as a requirement of one, which is what it meant. */
+function requirementRefs(value: unknown): string[][] {
+  if (!Array.isArray(value)) return []
+  return (value as { _ref?: string; anyOf?: { _ref?: string }[] }[])
+    .map((e) =>
+      Array.isArray(e?.anyOf)
+        ? e.anyOf.map((r) => r?._ref?.replace(/^drafts\./, '')).filter((r): r is string => Boolean(r))
+        : e?._ref
+          ? [e._ref.replace(/^drafts\./, '')]
+          : [],
+    )
+    .filter((g) => g.length > 0)
+}
+
 export const customizationType = defineType({
   name: 'customizationType',
   title: 'Customization Type',
@@ -152,7 +167,7 @@ export const customizationType = defineType({
       },
       validation: (Rule) => Rule.required(),
     }),
-    // WHICH SIDE RESTRICTS WHICH (PROD-2558).
+    // WHICH SIDE RESTRICTS WHICH (PROD-2558), AND WHICH DECIDERS ARE ALTERNATIVES (PROD-2595).
     //
     // `compatibleCustomizations` is one flat list of pairs, read from both ends —
     // "recording it on either option is enough" — so it states that Spot UV and Matte go
@@ -160,18 +175,22 @@ export const customizationType = defineType({
     // round. Nothing else in the model carries direction, so without this field the rules
     // engine has to be told it by its caller, and every caller has to agree.
     //
-    // A reference here may be a CATEGORY or a TYPE, because the board states it both ways.
-    // "Material dictates Printing Method" is a category — all sixteen material types, and
-    // listing them one by one would be wrong the day a seventeenth arrives. "Colour System
-    // depends on Printing Method" is a single type. Spot Coating needs three (Surface
-    // Finish, Surface Finish (non-paper) and Lamination), which is still a list of types
-    // rather than the whole Finishing category — that would drag in Foiling, which does
-    // not gate it.
+    // A list of REQUIREMENTS. Every requirement must be met; a requirement is met by a
+    // partner in ANY of its entries. It used to be a flat list, which could not say which
+    // deciders are alternatives: read as all-required, Spot Coating needed a paper AND a
+    // non-paper finish and was empty everywhere; read as any, Heat Transfer Printing would
+    // be offered on a tin for its ink alone. The board already says which — lines drawn in
+    // ONE frame are alternatives, lines in TWO frames are two requirements — and the fill
+    // writes one requirement per frame (backend `depends-on.ts`). Approved by Eric and
+    // Crystal 2026-09-24.
     //
-    // Read as ALL-OF: an option must find a compatible partner in EVERY entry here, and any
-    // one partner within an entry is enough. That is what the board draws as separate
-    // frames, and flattening it to "any pair anywhere" keeps an option alive on the
-    // strength of a relationship from a different axis entirely.
+    //   Printing Method   (Materials)  AND  (Ink)
+    //   Spot Coating      (Lamination OR Surface Finish OR Surface Finish (non-paper))
+    //
+    // An entry may be a CATEGORY or a TYPE, because the board states it both ways.
+    // "Material dictates Printing Method" is a category — all sixteen material types, and
+    // listing them one by one would be wrong the day a seventeenth arrives — and a category
+    // is met by the material the product has, whichever type it is.
     //
     // Empty is a WARNING, not an error. Nothing constrains such a type today, so the rules
     // return every option and say so rather than guessing; making it an error would light
@@ -184,44 +203,70 @@ export const customizationType = defineType({
       type: 'array',
       group: 'specs',
       description:
-        
-          'The customizations a customer picks before this one, which then decide what is left ' +
-          'here. Choose a whole category when anything in it decides — Printing Method is ' +
-          'decided by Materials — or specific types when only some do. Leave empty only while ' +
-          'nobody has worked it out: an empty list means nothing narrows this type, so every ' +
-          'option stays available.',
+        'The customizations a customer picks before this one, which then decide what is left here. ' +
+        'Each row is one requirement, and every row must be met. Put alternatives in the SAME row — ' +
+        'Spot Coating needs a Lamination or a Surface Finish, so both go in one row — and separate ' +
+        'requirements in separate rows: Printing Method needs a material AND an ink. Choose a whole ' +
+        'category when anything in it decides (Materials), or specific types when only some do. ' +
+        'Leave empty only while nobody has worked it out: an empty list means nothing narrows this ' +
+        'type, so every option stays available.',
       hidden: ({ parent }) => parent?.availabilityDecidedBy !== 'customization',
       of: [
         {
-          type: 'reference',
-          to: [{ type: 'customizationCategory' }, { type: 'customizationType' }],
-          options: { disableNew: true },
+          type: 'object',
+          name: 'requirement',
+          title: 'Requirement',
+          fields: [
+            defineField({
+              name: 'anyOf',
+              title: 'Any one of',
+              type: 'array',
+              description: 'A partner in any one of these is enough to meet this requirement.',
+              of: [
+                {
+                  type: 'reference',
+                  to: [{ type: 'customizationCategory' }, { type: 'customizationType' }],
+                  options: { disableNew: true },
+                },
+              ],
+              validation: (Rule) => Rule.required().min(1),
+            }),
+          ],
+          preview: {
+            select: { a0: 'anyOf.0.title', a1: 'anyOf.1.title', a2: 'anyOf.2.title', a3: 'anyOf.3.title' },
+            prepare({ a0, a1, a2, a3 }) {
+              const names = [a0, a1, a2, a3].filter(Boolean) as string[]
+              return {
+                title: names.length ? names.join(' or ') : 'Empty requirement',
+                subtitle: names.length > 1 ? 'Any one of these' : 'Required',
+              }
+            },
+          },
         },
       ],
       validation: (Rule) => [
         Rule.custom((value, context) => {
-          const list = Array.isArray(value) ? value : []
+          const groups = requirementRefs(value)
           const self = (context.document as { _id?: string } | undefined)?._id?.replace(/^drafts\./, '')
-          if (self && list.some((e) => (e as { _ref?: string })?._ref === self)) {
-            return 'A type cannot depend on itself.'
-          }
-          const refs = list.map((e) => (e as { _ref?: string })?._ref).filter(Boolean)
-          if (new Set(refs).size !== refs.length) return 'The same customization is listed more than once.'
+          if (self && groups.some((g) => g.includes(self))) return 'A type cannot depend on itself.'
+          if (groups.some((g) => new Set(g).size !== g.length)) return 'A requirement lists the same customization twice.'
+          const signatures = groups.map((g) => [...g].sort().join('|'))
+          if (new Set(signatures).size !== signatures.length) return 'Two requirements are identical. Keep one.'
           return true
         }),
         // Inert rather than wrong, so it warns and does not clear the data: a Type the
         // PRODUCT decides is never narrowed by another customization, and this list is
         // simply not read for it.
         Rule.custom((value, context) => {
-          const list = Array.isArray(value) ? value : []
+          const groups = requirementRefs(value)
           const decidedBy = (context.document as { availabilityDecidedBy?: string } | undefined)?.availabilityDecidedBy
-          if (list.length === 0 || decidedBy !== 'product') return true
+          if (groups.length === 0 || decidedBy !== 'product') return true
           return 'The product decides whether these options are offered, so nothing is read from this list. Either clear it or change "Who decides".'
         }).warning(),
         Rule.custom((value, context) => {
-          const list = Array.isArray(value) ? value : []
+          const groups = requirementRefs(value)
           const decidedBy = (context.document as { availabilityDecidedBy?: string } | undefined)?.availabilityDecidedBy
-          if (list.length > 0 || decidedBy !== 'customization') return true
+          if (groups.length > 0 || decidedBy !== 'customization') return true
           return 'Nothing decides which of these are available yet, so every option will stay available on every product. The configurator needs this filled in before launch.'
         }).warning(),
         // NAMING YOUR OWN CATEGORY MEANS YOUR SIBLINGS (PROD-2558).
@@ -229,22 +274,13 @@ export const customizationType = defineType({
         // It is a real answer sometimes — Colour System and Printing Method share the
         // Printing category, and Printing Method genuinely gates Colour System. It is a
         // disaster the rest of the time, and silently: a category expands to every type in
-        // it except this one, so "Embossing & Debossing depends on Finishing" means
-        // "Embossing depends on Foiling, Surface Finish and Spot Coating". Embossing has
-        // never been drawn against any of those, an option must find a partner in EVERY
-        // dependency, and the type empties out completely — offering nothing on any product.
-        //
-        // Crystal raised exactly this on 2026-09-22, asking whether two finishings she had
-        // not wired together would be read as incompatible. Drawn as the board states it
-        // they are independent and both survive. This is the one authoring choice that
-        // would make her fear come true, so it warns rather than waits to be discovered on
-        // a product page.
+        // it except this one, so "Embossing & Debossing depends on Finishing" means a partner
+        // in Foiling, Surface Finish or Spot Coating — types Embossing has never been drawn
+        // against — and the type empties out on every product.
         Rule.custom((value, context) => {
-          const list = Array.isArray(value) ? value : []
+          const groups = requirementRefs(value)
           const own = (context.document as { category?: { _ref?: string } } | undefined)?.category?._ref
-          if (!own || list.length === 0) return true
-          const namesOwn = list.some((e) => (e as { _ref?: string })?._ref === own)
-          if (!namesOwn) return true
+          if (!own || !groups.some((g) => g.includes(own))) return true
           return (
             'This names its own category, which means every OTHER type in it — its siblings. ' +
             'That is right when a sibling really does decide this one (Printing Method decides ' +
@@ -252,6 +288,49 @@ export const customizationType = defineType({
             'against those siblings it will offer nothing at all, on every product. Name the ' +
             'specific types that decide it instead, unless you mean the whole category.'
           )
+        }).warning(),
+        // AN OPTION NOT DRAWN AGAINST A REQUIREMENT IS UNAVAILABLE EVERYWHERE (PROD-2595).
+        //
+        // The requirements are the TYPE's, so every option under it is held to all of them.
+        // An option with no compatible partner in some requirement can never be offered —
+        // usually an authoring gap on the board rather than a real limit. Reported by name,
+        // never silently removed or kept. Configurable options only: a reference option is
+        // never combined, so it has nothing to satisfy.
+        Rule.custom(async (value, context) => {
+          const groups = requirementRefs(value)
+          const self = (context.document as { _id?: string } | undefined)?._id?.replace(/^drafts\./, '')
+          if (!self || groups.length === 0) return true
+          try {
+            const client = context.getClient({ apiVersion: '2024-01-01' })
+            const data = await client.fetch<{
+              types: { _id: string; categoryId: string | null }[]
+              options: { title: string | null; partnerTypes: (string | null)[] | null }[]
+            }>(
+              `{
+                "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{ _id, "categoryId": category._ref },
+                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && configuratorRole == "configurable"]{
+                  title,
+                  "partnerTypes": array::unique(
+                    *[_type == "customizationOption" && !(_id in path("drafts.**")) && (_id in ^.compatibleCustomizations[]._ref || ^._id in compatibleCustomizations[]._ref)].type._ref
+                  )
+                }
+              }`,
+              { self },
+            )
+            const membersOf = (ref: string) => {
+              const inCategory = data.types.filter((t) => t.categoryId === ref && t._id !== self).map((t) => t._id)
+              return inCategory.length ? inCategory : [ref]
+            }
+            const expanded = groups.map((g) => new Set(g.flatMap(membersOf)))
+            const gaps = data.options
+              .filter((o) => expanded.some((members) => !(o.partnerTypes ?? []).some((t) => t && members.has(t))))
+              .map((o) => o.title || 'Untitled')
+            if (gaps.length === 0) return true
+            const shown = gaps.slice(0, 5).join(', ') + (gaps.length > 5 ? ` and ${gaps.length - 5} more` : '')
+            return `${shown} ${gaps.length === 1 ? 'has' : 'have'} no compatible option in one of these requirements, so ${gaps.length === 1 ? 'it is' : 'they are'} never offered on any product. Usually a line nobody has drawn on the board yet.`
+          } catch {
+            return true // never block on a lookup failure
+          }
         }).warning(),
       ],
     }),
