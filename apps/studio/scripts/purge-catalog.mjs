@@ -61,7 +61,7 @@
 
 import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
-import { writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve as resolvePath } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
@@ -183,6 +183,75 @@ function findRefPaths(doc, targets) {
   }
   walk(doc, '')
   return out
+}
+
+/**
+ * Split `ids` into delete transactions of about `size`, ordered so no transaction deletes a
+ * document that a LATER one still references. `edges` maps referrer → ids it references.
+ *
+ * Referrers go first. Documents that reference each other in a cycle (a strongly connected
+ * component) always share one transaction, even if that makes it larger than `size` —
+ * splitting a cycle is exactly the case Sanity refuses.
+ */
+function deleteChunks(ids, edges, size) {
+  // Tarjan, iterative (no recursion-depth limit). It emits a component only after every
+  // component it references, i.e. targets before referrers — the reverse of what we want.
+  const index = new Map()
+  const low = new Map()
+  const onStack = new Set()
+  const stack = []
+  const components = []
+  let next = 0
+  for (const root of ids) {
+    if (index.has(root)) continue
+    const work = [[root, 0]]
+    index.set(root, next); low.set(root, next); next++
+    stack.push(root); onStack.add(root)
+    while (work.length) {
+      const frame = work[work.length - 1]
+      const [v] = frame
+      const out = edges.get(v) ?? []
+      if (frame[1] < out.length) {
+        const w = out[frame[1]++]
+        if (!index.has(w)) {
+          index.set(w, next); low.set(w, next); next++
+          stack.push(w); onStack.add(w)
+          work.push([w, 0])
+        } else if (onStack.has(w)) {
+          low.set(v, Math.min(low.get(v), index.get(w)))
+        }
+        continue
+      }
+      work.pop()
+      if (work.length) {
+        const parent = work[work.length - 1][0]
+        low.set(parent, Math.min(low.get(parent), low.get(v)))
+      }
+      if (low.get(v) === index.get(v)) {
+        const component = []
+        let w
+        do {
+          w = stack.pop()
+          onStack.delete(w)
+          component.push(w)
+        } while (w !== v)
+        components.push(component)
+      }
+    }
+  }
+  components.reverse()
+
+  const chunks = []
+  let current = []
+  for (const component of components) {
+    if (current.length && current.length + component.length > size) {
+      chunks.push(current)
+      current = []
+    }
+    current.push(...component)
+  }
+  if (current.length) chunks.push(current)
+  return chunks
 }
 
 async function main() {
@@ -324,7 +393,25 @@ async function main() {
         + 'choice (repairBy: "choice") — Notion splits embossing from debossing, so only the '
         + "referrer's own copy can say which successor it meant."
     }
-    writeFileSync(resolvePath(emitMap), `${JSON.stringify(map, null, 2)}\n`)
+    // After a detach, the referrers no longer point into the catalog, so a re-run finds
+    // nothing to record. Overwriting the earlier map would destroy the only record of the
+    // unset paths — the thing the re-point step needs.
+    const mapPath = resolvePath(emitMap)
+    if (!detachRows.length && existsSync(mapPath)) {
+      let prior = []
+      try {
+        prior = JSON.parse(readFileSync(mapPath, 'utf8')).detached ?? []
+      } catch {
+        // Not a map we wrote; nothing of ours to protect.
+      }
+      if (prior.length) {
+        console.error(`\n❌  ${mapPath} records ${plural(prior.length, 'detached reference path')},`)
+        console.error('    and this run has none to record — overwriting it would lose them.')
+        console.error('    Keep that file for the re-point step and pass a different --emit-map path.')
+        process.exit(1)
+      }
+    }
+    writeFileSync(mapPath, `${JSON.stringify(map, null, 2)}\n`)
     const counts = map.referrers.reduce((a, r) => ({ ...a, [r.repairBy]: (a[r.repairBy] ?? 0) + 1 }), {})
     const refs = (k) => map.referrers.filter((r) => r.repairBy === k).reduce((n, r) => n + r.referencedBy.length, 0)
     console.log(`\n   wrote the repair map to ${resolvePath(emitMap)}`)
@@ -403,21 +490,32 @@ async function main() {
     console.log('   re-checked: no document outside the catalog references it')
   }
 
-  // One transaction per chunk: references BETWEEN scoped documents vanish together, so
-  // they cannot block one another. A strong reference from OUTSIDE still can — that is
-  // what the list above is warning about, and the error names the document.
+  // References BETWEEN scoped documents block a delete too, unless both ends go in the
+  // same transaction. A chunk boundary can split them (a product in a later chunk still
+  // pointing at a customizationOption in chunk 1), so order the chunks by the reference
+  // graph: referrers are deleted before what they reference, and cycles never split.
   const ids = docs.map((d) => d._id)
-  const CHUNK = 100
+  const inbound = await client.fetch(
+    `*[_type in $scope]{_id, "by": *[_type in $scope && references(^._id)]._id}`,
+    { scope: SCOPE },
+  )
+  const edges = new Map()
+  for (const { _id, by } of inbound) {
+    for (const r of by) if (r !== _id) edges.set(r, [...(edges.get(r) ?? []), _id])
+  }
+  const chunks = deleteChunks(ids, edges, 100)
+  const largest = Math.max(...chunks.map((c) => c.length))
+  console.log(`\n   ${plural(chunks.length, 'transaction')}, ordered referrers-first (largest ${largest})`)
+
   let deleted = 0
-  for (let i = 0; i < ids.length; i += CHUNK) {
-    const slice = ids.slice(i, i + CHUNK)
+  for (const [n, slice] of chunks.entries()) {
     const tx = slice.reduce((t, id) => t.delete(id), client.transaction())
     try {
-      await tx.commit({ visibility: 'async' })
+      await tx.commit({ visibility: 'sync' })
       deleted += slice.length
       process.stdout.write(`\r   deleted ${deleted}/${ids.length}`)
     } catch (err) {
-      console.error(`\n❌  Chunk ${i / CHUNK + 1} failed: ${err.message}`)
+      console.error(`\n❌  Chunk ${n + 1} failed: ${err.message}`)
       console.error(
         deleted
           ? `    Nothing in that chunk was deleted. The ${plural(deleted, 'document')} in earlier chunks are already gone.`
