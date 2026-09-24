@@ -3,6 +3,7 @@ import type {
     CustomizationOption,
     ProductDimensionRange,
 } from '@/lib/catalog/types';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 import {
     parseBuilderState,
     type CustomizationBuilderState,
@@ -43,6 +44,8 @@ export type RequestLine = {
     productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
+    /** The product's customization rules at add time (PROD-2556), so /request narrows the same way. */
+    customizationRules?: CustomizationRulesSnapshot;
     /** Product dimensionInput shape key (snapshotted at add). */
     dimensionInput?: string;
     /** Product dimensionRange in mm from Sanity (snapshotted at add). */
@@ -64,6 +67,7 @@ export type AddLineInput = {
     productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
+    customizationRules?: CustomizationRulesSnapshot;
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
     quantities: number[];
@@ -473,6 +477,7 @@ export function createRequestLine(input: AddLineInput): RequestLine {
         ...(input.availableCustomizations?.length
             ? {availableCustomizations: input.availableCustomizations}
             : {}),
+        ...(input.customizationRules ? {customizationRules: input.customizationRules} : {}),
         ...(input.dimensionInput?.trim()
             ? {dimensionInput: input.dimensionInput.trim()}
             : {}),

@@ -34,17 +34,25 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 
 Library options: `customizationOption` with `hasPage == true` and `status == "active"` (D55 / PROD-2482). Configurator pickability is `configuratorRole` and is orthogonal — do not gate the library on deprecated `role == "reference"` (ADR-017 §3 before the split).
 
-### Product offer vs derived categories (PROD-2529)
+### Product availability — shared rules (PROD-2556)
 
-Studio authors **only** product-dictated categories on `product.availableCustomizations` (`materials`, `additional-customization`). Finishing / Printing are **derived** on www from Option `worksOnCustomizations` / `incompatibleWithCustomizations`.
+What a product offers is resolved by **`@pakfactory/sanity/customization-rules`** — the same package Studio's Customization tab uses, so www and Studio cannot disagree (ADR-022). Inputs: `product.availableCustomizations` (product-decided Types), `customizationType.dependsOn` requirements + option `compatibleCustomizations` (customization-decided Types), and `product.customizationExceptions`. A preset (`kind == "inspiration"`) resolves through its `basedOn` product; its own `preselectedIds` still apply.
 
 | Layer | Location |
 | --- | --- |
-| Category policy (`product` \| `derived` \| `code`) | [`src/lib/catalog/customization-category-policy.ts`](../src/lib/catalog/customization-category-policy.ts) |
-| Resolve / expand / filter | [`src/lib/catalog/customization-availability.ts`](../src/lib/catalog/customization-availability.ts) |
-| Derived universe GROQ | `CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY` in [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) |
+| Rules GROQ | `CATALOG_CUSTOMIZATION_RULES_QUERY` + PDP `rulesProduct` in [`packages/sanity/src/queries/catalog.ts`](../../../packages/sanity/src/queries/catalog.ts) |
+| Resolve per product + client snapshot | [`src/lib/catalog/customization-rules.ts`](../src/lib/catalog/customization-rules.ts) |
+| Fetch / cache (`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}:rules`) | `getPreparedRules()` / `resolveProductOffer()` in [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) |
+| Builder narrowing as the customer chooses | [`src/lib/customization-builder/rules-narrowing.ts`](../src/lib/customization-builder/rules-narrowing.ts) |
+| Display order only | [`src/lib/catalog/customization-category-order.ts`](../src/lib/catalog/customization-category-order.ts) |
 
-Builder rail + catalog tabs share policy `sortIndex`: Dimensions → materials → printing → finishing → additional-customization. Empty categories stay hidden. When Studio/Category later authors availability mode, replace the policy seed — keep calling `getCategoryPolicy()` / `compareCategorySlugs()`.
+**Builder UX is unchanged:** one answer per category step. An answered category is *closed* (its other Types stop keeping options available); a step lists its own alternatives, narrowed by the other categories' answers; a chosen option another answer makes impossible is cleared silently.
+
+**Production guard:** until a dataset holds `compatibleCustomizations` and `dependsOn` data, `prepareRules()` returns null and each product shows only what it lists directly (the rules fail closed — applying them to an empty rules dataset would remove every printing/finishing option).
+
+**Snapshot:** each product ships a pruned rules snapshot (its resolvable options only, compact ids, symmetric pairs stored once — ~20–35 KB on dev) with the PDP and every saved request line; narrowing on it is identical to narrowing on the full catalog.
+
+Builder rail + catalog tabs share `compareCategorySlugs()`: Dimensions → materials → printing → finishing → additional-customization. Empty categories stay hidden.
 
 ### Sanity field map
 

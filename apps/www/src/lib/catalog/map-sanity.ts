@@ -160,13 +160,6 @@ function mapAvailableCustomization(
             ? 'many'
             : 'one';
 
-    const worksOnIds = (option.worksOnIds ?? [])
-        .map((id) => id?.trim())
-        .filter((id): id is string => Boolean(id));
-    const incompatibleIds = (option.incompatibleIds ?? [])
-        .map((id) => id?.trim())
-        .filter((id): id is string => Boolean(id));
-
     return {
         id: option._id,
         label: option.title,
@@ -187,12 +180,10 @@ function mapAvailableCustomization(
         configuratorRole,
         role: configuratorRole,
         status: option.status ?? undefined,
-        ...(worksOnIds.length > 0 ? {worksOnIds} : {}),
-        ...(incompatibleIds.length > 0 ? {incompatibleIds} : {}),
     };
 }
 
-/** Map a raw option projection (universe / derived fetch) into a catalog option. */
+/** Map a raw option projection (e.g. from the rules catalog) into a catalog option. */
 export function mapSanityOptionDoc(
     option: CatalogOptionDoc | null | undefined,
     preselected = false,

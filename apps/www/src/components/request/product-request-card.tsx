@@ -424,6 +424,7 @@ export function ProductRequestCard({
                 productTitle={title}
                 dimensionInput={line.dimensionInput}
                 dimensionRange={line.dimensionRange}
+                customizationRules={line.customizationRules}
             />
 
             <Dialog open={qtyOpen} onOpenChange={setQtyOpen}>

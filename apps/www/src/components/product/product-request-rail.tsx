@@ -69,6 +69,9 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             productLineTitle: product.productLine.title,
             productMedia: product.media,
             availableCustomizations: product.availableCustomizations,
+            ...(product.customizationRules
+                ? {customizationRules: product.customizationRules}
+                : {}),
             ...(product.dimensionInput
                 ? {dimensionInput: product.dimensionInput}
                 : {}),
@@ -144,6 +147,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             <section className="rounded-2xl bg-muted p-6">
                 <CustomizationEntry
                     availableCustomizations={product.availableCustomizations}
+                    customizationRules={product.customizationRules}
                     builderState={builderState}
                     onBuilderStateChange={setBuilderState}
                     productTitle={product.title}

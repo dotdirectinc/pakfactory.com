@@ -48,10 +48,7 @@ const TYPE_PROJ = /* groq */ `{
   "category": category->${CATEGORY_PROJ}
 }`;
 
-const COMPAT_REF_IDS = /* groq */ `coalesce(worksOnCustomizations[]._ref, [])`;
-const INCOMPAT_REF_IDS = /* groq */ `coalesce(incompatibleWithCustomizations[]._ref, [])`;
-
-const OPTION_PROJ = /* groq */ `{
+const OPTION_FIELDS = /* groq */ `
   _id,
   title,
   "slug": slug.current,
@@ -62,14 +59,14 @@ const OPTION_PROJ = /* groq */ `{
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
-  "worksOnIds": ${COMPAT_REF_IDS},
-  "incompatibleIds": ${INCOMPAT_REF_IDS},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
   "type": type->${TYPE_PROJ}
-}`;
+`;
+
+const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
 const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
@@ -155,9 +152,25 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ}
 `;
 
-/** PDP-only extras: specs properties, FAQs, curated related (PROD-1913). */
+/**
+ * What the customization rules resolve a product from (PROD-2556). A preset offers what the
+ * product in `basedOn` offers and stores only its own pre-selections (PROD-2530), so for a
+ * preset the list and the exceptions are read from its base. Refs only — the rules catalog
+ * ({@link CATALOG_CUSTOMIZATION_RULES_QUERY}) carries the options themselves.
+ */
+const RULES_PRODUCT_PROJ = /* groq */ `{
+  "available": coalesce(availableCustomizations[].customization._ref, []),
+  "exceptions": coalesce(customizationExceptions[]{ "optionId": customization._ref, mode, reason }, [])
+}`;
+
+/** PDP-only extras: specs properties, FAQs, curated related (PROD-1913), rules inputs (PROD-2556). */
 export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
   ${CATALOG_PRODUCT_FIELDS},
+  "rulesProduct": select(
+    kind == "inspiration" && defined(basedOn) => basedOn->${RULES_PRODUCT_PROJ},
+    ${RULES_PRODUCT_PROJ}
+  ),
+  "preselectedIds": coalesce(availableCustomizations[preselected == true].customization._ref, []),
   "properties": properties[defined(property)]{
     "label": property->title,
     "values": values[]->title
@@ -517,16 +530,34 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Active configurable options in derived categories (finishing / printing).
- * Used by www to expand product offers via worksOn / incompatibleWith (PROD-2529).
+ * Everything `@pakfactory/sanity/customization-rules` computes from (PROD-2556), in one fetch:
+ * every type (who decides it, how many a customer picks, its requirements) and every active
+ * option (its type and compatible options, plus the display fields the builder shows). The
+ * rules need ALL types — a category requirement expands to its member types — and every
+ * active option, configurable or not, because a reference option can still be a partner.
+ *
+ * `requirements` reads `dependsOn` in either shape: `[{anyOf: [ref]}]` (PROD-2595) or an old
+ * flat reference, which is a requirement of one. Large (every compatible pair), so www caches
+ * it server-side and never sends it to the browser whole.
  */
-export const CATALOG_DERIVED_CUSTOMIZATION_OPTIONS_QUERY = /* groq */ `*[
-  _type == "customizationOption" &&
-  status == "active" &&
-  coalesce(configuratorRole, role) == "configurable" &&
-  type->category->slug.current in $categorySlugs
-] | order(title asc) {
-  ${OPTION_PROJ}
+export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
+  "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{
+    _id,
+    title,
+    availabilityDecidedBy,
+    customerSelects,
+    "categoryId": category._ref,
+    "requirements": dependsOn[]{ "refs": coalesce(anyOf[]._ref, [_ref]) }.refs
+  },
+  "options": *[
+    _type == "customizationOption" &&
+    !(_id in path("drafts.**")) &&
+    status == "active"
+  ]{
+    ${OPTION_FIELDS},
+    "typeId": type._ref,
+    "compatibleCustomizations": coalesce(compatibleCustomizations[]._ref, [])
+  }
 }`;
 
 /**
@@ -609,10 +640,35 @@ export type CatalogOptionDoc = {
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
-  worksOnIds?: (string | null)[] | null;
-  incompatibleIds?: (string | null)[] | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
+};
+
+/** {@link CATALOG_CUSTOMIZATION_RULES_QUERY} — the rules catalog (PROD-2556). */
+export type CatalogRulesTypeDoc = {
+  _id: string;
+  title?: string | null;
+  availabilityDecidedBy?: 'product' | 'customization' | null;
+  customerSelects?: 'one' | 'many' | null;
+  categoryId?: string | null;
+  /** One entry per requirement: its category / type refs. */
+  requirements?: (string | null)[][] | null;
+};
+
+export type CatalogRulesOptionDoc = CatalogOptionDoc & {
+  typeId?: string | null;
+  compatibleCustomizations?: (string | null)[] | null;
+};
+
+export type CatalogCustomizationRulesDoc = {
+  types: CatalogRulesTypeDoc[] | null;
+  options: CatalogRulesOptionDoc[] | null;
+};
+
+/** What a product is resolved from: a preset's come from its `basedOn` product. */
+export type CatalogRulesProductDoc = {
+  available?: (string | null)[] | null;
+  exceptions?: { optionId?: string | null; mode?: 'add' | 'remove' | null; reason?: string | null }[] | null;
 };
 
 export type CatalogAvailableCustomizationDoc = {
@@ -698,6 +754,9 @@ export type CatalogProductDoc = {
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
   availableCustomizations?: CatalogAvailableCustomizationDoc[] | null;
+  /** PDP by-slug only (PROD-2556): the rules inputs, and the product's own pre-selections. */
+  rulesProduct?: CatalogRulesProductDoc | null;
+  preselectedIds?: (string | null)[] | null;
   /** PDP by-slug only (PROD-1913). */
   properties?: CatalogProductPropertyDoc[] | null;
   faqs?: CatalogProductFaqDoc[] | null;
