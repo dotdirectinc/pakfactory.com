@@ -30,6 +30,7 @@
     "backfill:customization-role": "node scripts/backfill-customization-option-role.mjs",
     "backfill:availability-decided-by": "node scripts/backfill-availability-decided-by.mjs",
     "purge:catalog": "node scripts/purge-catalog.mjs",
+    "repoint:catalog-refs": "node scripts/repoint-catalog-refs.mjs",
     "split:coating-type": "node scripts/split-coating-customization-type.mjs",
     "migrate:availability-axes": "node scripts/migrate-customization-availability-axes.mjs",
     "migrate:option-category-benefits": "node scripts/migrate-customization-option-category-and-benefits.mjs",
