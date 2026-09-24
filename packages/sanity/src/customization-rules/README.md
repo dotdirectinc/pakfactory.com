@@ -69,7 +69,18 @@ depended on it:
 > pass later.
 
 Read **ALL-OF across dependencies, ANY-OF within one**: an option must find a compatible partner
-in *every* entry of `dependsOn`, and any one partner within an entry is enough. Flattening that
+in *every* entry of `dependsOn`, and any one partner within an entry is enough. **A category
+entry is ONE dependency**: `buildDependencyGraph` returns it as a group of its member types
+(`groups`), satisfied by a partner in any of them. Pass `groups` to `resolveForProduct`.
+Flattening the group into separate requirements, which this package did until 2026-09-24,
+demands a partner in every material type, which no product offers, and empties every
+Materials-decided type on every product.
+
+**What a flat `dependsOn` cannot say.** Two *type* entries are always two requirements. Spot
+Coating lists Lamination, Surface Finish and Surface Finish (non-paper), which the board means as
+alternatives (the registry drew them in one frame). No product has both a paper and a non-paper
+surface finish, so as three requirements Spot Coating is empty everywhere. Settling how
+`dependsOn` expresses "any of these types" is open (PROD-2595 follow-up). Flattening that
 to "any pair anywhere" keeps an option alive on the strength of a relationship from a different
 axis entirely.
 
@@ -108,7 +119,7 @@ After that one-time fill, **Sanity owns the rules** and this package computes fr
 
 ## Tests
 
-58 tests, no Sanity, no network. They use **Node's built-in runner**, not vitest — vitest
+62 tests, no Sanity, no network. They use **Node's built-in runner**, not vitest — vitest
 reports "No test suite found" for these files, which is a runner mismatch and not a failure:
 
 ```bash

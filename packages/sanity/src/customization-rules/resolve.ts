@@ -31,6 +31,28 @@ import type { Catalog, CompatibilityIndex, ProductDoc } from './index';
  */
 export interface DependencyGraph {
   dependsOn: Record<string, string[]>;
+  /**
+   * The same dependencies as GROUPS: an option needs a partner in EVERY group, and ANY member
+   * of a group will do. One group per `dependsOn` entry — a type reference is a group of one;
+   * a category reference is a group of its member types, because "Printing Method is decided
+   * by Materials" means by the material this product has, whichever type it is. Without this
+   * the category's sixteen types each became a separate requirement, and no product offers a
+   * partner in every material type, so every Materials-decided type came out empty.
+   *
+   * `buildDependencyGraph` fills it. A graph without it (a caller stating dependencies by
+   * hand) reads each `dependsOn` type as its own group.
+   */
+  groups?: Record<string, string[][]>;
+}
+
+/** A type's dependency groups, members limited to `keep`. Groups left empty are dropped. */
+export function dependencyGroups(
+  graph: DependencyGraph,
+  typeId: string,
+  keep: (typeId: string) => boolean,
+): string[][] {
+  const groups = graph.groups?.[typeId] ?? (graph.dependsOn[typeId] ?? []).map((d) => [d]);
+  return groups.map((g) => g.filter(keep)).filter((g) => g.length > 0);
 }
 
 export interface EmptiedType {
@@ -174,12 +196,12 @@ export function resolveForProduct(
   const unknownDependencies = new Set<string>();
   for (const type of catalog.types) {
     if (type.availabilityDecidedBy !== 'customization') continue;
-    const deps = (graph.dependsOn[type._id] ?? []).filter((d) => {
+    const groups = dependencyGroups(graph, type._id, (d) => {
       if (typeById.has(d)) return true;
       unknownDependencies.add(d);
       return false;
     });
-    if (deps.length === 0) unconstrainedTypes.push(type._id);
+    if (groups.length === 0) unconstrainedTypes.push(type._id);
   }
 
   // What each type held before any dependency was applied, so a type that ends empty can be
@@ -197,17 +219,22 @@ export function resolveForProduct(
     let changed = false;
     for (const type of catalog.types) {
       if (type.availabilityDecidedBy !== 'customization') continue;
-      const deps = (graph.dependsOn[type._id] ?? []).filter((d) => typeById.has(d));
-      if (deps.length === 0) continue;
+      const groups = dependencyGroups(graph, type._id, (d) => typeById.has(d));
+      if (groups.length === 0) continue;
       const set = available.get(type._id)!;
       for (const optionId of [...set]) {
         if (pinned.has(optionId)) continue;
         const partners = compatibility.pairs.get(optionId) ?? new Set<string>();
-        const unsatisfied = deps.filter((dep) => {
-          const live = available.get(dep) ?? new Set<string>();
-          for (const candidate of live) if (partners.has(candidate)) return false;
-          return true;
-        });
+        // ALL-OF across groups, ANY-OF within one. A group with no partner anywhere reports
+        // every member it looked in.
+        const unsatisfied = groups
+          .filter((group) =>
+            !group.some((dep) => {
+              for (const candidate of available.get(dep) ?? []) if (partners.has(candidate)) return true;
+              return false;
+            }),
+          )
+          .flat();
         if (unsatisfied.length > 0) {
           set.delete(optionId);
           removedBy.set(optionId, unsatisfied);
@@ -241,7 +268,7 @@ export function resolveForProduct(
   for (const type of catalog.types) {
     const had = seeded.get(type._id) ?? 0;
     if (had === 0 || (available.get(type._id)?.size ?? 0) > 0) continue;
-    const deps = (graph.dependsOn[type._id] ?? []).filter((d) => typeById.has(d));
+    const deps = dependencyGroups(graph, type._id, (d) => typeById.has(d)).flat();
     const unsatisfied = [...new Set(
       (optionsOfType.get(type._id) ?? []).flatMap((id) => removedBy.get(id) ?? []),
     )].sort((a, b) => deps.indexOf(a) - deps.indexOf(b));
@@ -251,19 +278,25 @@ export function resolveForProduct(
   const derivedBecause = new Map<string, DerivedReason[]>();
   for (const type of catalog.types) {
     if (type.availabilityDecidedBy !== 'customization') continue;
-    const deps = (graph.dependsOn[type._id] ?? []).filter((d) => typeById.has(d));
+    const groups = dependencyGroups(graph, type._id, (d) => typeById.has(d));
     for (const optionId of availableByType.get(type._id) ?? []) {
       if (pinned.has(optionId)) {
         derivedBecause.set(optionId, []);
         continue;
       }
       const pairs = compatibility.pairs.get(optionId) ?? new Set<string>();
+      // Within a category group only the member types that actually supplied a partner are
+      // named — "Chipboards: Black Chipboard", not fifteen empty material types.
       derivedBecause.set(
         optionId,
-        deps.map((dep) => ({
-          typeId: dep,
-          partners: (availableByType.get(dep) ?? []).filter((p) => pairs.has(p)),
-        })),
+        groups.flatMap((group) =>
+          group
+            .map((dep) => ({
+              typeId: dep,
+              partners: (availableByType.get(dep) ?? []).filter((p) => pairs.has(p)),
+            }))
+            .filter((r, _, all) => r.partners.length > 0 || all.length === 1),
+        ),
       );
     }
   }
