@@ -1,6 +1,6 @@
 # ADR-022: The customization model after the four-field retirement — rules are computed, not stored
 
-**Status:** **Proposed** (2026-09-24). Decisions **1–5 describe what has already shipped** and are settled in practice; **6–7 are implemented (PROD-2595) with Richard's answers to the four open questions, and await Eric's confirmation** before this moves to Accepted. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
+**Status:** **Accepted** (2026-09-24). Decisions **1–5 describe what shipped**; **6–7 were implemented in PROD-2595 (pakfactory.com #630) with Richard's answers to the four open questions, and confirmed 2026-09-24**. **Supersedes [ADR-017](0017-customization-availability-axes-and-role.md) § 1** (the four availability fields) and the Registry-ownership premise ADR-017 rests on. ADR-017's §§ 2, 3, 5 and 6 are untouched — see "What ADR-017 keeps".
 
 ## Context
 
@@ -72,7 +72,7 @@ Resolution is a **fixpoint, not one pass** — removing an option can remove the
 
 ### 6. Availability is direct ∪ derived — and the derived half is displayed, never stored
 
-🟡 **Implemented 2026-09-24 (PROD-2595), awaiting Eric's confirmation.** The product's Customization tab shows a read-only **Derived** section, computed by `resolveForProduct`, with the partner that keeps each option. Nothing derived is stored.
+✅ **Accepted 2026-09-24 — implemented in PROD-2595 (#630).** The product's Customization tab shows a read-only **Derived** section, computed by `resolveForProduct`, with the partner that keeps each option. Nothing derived is stored.
 
 `availableCustomizations` stores **one hop only**. Everything following from it — a lamination the material allows, a printing method the ink allows — is computed.
 
@@ -82,7 +82,7 @@ This un-parks what PROD-2529 listed as out of scope (*"the derived read-only Fin
 
 ### 7. `customizationExceptions` overrides per product, in **both** directions
 
-🟡 **Implemented 2026-09-24 (PROD-2595), awaiting Eric's confirmation.** The four questions PROD-2595 left open were answered by Richard on 2026-09-24:
+✅ **Accepted 2026-09-24 — implemented in PROD-2595 (#630).** The four questions PROD-2595 left open were answered by Richard on 2026-09-24:
 
 | Question | Answer |
 |---|---|
