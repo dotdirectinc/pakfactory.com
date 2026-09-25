@@ -174,10 +174,19 @@ registry (a production write, so a person runs it) and retake the snapshot.
 - Drive images are **optional** — `drive.json` missing means no images are planned and the fill
   records a caveat (`sanity-fill.mjs`). Images do not block the rebuild.
 
-## Status (2026-09-24)
+## Status (2026-09-25)
 
-- `purge:catalog` landed in **PR #619** (dry-run, `--emit-map`, category exclusion, referrer report).
-- `--detach-referrers` is **in progress** on `fix/PROD-2514-purge-detach-referrers` — the first
-  `--confirm` run failed on chunk 1 against the strong-reference rule and rolled back atomically,
-  deleting nothing.
-- No purge has been executed. `development` still holds all 776 catalog documents.
+**`development` is rebuilt and live in www. `production` is untouched and paused.**
+
+| Step | State |
+|---|---|
+| 1–10 on `development` | ✅ Done 2026-09-24. 1,972 catalog documents; 182 of 203 references re-pointed. 9 embossing choices and 12 with no successor are left for Eric. |
+| `dependsOn` as requirements | ✅ PROD-2595 / PROD-2597 (#634, backend #215). One requirement per board frame. |
+| www reads the shared rules | ✅ PROD-2556: #635 rules, #638 `customerSelects` picks, #641 pairwise incompatibilities, #643 disabled-not-hidden |
+| `production` rebuild | ⏸ **Paused** (PROD-2596). www shows each product's own list there until it has `compatibleCustomizations` + `dependsOn` data (the `prepareRules` guard). |
+
+Things that are **by design**, not gaps:
+
+- **Coming-soon options are drafts.** `sanity-fill.mjs` publishes only First Launch customizations. Multi-Level Debossing / Embossing, Plastisol Ink, Translucent Ink and Specialty Wrap sit in `development` as unpublished drafts with their pairs already filled; publishing one makes it appear in the builder.
+- **Incompatibilities live in `compatibleCustomizations`.** The relationship fill asks the registry engine — Crystal's 20 `exclude` rules included — so an unticked pair between two options one product offers is a real clash. There is no `excludes` field (ADR-022 decision 5, amended 2026-09-25).
+- **`nothing-else-alongside-textured-embossing`** reads `value_or_tag: "embossing_debossing"`, but its `subject_type` is `attribute`, so the engine ignores the value and fires on any Embossing pick. It works.
