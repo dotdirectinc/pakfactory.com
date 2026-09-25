@@ -24,11 +24,17 @@ export type SelectionValue = {
     label: string;
 };
 
+/**
+ * A category step's answer. A selection step holds EVERY option picked in that category:
+ * several Types can each contribute (a rigid box is a Chipboard AND an Exterior Wrap), and
+ * each Type allows one or several of its own options per its `customerSelects` (ADR-017 §4b).
+ * Never empty — a step with no picks is `unset`.
+ */
 export type StepAnswer =
     | {status: 'unset'}
     | {status: 'not-sure'}
     | {status: 'set'; dimensions: DimensionsValue}
-    | {status: 'set'; selection: SelectionValue};
+    | {status: 'set'; selections: SelectionValue[]};
 
 /** Display chip for a selected property value (rail / overview). */
 export type PropertySelectionSummaryItem = {

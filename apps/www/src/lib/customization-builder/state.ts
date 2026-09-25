@@ -8,6 +8,7 @@ import {
     dimensionEntryNoteKey,
     type BuilderOption,
     type BuilderStep,
+    type BuilderCardinality,
     type BuilderStepKey,
     type BuilderType,
     type CatalogOptionLike,
@@ -16,6 +17,7 @@ import {
     type DimensionsValue,
     type FaceMeasurements,
     type PropertySelectionSummaryItem,
+    type SelectionValue,
     type StepAnswer,
 } from '@/lib/customization-builder/types';
 
@@ -38,6 +40,12 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         propertySelections: {},
         propertySelectionSummaries: {},
     };
+}
+
+/** The options picked in a selection step, in the order they were picked. */
+export function answerSelections(answer: StepAnswer | undefined): SelectionValue[] {
+    if (answer?.status === 'set' && 'selections' in answer) return answer.selections;
+    return [];
 }
 
 export function getAnswer(
@@ -67,10 +75,7 @@ export function isAnswerReady(
             faceIsFilled(answer.dimensions.internal, axisIds)
         );
     }
-    if ('selection' in answer) {
-        return Boolean(answer.selection.optionId);
-    }
-    return false;
+    return answerSelections(answer).length > 0;
 }
 
 /**
@@ -147,23 +152,37 @@ export function formatDimensionsSummary(
     return '';
 }
 
+/** Option id → its Property summary items (`state.propertySelectionSummaries`). */
+export type PropertySummariesByOption = Partial<
+    Record<string, PropertySelectionSummaryItem[]>
+>;
+
+/** One picked option with its visible Property chips: `Soft Touch · Matte`. */
+export function summarizeSelection(
+    selection: SelectionValue,
+    propertySummaries?: PropertySummariesByOption,
+): string {
+    const chips = visiblePropertySummaries(
+        propertySummaries?.[selection.optionId],
+    ).filter((item) => item.kind === 'chip');
+    return [selection.label, ...chips.map((item) => item.label)].join(' · ');
+}
+
 export function summarizeAnswer(
     answer: StepAnswer,
     specialistLabel: string,
-    options?: {propertySummaries?: PropertySelectionSummaryItem[]},
+    options?: {propertySummaries?: PropertySummariesByOption},
 ): string {
     if (answer.status === 'unset') return 'Not set';
     if (answer.status === 'not-sure') return specialistLabel;
     if ('dimensions' in answer) {
         return formatDimensionsSummary(answer.dimensions) || 'Not set';
     }
-    const visible = (options?.propertySummaries ?? []).filter(
-        (item) => !item.omitFromSummary && item.kind === 'chip',
-    );
-    if (visible.length === 0) return answer.selection.label;
-    return [answer.selection.label, ...visible.map((item) => item.label)].join(
-        ' · ',
-    );
+    const picks = answerSelections(answer);
+    if (picks.length === 0) return 'Not set';
+    return picks
+        .map((pick) => summarizeSelection(pick, options?.propertySummaries))
+        .join(', ');
 }
 
 /** Visible (non-consultation) summary items for UI. */
@@ -340,10 +359,12 @@ export function clearStep(
     if (key === DIMENSIONS_STEP_KEY) {
         delete entryNotes[dimensionEntryNoteKey('external')];
         delete entryNotes[dimensionEntryNoteKey('internal')];
-    } else if (previous.status === 'set' && 'selection' in previous) {
-        delete entryNotes[previous.selection.optionId];
-        delete propertySelections[previous.selection.optionId];
-        delete propertySelectionSummaries[previous.selection.optionId];
+    } else {
+        for (const pick of answerSelections(previous)) {
+            delete entryNotes[pick.optionId];
+            delete propertySelections[pick.optionId];
+            delete propertySelectionSummaries[pick.optionId];
+        }
     }
 
     return {
@@ -356,6 +377,94 @@ export function clearStep(
         propertySelections,
         propertySelectionSummaries,
     };
+}
+
+/** Drop the notes and Property picks that belonged to options no longer selected. */
+function withoutOptionDetails(
+    state: CustomizationBuilderState,
+    optionIds: string[],
+): CustomizationBuilderState {
+    if (optionIds.length === 0) return state;
+    const entryNotes = {...(state.entryNotes ?? {})};
+    const propertySelections = {...(state.propertySelections ?? {})};
+    const propertySelectionSummaries = {
+        ...(state.propertySelectionSummaries ?? {}),
+    };
+    for (const id of optionIds) {
+        delete entryNotes[id];
+        delete propertySelections[id];
+        delete propertySelectionSummaries[id];
+    }
+    return {...state, entryNotes, propertySelections, propertySelectionSummaries};
+}
+
+function withSelections(
+    state: CustomizationBuilderState,
+    key: BuilderStepKey,
+    selections: SelectionValue[],
+): CustomizationBuilderState {
+    return patchAnswer(
+        state,
+        key,
+        selections.length > 0 ? {status: 'set', selections} : {status: 'unset'},
+    );
+}
+
+/**
+ * Pick or un-pick one option in a category step, honouring its Type's `customerSelects`:
+ * picking a second option of a `one` Type replaces the first (a box has one board); a `many`
+ * Type keeps both (Embossing AND Debossing). Other Types in the category are untouched.
+ */
+export function toggleSelection(
+    state: CustomizationBuilderState,
+    key: BuilderStepKey,
+    pick: SelectionValue,
+    cardinality: BuilderCardinality,
+): CustomizationBuilderState {
+    const current = answerSelections(getAnswer(state, key));
+    if (current.some((item) => item.optionId === pick.optionId)) {
+        return withoutOptionDetails(
+            withSelections(
+                state,
+                key,
+                current.filter((item) => item.optionId !== pick.optionId),
+            ),
+            [pick.optionId],
+        );
+    }
+    const replaced =
+        cardinality === 'one'
+            ? current.filter((item) => item.typeId === pick.typeId)
+            : [];
+    const kept = current.filter((item) => !replaced.includes(item));
+    return withoutOptionDetails(
+        withSelections(state, key, [...kept, pick]),
+        replaced.map((item) => item.optionId),
+    );
+}
+
+/**
+ * Remove picked options wherever they are (another answer made them impossible). A step left
+ * with no picks becomes unset. Returns `state` itself when nothing was picked.
+ */
+export function removeSelections(
+    state: CustomizationBuilderState,
+    optionIds: ReadonlySet<string>,
+): CustomizationBuilderState {
+    let next = state;
+    const removed: string[] = [];
+    for (const [key, answer] of Object.entries(state.answers)) {
+        const picks = answerSelections(answer);
+        const kept = picks.filter((item) => !optionIds.has(item.optionId));
+        if (kept.length === picks.length) continue;
+        removed.push(
+            ...picks
+                .filter((item) => optionIds.has(item.optionId))
+                .map((item) => item.optionId),
+        );
+        next = withSelections(next, key, kept);
+    }
+    return withoutOptionDetails(next, removed);
 }
 
 export function patchPropertySelections(
@@ -448,12 +557,8 @@ export function toRequestCustomizations(
             continue;
         }
 
-        if ('selection' in answer) {
-            out.push({
-                id: answer.selection.optionId,
-                label: answer.selection.label,
-                category,
-            });
+        for (const pick of answerSelections(answer)) {
+            out.push({id: pick.optionId, label: pick.label, category});
         }
     }
 
@@ -591,19 +696,31 @@ function parseAnswer(value: unknown): StepAnswer | null {
             },
         };
     }
-    if ('selection' in raw && raw.selection) {
-        const optionId = String(raw.selection.optionId ?? '');
-        const typeId = String(raw.selection.typeId ?? '');
-        return {
-            status: 'set',
-            selection: {
-                typeId,
-                optionId,
-                label: String(raw.selection.label ?? ''),
-            },
-        };
-    }
+    // Lines saved before PROD-2556 hold one `selection` per category.
+    const legacy = (raw as {selection?: unknown}).selection;
+    const list =
+        'selections' in raw && Array.isArray(raw.selections)
+            ? raw.selections
+            : legacy
+              ? [legacy]
+              : [];
+    const selections = list
+        .map(parseSelection)
+        .filter((item): item is SelectionValue => item !== null);
+    if (selections.length > 0) return {status: 'set', selections};
     return null;
+}
+
+function parseSelection(value: unknown): SelectionValue | null {
+    if (!value || typeof value !== 'object') return null;
+    const raw = value as Record<string, unknown>;
+    const optionId = String(raw.optionId ?? '');
+    if (!optionId) return null;
+    return {
+        typeId: String(raw.typeId ?? ''),
+        optionId,
+        label: String(raw.label ?? ''),
+    };
 }
 
 export function seedFromCustomizations(
@@ -618,19 +735,31 @@ export function seedFromCustomizations(
         ? customizations.filter((item) => item.preselected === true)
         : customizations;
 
-    const answers: CustomizationBuilderState['answers'] = {};
+    let seeded = createEmptyBuilderState();
     for (const item of toSeed) {
         const key = item.category?.trim();
         if (!key) continue;
-        answers[key] = {
-            status: 'set',
-            selection: {
-                typeId: item.typeId?.trim() || '',
-                optionId: item.id,
-                label: item.label,
-            },
+        const pick = {
+            typeId: item.typeId?.trim() || '',
+            optionId: item.id,
+            label: item.label,
         };
+        const already = answerSelections(getAnswer(seeded, key));
+        if (already.some((existing) => existing.optionId === pick.optionId)) continue;
+        // A `one` Type keeps its first seeded option rather than the last one listed.
+        const cardinality =
+            item.customerSelects === 'many' || item.cardinality === 'many'
+                ? 'many'
+                : 'one';
+        if (
+            cardinality === 'one' &&
+            already.some((existing) => existing.typeId === pick.typeId)
+        ) {
+            continue;
+        }
+        seeded = toggleSelection(seeded, key, pick, cardinality);
     }
+    const answers = seeded.answers;
 
     const configured = Object.keys(answers).length > 0;
     return {
