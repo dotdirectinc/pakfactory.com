@@ -2,8 +2,10 @@
 /**
  * Seed the Packaging Strategy expertise stage page (PROD-2577 · ADR-020).
  *
- * Copy is the approved Strategy copy (PROD-1888 — `Expertise_Packaging_Strategy_Page_Copy_v1.md`,
- * Consultative archetype). Writes:
+ * Copy is Crystal's approved Strategy copy — the `Expertise_Packaging_Strategy_Page_Copy_v1.md`
+ * attachment on PROD-1888 (Consultative archetype), NOT the edited copy in the POC repo.
+ * Additions on top of it, kept by product decision (2026-09-25): section labels above
+ * headings, the FAQ heading, and case-study cards under the S6 text. Writes:
  *   - 5 `expertiseService` docs — the 360° Strategic Framework dimensions (summary + points)
  *   - 5 `faq` docs (contextual) for the stage
  *   - patches the existing `expertiseStage` slug `packaging-strategy`: hero fields, SEO,
@@ -42,7 +44,7 @@ const CASE_STUDY_SLUGS = ['venture', 'serena-sleep', 'blind-barrels']
 
 const STAGE = {
   tagline: 'Packaging Strategy',
-  h1: 'Packaging strategy for brands built to scale.',
+  h1: 'Get the strategy right before the first box is made.',
   description:
     'High-growth brands need more than packaging. We start with a structured consultation — mapping your brand, portfolio, goals, and operating realities — so every decision that follows is aligned to your business, not just the box.',
   heroCtaLabel: 'Book a strategy consultation',
@@ -221,8 +223,10 @@ function buildSections({ serviceId }) {
       _key: 'strategy-case-studies',
       eyebrow: 'Why our recommendations hold up',
       heading: 'Strategy from a partner who also delivers it.',
+      // Crystal's approved S6 body (PROD-1888); case-study cards below it are a product
+      // decision on top of her text-only layout (2026-09-25).
       intro:
-        "Our strategy is grounded in data from thousands of production runs and shaped by consultative depth. Because we own every stage that follows, the strategy we set is one we're accountable to deliver.",
+        "A strategy is only as good as what gets built from it. Ours is grounded in data from thousands of production runs across our global network — so your plan reflects what's achievable in production — and shaped by consultative depth, not a generic template. Because we own every stage that follows, from design to delivery, the strategy we set is one we're accountable for executing.",
       link: pathLink('See all case studies', '/case-studies'),
       listSource: 'page',
       curatedItems: [],
