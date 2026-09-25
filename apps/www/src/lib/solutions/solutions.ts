@@ -4,15 +4,14 @@ import {unstable_cache} from 'next/cache';
 import {
     CATALOG_PRODUCT_LIBRARY_FIELDS,
     SOLUTION_BY_SLUG_QUERY,
+    SOLUTION_HERO_PRODUCTS_QUERY,
     SOLUTION_LINE_PRODUCTS_QUERY,
     SOLUTION_PAGE_SLUGS_QUERY,
     SOLUTION_STYLE_BY_SLUGS_QUERY,
     SOLUTION_STYLE_PAGE_PARAMS_QUERY,
-    SOLUTION_STYLES_FILTER_QUERY,
     SOLUTION_STYLES_FOR_SOLUTION_QUERY,
     SOLUTION_TAGGED_PRODUCTS_QUERY,
     SOLUTIONS_WITH_PAGES_QUERY,
-    CATALOG_PRODUCT_FIELDS,
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type PageSectionDoc,
@@ -20,13 +19,11 @@ import {
     type SolutionPageSlugDoc,
     type SolutionStyleBySlugsDoc,
     type SolutionStyleCardDoc,
-    type SolutionStyleFilterDoc,
     type SolutionStylePageParamDoc,
     type SolutionWithPageDoc,
 } from '@pakfactory/sanity/queries';
 import {
     filterParams,
-    hasAnyCondition,
     solutionStyleProductFilter,
     solutionStyleQueryParams,
     SOLUTION_STYLE_ORDER,
@@ -78,9 +75,6 @@ import {
     wwwSolutionTag,
 } from '@/lib/www-cache';
 
-/** Cap matches Industry LP hero desktop tile budget. */
-const MAX_HERO_STYLE_PRODUCTS = 16;
-
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
 }
@@ -109,63 +103,25 @@ async function fetchTaggedProducts(
 }
 
 /**
- * Union of inspiration products matching any solutionStyle under this solution.
- * Uses shared solution-style-filter (same membership as Studio match counts).
+ * Industry LP hero tiles — products tagged to this solution via Solutions
+ * categorization (same membership as related-products fallback).
  */
-async function fetchStyleMatchedHeroProducts(
-    solutionId: string,
+async function fetchHeroTaggedProducts(
+    solutionSlug: string,
 ): Promise<Product[]> {
-    if (!isSanityConfigured() || !solutionId) return [];
+    if (!isSanityConfigured() || !solutionSlug) return [];
     try {
-        const client = await draftAwareClient();
-        const styles = await client.fetch<SolutionStyleFilterDoc[]>(
-            SOLUTION_STYLES_FILTER_QUERY,
-            {solutionId},
-        );
-        if (!styles?.length) return [];
-
-        const byId = new Map<string, Product>();
-
-        for (const style of styles) {
-            const raw = style.filter;
-            const authoredFilter = raw
-                ? {
-                      productLines: raw.productLines ?? undefined,
-                      productStyles: raw.productStyles ?? undefined,
-                      keywords: raw.keywords ?? undefined,
-                  }
-                : undefined;
-            const params = filterParams(
-                solutionId,
-                authoredFilter,
-                style.excludedProducts ?? undefined,
-            );
-            if (!hasAnyCondition(params)) continue;
-            const filter = solutionStyleProductFilter(params);
-            if (!filter) continue;
-
-            // CATALOG_PRODUCT_FIELDS includes availableCustomizations for hero preview.
-            const query = `*[${filter} && (status == "active" || !defined(status))] | ${SOLUTION_STYLE_ORDER} [0...${MAX_HERO_STYLE_PRODUCTS}] {
-  ${CATALOG_PRODUCT_FIELDS}
-}`;
-            const docs = await client.fetch<CatalogProductDoc[]>(
-                query,
-                solutionStyleQueryParams(params),
-            );
-            for (const doc of docs ?? []) {
-                const product = mapSanityProduct(doc);
-                if (!product?.slug || !product.title) continue;
-                if (!byId.has(product.slug)) {
-                    byId.set(product.slug, product);
-                }
-            }
-        }
-
-        return Array.from(byId.values()).slice(0, MAX_HERO_STYLE_PRODUCTS);
+        const docs = await (await draftAwareClient()).fetch<
+            CatalogProductDoc[]
+        >(SOLUTION_HERO_PRODUCTS_QUERY, {solutionSlug});
+        return (docs ?? [])
+            .map(mapSanityProduct)
+            .filter((item): item is Product => item != null)
+            .filter(isCompleteProduct);
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error(
-                '[solutions] Style-matched hero products failed:',
+                '[solutions] Sanity hero tagged products failed:',
                 err,
             );
         }
@@ -231,7 +187,7 @@ async function fetchSolutionBySlug(
             curated.length > 0
                 ? curated
                 : await fetchTaggedProducts(slug);
-        const heroProducts = await fetchStyleMatchedHeroProducts(doc._id);
+        const heroProducts = await fetchHeroTaggedProducts(slug);
 
         return {
             page: {...mapped, relatedProducts: tagged},
@@ -317,7 +273,7 @@ async function getSolutionBySlugResult(
         () => fetchSolutionBySlug(key),
         unstable_cache(
             () => fetchSolutionBySlug(key),
-            [wwwSolutionTag(key), 'v7-hero-customizations'],
+            [wwwSolutionTag(key), 'v9-hero-featured-image'],
             {
                 revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
                 tags: [WWW_SOLUTIONS_CACHE_TAG, wwwSolutionTag(key)],

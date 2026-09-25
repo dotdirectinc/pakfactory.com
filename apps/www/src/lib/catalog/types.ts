@@ -127,7 +127,6 @@ export type Product = {
     customizationRules?: CustomizationRulesSnapshot;
     primarySolution?: string;
     moq?: number;
-    leadTimeDays?: number;
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;

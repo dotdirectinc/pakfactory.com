@@ -1,4 +1,5 @@
 import {defineField} from 'sanity'
+import {SectionTokenStringInput} from '../components/SectionTokenStringInput'
 import {
   LINKABLE_TYPE_FILTER,
   linkableReferenceTo,
@@ -69,9 +70,11 @@ export function sectionLinkTargetFields() {
       name: 'relativePath',
       title: 'Site path',
       type: 'string',
-      description: 'Path only, e.g. /products. No domain.',
+      description:
+        'Path only, e.g. /products or /products/%slug%/. No domain. Use Insert page field or type %slug%, etc.',
       placeholder: '/products',
       hidden: ({parent}) => parent?.linkType !== 'path',
+      components: {input: SectionTokenStringInput},
       validation: (Rule) =>
         Rule.custom((value, context) => {
           const parent = context.parent as SectionLinkParent | undefined

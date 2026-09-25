@@ -53,7 +53,7 @@ export function productsToHeroTiles(products: Product[]): SolutionHeroTile[] {
 
 /**
  * Build Industry LP hero props from a Sanity-backed SolutionPage.
- * Tiles come from solutionStyle-matched inspiration products (caller supplies).
+ * Tiles come from products tagged to this solution (caller supplies).
  */
 export function buildSolutionHeroContent(
     page: SolutionPage,

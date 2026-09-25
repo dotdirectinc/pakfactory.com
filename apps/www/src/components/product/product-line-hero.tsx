@@ -19,6 +19,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 const PRODUCT_LINE_HERO_SECTION_ID = 'product-line-hero';
 const HERO_HEADING_ID = 'product-line-hero-heading';
 const KIT_MARK_PLACEHOLDER = '/solutions/hero-kit-placeholder.svg';
+const FEATURE_IMAGE_PLACEHOLDER = '/products/hero-feature-placeholder.svg';
 /** Final kit-mark size (matches prior PageHeading eyebrow). */
 const MARK_SIZE_PX = 128;
 /** Apple Books–style oversized start (~414px desktop). */
@@ -182,12 +183,18 @@ export function ProductLineHero({
         ? kitMarkAlt.trim() || h1
         : `${h1} kit mark placeholder`;
 
-    const featureImage =
-        (featuredSrc
-            ? {src: featuredSrc, alt: featuredImageAlt.trim() || h1}
-            : null) ??
-        frames[0] ??
-        null;
+    const frameWithSrc = frames.find((frame) => Boolean(frame.src?.trim()));
+    const featureImage = featuredSrc
+        ? {src: featuredSrc, alt: featuredImageAlt.trim() || h1}
+        : frameWithSrc
+          ? {
+                src: frameWithSrc.src.trim(),
+                alt: frameWithSrc.alt.trim() || h1,
+            }
+          : {
+                src: FEATURE_IMAGE_PLACEHOLDER,
+                alt: `${h1} featured image placeholder`,
+            };
 
     const quoteCta = {
         label: 'Get a quote',
@@ -406,7 +413,7 @@ export function ProductLineHero({
                     : 'overflow-x-clip overflow-y-visible',
             )}
         >
-            <div className={pageDielineInnerClass()}>
+            <div className={pageDielineInnerClass('flex flex-col gap-1')}>
                 <div className="relative z-10 flex flex-col items-center gap-7 pt-8 pb-0 sm:pt-10 lg:pt-12">
                     <div
                         ref={markRef}
@@ -443,23 +450,21 @@ export function ProductLineHero({
                     </div>
                 </div>
 
-                {featureImage ? (
-                    <div
-                        ref={mediaRef}
-                        className={cn(
-                            'pb-12',
-                            enterPhase === 'pending' && 'opacity-0',
-                        )}
-                    >
-                        <div className="mx-auto w-full xl:max-w-4xl overflow-hidden rounded-2xl">
-                            <HeroFrameImage
-                                src={featureImage.src}
-                                alt={featureImage.alt}
-                                priority
-                            />
-                        </div>
+                <div
+                    ref={mediaRef}
+                    className={cn(
+                        'pb-12',
+                        enterPhase === 'pending' && 'opacity-0',
+                    )}
+                >
+                    <div className="mx-auto w-full xl:max-w-4xl overflow-hidden rounded-2xl">
+                        <HeroFrameImage
+                            src={featureImage.src}
+                            alt={featureImage.alt}
+                            priority
+                        />
                     </div>
-                ) : null}
+                </div>
             </div>
         </section>
     );

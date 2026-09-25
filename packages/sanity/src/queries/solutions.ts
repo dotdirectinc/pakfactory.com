@@ -5,7 +5,7 @@
  */
 
 import type {SolutionStyleFilter} from '../solution-style-filter';
-import {CATALOG_PRODUCT_CARD_FIELDS} from './catalog';
+import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS} from './catalog';
 import {
     PAGE_SECTIONS_PROJECTION,
     type PageSectionDoc,
@@ -181,6 +181,33 @@ export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
   )
 ] | order(title asc) [0...12] {
   ${CATALOG_PRODUCT_CARD_FIELDS}
+}`;
+
+/**
+ * Industry LP hero tiles — products whose Solutions categorization includes
+ * this solution. Full catalog fields for preview customizations; cap 16.
+ * Media prefers `featuredImage` (card/representative) then gallery `media`.
+ */
+export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
+  _type == "product" &&
+  defined(slug.current) &&
+  (status == "active" || !defined(status)) &&
+  (
+    primarySolution->slug.current == $solutionSlug ||
+    $solutionSlug in solutions[]->slug.current
+  )
+] | order(title asc) [0...16] {
+  ${CATALOG_PRODUCT_FIELDS},
+  "media": [
+    ...select(defined(featuredImage.asset) => [featuredImage{
+      ...,
+      "alt": ${IMAGE_ALT}
+    }], []),
+    ...coalesce(media, [])[]{
+      ...,
+      "alt": ${IMAGE_ALT}
+    }
+  ]
 }`;
 
 /** Slugs + formats for solutions that earn a landing page (static params). */

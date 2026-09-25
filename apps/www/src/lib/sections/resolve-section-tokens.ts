@@ -1,5 +1,5 @@
 /**
- * Resolve section eyebrow/heading/intro/link-query page-field tokens (ADR-020).
+ * Resolve section eyebrow/heading/intro/link-query/link-path page-field tokens (ADR-020).
  * Tokens match Studio chips: %h1% %title% %description% %shortName% %shortDescription% %slug%
  */
 
@@ -47,12 +47,13 @@ type SectionWithChrome = {
     intro?: string | null
     link?: {
         query?: string | null
+        relativePath?: string | null
         [key: string]: unknown
     } | null
     [key: string]: unknown
 }
 
-/** Resolve eyebrow + heading + intro + link.query tokens on every section object (shallow). */
+/** Resolve eyebrow + heading + intro + link.query / link.relativePath tokens on every section object (shallow). */
 export function applySectionTokens<T extends SectionWithChrome>(
     sections: T[],
     ctx: SectionTokenContext,
@@ -70,10 +71,20 @@ export function applySectionTokens<T extends SectionWithChrome>(
                 ? resolveSectionTokens(section.intro, ctx)
                 : section.intro,
         }
-        if (section.link?.query) {
+        if (section.link?.query || section.link?.relativePath) {
             next.link = {
                 ...section.link,
-                query: resolveSectionTokens(section.link.query, ctx),
+                ...(section.link.query
+                    ? {query: resolveSectionTokens(section.link.query, ctx)}
+                    : {}),
+                ...(section.link.relativePath
+                    ? {
+                          relativePath: resolveSectionTokens(
+                              section.link.relativePath,
+                              ctx,
+                          ),
+                      }
+                    : {}),
             }
         }
         return next
