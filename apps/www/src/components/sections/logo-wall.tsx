@@ -15,6 +15,8 @@ type LogoWallProps = {
     content: LogoWallContent;
     /** DOM id for the sr-only heading when present. */
     headingId?: string;
+    /** Marquee lap in seconds (LogoMarquee default when omitted). */
+    marqueeDuration?: number;
 };
 
 function toLogoMarqueeItems(content: LogoWallContent): LogoMarqueeItem[] {
@@ -36,6 +38,7 @@ function toLogoMarqueeItems(content: LogoWallContent): LogoMarqueeItem[] {
 export function LogoWall({
     content,
     headingId = 'logo-wall-heading',
+    marqueeDuration,
 }: LogoWallProps) {
     const items = toLogoMarqueeItems(content);
     if (items.length === 0) return null;
@@ -90,7 +93,10 @@ export function LogoWall({
                     </div>
                 ) : null}
                 <div className="min-w-0 flex-1">
-                    <LogoMarquee items={items} />
+                    <LogoMarquee
+                        items={items}
+                        {...(marqueeDuration ? {duration: marqueeDuration} : {})}
+                    />
                 </div>
             </div>
         </PageDielineSection>

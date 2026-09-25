@@ -246,7 +246,7 @@ Prove the playbook on `/solutions/beauty-cosmetics` first; other solutions later
 | 8 | `FaqSection` | `faqSection` | Wired (WP2) |
 ## Expertise stage band → Section inventory (PROD-2577)
 
-Second proof of the playbook: `/expertise/[slug]`, starting with Strategy (Consultative archetype). The breadcrumb and hero are route-owned fields on `expertiseStage`. The body lives on an **Expertise Page** template (`expertiseStage.template` → `expertiseStagePage`, Main Website → Expertise Pages). It is not a singleton, and it owns the whole body (order, headings and content), unlike the Solution / Product Line templates, which own order + chrome only. There is one template per archetype or stage (Packaging Strategy, Packaging Design). Empty lists on the template still inherit from the rendering stage (§8). How-built: [`apps/www/docs/expertise-stage-page.md`](../../apps/www/docs/expertise-stage-page.md).
+Second proof of the playbook: `/expertise/[slug]`, starting with Strategy (Consultative archetype). The breadcrumb and hero are route-owned fields on `expertiseStage`. The body lives on an **Expertise Stage Page** template (`expertiseStage.template` → `expertiseStagePage`, Main Website → Expertise Pages → Expertise Stage Pages). It is not a singleton, and it owns the whole body (order, headings and content), unlike the Solution / Product Line templates, which own order + chrome only. There is one template per archetype or stage (Packaging Strategy, Packaging Design). Empty lists on the template still inherit from the rendering stage (§8). How-built: [`apps/www/docs/expertise-stage-page.md`](../../apps/www/docs/expertise-stage-page.md).
 
 | Order | Band (archetype spine) | CMS `_type` | Notes |
 | ----- | ---------------------- | ----------- | ----- |

@@ -56,9 +56,10 @@ export function Benefits({content, id = 'benefits', className}: BenefitsProps) {
                             cta={cta}
                         />
                     ) : null}
+                    {/* Rises in as it enters (scroll-driven, `motion-rise`). */}
                     <ul
                         className={cn(
-                            'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                            'motion-rise grid grid-cols-1 gap-4 sm:grid-cols-2',
                             items.length >= 4 && 'lg:grid-cols-4',
                             items.length === 3 && 'lg:grid-cols-3',
                         )}
@@ -66,17 +67,19 @@ export function Benefits({content, id = 'benefits', className}: BenefitsProps) {
                         {items.map((item) => (
                             <li
                                 key={item.id}
-                                className="flex flex-col gap-6 rounded-lg bg-muted p-8"
+                                // Colour response only — these cells are not links, so no
+                                // lift or shadow (a pressable look that goes nowhere).
+                                className="group flex flex-col gap-4 rounded-2xl border border-border bg-muted/40 p-8 transition-colors duration-300 hover:border-foreground/25 hover:bg-muted motion-reduce:transition-none"
                             >
-                                <span className="flex size-10 items-center justify-center rounded-full bg-background text-foreground">
+                                <span className="flex size-10 items-center justify-center rounded-full bg-background text-foreground transition-colors duration-300 group-hover:bg-foreground group-hover:text-background motion-reduce:transition-none">
                                     <Icon icon={item.icon} size="md" />
                                 </span>
                                 <div className="flex flex-col gap-2">
-                                    <h3 className="text-lg font-semibold text-foreground">
+                                    <h3 className="text-lg font-medium leading-snug text-foreground">
                                         {item.title}
                                     </h3>
                                     {item.body ? (
-                                        <p className="text-sm leading-6 text-muted-foreground">
+                                        <p className="text-base leading-7 text-muted-foreground">
                                             {item.body}
                                         </p>
                                     ) : null}

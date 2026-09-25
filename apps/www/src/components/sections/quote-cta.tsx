@@ -80,7 +80,12 @@ export function QuoteCta({
                     <Button
                         asChild
                         size="lg"
-                        variant={inverse ? 'secondary' : 'default'}
+                        variant={inverse ? 'outline' : 'default'}
+                        className={
+                            inverse
+                                ? 'border-transparent bg-background text-foreground hover:bg-background/90'
+                                : undefined
+                        }
                     >
                         <Link href={href}>{ctaLabel}</Link>
                     </Button>
