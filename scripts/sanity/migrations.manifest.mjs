@@ -361,6 +361,18 @@ export const MIGRATIONS = [
     probe: `count(*[_type == "customizationType" && count(dependsOn[defined(_ref)]) > 0]) == 0`,
   },
   {
+    id: '20260925-remove-seeded-solution-styles',
+    ticket: 'PROD-2605',
+    title: 'Remove the Solution Styles the PROD-1541 seed scripts created, before the Notion fill',
+    pkg: '@pakfactory/studio',
+    task: 'remove:seeded-solution-styles',
+    script: 'apps/studio/scripts/remove-seeded-solution-styles.mjs',
+    args: 'flags',
+    // Asserts the OLD state is gone: no document with a seed prefix. Stays true unless a seed
+    // script is run again — which it must not be once the fill owns Solution Styles.
+    probe: `count(*[_type == "solutionStyle" && (string::startsWith(_id, "solutionStyle.beauty-") || string::startsWith(_id, "drafts.solutionStyle.beauty-") || string::startsWith(_id, "solutionStyle.test-kids-") || string::startsWith(_id, "drafts.solutionStyle.test-kids-"))]) == 0`,
+  },
+  {
     id: '20260925-expertise-stage-template',
     ticket: 'PROD-2577',
     title: 'Move expertiseStage.sections onto Expertise Page templates (expertiseStage.template)',
