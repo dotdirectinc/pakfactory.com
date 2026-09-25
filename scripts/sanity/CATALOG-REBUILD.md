@@ -196,6 +196,28 @@ pnpm --filter @pakfactory/studio run fill:catalog -- --review ~/cf/ss/review --d
 pnpm --filter @pakfactory/studio run fill:catalog -- --review ~/cf/ss/review --dataset development --confirm
 ```
 
+## FAQs
+
+FAQs are outside the catalog purge, but follow the same policy: Notion's FAQ table is the only
+source, so `populate:faqs` **replaces** every `faq` rather than merging. It deletes every FAQ that
+is not a Notion row (and any Help Category titled "test"), writes the Notion rows as
+`faq-<Notion page id>`, and replaces the `faqs` list on each product line (Notion `Product Line`)
+and expertise stage (Notion `Expertise`, Type = Expertise only). Type → scope: Generic → general,
+Product / Expertise → contextual. `category` is left blank — Notion has no category column
+(2026-09-25). Other documents that referenced a deleted FAQ have just those items removed.
+
+```bash
+# back up first, then dry run, read the plan, then confirm
+cd <repo>
+npx sanity@latest dataset export development ~/cf/dev-before-faq.tar.gz -p 8293wrxp
+NOTION_TOKEN=<from backend .env.local> pnpm --filter @pakfactory/studio run populate:faqs -- --dataset development
+NOTION_TOKEN=<from backend .env.local> pnpm --filter @pakfactory/studio run populate:faqs -- --dataset development --confirm
+```
+
+Dry run on 2026-09-25: 23 test FAQs + 1 test Help Category deleted, 101 FAQs written (7 general,
+94 contextual), 13 lines and 5 stages re-listed. Corrugated Boxes gets 7 (over the 6-item limit,
+left for Notion to fix); the two page templates lose their test FAQ picks.
+
 ## Preconditions
 
 - **Nightly prod → dev sync must be paused.** Repo variable `SANITY_DEV_SYNC_PAUSED=true`

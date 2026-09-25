@@ -38,6 +38,7 @@
     "migrate:expertise-stage-template": "node scripts/migrate-expertise-stage-template.mjs",
     "purge:catalog": "node scripts/purge-catalog.mjs",
     "repoint:catalog-refs": "node scripts/repoint-catalog-refs.mjs",
+    "populate:faqs": "node scripts/populate-faqs-from-notion.mjs",
     "split:coating-type": "node scripts/split-coating-customization-type.mjs",
     "migrate:availability-axes": "node scripts/migrate-customization-availability-axes.mjs",
     "migrate:option-category-benefits": "node scripts/migrate-customization-option-category-and-benefits.mjs",
