@@ -116,8 +116,8 @@ export function caseStudyGalleryCards(slugs, caseStudyBySlug) {
  * @param {string} [spec.templateTitle] Expertise Page template title; defaults to the stage title
  * @param {string[]} [spec.logoClientSlugs] clients (with logos) for the trust strip, in order
  * @param {string[]} [spec.galleryCaseStudySlugs] case studies whose card images feed a work gallery
- * @param {string[]} [spec.galleryCatalogueIds] published solutionStyle / productStyle / product ids (with a
- *   featured image) for the gallery's catalogue cards — missing ones are skipped
+ * @param {number} [spec.galleryCatalogueCount] how many published Solution Styles (with a featured image)
+ *   to add as the gallery's catalogue cards — picked at run time, never the PROD-1541 seeded ones
  * @param {(ctx: {serviceId: (key: string) => string, stageIdBySlug: Map<string, string>, clientIdBySlug: Map<string, string>, caseStudyBySlug: Map<string, {_id: string, title: string, clientName?: string, imageRef?: string, imageAlt?: string}>, catalogueIds: string[]}) => object[]} spec.buildSections
  * @param {string[]} [spec.editorNotes] printed after the plan — what editors still add in Studio
  */
@@ -213,15 +213,20 @@ export async function runExpertiseStageSeed(spec) {
     (slug) => !caseStudyBySlug.get(slug)?.imageRef,
   )
 
-  const catalogueWanted = spec.galleryCatalogueIds ?? []
-  const catalogueFound = new Set(
-    await client.fetch(
-      `*[_id in $ids && _type in ["solutionStyle", "productStyle", "product"] && defined(featuredImage.asset)]._id`,
-      { ids: catalogueWanted },
-    ),
-  )
-  const catalogueIds = catalogueWanted.filter((id) => catalogueFound.has(id))
-  const missingCatalogue = catalogueWanted.filter((id) => !catalogueFound.has(id))
+  // Picked at run time, not pinned: the seeded `solutionStyle.beauty-*` / `.test-kids-*` docs are
+  // being removed (PROD-2605, remove:seeded-solution-styles refuses while anything references
+  // them), so pinning ids would either block that clean-up or point at nothing afterwards.
+  const catalogueCount = spec.galleryCatalogueCount ?? 0
+  const catalogueIds = catalogueCount
+    ? await client.fetch(
+        `*[_type == "solutionStyle" && defined(featuredImage.asset) && !(_id in path("drafts.**"))
+          && !string::startsWith(_id, "solutionStyle.beauty-")
+          && !string::startsWith(_id, "solutionStyle.test-kids-")
+          && !string::startsWith(lower(coalesce(title, "")), "[test]")
+        ] | order(_createdAt asc)[0...$n]._id`,
+        { n: catalogueCount },
+      )
+    : []
 
   const templateId = `expertiseStagePage.${spec.stageSlug}`
   const templateTitle = spec.templateTitle || stage.title
@@ -270,8 +275,12 @@ export async function runExpertiseStageSeed(spec) {
   if (missingGallery.length) {
     console.log(`  ⚠️  gallery case studies not found (or no card image), skipped: ${missingGallery.join(', ')}`)
   }
-  if (missingCatalogue.length) {
-    console.log(`  ⚠️  gallery catalogue items not found (or no featured image), skipped: ${missingCatalogue.join(', ')}`)
+  if (catalogueCount) {
+    console.log(
+      catalogueIds.length
+        ? `Gallery catalogue cards (${catalogueIds.length}/${catalogueCount}): ${catalogueIds.join(', ')}`
+        : `  ⚠️  no uploaded Solution Styles with images in ${dataset} — gallery gets no catalogue row (re-run after the Solution Style upload)`,
+    )
   }
   console.log(`\nSections: ${sections.map((s) => s._type).join(' → ')}`)
   for (const note of spec.editorNotes ?? []) console.log(`Editors: ${note}`)

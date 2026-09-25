@@ -46,15 +46,10 @@ const GALLERY_CASE_STUDY_SLUGS = ['blind-barrels', 'via-carota', 'hello-adorn', 
 
 /**
  * "Our work" second row — catalogue pieces that glide under the case studies (POC
- * `projects`, itself a placeholder drawn from the product library). Real, published
- * solution styles with images; swap for the design team's curated set when it exists.
+ * `projects`, itself a placeholder drawn from the product library). The runner picks this
+ * many uploaded Solution Styles with images; editors swap in the design team's curated set.
  */
-const GALLERY_CATALOGUE_IDS = [
-  'solutionStyle.beauty-premium-rigid-gift-boxes',
-  'solutionStyle.beauty-product-boxes',
-  'solutionStyle.beauty-shipping-boxes',
-  'solutionStyle.beauty-paper-gift-bags',
-]
+const GALLERY_CATALOGUE_COUNT = 6
 
 // ── Content (approved copy, PROD-1888) ──────────────────────────────────────
 
@@ -259,7 +254,7 @@ runExpertiseStageSeed({
   templateTitle: 'Packaging Design',
   logoClientSlugs: TRUST_STRIP_CLIENT_SLUGS,
   galleryCaseStudySlugs: GALLERY_CASE_STUDY_SLUGS,
-  galleryCatalogueIds: GALLERY_CATALOGUE_IDS,
+  galleryCatalogueCount: GALLERY_CATALOGUE_COUNT,
   stage: STAGE,
   services: SERVICES,
   faqs: FAQS,
