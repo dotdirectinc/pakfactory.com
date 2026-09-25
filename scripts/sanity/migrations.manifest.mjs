@@ -440,6 +440,7 @@ export const TASKS = [
   // The purge's other half: writes back the references --detach-referrers unset, to the
   // rebuilt successors, from the purge map. Idempotent — anything already in place is skipped.
   { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
+  { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]
