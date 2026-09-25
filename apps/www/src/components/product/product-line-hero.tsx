@@ -163,8 +163,13 @@ export function ProductLineHero({
 }: ProductLineHeroProps) {
     const isMobile = useIsMobile();
     const reduceMotion = usePrefersReducedMotion();
-    /** Hide enter targets until layout effect arms GSAP (or skip reveals). */
-    const [enterPending, setEnterPending] = useState(true);
+    /**
+     * pending — hide until GSAP arms; active — oversized hold (no Y clip);
+     * done — settled layout, full overflow-clip.
+     */
+    const [enterPhase, setEnterPhase] = useState<'pending' | 'active' | 'done'>(
+        'pending',
+    );
 
     const sectionRef = useRef<HTMLElement>(null);
     const markRef = useRef<HTMLDivElement>(null);
@@ -206,9 +211,17 @@ export function ProductLineHero({
         const heading = headingRef.current;
         const media = mediaRef.current;
         if (!section || !mark || !heading) {
-            setEnterPending(false);
+            setEnterPhase('done');
             return;
         }
+
+        const settleToDone = () => {
+            gsap.set([mark, heading, media].filter(Boolean), {
+                clearProps: 'all',
+            });
+            gsap.set(heading.querySelectorAll('h1, div'), {clearProps: 'all'});
+            setEnterPhase('done');
+        };
 
         const skip =
             isMobile ||
@@ -217,123 +230,163 @@ export function ProductLineHero({
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (skip) {
-            gsap.set([mark, heading, media].filter(Boolean), {
-                clearProps: 'all',
-            });
-            gsap.set(heading.querySelectorAll('h1, div'), {clearProps: 'all'});
-            setEnterPending(false);
+            settleToDone();
             return;
         }
 
-        const bigPx = Math.min(MARK_BIG_MAX_PX, window.innerWidth * 0.65);
-        const startScale = bigPx / MARK_SIZE_PX;
-        const copyAt = ENTER_SCALE_S * ENTER_COPY_AT_SCALE;
-        const copyDur = ENTER_SCALE_S - copyAt;
-        const mediaAt = copyAt + ENTER_MEDIA_LAG_S;
+        let cancelled = false;
+        let ctx: gsap.Context | null = null;
 
-        // Scope enter to the hero: center the oversized mark in the section's
-        // first viewport-tall band (not the full page).
-        const sectionRect = section.getBoundingClientRect();
-        const markRect = mark.getBoundingClientRect();
-        const markCenterY = markRect.top + markRect.height / 2;
-        const stageCenterY =
-            sectionRect.top +
-            Math.min(window.innerHeight, sectionRect.height) / 2;
-        const enterY = stageCenterY - markCenterY;
+        const waitFrame = () =>
+            new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => resolve());
+                });
+            });
 
-        // Heading layers rise from within the hero stage, not page bottom.
-        const headingRect = heading.getBoundingClientRect();
-        const fromBottom = Math.max(
-            80,
-            Math.min(window.innerHeight, sectionRect.bottom) -
-                headingRect.top +
-                24,
-        );
+        void (async () => {
+            // Settle fluid mark size / layout before measuring for FLIP.
+            if (document.fonts?.ready) {
+                await document.fonts.ready;
+            }
+            // Two frame pairs so a late scroll restore is reflected before we
+            // decide whether the hero is still in view (reload mid-page).
+            await waitFrame();
+            await waitFrame();
+            if (cancelled) return;
 
-        const titleEl = heading.querySelector('h1');
-        let descEl: HTMLElement | null = null;
-        let actionsEl: HTMLElement | null = null;
-        if (titleEl) {
-            let sib = titleEl.nextElementSibling;
-            while (sib) {
-                if (sib instanceof HTMLElement) {
-                    if (sib.querySelector('a')) {
-                        actionsEl = sib;
-                    } else if (!descEl) {
-                        descEl = sib;
+            const sectionRect = section.getBoundingClientRect();
+            const heroOffScreen =
+                sectionRect.bottom <= 0 ||
+                sectionRect.top >= window.innerHeight;
+            if (heroOffScreen) {
+                settleToDone();
+                return;
+            }
+
+            const markRect = mark.getBoundingClientRect();
+            const markLayoutPx = markRect.width || MARK_SIZE_PX;
+            const bigPx = Math.min(MARK_BIG_MAX_PX, window.innerWidth * 0.65);
+            const startScale = bigPx / markLayoutPx;
+            const copyAt = ENTER_SCALE_S * ENTER_COPY_AT_SCALE;
+            const copyDur = ENTER_SCALE_S - copyAt;
+            const mediaAt = copyAt + ENTER_MEDIA_LAG_S;
+
+            // Resting layout is top-of-stack; shift so the oversized mark is
+            // optically centered in the browser window (Apple Books enter).
+            const markCenterX = markRect.left + markRect.width / 2;
+            const markCenterY = markRect.top + markRect.height / 2;
+            const enterX = window.innerWidth / 2 - markCenterX;
+            const enterY = window.innerHeight / 2 - markCenterY;
+
+            // Heading layers rise from within the hero stage, not page bottom.
+            const headingRect = heading.getBoundingClientRect();
+            const fromBottom = Math.max(
+                80,
+                Math.min(window.innerHeight, sectionRect.bottom) -
+                    headingRect.top +
+                    24,
+            );
+
+            const titleEl = heading.querySelector('h1');
+            let descEl: HTMLElement | null = null;
+            let actionsEl: HTMLElement | null = null;
+            if (titleEl) {
+                let sib = titleEl.nextElementSibling;
+                while (sib) {
+                    if (sib instanceof HTMLElement) {
+                        if (sib.querySelector('a')) {
+                            actionsEl = sib;
+                        } else if (!descEl) {
+                            descEl = sib;
+                        }
                     }
+                    sib = sib.nextElementSibling;
                 }
-                sib = sib.nextElementSibling;
             }
-        }
-        const layers = [titleEl, descEl, actionsEl].filter(
-            (el): el is HTMLElement => Boolean(el),
-        );
+            const layers = [titleEl, descEl, actionsEl].filter(
+                (el): el is HTMLElement => Boolean(el),
+            );
 
-        gsap.set(mark, {
-            scale: startScale,
-            y: enterY,
-            transformOrigin: '50% 50%',
-            opacity: 0,
-            force3D: true,
-        });
-        layers.forEach((el, i) => {
-            gsap.set(el, {
+            if (cancelled) return;
+
+            gsap.set(mark, {
+                scale: startScale,
+                x: enterX,
+                y: enterY,
+                transformOrigin: '50% 50%',
                 opacity: 0,
-                y: fromBottom * (1 + i * 0.04),
+                force3D: true,
             });
-        });
-        if (media) gsap.set(media, {opacity: 0, y: 80});
-        // GSAP owns opacity now; drop CSS hide before paint.
-        setEnterPending(false);
-
-        const ctx = gsap.context(() => {
-            const tl = gsap.timeline({
-                defaults: {ease: 'power2.out'},
-            });
-
-            // 1) Blank hero.
-            tl.to({}, {duration: ENTER_BLANK_S});
-
-            // 2) Mark appears at large scale, brief hold (stage-centered).
-            tl.to(mark, {opacity: 1, duration: 0.2, ease: 'power1.out'});
-            tl.to({}, {duration: ENTER_HOLD_S});
-
-            // 3) Scale down + settle back to layout position.
-            const scaleStart = tl.duration();
-            tl.to(mark, {
-                scale: 1,
-                y: 0,
-                duration: ENTER_SCALE_S,
-                ease: 'power3.inOut',
-            });
-
-            // 4) Title → description → actions rise with parallax stagger.
             layers.forEach((el, i) => {
-                tl.to(
-                    el,
-                    {
-                        opacity: 1,
-                        y: 0,
-                        duration: copyDur,
-                        ease: 'power3.out',
-                    },
-                    scaleStart + copyAt + i * 0.01,
-                );
+                gsap.set(el, {
+                    opacity: 0,
+                    y: fromBottom * (1 + i * 0.04),
+                });
             });
+            if (media) gsap.set(media, {opacity: 0, y: 80});
+            if (cancelled) return;
+            // GSAP owns opacity; allow Y overflow while the mark is oversized.
+            setEnterPhase('active');
 
-            // 5) Feature image rises from below, overlapping late scale.
-            if (media) {
-                tl.to(
-                    media,
-                    {opacity: 1, y: 0, duration: 0.85, ease: 'power3.out'},
-                    scaleStart + mediaAt,
-                );
-            }
-        }, section);
+            ctx = gsap.context(() => {
+                const tl = gsap.timeline({
+                    defaults: {ease: 'power2.out'},
+                });
+
+                // 1) Blank hero.
+                tl.to({}, {duration: ENTER_BLANK_S});
+
+                // 2) Mark appears at large scale, brief hold (window-centered).
+                tl.to(mark, {opacity: 1, duration: 0.2, ease: 'power1.out'});
+                tl.to({}, {duration: ENTER_HOLD_S});
+
+                // 3) Scale down + settle back to layout position.
+                const scaleStart = tl.duration();
+                tl.to(mark, {
+                    scale: 1,
+                    x: 0,
+                    y: 0,
+                    duration: ENTER_SCALE_S,
+                    ease: 'power3.inOut',
+                    onComplete: () => {
+                        if (!cancelled) setEnterPhase('done');
+                    },
+                });
+
+                // 4) Title → description → actions rise with parallax stagger.
+                layers.forEach((el, i) => {
+                    tl.to(
+                        el,
+                        {
+                            opacity: 1,
+                            y: 0,
+                            duration: copyDur,
+                            ease: 'power3.out',
+                        },
+                        scaleStart + copyAt + i * 0.01,
+                    );
+                });
+
+                // 5) Feature image rises from below, overlapping late scale.
+                if (media) {
+                    tl.to(
+                        media,
+                        {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.85,
+                            ease: 'power3.out',
+                        },
+                        scaleStart + mediaAt,
+                    );
+                }
+            }, section);
+        })();
 
         return () => {
-            ctx.revert();
+            cancelled = true;
+            ctx?.revert();
         };
     }, [isMobile, reduceMotion]);
 
@@ -342,22 +395,26 @@ export function ProductLineHero({
             ref={sectionRef}
             id={PRODUCT_LINE_HERO_SECTION_ID}
             aria-labelledby={HERO_HEADING_ID}
-            data-enter={enterPending ? 'pending' : undefined}
+            data-enter={enterPhase === 'done' ? undefined : enterPhase}
             className={cn(
                 pageDielineOuterClass(),
                 pageDielineBorderYClass({borderBottom: true}),
-                'relative overflow-clip bg-gradient-to-b from-muted from-0% via-background via-[65%] to-background',
+                'relative bg-gradient-to-b from-muted from-0% via-background via-[65%] to-background',
+                // Clip Y only after the oversized mark has settled (avoids asymmetric clip).
+                enterPhase === 'done'
+                    ? 'overflow-clip'
+                    : 'overflow-x-clip overflow-y-visible',
             )}
         >
             <div className={pageDielineInnerClass()}>
-                <div className="relative z-10 flex flex-col items-center gap-7 pt-16 pb-0 sm:pt-24">
+                <div className="relative z-10 flex flex-col items-center gap-7 pt-8 pb-0 sm:pt-10 lg:pt-12">
                     <div
                         ref={markRef}
                         className={cn(
-                            'relative mx-auto size-32 shrink-0 overflow-hidden rounded-xl  border border-gray-400 bg-background/50',
-                            enterPending && 'opacity-0',
+                            'relative mx-auto shrink-0 overflow-hidden rounded-xl border border-blue-950 bg-background/50',
+                            'size-display-mark',
+                            enterPhase === 'pending' && 'opacity-0',
                         )}
-                        style={{width: MARK_SIZE_PX, height: MARK_SIZE_PX}}
                     >
                         <KitMarkImage
                             src={kitMarkSrc}
@@ -367,7 +424,10 @@ export function ProductLineHero({
 
                     <div
                         ref={headingRef}
-                        className={cn('w-full', enterPending && 'opacity-0')}
+                        className={cn(
+                            'w-full',
+                            enterPhase === 'pending' && 'opacity-0',
+                        )}
                     >
                         <PageHeadingContent
                             align="center"
@@ -377,7 +437,7 @@ export function ProductLineHero({
                             primaryCta={primaryCta}
                             secondaryCta={secondaryCta}
                             ctaOrder={ctaOrder}
-                            titleClassName="max-w-[1066px] text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.1] tracking-[-0.82px]"
+                            titleClassName="max-w-[1066px] text-display font-bold tracking-[-0.82px]"
                             descriptionClassName="max-w-[732px] text-xl leading-7 text-foreground"
                         />
                     </div>
@@ -387,11 +447,11 @@ export function ProductLineHero({
                     <div
                         ref={mediaRef}
                         className={cn(
-                            '-mt-3 pb-12',
-                            enterPending && 'opacity-0',
+                            'pb-12',
+                            enterPhase === 'pending' && 'opacity-0',
                         )}
                     >
-                        <div className="mx-auto w-full max-w-7xl overflow-hidden rounded-2xl">
+                        <div className="mx-auto w-full xl:max-w-4xl overflow-hidden rounded-2xl">
                             <HeroFrameImage
                                 src={featureImage.src}
                                 alt={featureImage.alt}

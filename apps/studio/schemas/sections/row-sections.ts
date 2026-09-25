@@ -3,7 +3,6 @@ import {
   CaseIcon,
   UsersIcon,
   PackageIcon,
-  ThLargeIcon,
   CubeIcon,
   StackCompactIcon,
   ComponentIcon,
@@ -92,10 +91,6 @@ export const productLinesRow = rowSection({
   name: 'productLinesRow', title: 'Product line row', icon: StackCompactIcon,
   curatedTo: [{ type: 'productLine' }], itemNoun: 'lines',
 })
-export const productStylesRow = rowSection({
-  name: 'productStylesRow', title: 'Product style row', icon: ThLargeIcon,
-  sourceTo: [{ type: 'productLine' }], curatedTo: [{ type: 'productStyle' }], itemNoun: 'styles',
-})
 export const productsRow = rowSection({
   name: 'productsRow', title: 'Product row', icon: PackageIcon,
   sourceTo: [{ type: 'productLine' }, { type: 'productStyle' }, { type: 'solution' }],
@@ -147,7 +142,6 @@ export const rowSections = [
   caseStudiesRow,
   logoWall,
   productLinesRow,
-  productStylesRow,
   productsRow,
   bundlesRow,
   customizationsRow,

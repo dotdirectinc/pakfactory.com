@@ -15,6 +15,7 @@
     "seed:beauty-solution-lp": "node scripts/seed-beauty-solution-lp.mjs",
     "seed:expertise-strategy": "node scripts/seed-expertise-strategy.mjs",
     "seed:beauty-style-products": "node scripts/seed-beauty-style-products.mjs",
+    "seed:product-line-page-styles": "node scripts/seed-product-line-page-styles.mjs",
     "seed:test-kids-solution-lp": "node scripts/seed-test-kids-solution-lp.mjs",
     "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
     "fill:catalog": "node scripts/fill-catalog-from-review.mjs",

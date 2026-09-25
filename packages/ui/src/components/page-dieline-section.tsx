@@ -8,9 +8,9 @@ export type PageDielineAs = "div" | "section" | "header" | "footer" | "nav";
 const PADDING_BLOCK_CLASS: Record<PageDielinePaddingBlock, string> = {
   none: "",
   xs: "py-2",
-  sm: "py-8 sm:py-12",
-  md: "py-16 sm:py-20",
-  lg: "py-20 sm:py-24",
+  sm: "py-8 sm:py-10 lg:py-12",
+  md: "py-16 sm:py-20 lg:py-24",
+  lg: "py-20 sm:py-24 lg:py-28",
 };
 
 const BAND_CLASS: Record<PageDielineBand, string> = {
