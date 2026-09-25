@@ -1,6 +1,7 @@
 'use client';
 
 import {useCallback, useEffect, useState} from 'react';
+import Image from 'next/image';
 import {ArrowDown} from 'lucide-react';
 
 import {
@@ -41,7 +42,8 @@ function prefersReducedMotion(): boolean {
 
 /**
  * Signature system — why a stage matters (problems) + its named method
- * (dimensions). Studio `signatureSystem`, PROD-2577. Props-only.
+ * (dimensions). Studio `signatureSystem`, PROD-2577. Props-only. Without a
+ * named method (Design, PROD-2578) the ring gives way to the open service's image.
  *
  * A problem label opens the dimension that answers it and scrolls to it;
  * `#<dimension>` in the URL opens that dimension on load. The ring is a
@@ -112,6 +114,12 @@ export function SignatureSystem({
         (dimension) => dimension.id === openId,
     );
     const hasWhy = body.length > 0 || problems.length > 0;
+    // Beside the list: the ring for a named method, else the open (or first)
+    // service's image, else nothing and the list takes the full width.
+    const asideImage =
+        dimensions[openIndex]?.image ??
+        dimensions.find((dimension) => dimension.image)?.image;
+    const hasAside = Boolean(systemName || asideImage);
 
     return (
         <section
@@ -209,8 +217,8 @@ export function SignatureSystem({
                     <div
                         className={cn(
                             'grid grid-cols-1 items-start gap-12 lg:grid-cols-2',
-                            (heading || hasWhy) &&
-                                'border-t border-dashed border-border pt-16',
+                            hasWhy && 'border-t border-dashed border-border pt-16',
+                            !hasAside && 'lg:grid-cols-1',
                         )}
                     >
                         <div className="flex flex-col gap-8">
@@ -277,17 +285,30 @@ export function SignatureSystem({
                                 ))}
                             </Accordion>
                         </div>
-                        <SystemRing
-                            name={systemName}
-                            count={dimensions.length}
-                            activeIndex={openIndex}
-                            activeLabel={
-                                openIndex >= 0
-                                    ? `${formatIndex(openIndex)} · ${dimensions[openIndex]?.title}`
-                                    : undefined
-                            }
-                            className="mx-auto w-full max-w-sm lg:sticky lg:top-32"
-                        />
+                        {systemName ? (
+                            <SystemRing
+                                name={systemName}
+                                count={dimensions.length}
+                                activeIndex={openIndex}
+                                activeLabel={
+                                    openIndex >= 0
+                                        ? `${formatIndex(openIndex)} · ${dimensions[openIndex]?.title}`
+                                        : undefined
+                                }
+                                className="mx-auto w-full max-w-sm lg:sticky lg:top-32"
+                            />
+                        ) : asideImage ? (
+                            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted lg:sticky lg:top-32">
+                                <Image
+                                    key={asideImage.src}
+                                    src={asideImage.src}
+                                    alt={asideImage.alt}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                />
+                            </div>
+                        ) : null}
                     </div>
                 </div>
             </PageDielineSection>

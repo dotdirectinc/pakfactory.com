@@ -12,6 +12,7 @@ import {
 } from './lifecycle';
 import {applySignatureSystemInherit} from '../sections/inherit-signature-system';
 import {mapSignatureSystem} from '../sections/map-signature-system';
+import {mapSteps} from '../sections/map-steps';
 import type {ExpertiseStageCard} from './types';
 
 const STAGES: ExpertiseStageCard[] = [
@@ -133,5 +134,50 @@ describe('signature system', () => {
 
     it('renders nothing without dimensions', () => {
         assert.equal(mapSignatureSystem(section()), null);
+    });
+
+    it('lists services with images when there is no named method (Design)', () => {
+        const mapped = mapSignatureSystem(
+            section({
+                systemName: null,
+                problems: null,
+                bodyPlain: null,
+                services: [
+                    {_id: 'd1', title: 'Precision Structural Design', imageSrc: 'https://cdn/x.jpg'},
+                ],
+            }),
+        );
+        assert.equal(mapped?.systemName, undefined);
+        assert.deepEqual(mapped?.dimensions[0]?.image, {
+            src: 'https://cdn/x.jpg',
+            alt: 'Precision Structural Design',
+        });
+        assert.deepEqual(mapped?.body, []);
+    });
+});
+
+describe('mapSteps', () => {
+    it('keeps order, drops untitled steps, resolves site-path links', () => {
+        const mapped = mapSteps({
+            _type: 'steps',
+            _key: 'st',
+            heading: 'How the work happens',
+            items: [
+                {_key: 'a', title: 'Consultation', body: 'We start by understanding your brand.'},
+                {_key: 'b', title: '  '},
+                {
+                    _key: 'c',
+                    title: 'Refinement & validation',
+                    link: {label: 'Prototyping', linkType: 'path', relativePath: '/expertise/prototyping'},
+                },
+                {_key: 'd', title: 'No link label', link: {linkType: 'path', relativePath: '/x'}},
+            ],
+        });
+        assert.deepEqual(mapped.items.map((item) => item.id), ['a', 'c', 'd']);
+        assert.deepEqual(mapped.items[1]?.link, {
+            label: 'Prototyping',
+            href: '/expertise/prototyping',
+        });
+        assert.equal(mapped.items[2]?.link, undefined);
     });
 });

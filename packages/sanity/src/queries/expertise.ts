@@ -26,7 +26,7 @@ const STAGE_CASE_STUDY_CARD = /* groq */ `{
   "cardImageUrl": cardImage.asset->url,
   "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText),
   "clientName": client->name,
-  "tag": coalesce(products[0]->title, expertiseAreas[0]->title)
+  "tag": coalesce(products[0]->title, expertise[0]->title, expertiseAreas[0]->title)
 }`;
 
 /** Card fields shared by listing + featured projections. */
@@ -79,6 +79,9 @@ export const EXPERTISE_STAGE_SLUGS_QUERY = /* groq */ `*[
  * the host lists sections inherit from (ADR-020 §8): `services` →
  * `signatureSystem`, `faqs` → `faqSection`, featured (else tagged) case
  * studies → `caseStudiesRow`.
+ *
+ * Case-study readers accept both `expertise` and `expertiseAreas` — PROD-2293
+ * (#365) renames caseStudy.expertiseAreas → expertise.
  */
 export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "expertiseStage" &&
@@ -108,7 +111,7 @@ export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
   },
   "taggedStudies": *[
     _type == "caseStudy" &&
-    ^._id in expertiseAreas[]._ref &&
+    (^._id in expertise[]._ref || ^._id in expertiseAreas[]._ref) &&
     !(_id in path("drafts.**"))
   ] | order(_updatedAt desc)[0...6]{
     "_key": _id,

@@ -11,6 +11,7 @@ import type {
     PageSectionProductStylesRowDoc,
     PageSectionQuoteCtaDoc,
     PageSectionSignatureSystemDoc,
+    PageSectionStepsDoc,
     PageSectionTestimonialsRowDoc,
     PageSectionVideoCaseStudiesRowDoc,
 } from '@pakfactory/sanity/queries';
@@ -24,6 +25,7 @@ import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
 import {QuoteCta} from '@/components/sections/quote-cta';
 import {SignatureSystem} from '@/components/sections/signature-system';
+import {Steps} from '@/components/sections/steps';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {VideoCaseStudiesRow} from '@/components/sections/video-case-studies-row';
 import {TextWithImage} from '@/components/ui/text-with-image';
@@ -38,6 +40,7 @@ import {mapMediaFeature} from '@/lib/sections/map-media-feature';
 import {mapProductStylesRow} from '@/lib/sections/map-product-styles-row';
 import {mapQuoteCta} from '@/lib/sections/map-quote-cta';
 import {mapSignatureSystem} from '@/lib/sections/map-signature-system';
+import {mapSteps} from '@/lib/sections/map-steps';
 import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
 import {mapVideoCaseStudiesRow} from '@/lib/sections/map-video-case-studies-row';
 
@@ -203,6 +206,12 @@ function BenefitsFromSanity(section: PageSectionBenefitsDoc) {
     return <Benefits content={mapped} id={`benefits-${section._key}`} />;
 }
 
+function StepsFromSanity(section: PageSectionStepsDoc) {
+    const mapped = mapSteps(section);
+    if (mapped.items.length === 0) return null;
+    return <Steps content={mapped} id={`steps-${section._key}`} />;
+}
+
 function QuoteCtaFromSanity(section: PageSectionQuoteCtaDoc) {
     const mapped = mapQuoteCta(section);
     return (
@@ -240,4 +249,5 @@ export const SECTION_COMPONENTS: Record<
     signatureSystem: SignatureSystemFromSanity as ComponentType<PageSection>,
     benefits: BenefitsFromSanity as ComponentType<PageSection>,
     quoteCta: QuoteCtaFromSanity as ComponentType<PageSection>,
+    steps: StepsFromSanity as ComponentType<PageSection>,
 };

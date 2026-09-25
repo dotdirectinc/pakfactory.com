@@ -8,6 +8,7 @@ import {OptionDetail} from '@/components/customization-builder/option-detail';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
+    answerSelections,
     dimensionEntryNoteKey,
     getAnswer,
     type BuilderOption,
@@ -81,8 +82,14 @@ export function BuilderThreeColumn({
                   ? 'external'
                   : null
             : null;
+    const selectedOptionIds = new Set(
+        answerSelections(answer).map((item) => item.optionId),
+    );
+    // The detail panel shows the open pick. Browsing without picking shows nothing, so a note
+    // or Property can never attach to an option that is not in the spec.
     const selectedOption = step.options.find(
-        (item) => item.id === activeOptionId,
+        (item) =>
+            item.id === activeOptionId && selectedOptionIds.has(item.id),
     );
     const entryNoteKey =
         step.kind === 'dimensions'
@@ -128,6 +135,7 @@ export function BuilderThreeColumn({
                     options={step.options}
                     activeTypeId={activeTypeId}
                     activeOptionId={activeOptionId}
+                    selectedOptionIds={selectedOptionIds}
                     consultationSelected={consultationSelected}
                     onSelectConsultation={onSelectConsultation}
                     onSelectType={onSelectType}

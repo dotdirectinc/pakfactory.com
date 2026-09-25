@@ -33,6 +33,11 @@ export interface CustomizationTypeDoc {
   _id: string;
   title?: string;
   availabilityDecidedBy: AvailabilityDecidedBy;
+  /**
+   * How many of this type's options a customer orders (`customizationType.customerSelects`).
+   * Only a `many` type's picks are checked against each other; absent reads as `one`.
+   */
+  customerSelects?: 'one' | 'many';
 }
 
 export interface CustomizationOptionDoc {

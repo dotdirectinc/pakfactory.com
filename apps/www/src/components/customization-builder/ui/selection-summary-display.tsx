@@ -3,22 +3,24 @@
 import type {CSSProperties} from 'react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {
+    answerSelections,
     summarizeAnswer,
     visiblePropertySummaries,
-    type PropertySelectionSummaryItem,
+    type PropertySummariesByOption,
     type StepAnswer,
 } from '@/lib/customization-builder';
 
 type SelectionSummaryDisplayProps = {
     answer: StepAnswer;
     specialistLabel: string;
-    propertySummaries?: PropertySelectionSummaryItem[];
+    /** Option id → Property summary items (`state.propertySelectionSummaries`). */
+    propertySummaries?: PropertySummariesByOption;
     className?: string;
 };
 
 /**
- * Option title + mini swatch circles / chip text for rail & overview.
- * Consultation items are omitted from the front (still in payload).
+ * Picked option titles + mini swatch circles / chip text for rail & overview — every pick in
+ * the step, comma-separated. Consultation items are omitted from the front (still in payload).
  */
 export function SelectionSummaryDisplay({
     answer,
@@ -39,13 +41,12 @@ export function SelectionSummaryDisplay({
         );
     }
 
-    const visible = visiblePropertySummaries(propertySummaries);
-    const swatches = visible.filter((item) => item.kind === 'swatch');
-    const chips = visible.filter((item) => item.kind === 'chip');
-    const text = [
-        answer.selection.label,
-        ...chips.map((item) => item.label),
-    ].join(' · ');
+    const text = summarizeAnswer(answer, specialistLabel, {propertySummaries});
+    const swatches = answerSelections(answer).flatMap((pick) =>
+        visiblePropertySummaries(propertySummaries?.[pick.optionId]).filter(
+            (item) => item.kind === 'swatch',
+        ),
+    );
 
     return (
         <span

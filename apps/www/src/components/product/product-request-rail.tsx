@@ -29,8 +29,13 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
     const {addLine, draft} = useRequest();
     const isInspiration = product.kind === 'inspiration';
     const initialBuilder = useMemo(() => {
-        if (isInspiration && product.availableCustomizations.length) {
-            return seedFromCustomizations(product.availableCustomizations);
+        // A preset starts from the options it names. Without any, the builder starts empty —
+        // seeding from the whole offer would pick every option now that a step holds several.
+        const preselected = product.availableCustomizations.filter(
+            (item) => item.preselected === true,
+        );
+        if (isInspiration && preselected.length) {
+            return seedFromCustomizations(preselected);
         }
         return createEmptyBuilderState();
     }, [isInspiration, product.availableCustomizations]);
@@ -109,9 +114,12 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
         setDetailsOptIn(false);
         setNotes('');
         setReferenceImages([]);
+        const preselected = product.availableCustomizations.filter(
+            (item) => item.preselected === true,
+        );
         setBuilderState(
-            isInspiration && product.availableCustomizations.length
-                ? seedFromCustomizations(product.availableCustomizations)
+            isInspiration && preselected.length
+                ? seedFromCustomizations(preselected)
                 : createEmptyBuilderState(),
         );
     }

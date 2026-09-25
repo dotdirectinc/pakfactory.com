@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/**/*.test.ts"
+    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +"
   },
   "devDependencies": {
     "tsx": "^4.21.0",

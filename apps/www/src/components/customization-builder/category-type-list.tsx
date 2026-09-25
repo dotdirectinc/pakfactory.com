@@ -1,5 +1,6 @@
 'use client';
 
+import {Check} from 'lucide-react';
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {BuilderOption, BuilderType} from '@/lib/customization-builder';
@@ -11,6 +12,8 @@ type CategoryTypeListProps = {
     options: BuilderOption[];
     activeTypeId: string | null;
     activeOptionId: string | null;
+    /** Every option picked in this step (several Types, each per its `customerSelects`). */
+    selectedOptionIds?: ReadonlySet<string>;
     consultationSelected?: boolean;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -23,6 +26,7 @@ export function CategoryTypeList({
     options,
     activeTypeId,
     activeOptionId,
+    selectedOptionIds,
     consultationSelected = false,
     onSelectConsultation,
     onSelectType,
@@ -62,13 +66,25 @@ export function CategoryTypeList({
                           if (typeOptions.length === 0) return null;
                           return (
                               <div key={type.id}>
-                                  <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                      {type.title}
+                                  <p className="mb-2 flex items-baseline justify-between gap-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                      <span>{type.title}</span>
+                                      <span className="shrink-0 font-normal normal-case tracking-normal">
+                                          {type.cardinality === 'many'
+                                              ? CUSTOMIZATION_BUILDER_COPY.chooseAny
+                                              : CUSTOMIZATION_BUILDER_COPY.chooseOne}
+                                      </span>
                                   </p>
                                   <ul className="flex flex-col gap-1">
                                       {typeOptions.map((option) => {
-                                          const active =
+                                          const picked =
                                               !consultationSelected &&
+                                              Boolean(
+                                                  selectedOptionIds?.has(
+                                                      option.id,
+                                                  ),
+                                              );
+                                          const open =
+                                              picked &&
                                               option.id === activeOptionId;
                                           const blurb =
                                               option.shortDescription?.trim() ||
@@ -77,7 +93,13 @@ export function CategoryTypeList({
                                           return (
                                               <li key={option.id}>
                                                   <HighlightItem
-                                                      selected={active}
+                                                      selected={picked}
+                                                      aria-pressed={picked}
+                                                      aria-current={
+                                                          open
+                                                              ? 'true'
+                                                              : undefined
+                                                      }
                                                       onClick={() =>
                                                           onSelectOption(option)
                                                       }
@@ -100,7 +122,7 @@ export function CategoryTypeList({
                                                               </div>
                                                           ) : null}
                                                       </span>
-                                                      <span className="min-w-0">
+                                                      <span className="min-w-0 flex-1">
                                                           <span className="block truncate text-sm font-medium">
                                                               {option.title}
                                                           </span>
@@ -110,6 +132,12 @@ export function CategoryTypeList({
                                                               </p>
                                                           ) : null}
                                                       </span>
+                                                      {picked ? (
+                                                          <Check
+                                                              className="mt-0.5 size-4 shrink-0 text-brand-forest"
+                                                              aria-hidden
+                                                          />
+                                                      ) : null}
                                                   </HighlightItem>
                                               </li>
                                           );
