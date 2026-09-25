@@ -8,9 +8,7 @@ import {
     useMemo,
     useRef,
     useState,
-    useTransition,
 } from 'react';
-import {usePathname, useRouter, useSearchParams} from 'next/navigation';
 import {ChevronDown, Search, SlidersHorizontal} from 'lucide-react';
 
 import {Button} from '@pakfactory/ui/components/button';
@@ -18,9 +16,7 @@ import {Input} from '@pakfactory/ui/components/input';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {
-    CustomizationCatalogFilters,
-} from '@/components/customization/customization-catalog-filters';
+import {CustomizationCatalogFilters} from '@/components/customization/customization-catalog-filters';
 import {CustomizationCatalogFiltersDrawer} from '@/components/customization/customization-catalog-filters-drawer';
 import {
     CustomizationCatalogList,
@@ -31,22 +27,16 @@ import {
     CUSTOMIZATION_CATALOG_ALL_CATEGORY,
     matchesCustomizationItem,
 } from '@/lib/catalog/customization-catalog-filter';
-import {useCatalogSearchDraft} from '@/lib/catalog/use-catalog-search-draft';
+import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
+import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
 import type {
     CustomizationFacetDef,
     CustomizationLibraryResult,
 } from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
-/** Auto-reveal this many PAGE_SIZE batches via scroll before showing Load more. */
-const AUTO_REVEAL_LIMIT = 2;
-/** Simulated delay so append skeletons are visible before revealing the next batch. */
-const APPEND_DELAY_MS = 400;
 const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
-const PARAM_CATEGORY = 'category';
-const PARAM_Q = 'q';
-/** Legacy load-more depth param — stripped on URL writes, never read. */
-const LEGACY_PARAM_VISIBLE = 'visible';
+const EXTRA_CATEGORY = 'category';
 
 export type CustomizationCatalogTab = {
     label: string;
@@ -57,39 +47,16 @@ type CustomizationCatalogPanelProps = {
     library: CustomizationLibraryResult;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
-    /** Optional initial category slug from Studio section. */
+    /** Optional initial category slug from Studio section embeds. */
     initialCategory?: string | null;
     showHeroChrome?: boolean;
 };
-
-function parseList(raw: string | null): string[] {
-    if (!raw?.trim()) return [];
-    return raw
-        .split(',')
-        .map((part) => part.trim())
-        .filter(Boolean);
-}
-
-function serializeList(values: string[]): string | null {
-    return values.length > 0 ? values.join(',') : null;
-}
-
-function toggleValue(list: string[], value: string): string[] {
-    return list.includes(value)
-        ? list.filter((item) => item !== value)
-        : [...list, value];
-}
 
 export function CustomizationCatalogPanel({
     library,
     urlSync = true,
     initialCategory = null,
 }: CustomizationCatalogPanelProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
-
     const tabs: CustomizationCatalogTab[] = useMemo(
         () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
         [library.tabs],
@@ -100,148 +67,48 @@ export function CustomizationCatalogPanel({
         [library.facetCatalog.shared],
     );
 
-    const readCategory = useCallback(() => {
-        if (urlSync) {
-            const fromUrl = searchParams.get(PARAM_CATEGORY)?.trim();
-            if (fromUrl) return fromUrl;
+    const allFacetIds = useMemo(() => {
+        const ids = new Set<string>();
+        for (const facet of library.facetCatalog.shared) ids.add(facet.id);
+        for (const group of Object.values(library.facetCatalog.byCategory)) {
+            for (const facet of group) ids.add(facet.id);
         }
-        if (initialCategory?.trim()) return initialCategory.trim();
-        return ALL_CATEGORY;
-    }, [urlSync, searchParams, initialCategory]);
+        return [...ids];
+    }, [library.facetCatalog]);
 
-    const [localCategory, setLocalCategory] = useState(readCategory);
-    const [localQuery, setLocalQuery] = useState(() =>
-        urlSync ? (searchParams.get(PARAM_Q) ?? '') : '',
+    const initialExtras = useMemo(
+        () => ({
+            [EXTRA_CATEGORY]: initialCategory?.trim() || ALL_CATEGORY,
+        }),
+        [initialCategory],
     );
-    const [localSelections, setLocalSelections] = useState<
-        Record<string, string[]>
-    >(() => {
-        if (!urlSync) return {};
-        const next: Record<string, string[]> = {};
-        for (const facet of [
-            ...library.facetCatalog.shared,
-            ...Object.values(library.facetCatalog.byCategory).flat(),
-        ]) {
-            const values = parseList(searchParams.get(facet.id));
-            if (values.length) next[facet.id] = values;
-        }
-        return next;
-    });
-    const [localVisible, setLocalVisible] = useState(PAGE_SIZE);
 
-    const category = urlSync ? readCategory() : localCategory;
-    const query = urlSync ? (searchParams.get(PARAM_Q) ?? '') : localQuery;
-    const visible = localVisible;
+    const extraParams = useMemo(
+        () => ({
+            [EXTRA_CATEGORY]: {
+                param: 'category',
+                defaultValue: ALL_CATEGORY,
+            },
+        }),
+        [],
+    );
 
-    const selections = useMemo(() => {
-        if (!urlSync) return localSelections;
-        const next: Record<string, string[]> = {};
-        const facets = [
-            ...library.facetCatalog.shared,
-            ...(category !== ALL_CATEGORY
-                ? (library.facetCatalog.byCategory[category] ?? [])
-                : []),
-        ];
-        for (const facet of facets) {
-            const values = parseList(searchParams.get(facet.id));
-            if (values.length) next[facet.id] = values;
-        }
-        return next;
-    }, [
+    const {
+        draftQuery,
+        setDraftQuery,
+        selections,
+        extras,
+        setSelections,
+        toggleFacet,
+        reset,
+    } = useCatalogQueryState({
         urlSync,
-        localSelections,
-        searchParams,
-        library.facetCatalog,
-        category,
-    ]);
-
-    const writeParams = useCallback(
-        (patch: {
-            category?: string;
-            q?: string;
-            visible?: number;
-            selections?: Record<string, string[]>;
-            clearFacetIds?: string[];
-        }) => {
-            if (patch.visible !== undefined) setLocalVisible(patch.visible);
-
-            if (!urlSync) {
-                if (patch.category !== undefined)
-                    setLocalCategory(patch.category);
-                if (patch.q !== undefined) setLocalQuery(patch.q);
-                if (patch.selections) setLocalSelections(patch.selections);
-                return;
-            }
-
-            const touchesUrl =
-                patch.category !== undefined ||
-                patch.q !== undefined ||
-                patch.selections !== undefined ||
-                (patch.clearFacetIds?.length ?? 0) > 0;
-            if (!touchesUrl) return;
-
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete(LEGACY_PARAM_VISIBLE);
-
-            const nextCategory = patch.category ?? category;
-            if (!nextCategory || nextCategory === ALL_CATEGORY) {
-                params.delete(PARAM_CATEGORY);
-            } else {
-                params.set(PARAM_CATEGORY, nextCategory);
-            }
-
-            const nextQ = patch.q ?? query;
-            if (!nextQ.trim()) params.delete(PARAM_Q);
-            else params.set(PARAM_Q, nextQ);
-
-            const nextSelections = patch.selections ?? selections;
-            const allFacetIds = new Set([
-                ...library.facetCatalog.shared.map((f) => f.id),
-                ...Object.values(library.facetCatalog.byCategory)
-                    .flat()
-                    .map((f) => f.id),
-            ]);
-            for (const id of allFacetIds) {
-                params.delete(id);
-            }
-            for (const id of patch.clearFacetIds ?? []) {
-                params.delete(id);
-            }
-            for (const [id, values] of Object.entries(nextSelections)) {
-                const serialized = serializeList(values);
-                if (serialized) params.set(id, serialized);
-            }
-
-            const qs = params.toString();
-            startTransition(() => {
-                router.replace(qs ? `${pathname}?${qs}` : pathname, {
-                    scroll: false,
-                });
-            });
-        },
-        [
-            urlSync,
-            searchParams,
-            category,
-            query,
-            selections,
-            library.facetCatalog,
-            pathname,
-            router,
-        ],
-    );
-
-    const commitSearch = useCallback(
-        (q: string) => {
-            writeParams({q, visible: PAGE_SIZE});
-        },
-        [writeParams],
-    );
-
-    const {draftQuery, setDraftQuery} = useCatalogSearchDraft({
-        committedQuery: query,
-        onCommit: commitSearch,
+        facetIds: allFacetIds,
+        extraParams,
+        initialExtras,
     });
+
+    const category = extras[EXTRA_CATEGORY] ?? ALL_CATEGORY;
     const deferredQuery = useDeferredValue(draftQuery);
     const isSearchUpdating = draftQuery !== deferredQuery;
 
@@ -260,99 +127,32 @@ export function CustomizationCatalogPanel({
         );
     }, [library.items, category, deferredQuery, selections]);
 
+    const filterResetKey = useMemo(
+        () =>
+            JSON.stringify({
+                category,
+                q: deferredQuery,
+                selections,
+            }),
+        [category, deferredQuery, selections],
+    );
+
+    const {
+        visible,
+        isAppending,
+        appendCount,
+        canAutoReveal,
+        showLoadMore,
+        revealNextBatch,
+        sentinelRef,
+    } = useProgressiveReveal({
+        total: filtered.length,
+        pageSize: PAGE_SIZE,
+        appendDelayMs: 0,
+        resetKey: filterResetKey,
+    });
+
     const shown = filtered.slice(0, visible);
-
-    const [appendCount, setAppendCount] = useState(0);
-    const isAppending = appendCount > 0;
-    const appendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-        null,
-    );
-    const isAppendingRef = useRef(false);
-    const pendingVisibleRef = useRef<number | null>(null);
-
-    const clearAppend = useCallback(() => {
-        if (appendTimeoutRef.current) {
-            clearTimeout(appendTimeoutRef.current);
-            appendTimeoutRef.current = null;
-        }
-        isAppendingRef.current = false;
-        pendingVisibleRef.current = null;
-        setAppendCount(0);
-    }, []);
-
-    useEffect(() => () => clearAppend(), [clearAppend]);
-
-    useEffect(() => {
-        if (!isAppendingRef.current) return;
-        if (visible <= PAGE_SIZE) {
-            clearAppend();
-            return;
-        }
-        if (
-            pendingVisibleRef.current != null &&
-            visible >= pendingVisibleRef.current
-        ) {
-            clearAppend();
-        }
-    }, [visible, clearAppend]);
-
-    const hasMore = visible < filtered.length;
-    const autoLoadsDone = Math.max(
-        0,
-        Math.floor((visible - PAGE_SIZE) / PAGE_SIZE),
-    );
-    const canAutoReveal =
-        !isPending &&
-        !isAppending &&
-        hasMore &&
-        autoLoadsDone < AUTO_REVEAL_LIMIT;
-    const showLoadMore =
-        !isPending &&
-        !isAppending &&
-        hasMore &&
-        autoLoadsDone >= AUTO_REVEAL_LIMIT;
-
-    const revealNextBatch = useCallback(() => {
-        if (isAppendingRef.current) return;
-        if (visible >= filtered.length) return;
-
-        const count = Math.min(PAGE_SIZE, filtered.length - visible);
-        const nextVisible = visible + PAGE_SIZE;
-        isAppendingRef.current = true;
-        pendingVisibleRef.current = nextVisible;
-        setAppendCount(count);
-
-        appendTimeoutRef.current = setTimeout(() => {
-            appendTimeoutRef.current = null;
-            writeParams({visible: nextVisible});
-        }, APPEND_DELAY_MS);
-    }, [visible, filtered.length, writeParams]);
-
-    const sentinelRef = useRef<HTMLDivElement>(null);
-    const autoRevealLockedRef = useRef(false);
-
-    useEffect(() => {
-        autoRevealLockedRef.current = false;
-    }, [visible]);
-
-    useEffect(() => {
-        if (!canAutoReveal) return;
-        const el = sentinelRef.current;
-        if (!el) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const entry = entries[0];
-                if (!entry?.isIntersecting) return;
-                if (autoRevealLockedRef.current) return;
-                autoRevealLockedRef.current = true;
-                revealNextBatch();
-            },
-            {rootMargin: '200px'},
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [canAutoReveal, revealNextBatch, visible]);
 
     const countForTab = useCallback(
         (tabValue: string) => {
@@ -441,50 +241,18 @@ export function CustomizationCatalogPanel({
         for (const [id, values] of Object.entries(selections)) {
             if (sharedFacetIds.has(id)) nextSelections[id] = values;
         }
-        setDraftQuery('');
-        writeParams({
-            category: next,
-            q: '',
-            selections: nextSelections,
-            visible: PAGE_SIZE,
-            clearFacetIds: Object.keys(selections).filter(
-                (id) => !sharedFacetIds.has(id),
-            ),
+        setSelections(nextSelections, {
+            clearQuery: true,
+            extras: {[EXTRA_CATEGORY]: next},
         });
-        if (!urlSync) {
-            setLocalSelections(nextSelections);
-            setLocalQuery('');
-        }
     }
 
     function onToggle(facetId: string, value: string) {
-        const next = {
-            ...selections,
-            [facetId]: toggleValue(selections[facetId] ?? [], value),
-        };
-        if (next[facetId]?.length === 0) delete next[facetId];
-        setDraftQuery('');
-        writeParams({selections: next, visible: PAGE_SIZE, q: ''});
-        if (!urlSync) {
-            setLocalSelections(next);
-            setLocalQuery('');
-        }
+        toggleFacet(facetId, value);
     }
 
     function onReset() {
-        setDraftQuery('');
-        writeParams({
-            category: ALL_CATEGORY,
-            q: '',
-            selections: {},
-            visible: PAGE_SIZE,
-            clearFacetIds: Object.keys(selections),
-        });
-        if (!urlSync) {
-            setLocalCategory(ALL_CATEGORY);
-            setLocalQuery('');
-            setLocalSelections({});
-        }
+        reset({clearExtrasToDefault: true, clearQuery: true});
     }
 
     const [filtersOpen, setFiltersOpen] = useState(false);
@@ -681,11 +449,11 @@ export function CustomizationCatalogPanel({
                 <div
                     className={cn(
                         'flex min-w-0 flex-1 flex-col gap-6 transition-opacity duration-(--motion-fast)',
-                        (isSearchUpdating || isPending) &&
+                        isSearchUpdating &&
                             !isAppending &&
                             'pointer-events-none opacity-60',
                     )}
-                    aria-busy={isPending || isAppending || isSearchUpdating}
+                    aria-busy={isAppending || isSearchUpdating}
                 >
                     <CustomizationCatalogList items={shown} />
                     {isAppending ? (

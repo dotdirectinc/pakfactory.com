@@ -11,8 +11,11 @@ import {
     CATALOG_PRODUCT_LIBRARY_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
+    CUSTOMIZATION_CATALOG_PAGE_QUERY,
+    PRODUCT_CATALOG_PAGE_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogCustomizationRulesDoc,
+    type CatalogIndexPageDoc,
     type CatalogLibraryOptionDoc,
     type CatalogOptionDoc,
     type CatalogProductDoc,
@@ -228,9 +231,17 @@ async function fetchSanityCustomizationLibrary(): Promise<
     }
 }
 
+const EMPTY_PRODUCT_LIBRARY: ProductLibraryResult = {
+    items: [],
+    linesBySlug: {},
+    stylesByLineSlug: {},
+    propertyTitles: {},
+    facetCatalog: {shared: []},
+};
+
 async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
     if (!isSanityConfigured()) {
-        return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+        return EMPTY_PRODUCT_LIBRARY;
     }
     try {
         const docs = await (await draftAwareClient()).fetch<
@@ -238,18 +249,27 @@ async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
         >(CATALOG_PRODUCT_LIBRARY_QUERY);
         const items: ProductLibraryItem[] = [];
         const lineMetas: ProductLibraryLineMeta[] = [];
+        const propertyTitles: Record<string, string> = {};
+        const valueTitles: Record<string, string> = {};
         for (const doc of docs ?? []) {
-            const item = mapSanityProductLibraryItem(doc);
-            if (item) items.push(item);
+            const mapped = mapSanityProductLibraryItem(doc);
+            if (mapped) {
+                items.push(mapped.item);
+                Object.assign(propertyTitles, mapped.propertyTitles);
+                Object.assign(valueTitles, mapped.valueTitles);
+            }
             const lineMeta = mapSanityProductLibraryLineMeta(doc);
             if (lineMeta) lineMetas.push(lineMeta);
         }
-        return buildProductLibraryResult(items, lineMetas);
+        return buildProductLibraryResult(items, lineMetas, {
+            propertyTitles,
+            valueTitles,
+        });
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity product library failed:', err);
         }
-        return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+        return EMPTY_PRODUCT_LIBRARY;
     }
 }
 
@@ -320,6 +340,59 @@ export async function listProducts(): Promise<Product[]> {
 /** Faceted products library for `/products` (PROD-1845). */
 export async function listProductLibrary(): Promise<ProductLibraryResult> {
     return readThrough(fetchSanityProductLibrary, getCachedProductLibrary);
+}
+
+async function fetchProductCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            PRODUCT_CATALOG_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedProductCatalogPage = unstable_cache(
+    fetchProductCatalogPage,
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+/** Sections below the `/products` grid (PROD-2589 / PROD-2599). */
+export async function getProductCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(fetchProductCatalogPage, getCachedProductCatalogPage);
+}
+
+async function fetchCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            CUSTOMIZATION_CATALOG_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedCustomizationCatalogPage = unstable_cache(
+    fetchCustomizationCatalogPage,
+    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    },
+);
+
+/** Sections below the `/customizations` grid (PROD-2599). */
+export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(
+        fetchCustomizationCatalogPage,
+        getCachedCustomizationCatalogPage,
+    );
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */

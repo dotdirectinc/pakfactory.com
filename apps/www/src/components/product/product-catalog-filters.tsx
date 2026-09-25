@@ -8,7 +8,19 @@ import {
     CatalogFacetGroup,
     CatalogFacetGroupSkeleton,
 } from '@/components/ui/catalog-facet-group';
-import type {CustomizationFacetDef} from '@/lib/catalog/types';
+import {ProductLineFacetGroup} from '@/components/product/product-line-facet-group';
+import type {CustomizationFacetDef, CustomizationFacetOption} from '@/lib/catalog/types';
+import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
+
+/** Desktop filter rail: stable gutter + centered thin thumb (PROD-2599). */
+const FILTER_RAIL_CLASS = cn(
+    'hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto lg:[scrollbar-gutter:stable]',
+    '[&::-webkit-scrollbar]:w-3',
+    '[&::-webkit-scrollbar-thumb]:rounded-full',
+    '[&::-webkit-scrollbar-thumb]:border-2',
+    '[&::-webkit-scrollbar-thumb]:border-transparent',
+    '[&::-webkit-scrollbar-thumb]:bg-clip-padding',
+);
 
 type ProductCatalogFiltersProps = {
     resultCount: number;
@@ -18,6 +30,11 @@ type ProductCatalogFiltersProps = {
     countsByFacet: Record<string, Record<string, number>>;
     onToggle: (facetId: string, value: string) => void;
     onReset: () => void;
+    /** Styles for the single selected Product Line (empty when not exactly one). */
+    styleOptions?: CustomizationFacetOption[];
+    selectedStyles?: string[];
+    styleCounts?: Record<string, number>;
+    onToggleStyle?: (value: string) => void;
 };
 
 export function ProductCatalogFilters({
@@ -28,13 +45,17 @@ export function ProductCatalogFilters({
     countsByFacet,
     onToggle,
     onReset,
+    styleOptions = [],
+    selectedStyles = [],
+    styleCounts = {},
+    onToggleStyle,
 }: ProductCatalogFiltersProps) {
     const visibleFacets = sharedFacets.filter(
         (facet) => facet.options.length > 0,
     );
 
     return (
-        <aside className="hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
+        <aside className={FILTER_RAIL_CLASS}>
             <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">
                     {resultCount} of {totalCount}
@@ -60,14 +81,29 @@ export function ProductCatalogFilters({
                             'border-b border-dashed border-border',
                     )}
                 >
-                    <CatalogFacetGroup
-                        title={facet.title}
-                        options={facet.options}
-                        selected={selections[facet.id] ?? []}
-                        counts={countsByFacet[facet.id] ?? {}}
-                        onToggle={(value) => onToggle(facet.id, value)}
-                        defaultOpen
-                    />
+                    {facet.id === PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID ? (
+                        <ProductLineFacetGroup
+                            title={facet.title}
+                            options={facet.options}
+                            selected={selections[facet.id] ?? []}
+                            counts={countsByFacet[facet.id] ?? {}}
+                            onToggle={(value) => onToggle(facet.id, value)}
+                            styleOptions={styleOptions}
+                            selectedStyles={selectedStyles}
+                            styleCounts={styleCounts}
+                            onToggleStyle={onToggleStyle}
+                            defaultOpen
+                        />
+                    ) : (
+                        <CatalogFacetGroup
+                            title={facet.title}
+                            options={facet.options}
+                            selected={selections[facet.id] ?? []}
+                            counts={countsByFacet[facet.id] ?? {}}
+                            onToggle={(value) => onToggle(facet.id, value)}
+                            defaultOpen
+                        />
+                    )}
                 </div>
             ))}
         </aside>
@@ -85,7 +121,7 @@ export function ProductCatalogFiltersSkeleton({
 }: ProductCatalogFiltersSkeletonProps) {
     return (
         <aside
-            className="hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto"
+            className={FILTER_RAIL_CLASS}
             aria-busy="true"
             aria-live="polite"
         >

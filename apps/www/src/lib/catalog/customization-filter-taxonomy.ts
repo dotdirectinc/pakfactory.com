@@ -63,6 +63,7 @@ export function withinOpForFacet(
     title?: string | null,
 ): CustomizationFacetWithinOp {
     if (facetId === CUSTOMIZATION_PRODUCT_LINE_FACET_ID) return 'or';
+    if (facetId === 'product-style') return 'or';
     if (isSustainabilityProperty(facetId, title)) return 'and';
     if (isPerformanceProperty(facetId, title)) return 'and';
     return 'or';

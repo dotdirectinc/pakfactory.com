@@ -67,12 +67,14 @@ export function CatalogEntryCard({
                     'md:w-auto md:justify-start md:pb-2 md:pt-6',
                 )}
             >
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {eyebrow}
-                </span>
-                <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground sm:text-lg">
-                    {headline}
-                </h3>
+                <div className="flex flex-col gap-0">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {eyebrow}
+                    </span>
+                    <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground sm:text-lg">
+                        {headline}
+                    </h3>
+                </div>
                 <span className="inline-flex text-sm font-semibold text-foreground underline underline-offset-4">
                     Learn more
                 </span>
@@ -80,13 +82,13 @@ export function CatalogEntryCard({
 
             <div className="relative min-h-0 min-w-0 flex-1">
                 {imageUrl ? (
-                    <div className="absolute -inset-y-2 -right-3 left-0 md:inset-x-[-0.75rem] md:bottom-[-1rem] md:top-0">
+                    <div className="absolute bottom-0 -right-8 -top-2 left-0 md:inset-x-[-3.5rem] md:bottom-0 md:top-[0.5rem]">
                         <SanityImage
                             src={imageUrl}
                             alt={imageAlt ?? title}
                             fill
                             sizes="(max-width: 768px) 60vw, (max-width: 1280px) 30vw, 15vw"
-                            className="object-contain object-center md:object-bottom"
+                            className="object-contain object-right-bottom"
                         />
                     </div>
                 ) : (

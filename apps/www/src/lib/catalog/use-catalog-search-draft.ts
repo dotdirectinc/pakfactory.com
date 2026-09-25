@@ -14,7 +14,7 @@ type UseCatalogSearchDraftOptions = {
 
 /**
  * Keeps the search input snappy: draft updates immediately; URL/local commit
- * is debounced so router.replace is not called on every keystroke.
+ * is debounced so history.replaceState is not called on every keystroke.
  */
 export function useCatalogSearchDraft({
     committedQuery,

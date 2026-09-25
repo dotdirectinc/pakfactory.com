@@ -325,10 +325,16 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     };
 }
 
+export type MappedProductLibraryItem = {
+    item: ProductLibraryItem;
+    propertyTitles: Record<string, string>;
+    valueTitles: Record<string, string>;
+};
+
 /** Faceted `/products` library card (PROD-1845) — no availableCustomizations tree. */
 export function mapSanityProductLibraryItem(
     doc: CatalogProductLibraryDoc,
-): ProductLibraryItem | null {
+): MappedProductLibraryItem | null {
     const product = mapSanityProduct(doc);
     if (!product) return null;
 
@@ -369,19 +375,25 @@ export function mapSanityProductLibraryItem(
     }
 
     return {
-        _id: doc._id,
-        title: product.title,
-        slug: product.slug,
-        sku: product.sku,
-        kind: product.kind,
-        productLine: product.productLine,
-        productStyle: product.productStyle,
-        imageUrl: first?.src ?? null,
-        imageAlt: first?.alt ?? product.title,
-        images: images.length > 0 ? images : undefined,
-        ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
-        industries,
-        attrs,
+        item: {
+            _id: doc._id,
+            title: product.title,
+            slug: product.slug,
+            sku: product.sku,
+            kind: product.kind,
+            productLine: product.productLine,
+            // Library payload: slug + title only (PROD-2599).
+            productStyle: {
+                slug: product.productStyle.slug,
+                title: product.productStyle.title,
+            },
+            imageUrl: first?.src ?? null,
+            imageAlt: first?.alt ?? product.title,
+            images: images.length > 0 ? images : undefined,
+            ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
+            industries,
+            attrs,
+        },
         propertyTitles,
         valueTitles,
     };

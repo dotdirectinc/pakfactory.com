@@ -377,7 +377,13 @@ export async function getSolutionLineCatalog(
 }
 
 function emptyProductLibrary(): ProductLibraryResult {
-    return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+    return {
+        items: [],
+        linesBySlug: {},
+        stylesByLineSlug: {},
+        propertyTitles: {},
+        facetCatalog: {shared: []},
+    };
 }
 
 async function fetchSolutionStylesForSolution(
@@ -447,15 +453,23 @@ async function fetchStyleProductLibrary(
 
         const items: ProductLibraryItem[] = [];
         const lineMetas: ProductLibraryLineMeta[] = [];
+        const propertyTitles: Record<string, string> = {};
+        const valueTitles: Record<string, string> = {};
         for (const productDoc of docs ?? []) {
-            const item = mapSanityProductLibraryItem(productDoc);
-            if (item) items.push(item);
+            const mapped = mapSanityProductLibraryItem(productDoc);
+            if (mapped) {
+                items.push(mapped.item);
+                Object.assign(propertyTitles, mapped.propertyTitles);
+                Object.assign(valueTitles, mapped.valueTitles);
+            }
             const lineMeta = mapSanityProductLibraryLineMeta(productDoc);
             if (lineMeta) lineMetas.push(lineMeta);
         }
 
         return buildProductLibraryResult(items, lineMetas, {
             omitFacetIds: [PRODUCT_CATALOG_INDUSTRY_FACET_ID],
+            propertyTitles,
+            valueTitles,
         });
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
