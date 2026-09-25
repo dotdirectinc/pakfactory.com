@@ -4,12 +4,12 @@ import {groupsFor, GROUPS} from '../lib/field-groups'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
- * Expertise Page — the body template for expertise stage pages (PROD-2577 /
- * PROD-2578). Lives in Main Website → Expertise Pages; an `expertiseStage`
- * selects one via its `template` field.
+ * Expertise Stage Page — the body template for expertise stage pages (PROD-2577 /
+ * PROD-2578). Lives in Main Website → Expertise Pages → Expertise Stage Pages; an
+ * `expertiseStage` selects one via its `template` field.
  *
  * Unlike the Solution / Product Line singletons (order + default chrome only,
- * content matched by key on the entity), an Expertise Page owns the WHOLE body:
+ * content matched by key on the entity), an Expertise Stage Page owns the WHOLE body:
  * section order, headings and band content. Stages differ by archetype
  * (Consultative, Experiential, …), so there is one template per archetype or
  * stage — e.g. "Packaging Strategy", "Packaging Design".
@@ -25,7 +25,7 @@ import {pageSectionsField, SECTION_ALLOW} from './sections'
  */
 export const expertiseStagePage = defineType({
   name: 'expertiseStagePage',
-  title: 'Expertise Page',
+  title: 'Expertise Stage Page',
   type: 'document',
   icon: CheckmarkCircleIcon,
   groups: groupsFor(['content', 'sections']),
@@ -52,8 +52,8 @@ export const expertiseStagePage = defineType({
     prepare({title, sections}) {
       const count = Array.isArray(sections) ? sections.length : 0
       return {
-        title: title || 'Untitled expertise page',
-        subtitle: `Expertise page template · ${count} section(s)`,
+        title: title || 'Untitled expertise stage page',
+        subtitle: `Stage template · ${count} section(s)`,
       }
     },
   },

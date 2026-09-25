@@ -974,7 +974,8 @@ export const solutionsWorkspaceStructure = (
                 ),
         ]);
 
-/** Expertise workspace (PROD-2330 / D2) — listing singleton + stages + services. */
+/** Expertise workspace (PROD-2330 / D2) — stages + services. The hub page and the
+ *  stage templates live in Main Website → Expertise Pages. */
 export const expertiseStructure = (
     S: StructureBuilder,
     _context: StructureResolverContext,
@@ -983,15 +984,8 @@ export const expertiseStructure = (
         .title('Expertise')
         .items([
             ...sitePreviewHint(S),
-            S.listItem()
-                .title('Expertise Page')
-                .icon(CogIcon)
-                .child(
-                    S.editor()
-                        .id('expertisePage')
-                        .schemaType('listingPage')
-                        .documentId('expertisePage'),
-                ),
+            // The /expertise hub singleton (expertisePage) lives in Main Website →
+            // Expertise Pages with the stage templates — one home for page docs.
             S.listItem()
                 .title('Expertise Stages')
                 .schemaType('expertiseStage')
@@ -1056,7 +1050,7 @@ export const mainWebsiteStructure = (
                 .icon(HomeIcon)
                 .child(S.editor().id('homePage').schemaType('homePage').documentId('homePage')),
             // Domain page folders (PROD-2589). Product / Customization / Solution /
-            // Case Study pins; Expertise lists the Expertise Page templates.
+            // Case Study pins; Expertise holds the hub page + stage templates.
             S.listItem()
                 .title('Product Pages')
                 .icon(PackageIcon)
@@ -1116,9 +1110,31 @@ export const mainWebsiteStructure = (
             S.listItem()
                 .title('Expertise Pages')
                 .icon(CheckmarkCircleIcon)
-                .schemaType('expertiseStagePage')
                 .child(
-                    S.documentTypeList('expertiseStagePage').title('Expertise Pages'),
+                    S.list()
+                        .title('Expertise Pages')
+                        .items([
+                            // /expertise hub — intro + featured stage order (ADR-017).
+                            S.listItem()
+                                .title('Expertise Page')
+                                .icon(CheckmarkCircleIcon)
+                                .child(
+                                    S.editor()
+                                        .id('expertisePage')
+                                        .schemaType('listingPage')
+                                        .documentId('expertisePage'),
+                                ),
+                            // Stage body templates — each expertiseStage selects one.
+                            S.listItem()
+                                .title('Expertise Stage Pages')
+                                .icon(CheckmarkCircleIcon)
+                                .schemaType('expertiseStagePage')
+                                .child(
+                                    S.documentTypeList('expertiseStagePage').title(
+                                        'Expertise Stage Pages',
+                                    ),
+                                ),
+                        ]),
                 ),
             S.listItem()
                 .title('Case Study Pages')

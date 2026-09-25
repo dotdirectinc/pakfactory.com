@@ -12,7 +12,7 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * (Entities/Expertise Stage.md). Now a page at /expertise/<slug>, not just a tag
  * on case studies, with an Expertise landing page above and service pages beneath.
  * The stage owns hero, SEO and the lists sections inherit (services, FAQs, case
- * studies); the page body is the Expertise Page selected in `template`.
+ * studies); the page body is the Expertise Stage Page selected in `template`.
  *
  * 🔴 The display sequence is Eric's end-to-end order (Design → Prototyping →
  * Managed Manufacturing → Strategy → Logistics → Fulfillment) and it lives on the
@@ -159,8 +159,8 @@ export const expertiseStage = defineType({
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
     // ─── TEMPLATE ─────────────────────────────────────────────────────────────
-    // The page body lives on an Expertise Page template (Main Website →
-    // Expertise Pages), not on the stage (PROD-2577 follow-up). Lists the
+    // The page body lives on an Expertise Stage Page template (Main Website →
+    // Expertise Pages → Expertise Stage Pages), not on the stage (PROD-2577 follow-up). Lists the
     // template leaves empty fill from this stage (ADR-020 §8).
     defineField({
       name: 'template',
@@ -171,7 +171,7 @@ export const expertiseStage = defineType({
       options: { disableNew: true },
       description:
         'The page body — sections, headings and band content. Edit it on the template ' +
-        '(Main Website → Expertise Pages), not here. Empty lists on the template ' +
+        '(Main Website → Expertise Pages → Expertise Stage Pages), not here. Empty lists on the template ' +
         '(Services, FAQs, case studies, stages) fill from this stage.',
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
