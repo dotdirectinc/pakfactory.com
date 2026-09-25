@@ -80,6 +80,10 @@ export const EXPERTISE_STAGE_SLUGS_QUERY = /* groq */ `*[
  * `signatureSystem`, `faqs` → `faqSection`, featured (else tagged) case
  * studies → `caseStudiesRow`.
  *
+ * Body = the selected Expertise Page template's `sections` (Main Website →
+ * Expertise Pages). Falls back to the stage's legacy `sections` until
+ * `migrate-expertise-stage-template` has moved them onto a template.
+ *
  * Case-study readers accept both `expertise` and `expertiseAreas` — PROD-2293
  * (#365) renames caseStudy.expertiseAreas → expertise.
  */
@@ -117,7 +121,8 @@ export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
     "_key": _id,
     ...${STAGE_CASE_STUDY_CARD}
   },
-  "sections": sections[]${PAGE_SECTIONS_PROJECTION},
+  "templateTitle": template->title,
+  "sections": coalesce(template->sections, sections)[]${PAGE_SECTIONS_PROJECTION},
   ogTitle,
   ogDescription,
   "ogImageUrl": ogImage.asset->url,
@@ -161,6 +166,8 @@ export type ExpertiseStageBySlugDoc = {
   featuredStudies?: PageSectionCaseStudyItemDoc[] | null;
   /** Case studies tagging this stage — fallback when `featuredStudies` is empty. */
   taggedStudies?: PageSectionCaseStudyItemDoc[] | null;
+  /** Title of the Expertise Page template the body comes from (null = legacy/none). */
+  templateTitle?: string | null;
   sections?: PageSectionDoc[] | null;
   ogTitle?: string | null;
   ogDescription?: string | null;

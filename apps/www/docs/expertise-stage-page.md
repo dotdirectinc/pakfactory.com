@@ -8,16 +8,17 @@ How `/expertise/[slug]` is wired, for humans and AI agents. This is the **one te
 | --- | --- | --- |
 | Breadcrumb | Route | Home → Expertise → stage title |
 | Hero | Route (ADR-020 §2) | `expertiseStage.tagline` (eyebrow), `h1` (falls back to `title`), `description` (subhead), `diagram` (media), `heroCtaLabel` (button to the quote request, `WWW_ROUTES.request`; empty falls back to "Get a quote") |
-| Body | Editors | `expertiseStage.sections[]` (`SECTION_ALLOW.marketPage`), rendered in editor order by `SectionRenderer` |
+| Body | Editors | The stage's **Expertise Page template** (`expertiseStage.template` → `expertiseStagePage`, Main Website → Expertise Pages): its `sections[]` (`SECTION_ALLOW.marketPage`), rendered in editor order by `SectionRenderer`. Legacy `expertiseStage.sections` is read as a fallback until `migrate-expertise-stage-template` has run |
 | SEO | Route | `metaTitle` / `metaDescription` / robots / canonical; OG image comes from `ogImage`, then `diagram`, then Global Settings `defaultOgImage` |
 | JSON-LD | Route | BreadcrumbList, plus FAQPage built from the FAQ sections the page actually renders ([`expertise-jsonld.ts`](../src/lib/expertise/expertise-jsonld.ts)) |
 
-There is no per-stage layout and no template singleton. Stages differ by archetype (Consultative, Experiential, Operational), so each stage's `sections[]` holds its full body.
+There is no per-stage layout in code. The body lives on an **Expertise Page** template document, and unlike the Solution / Product Line singletons it owns the whole body: order, headings and band content. Stages differ by archetype (Consultative, Experiential, Operational), so templates are per archetype or per stage: **Packaging Strategy** and **Packaging Design** today. Lists the template leaves empty still fill from the stage that renders it (see Host inherit below), and page-field chips resolve from that stage, so one template can serve several stages. Editing a template revalidates every stage page (`/api/revalidate` handles `expertiseStagePage`).
 
 ## Band → Section map (Strategy, Consultative)
 
 | # | Band (archetype spine) | `_type` | React |
 | --- | --- | --- | --- |
+| 0 | Trust strip ("Trusted by 5,000+ brands…") | `logoWall` | `LogoWall` |
 | 1 | Why strategy matters + Our approach (360° Strategic Framework) | `signatureSystem` (new) | `SignatureSystem` + `ui/SystemRing` |
 | 2 | How an engagement starts | `mediaFeature` | `TextWithImage` |
 | 3 | What you walk away with | `benefits` (new) | `Benefits` |
@@ -25,7 +26,6 @@ There is no per-stage layout and no template singleton. Stages differ by archety
 | 5 | Where this fits | `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath` (this host only) |
 | 6 | FAQ | `faqSection` | `FaqSection` |
 | 7 | Final CTA | `quoteCta` (now wired) | `QuoteCta` |
-| — | Trust strip (optional) | `logoWall` | `LogoWall` |
 
 ## Band → Section map (Design, Experiential — PROD-2578)
 
@@ -33,7 +33,8 @@ Show first, then explain. The template is the same; only the stage's `sections[]
 
 | # | Band (archetype spine) | `_type` | React |
 | --- | --- | --- | --- |
-| 1 | Work showcase ("Our work") | `inspirationsGrid` (Custom list, curated by the design team) | `InspirationGallery` |
+| 0 | Trust strip | `logoWall` | `LogoWall` |
+| 1 | Work showcase ("Our work") | `inspirationsGrid`: a Custom list of typed cards reusing case-study images, each linking to its study (to be swapped for the design team's curated set) | `InspirationGallery` |
 | 2 | What's possible ("What our designers do") | `signatureSystem` with **no System name** | `SignatureSystem`: the services list, with the open service's image beside it instead of the ring |
 | 3 | How it works | `steps` (now wired; each step can link on, e.g. to the Prototyping stage) | `Steps` |
 | 4 | Why it's certain (Design fidelity) | `caseStudiesRow` | `CaseStudiesRow` |
@@ -58,14 +59,29 @@ Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
 
 ## One Section, two hosts
 
-`SectionRenderer` takes an optional `components` override, keyed by `_type`. On a stage page, `expertiseSequence` renders as the lifecycle path:
-- every stage is shown, and the current one is highlighted with `aria-current="step"`;
-- unreleased (`coming-soon`) stages are not linked;
-- previous and next links skip unreleased stages.
+`SectionRenderer` takes an optional `components` override, keyed by `_type`. The expertise stage page uses it to give shared Sections the expertise (POC) presentation. The data is the same and the CMS stores no variant field (D35); every other host keeps the registry default.
 
-Everywhere else the same Section still renders as `ExpertiseRow` (StagesBoard). The CMS stores no variant field (D35).
+| `_type` | On the stage page | Elsewhere |
+| --- | --- | --- |
+| `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath`: every stage, the current one highlighted (`aria-current="step"`); `coming-soon` stages are not linked; previous/next links skip them | `ExpertiseRow` (StagesBoard) |
+| `mediaFeature` | `ui/MediaPanel`: one rounded panel with the copy over the image. Renders solid until an image is uploaded | `TextWithImage` |
+| `caseStudiesRow` | `CaseStudiesRow` on the muted band | `CaseStudiesRow` (default band) |
+| `quoteCta` | `QuoteCta` with `theme="inverse"` (dark band), left-aligned | `QuoteCta` (muted, centred) |
+
+Band rhythm follows the POC:
+- `signatureSystem` (the "why" on white, the method on muted)
+- `steps` (muted)
+- case studies (muted)
+- the dark closing CTA
+
+The hero's diagram renders as a full-width media band under the copy.
 
 ## Signature system behaviour
+
+Presentation follows the data, not a layout field:
+- **Named method** (System name set, e.g. Strategy's 360° Strategic Framework): a disclosure list plus a decorative ring numbered per dimension, with the name's leading figure ("360°") set large.
+- **No named method** (Design): dark service cards (the service image when set) with a `+` that reveals the summary.
+
 
 - Each problem label can reference the Expertise Service that answers it. Selecting the label opens that dimension, writes `#<dimension>` to the URL and scrolls to it once the accordion settles.
 - A problem whose service is not among the shown dimensions renders as a plain label.

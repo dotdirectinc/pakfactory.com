@@ -66,9 +66,9 @@ export function Benefits({content, id = 'benefits', className}: BenefitsProps) {
                         {items.map((item) => (
                             <li
                                 key={item.id}
-                                className="flex flex-col gap-4 rounded-lg border border-border bg-card p-8"
+                                className="flex flex-col gap-6 rounded-lg bg-muted p-8"
                             >
-                                <span className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground">
+                                <span className="flex size-10 items-center justify-center rounded-full bg-background text-foreground">
                                     <Icon icon={item.icon} size="md" />
                                 </span>
                                 <div className="flex flex-col gap-2">

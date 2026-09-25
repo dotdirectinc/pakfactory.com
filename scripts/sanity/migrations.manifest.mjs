@@ -360,6 +360,19 @@ export const MIGRATIONS = [
     // relationship fill regroups afterwards; this probe stays true through that.
     probe: `count(*[_type == "customizationType" && count(dependsOn[defined(_ref)]) > 0]) == 0`,
   },
+  {
+    id: '20260925-expertise-stage-template',
+    ticket: 'PROD-2577',
+    title: 'Move expertiseStage.sections onto Expertise Page templates (expertiseStage.template)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:expertise-stage-template',
+    script: 'apps/studio/scripts/migrate-expertise-stage-template.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no stage (published or draft) still carries its own
+    // sections. The field leaves the schema in the same PR; www reads the template and
+    // falls back to legacy sections until this has run.
+    probe: `count(*[_type == "expertiseStage" && defined(sections)]) == 0`,
+  },
 ]
 
 /**
@@ -404,8 +417,8 @@ export const HISTORIC = [
 export const TASKS = [
   { task: 'seed:blog-singleton-pages', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
   { task: 'seed:per-type-settings', pkg: '@pakfactory/studio', why: 'idempotent singleton seed' },
-  { task: 'seed:expertise-design', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2578); fixed _ids, replaces the stage sections' },
-  { task: 'seed:expertise-strategy', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2577); fixed _ids, replaces the stage sections' },
+  { task: 'seed:expertise-design', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2578); fixed _ids, replaces the stage template body' },
+  { task: 'seed:expertise-strategy', pkg: '@pakfactory/studio', why: 'idempotent content seed (PROD-2577); fixed _ids, replaces the stage template body' },
   { task: 'import:notion-customization-demo', pkg: '@pakfactory/studio', why: 're-importable source of truth' },
   { task: 'fill:catalog', pkg: '@pakfactory/studio', why: 'run per catalogue review' },
   // Destructive, and paired with fill:catalog — the purge is only ever a prelude to a

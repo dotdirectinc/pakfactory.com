@@ -1,7 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { StarIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
-import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { faqsField } from '../lib/faq-field'
@@ -12,6 +11,8 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * Expertise Stage — one of the six stages of PakFactory's service model
  * (Entities/Expertise Stage.md). Now a page at /expertise/<slug>, not just a tag
  * on case studies, with an Expertise landing page above and service pages beneath.
+ * The stage owns hero, SEO and the lists sections inherit (services, FAQs, case
+ * studies); the page body is the Expertise Page selected in `template`.
  *
  * 🔴 The display sequence is Eric's end-to-end order (Design → Prototyping →
  * Managed Manufacturing → Strategy → Logistics → Fulfillment) and it lives on the
@@ -26,7 +27,7 @@ export const expertiseStage = defineType({
   title: 'Expertise Stage',
   type: 'document',
   icon: StarIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'template', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -157,8 +158,30 @@ export const expertiseStage = defineType({
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
+    // ─── TEMPLATE ─────────────────────────────────────────────────────────────
+    // The page body lives on an Expertise Page template (Main Website →
+    // Expertise Pages), not on the stage (PROD-2577 follow-up). Lists the
+    // template leaves empty fill from this stage (ADR-020 §8).
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{ type: 'expertiseStagePage' }],
+      options: { disableNew: true },
+      description:
+        'The page body — sections, headings and band content. Edit it on the template ' +
+        '(Main Website → Expertise Pages), not here. Empty lists on the template ' +
+        '(Services, FAQs, case studies, stages) fill from this stage.',
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const status = (ctx.document as { status?: string } | undefined)?.status
+          if (status !== 'active' || value) return true
+          return 'Active stages need a template — without one the page shows the hero only.'
+        }).warning(),
+    }),
+
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
-    pageSectionsField(SECTION_ALLOW.marketPage),
     ...seoFields({ group: GROUPS.seo, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],

@@ -36,7 +36,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "productLinePage", "expertiseStage", "customizationOption",
+ *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "productCatalogPage", "productStylePage", "customizationCatalogPage",
  *     "websiteNavigation", "settings"
@@ -217,10 +217,13 @@ export async function POST(request: Request) {
     }
   }
 
-  // Expertise landing grid + stage shells.
+  // Expertise landing grid + stage pages. An Expertise Page template edit
+  // re-renders every stage that selects it, so it revalidates all stage paths.
   const touchesExpertise =
     !type ||
     type === "expertiseStage" ||
+    type === "expertiseStagePage" ||
+    type === "expertiseService" ||
     type === "listingPage";
   if (touchesExpertise) {
     tags.add(WWW_EXPERTISE_CACHE_TAG);
@@ -298,6 +301,8 @@ export async function POST(request: Request) {
     type === "productLinePage" ||
     type === "solutionStyle" ||
     type === "expertiseStage" ||
+    type === "expertiseStagePage" ||
+    type === "expertiseService" ||
     type === "websiteNavigation" ||
     type === "settings";
 

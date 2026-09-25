@@ -8,14 +8,17 @@
  * `expertiseStage` slug `packaging-design` (hero, SEO, services, FAQs, featured case
  * studies, body `sections[]`). Runner: `lib/expertise-stage-seed.mjs`.
  *
- * Body order: inspirationsGrid (our work) → signatureSystem with no system name (what
+ * The body is written to the Expertise Page template "Packaging Design"
+ * (`expertiseStagePage.packaging-design`, Main Website → Expertise Pages); the
+ * stage selects it. Updated to the POC (localhost:8888/expertise/design):
+ * trust strip first, and a case-study-led work gallery.
+ *
+ * Body order: logoWall (trust strip) → inspirationsGrid (our work) → signatureSystem with no system name (what
  * our designers do) → steps (how the work happens) → caseStudiesRow (why it holds up)
  * → expertiseSequence (where this fits) → faqSection → quoteCta.
  *
  * Not written (editors do these in Studio):
- *   - The work gallery cards. The POC gallery is a placeholder set; the copy doc asks for
- *     a permissioned set of real projects curated with the design team. The section is
- *     seeded as a Custom list with no cards, so it renders nothing until cards are added.
+ *   - The design team's curated work set (the seeded gallery reuses 5 case studies).
  *   - Service images (shown beside the services list), stage diagram / hero image, OG image.
  *   - The "Browse the Option Library" link on Option Selection & Optimization — services
  *     carry no link field yet.
@@ -29,10 +32,16 @@
  */
 
 import {
+  caseStudyGalleryCards,
   internalLink,
   pathLink,
   runExpertiseStageSeed,
+  TRUST_STRIP_CLIENT_SLUGS,
+  trustStripSection,
 } from './lib/expertise-stage-seed.mjs'
+
+/** "Our work" — the POC's case-study-led gallery: real, published work. */
+const GALLERY_CASE_STUDY_SLUGS = ['blind-barrels', 'via-carota', 'hello-adorn', 'venture', 'serena-sleep']
 
 // ── Content (approved copy, PROD-1888) ──────────────────────────────────────
 
@@ -121,8 +130,9 @@ function stageLink(stageIdBySlug, label, slug) {
   return id ? { link: internalLink(label, id) } : {}
 }
 
-function buildSections({ stageIdBySlug }) {
+function buildSections({ stageIdBySlug, clientIdBySlug, caseStudyBySlug }) {
   return [
+    trustStripSection('design-trust-strip', clientIdBySlug),
     {
       _type: 'inspirationsGrid',
       _key: 'design-work',
@@ -130,9 +140,10 @@ function buildSections({ stageIdBySlug }) {
       heading: 'First impressions, made to last.',
       intro:
         'Great packaging design earns attention on the shelf and turns the unboxing into a reason customers come back.',
-      // Curated by the design team — Custom + empty renders nothing until cards exist.
+      // Case-study-led, as in the POC: each card reuses the study's card image and
+      // links to it. Swap for the design team's curated set when it exists.
       listSource: 'custom',
-      cards: [],
+      cards: caseStudyGalleryCards(GALLERY_CASE_STUDY_SLUGS, caseStudyBySlug),
     },
     {
       _type: 'signatureSystem',
@@ -227,6 +238,9 @@ runExpertiseStageSeed({
   task: 'seed:expertise-design',
   stageSlug: 'packaging-design',
   idPrefix: 'design',
+  templateTitle: 'Packaging Design',
+  logoClientSlugs: TRUST_STRIP_CLIENT_SLUGS,
+  galleryCaseStudySlugs: GALLERY_CASE_STUDY_SLUGS,
   stage: STAGE,
   services: SERVICES,
   faqs: FAQS,
@@ -234,7 +248,7 @@ runExpertiseStageSeed({
   caseStudySlugs: ['blind-barrels', 'via-carota', 'hello-adorn'],
   buildSections,
   editorNotes: [
-    'work gallery cards (Our work) — a permissioned set of real projects from the design team.',
+    'work gallery (Our work) is seeded from 5 case studies — replace with the design team\'s curated set when ready.',
     'service images (beside the services list), stage diagram, OG image.',
   ],
 }).catch((err) => {

@@ -7,10 +7,13 @@
  *   washout; media placeholders use `bg-background` via card `surface`)
  * - **text** / **chrome** — stay on semantic tokens until an inverse band exists
  *
+ * - **inverse** — dark band (`foreground` as background); text flips to
+ *   `background`. Closing CTAs on expertise stage pages (PROD-2577).
+ *
  * Extend with `'cream'` when www needs brand-cream bands.
  */
 
-export type SectionTheme = 'default' | 'muted';
+export type SectionTheme = 'default' | 'muted' | 'inverse';
 
 /** Card / tile surface relative to the section band. */
 export type SectionCardSurface = 'default' | 'elevated';
@@ -18,6 +21,7 @@ export type SectionCardSurface = 'default' | 'elevated';
 const BAND_CLASS: Record<SectionTheme, string> = {
     default: 'bg-background',
     muted: 'bg-muted',
+    inverse: 'bg-foreground text-background',
 };
 
 /** Elevated surface on muted: stay white; suppress hover→muted washout. */

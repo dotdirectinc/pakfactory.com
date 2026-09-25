@@ -11,12 +11,16 @@
  *   - patches the existing `expertiseStage` slug `packaging-strategy`: hero fields, SEO,
  *     `services`, `faqs`, `featuredStudies`, and body `sections[]` in the Consultative order
  *
+ * The body is written to the Expertise Page template "Packaging Strategy"
+ * (`expertiseStagePage.packaging-strategy`, Main Website → Expertise Pages); the
+ * stage selects it. Trust strip = Logo wall of the POC's 10 clients.
+ *
  * Not written (editors do these in Studio):
  *   - Images: the engagement photo (`mediaFeature` renders nothing until it has one), the
  *     stage diagram / hero image and the OG image — the assets live in Drive.
  *   - The logo wall (trust strip) — pick the client logos in Studio.
  *
- * Body order: signatureSystem (why it matters + framework) → mediaFeature (how an
+ * Body order: logoWall (trust strip) → signatureSystem (why it matters + framework) → mediaFeature (how an
  * engagement starts) → benefits (what you walk away with) → caseStudiesRow (why it's
  * certain) → expertiseSequence (where this fits) → faqSection → quoteCta.
  * Lists are left empty on purpose so they inherit from the stage (ADR-020 §8):
@@ -36,6 +40,8 @@ import {
   plainBlock,
   ref,
   runExpertiseStageSeed,
+  TRUST_STRIP_CLIENT_SLUGS,
+  trustStripSection,
 } from './lib/expertise-stage-seed.mjs'
 
 const CASE_STUDY_SLUGS = ['venture', 'serena-sleep', 'blind-barrels']
@@ -146,8 +152,9 @@ const FAQS = [
   },
 ]
 
-function buildSections({ serviceId }) {
+function buildSections({ serviceId, clientIdBySlug }) {
   return [
+    trustStripSection('strategy-trust-strip', clientIdBySlug),
     {
       _type: 'signatureSystem',
       _key: 'strategy-signature-system',
@@ -261,6 +268,8 @@ runExpertiseStageSeed({
   task: 'seed:expertise-strategy',
   stageSlug: 'packaging-strategy',
   idPrefix: 'strategy',
+  templateTitle: 'Packaging Strategy',
+  logoClientSlugs: TRUST_STRIP_CLIENT_SLUGS,
   stage: STAGE,
   services: SERVICES,
   faqs: FAQS,
@@ -268,7 +277,6 @@ runExpertiseStageSeed({
   buildSections,
   editorNotes: [
     'engagement photo (mediaFeature renders nothing without one), stage diagram, OG image.',
-    'logo wall (trust strip) — pick client logos.',
   ],
 }).catch((err) => {
   console.error(err)

@@ -22,6 +22,8 @@ type QuoteCtaProps = {
      * Defaults to `muted` for the conversion strip.
      */
     theme?: SectionTheme;
+    /** Content alignment. Default `center` (PDP conversion strip). */
+    align?: 'left' | 'center';
 };
 
 /**
@@ -35,8 +37,10 @@ export function QuoteCta({
     className,
     id = 'pdp-quote-cta',
     theme = 'muted',
+    align = 'center',
 }: QuoteCtaProps) {
     const shell = sectionThemeShell(theme);
+    const inverse = theme === 'inverse';
 
     return (
         <section
@@ -45,16 +49,39 @@ export function QuoteCta({
             className={cn('scroll-mt-20', shell.bandClass, className)}
         >
             <PageDielineSection innerClassName="py-16 sm:py-20">
-                <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
-                    <h2 className="text-2xl font-semibold text-brand-blue sm:text-3xl">
+                <div
+                    className={cn(
+                        'flex max-w-2xl flex-col gap-6',
+                        align === 'center'
+                            ? 'mx-auto items-center text-center'
+                            : 'items-start text-left',
+                    )}
+                >
+                    <h2
+                        className={cn(
+                            'text-2xl font-semibold sm:text-3xl',
+                            inverse ? 'text-background' : 'text-brand-blue',
+                        )}
+                    >
                         {heading}
                     </h2>
                     {body ? (
-                        <p className="text-base leading-relaxed text-muted-foreground">
+                        <p
+                            className={cn(
+                                'text-base leading-relaxed',
+                                inverse
+                                    ? 'text-background/80'
+                                    : 'text-muted-foreground',
+                            )}
+                        >
                             {body}
                         </p>
                     ) : null}
-                    <Button asChild size="lg">
+                    <Button
+                        asChild
+                        size="lg"
+                        variant={inverse ? 'secondary' : 'default'}
+                    >
                         <Link href={href}>{ctaLabel}</Link>
                     </Button>
                 </div>
