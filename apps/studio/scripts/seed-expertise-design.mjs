@@ -33,6 +33,7 @@
 
 import {
   caseStudyGalleryCards,
+  catalogueGalleryRefs,
   internalLink,
   pathLink,
   runExpertiseStageSeed,
@@ -43,6 +44,13 @@ import {
 /** "Our work" — the POC's case-study-led gallery: real, published work. */
 const GALLERY_CASE_STUDY_SLUGS = ['blind-barrels', 'via-carota', 'hello-adorn', 'venture', 'serena-sleep']
 
+/**
+ * "Our work" second row — catalogue pieces that glide under the case studies (POC
+ * `projects`, itself a placeholder drawn from the product library). The runner picks this
+ * many uploaded Solution Styles with images; editors swap in the design team's curated set.
+ */
+const GALLERY_CATALOGUE_COUNT = 6
+
 // ── Content (approved copy, PROD-1888) ──────────────────────────────────────
 
 const STAGE = {
@@ -52,6 +60,8 @@ const STAGE = {
     'Our expert team creates custom packaging designs around your brand and your product, making sure they are production-ready and built for an unboxing moment worth sharing.',
   // [OPEN] in the copy doc: "Request a sample" vs "Get a quote" — both open the quote request.
   heroCtaLabel: 'Request a sample',
+  heroSecondaryLabel: 'See our work',
+  heroSecondaryTarget: 'inspirationsGrid',
   metaTitle: 'Custom Packaging Design Services | PakFactory',
   metaDescription:
     "Packaging design that's brand-aligned and built to produce — structural dielines, full creative execution, and production-ready files. See our work and request a sample.",
@@ -130,7 +140,7 @@ function stageLink(stageIdBySlug, label, slug) {
   return id ? { link: internalLink(label, id) } : {}
 }
 
-function buildSections({ stageIdBySlug, clientIdBySlug, caseStudyBySlug }) {
+function buildSections({ stageIdBySlug, clientIdBySlug, caseStudyBySlug, catalogueIds }) {
   return [
     trustStripSection('design-trust-strip', clientIdBySlug),
     {
@@ -143,7 +153,10 @@ function buildSections({ stageIdBySlug, clientIdBySlug, caseStudyBySlug }) {
       // Case-study-led, as in the POC: each card reuses the study's card image and
       // links to it. Swap for the design team's curated set when it exists.
       listSource: 'custom',
-      cards: caseStudyGalleryCards(GALLERY_CASE_STUDY_SLUGS, caseStudyBySlug),
+      cards: [
+        ...caseStudyGalleryCards(GALLERY_CASE_STUDY_SLUGS, caseStudyBySlug),
+        ...catalogueGalleryRefs(catalogueIds),
+      ],
     },
     {
       _type: 'signatureSystem',
@@ -241,6 +254,7 @@ runExpertiseStageSeed({
   templateTitle: 'Packaging Design',
   logoClientSlugs: TRUST_STRIP_CLIENT_SLUGS,
   galleryCaseStudySlugs: GALLERY_CASE_STUDY_SLUGS,
+  galleryCatalogueCount: GALLERY_CATALOGUE_COUNT,
   stage: STAGE,
   services: SERVICES,
   faqs: FAQS,

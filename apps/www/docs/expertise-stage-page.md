@@ -7,7 +7,7 @@ How `/expertise/[slug]` is wired, for humans and AI agents. This is the **one te
 | Part | Owner | Source |
 | --- | --- | --- |
 | Breadcrumb | Route | Home → Expertise → stage title |
-| Hero | Route (ADR-020 §2) | `expertiseStage.tagline` (eyebrow), `h1` (falls back to `title`), `description` (subhead), `diagram` (media), `heroCtaLabel` (button to the quote request, `WWW_ROUTES.request`; empty falls back to "Get a quote") |
+| Hero | Route (ADR-020 §2) | `ExpertiseHero` (POC values): `expertiseStage.tagline` (eyebrow), `h1` (falls back to `title`), `description` (subhead), `heroCtaLabel` (button to the quote request, `WWW_ROUTES.request`; empty falls back to "Get a quote"), `heroSecondaryLabel` + `heroSecondaryTarget` (in-page text link to the first body section of that type, e.g. "See our work" → `inspirationsGrid`; ids come from [`section-anchor.ts`](../src/lib/expertise/section-anchor.ts)), `heroImage` (optional full-width 21:9 band; empty on Design, which opens on its work gallery). `diagram` is the hub card image only |
 | Body | Editors | The stage's **Expertise Stage Page template** (`expertiseStage.template` → `expertiseStagePage`, Main Website → Expertise Pages → Expertise Stage Pages): its `sections[]` (`SECTION_ALLOW.marketPage`), rendered in editor order by `SectionRenderer`. Legacy `expertiseStage.sections` is read as a fallback until `migrate-expertise-stage-template` has run |
 | SEO | Route | `metaTitle` / `metaDescription` / robots / canonical; OG image comes from `ogImage`, then `diagram`, then Global Settings `defaultOgImage` |
 | JSON-LD | Route | BreadcrumbList, plus FAQPage built from the FAQ sections the page actually renders ([`expertise-jsonld.ts`](../src/lib/expertise/expertise-jsonld.ts)) |
@@ -85,9 +85,10 @@ Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
 | `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath`: every stage, the current one highlighted (`aria-current="step"`); `coming-soon` stages are not linked; previous/next links skip them | `ExpertiseRow` (StagesBoard) |
 | `mediaFeature` | `ui/MediaPanel`: one rounded panel with the copy over the image. Renders solid until an image is uploaded | `TextWithImage` |
 | `caseStudiesRow` | `CaseStudyRail` (4:3 image cards on a snap rail, muted band) | `CaseStudiesRow` |
-| `logoWall` | `LogoWall` with its heading as the visible label, 40s lap | `LogoWall` |
+| `logoWall` | `LogoWall variant="strip"`: the thin trust strip (dashed rules, 72px logos at natural width, heading as the visible label, 40s lap) | `LogoWall` |
 | `inspirationsGrid` | `WorkShowcase` when cards link to case studies; else `InspirationGallery` | `InspirationGallery` |
-| `quoteCta` | `QuoteCta` with `theme="inverse"` (dark band), left-aligned | `QuoteCta` (muted, centred) |
+| `faqSection` | `FaqSection variant="rows"`: left-aligned, full-width divider rows, no stock intro | `FaqSection` (centred cards) |
+| `quoteCta` | `QuoteCta` with `theme="inverse"` (dark band, 44px title), left-aligned | `QuoteCta` (muted, centred) |
 
 Band rhythm follows the POC:
 - `signatureSystem` (the "why" on white, the method on muted)
@@ -95,7 +96,9 @@ Band rhythm follows the POC:
 - case studies (muted)
 - the dark closing CTA
 
-The hero's diagram renders as a full-width media band under the copy.
+The body is wrapped in `.expertise-stage`, which restyles every `SectionHeading` by `data-slot` (`app/globals.css`): muted 0.14em label with **no V5 brackets**, 28 → 40px weight-500 title, 18px intro. Other pages keep the bracketed V5 heading.
+
+The POC runs an 18px root and www a 16px one, so the expertise components use the POC's *rendered* pixel values (e.g. the H1 is 40 → 72px, the intro 18px), not its class names.
 
 ## Signature system behaviour
 

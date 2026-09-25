@@ -100,6 +100,12 @@ export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
   description,
   status,
   heroCtaLabel,
+  heroSecondaryLabel,
+  heroSecondaryTarget,
+  heroImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   diagram{
     ...,
     "alt": ${IMAGE_ALT}
@@ -160,6 +166,10 @@ export type ExpertiseStageBySlugDoc = {
   description?: string | null;
   status?: string | null;
   heroCtaLabel?: string | null;
+  heroSecondaryLabel?: string | null;
+  /** Section `_type` the hero link jumps to (first of that kind in the body). */
+  heroSecondaryTarget?: string | null;
+  heroImage?: unknown | null;
   diagram?: unknown | null;
   services?: ExpertiseServiceDimensionDoc[] | null;
   faqs?: PageSectionFaqDoc[] | null;

@@ -40,6 +40,12 @@ type FaqSectionProps = {
     /** Outer full-bleed dashed bottom border. Defaults on for PDP. */
     borderBottom?: boolean;
     cta?: {label: string; href: string};
+    /**
+     * `cards` (default) — separate muted accordion cards under a centred column.
+     * `rows` — full-width divider rows, larger questions (expertise pages, POC
+     * `ExpertiseFaq`).
+     */
+    variant?: 'cards' | 'rows';
 };
 
 /**
@@ -60,7 +66,9 @@ export function FaqSection({
     borderTop = false,
     borderBottom = true,
     cta,
+    variant = 'cards',
 }: FaqSectionProps) {
+    const rows = variant === 'rows';
     const shell = sectionThemeShell(theme);
 
     if (items.length === 0) return null;
@@ -76,9 +84,14 @@ export function FaqSection({
             <PageDielineSection
                 borderTop={borderTop}
                 borderBottom={borderBottom}
-                paddingBlock="md"
+                paddingBlock={rows ? 'lg' : 'md'}
             >
-                <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+                <div
+                    className={cn(
+                        'flex w-full flex-col',
+                        rows ? 'gap-12' : 'mx-auto max-w-4xl gap-8',
+                    )}
+                >
                     <SectionHeading
                         align={align}
                         eyebrow={eyebrow}
@@ -91,7 +104,11 @@ export function FaqSection({
                         type="single"
                         collapsible
                         defaultValue={defaultOpen}
-                        className="flex flex-col gap-4"
+                        className={
+                            rows
+                                ? 'w-full border-t border-border'
+                                : 'flex flex-col gap-4'
+                        }
                     >
                         {items.map((item, index) => {
                             const value = `faq-${index}`;
@@ -100,19 +117,32 @@ export function FaqSection({
                                 <AccordionItem
                                     key={`${item.question}-${index}`}
                                     value={value}
-                                    className="rounded-2xl border-0 bg-muted px-6 sm:px-8"
+                                    className={
+                                        rows
+                                            ? 'border-b border-border'
+                                            : 'rounded-2xl border-0 bg-muted px-6 sm:px-8'
+                                    }
                                 >
                                     <AccordionTrigger
                                         className={cn(
                                             'gap-4 py-6 hover:no-underline',
-                                            'items-center text-base font-semibold text-foreground',
+                                            rows
+                                                ? // Plain chevron, no filled chip (POC).
+                                                  'items-center text-xl font-medium leading-8 text-foreground [&>span]:size-6 [&>span]:bg-transparent [&_svg]:text-muted-foreground'
+                                                : 'items-center text-base font-semibold text-foreground',
                                         )}
                                     >
                                         <span className="min-w-0 flex-1 text-left leading-snug">
                                             {item.question}
                                         </span>
                                     </AccordionTrigger>
-                                    <AccordionContent className="pb-6 text-sm leading-relaxed text-muted-foreground">
+                                    <AccordionContent
+                                        className={
+                                            rows
+                                                ? 'pb-8 pr-8 text-lg leading-8 text-muted-foreground'
+                                                : 'pb-6 text-sm leading-relaxed text-muted-foreground'
+                                        }
+                                    >
                                         {item.answerPlain}
                                     </AccordionContent>
                                 </AccordionItem>

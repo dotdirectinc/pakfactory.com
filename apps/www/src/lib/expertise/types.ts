@@ -20,6 +20,11 @@ export type ExpertiseStagePage = {
     diagramAlt?: string;
     /** Hero primary button label; empty → site-wide quote label. */
     heroCtaLabel?: string;
+    /** Hero in-page link — label + the section `_type` it jumps to. */
+    heroSecondary?: {label: string; target: string};
+    /** Full-width picture under the hero (none → the page opens on its body). */
+    heroImageUrl?: string;
+    heroImageAlt?: string;
     /** Resolved body sections (host inherit + page-field tokens applied). */
     sections: PageSectionDoc[];
     ogTitle?: string;

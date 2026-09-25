@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import type {
     PageSectionCaseStudiesRowDoc,
+    PageSectionFaqSectionDoc,
     PageSectionInspirationsGridDoc,
     PageSectionLogoWallDoc,
     PageSectionExpertiseSequenceDoc,
@@ -10,8 +10,10 @@ import type {
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {ExpertiseHero} from '@/components/expertise/expertise-hero';
 import {ExpertiseLifecycle} from '@/components/expertise/expertise-lifecycle';
 import {CaseStudyRail} from '@/components/sections/case-study-rail';
+import {FaqSection} from '@/components/sections/faq-section';
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
 import {WorkShowcase} from '@/components/sections/work-showcase';
@@ -28,7 +30,12 @@ import {
     mapExpertiseLifecycle,
 } from '@/lib/expertise/lifecycle';
 import {mapWorkShowcase} from '@/lib/expertise/map-work-showcase';
+import {
+    expertiseSectionAnchor,
+    expertiseSectionHref,
+} from '@/lib/expertise/section-anchor';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
+import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaPanel} from '@/lib/sections/map-media-panel';
@@ -91,13 +98,16 @@ export function ExpertiseCatalogView({
  * Expertise stage detail page — the one template every stage renders through
  * (PROD-1108 / PROD-2469, first used by PROD-2577 Strategy).
  *
- * Breadcrumb + hero are route-owned (ADR-020 §2): H1, tagline, description and
- * diagram come from the stage; the hero button opens the quote request. The
- * body is the stage's `sections[]` in editor order. On this host some shared
- * Sections take the expertise (POC) presentation: `expertiseSequence` → the
- * lifecycle path with this stage current (inheriting every stage in hub order
- * when its list is empty), `mediaFeature` → MediaPanel, `caseStudiesRow` on the
- * muted band, `quoteCta` as the dark closing band.
+ * Breadcrumb + hero are route-owned (ADR-020 §2): the POC `ExpertiseHero`
+ * with H1, tagline, description, the quote button, an optional in-page link
+ * (label + target section type from the stage) and an optional hero image. The
+ * body is the template's `sections[]` in editor order, wrapped in
+ * `.expertise-stage` so SectionHeading takes the POC style (no V5 brackets).
+ * On this host some shared Sections take the expertise (POC) presentation:
+ * `expertiseSequence` → the lifecycle path with this stage current (inheriting
+ * every stage in hub order when its list is empty), `mediaFeature` →
+ * MediaPanel, `caseStudiesRow` on the muted band, `logoWall` as the trust
+ * strip, `inspirationsGrid` → WorkShowcase, `quoteCta` as the dark closing band.
  */
 export function ExpertiseStageView({
     stage,
@@ -108,6 +118,9 @@ export function ExpertiseStageView({
     orderedStages: ExpertiseStageCard[];
 }) {
     const sections = applyStageSequenceInherit(stage.sections, orderedStages);
+    const heroLinkHref = stage.heroSecondary
+        ? expertiseSectionHref(sections, stage.heroSecondary.target)
+        : null;
     // Expertise-page renderings of shared Sections (POC design). Same Sanity
     // data; other hosts keep the registry defaults.
     const components: SectionComponentOverrides = {
@@ -116,7 +129,10 @@ export function ExpertiseStageView({
                 section as PageSectionMediaFeatureDoc,
             );
             return mapped ? (
-                <MediaPanel {...mapped} id={`engagement-${section._key}`} />
+                <MediaPanel
+                    {...mapped}
+                    id={expertiseSectionAnchor('mediaFeature', section._key)!}
+                />
             ) : null;
         },
         caseStudiesRow: (section: PageSection) => {
@@ -130,7 +146,8 @@ export function ExpertiseStageView({
                 />
             ) : null;
         },
-        // Trust strip: visible label + the POC's 40s lap.
+        // Trust strip (POC `TrustedBrands`): thin dashed strip, visible label,
+        // 72px logos, the POC's 40s lap.
         logoWall: (section: PageSection) => {
             const mapped = mapLogoWall(section as PageSectionLogoWallDoc);
             if (mapped.items.length === 0) return null;
@@ -144,6 +161,7 @@ export function ExpertiseStageView({
                     }}
                     headingId={`logo-wall-${section._key}`}
                     marqueeDuration={40}
+                    variant="strip"
                 />
             );
         },
@@ -151,14 +169,35 @@ export function ExpertiseStageView({
         // gallery links case studies; otherwise the regular gallery.
         inspirationsGrid: (section: PageSection) => {
             const doc = section as PageSectionInspirationsGridDoc;
+            const id = expertiseSectionAnchor('inspirationsGrid', section._key)!;
             const showcase = mapWorkShowcase(doc);
             if (showcase) {
-                return <WorkShowcase content={showcase} id={`work-${section._key}`} />;
+                return <WorkShowcase content={showcase} id={id} />;
             }
             const mapped = mapInspirationsGrid(doc);
             return mapped.cards.length > 0 ? (
-                <InspirationGallery content={mapped} id={`inspirations-${section._key}`} />
+                <InspirationGallery content={mapped} id={id} />
             ) : null;
+        },
+        // FAQ as full-width divider rows, left-aligned (POC `ExpertiseFaq`);
+        // no stock intro — only the editor's, when there is one.
+        faqSection: (section: PageSection) => {
+            const mapped = mapFaqSection(section as PageSectionFaqSectionDoc);
+            if (mapped.items.length === 0) return null;
+            return (
+                <FaqSection
+                    variant="rows"
+                    sectionId={expertiseSectionAnchor('faqSection', section._key)!}
+                    items={mapped.items}
+                    heading={mapped.heading}
+                    description={mapped.intro ?? ''}
+                    eyebrow={mapped.eyebrow}
+                    align="left"
+                    borderTop={mapped.borderTop}
+                    borderBottom={mapped.borderBottom}
+                    cta={mapped.cta}
+                />
+            );
         },
         quoteCta: (section: PageSection) => {
             const mapped = mapQuoteCta(section as PageSectionQuoteCtaDoc);
@@ -197,34 +236,25 @@ export function ExpertiseStageView({
                     {label: stage.title},
                 ]}
             />
-            <PageHeadingSection
+            <ExpertiseHero
                 title={stage.h1}
                 {...(stage.tagline ? {eyebrow: stage.tagline} : {})}
-                {...(stage.description
-                    ? {description: stage.description}
-                    : {})}
+                {...(stage.description ? {subhead: stage.description} : {})}
                 primaryCta={{
                     label: stage.heroCtaLabel ?? QUOTE_CTA_DEFAULT_LABEL,
                     href: WWW_ROUTES.request,
                 }}
-                borderBottom={!stage.diagramUrl}
+                {...(heroLinkHref && stage.heroSecondary
+                    ? {secondaryCta: {label: stage.heroSecondary.label, href: heroLinkHref}}
+                    : {})}
+                {...(stage.heroImageUrl
+                    ? {image: {src: stage.heroImageUrl, alt: stage.heroImageAlt ?? stage.title}}
+                    : {})}
             />
-            {stage.diagramUrl ? (
-                // Hero media as a full-width band under the copy (POC layout).
-                <PageDielineSection borderBottom paddingBlock="sm">
-                    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted lg:aspect-[21/9]">
-                        <Image
-                            src={stage.diagramUrl}
-                            alt={stage.diagramAlt ?? stage.title}
-                            fill
-                            priority
-                            className="object-cover"
-                            sizes="(max-width: 1280px) 100vw, 1280px"
-                        />
-                    </div>
-                </PageDielineSection>
-            ) : null}
-            <SectionRenderer sections={sections} components={components} />
+            {/* Scopes the POC heading style (globals.css) to this page. */}
+            <div className="expertise-stage">
+                <SectionRenderer sections={sections} components={components} />
+            </div>
         </>
     );
 }
