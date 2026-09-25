@@ -313,9 +313,6 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
             ? {primarySolution: doc.primarySolution}
             : {}),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
-        ...(typeof doc.leadTimeDays === 'number'
-            ? {leadTimeDays: doc.leadTimeDays}
-            : {}),
         ...(dimensionInput ? {dimensionInput} : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
             ? {dimensionRange}

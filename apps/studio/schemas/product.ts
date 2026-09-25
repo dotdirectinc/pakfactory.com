@@ -19,7 +19,7 @@ import { AvailableCustomizationsInput } from '../components/AvailableCustomizati
  * mock data legible until the re-seed), and the line/style single references
  * replace the old arrays. The re-seed produces correct-shaped documents.
  *
- * Source-owned fields (sku, status, moq, leadTimeDays, dimensionRange,
+ * Source-owned fields (sku, status, moq, leadTimeBusinessDaysMin/Max, dimensionRange,
  * properties, availableCustomizations, productLine, productStyle) are marked but
  * kept EDITABLE — decision b, PROD-2295: they flip to readOnly when the
  * Registry/SPECs system ships.
@@ -873,11 +873,30 @@ export const product = defineType({
       description: `This product's own minimum order quantity, in units. Not an override. ${SOURCE_OWNED_NOTE}`,
     }),
     defineField({
-      name: 'leadTimeDays',
-      title: 'Lead time (days)',
+      name: 'leadTimeBusinessDaysMin',
+      title: 'Lead time — min (business days)',
       type: 'number',
       group: GROUPS.specs,
-      description: `This product's own production lead time, in days. ${SOURCE_OWNED_NOTE}`,
+      description:
+        'The fastest this product is produced, counted in business days — weekends and holidays are not included. Owned by the product data source. Editable for now, read-only once that source is live.',
+    }),
+    defineField({
+      name: 'leadTimeBusinessDaysMax',
+      title: 'Lead time — max (business days)',
+      type: 'number',
+      group: GROUPS.specs,
+      description:
+        'The longest this product takes to produce, counted in business days. Set it to the same number as the minimum if this product has one fixed lead time. Owned by the product data source. Editable for now, read-only once that source is live.',
+      validation: (Rule) =>
+        Rule.custom((max, context) => {
+          const min = (context.document as {leadTimeBusinessDaysMin?: number} | undefined)
+            ?.leadTimeBusinessDaysMin
+          if (typeof max !== 'number' || typeof min !== 'number') return true
+          if (max < min) {
+            return 'Lead time max is below the min.'
+          }
+          return true
+        }).warning(),
     }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
