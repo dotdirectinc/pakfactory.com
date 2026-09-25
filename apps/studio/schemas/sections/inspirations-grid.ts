@@ -54,7 +54,7 @@ const inspirationsCardMember = defineArrayMember({
       title: 'Link',
       type: 'object',
       description: 'Where the card goes. Internal references survive slug changes.',
-      fields: linkTargetFields({ requireLinkType: false }),
+      fields: linkTargetFields({ requireLinkType: false, includeSitePath: true }),
     }),
   ],
   preview: {

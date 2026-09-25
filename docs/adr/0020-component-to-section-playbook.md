@@ -201,7 +201,7 @@ Example stored: `The best custom %h1% packaging` → on Beauty LP: *The best cus
 
 #### Section link → catalog query
 
-Section chrome links use **Internal · Site path · External** ([`sectionLinkTargetFields`](../../apps/studio/lib/section-link-target-fields.ts)). Prefer **Site path** for on-site routes — root-relative `/products` uses the current host (staging vs production); never hardcode `pakfactory.com`.
+Section chrome links use **Internal · Site path · External** ([`sectionLinkTargetFields`](../../apps/studio/lib/section-link-target-fields.ts)). www nav and in-section card links use the same Site path option via [`linkTargetFields({ includeSitePath: true })`](../../apps/studio/lib/link-target-fields.ts). Prefer **Site path** for on-site routes — root-relative `/products` uses the current host (staging vs production); never hardcode `pakfactory.com`.
 
 Optional freeform `link.query` (no leading `?`) appends after token resolve.
 

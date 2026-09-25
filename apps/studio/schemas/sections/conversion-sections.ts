@@ -100,7 +100,10 @@ export const linkCards = defineType({
               description:
                 'Internal reference or external URL — internal links keep working when a slug ' +
                 'changes.',
-              fields: linkTargetFields({ requireLinkType: false }),
+              fields: linkTargetFields({
+                requireLinkType: false,
+                includeSitePath: true,
+              }),
             }),
           ],
           preview: { select: { title: 'title', subtitle: 'description' } },

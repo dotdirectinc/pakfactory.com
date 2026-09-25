@@ -22,6 +22,7 @@ const NAV_LINK_FIELDS = /* groq */ `{
   label,
   linkType,
   externalUrl,
+  relativePath,
   "internalLink": internalLink->${LINKABLE_DOC_PROJECTION}
 }`;
 
@@ -31,6 +32,7 @@ export const WEBSITE_NAVIGATION_QUERY = /* groq */ `*[_id == "websiteNavigation"
     label,
     linkType,
     externalUrl,
+    relativePath,
     "internalLink": internalLink->${LINKABLE_DOC_PROJECTION}
   },
   items[]{
@@ -55,6 +57,8 @@ export type WebsiteNavLinkDoc = {
   label?: string | null;
   linkType?: string | null;
   externalUrl?: string | null;
+  /** Root-relative site path when `linkType === 'path'` (e.g. `/products`). */
+  relativePath?: string | null;
   internalLink?: {
     _id?: string;
     _type?: string;
@@ -77,6 +81,7 @@ export type WebsiteNavigationDoc = {
     label?: string | null;
     linkType?: string | null;
     externalUrl?: string | null;
+    relativePath?: string | null;
     internalLink?: WebsiteNavLinkDoc['internalLink'];
   } | null;
   items?:

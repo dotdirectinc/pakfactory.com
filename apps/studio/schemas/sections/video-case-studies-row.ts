@@ -77,7 +77,7 @@ const videoCaseStudyCardMember = defineArrayMember({
       title: 'Link',
       type: 'object',
       description: 'Where the card goes (usually a case study).',
-      fields: linkTargetFields({ requireLinkType: false }),
+      fields: linkTargetFields({ requireLinkType: false, includeSitePath: true }),
     }),
     defineField({
       name: 'metric',

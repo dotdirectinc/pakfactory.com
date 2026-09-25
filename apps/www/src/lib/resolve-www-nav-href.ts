@@ -2,7 +2,6 @@ import {
   resolveSanityDocumentHref,
   type SanityLinkDocument,
 } from '@pakfactory/sanity/resolve-document-href';
-import type {WebsiteNavLinkDoc} from '@pakfactory/sanity/queries';
 import {getWwwUrl} from '@/lib/site';
 
 export type ResolvedWwwHref = {
@@ -10,12 +9,16 @@ export type ResolvedWwwHref = {
   external: boolean;
 };
 
-export type SectionLinkHrefInput = {
+/** Studio link target shape used by www nav, footer, and section cards. */
+export type WwwLinkHrefInput = {
   linkType?: string | null;
   externalUrl?: string | null;
   relativePath?: string | null;
   internalLink?: SanityLinkDocument | null;
 };
+
+/** @deprecated Prefer {@link WwwLinkHrefInput}. */
+export type SectionLinkHrefInput = WwwLinkHrefInput;
 
 function stripWwwOrigin(href: string): ResolvedWwwHref {
   const origin = getWwwUrl().replace(/\/+$/, '');
@@ -48,44 +51,13 @@ export function normalizeSitePath(
 }
 
 /**
- * Resolve a Studio linkTarget (internal | external) for www chrome.
- * Same-origin absolute www URLs become root-relative for Next Link.
+ * Resolve a Studio linkTarget (internal | path | external) for www chrome
+ * and in-section card links. Same-origin absolute www URLs become
+ * root-relative for Next Link. Site path stays root-relative so the
+ * browser uses the current host.
  */
 export function resolveWwwNavHref(
-  raw: Pick<
-    WebsiteNavLinkDoc,
-    'linkType' | 'externalUrl' | 'internalLink'
-  > | null | undefined,
-): ResolvedWwwHref | null {
-  if (!raw) return null;
-
-  if (raw.linkType === 'external') {
-    const url = raw.externalUrl?.trim();
-    if (!url) return null;
-    return stripWwwOrigin(url);
-  }
-
-  if (raw.linkType === 'internal' && raw.internalLink) {
-    const resolved = resolveSanityDocumentHref(
-      raw.internalLink as SanityLinkDocument,
-      {
-        surface: 'www',
-        wwwOrigin: getWwwUrl(),
-      },
-    );
-    if (!resolved?.href) return null;
-    return stripWwwOrigin(resolved.href);
-  }
-
-  return null;
-}
-
-/**
- * Resolve a section chrome link (Internal | Site path | External).
- * Site path stays root-relative so the browser uses the current host.
- */
-export function resolveSectionLinkHref(
-  raw: SectionLinkHrefInput | null | undefined,
+  raw: WwwLinkHrefInput | null | undefined,
 ): ResolvedWwwHref | null {
   if (!raw) return null;
 
@@ -95,9 +67,30 @@ export function resolveSectionLinkHref(
     return {href: path, external: false};
   }
 
-  return resolveWwwNavHref({
-    linkType: raw.linkType,
-    externalUrl: raw.externalUrl,
-    internalLink: raw.internalLink as WebsiteNavLinkDoc['internalLink'],
-  });
+  if (raw.linkType === 'external') {
+    const url = raw.externalUrl?.trim();
+    if (!url) return null;
+    return stripWwwOrigin(url);
+  }
+
+  if (raw.linkType === 'internal' && raw.internalLink) {
+    const resolved = resolveSanityDocumentHref(raw.internalLink, {
+      surface: 'www',
+      wwwOrigin: getWwwUrl(),
+    });
+    if (!resolved?.href) return null;
+    return stripWwwOrigin(resolved.href);
+  }
+
+  return null;
+}
+
+/**
+ * Resolve a section chrome link (Internal | Site path | External).
+ * Delegates to {@link resolveWwwNavHref}; callers may still append `query`.
+ */
+export function resolveSectionLinkHref(
+  raw: WwwLinkHrefInput | null | undefined,
+): ResolvedWwwHref | null {
+  return resolveWwwNavHref(raw);
 }
