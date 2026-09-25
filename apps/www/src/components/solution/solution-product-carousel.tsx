@@ -101,8 +101,12 @@ function splitRowsForBreakpoint(
               : MAX_HERO_TILES_MOBILE;
 
     let usable = Math.min(maxTiles, tiles.length);
-    usable -= usable % 2;
     if (usable === 0) return {rowA: [], rowB: []};
+    // Dual-row scrub needs pairs; a single tile still renders on row A.
+    if (usable === 1) {
+        return {rowA: tiles.slice(0, 1), rowB: []};
+    }
+    usable -= usable % 2;
     const half = usable / 2;
     const sliced = tiles.slice(0, usable);
     return {

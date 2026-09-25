@@ -148,6 +148,7 @@ export const SECTION_ALLOW = {
     ...FAMILY.product,
     ...FAMILY.customization,
     ...FAMILY.caseStudy,
+    ...FAMILY.expertise,
     ...FAMILY.client,
     ...FAMILY.layout,
     'quoteCta',

@@ -120,7 +120,6 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   status,
   "description": coalesce(pt::text(description), shortDescription),
   moq,
-  leadTimeDays,
   dimensionInput,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
@@ -149,7 +148,6 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   status,
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
-  leadTimeDays,
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -754,7 +752,6 @@ export type CatalogProductDoc = {
   status?: string | null;
   description?: string | null;
   moq?: number | null;
-  leadTimeDays?: number | null;
   dimensionInput?: string | null;
   dimensionRange?: {
     lengthMin?: number | null;

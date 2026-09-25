@@ -123,7 +123,7 @@ export const productLine = defineType({
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
       description:
-        'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback.',
+        'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback. Leave empty to use the hero placeholder.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
     // Icon above the H1 on the product-line landing (dieline / mark). Distinct from
