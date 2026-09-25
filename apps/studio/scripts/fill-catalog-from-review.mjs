@@ -233,14 +233,24 @@ async function main() {
     }
   }
   docs.forEach(walk)
+  // A target that exists only as `drafts.<id>` is fine: it is written weak below, the shape
+  // Studio writes, and strengthens when the target is published. Checking published ids alone
+  // rejected every reference to an unlaunched solution or a Hidden style (PROD-2605).
   const outside = [...refs].filter((r) => !planned.has(r))
   const outsideFound = new Set()
+  const outsideDraftOnly = new Set()
   for (let i = 0; i < outside.length; i += 500) {
-    const rows = await client.fetch(`*[_id in $ids]._id`, { ids: outside.slice(i, i + 500) })
-    rows.forEach((id) => outsideFound.add(id))
+    const ids = outside.slice(i, i + 500)
+    const rows = await client.fetch(`*[_id in $ids || _id in $drafts]._id`, { ids, drafts: ids.map((id) => `drafts.${id}`) })
+    for (const id of rows) if (!id.startsWith('drafts.')) outsideFound.add(id)
+    for (const id of rows) if (id.startsWith('drafts.') && !outsideFound.has(id.slice(7))) outsideDraftOnly.add(id.slice(7))
   }
-  for (const r of outside) if (!outsideFound.has(r)) errors.push(`reference to ${r}, which is neither in ${DATASET} nor in the review set.`)
+  for (const id of outsideFound) outsideDraftOnly.delete(id)
+  for (const r of outside) if (!outsideFound.has(r) && !outsideDraftOnly.has(r)) errors.push(`reference to ${r}, which is neither in ${DATASET} nor in the review set.`)
   outsideFound.forEach((id) => willExistPublished.add(id))
+  if (outsideDraftOnly.size) {
+    console.log(`    ${plural(outsideDraftOnly.size, 'referenced document')} outside the set exist only as drafts — those references are written weak and strengthen on publish`)
+  }
 
   const counts = {}
   for (const d of docs) {
