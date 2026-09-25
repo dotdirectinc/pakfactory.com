@@ -164,6 +164,38 @@ against that set's own manifest, so a mismatch fails loudly rather than quietly.
 If step 7 warns the matrix is stale, run `select app.refresh_product_spec_matrix();` against the
 registry (a production write, so a person runs it) and retake the snapshot.
 
+## Solution Styles (PROD-2605)
+
+The 2026-09-14 scope skipped Notion's Solution Style table (A3). It is filled on its own, **after** the
+catalog, with `generate --types solutionStyle` so nothing else is re-patched. First launch → published,
+every other row → draft (even with no filter — listed in the report as needing one). Slug from Title,
+meta title blank, images not written.
+
+```bash
+# a · remove the seeded test styles first — dry run, then confirm
+cd <repo>
+pnpm --filter @pakfactory/studio run remove:seeded-solution-styles -- --dataset development
+pnpm --filter @pakfactory/studio run remove:seeded-solution-styles -- --dataset development --confirm
+```
+
+```bash
+# b · pull Notion + a fresh snapshot, generate Solution Styles only
+cd <backend>
+node --env-file=.env.local scripts/sanity-fill.mjs pull-notion --out ~/cf/ss
+node --env-file=../pakFactory/pakfactory.com/.env.local scripts/sanity-fill.mjs pull-sanity --dataset development --out ~/cf/ss
+node scripts/sanity-fill.mjs generate --in ~/cf/ss --out ~/cf/ss/review --types solutionStyle
+```
+
+Read `~/cf/ss/review/report.md` — expect 198 creates (103 publish, 95 draft), the "Solution Styles"
+section, and no seeded styles under "In Sanity, not in Notion".
+
+```bash
+# c · upload — dry run first
+cd <repo>
+pnpm --filter @pakfactory/studio run fill:catalog -- --review ~/cf/ss/review --dataset development
+pnpm --filter @pakfactory/studio run fill:catalog -- --review ~/cf/ss/review --dataset development --confirm
+```
+
 ## Preconditions
 
 - **Nightly prod → dev sync must be paused.** Repo variable `SANITY_DEV_SYNC_PAUSED=true`
