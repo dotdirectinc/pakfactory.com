@@ -1,3 +1,4 @@
+import {createFacetEngine} from '@/lib/catalog/facet-engine';
 import type {
     CustomizationFacetDef,
     ProductLibraryItem,
@@ -5,6 +6,7 @@ import type {
 import {
     PRODUCT_CATALOG_INDUSTRY_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
 } from '@/lib/catalog/types';
 import {withinOpForFacet} from '@/lib/catalog/customization-filter-taxonomy';
@@ -18,9 +20,13 @@ function matchesFacet(
     item: ProductLibraryItem,
     facetId: string,
     selected: string[],
+    propertyTitles: Record<string, string>,
 ): boolean {
     if (facetId === PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID) {
         return selected.includes(item.productLine.slug);
+    }
+    if (facetId === PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID) {
+        return selected.includes(item.productStyle.slug);
     }
     if (facetId === PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID) {
         return selected.includes(item.kind);
@@ -31,20 +37,41 @@ function matchesFacet(
         );
     }
     const values = item.attrs[facetId] ?? [];
-    const title = item.propertyTitles[facetId];
+    const title = propertyTitles[facetId];
     if (withinOpForFacet(facetId, title) === 'and') {
         return selected.every((slug) => values.includes(slug));
     }
     return selected.some((slug) => values.includes(slug));
 }
 
+function createProductFacetEngine(propertyTitles: Record<string, string>) {
+    return createFacetEngine<ProductLibraryItem>({
+        getSearchText: (item) =>
+            [
+                item.title,
+                item.sku,
+                item.productLine.title,
+                item.productStyle.title,
+            ].join(' '),
+        matchesFacet: (item, facetId, selected) =>
+            matchesFacet(item, facetId, selected, propertyTitles),
+    });
+}
+
+const defaultEngine = createProductFacetEngine({});
+
 /** Whether an item carries a single facet option. */
 export function productItemHasFacetValue(
     item: ProductLibraryItem,
     facetId: string,
     value: string,
+    propertyTitles: Record<string, string> = {},
 ): boolean {
-    return matchesFacet(item, facetId, [value]);
+    return createProductFacetEngine(propertyTitles).itemHasFacetValue(
+        item,
+        facetId,
+        value,
+    );
 }
 
 /**
@@ -52,33 +79,14 @@ export function productItemHasFacetValue(
  *
  * Search is AND with facets. Active facet groups combine with AND across groups;
  * within a group: Sustainability and Performance are AND; Product Line, Product
- * type, Industries, and other properties are OR (same taxonomy as customizations).
+ * Style, Product type, Industries, and other properties are OR.
  */
 export function matchesProductItem(
     item: ProductLibraryItem,
-    {query, selections}: ProductCatalogFilterInput,
+    input: ProductCatalogFilterInput,
+    propertyTitles: Record<string, string> = {},
 ): boolean {
-    const q = query.trim().toLowerCase();
-    if (q) {
-        const haystack = [
-            item.title,
-            item.sku,
-            item.productLine.title,
-            item.productStyle.title,
-        ]
-            .join(' ')
-            .toLowerCase();
-        if (!haystack.includes(q)) return false;
-    }
-
-    const activeFacets = Object.entries(selections).filter(
-        ([, selected]) => selected.length > 0,
-    );
-    if (activeFacets.length === 0) return true;
-
-    return activeFacets.every(([facetId, selected]) =>
-        matchesFacet(item, facetId, selected),
-    );
+    return createProductFacetEngine(propertyTitles).matchesItem(item, input);
 }
 
 /**
@@ -88,24 +96,15 @@ export function matchesProductItem(
 export function buildProductFacetCounts(
     items: ProductLibraryItem[],
     facets: CustomizationFacetDef[],
-    {query, selections}: ProductCatalogFilterInput,
+    input: ProductCatalogFilterInput,
+    propertyTitles: Record<string, string> = {},
 ): Record<string, Record<string, number>> {
-    const result: Record<string, Record<string, number>> = {};
-
-    for (const facet of facets) {
-        const selectionsExcept = {...selections};
-        delete selectionsExcept[facet.id];
-        const base = items.filter((item) =>
-            matchesProductItem(item, {query, selections: selectionsExcept}),
-        );
-        const counts: Record<string, number> = {};
-        for (const opt of facet.options) {
-            counts[opt.value] = base.filter((item) =>
-                productItemHasFacetValue(item, facet.id, opt.value),
-            ).length;
-        }
-        result[facet.id] = counts;
-    }
-
-    return result;
+    return createProductFacetEngine(propertyTitles).buildFacetCounts(
+        items,
+        facets,
+        input,
+    );
 }
+
+/** Default engine export for callers that already hoist titles onto facets. */
+export {defaultEngine as productFacetEngine};

@@ -1,6 +1,7 @@
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {PageEnter} from '@/components/layout/page-enter';
 import {ProductLineHero} from '@/components/product/product-line-hero';
 import {CaseStudiesRow} from '@/components/sections/case-studies-row';
 import {ExpertiseRow} from '@/components/sections/expertise-row';
@@ -85,7 +86,7 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
     const model = assembleProductLineLanding(line);
 
     return (
-        <>
+        <PageEnter>
             <PageBreadcrumbSection
                 band="muted"
                 items={[
@@ -162,6 +163,6 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
             {model.pageSections.length > 0 ? (
                 <SectionRenderer sections={model.pageSections} />
             ) : null}
-        </>
+        </PageEnter>
     );
 }

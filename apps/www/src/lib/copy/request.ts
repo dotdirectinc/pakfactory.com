@@ -16,12 +16,16 @@ export const REQUEST_COPY = {
     no: 'No',
     yes: 'Yes',
     customizationHeading: 'Customization',
+    /** Inspiration PDP — product ships with options already chosen. */
+    customizationPresetDescription:
+        'This product is already customized with the options below. Change any of them to fit your project.',
     specialistCanPropose:
         'A specialist can propose materials and finishes with your request.',
     customizeItYourself: 'Customize it yourself',
     sizeGroup: 'Size',
     materialFinishGroup: 'Material & finish',
     customizeRow: 'Customize',
+    changeRow: 'Change',
     revertToSpecialist: 'Actually, let a specialist suggest options',
     dimensionsRow: 'Dimensions',
     materialRow: 'Material',

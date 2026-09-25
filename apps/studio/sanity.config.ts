@@ -402,6 +402,7 @@ const makeNewDocumentOptions =
       'solutionIndustryPage',
       'productLinePage',
       'productCatalogPage',
+      'productStylePage',
       'customizationCatalogPage',
     ])
     let opts = prev.filter((item) => !NON_CREATABLE.has(item.templateId))

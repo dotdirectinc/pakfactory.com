@@ -19,14 +19,14 @@ const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
  * `image` (PROD-2511) and `cardImage` stay as fallbacks until content is unset.
  * The projection key stays `cardImage` for the www consumer map.
  *
- * Line: unchanged, `cardImage` → `heroMedia`.
+ * Line: same cascade — `featuredImage` first, then legacy `cardImage` / `heroMedia`.
  */
 const STYLE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, image, cardImage){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
 
-const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(cardImage, heroMedia){
+const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, cardImage, heroMedia){
   ...,
   "alt": ${IMAGE_ALT}
 }`;
@@ -102,6 +102,12 @@ const STYLE_REF_PROJ = /* groq */ `{
   shortDescription,
   "description": coalesce(pt::text(description), shortDescription),
   ${STYLE_CARD_IMAGE}
+}`;
+
+/** Library grid only needs slug + title (PROD-2599 payload trim). */
+const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
+  title,
+  "slug": slug.current
 }`;
 
 /** Shared product projection used by by-slug and list queries. */
@@ -205,9 +211,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   sku,
   kind,
   status,
-  "description": coalesce(shortDescription, pt::text(description)),
   moq,
-  leadTimeDays,
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -220,7 +224,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
     "description": coalesce(cardSummary, pt::text(intro)),
     ${LINE_CARD_IMAGE}
   },
-  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_REF_PROJ},
+  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_LIBRARY_REF_PROJ},
   "industries": solutions[@->solutionType == "industry"]->{
     title,
     "slug": slug.current
@@ -259,8 +263,7 @@ export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
  * Line landing projection (PROD-1914). Reads current productLine fields
  * (`featuredImage`, `shortDescription`, `description`) with legacy
  * `cardImage` / `heroMedia` fallbacks until content is migrated.
- * Do not reuse `LINE_CARD_IMAGE` / `LINE_REF_PROJ` here — those stay on the
- * retired keys for product-library cards.
+ * Image cascade matches `LINE_CARD_IMAGE` (library entry card).
  */
 const LINE_FEATURED_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, cardImage, heroMedia){
   ...,
@@ -272,10 +275,8 @@ const LINE_KIT_MARK = /* groq */ `kitMark{
   "alt": ${IMAGE_ALT}
 }`;
 
-export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
-  _type == "productLine" &&
-  defined(slug.current)
-] | order(title asc) {
+/** Shared projection for list + single-line fetches (PROD-1914 landing). */
+export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   _id,
   title,
   h1,
@@ -338,7 +339,30 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   ) && defined(slug.current) && (status == "active" || !defined(status))] | order(title asc) {
     ${CATALOG_PRODUCT_CARD_FIELDS}
   }
+`;
+
+export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  defined(slug.current)
+] | order(title asc) {
+  ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
+
+export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  slug.current == $slug
+][0]{
+  ${CATALOG_PRODUCT_LINE_FIELDS}
+}`;
+
+/**
+ * Existence probe for `/products/[slug]` segment resolution.
+ * Product clicks wait on this (not the full line landing document).
+ */
+export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  slug.current == $slug
+][0]._id`;
 
 const PROPERTY_VALUE_PROJ = /* groq */ `{
   _id,

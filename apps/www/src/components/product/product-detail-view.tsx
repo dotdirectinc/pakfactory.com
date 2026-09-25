@@ -1,6 +1,9 @@
-import {Badge} from '@pakfactory/ui/components/badge';
+import {Suspense} from 'react';
+
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {PageEnter} from '@/components/layout/page-enter';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
 import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
@@ -17,6 +20,8 @@ import {
     type ProductsRowItem,
 } from '@/components/sections/products-row';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
+import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
+import {displayProductSku} from '@/lib/catalog/display-sku';
 import {MOCK_PRODUCT_TESTIMONIALS, MOCK_TESTIMONIALS_AGGREGATE} from '@/lib/catalog/mock-testimonials';
 import type {Product} from '@/lib/catalog/types';
 import {
@@ -40,13 +45,57 @@ function toProductsRowItem(product: Product): ProductsRowItem {
     };
 }
 
+function RelatedProductsSkeleton() {
+    return (
+        <section
+            id="pdp-related"
+            aria-busy="true"
+            aria-live="polite"
+            className="scroll-mt-32 bg-muted"
+        >
+            <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
+                <span className="sr-only">Loading related products</span>
+                <div className="flex flex-col gap-6">
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-full max-w-xl" />
+                    </div>
+                    <div className="flex gap-4 overflow-hidden">
+                        {Array.from({length: 4}, (_, index) => (
+                            <Skeleton
+                                key={index}
+                                className="aspect-square w-56 shrink-0 rounded-2xl"
+                            />
+                        ))}
+                    </div>
+                </div>
+            </PageDielineSection>
+        </section>
+    );
+}
+
+async function RelatedProductsFromLine({product}: {product: Product}) {
+    const siblings = await listRelatedProductSiblings(product);
+    if (siblings.length === 0) return null;
+    return (
+        <ProductsRow
+            theme="muted"
+            products={siblings.map(toProductsRowItem)}
+        />
+    );
+}
+
 export function ProductDetailView({product}: ProductDetailViewProps) {
     const {productLine: line, productStyle: style} = product;
+    const displaySku = displayProductSku(product.sku, product.slug);
     const specRows = buildProductSpecRows(product);
     const customizationItems = mapCustomizationPreviewItems(
         product.availableCustomizations,
     );
-    const relatedCards = (product.relatedProducts ?? []).map(toProductsRowItem);
+    const curatedRelated = product.relatedProducts ?? [];
+    const relatedCards = curatedRelated.map(toProductsRowItem);
+    const hasCuratedRelated = relatedCards.length > 0;
     const hasCmsTestimonials = Boolean(product.testimonials?.length);
     const testimonials = hasCmsTestimonials
         ? product.testimonials!
@@ -63,7 +112,8 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ...(customizationItems.length > 0
             ? [{id: 'pdp-customizations', label: 'Customization'}]
             : []),
-        ...(relatedCards.length > 0
+        // Sibling fallback may still populate related when curated is empty.
+        ...(hasCuratedRelated || Boolean(line.slug)
             ? [{id: 'pdp-related', label: 'Related Products'}]
             : []),
         ...(testimonials.length > 0
@@ -73,7 +123,7 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
     ];
 
     return (
-        <>
+        <PageEnter>
             <PageBreadcrumbSection
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
@@ -94,16 +144,16 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     <ProductGallery
                         media={product.media}
                         productTitle={product.title}
+                        badgeLabel={
+                            product.kind === 'inspiration'
+                                ? 'Inspiration'
+                                : undefined
+                        }
                     />
                     <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                                {product.sku}
-                            </p>
-                            {product.kind === 'inspiration' ? (
-                                <Badge variant="secondary">Inspiration</Badge>
-                            ) : null}
-                        </div>
+                        <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                            {displaySku}
+                        </p>
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {product.title}
                         </h1>
@@ -124,7 +174,13 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     styleTitle={style.title}
                     items={customizationItems}
                 />
-                <ProductsRow theme="muted" products={relatedCards} />
+                {hasCuratedRelated ? (
+                    <ProductsRow theme="muted" products={relatedCards} />
+                ) : (
+                    <Suspense fallback={<RelatedProductsSkeleton />}>
+                        <RelatedProductsFromLine product={product} />
+                    </Suspense>
+                )}
                 <TestimonialsRow
                     items={testimonials}
                     aggregate={testimonialsAggregate}
@@ -135,6 +191,6 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     footerLabel="Let's chat"
                 />
             </div>
-        </>
+        </PageEnter>
     );
 }

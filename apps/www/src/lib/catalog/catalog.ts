@@ -1,5 +1,6 @@
 import 'server-only';
 
+import {cache} from 'react';
 import {unstable_cache} from 'next/cache';
 import {
     CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
@@ -9,10 +10,16 @@ import {
     CATALOG_OPTION_BY_ID_QUERY,
     CATALOG_PRODUCT_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LIBRARY_QUERY,
+    CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
+    CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
+    CUSTOMIZATION_CATALOG_PAGE_QUERY,
+    PRODUCT_CATALOG_PAGE_QUERY,
+    PRODUCT_STYLE_PAGE_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogCustomizationRulesDoc,
+    type CatalogIndexPageDoc,
     type CatalogLibraryOptionDoc,
     type CatalogOptionDoc,
     type CatalogProductDoc,
@@ -49,6 +56,7 @@ import type {
     ProductStyleRef,
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
+import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
 import {
     draftAwareClient,
     readThrough,
@@ -100,6 +108,45 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
             console.error('[catalog] Sanity product lines fetch failed:', err);
         }
         return [];
+    }
+}
+
+async function fetchSanityLineBySlug(slug: string): Promise<ProductLine | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        const doc = await (
+            await draftAwareClient()
+        ).fetch<CatalogProductLineDoc | null>(
+            CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
+            {slug: normalizeSlug(slug)},
+        );
+        const line = doc ? mapSanityProductLine(doc) : null;
+        if (!line) return null;
+        if (line.products.length === 0 && line.styles.length === 0) {
+            return null;
+        }
+        return line;
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error('[catalog] Sanity product line by slug failed:', err);
+        }
+        return null;
+    }
+}
+
+async function fetchSanityLineExists(slug: string): Promise<boolean> {
+    if (!isSanityConfigured()) return false;
+    try {
+        const id = await (await draftAwareClient()).fetch<string | null>(
+            CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
+            {slug: normalizeSlug(slug)},
+        );
+        return Boolean(id);
+    } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
+            console.error('[catalog] Sanity product line exists failed:', err);
+        }
+        return false;
     }
 }
 
@@ -177,8 +224,9 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
         if (!doc) return null;
         const mapped = mapSanityProduct(doc);
         if (!mapped) return null;
-        const resolved = await resolveProductOffer(mapped, doc);
-        return enrichRelatedProducts(resolved);
+        // Curated relatedProducts stay on the blocking path; sibling fallback
+        // loads under Suspense in ProductDetailView (see listRelatedProductSiblings).
+        return resolveProductOffer(mapped, doc);
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity product by slug failed:', err);
@@ -189,21 +237,24 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
 
 const RELATED_PRODUCTS_CAP = 6;
 
-/** Curated related first; else same product-line siblings (PROD-1913). */
-async function enrichRelatedProducts(product: Product): Promise<Product> {
+/**
+ * Same-line siblings when the product has no curated relatedProducts (PROD-1913).
+ * Loaded under Suspense so the PDP hero is not blocked by listProducts().
+ */
+export async function listRelatedProductSiblings(
+    product: Product,
+): Promise<Product[]> {
     if (product.relatedProducts && product.relatedProducts.length > 0) {
-        return product;
+        return product.relatedProducts;
     }
     const lineSlug = product.productLine.slug;
-    const siblings = (await listProducts())
+    return (await listProducts())
         .filter(
             (item) =>
                 item.slug !== product.slug &&
                 item.productLine.slug === lineSlug,
         )
         .slice(0, RELATED_PRODUCTS_CAP);
-    if (siblings.length === 0) return product;
-    return {...product, relatedProducts: siblings};
 }
 
 async function fetchSanityCustomizationLibrary(): Promise<
@@ -228,9 +279,17 @@ async function fetchSanityCustomizationLibrary(): Promise<
     }
 }
 
+const EMPTY_PRODUCT_LIBRARY: ProductLibraryResult = {
+    items: [],
+    linesBySlug: {},
+    stylesByLineSlug: {},
+    propertyTitles: {},
+    facetCatalog: {shared: []},
+};
+
 async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
     if (!isSanityConfigured()) {
-        return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+        return EMPTY_PRODUCT_LIBRARY;
     }
     try {
         const docs = await (await draftAwareClient()).fetch<
@@ -238,18 +297,27 @@ async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
         >(CATALOG_PRODUCT_LIBRARY_QUERY);
         const items: ProductLibraryItem[] = [];
         const lineMetas: ProductLibraryLineMeta[] = [];
+        const propertyTitles: Record<string, string> = {};
+        const valueTitles: Record<string, string> = {};
         for (const doc of docs ?? []) {
-            const item = mapSanityProductLibraryItem(doc);
-            if (item) items.push(item);
+            const mapped = mapSanityProductLibraryItem(doc);
+            if (mapped) {
+                items.push(mapped.item);
+                Object.assign(propertyTitles, mapped.propertyTitles);
+                Object.assign(valueTitles, mapped.valueTitles);
+            }
             const lineMeta = mapSanityProductLibraryLineMeta(doc);
             if (lineMeta) lineMetas.push(lineMeta);
         }
-        return buildProductLibraryResult(items, lineMetas);
+        return buildProductLibraryResult(items, lineMetas, {
+            propertyTitles,
+            valueTitles,
+        });
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity product library failed:', err);
         }
-        return {items: [], linesBySlug: {}, facetCatalog: {shared: []}};
+        return EMPTY_PRODUCT_LIBRARY;
     }
 }
 
@@ -301,6 +369,30 @@ function getCachedProductBySlug(slug: string) {
     )();
 }
 
+function getCachedLineBySlug(slug: string) {
+    const key = normalizeSlug(slug);
+    return unstable_cache(
+        () => fetchSanityLineBySlug(key),
+        [`www-product-line:${key}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_LINES_CACHE_TAG],
+        },
+    )();
+}
+
+function getCachedLineExists(slug: string) {
+    const key = normalizeSlug(slug);
+    return unstable_cache(
+        () => fetchSanityLineExists(key),
+        [`www-product-line-exists:${key}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_LINES_CACHE_TAG],
+        },
+    )();
+}
+
 /**
  * Draft reads MUST NOT go through `unstable_cache`. Two reasons: a cached draft
  * is stale the moment the editor types again (so Presentation would show an old
@@ -320,6 +412,109 @@ export async function listProducts(): Promise<Product[]> {
 /** Faceted products library for `/products` (PROD-1845). */
 export async function listProductLibrary(): Promise<ProductLibraryResult> {
     return readThrough(fetchSanityProductLibrary, getCachedProductLibrary);
+}
+
+/**
+ * Product library scoped to one line + style for `/products/[line]/[style]`.
+ * Omits the Product Line facet (the page already is that line).
+ */
+export async function listProductStyleLibrary(
+    lineSlug: string,
+    styleSlug: string,
+): Promise<ProductLibraryResult> {
+    const library = await listProductLibrary();
+    const lineKey = normalizeSlug(lineSlug);
+    const styleKey = normalizeSlug(styleSlug);
+    const items = library.items.filter(
+        (item) =>
+            item.productLine.slug === lineKey &&
+            item.productStyle.slug === styleKey,
+    );
+    const lineMetas = Object.values(library.linesBySlug).filter(
+        (meta) => meta.slug === lineKey,
+    );
+    return buildProductLibraryResult(items, lineMetas, {
+        omitFacetIds: [PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID],
+        propertyTitles: library.propertyTitles,
+    });
+}
+
+async function fetchProductCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            PRODUCT_CATALOG_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedProductCatalogPage = unstable_cache(
+    fetchProductCatalogPage,
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+/** Sections below the `/products` grid (PROD-2589 / PROD-2599). */
+export async function getProductCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(fetchProductCatalogPage, getCachedProductCatalogPage);
+}
+
+async function fetchProductStylePage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            PRODUCT_STYLE_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedProductStylePage = unstable_cache(
+    fetchProductStylePage,
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-style-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    },
+);
+
+/** Sections below every `/products/[line]/[style]` catalog grid. */
+export async function getProductStylePage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(fetchProductStylePage, getCachedProductStylePage);
+}
+
+async function fetchCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            CUSTOMIZATION_CATALOG_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedCustomizationCatalogPage = unstable_cache(
+    fetchCustomizationCatalogPage,
+    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    },
+);
+
+/** Sections below the `/customizations` grid (PROD-2599). */
+export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(
+        fetchCustomizationCatalogPage,
+        getCachedCustomizationCatalogPage,
+    );
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */
@@ -375,56 +570,60 @@ export async function getCustomizationCategory(
     return readThrough(fetchUncached, getCached);
 }
 
-export async function getCustomizationDetail(
-    category: string,
-    handle: string,
-): Promise<CustomizationDetailResult | null> {
-    const categoryKey = normalizeSlug(category);
-    const handleKey = normalizeSlug(handle);
-    if (!isSanityConfigured()) return null;
+export const getCustomizationDetail = cache(
+    async (
+        category: string,
+        handle: string,
+    ): Promise<CustomizationDetailResult | null> => {
+        const categoryKey = normalizeSlug(category);
+        const handleKey = normalizeSlug(handle);
+        if (!isSanityConfigured()) return null;
 
-    const fetchUncached =
-        async (): Promise<CustomizationDetailResult | null> => {
-            try {
-                const doc = await (await draftAwareClient()).fetch<
-                    CatalogCustomizationDetailDoc | null
-                >(CATALOG_CUSTOMIZATION_DETAIL_QUERY, {
-                    category: categoryKey,
-                    handle: handleKey,
-                });
-                const mapped = doc ? mapSanityCustomizationDetail(doc) : null;
-                if (!mapped || !doc) return null;
-                const peers = (doc.peers ?? [])
-                    .map((peer) =>
-                        peer ? mapSanityCustomizationDetail(peer) : null,
-                    )
-                    .filter(
-                        (item): item is NonNullable<typeof item> =>
-                            item != null,
-                    );
-                return {detail: mapped, peers};
-            } catch (err) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.error(
-                        '[catalog] Sanity customization detail failed:',
-                        err,
-                    );
+        const fetchUncached =
+            async (): Promise<CustomizationDetailResult | null> => {
+                try {
+                    const doc = await (await draftAwareClient()).fetch<
+                        CatalogCustomizationDetailDoc | null
+                    >(CATALOG_CUSTOMIZATION_DETAIL_QUERY, {
+                        category: categoryKey,
+                        handle: handleKey,
+                    });
+                    const mapped = doc
+                        ? mapSanityCustomizationDetail(doc)
+                        : null;
+                    if (!mapped || !doc) return null;
+                    const peers = (doc.peers ?? [])
+                        .map((peer) =>
+                            peer ? mapSanityCustomizationDetail(peer) : null,
+                        )
+                        .filter(
+                            (item): item is NonNullable<typeof item> =>
+                                item != null,
+                        );
+                    return {detail: mapped, peers};
+                } catch (err) {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.error(
+                            '[catalog] Sanity customization detail failed:',
+                            err,
+                        );
+                    }
+                    return null;
                 }
-                return null;
-            }
-        };
+            };
 
-    const getCached = unstable_cache(
-        fetchUncached,
-        [`www-customization-detail:${categoryKey}:${handleKey}`],
-        {
-            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-            tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
-        },
-    );
+        const getCached = unstable_cache(
+            fetchUncached,
+            [`www-customization-detail:${categoryKey}:${handleKey}`],
+            {
+                revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+                tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+            },
+        );
 
-    return readThrough(fetchUncached, getCached);
-}
+        return readThrough(fetchUncached, getCached);
+    },
+);
 
 /**
  * Active Option by id for builder Property controllers (no hasPage gate).
@@ -471,17 +670,40 @@ export async function getProduct(slug: string): Promise<Product | null> {
     );
 }
 
-export async function getByProductsSegment(
-    slug: string,
-): Promise<ProductsSegmentResult | null> {
-    const key = normalizeSlug(slug);
-    const lines = await listLines();
-    const line = lines.find((item) => item.slug === key);
-    if (line) return {type: 'line', line};
-    const product = await getProduct(key);
-    if (product) return {type: 'product', product};
-    return null;
+export async function getLine(slug: string): Promise<ProductLine | null> {
+    return readThrough(
+        () => fetchSanityLineBySlug(normalizeSlug(slug)),
+        () => getCachedLineBySlug(slug),
+    );
 }
+
+async function productLineExists(slug: string): Promise<boolean> {
+    return readThrough(
+        () => fetchSanityLineExists(normalizeSlug(slug)),
+        () => getCachedLineExists(slug),
+    );
+}
+
+/**
+ * Resolve `/products/[slug]` as a product line (wins) or a product.
+ * Product clicks wait on a tiny line probe + getProduct — not the full line
+ * landing document. Full line loads only when the probe hits.
+ */
+export const getByProductsSegment = cache(
+    async (slug: string): Promise<ProductsSegmentResult | null> => {
+        const key = normalizeSlug(slug);
+        const [lineExists, product] = await Promise.all([
+            productLineExists(key),
+            getProduct(key),
+        ]);
+        if (lineExists) {
+            const line = await getLine(key);
+            if (line) return {type: 'line', line};
+        }
+        if (product) return {type: 'product', product};
+        return null;
+    },
+);
 
 export async function getStyle(
     lineSlug: string,

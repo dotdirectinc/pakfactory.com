@@ -21,6 +21,7 @@ import { solutionStyle } from './solutionStyle'
 import { solutionIndustryPage } from './solutionIndustryPage'
 import { productLinePage } from './productLinePage'
 import { productCatalogPage } from './productCatalogPage'
+import { productStylePage } from './productStylePage'
 import { customizationCatalogPage } from './customizationCatalogPage'
 import { expertiseStage } from './expertiseStage'
 import { expertiseService } from './expertiseService'
@@ -86,6 +87,7 @@ export const schemaTypes = [
   solutionIndustryPage,
   productLinePage,
   productCatalogPage,
+  productStylePage,
   customizationCatalogPage,
   expertiseStage,
   expertiseService,

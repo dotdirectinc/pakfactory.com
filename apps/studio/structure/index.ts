@@ -1083,6 +1083,15 @@ export const mainWebsiteStructure = (
                                         .schemaType('productLinePage')
                                         .documentId('productLinePage'),
                                 ),
+                            S.listItem()
+                                .title('Product Style Page')
+                                .icon(PackageIcon)
+                                .child(
+                                    S.editor()
+                                        .id('productStylePage')
+                                        .schemaType('productStylePage')
+                                        .documentId('productStylePage'),
+                                ),
                         ]),
                 ),
             S.listItem()

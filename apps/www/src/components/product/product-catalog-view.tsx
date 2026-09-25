@@ -1,56 +1,19 @@
 import {Suspense} from 'react';
 
-import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
-import {
-    ProductCard,
-    type ProductCardData,
-} from '@/components/product/product-card';
 import {
     ProductCatalogListSkeleton,
 } from '@/components/product/product-catalog-list';
 import {ProductCatalogFiltersSkeleton} from '@/components/product/product-catalog-filters';
 import {ProductCatalogPanel} from '@/components/product/product-catalog-panel';
-import type {
-    Product,
-    ProductLibraryResult,
-    ProductLine,
-    ProductStyleRef,
-} from '@/lib/catalog/types';
-import {productHref, WWW_ROUTES} from '@/lib/www-routes';
+import type {ProductLibraryResult} from '@/lib/catalog/types';
+import {WWW_ROUTES} from '@/lib/www-routes';
 
 export {
     ProductCardSkeleton,
     ProductCatalogGridSkeleton,
 } from '@/components/product/product-card-skeleton';
-
-const PRODUCT_GRID_CLASS =
-    'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-8';
-
-function toProductCardData(
-    product: Product,
-    line: ProductLine,
-): ProductCardData {
-    const images = product.media
-        .filter((item): item is {src: string; alt: string} =>
-            Boolean(item.src),
-        )
-        .map((item) => ({
-            src: item.src as string,
-            alt: item.alt || product.title,
-        }));
-    return {
-        title: product.title,
-        href: productHref(product.slug),
-        sku: product.sku,
-        eyebrowLabel: product.productStyle.title ?? line.title,
-        imageUrl: images[0]?.src ?? product.media[0]?.src ?? null,
-        imageAlt: images[0]?.alt ?? product.media[0]?.alt ?? product.title,
-        images: images.length > 0 ? images : undefined,
-        moq: product.moq,
-    };
-}
 
 type ProductCatalogViewProps = {
     library: ProductLibraryResult;
@@ -58,6 +21,8 @@ type ProductCatalogViewProps = {
     urlSync?: boolean;
     /** When false, omit breadcrumb + page heading (section embed). */
     showPageChrome?: boolean;
+    /** Drop the desktop search strip top border (style landing under a headed section). */
+    hideCatalogBorderTop?: boolean;
     heading?: string | null;
     intro?: string | null;
 };
@@ -67,6 +32,7 @@ export function ProductCatalogView({
     library,
     urlSync = true,
     showPageChrome = true,
+    hideCatalogBorderTop = false,
     heading,
     intro,
 }: ProductCatalogViewProps) {
@@ -117,47 +83,12 @@ export function ProductCatalogView({
                     </div>
                 }
             >
-                <ProductCatalogPanel library={library} urlSync={urlSync} />
+                <ProductCatalogPanel
+                    library={library}
+                    urlSync={urlSync}
+                    hideCatalogBorderTop={hideCatalogBorderTop}
+                />
             </Suspense>
-        </>
-    );
-}
-
-export function ProductStyleView({
-    line,
-    style,
-}: {
-    line: ProductLine;
-    style: ProductStyleRef;
-}) {
-    const products = line.products.filter(
-        (product) => product.productStyle.slug === style.slug,
-    );
-    return (
-        <>
-            <PageBreadcrumbSection
-                items={[
-                    {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Products', href: WWW_ROUTES.products},
-                    {label: line.title, href: productHref(line.slug)},
-                    {label: style.title},
-                ]}
-            />
-            <PageHeadingSection
-                title={style.title}
-                description={style.description}
-                borderBottom={false}
-            />
-            <PageDielineSection paddingBlock="none" innerClassName="pb-24">
-                <div className={PRODUCT_GRID_CLASS}>
-                    {products.map((product) => (
-                        <ProductCard
-                            key={product.slug}
-                            data={toProductCardData(product, line)}
-                        />
-                    ))}
-                </div>
-            </PageDielineSection>
         </>
     );
 }

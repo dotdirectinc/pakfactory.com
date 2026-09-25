@@ -1,15 +1,6 @@
 'use client';
 
-import {
-    useCallback,
-    useDeferredValue,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useTransition,
-} from 'react';
-import {usePathname, useRouter, useSearchParams} from 'next/navigation';
+import {useCallback, useDeferredValue, useMemo, useState} from 'react';
 import {ChevronDown, Search, SlidersHorizontal} from 'lucide-react';
 
 import {Button} from '@pakfactory/ui/components/button';
@@ -17,9 +8,7 @@ import {Input} from '@pakfactory/ui/components/input';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
-import {
-    ProductCatalogFilters,
-} from '@/components/product/product-catalog-filters';
+import {ProductCatalogFilters} from '@/components/product/product-catalog-filters';
 import {ProductCatalogFiltersDrawer} from '@/components/product/product-catalog-filters-drawer';
 import {
     ProductCatalogList,
@@ -29,36 +18,26 @@ import {
     buildProductFacetCounts,
     matchesProductItem,
 } from '@/lib/catalog/product-catalog-filter';
-import {useCatalogSearchDraft} from '@/lib/catalog/use-catalog-search-draft';
-import type {ProductLibraryResult} from '@/lib/catalog/types';
-import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
+import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
+import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
+import type {
+    CustomizationFacetDef,
+    ProductLibraryResult,
+} from '@/lib/catalog/types';
+import {
+    PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
+} from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
-/** Auto-reveal this many PAGE_SIZE batches via scroll before showing Load more. */
-const AUTO_REVEAL_LIMIT = 2;
-/** Simulated delay so append skeletons are visible before revealing the next batch. */
-const APPEND_DELAY_MS = 400;
-const PARAM_Q = 'q';
-/** Legacy load-more depth param — stripped on URL writes, never read. */
-const LEGACY_PARAM_VISIBLE = 'visible';
 
 type ProductCatalogPanelProps = {
     library: ProductLibraryResult;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
+    /** Drop the desktop search strip top border (style landing under a headed section). */
+    hideCatalogBorderTop?: boolean;
 };
-
-function parseList(raw: string | null): string[] {
-    if (!raw?.trim()) return [];
-    return raw
-        .split(',')
-        .map((part) => part.trim())
-        .filter(Boolean);
-}
-
-function serializeList(values: string[]): string | null {
-    return values.length > 0 ? values.join(',') : null;
-}
 
 function toggleValue(list: string[], value: string): string[] {
     return list.includes(value)
@@ -69,270 +48,209 @@ function toggleValue(list: string[], value: string): string[] {
 export function ProductCatalogPanel({
     library,
     urlSync = true,
+    hideCatalogBorderTop = false,
 }: ProductCatalogPanelProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const [isPending, startTransition] = useTransition();
+    const facetIds = useMemo(() => {
+        const ids = library.facetCatalog.shared.map((facet) => facet.id);
+        ids.push(PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID);
+        return ids;
+    }, [library.facetCatalog.shared]);
 
-    const [localQuery, setLocalQuery] = useState(() =>
-        urlSync ? (searchParams.get(PARAM_Q) ?? '') : '',
-    );
-    const [localSelections, setLocalSelections] = useState<
-        Record<string, string[]>
-    >(() => {
-        if (!urlSync) return {};
-        const next: Record<string, string[]> = {};
-        for (const facet of library.facetCatalog.shared) {
-            const values = parseList(searchParams.get(facet.id));
-            if (values.length) next[facet.id] = values;
-        }
-        return next;
+    const {
+        draftQuery,
+        setDraftQuery,
+        selections,
+        setSelections,
+        toggleFacet,
+        reset,
+    } = useCatalogQueryState({
+        urlSync,
+        facetIds,
     });
-    const [localVisible, setLocalVisible] = useState(PAGE_SIZE);
 
-    const query = urlSync ? (searchParams.get(PARAM_Q) ?? '') : localQuery;
-    const visible = localVisible;
-
-    const selections = useMemo(() => {
-        if (!urlSync) return localSelections;
-        const next: Record<string, string[]> = {};
-        for (const facet of library.facetCatalog.shared) {
-            const values = parseList(searchParams.get(facet.id));
-            if (values.length) next[facet.id] = values;
-        }
-        return next;
-    }, [urlSync, localSelections, searchParams, library.facetCatalog.shared]);
-
-    const writeParams = useCallback(
-        (patch: {
-            q?: string;
-            visible?: number;
-            selections?: Record<string, string[]>;
-            clearFacetIds?: string[];
-        }) => {
-            if (patch.visible !== undefined) setLocalVisible(patch.visible);
-
-            if (!urlSync) {
-                if (patch.q !== undefined) setLocalQuery(patch.q);
-                if (patch.selections) setLocalSelections(patch.selections);
-                return;
-            }
-
-            const touchesUrl =
-                patch.q !== undefined ||
-                patch.selections !== undefined ||
-                (patch.clearFacetIds?.length ?? 0) > 0;
-            if (!touchesUrl) return;
-
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete(LEGACY_PARAM_VISIBLE);
-
-            const nextQ = patch.q ?? query;
-            if (!nextQ.trim()) params.delete(PARAM_Q);
-            else params.set(PARAM_Q, nextQ);
-
-            const nextSelections = patch.selections ?? selections;
-            const allFacetIds = new Set(
-                library.facetCatalog.shared.map((f) => f.id),
-            );
-            for (const id of allFacetIds) {
-                params.delete(id);
-            }
-            for (const id of patch.clearFacetIds ?? []) {
-                params.delete(id);
-            }
-            for (const [id, values] of Object.entries(nextSelections)) {
-                const serialized = serializeList(values);
-                if (serialized) params.set(id, serialized);
-            }
-
-            const qs = params.toString();
-            startTransition(() => {
-                router.replace(qs ? `${pathname}?${qs}` : pathname, {
-                    scroll: false,
-                });
-            });
-        },
-        [
-            urlSync,
-            searchParams,
-            query,
-            selections,
-            library.facetCatalog.shared,
-            pathname,
-            router,
-        ],
-    );
-
-    const commitSearch = useCallback(
-        (q: string) => {
-            writeParams({q, visible: PAGE_SIZE});
-        },
-        [writeParams],
-    );
-
-    const {draftQuery, setDraftQuery} = useCatalogSearchDraft({
-        committedQuery: query,
-        onCommit: commitSearch,
-    });
     const deferredQuery = useDeferredValue(draftQuery);
     const isSearchUpdating = draftQuery !== deferredQuery;
 
-    const filtered = useMemo(() => {
-        return library.items.filter((item) =>
-            matchesProductItem(item, {query: deferredQuery, selections}),
-        );
-    }, [library.items, deferredQuery, selections]);
+    const propertyTitles = library.propertyTitles;
+
+    const selectedLines =
+        selections[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID] ?? [];
+    const singleLineSlug =
+        selectedLines.length === 1 ? selectedLines[0] : undefined;
 
     const lineEntry = useMemo(() => {
-        const selected =
-            selections[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID] ?? [];
-        const slug = selected.length === 1 ? selected[0] : undefined;
-        if (!slug) return null;
-        return library.linesBySlug[slug] ?? null;
-    }, [selections, library.linesBySlug]);
+        if (!singleLineSlug) return null;
+        return library.linesBySlug[singleLineSlug] ?? null;
+    }, [singleLineSlug, library.linesBySlug]);
+
+    const styleOptions = useMemo(() => {
+        if (!singleLineSlug) return [];
+        return library.stylesByLineSlug[singleLineSlug] ?? [];
+    }, [singleLineSlug, library.stylesByLineSlug]);
+
+    const selectedStyles = useMemo(() => {
+        if (!singleLineSlug) return [];
+        const allowed = new Set(styleOptions.map((opt) => opt.value));
+        return (selections[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID] ?? []).filter(
+            (slug) => allowed.has(slug),
+        );
+    }, [singleLineSlug, styleOptions, selections]);
+
+    const effectiveSelections = useMemo(() => {
+        const next = {...selections};
+        if (!singleLineSlug) {
+            delete next[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID];
+            return next;
+        }
+        if (selectedStyles.length === 0) {
+            delete next[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID];
+        } else {
+            next[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID] = selectedStyles;
+        }
+        return next;
+    }, [selections, singleLineSlug, selectedStyles]);
+
+    const filtered = useMemo(() => {
+        return library.items.filter((item) =>
+            matchesProductItem(
+                item,
+                {query: deferredQuery, selections: effectiveSelections},
+                propertyTitles,
+            ),
+        );
+    }, [library.items, deferredQuery, effectiveSelections, propertyTitles]);
+
+    const filterResetKey = useMemo(
+        () =>
+            JSON.stringify({
+                q: deferredQuery,
+                selections: effectiveSelections,
+            }),
+        [deferredQuery, effectiveSelections],
+    );
+
+    const {
+        visible,
+        isAppending,
+        appendCount,
+        canAutoReveal,
+        showLoadMore,
+        revealNextBatch,
+        sentinelRef,
+    } = useProgressiveReveal({
+        total: filtered.length,
+        pageSize: PAGE_SIZE,
+        appendDelayMs: 0,
+        resetKey: filterResetKey,
+    });
 
     const shown = filtered.slice(0, visible);
 
-    const [appendCount, setAppendCount] = useState(0);
-    const isAppending = appendCount > 0;
-    const appendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-        null,
-    );
-    const isAppendingRef = useRef(false);
-    const pendingVisibleRef = useRef<number | null>(null);
-
-    const clearAppend = useCallback(() => {
-        if (appendTimeoutRef.current) {
-            clearTimeout(appendTimeoutRef.current);
-            appendTimeoutRef.current = null;
-        }
-        isAppendingRef.current = false;
-        pendingVisibleRef.current = null;
-        setAppendCount(0);
-    }, []);
-
-    useEffect(() => () => clearAppend(), [clearAppend]);
-
-    useEffect(() => {
-        if (!isAppendingRef.current) return;
-        if (visible <= PAGE_SIZE) {
-            clearAppend();
-            return;
-        }
-        if (
-            pendingVisibleRef.current != null &&
-            visible >= pendingVisibleRef.current
-        ) {
-            clearAppend();
-        }
-    }, [visible, clearAppend]);
-
-    const hasMore = visible < filtered.length;
-    const autoLoadsDone = Math.max(
-        0,
-        Math.floor((visible - PAGE_SIZE) / PAGE_SIZE),
-    );
-    const canAutoReveal =
-        !isPending &&
-        !isAppending &&
-        hasMore &&
-        autoLoadsDone < AUTO_REVEAL_LIMIT;
-    const showLoadMore =
-        !isPending &&
-        !isAppending &&
-        hasMore &&
-        autoLoadsDone >= AUTO_REVEAL_LIMIT;
-
-    const revealNextBatch = useCallback(() => {
-        if (isAppendingRef.current) return;
-        if (visible >= filtered.length) return;
-
-        const count = Math.min(PAGE_SIZE, filtered.length - visible);
-        const nextVisible = visible + PAGE_SIZE;
-        isAppendingRef.current = true;
-        pendingVisibleRef.current = nextVisible;
-        setAppendCount(count);
-
-        appendTimeoutRef.current = setTimeout(() => {
-            appendTimeoutRef.current = null;
-            writeParams({visible: nextVisible});
-        }, APPEND_DELAY_MS);
-    }, [visible, filtered.length, writeParams]);
-
-    const sentinelRef = useRef<HTMLDivElement>(null);
-    const autoRevealLockedRef = useRef(false);
-
-    useEffect(() => {
-        autoRevealLockedRef.current = false;
-    }, [visible]);
-
-    useEffect(() => {
-        if (!canAutoReveal) return;
-        const el = sentinelRef.current;
-        if (!el) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const entry = entries[0];
-                if (!entry?.isIntersecting) return;
-                if (autoRevealLockedRef.current) return;
-                autoRevealLockedRef.current = true;
-                revealNextBatch();
-            },
-            {rootMargin: '200px'},
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [canAutoReveal, revealNextBatch, visible]);
-
     const countsByFacet = useMemo(
         () =>
-            buildProductFacetCounts(library.items, library.facetCatalog.shared, {
-                query: deferredQuery,
-                selections,
-            }),
-        [library.items, library.facetCatalog.shared, deferredQuery, selections],
+            buildProductFacetCounts(
+                library.items,
+                library.facetCatalog.shared,
+                {query: deferredQuery, selections: effectiveSelections},
+                propertyTitles,
+            ),
+        [
+            library.items,
+            library.facetCatalog.shared,
+            deferredQuery,
+            effectiveSelections,
+            propertyTitles,
+        ],
     );
 
-    function onToggle(facetId: string, value: string) {
-        const next = {
-            ...selections,
-            [facetId]: toggleValue(selections[facetId] ?? [], value),
+    const styleFacetDef: CustomizationFacetDef | null = useMemo(() => {
+        if (!singleLineSlug || styleOptions.length === 0) return null;
+        return {
+            id: PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
+            title: 'Product Style',
+            options: styleOptions,
         };
-        if (next[facetId]?.length === 0) delete next[facetId];
-        setDraftQuery('');
-        writeParams({selections: next, visible: PAGE_SIZE, q: ''});
-        if (!urlSync) {
-            setLocalSelections(next);
-            setLocalQuery('');
-        }
-    }
+    }, [singleLineSlug, styleOptions]);
+
+    const styleCounts = useMemo(() => {
+        if (!styleFacetDef) return {};
+        const counts = buildProductFacetCounts(
+            library.items,
+            [styleFacetDef],
+            {query: deferredQuery, selections: effectiveSelections},
+            propertyTitles,
+        );
+        return counts[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID] ?? {};
+    }, [
+        styleFacetDef,
+        library.items,
+        deferredQuery,
+        effectiveSelections,
+        propertyTitles,
+    ]);
+
+    const onToggleLineOrOther = useCallback(
+        (facetId: string, value: string) => {
+            if (facetId !== PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID) {
+                toggleFacet(facetId, value);
+                return;
+            }
+
+            const nextLines = toggleValue(
+                selections[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID] ?? [],
+                value,
+            );
+            const next: Record<string, string[]> = {...selections};
+            if (nextLines.length === 0) {
+                delete next[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID];
+            } else {
+                next[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID] = nextLines;
+            }
+
+            // Styles only apply when exactly one line is selected.
+            if (nextLines.length !== 1) {
+                delete next[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID];
+            } else if (
+                selections[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID]?.length ===
+                    1 &&
+                selections[PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID]?.[0] !==
+                    nextLines[0]
+            ) {
+                delete next[PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID];
+            }
+
+            setDraftQuery('');
+            setSelections(next, {clearQuery: true});
+        },
+        [selections, toggleFacet, setSelections, setDraftQuery],
+    );
+
+    const onToggleStyle = useCallback(
+        (value: string) => {
+            if (!singleLineSlug) return;
+            toggleFacet(PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID, value);
+        },
+        [singleLineSlug, toggleFacet],
+    );
 
     function onReset() {
-        setDraftQuery('');
-        writeParams({
-            q: '',
-            selections: {},
-            visible: PAGE_SIZE,
-            clearFacetIds: Object.keys(selections),
-        });
-        if (!urlSync) {
-            setLocalQuery('');
-            setLocalSelections({});
-        }
+        reset({clearQuery: true});
     }
 
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const activeFilterCount = useMemo(
-        () =>
-            Object.values(selections).reduce(
-                (sum, values) => sum + values.length,
-                0,
-            ),
-        [selections],
-    );
+    const activeFilterCount = useMemo(() => {
+        let sum = 0;
+        for (const [id, values] of Object.entries(selections)) {
+            if (
+                id === PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID &&
+                !singleLineSlug
+            ) {
+                continue;
+            }
+            sum += values.length;
+        }
+        return sum;
+    }, [selections, singleLineSlug]);
 
     function renderSearchField(className?: string) {
         return (
@@ -354,6 +272,18 @@ export function ProductCatalogPanel({
             </div>
         );
     }
+
+    const filterProps = {
+        sharedFacets: library.facetCatalog.shared,
+        selections,
+        countsByFacet,
+        onToggle: onToggleLineOrOther,
+        onReset,
+        styleOptions,
+        selectedStyles,
+        styleCounts,
+        onToggleStyle,
+    };
 
     return (
         <PageDielineSection
@@ -389,7 +319,12 @@ export function ProductCatalogPanel({
             </div>
 
             {/* Desktop: sticky search bar (no category tabs) */}
-            <div className="-mx-layout-gutter-inner hidden border-y border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block">
+            <div
+                className={cn(
+                    '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
+                    hideCatalogBorderTop ? 'border-b' : 'border-y',
+                )}
+            >
                 <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
                     <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
                         {renderSearchField()}
@@ -401,32 +336,24 @@ export function ProductCatalogPanel({
                 open={filtersOpen}
                 onOpenChange={setFiltersOpen}
                 resultCount={filtered.length}
-                sharedFacets={library.facetCatalog.shared}
-                selections={selections}
-                countsByFacet={countsByFacet}
-                onToggle={onToggle}
-                onReset={onReset}
+                {...filterProps}
             />
 
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
                 <ProductCatalogFilters
                     resultCount={filtered.length}
                     totalCount={library.items.length}
-                    sharedFacets={library.facetCatalog.shared}
-                    selections={selections}
-                    countsByFacet={countsByFacet}
-                    onToggle={onToggle}
-                    onReset={onReset}
+                    {...filterProps}
                 />
 
                 <div
                     className={cn(
                         'flex min-w-0 flex-1 flex-col gap-6 transition-opacity duration-(--motion-fast)',
-                        (isSearchUpdating || isPending) &&
+                        isSearchUpdating &&
                             !isAppending &&
                             'pointer-events-none opacity-60',
                     )}
-                    aria-busy={isPending || isAppending || isSearchUpdating}
+                    aria-busy={isAppending || isSearchUpdating}
                 >
                     <ProductCatalogList
                         items={shown}

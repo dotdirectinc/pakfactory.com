@@ -262,6 +262,21 @@ export const PRODUCT_CATALOG_INDUSTRY_FACET_ID = 'industry';
 /** Product type facet — Sanity `product.kind` (`standard` | `inspiration`). */
 export const PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID = 'product-type';
 
+/**
+ * Product Style facet — nested under a single selected Product Line on `/products`.
+ * Not a top-level rail accordion.
+ */
+export const PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID = 'product-style';
+
+/**
+ * Library card style — slug + title only (PROD-2599). Full style copy stays on
+ * landing / PDP projections.
+ */
+export type ProductLibraryStyleRef = {
+    slug: string;
+    title: string;
+};
+
 /** Enriched product card for the faceted `/products` library (PROD-1845). */
 export type ProductLibraryItem = {
     _id: string;
@@ -271,7 +286,7 @@ export type ProductLibraryItem = {
     /** Sanity `product.kind` — drives the Product type facet. */
     kind: ProductKind;
     productLine: ProductLineRef;
-    productStyle: ProductStyleRef;
+    productStyle: ProductLibraryStyleRef;
     imageUrl?: string | null;
     imageAlt?: string | null;
     images?: {src: string; alt?: string}[];
@@ -280,8 +295,6 @@ export type ProductLibraryItem = {
     industries: {slug: string; title: string}[];
     /** property.slug → propertyValue.slug[] */
     attrs: Record<string, string[]>;
-    propertyTitles: Record<string, string>;
-    valueTitles: Record<string, string>;
 };
 
 /** Line meta for the catalog entry card (first spot when one line is filtered). */
@@ -297,6 +310,10 @@ export type ProductLibraryResult = {
     items: ProductLibraryItem[];
     /** Unique product lines in the library, keyed by slug. */
     linesBySlug: Record<string, ProductLibraryLineMeta>;
+    /** Styles per line for the nested Product Style filter (keyed by line slug). */
+    stylesByLineSlug: Record<string, CustomizationFacetOption[]>;
+    /** property.slug → display title (hoisted off per-item copies). */
+    propertyTitles: Record<string, string>;
     facetCatalog: {
         /** Always-on: Product type + Product Line + Industries + Sustainability (when present). */
         shared: CustomizationFacetDef[];

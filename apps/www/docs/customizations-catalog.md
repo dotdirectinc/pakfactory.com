@@ -25,9 +25,12 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 | GROQ (page sections) | [`packages/sanity/src/queries/catalog-pages.ts`](../../../packages/sanity/src/queries/catalog-pages.ts) — `CUSTOMIZATION_CATALOG_PAGE_QUERY` |
 | Mapper | [`src/lib/catalog/map-sanity.ts`](../src/lib/catalog/map-sanity.ts) — `mapSanityLibraryOption` |
 | Facet assembly | [`src/lib/catalog/build-customization-library.ts`](../src/lib/catalog/build-customization-library.ts) |
-| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — `matchesCustomizationItem`, `buildCustomizationFacetCounts` |
+| Facet engine | [`src/lib/catalog/facet-engine.ts`](../src/lib/catalog/facet-engine.ts) — `createFacetEngine` |
+| Filter matching | [`src/lib/catalog/customization-catalog-filter.ts`](../src/lib/catalog/customization-catalog-filter.ts) — thin config on the engine |
+| Query state | [`src/lib/catalog/use-catalog-query-state.ts`](../src/lib/catalog/use-catalog-query-state.ts) — local state + `history.replaceState` (owns `category`) |
+| Progressive reveal | [`src/lib/catalog/use-progressive-reveal.ts`](../src/lib/catalog/use-progressive-reveal.ts) |
 | Filter taxonomy (ops + product lines) | [`src/lib/catalog/customization-filter-taxonomy.ts`](../src/lib/catalog/customization-filter-taxonomy.ts) — driven by [`docs/customization-filter-taxonomy.md`](./customization-filter-taxonomy.md) |
-| API | [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) — **`listCustomizations()`** (ticket name `getCustomizations`) |
+| API | [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) — **`listCustomizations()`**, **`getCustomizationCatalogPage()`** |
 | Alias | `listCustomizationCategories()` → `listCustomizations().items` |
 | Detail | `getCustomizationCategory(category, handle)` |
 | Cache tag | `WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG` |
@@ -77,7 +80,7 @@ Folder: `src/components/customization/`
 | File | Export | Role |
 | --- | --- | --- |
 | `customization-catalog-view.tsx` | `CustomizationCatalogView` | Chrome + Suspense + panel |
-| `customization-catalog-panel.tsx` | `CustomizationCatalogPanel` | Client: tabs/chips, search, filters, Load more (2 auto-reveals then button; append skeletons ~400ms), URL/local state |
+| `customization-catalog-panel.tsx` | `CustomizationCatalogPanel` | Client: tabs/chips, search, filters, Load more (2 auto-reveals then button), URL/local state |
 | `customization-catalog-filters.tsx` | `CustomizationCatalogFilters` | Desktop left rail (`lg+`) |
 | `customization-catalog-filters-drawer.tsx` | `CustomizationCatalogFiltersDrawer` | Mobile filters bottom Drawer (Clear all + Show N) |
 | `customization-facet-group.tsx` | `CustomizationFacetGroup` | Checkbox rows + counts centered under the chevron column; previews 15 options with Show more / Show less; zero-count options disabled |
@@ -88,11 +91,12 @@ Buyer copy: **customization**, never “capability”.
 
 ## Filter / URL responsibility
 
-- **Server:** one library fetch + facet catalog in `CustomizationLibraryResult`
-- **Client:** filter in memory via `matchesCustomizationItem`; facet option counts via `buildCustomizationFacetCounts` — **disjunctive (except-self)**: for facet F, count options against items that match category + query + all selections **except F** (so selecting one Product Line does not zero sibling lines); header **“N of M”** stays based on the fully filtered result set; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; each reveal shows append card skeletons for ~400ms before bumping `visible`)
+- **Server:** one library fetch + facet catalog in `CustomizationLibraryResult`; page sections via cached `getCustomizationCatalogPage()`. The route does **not** read `searchParams` — the client owns `category`.
+- **Client:** local state is the source of truth; `history.replaceState` mirrors `category`, `q`, and facet params (no `router.replace`, no RSC round trip on filter clicks — PROD-2599). Back/forward re-seeds from `useSearchParams`.
+- **Filter:** in memory via the shared facet engine; facet option counts are **disjunctive (except-self)**; header **“N of M”** stays based on the fully filtered result set; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; no artificial append delay)
 - **Route:** `urlSync` (default true) — `category`, `q`, plus facet ids as comma-separated query params (load-more depth is session-only, not in the URL)
 
-- **Section:** `urlSync={false}` — local React state only
+- **Section:** `urlSync={false}` — local React state only; optional `initialCategory` from Studio
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line and other properties = **OR** (see [`customization-filter-taxonomy.md`](./customization-filter-taxonomy.md))
 - **UI chrome:** underline category tabs + pill search on `lg+`; below `lg`, sticky search + Filters button, horizontal category chips, and facet groups in a bottom **Drawer** (Clear all + Show N); accordion facet groups (mockup-aligned); each facet group previews **15** options then **Show more** / **Show less** (auto-expands if a selected value is past the fold); option counts share a trailing column centered under the chevron; options with live count **0** are disabled (still uncheckable if already selected)
 
@@ -100,6 +104,7 @@ Buyer copy: **customization**, never “capability”.
 
 - Mid-page CTA band
 - Detail body (PROD-1299)
+- Making the `(site)` layout cacheable (PROD-2599 L4 follow-up)
 - Bookmark/compare persistence
 - Changing `customizationsRow` strip behavior
 - Canonical facet option lists beyond what Sanity content provides
