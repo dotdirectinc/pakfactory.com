@@ -2,6 +2,7 @@
 
 import {Check} from 'lucide-react';
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {BuilderOption, BuilderType} from '@/lib/customization-builder';
 import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
@@ -14,6 +15,8 @@ type CategoryTypeListProps = {
     activeOptionId: string | null;
     /** Every option picked in this step (several Types, each per its `customerSelects`). */
     selectedOptionIds?: ReadonlySet<string>;
+    /** Ruled out by the customer's other picks: listed, greyed, not selectable. */
+    disabledOptionIds?: ReadonlySet<string>;
     consultationSelected?: boolean;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -27,6 +30,7 @@ export function CategoryTypeList({
     activeTypeId,
     activeOptionId,
     selectedOptionIds,
+    disabledOptionIds,
     consultationSelected = false,
     onSelectConsultation,
     onSelectType,
@@ -86,6 +90,15 @@ export function CategoryTypeList({
                                           const open =
                                               picked &&
                                               option.id === activeOptionId;
+                                          // A pick is never disabled: the rules keep what
+                                          // stands, and clear what does not.
+                                          const disabled =
+                                              !picked &&
+                                              Boolean(
+                                                  disabledOptionIds?.has(
+                                                      option.id,
+                                                  ),
+                                              );
                                           const blurb =
                                               option.shortDescription?.trim() ||
                                               option.description?.trim() ||
@@ -94,6 +107,12 @@ export function CategoryTypeList({
                                               <li key={option.id}>
                                                   <HighlightItem
                                                       selected={picked}
+                                                      disabled={disabled}
+                                                      title={
+                                                          disabled
+                                                              ? CUSTOMIZATION_BUILDER_COPY.unavailableWithSelections
+                                                              : undefined
+                                                      }
                                                       aria-pressed={picked}
                                                       aria-current={
                                                           open
@@ -103,7 +122,11 @@ export function CategoryTypeList({
                                                       onClick={() =>
                                                           onSelectOption(option)
                                                       }
-                                                      className="flex w-full items-start gap-3"
+                                                      className={cn(
+                                                          'flex w-full items-start gap-3',
+                                                          disabled &&
+                                                              'opacity-50 hover:bg-transparent',
+                                                      )}
                                                   >
                                                       <span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
                                                           {option.imageUrl ? (
@@ -130,6 +153,13 @@ export function CategoryTypeList({
                                                               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                                                                   {blurb}
                                                               </p>
+                                                          ) : null}
+                                                          {disabled ? (
+                                                              <span className="sr-only">
+                                                                  {
+                                                                      CUSTOMIZATION_BUILDER_COPY.unavailableWithSelections
+                                                                  }
+                                                              </span>
                                                           ) : null}
                                                       </span>
                                                       {picked ? (

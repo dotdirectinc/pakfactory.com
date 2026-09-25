@@ -17,6 +17,8 @@ type CustomizationWorkspaceViewProps = {
     activeKey: BuilderStepKey;
     activeTypeId: string | null;
     activeOptionId: string | null;
+    /** Options the rules rule out given the other picks: listed, not selectable. */
+    disabledOptionIds?: ReadonlySet<string>;
     state: CustomizationBuilderState;
     dimensionRange?: ProductDimensionRange;
     dimensionInput?: string;
@@ -40,6 +42,7 @@ export function CustomizationWorkspaceView({
     activeKey,
     activeTypeId,
     activeOptionId,
+    disabledOptionIds,
     state,
     dimensionRange,
     dimensionInput,
@@ -59,6 +62,7 @@ export function CustomizationWorkspaceView({
             activeKey={activeKey}
             activeTypeId={activeTypeId}
             activeOptionId={activeOptionId}
+            disabledOptionIds={disabledOptionIds}
             state={state}
             dimensionRange={dimensionRange}
             dimensionInput={dimensionInput}

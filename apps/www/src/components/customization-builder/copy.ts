@@ -30,6 +30,7 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     pickAnOption: 'Choose an option for this type.',
     chooseOne: 'Choose one',
     chooseAny: 'Choose any',
+    unavailableWithSelections: 'Not available with your current selections',
     additionalNote: 'Additional note',
     addAdditionalNote: '+ Additional Note',
     removeSelection: 'Remove selection',

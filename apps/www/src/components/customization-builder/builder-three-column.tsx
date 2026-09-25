@@ -25,6 +25,7 @@ type BuilderThreeColumnProps = {
     activeKey: BuilderStepKey;
     activeTypeId: string | null;
     activeOptionId: string | null;
+    disabledOptionIds?: ReadonlySet<string>;
     state: CustomizationBuilderState;
     numberedRail?: boolean;
     maxReachableIndex?: number;
@@ -52,6 +53,7 @@ export function BuilderThreeColumn({
     activeKey,
     activeTypeId,
     activeOptionId,
+    disabledOptionIds,
     state,
     numberedRail = false,
     maxReachableIndex,
@@ -136,6 +138,7 @@ export function BuilderThreeColumn({
                     activeTypeId={activeTypeId}
                     activeOptionId={activeOptionId}
                     selectedOptionIds={selectedOptionIds}
+                    disabledOptionIds={disabledOptionIds}
                     consultationSelected={consultationSelected}
                     onSelectConsultation={onSelectConsultation}
                     onSelectType={onSelectType}
