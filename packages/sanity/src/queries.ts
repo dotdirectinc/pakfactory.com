@@ -193,6 +193,8 @@ export {
     type PageSectionQuoteCtaDoc,
     type PageSectionSignatureProblemDoc,
     type PageSectionSignatureSystemDoc,
+    type PageSectionStepDoc,
+    type PageSectionStepsDoc,
     type PageSectionStubDoc,
     type PageSectionTestimonialsRowDoc,
     type PageSectionVideoCaseStudiesRowDoc,

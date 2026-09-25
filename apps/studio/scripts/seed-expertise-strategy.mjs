@@ -29,57 +29,13 @@
  *   pnpm --filter @pakfactory/studio run seed:expertise-strategy -- --dataset production --confirm --yes-production
  */
 
-import { createClient } from '@sanity/client'
-import { config as loadEnv } from 'dotenv'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
+import {
+  pathLink,
+  plainBlock,
+  ref,
+  runExpertiseStageSeed,
+} from './lib/expertise-stage-seed.mjs'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const repoRoot = join(__dirname, '../../..')
-loadEnv({ path: join(repoRoot, '.env.local') })
-loadEnv({ path: join(repoRoot, '.env') })
-loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
-
-const USAGE = `Usage:
-  pnpm --filter @pakfactory/studio run seed:expertise-strategy -- --dataset <development|production> [--confirm] [--yes-production]
-
-  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
-  --confirm         Actually write. Without it the run is a dry run.
-  --yes-production  Second gate; required to write to production.`
-
-const args = parseScriptArgs({ usage: USAGE })
-const { confirm: apply } = args
-
-const PROJECT_ID =
-  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
-  process.env.SANITY_STUDIO_PROJECT_ID ||
-  '8293wrxp'
-const DATASET = args.dataset
-const TOKEN =
-  process.env.SANITY_API_WRITE_TOKEN ||
-  process.env.SANITY_API_READ_TOKEN ||
-  process.env.SANITY_TOKEN
-
-if (!TOKEN) {
-  console.error('❌  Missing Sanity token in .env.local')
-  process.exit(1)
-}
-if (apply && !(process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_TOKEN)) {
-  console.error('❌  --confirm needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN).')
-  process.exit(1)
-}
-
-const client = createClient({
-  projectId: PROJECT_ID,
-  dataset: DATASET,
-  apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2025-01-01',
-  token: TOKEN,
-  useCdn: false,
-  perspective: 'raw',
-})
-
-const STAGE_SLUG = 'packaging-strategy'
 const CASE_STUDY_SLUGS = ['venture', 'serena-sleep', 'blind-barrels']
 
 // ── Content (approved copy, PROD-1888) ──────────────────────────────────────
@@ -188,30 +144,7 @@ const FAQS = [
   },
 ]
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-const serviceId = (key) => `expertiseService.strategy-${key}`
-const faqId = (key) => `faq.expertise-strategy-${key}`
-
-function plainBlock(text, key) {
-  return {
-    _type: 'block',
-    _key: key,
-    style: 'normal',
-    markDefs: [],
-    children: [{ _type: 'span', _key: `${key}-span`, text, marks: [] }],
-  }
-}
-
-function ref(id, key) {
-  return { _type: 'reference', _ref: id, ...(key ? { _key: key } : {}) }
-}
-
-function pathLink(label, relativePath) {
-  return { label, linkType: 'path', relativePath }
-}
-
-function buildSections() {
+function buildSections({ serviceId }) {
   return [
     {
       _type: 'signatureSystem',
@@ -320,121 +253,20 @@ function buildSections() {
   ]
 }
 
-// ── Main ────────────────────────────────────────────────────────────────────
-
-async function main() {
-  console.log(
-    `\nseed:expertise-strategy  project=${PROJECT_ID}  dataset=${DATASET}  ${describeMode(args)}\n`,
-  )
-
-  const stage = await client.fetch(
-    `*[_type == "expertiseStage" && slug.current == $slug && !(_id in path("drafts.**"))][0]{
-      _id, title, "sectionCount": count(sections)
-    }`,
-    { slug: STAGE_SLUG },
-  )
-  if (!stage) {
-    console.error(`❌  No published expertiseStage with slug "${STAGE_SLUG}" in ${DATASET}.`)
-    process.exit(1)
-  }
-
-  const helpCategoryId = await client.fetch(
-    `*[_type == "helpCategory" && !(_id in path("drafts.**"))] | order(_createdAt asc)[0]._id`,
-  )
-  if (!helpCategoryId) {
-    console.error(
-      `❌  No helpCategory in ${DATASET}. FAQs require one (the set is fixed — create it in Studio first).`,
-    )
-    process.exit(1)
-  }
-
-  const studies = await client.fetch(
-    `*[_type == "caseStudy" && slug.current in $slugs && !(_id in path("drafts.**"))]{ _id, "slug": slug.current }`,
-    { slugs: CASE_STUDY_SLUGS },
-  )
-  const studyBySlug = new Map(studies.map((s) => [s.slug, s._id]))
-  const featured = CASE_STUDY_SLUGS.filter((slug) => studyBySlug.has(slug))
-  const missingStudies = CASE_STUDY_SLUGS.filter((slug) => !studyBySlug.has(slug))
-
-  const existingIds = new Set(
-    await client.fetch(`*[_id in $ids]._id`, {
-      ids: [...SERVICES.map((s) => serviceId(s.key)), ...FAQS.map((f) => faqId(f.key))],
-    }),
-  )
-
-  console.log(`Stage: ${stage._id} (${stage.title}) — ${stage.sectionCount ?? 0} section(s) today`)
-  console.log(`Help category: ${helpCategoryId}`)
-  console.log(`Featured case studies: ${featured.join(', ') || '(none)'}`)
-  if (missingStudies.length) {
-    console.log(`  ⚠️  not found, skipped: ${missingStudies.join(', ')} (section falls back to tagged studies)`)
-  }
-
-  console.log(`\nPlanned writes:`)
-  for (const s of SERVICES) {
-    console.log(`  ${existingIds.has(serviceId(s.key)) ? 'replace' : 'create '} ${serviceId(s.key)} — ${s.title}`)
-  }
-  for (const f of FAQS) {
-    console.log(`  ${existingIds.has(faqId(f.key)) ? 'replace' : 'create '} ${faqId(f.key)} — ${f.question}`)
-  }
-  console.log(
-    `  patch   ${stage._id} — hero + SEO fields, services(${SERVICES.length}), faqs(${FAQS.length}), featuredStudies(${featured.length}), sections(7, replaces ${stage.sectionCount ?? 0})`,
-  )
-  console.log(`\nNote: stage.description becomes the Strategy hero subhead — the Beauty LP stage board shows it too.`)
-  console.log(`Editors still add in Studio: engagement photo (mediaFeature), stage diagram, OG image, logo wall.`)
-
-  if (!apply) {
-    console.log(
-      `\nDRY-RUN on ${DATASET} — nothing written. Re-run with \`--confirm\` (production also needs \`--yes-production\`).\n`,
-    )
-    return
-  }
-
-  const tx = client.transaction()
-
-  for (const s of SERVICES) {
-    tx.createOrReplace({
-      _id: serviceId(s.key),
-      _type: 'expertiseService',
-      title: s.title,
-      stage: ref(stage._id),
-      summary: s.summary,
-      points: s.points.map((point, index) => ({
-        _type: 'servicePoint',
-        _key: `${s.key}-point-${index + 1}`,
-        ...point,
-      })),
-      hasPage: false,
-      status: 'active',
-    })
-  }
-
-  for (const f of FAQS) {
-    tx.createOrReplace({
-      _id: faqId(f.key),
-      _type: 'faq',
-      question: f.question,
-      slug: { _type: 'slug', current: `packaging-strategy-${f.key}` },
-      answer: [plainBlock(f.answer, `${f.key}-a`)],
-      scope: 'contextual',
-      category: ref(helpCategoryId),
-    })
-  }
-
-  tx.patch(stage._id, (p) =>
-    p.set({
-      ...STAGE,
-      services: SERVICES.map((s) => ref(serviceId(s.key), `service-${s.key}`)),
-      faqs: FAQS.map((f) => ref(faqId(f.key), `faq-${f.key}`)),
-      featuredStudies: featured.map((slug) => ref(studyBySlug.get(slug), `study-${slug}`)),
-      sections: buildSections(),
-    }),
-  )
-
-  const result = await tx.commit()
-  console.log(`\n✅ Committed ${result.results.length} mutation(s) to dataset=${DATASET} (transaction ${result.transactionId}).\n`)
-}
-
-main().catch((err) => {
+runExpertiseStageSeed({
+  task: 'seed:expertise-strategy',
+  stageSlug: 'packaging-strategy',
+  idPrefix: 'strategy',
+  stage: STAGE,
+  services: SERVICES,
+  faqs: FAQS,
+  caseStudySlugs: CASE_STUDY_SLUGS,
+  buildSections,
+  editorNotes: [
+    'engagement photo (mediaFeature renders nothing without one), stage diagram, OG image.',
+    'logo wall (trust strip) — pick client logos.',
+  ],
+}).catch((err) => {
   console.error(err)
   process.exit(1)
 })

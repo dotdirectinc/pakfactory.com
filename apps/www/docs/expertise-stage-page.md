@@ -27,6 +27,20 @@ There is no per-stage layout and no template singleton. Stages differ by archety
 | 7 | Final CTA | `quoteCta` (now wired) | `QuoteCta` |
 | — | Trust strip (optional) | `logoWall` | `LogoWall` |
 
+## Band → Section map (Design, Experiential — PROD-2578)
+
+Show first, then explain. The template is the same; only the stage's `sections[]` differs.
+
+| # | Band (archetype spine) | `_type` | React |
+| --- | --- | --- | --- |
+| 1 | Work showcase ("Our work") | `inspirationsGrid` (Custom list, curated by the design team) | `InspirationGallery` |
+| 2 | What's possible ("What our designers do") | `signatureSystem` with **no System name** | `SignatureSystem`: the services list, with the open service's image beside it instead of the ring |
+| 3 | How it works | `steps` (now wired; each step can link on, e.g. to the Prototyping stage) | `Steps` |
+| 4 | Why it's certain (Design fidelity) | `caseStudiesRow` | `CaseStudiesRow` |
+| 5–7 | Where this fits · FAQ · Final CTA | `expertiseSequence` · `faqSection` · `quoteCta` | as Strategy |
+
+Service images are a new optional field, `expertiseService.image`.
+
 ## Host inherit (ADR-020 §8)
 
 An empty section list is filled from the stage document, unless the editor picked **Custom**:
@@ -35,7 +49,7 @@ An empty section list is filled from the stage document, unless the editor picke
 | --- | --- | --- |
 | `signatureSystem.services` | `expertiseStage.services` (non-discontinued), in order | [`inherit-signature-system.ts`](../src/lib/sections/inherit-signature-system.ts) |
 | `faqSection.faqs` | `expertiseStage.faqs` | `applyFaqInherit` |
-| `caseStudiesRow.items` | `featuredStudies`; if that is empty, the 6 latest case studies tagging the stage (`expertiseAreas`) | `applyCaseStudyInherit` |
+| `caseStudiesRow.items` | `featuredStudies`; if that is empty, the 6 latest case studies tagging the stage (`expertise`, or `expertiseAreas` before the PROD-2293 rename) | `applyCaseStudyInherit` |
 | `expertiseSequence.stages` | Every stage in hub order: `expertisePage.featured` pins first, then by title (ADR-017, `orderExpertiseStages`) | [`lifecycle.ts`](../src/lib/expertise/lifecycle.ts) `applyStageSequenceInherit` |
 
 Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
@@ -60,7 +74,7 @@ Everywhere else the same Section still renders as `ExpertiseRow` (StagesBoard). 
 
 ## Content
 
-Strategy content is seeded by [`seed-expertise-strategy.mjs`](../../studio/scripts/seed-expertise-strategy.mjs), which a human runs (`pnpm --filter @pakfactory/studio run seed:expertise-strategy -- --dataset development [--confirm]`). Editors still add these in Studio:
+Stage content is seeded by a human-run script per stage: [`seed-expertise-strategy.mjs`](../../studio/scripts/seed-expertise-strategy.mjs) and [`seed-expertise-design.mjs`](../../studio/scripts/seed-expertise-design.mjs) (`pnpm --filter @pakfactory/studio run seed:expertise-<stage> -- --dataset development [--confirm]`). Both run through the shared runner [`lib/expertise-stage-seed.mjs`](../../studio/scripts/lib/expertise-stage-seed.mjs); a new stage adds only a content file. For Design, editors also curate the work gallery cards and add service images. Editors still add these in Studio:
 - the engagement photo (`mediaFeature` renders nothing without media)
 - the stage diagram
 - the OG image
@@ -73,5 +87,5 @@ Strategy content is seeded by [`seed-expertise-strategy.mjs`](../../studio/scrip
 | Route | [`src/app/(site)/expertise/[slug]/page.tsx`](../src/app/(site)/expertise/[slug]/page.tsx) |
 | View | [`src/components/expertise/expertise-views.tsx`](../src/components/expertise/expertise-views.tsx) `ExpertiseStageView` |
 | GROQ | [`packages/sanity/src/queries/expertise.ts`](../../../packages/sanity/src/queries/expertise.ts) `EXPERTISE_STAGE_BY_SLUG_QUERY`; section shapes in `queries/sections.ts` |
-| Mapping | [`src/lib/expertise/map-sanity.ts`](../src/lib/expertise/map-sanity.ts), `lib/sections/map-signature-system.ts`, `map-benefits.ts`, `map-quote-cta.ts` |
+| Mapping | [`src/lib/expertise/map-sanity.ts`](../src/lib/expertise/map-sanity.ts), `lib/sections/map-signature-system.ts`, `map-benefits.ts`, `map-quote-cta.ts`, `map-steps.ts` |
 | Tests | [`src/lib/expertise/expertise-stage-sections.test.ts`](../src/lib/expertise/expertise-stage-sections.test.ts) |

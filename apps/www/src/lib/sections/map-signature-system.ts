@@ -11,6 +11,8 @@ export type SignatureDimension = {
     id: string;
     title: string;
     summary?: string;
+    /** Service image — shown beside the list when there is no named method. */
+    image?: {src: string; alt: string};
     points: {label: string; gloss?: string}[];
 };
 
@@ -28,7 +30,8 @@ export type SignatureSystemContent = {
     body: string[];
     problems: SignatureProblem[];
     problemsCaption?: string;
-    systemName: string;
+    /** Named method (ring label). Absent → the section lists services with their images. */
+    systemName?: string;
     systemHeading?: string;
     systemIntro?: string;
     dimensions: SignatureDimension[];
@@ -56,6 +59,7 @@ function mapDimension(
     if (!title) return null;
     const id = doc.slug?.trim() || slugify(title);
     const summary = doc.summary?.trim();
+    const imageSrc = doc.imageSrc?.trim();
     const points: {label: string; gloss?: string}[] = [];
     for (const point of doc.points ?? []) {
         const label = point?.label?.trim();
@@ -68,6 +72,9 @@ function mapDimension(
         id,
         title,
         ...(summary ? {summary} : {}),
+        ...(imageSrc
+            ? {image: {src: imageSrc, alt: doc.imageAlt?.trim() || title}}
+            : {}),
         points,
     };
 }
@@ -84,7 +91,7 @@ export function mapSignatureSystem(
     const resolved = (section.services ?? [])
         .map(mapDimension)
         .filter((item): item is NonNullable<typeof item> => item != null);
-    if (!systemName || resolved.length === 0) return null;
+    if (resolved.length === 0) return null;
 
     const anchorById = new Map(
         resolved
@@ -125,7 +132,7 @@ export function mapSignatureSystem(
         body,
         problems,
         ...(problemsCaption ? {problemsCaption} : {}),
-        systemName,
+        ...(systemName ? {systemName} : {}),
         ...(systemHeading ? {systemHeading} : {}),
         ...(systemIntro ? {systemIntro} : {}),
         dimensions,

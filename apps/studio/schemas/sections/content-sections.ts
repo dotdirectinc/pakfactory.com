@@ -5,6 +5,7 @@ import { faqsField } from '../../lib/faq-field'
 import { sectionListSourceField, hideUnlessCustomList } from '../../lib/section-list-source-fields'
 import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
 import { sectionHeaderFields } from '../../lib/section-header-fields'
+import { sectionLinkTargetFields } from '../../lib/section-link-target-fields'
 
 /**
  * Layout-family content sections (ADR-020). Shared chrome with Heading/Layout
@@ -150,6 +151,22 @@ export const steps = defineType({
               validation: (Rule) => Rule.required(),
             }),
             defineField({ name: 'body', title: 'Body', type: 'text', rows: 3 }),
+            defineField({
+              name: 'link',
+              title: 'Link',
+              type: 'object',
+              description:
+                'Optional — where this step continues (e.g. the Prototyping stage page).',
+              fields: [
+                defineField({
+                  name: 'label',
+                  title: 'Label',
+                  type: 'string',
+                  description: 'Leave empty for no link.',
+                }),
+                ...sectionLinkTargetFields(),
+              ],
+            }),
           ],
           preview: { select: { title: 'title' } },
         }),

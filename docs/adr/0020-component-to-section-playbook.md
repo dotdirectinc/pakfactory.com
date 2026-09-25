@@ -168,7 +168,8 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `customizationsRow` | (row inventory) | Customization row |
 | `customizationsCatalog` | catalog UI | Customizations library |
 | `guidesRow` / `dielinesRow` / `glossaryStrip` / `postsRow` | (row inventory) | Guide / Dieline / Glossary / Post row |
-| `richText` / `stats` / `steps` | — | Rich text / Stats / Steps |
+| `steps` | `Steps` | Steps |
+| `richText` / `stats` | — | Rich text / Stats |
 | `quoteCta` | `QuoteCta` | Get a quote |
 | `newsletterCta` / `linkCards` / `contactForm` | — | Newsletter / Link cards / Contact form |
 
@@ -257,6 +258,8 @@ Second proof of the playbook: `/expertise/[slug]`, starting with Strategy (Consu
 | 5 | Where this fits | `expertiseSequence` | Host override: stage path with current stage (see below) |
 | 6 | FAQ | `faqSection` | §8 inherit from `expertiseStage.faqs`; FAQPage JSON-LD from rendered FAQs |
 | 7 | Final CTA | `quoteCta` | Now wired in www (`body`, `ctaLabel` projected) |
+
+**Design (PROD-2578, Experiential)** reuses the same set. Work showcase → `inspirationsGrid`. What's possible → `signatureSystem` with no System name (the services list, with service images beside it instead of the ring; new optional `expertiseService.image`). How it works → `steps`, now wired in www with an optional per-step link. Why it's certain → `caseStudiesRow`. Then the same tail. No new `_type`.
 
 **Host overrides.** `SectionRenderer` accepts `components` (by `_type`) so a host can render a Section with page context the page-agnostic registry cannot know. The data stays the same and the CMS stores no variant, so D35 is untouched. It is used by the expertise stage page for `expertiseSequence`. Use it sparingly: a second presentation of one Section on one host. It is not a way to fork a registry entry.
 
