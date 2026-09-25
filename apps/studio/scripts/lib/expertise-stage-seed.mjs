@@ -6,8 +6,11 @@
  * Writes (only with --confirm):
  *   - `expertiseService` docs (createOrReplace, fixed ids) — the stage's services
  *   - contextual `faq` docs (createOrReplace, fixed ids)
+ *   - the stage's Expertise Page template `expertiseStagePage.<stage slug>`
+ *     (createOrReplace) — title + the whole body `sections[]`
  *   - a patch on the existing `expertiseStage`: hero/SEO fields, `services`,
- *     `faqs`, `featuredStudies`, and `sections[]` (replaced wholesale)
+ *     `faqs`, `featuredStudies`, `template` → the template; legacy `sections`
+ *     unset (the body moved to the template, PROD-2577 follow-up)
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN (AGENTS.md § Sanity content — agent
  * guardrails). Flags per `.claude/rules/dataset-script-placement-and-flags.md`.
@@ -44,6 +47,53 @@ export function internalLink(label, documentId) {
   return { label, linkType: 'internal', internalLink: ref(documentId) }
 }
 
+/** POC trust strip ("Trusted by 5,000+ brands across 20+ industries") as a Logo wall. */
+export const TRUST_STRIP_CLIENT_SLUGS = [
+  'coca-cola',
+  'east-west-bank',
+  'venture',
+  'hello-adorn',
+  'blind-barrels',
+  'via-carota',
+  'serena-sleep',
+  'hrbls',
+  'hex-coffee',
+  'vitamin-bar',
+]
+
+export function trustStripSection(key, clientIdBySlug) {
+  return {
+    _type: 'logoWall',
+    _key: key,
+    heading: 'Trusted by 5,000+ brands across 20+ industries',
+    curatedItems: TRUST_STRIP_CLIENT_SLUGS.filter((slug) => clientIdBySlug.has(slug)).map(
+      (slug) => ref(clientIdBySlug.get(slug), `client-${slug}`),
+    ),
+  }
+}
+
+/**
+ * Typed Inspiration gallery cards from case studies — reuses each study's card
+ * image asset (no upload) and links to the study (internal ref).
+ */
+export function caseStudyGalleryCards(slugs, caseStudyBySlug) {
+  return slugs
+    .map((slug) => caseStudyBySlug.get(slug))
+    .filter((doc) => doc?.imageRef)
+    .map((doc) => ({
+      _type: 'inspirationsCard',
+      _key: `work-${doc.slug}`,
+      title: doc.title,
+      ...(doc.clientName ? { description: doc.clientName } : {}),
+      image: {
+        _type: 'image',
+        asset: { _type: 'reference', _ref: doc.imageRef },
+        alt: doc.imageAlt || doc.title,
+      },
+      link: { linkType: 'internal', internalLink: ref(doc._id) },
+    }))
+}
+
 /**
  * @param {object} spec
  * @param {string} spec.task            pnpm task name, e.g. 'seed:expertise-design'
@@ -53,7 +103,10 @@ export function internalLink(label, documentId) {
  * @param {Array<{key: string, title: string, summary?: string, points?: Array<{label: string, gloss?: string}>}>} spec.services
  * @param {Array<{key: string, question: string, answer: string}>} spec.faqs
  * @param {string[]} spec.caseStudySlugs featured case studies, in order (missing ones are skipped)
- * @param {(ctx: {serviceId: (key: string) => string, stageIdBySlug: Map<string, string>}) => object[]} spec.buildSections
+ * @param {string} [spec.templateTitle] Expertise Page template title; defaults to the stage title
+ * @param {string[]} [spec.logoClientSlugs] clients (with logos) for the trust strip, in order
+ * @param {string[]} [spec.galleryCaseStudySlugs] case studies whose card images feed a work gallery
+ * @param {(ctx: {serviceId: (key: string) => string, stageIdBySlug: Map<string, string>, clientIdBySlug: Map<string, string>, caseStudyBySlug: Map<string, {_id: string, title: string, clientName?: string, imageRef?: string, imageAlt?: string}>}) => object[]} spec.buildSections
  * @param {string[]} [spec.editorNotes] printed after the plan — what editors still add in Studio
  */
 export async function runExpertiseStageSeed(spec) {
@@ -127,13 +180,41 @@ export async function runExpertiseStageSeed(spec) {
   const featured = spec.caseStudySlugs.filter((slug) => studyBySlug.has(slug))
   const missingStudies = spec.caseStudySlugs.filter((slug) => !studyBySlug.has(slug))
 
+  const clientSlugs = spec.logoClientSlugs ?? []
+  const clients = await client.fetch(
+    `*[_type == "client" && slug.current in $slugs && defined(logo.asset) && !(_id in path("drafts.**"))]{ _id, "slug": slug.current }`,
+    { slugs: clientSlugs },
+  )
+  const clientIdBySlug = new Map(clients.map((c) => [c.slug, c._id]))
+  const missingClients = clientSlugs.filter((slug) => !clientIdBySlug.has(slug))
+
+  const gallerySlugs = spec.galleryCaseStudySlugs ?? []
+  const galleryDocs = await client.fetch(
+    `*[_type == "caseStudy" && slug.current in $slugs && !(_id in path("drafts.**"))]{
+      _id, title, "slug": slug.current, "clientName": client->name,
+      "imageRef": cardImage.asset._ref, "imageAlt": coalesce(cardImageAlt, cardImage.alt)
+    }`,
+    { slugs: gallerySlugs },
+  )
+  const caseStudyBySlug = new Map(galleryDocs.map((d) => [d.slug, d]))
+  const missingGallery = gallerySlugs.filter(
+    (slug) => !caseStudyBySlug.get(slug)?.imageRef,
+  )
+
+  const templateId = `expertiseStagePage.${spec.stageSlug}`
+  const templateTitle = spec.templateTitle || stage.title
+
   const existingIds = new Set(
     await client.fetch(`*[_id in $ids]._id`, {
-      ids: [...spec.services.map((s) => serviceId(s.key)), ...spec.faqs.map((f) => faqId(f.key))],
+      ids: [
+        ...spec.services.map((s) => serviceId(s.key)),
+        ...spec.faqs.map((f) => faqId(f.key)),
+        templateId,
+      ],
     }),
   )
 
-  const sections = spec.buildSections({ serviceId, stageIdBySlug })
+  const sections = spec.buildSections({ serviceId, stageIdBySlug, clientIdBySlug, caseStudyBySlug })
 
   console.log(`Stage: ${stage._id} (${stage.title}) — ${stage.sectionCount ?? 0} section(s) today`)
   console.log(`Help category: ${helpCategoryId}`)
@@ -150,8 +231,17 @@ export async function runExpertiseStageSeed(spec) {
     console.log(`  ${existingIds.has(faqId(f.key)) ? 'replace' : 'create '} ${faqId(f.key)} — ${f.question}`)
   }
   console.log(
-    `  patch   ${stage._id} — hero + SEO fields, services(${spec.services.length}), faqs(${spec.faqs.length}), featuredStudies(${featured.length}), sections(${sections.length}, replaces ${stage.sectionCount ?? 0})`,
+    `  ${existingIds.has(templateId) ? 'replace' : 'create '} ${templateId} — Expertise Page "${templateTitle}", ${sections.length} section(s)`,
   )
+  console.log(
+    `  patch   ${stage._id} — hero + SEO fields, services(${spec.services.length}), faqs(${spec.faqs.length}), featuredStudies(${featured.length}), template → ${templateId}${stage.sectionCount ? `, unset ${stage.sectionCount} legacy section(s)` : ''}`,
+  )
+  if (missingClients.length) {
+    console.log(`  ⚠️  trust-strip clients not found (or no logo), skipped: ${missingClients.join(', ')}`)
+  }
+  if (missingGallery.length) {
+    console.log(`  ⚠️  gallery case studies not found (or no card image), skipped: ${missingGallery.join(', ')}`)
+  }
   console.log(`\nSections: ${sections.map((s) => s._type).join(' → ')}`)
   for (const note of spec.editorNotes ?? []) console.log(`Editors: ${note}`)
 
@@ -193,14 +283,23 @@ export async function runExpertiseStageSeed(spec) {
     })
   }
 
+  tx.createOrReplace({
+    _id: templateId,
+    _type: 'expertiseStagePage',
+    title: templateTitle,
+    sections,
+  })
+
   tx.patch(stage._id, (p) =>
-    p.set({
-      ...spec.stage,
-      services: spec.services.map((s) => ref(serviceId(s.key), `service-${s.key}`)),
-      faqs: spec.faqs.map((f) => ref(faqId(f.key), `faq-${f.key}`)),
-      featuredStudies: featured.map((slug) => ref(studyBySlug.get(slug), `study-${slug}`)),
-      sections,
-    }),
+    p
+      .set({
+        ...spec.stage,
+        services: spec.services.map((s) => ref(serviceId(s.key), `service-${s.key}`)),
+        faqs: spec.faqs.map((f) => ref(faqId(f.key), `faq-${f.key}`)),
+        featuredStudies: featured.map((slug) => ref(studyBySlug.get(slug), `study-${slug}`)),
+        template: ref(templateId),
+      })
+      .unset(['sections']),
   )
 
   const result = await tx.commit()

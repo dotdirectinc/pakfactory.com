@@ -1055,9 +1055,8 @@ export const mainWebsiteStructure = (
                 .title('Home Page')
                 .icon(HomeIcon)
                 .child(S.editor().id('homePage').schemaType('homePage').documentId('homePage')),
-            // Domain page folders (PROD-2589). Empty Expertise folder reserves
-            // IA for a future singleton; Product / Customization / Solution /
-            // Case Study pins are live.
+            // Domain page folders (PROD-2589). Product / Customization / Solution /
+            // Case Study pins; Expertise lists the Expertise Page templates.
             S.listItem()
                 .title('Product Pages')
                 .icon(PackageIcon)
@@ -1112,10 +1111,15 @@ export const mainWebsiteStructure = (
                                 ),
                         ]),
                 ),
+            // Expertise Page templates — one per stage archetype / stage
+            // (PROD-2577); each expertiseStage selects one as its body.
             S.listItem()
                 .title('Expertise Pages')
                 .icon(CheckmarkCircleIcon)
-                .child(S.list().title('Expertise Pages').items([])),
+                .schemaType('expertiseStagePage')
+                .child(
+                    S.documentTypeList('expertiseStagePage').title('Expertise Pages'),
+                ),
             S.listItem()
                 .title('Case Study Pages')
                 .icon(CaseIcon)

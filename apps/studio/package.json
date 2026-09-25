@@ -33,6 +33,7 @@
     "backfill:customization-role": "node scripts/backfill-customization-option-role.mjs",
     "backfill:availability-decided-by": "node scripts/backfill-availability-decided-by.mjs",
     "migrate:depends-on-requirements": "node scripts/migrate-depends-on-requirements.mjs",
+    "migrate:expertise-stage-template": "node scripts/migrate-expertise-stage-template.mjs",
     "purge:catalog": "node scripts/purge-catalog.mjs",
     "repoint:catalog-refs": "node scripts/repoint-catalog-refs.mjs",
     "split:coating-type": "node scripts/split-coating-customization-type.mjs",
