@@ -81,6 +81,55 @@ export const expertiseStage = defineType({
         'The primary button in the hero, e.g. "Book a strategy consultation". It opens the quote request. Leave empty for "Get a quote".',
     }),
     defineField({
+      name: 'heroSecondaryLabel',
+      title: 'Hero link label',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'Optional text link beside the hero button that jumps down the page, e.g. "See our work". Needs a target below.',
+    }),
+    defineField({
+      name: 'heroSecondaryTarget',
+      title: 'Hero link target',
+      type: 'string',
+      group: GROUPS.content,
+      description: 'Which section of the template the hero link jumps to (the first one of that kind).',
+      options: {
+        list: [
+          { title: 'Our work (Inspiration gallery)', value: 'inspirationsGrid' },
+          { title: 'Engagement (Media feature)', value: 'mediaFeature' },
+          { title: 'Services / framework (Signature system)', value: 'signatureSystem' },
+          { title: 'Process (Steps)', value: 'steps' },
+          { title: 'Case studies', value: 'caseStudiesRow' },
+          { title: 'FAQ', value: 'faqSection' },
+        ],
+      },
+      hidden: ({ parent }) => !parent?.heroSecondaryLabel,
+      validation: (Rule) =>
+        Rule.custom((value, { parent }) =>
+          (parent as { heroSecondaryLabel?: string } | undefined)?.heroSecondaryLabel && !value
+            ? 'Pick where the hero link goes.'
+            : true,
+        ),
+    }),
+    defineField({
+      name: 'heroImage',
+      title: 'Hero image',
+      type: 'image',
+      group: GROUPS.content,
+      description:
+        'Optional full-width picture under the hero. Leave empty when the page opens on its work gallery (Design).',
+      options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
+    }),
+    defineField({
       name: 'intro',
       title: 'Intro',
       type: 'array',
@@ -104,7 +153,7 @@ export const expertiseStage = defineType({
       title: 'Diagram',
       type: 'image',
       group: GROUPS.content,
-      description: 'Optional supporting visual for the stage page.',
+      description: 'Card image for the Expertise landing page and anywhere the stage is listed.',
       options: { hotspot: true },
       fields: [
         defineField({

@@ -48,10 +48,15 @@ export function QuoteCta({
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-20', shell.bandClass, className)}
         >
-            <PageDielineSection innerClassName="py-16 sm:py-20">
+            {/* Inverse = the expertise closing band (POC `ExpertiseCta`): taller,
+                display title, larger body. */}
+            <PageDielineSection
+                innerClassName={inverse ? 'py-24 sm:py-28' : 'py-16 sm:py-20'}
+            >
                 <div
                     className={cn(
-                        'flex max-w-2xl flex-col gap-6',
+                        'flex flex-col gap-6',
+                        !inverse && 'max-w-2xl',
                         align === 'center'
                             ? 'mx-auto items-center text-center'
                             : 'items-start text-left',
@@ -59,8 +64,9 @@ export function QuoteCta({
                 >
                     <h2
                         className={cn(
-                            'text-2xl font-semibold sm:text-3xl',
-                            inverse ? 'text-background' : 'text-brand-blue',
+                            inverse
+                                ? 'max-w-190 text-[32px] font-medium leading-[1.12] tracking-[-0.02em] text-background sm:text-[44px]'
+                                : 'text-2xl font-semibold text-brand-blue sm:text-3xl',
                         )}
                     >
                         {heading}
@@ -68,10 +74,9 @@ export function QuoteCta({
                     {body ? (
                         <p
                             className={cn(
-                                'text-base leading-relaxed',
                                 inverse
-                                    ? 'text-background/80'
-                                    : 'text-muted-foreground',
+                                    ? 'max-w-160 text-xl leading-9 text-background/75'
+                                    : 'text-base leading-relaxed text-muted-foreground',
                             )}
                         >
                             {body}
@@ -79,11 +84,11 @@ export function QuoteCta({
                     ) : null}
                     <Button
                         asChild
-                        size="lg"
+                        size={inverse ? 'xl' : 'lg'}
                         variant={inverse ? 'outline' : 'default'}
                         className={
                             inverse
-                                ? 'border-transparent bg-background text-foreground hover:bg-background/90'
+                                ? 'mt-2 border-transparent bg-background text-foreground hover:bg-background/90'
                                 : undefined
                         }
                     >

@@ -76,6 +76,16 @@ export function trustStripSection(key, clientIdBySlug) {
  * Typed Inspiration gallery cards from case studies — reuses each study's card
  * image asset (no upload) and links to the study (internal ref).
  */
+/** Inspiration gallery refs to catalogue items (solutionStyle / productStyle / product). */
+export function catalogueGalleryRefs(ids) {
+  // Named array member (`inspirationsRef`) — Studio stores the member name as `_type`.
+  return ids.map((id) => ({
+    _type: 'inspirationsRef',
+    _ref: id,
+    _key: `work-${id.replace(/[^a-zA-Z0-9-]/g, '-')}`,
+  }))
+}
+
 export function caseStudyGalleryCards(slugs, caseStudyBySlug) {
   return slugs
     .map((slug) => caseStudyBySlug.get(slug))
@@ -106,7 +116,9 @@ export function caseStudyGalleryCards(slugs, caseStudyBySlug) {
  * @param {string} [spec.templateTitle] Expertise Page template title; defaults to the stage title
  * @param {string[]} [spec.logoClientSlugs] clients (with logos) for the trust strip, in order
  * @param {string[]} [spec.galleryCaseStudySlugs] case studies whose card images feed a work gallery
- * @param {(ctx: {serviceId: (key: string) => string, stageIdBySlug: Map<string, string>, clientIdBySlug: Map<string, string>, caseStudyBySlug: Map<string, {_id: string, title: string, clientName?: string, imageRef?: string, imageAlt?: string}>}) => object[]} spec.buildSections
+ * @param {string[]} [spec.galleryCatalogueIds] published solutionStyle / productStyle / product ids (with a
+ *   featured image) for the gallery's catalogue cards — missing ones are skipped
+ * @param {(ctx: {serviceId: (key: string) => string, stageIdBySlug: Map<string, string>, clientIdBySlug: Map<string, string>, caseStudyBySlug: Map<string, {_id: string, title: string, clientName?: string, imageRef?: string, imageAlt?: string}>, catalogueIds: string[]}) => object[]} spec.buildSections
  * @param {string[]} [spec.editorNotes] printed after the plan — what editors still add in Studio
  */
 export async function runExpertiseStageSeed(spec) {
@@ -201,6 +213,16 @@ export async function runExpertiseStageSeed(spec) {
     (slug) => !caseStudyBySlug.get(slug)?.imageRef,
   )
 
+  const catalogueWanted = spec.galleryCatalogueIds ?? []
+  const catalogueFound = new Set(
+    await client.fetch(
+      `*[_id in $ids && _type in ["solutionStyle", "productStyle", "product"] && defined(featuredImage.asset)]._id`,
+      { ids: catalogueWanted },
+    ),
+  )
+  const catalogueIds = catalogueWanted.filter((id) => catalogueFound.has(id))
+  const missingCatalogue = catalogueWanted.filter((id) => !catalogueFound.has(id))
+
   const templateId = `expertiseStagePage.${spec.stageSlug}`
   const templateTitle = spec.templateTitle || stage.title
 
@@ -214,7 +236,13 @@ export async function runExpertiseStageSeed(spec) {
     }),
   )
 
-  const sections = spec.buildSections({ serviceId, stageIdBySlug, clientIdBySlug, caseStudyBySlug })
+  const sections = spec.buildSections({
+    serviceId,
+    stageIdBySlug,
+    clientIdBySlug,
+    caseStudyBySlug,
+    catalogueIds,
+  })
 
   console.log(`Stage: ${stage._id} (${stage.title}) — ${stage.sectionCount ?? 0} section(s) today`)
   console.log(`Help category: ${helpCategoryId}`)
@@ -241,6 +269,9 @@ export async function runExpertiseStageSeed(spec) {
   }
   if (missingGallery.length) {
     console.log(`  ⚠️  gallery case studies not found (or no card image), skipped: ${missingGallery.join(', ')}`)
+  }
+  if (missingCatalogue.length) {
+    console.log(`  ⚠️  gallery catalogue items not found (or no featured image), skipped: ${missingCatalogue.join(', ')}`)
   }
   console.log(`\nSections: ${sections.map((s) => s._type).join(' → ')}`)
   for (const note of spec.editorNotes ?? []) console.log(`Editors: ${note}`)

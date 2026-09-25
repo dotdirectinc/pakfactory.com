@@ -569,14 +569,14 @@ export function SignatureSystem({
 
     const systemHeader =
         systemHeading || systemIntro ? (
-            <div className="flex flex-col gap-4 lg:max-w-160">
+            <div className="flex flex-col gap-4 lg:max-w-216">
                 {systemHeading ? (
-                    <h3 className="text-3xl font-semibold leading-tight text-foreground">
+                    <h3 className="text-[28px] font-medium leading-[1.15] tracking-[-0.02em] text-foreground sm:text-[40px]">
                         {systemHeading}
                     </h3>
                 ) : null}
                 {systemIntro ? (
-                    <p className="text-base leading-7 text-muted-foreground">
+                    <p className="text-lg leading-8 text-muted-foreground">
                         {systemIntro}
                     </p>
                 ) : null}

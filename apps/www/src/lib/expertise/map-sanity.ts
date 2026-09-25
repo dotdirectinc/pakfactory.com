@@ -98,6 +98,12 @@ export function mapSanityExpertiseStage(
         ? resolveImageAlt(doc.diagram, title)
         : title;
 
+    const heroImageUrl = doc.heroImage
+        ? (sanityImageBaseUrl(doc.heroImage) ?? undefined)
+        : undefined;
+    const heroSecondaryLabel = doc.heroSecondaryLabel?.trim();
+    const heroSecondaryTarget = doc.heroSecondaryTarget?.trim();
+
     return {
         slug,
         title,
@@ -108,6 +114,12 @@ export function mapSanityExpertiseStage(
         ...(diagramUrl ? {diagramUrl, diagramAlt} : {}),
         ...(doc.heroCtaLabel?.trim()
             ? {heroCtaLabel: doc.heroCtaLabel.trim()}
+            : {}),
+        ...(heroSecondaryLabel && heroSecondaryTarget
+            ? {heroSecondary: {label: heroSecondaryLabel, target: heroSecondaryTarget}}
+            : {}),
+        ...(heroImageUrl
+            ? {heroImageUrl, heroImageAlt: resolveImageAlt(doc.heroImage, title)}
             : {}),
         sections: resolveStageSections(doc, title, h1, slug),
         ...(doc.ogTitle?.trim() ? {ogTitle: doc.ogTitle.trim()} : {}),

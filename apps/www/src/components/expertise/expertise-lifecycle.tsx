@@ -47,7 +47,7 @@ export function ExpertiseLifecycle({
                 as="div"
                 borderTop={borderTop}
                 borderBottom={borderBottom}
-                paddingBlock="md"
+                paddingBlock="lg"
             >
                 <div className="flex flex-col gap-12">
                     {heading ? (

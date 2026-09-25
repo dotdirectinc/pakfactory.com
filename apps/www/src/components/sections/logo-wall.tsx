@@ -17,7 +17,16 @@ type LogoWallProps = {
     headingId?: string;
     /** Marquee lap in seconds (LogoMarquee default when omitted). */
     marqueeDuration?: number;
+    /**
+     * `band` (default) — padded section with a muted label.
+     * `strip` — the thin trust strip under a hero (POC `TrustedBrands`): dashed
+     * rules both sides, tight padding, label in body ink, logos at a fixed
+     * 72px height and natural width.
+     */
+    variant?: 'band' | 'strip';
 };
+
+const STRIP_MARK_HEIGHT = 72;
 
 function toLogoMarqueeItems(content: LogoWallContent): LogoMarqueeItem[] {
     return content.items.map((item) => ({
@@ -39,9 +48,42 @@ export function LogoWall({
     content,
     headingId = 'logo-wall-heading',
     marqueeDuration,
+    variant = 'band',
 }: LogoWallProps) {
     const items = toLogoMarqueeItems(content);
     if (items.length === 0) return null;
+
+    if (variant === 'strip') {
+        const label = content.subhead?.trim() || content.heading?.trim();
+        return (
+            <PageDielineSection
+                as="section"
+                aria-labelledby={content.heading ? headingId : undefined}
+                className="bg-background"
+                borderTop
+                borderBottom
+                paddingBlock="none"
+                innerClassName="flex flex-col gap-4 py-3 sm:flex-row sm:items-center sm:gap-10"
+            >
+                {content.heading ? (
+                    <h2 id={headingId} className="sr-only">
+                        {content.heading}
+                    </h2>
+                ) : null}
+                {label ? (
+                    <p className="shrink-0 text-base text-foreground">{label}</p>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                    <LogoMarquee
+                        items={items}
+                        gap={4}
+                        markHeight={STRIP_MARK_HEIGHT}
+                        {...(marqueeDuration ? {duration: marqueeDuration} : {})}
+                    />
+                </div>
+            </PageDielineSection>
+        );
+    }
 
     const {
         borderTop = false,

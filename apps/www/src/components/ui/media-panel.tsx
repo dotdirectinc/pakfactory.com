@@ -62,11 +62,11 @@ export function MediaPanel({
                             </>
                         ) : null}
                         <div className="flex max-w-xl flex-col gap-6 p-8 sm:p-12 lg:p-16">
-                            <h2 className="text-3xl font-semibold leading-tight sm:text-4xl">
+                            <h2 className="text-2xl font-medium leading-tight tracking-[-0.01em] sm:text-3xl">
                                 {heading}
                             </h2>
                             {body ? (
-                                <p className="text-base leading-7 text-background/80">
+                                <p className="text-lg leading-8 text-background/85">
                                     {body}
                                 </p>
                             ) : null}
@@ -76,9 +76,9 @@ export function MediaPanel({
                                         global [data-variant=default] rule. */}
                                     <Button
                                         asChild
-                                        size="lg"
+                                        size="xl"
                                         variant="outline"
-                                        className="border-transparent bg-background text-foreground hover:bg-background/90"
+                                        className="mt-2 border-transparent bg-background text-foreground hover:bg-background/90"
                                     >
                                         <Link href={cta.href}>{cta.label}</Link>
                                     </Button>

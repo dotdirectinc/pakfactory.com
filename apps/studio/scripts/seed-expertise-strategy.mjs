@@ -54,6 +54,8 @@ const STAGE = {
   description:
     'High-growth brands need more than packaging. We start with a structured consultation — mapping your brand, portfolio, goals, and operating realities — so every decision that follows is aligned to your business, not just the box.',
   heroCtaLabel: 'Book a strategy consultation',
+  heroSecondaryLabel: 'See how an engagement works',
+  heroSecondaryTarget: 'mediaFeature',
   metaTitle: 'Packaging Strategy Services | PakFactory',
   metaDescription:
     "Align packaging with your brand, portfolio, and operations. PakFactory's 360° Strategic Framework reduces Total Cost of Ownership and risk across your product line.",

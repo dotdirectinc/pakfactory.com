@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {ArrowLeft, ArrowRight} from 'lucide-react';
+import {ArrowLeft, ArrowRight, ChevronRight} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
@@ -26,8 +26,10 @@ type StagePathProps = {
 
 /**
  * Linear stage path — numbered steps with the current one highlighted, plus
- * previous / next links. Props-only (ADR-013); used by the expertise lifecycle
- * band ("Where this fits"). Stacks vertically below `md`.
+ * previous / next links (POC `LifecycleModule`). Cells sit on a 1px border
+ * seam with a chevron in each seam, so it reads as a path rather than a table.
+ * Props-only (ADR-013); used by the expertise lifecycle band ("Where this
+ * fits"). Stacks vertically below `md`, where the chevrons drop out.
  */
 export function StagePath({
     steps,
@@ -40,21 +42,21 @@ export function StagePath({
 
     return (
         <nav aria-label={label} className={cn('flex flex-col gap-6', className)}>
-            <ol className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border md:flex-row md:divide-x md:divide-y-0">
+            <ol className="flex flex-col gap-px overflow-hidden rounded-xl border border-border bg-border md:flex-row">
                 {steps.map((step, index) => {
                     const inner = (
                         <>
                             <span
                                 className={cn(
-                                    'font-mono text-xs',
+                                    'font-mono text-[11px]',
                                     step.current
-                                        ? 'text-background'
+                                        ? 'text-background/60'
                                         : 'text-muted-foreground',
                                 )}
                             >
                                 {String(index + 1).padStart(2, '0')}
                             </span>
-                            <span className="text-sm font-semibold">
+                            <span className="text-base font-medium">
                                 {step.title}
                             </span>
                             {step.comingSoon ? (
@@ -65,16 +67,22 @@ export function StagePath({
                         </>
                     );
                     const cellClass = cn(
-                        'flex h-full flex-col gap-1 px-4 py-4',
-                        step.current && 'bg-foreground text-background',
+                        'flex h-full flex-col gap-2 p-6',
+                        step.current ? 'bg-foreground text-background' : 'bg-background',
                         !step.current && !step.href && 'text-muted-foreground',
                     );
                     return (
                         <li
                             key={step.id}
-                            className="min-w-0 flex-1"
+                            className="relative min-w-0 flex-1"
                             aria-current={step.current ? 'step' : undefined}
                         >
+                            {index > 0 ? (
+                                <Icon
+                                    icon={ChevronRight}
+                                    className="absolute -left-2.5 top-1/2 z-10 hidden size-5 -translate-y-1/2 text-muted-foreground md:block"
+                                />
+                            ) : null}
                             {step.href ? (
                                 <Link
                                     href={step.href}
@@ -93,19 +101,17 @@ export function StagePath({
                 })}
             </ol>
             {previous || next ? (
-                <div className="flex flex-wrap items-center justify-between gap-4 text-sm font-medium">
+                <div className="flex flex-wrap items-center justify-between gap-4 text-base">
                     {previous ? (
                         <Link
                             href={previous.href}
-                            className="group inline-flex items-center gap-2 text-foreground"
+                            className="group inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
                         >
                             <Icon
                                 icon={ArrowLeft}
                                 className="transition-transform duration-300 group-hover:-translate-x-1 motion-reduce:transition-none"
                             />
-                            <span className="underline-offset-4 group-hover:underline">
-                                {previous.label}
-                            </span>
+                            {previous.label}
                         </Link>
                     ) : (
                         <span />
@@ -113,11 +119,9 @@ export function StagePath({
                     {next ? (
                         <Link
                             href={next.href}
-                            className="group inline-flex items-center gap-2 text-foreground"
+                            className="group inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
                         >
-                            <span className="underline-offset-4 group-hover:underline">
-                                {next.label}
-                            </span>
+                            {next.label}
                             <Icon
                                 icon={ArrowRight}
                                 className="transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none"
