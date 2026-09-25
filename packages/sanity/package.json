@@ -27,7 +27,7 @@
     "./customization-rules/selections": "./src/customization-rules/selections.ts"
   },
   "scripts": {
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "migrate:product-single-refs": "tsx scripts/migrate-product-to-single-refs.ts",
