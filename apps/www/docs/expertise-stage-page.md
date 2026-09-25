@@ -58,14 +58,29 @@ Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
 
 ## One Section, two hosts
 
-`SectionRenderer` takes an optional `components` override, keyed by `_type`. On a stage page, `expertiseSequence` renders as the lifecycle path:
-- every stage is shown, and the current one is highlighted with `aria-current="step"`;
-- unreleased (`coming-soon`) stages are not linked;
-- previous and next links skip unreleased stages.
+`SectionRenderer` takes an optional `components` override, keyed by `_type`. The expertise stage page uses it to give shared Sections the expertise (POC) presentation. The data is the same and the CMS stores no variant field (D35); every other host keeps the registry default.
 
-Everywhere else the same Section still renders as `ExpertiseRow` (StagesBoard). The CMS stores no variant field (D35).
+| `_type` | On the stage page | Elsewhere |
+| --- | --- | --- |
+| `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath`: every stage, the current one highlighted (`aria-current="step"`); `coming-soon` stages are not linked; previous/next links skip them | `ExpertiseRow` (StagesBoard) |
+| `mediaFeature` | `ui/MediaPanel`: one rounded panel with the copy over the image. Renders solid until an image is uploaded | `TextWithImage` |
+| `caseStudiesRow` | `CaseStudiesRow` on the muted band | `CaseStudiesRow` (default band) |
+| `quoteCta` | `QuoteCta` with `theme="inverse"` (dark band), left-aligned | `QuoteCta` (muted, centred) |
+
+Band rhythm follows the POC:
+- `signatureSystem` (the "why" on white, the method on muted)
+- `steps` (muted)
+- case studies (muted)
+- the dark closing CTA
+
+The hero's diagram renders as a full-width media band under the copy.
 
 ## Signature system behaviour
+
+Presentation follows the data, not a layout field:
+- **Named method** (System name set, e.g. Strategy's 360° Strategic Framework): a disclosure list plus a decorative ring numbered per dimension, with the name's leading figure ("360°") set large.
+- **No named method** (Design): dark service cards (the service image when set) with a `+` that reveals the summary.
+
 
 - Each problem label can reference the Expertise Service that answers it. Selecting the label opens that dimension, writes `#<dimension>` to the URL and scrolls to it once the accordion settles.
 - A problem whose service is not among the shown dimensions renders as a plain label.
