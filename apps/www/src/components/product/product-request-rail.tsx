@@ -27,8 +27,13 @@ type ProductRequestRailProps = {
 export function ProductRequestRail({product}: ProductRequestRailProps) {
     const {addLine, draft} = useRequest();
     const initialBuilder = useMemo(() => {
-        if (product.kind === 'inspiration' && product.availableCustomizations.length) {
-            return seedFromCustomizations(product.availableCustomizations);
+        // A preset starts from the options it names. Without any, the builder starts empty —
+        // seeding from the whole offer would pick every option now that a step holds several.
+        const preselected = product.availableCustomizations.filter(
+            (item) => item.preselected === true,
+        );
+        if (product.kind === 'inspiration' && preselected.length) {
+            return seedFromCustomizations(preselected);
         }
         return createEmptyBuilderState();
     }, [product]);

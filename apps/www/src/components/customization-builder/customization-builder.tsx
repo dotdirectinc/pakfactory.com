@@ -17,6 +17,7 @@ import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
 import {narrowByRules} from '@/lib/customization-builder/rules-narrowing';
 import {
+    answerSelections,
     buildStepsFromCatalog,
     clearStep,
     createEmptyBuilderState,
@@ -26,7 +27,9 @@ import {
     patchAnswer,
     patchEntryNote,
     patchPropertySelections,
+    removeSelections,
     shouldEnterGuided,
+    toggleSelection,
     type BuilderMode,
     type BuilderOption,
     type BuilderStep,
@@ -60,32 +63,25 @@ export type CustomizationBuilderProps = {
     customizationRules?: CustomizationRulesSnapshot | null;
 };
 
+/** The pick the detail panel reopens on: the most recent one in the step. */
+function lastPick(step: BuilderStep | undefined, state: CustomizationBuilderState) {
+    if (!step || step.kind !== 'selection') return undefined;
+    return answerSelections(getAnswer(state, step.key)).at(-1);
+}
+
 function restoreTypeId(
     step: BuilderStep | undefined,
     state: CustomizationBuilderState,
 ): string | null {
-    if (!step) return null;
-    const answer = getAnswer(state, step.key);
-    if (step.kind === 'selection') {
-        if (answer.status === 'set' && 'selection' in answer) {
-            return answer.selection.typeId || null;
-        }
-        return null;
-    }
     // Dimensions: never preselect External/Internal from answer alone.
-    return null;
+    return lastPick(step, state)?.typeId || null;
 }
 
 function restoreOptionId(
     step: BuilderStep | undefined,
     state: CustomizationBuilderState,
 ): string | null {
-    if (!step || step.kind !== 'selection') return null;
-    const answer = getAnswer(state, step.key);
-    if (answer.status === 'set' && 'selection' in answer) {
-        return answer.selection.optionId || null;
-    }
-    return null;
+    return lastPick(step, state)?.optionId || null;
 }
 
 export function CustomizationBuilder({
@@ -107,7 +103,7 @@ export function CustomizationBuilder({
         [dimensionInput, dimensionRange],
     );
 
-    // One answer per category, as designed; the shared rules decide what each step still lists.
+    // Every pick in every step goes to the shared rules, which decide what each Type still lists.
     const narrowed = useMemo(
         () => narrowByRules(availableCustomizations, customizationRules, value),
         [availableCustomizations, customizationRules, value],
@@ -119,17 +115,11 @@ export function CustomizationBuilder({
         [filteredCustomizations],
     );
 
-    // Clear answers another choice has made impossible (e.g. a board the chosen printing
-    // method cannot print on). Silent, as designed; the step simply becomes unanswered.
+    // Clear picks another pick has made impossible (e.g. a printing method the newly chosen
+    // board cannot take). Silent, as designed; only that pick goes — the rest of its step stays.
     useEffect(() => {
         if (narrowed.invalidOptionIds.size === 0) return;
-        let next = value;
-        for (const [key, answer] of Object.entries(value.answers)) {
-            if (answer?.status !== 'set' || !('selection' in answer)) continue;
-            if (narrowed.invalidOptionIds.has(answer.selection.optionId)) {
-                next = clearStep(next, key);
-            }
-        }
+        const next = removeSelections(value, narrowed.invalidOptionIds);
         if (next !== value) onChange(next);
     }, [narrowed, value, onChange]);
 
@@ -162,19 +152,38 @@ export function CustomizationBuilder({
         }
     }
 
+    /**
+     * Clicking an option picks it and opens its detail. Clicking a pick that is not open just
+     * opens it (its Properties and note live there); clicking the open pick again un-picks it.
+     * A `one` Type swaps its pick; a `many` Type adds to it (`customerSelects`).
+     */
     function selectOption(option: BuilderOption) {
-        setActiveOptionId(option.id);
-        setActiveTypeId(option.typeId);
-        onChange(
-            patchAnswer(value, activeKey, {
-                status: 'set',
-                selection: {
-                    typeId: option.typeId,
-                    optionId: option.id,
-                    label: option.title,
-                },
-            }),
+        const step = steps.find((item) => item.key === activeKey);
+        const picked = answerSelections(getAnswer(value, activeKey)).some(
+            (item) => item.optionId === option.id,
         );
+        if (picked && activeOptionId !== option.id) {
+            setActiveOptionId(option.id);
+            setActiveTypeId(option.typeId);
+            return;
+        }
+        const cardinality =
+            step?.types.find((type) => type.id === option.typeId)?.cardinality ??
+            'one';
+        const next = toggleSelection(
+            value,
+            activeKey,
+            {typeId: option.typeId, optionId: option.id, label: option.title},
+            cardinality,
+        );
+        onChange(next);
+        if (picked) {
+            setActiveOptionId(restoreOptionId(step, next));
+            setActiveTypeId(restoreTypeId(step, next));
+        } else {
+            setActiveOptionId(option.id);
+            setActiveTypeId(option.typeId);
+        }
     }
 
     useEffect(() => {

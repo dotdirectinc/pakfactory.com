@@ -28,6 +28,8 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     internal: 'Internal',
     measurements: 'Measurements',
     pickAnOption: 'Choose an option for this type.',
+    chooseOne: 'Choose one',
+    chooseAny: 'Choose any',
     additionalNote: 'Additional note',
     addAdditionalNote: '+ Additional Note',
     removeSelection: 'Remove selection',

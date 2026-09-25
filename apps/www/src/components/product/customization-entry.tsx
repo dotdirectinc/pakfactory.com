@@ -22,7 +22,7 @@ import {
     summarizeAnswer,
     type BuilderStepKey,
     type CustomizationBuilderState,
-    type PropertySelectionSummaryItem,
+    type PropertySummariesByOption,
     type StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -48,7 +48,7 @@ type CustomizationEntryProps = {
 type SummaryRowProps = {
     label: string;
     answer: StepAnswer;
-    propertySummaries?: PropertySelectionSummaryItem[];
+    propertySummaries?: PropertySummariesByOption;
     onCustomize: () => void;
 };
 
@@ -117,21 +117,13 @@ function SummaryGroup({
             <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-background">
                 {rows.map((row) => {
                     const answer = getAnswer(builderState, row.key);
-                    const optionId =
-                        answer.status === 'set' && 'selection' in answer
-                            ? answer.selection.optionId
-                            : undefined;
                     return (
                         <SummaryRow
                             key={row.key}
                             label={row.label}
                             answer={answer}
                             propertySummaries={
-                                optionId
-                                    ? builderState.propertySelectionSummaries?.[
-                                          optionId
-                                      ]
-                                    : undefined
+                                builderState.propertySelectionSummaries
                             }
                             onCustomize={() => onCustomize(row.key)}
                         />

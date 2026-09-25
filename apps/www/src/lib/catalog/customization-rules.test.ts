@@ -4,7 +4,14 @@ import {buildDependencyGraph} from '@pakfactory/sanity/customization-rules/depen
 import {resolveWithSelections} from '@pakfactory/sanity/customization-rules/selections';
 import type {CatalogCustomizationRulesDoc, CatalogRulesOptionDoc} from '@pakfactory/sanity/queries';
 import {narrowByRules, selectionsFromState} from '../customization-builder/rules-narrowing';
-import {createEmptyBuilderState} from '../customization-builder/state';
+import {
+    answerSelections,
+    createEmptyBuilderState,
+    parseBuilderState,
+    removeSelections,
+    toggleSelection,
+    toRequestCustomizations,
+} from '../customization-builder/state';
 import type {CustomizationBuilderState} from '../customization-builder/types';
 import {prepareRules, resolveProductCustomizations, PRUNED_PAIRS_MARKER} from './customization-rules';
 import type {CustomizationOption} from './types';
@@ -41,8 +48,10 @@ const rulesDoc = (): CatalogCustomizationRulesDoc => ({
     ],
     options: [
         option('o.tinplate', 'Tinplate', 't.tin'),
+        option('o.blackplate', 'Blackplate', 't.tin'),
         option('o.canvas', 'Canvas', 't.fabric'),
-        option('o.metallic', 'Metallic Ink', 't.ink', ['o.tinplate', 'o.canvas']),
+        option('o.metallic', 'Metallic Ink', 't.ink', ['o.tinplate', 'o.blackplate', 'o.canvas']),
+        option('o.uv', 'UV Ink', 't.ink', ['o.tinplate', 'o.canvas']),
         option('o.offset', 'Offset', 't.method', ['o.tinplate', 'o.metallic']),
         option('o.htp', 'Heat Transfer Printing', 't.method', ['o.canvas', 'o.metallic']),
         option('o.matte', 'Matte', 't.sf', ['o.canvas']),
@@ -90,7 +99,7 @@ describe('customization rules — the product offer', () => {
 
     it('lists the product-decided options it offers directly, and nothing derived it cannot take', () => {
         assert.deepEqual(idsOf(resolve(['o.tinplate']).availableCustomizations), [
-            'o.mattenp', 'o.metallic', 'o.offset', 'o.spotuv', 'o.tinplate',
+            'o.mattenp', 'o.metallic', 'o.offset', 'o.spotuv', 'o.tinplate', 'o.uv',
         ]);
     });
 
@@ -136,52 +145,129 @@ describe('customization rules — the production guard', () => {
     });
 });
 
-// The builder answers one option per CATEGORY step, as designed.
-const answer = (
-    state: CustomizationBuilderState,
-    key: string,
-    typeId: string,
-    optionId: string,
-): CustomizationBuilderState => ({
-    ...state,
-    answers: {...state.answers, [key]: {status: 'set', selection: {typeId, optionId, label: optionId}}},
+// The builder holds every pick in a category step: several Types, each as many options as its
+// `customerSelects` allows (ADR-017 §4b — Materials are "single selection within each type").
+const cardinalityOf = (typeId: string) =>
+    rulesDoc().types!.find((t) => t._id === typeId)?.customerSelects === 'many' ? 'many' : 'one';
+const pick = (state: CustomizationBuilderState, key: string, typeId: string, optionId: string) =>
+    toggleSelection(state, key, {typeId, optionId, label: optionId}, cardinalityOf(typeId));
+const picksIn = (state: CustomizationBuilderState, key: string) =>
+    answerSelections(state.answers[key]).map((s) => s.optionId);
+
+describe('builder picks — customerSelects per Type', () => {
+    it('a one Type swaps its pick; another Type in the same category keeps its own', () => {
+        let state = pick(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
+        state = pick(state, 'materials', 't.fabric', 'o.canvas');
+        state = pick(state, 'materials', 't.tin', 'o.blackplate');
+        assert.deepEqual(picksIn(state, 'materials'), ['o.canvas', 'o.blackplate']);
+    });
+
+    it('a many Type keeps every pick, and picking one again takes it out', () => {
+        let state = pick(createEmptyBuilderState(), 'printing', 't.ink', 'o.metallic');
+        state = pick(state, 'printing', 't.ink', 'o.uv');
+        assert.deepEqual(picksIn(state, 'printing'), ['o.metallic', 'o.uv']);
+        state = pick(state, 'printing', 't.ink', 'o.metallic');
+        assert.deepEqual(picksIn(state, 'printing'), ['o.uv']);
+    });
+
+    it('un-picking the last option leaves the step unset, and drops that option\'s note', () => {
+        let state = pick(createEmptyBuilderState(), 'printing', 't.method', 'o.offset');
+        state = {...state, entryNotes: {'o.offset': 'two passes'}};
+        state = pick(state, 'printing', 't.method', 'o.offset');
+        assert.deepEqual(state.answers.printing, {status: 'unset'});
+        assert.equal(state.entryNotes['o.offset'], undefined);
+    });
+
+    it('removeSelections takes out only the invalid pick; the rest of its step stays', () => {
+        let state = pick(createEmptyBuilderState(), 'printing', 't.ink', 'o.metallic');
+        state = pick(state, 'printing', 't.method', 'o.offset');
+        state = removeSelections(state, new Set(['o.offset']));
+        assert.deepEqual(picksIn(state, 'printing'), ['o.metallic']);
+    });
+
+    it('reads a request line saved with one selection per category', () => {
+        const legacy = {answers: {materials: {status: 'set', selection: {typeId: 't.tin', optionId: 'o.tinplate', label: 'Tinplate'}}}};
+        assert.deepEqual(parseBuilderState(legacy).answers.materials, {
+            status: 'set',
+            selections: [{typeId: 't.tin', optionId: 'o.tinplate', label: 'Tinplate'}],
+        });
+    });
+
+    it('sends every pick to the request, one row each', () => {
+        let state = pick(createEmptyBuilderState(), 'printing', 't.ink', 'o.metallic');
+        state = pick(state, 'printing', 't.method', 'o.offset');
+        assert.deepEqual(toRequestCustomizations(state, 'x').map((c) => c.id), ['o.metallic', 'o.offset']);
+    });
 });
 
 describe('builder narrowing', () => {
     const product = ['o.tinplate', 'o.canvas'];
 
-    it('turns category answers into the rules\' type → option selections', () => {
-        let state = answer(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
-        state = answer(state, 'printing', 't.method', 'o.offset');
-        assert.deepEqual(selectionsFromState(state), {'t.tin': ['o.tinplate'], 't.method': ['o.offset']});
+    it('turns every pick into the rules\' type → option selections', () => {
+        let state = pick(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
+        state = pick(state, 'printing', 't.method', 'o.offset');
+        state = pick(state, 'printing', 't.ink', 'o.metallic');
+        assert.deepEqual(selectionsFromState(state), {'t.tin': ['o.tinplate'], 't.method': ['o.offset'], 't.ink': ['o.metallic']});
     });
 
-    it('narrows the list to the chosen board: tinplate keeps Offset, drops Heat Transfer', () => {
-        const {availableCustomizations, customizationRules} = resolve(product);
-        const state = answer(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
+    it('narrows the list to the chosen board: blackplate drops Offset', () => {
+        const {availableCustomizations, customizationRules} = resolve(['o.tinplate', 'o.blackplate']);
+        const state = pick(createEmptyBuilderState(), 'materials', 't.tin', 'o.blackplate');
         const ids = idsOf(narrowByRules(availableCustomizations, customizationRules, state).available);
-        assert.ok(ids.includes('o.offset'));
-        assert.ok(!ids.includes('o.htp'));
+        assert.ok(!ids.includes('o.offset'), 'Offset prints on tinplate only');
+        assert.ok(ids.includes('o.tinplate'), 'the Type still lists its alternative, so the customer can switch');
     });
 
-    it('the answered step still lists its own alternatives, so the customer can switch board', () => {
+    it('a Type not yet answered still counts: tinplate alone keeps canvas-only Heat Transfer', () => {
+        // Materials allow one option per Type, so this product can take tinplate AND canvas.
         const {availableCustomizations, customizationRules} = resolve(product);
-        const state = answer(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
+        const state = pick(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
         const ids = idsOf(narrowByRules(availableCustomizations, customizationRules, state).available);
-        assert.ok(ids.includes('o.canvas'), 'Canvas stays listed under Materials');
+        assert.ok(ids.includes('o.htp'));
+        assert.ok(ids.includes('o.canvas'));
     });
 
-    it('flags an earlier answer the new board makes impossible, so the builder can clear it', () => {
+    it('a requirement inside the same category holds: Offset is kept before any Ink is picked', () => {
+        // Printing Method needs an Ink. Closing the rest of an answered category cleared it.
         const {availableCustomizations, customizationRules} = resolve(product);
-        let state = answer(createEmptyBuilderState(), 'printing', 't.method', 'o.offset');
-        state = answer(state, 'materials', 't.fabric', 'o.canvas');
+        let state = pick(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
+        state = pick(state, 'printing', 't.method', 'o.offset');
+        assert.equal(narrowByRules(availableCustomizations, customizationRules, state).invalidOptionIds.size, 0);
+    });
+
+    it('flags an earlier pick a later one makes impossible, so the builder can clear it', () => {
+        const {availableCustomizations, customizationRules} = resolve(['o.tinplate', 'o.blackplate']);
+        let state = pick(createEmptyBuilderState(), 'printing', 't.method', 'o.offset');
+        state = pick(state, 'materials', 't.tin', 'o.blackplate');
         const {invalidOptionIds} = narrowByRules(availableCustomizations, customizationRules, state);
         assert.deepEqual([...invalidOptionIds], ['o.offset']);
     });
 
+    it('everything listed can be picked and stays picked', () => {
+        for (const offer of [product, ['o.tinplate', 'o.blackplate'], ['o.tinplate', 'o.blackplate', 'o.canvas']]) {
+            const {availableCustomizations, customizationRules} = resolve(offer);
+            const byId = new Map(availableCustomizations.map((o) => [o.id, o]));
+            // Every state reachable by picking listed options, breadth-first, a few picks deep.
+            let frontier = [createEmptyBuilderState()];
+            for (let depth = 0; depth < 3; depth++) {
+                const next: CustomizationBuilderState[] = [];
+                for (const state of frontier) {
+                    for (const o of narrowByRules(availableCustomizations, customizationRules, state).available) {
+                        if (selectionsFromState(state)[o.typeId!]?.includes(o.id)) continue;
+                        const after = pick(state, o.category, o.typeId!, o.id);
+                        const {invalidOptionIds} = narrowByRules(availableCustomizations, customizationRules, after);
+                        assert.ok(!invalidOptionIds.has(o.id), `${offer}: listed ${byId.get(o.id)?.label} was cleared once picked after ${JSON.stringify(selectionsFromState(state))}`);
+                        next.push(after);
+                    }
+                }
+                frontier = next;
+            }
+        }
+    });
+
     it('with no rules snapshot, lists everything and clears nothing', () => {
         const {availableCustomizations} = resolve(product);
-        const state = answer(createEmptyBuilderState(), 'materials', 't.fabric', 'o.canvas');
+        const state = pick(createEmptyBuilderState(), 'materials', 't.fabric', 'o.canvas');
         const narrowed = narrowByRules(availableCustomizations, undefined, state);
         assert.equal(narrowed.available.length, availableCustomizations.length);
         assert.equal(narrowed.invalidOptionIds.size, 0);

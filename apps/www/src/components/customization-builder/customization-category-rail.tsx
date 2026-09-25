@@ -52,13 +52,7 @@ export function CustomizationCategoryRail({
                     item.kind === 'dimensions'
                         ? isAnswerReady(answer, dimensionAxisIds)
                         : isAnswerReady(answer);
-                const optionId =
-                    answer.status === 'set' && 'selection' in answer
-                        ? answer.selection.optionId
-                        : undefined;
-                const propertySummaries = optionId
-                    ? state.propertySelectionSummaries?.[optionId]
-                    : undefined;
+                const propertySummaries = state.propertySelectionSummaries;
                 const summaryText = summarizeAnswer(
                     answer,
                     CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
