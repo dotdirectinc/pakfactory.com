@@ -115,6 +115,9 @@ function PageHeadingEyebrowSlot({
                 </p>
             );
         case 'image': {
+            const hasFixedSize =
+                typeof eyebrow.width === 'number' &&
+                typeof eyebrow.height === 'number';
             const width = eyebrow.width ?? 128;
             const height = eyebrow.height ?? 128;
             const isSvg = /\.svg(?:[?#]|$)/i.test(eyebrow.src);
@@ -122,9 +125,14 @@ function PageHeadingEyebrowSlot({
                 <div
                     className={cn(
                         'relative shrink-0 overflow-hidden',
+                        !hasFixedSize && 'size-display-mark',
                         centered && 'mx-auto',
                     )}
-                    style={{width, height}}
+                    style={
+                        hasFixedSize
+                            ? {width: eyebrow.width, height: eyebrow.height}
+                            : undefined
+                    }
                 >
                     <Image
                         src={eyebrow.src}
@@ -139,15 +147,21 @@ function PageHeadingEyebrowSlot({
             );
         }
         case 'video': {
-            const width = eyebrow.width ?? 128;
-            const height = eyebrow.height ?? 128;
+            const hasFixedSize =
+                typeof eyebrow.width === 'number' &&
+                typeof eyebrow.height === 'number';
             return (
                 <div
                     className={cn(
                         'relative shrink-0 overflow-hidden',
+                        !hasFixedSize && 'size-display-mark',
                         centered && 'mx-auto',
                     )}
-                    style={{width, height}}
+                    style={
+                        hasFixedSize
+                            ? {width: eyebrow.width, height: eyebrow.height}
+                            : undefined
+                    }
                 >
                     <video
                         src={eyebrow.src}
@@ -226,10 +240,8 @@ export function PageHeadingContent({
             <h1
                 id={titleId}
                 className={cn(
-                    'font-medium leading-none tracking-tight text-foreground',
-                    isCompact
-                        ? 'text-[clamp(2rem,5vw,3rem)]'
-                        : 'text-[clamp(2.5rem,6vw,4.5rem)]',
+                    'font-medium tracking-tight text-foreground',
+                    isCompact ? 'text-display' : 'text-display-lg',
                     titleClassName,
                 )}
             >

@@ -1,4 +1,4 @@
-import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+import type {PageSectionDoc, PageSectionInspirationsCardDoc} from '@pakfactory/sanity/queries';
 
 import type {
     Product,
@@ -10,7 +10,14 @@ import type {
     ProductLineRelatedRef,
     ProductStyleRef,
 } from '@/lib/catalog/types';
-import {mergeSolutionSections} from '@/lib/sections/merge-solution-sections';
+import {
+    applyProductStylesInherit,
+    mergeSolutionSections,
+} from '@/lib/sections/merge-solution-sections';
+import {
+    applySectionTokens,
+    sectionTokenContextFromHost,
+} from '@/lib/sections/resolve-section-tokens';
 
 /** Storyboard H1 for rigid-boxes when Sanity `h1` is empty (PROD-1914). */
 export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
@@ -250,6 +257,19 @@ export function assembleProductLineLanding(
         };
     });
 
+    const inheritStyleCards: PageSectionInspirationsCardDoc[] = styles.map(
+        (style) => ({
+            kind: 'ref',
+            _type: 'productStyle',
+            title: style.title,
+            ...(style.description ? {description: style.description} : {}),
+            ...(style.imageUrl ? {imageSrc: style.imageUrl} : {}),
+            imageAlt: style.imageAlt,
+            slug: style.slug,
+            lineSlug: line.slug,
+        }),
+    );
+
     const expertise = line.expertise?.length ? line.expertise : null;
     const featuredStudies = line.featuredStudies?.length
         ? line.featuredStudies
@@ -259,10 +279,20 @@ export function assembleProductLineLanding(
 
     const contentSections = line.sections ?? [];
     const templateSections = line.templateSections ?? [];
-    const pageSections =
+    const mergedSections =
         templateSections.length > 0
             ? mergeSolutionSections(templateSections, contentSections)
             : contentSections;
+    const pageSections = applySectionTokens(
+        applyProductStylesInherit(mergedSections, inheritStyleCards),
+        sectionTokenContextFromHost({
+            title: line.title,
+            h1: resolveH1(line),
+            shortDescription: line.shortDescription,
+            descriptionText: line.description,
+            slug: line.slug,
+        }),
+    );
 
     return {
         slug: line.slug,

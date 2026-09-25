@@ -53,9 +53,21 @@ Industry LP **order + chrome** live on the pinned singleton `solutionIndustryPag
 
 ## Product Line Page template
 
-Product Line LP **order + chrome** live on the pinned singleton `productLinePage` (Main Website → Product Pages → Product Line Page) — twin of `solutionIndustryPage`. Each customer-facing `productLine` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merge of template × line sections is a follow-up; Phase 2 landing bands stay code-owned until then.
+Product Line LP **order + chrome** live on the pinned singleton `productLinePage` (Main Website → Product Pages → Product Line Page) — twin of `solutionIndustryPage`. Each customer-facing `productLine` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merges template × line sections; `productStylesRow` with `listSource` = Line styles inherits each line’s styles.
 
-Humans open the pin (Studio creates id `productLinePage`), add sections, publish, then set `template` on each customer-facing line. Agents do not create documents.
+**Human seed (Product style row on the template):**
+
+```bash
+# Dry-run
+pnpm --filter @pakfactory/studio run seed:product-line-page-styles -- --dataset development
+
+# Write (needs SANITY_API_WRITE_TOKEN)
+pnpm --filter @pakfactory/studio run seed:product-line-page-styles -- --dataset development --confirm
+```
+
+Creates/updates `productLinePage` with a `productStylesRow` (`_key` `product-line-styles`, heading `Explore %title% styles`, empty cards → inherit). Sets `template` on customer-facing lines that lack it. Agents do not run `--confirm`.
+
+Humans may also open the pin in Studio, add **Product style row**, set List source to Line styles, publish, then set `template` on each customer-facing line.
 
 ## Product / Customization catalog pages (PROD-2589)
 
