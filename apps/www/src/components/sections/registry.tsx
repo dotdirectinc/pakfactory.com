@@ -8,12 +8,14 @@ import type {
     PageSectionInspirationsGridDoc,
     PageSectionLogoWallDoc,
     PageSectionMediaFeatureDoc,
+    PageSectionProductStylesRowDoc,
     PageSectionQuoteCtaDoc,
     PageSectionSignatureSystemDoc,
     PageSectionTestimonialsRowDoc,
     PageSectionVideoCaseStudiesRowDoc,
 } from '@pakfactory/sanity/queries';
 
+import {ProductStylesSection} from '@/components/product/product-styles-section';
 import {Benefits} from '@/components/sections/benefits';
 import {CaseStudiesRow} from '@/components/sections/case-studies-row';
 import {ExpertiseRow} from '@/components/sections/expertise-row';
@@ -33,6 +35,7 @@ import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaFeature} from '@/lib/sections/map-media-feature';
+import {mapProductStylesRow} from '@/lib/sections/map-product-styles-row';
 import {mapQuoteCta} from '@/lib/sections/map-quote-cta';
 import {mapSignatureSystem} from '@/lib/sections/map-signature-system';
 import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
@@ -128,6 +131,21 @@ function InspirationsGridFromSanity(section: PageSectionInspirationsGridDoc) {
     );
 }
 
+function ProductStylesRowFromSanity(section: PageSectionProductStylesRowDoc) {
+    const mapped = mapProductStylesRow(section);
+    if (mapped.cards.length === 0) return null;
+    return (
+        <ProductStylesSection
+            id="styles"
+            eyebrow={mapped.eyebrow}
+            headline={mapped.headline}
+            description={mapped.description}
+            cta={mapped.cta}
+            cards={mapped.cards}
+        />
+    );
+}
+
 function VideoCaseStudiesRowFromSanity(
     section: PageSectionVideoCaseStudiesRowDoc,
 ) {
@@ -214,6 +232,8 @@ export const SECTION_COMPONENTS: Record<
         ExpertiseSequenceFromSanity as ComponentType<PageSection>,
     caseStudiesRow: CaseStudiesRowFromSanity as ComponentType<PageSection>,
     inspirationsGrid: InspirationsGridFromSanity as ComponentType<PageSection>,
+    productStylesRow:
+        ProductStylesRowFromSanity as ComponentType<PageSection>,
     videoCaseStudiesRow:
         VideoCaseStudiesRowFromSanity as ComponentType<PageSection>,
     testimonialsRow: TestimonialsRowFromSanity as ComponentType<PageSection>,
