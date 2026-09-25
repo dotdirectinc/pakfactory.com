@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import type {
     PageSectionCaseStudiesRowDoc,
+    PageSectionInspirationsGridDoc,
+    PageSectionLogoWallDoc,
     PageSectionExpertiseSequenceDoc,
     PageSectionMediaFeatureDoc,
     PageSectionQuoteCtaDoc,
@@ -9,7 +11,10 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {ExpertiseLifecycle} from '@/components/expertise/expertise-lifecycle';
-import {CaseStudiesRow} from '@/components/sections/case-studies-row';
+import {CaseStudyRail} from '@/components/sections/case-study-rail';
+import {InspirationGallery} from '@/components/sections/inspiration-gallery';
+import {LogoWall} from '@/components/sections/logo-wall';
+import {WorkShowcase} from '@/components/sections/work-showcase';
 import {QuoteCta} from '@/components/sections/quote-cta';
 import type {PageSection} from '@/components/sections/registry';
 import {
@@ -22,7 +27,10 @@ import {
     applyStageSequenceInherit,
     mapExpertiseLifecycle,
 } from '@/lib/expertise/lifecycle';
+import {mapWorkShowcase} from '@/lib/expertise/map-work-showcase';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
+import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
+import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaPanel} from '@/lib/sections/map-media-panel';
 import {
     mapQuoteCta,
@@ -116,11 +124,40 @@ export function ExpertiseStageView({
                 section as PageSectionCaseStudiesRowDoc,
             );
             return mapped.cards.length > 0 ? (
-                <CaseStudiesRow
+                <CaseStudyRail
                     content={mapped}
                     id={`case-studies-${section._key}`}
-                    theme="muted"
                 />
+            ) : null;
+        },
+        // Trust strip: visible label + the POC's 40s lap.
+        logoWall: (section: PageSection) => {
+            const mapped = mapLogoWall(section as PageSectionLogoWallDoc);
+            if (mapped.items.length === 0) return null;
+            return (
+                <LogoWall
+                    content={{
+                        ...mapped,
+                        ...(mapped.subhead || !mapped.heading
+                            ? {}
+                            : {subhead: mapped.heading}),
+                    }}
+                    headingId={`logo-wall-${section._key}`}
+                    marqueeDuration={40}
+                />
+            );
+        },
+        // Case-study-led work showcase (pinned zoom-out reveal) when the
+        // gallery links case studies; otherwise the regular gallery.
+        inspirationsGrid: (section: PageSection) => {
+            const doc = section as PageSectionInspirationsGridDoc;
+            const showcase = mapWorkShowcase(doc);
+            if (showcase) {
+                return <WorkShowcase content={showcase} id={`work-${section._key}`} />;
+            }
+            const mapped = mapInspirationsGrid(doc);
+            return mapped.cards.length > 0 ? (
+                <InspirationGallery content={mapped} id={`inspirations-${section._key}`} />
             ) : null;
         },
         quoteCta: (section: PageSection) => {

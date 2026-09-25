@@ -99,7 +99,10 @@ export function StagePath({
                             href={previous.href}
                             className="group inline-flex items-center gap-2 text-foreground"
                         >
-                            <Icon icon={ArrowLeft} />
+                            <Icon
+                                icon={ArrowLeft}
+                                className="transition-transform duration-300 group-hover:-translate-x-1 motion-reduce:transition-none"
+                            />
                             <span className="underline-offset-4 group-hover:underline">
                                 {previous.label}
                             </span>
@@ -115,7 +118,10 @@ export function StagePath({
                             <span className="underline-offset-4 group-hover:underline">
                                 {next.label}
                             </span>
-                            <Icon icon={ArrowRight} />
+                            <Icon
+                                icon={ArrowRight}
+                                className="transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none"
+                            />
                         </Link>
                     ) : null}
                 </div>

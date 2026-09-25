@@ -177,3 +177,73 @@ html:has(body[data-scroll-locked]) {
   animation: page-enter var(--motion-slow) ease-out;
 }
 
+
+/*
+  Expertise stage pages — scroll-driven entrances (POC parity, PROD-2577).
+  Each keyframe defines only `from`, so the element's own styles are the end
+  state: no animation-timeline support (e.g. Firefox) or reduced motion simply
+  renders the finished layout.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Engagement panel: starts full-bleed, pulls back into the column. */
+    .motion-pullback {
+      animation: motion-pullback linear both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 100%;
+    }
+    /* …while its card corners round in over the same range. */
+    .motion-unround {
+      animation: motion-unround linear both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 100%;
+    }
+    /* Benefits grid: rises in as it enters. */
+    .motion-rise {
+      animation: motion-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 45% entry 100%;
+    }
+  }
+}
+
+@keyframes motion-pullback {
+  from {
+    padding-inline: 0;
+  }
+}
+
+@keyframes motion-unround {
+  from {
+    border-radius: 0;
+  }
+}
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--spacing-grid-unit) * 1.75));
+  }
+}
+
+/* Steps: active tab fills over one autoplay cycle (--motion-cycle). */
+@keyframes motion-tab-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.motion-tab-progress {
+  transform-origin: left center;
+  animation: motion-tab-progress var(--motion-cycle, 6000ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-tab-progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

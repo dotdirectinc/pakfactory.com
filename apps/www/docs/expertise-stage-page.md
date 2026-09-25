@@ -42,6 +42,25 @@ Show first, then explain. The template is the same; only the stage's `sections[]
 
 Service images are a new optional field, `expertiseService.image`.
 
+## Motion (POC parity)
+
+The stage pages reproduce the POC's motion (`poc-aslan` `/expertise/strategy` v2, `/expertise/design` case-study-led). Every effect respects `prefers-reduced-motion`: under it, each one renders its finished state.
+
+| Band | Effect | Mechanism | Where |
+| --- | --- | --- | --- |
+| Trust strip (`logoWall`) | 40s marquee, pauses on hover/focus, logos grayscale → colour | `LogoMarquee` (`marqueeDuration` via stage override) | `components/sections/logo-wall.tsx` |
+| Signature system, named method, 5 problems ↔ 5 dimensions | Problem cards (sticky beside both bands) fade their words, then bend, turn and travel into the dial's arcs as you scroll. Cursor parallax at rest. A problem card scrolls to its dimension, level with the ring. Desktop (≥1024px) only; mobile shows a problem list and the finished dial | GSAP ScrollTrigger (raw progress, `start: top <96+box+128>px`, `end: top 12%`), `gsap.ticker` easing 0.08. Geometry ported verbatim | `components/ui/morph-framework-graphic.tsx`, `lib/ui/morph-framework.ts` (+ test) |
+| Signature system list | Always one open; panels switch instantly; chevron turns | `hidden` attribute | `components/sections/signature-system.tsx` |
+| Signature system, no named method | Service panels grow 1 → 4 on hover/focus (500ms), the dim lifts, the + turns 45°; leaving the row folds them | CSS `flex-grow` transition | same file |
+| Engagement (`mediaFeature`) | Enters full-bleed and pulls back to the gutter while its corners round in | scroll-driven CSS `view()` (`motion-pullback` / `motion-unround`) | `components/ui/media-panel.tsx`, `app/globals.css` |
+| Benefits | Grid rises in (14px, fade); cells change colour on hover, icon chip inverts | `motion-rise` (`view()`), transitions | `components/sections/benefits.tsx` |
+| Work showcase (`inspirationsGrid` with case-study cards) | Pinned for one viewport: the centred case study resizes from a large inset opening down to its rest size. The case row then steps every 4s (10s under the pointer); the work row glides at 88px/s (a quarter under the pointer). Off below 640px | rAF scroll-scrub (`useScrollScrub`) writing CSS variables; timers; rAF glide | `components/sections/work-showcase.tsx`, `lib/ui/use-scroll-scrub.ts` |
+| Steps | Autoplays every 6s with a progress fill; pauses on hover/focus; stops once a step is chosen; panels cross-fade; the rail recentres | timers + `motion-tab-progress` | `components/sections/steps.tsx` |
+| Case studies | Snap rail; image eases to 103% on hover (500ms) | CSS scroll-snap | `components/sections/case-study-rail.tsx`, `components/ui/snap-rail.tsx` |
+| Lifecycle | Previous/next arrows nudge 4px on hover | transition | `components/ui/stage-path.tsx` |
+
+`animation-timeline: view()` is unsupported in some browsers (e.g. Firefox stable). The keyframes define only `from`, so those browsers simply show the settled layout.
+
 ## Host inherit (ADR-020 §8)
 
 An empty section list is filled from the stage document, unless the editor picked **Custom**:
@@ -65,7 +84,9 @@ Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
 | --- | --- | --- |
 | `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath`: every stage, the current one highlighted (`aria-current="step"`); `coming-soon` stages are not linked; previous/next links skip them | `ExpertiseRow` (StagesBoard) |
 | `mediaFeature` | `ui/MediaPanel`: one rounded panel with the copy over the image. Renders solid until an image is uploaded | `TextWithImage` |
-| `caseStudiesRow` | `CaseStudiesRow` on the muted band | `CaseStudiesRow` (default band) |
+| `caseStudiesRow` | `CaseStudyRail` (4:3 image cards on a snap rail, muted band) | `CaseStudiesRow` |
+| `logoWall` | `LogoWall` with its heading as the visible label, 40s lap | `LogoWall` |
+| `inspirationsGrid` | `WorkShowcase` when cards link to case studies; else `InspirationGallery` | `InspirationGallery` |
 | `quoteCta` | `QuoteCta` with `theme="inverse"` (dark band), left-aligned | `QuoteCta` (muted, centred) |
 
 Band rhythm follows the POC:
