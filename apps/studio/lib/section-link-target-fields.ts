@@ -4,6 +4,7 @@ import {
   linkableReferenceTo,
   linkableTypeFilterParams,
 } from './linkable-document-types'
+import {validateRelativeSitePath} from './relative-site-path'
 
 type SectionLinkParent = {
   linkType?: string
@@ -19,7 +20,7 @@ function hasButtonLabel(parent: SectionLinkParent | undefined): boolean {
  * Internal · Site path · External — Site path stays root-relative so staging
  * and production use the current host (never hardcode a domain).
  * Destination is required only when Button label is set (optional CTA).
- * Footer / nav / in-card links keep {@link linkTargetFields}.
+ * www nav / in-card links use {@link linkTargetFields} with `includeSitePath`.
  */
 export function sectionLinkTargetFields() {
   return [
@@ -74,18 +75,10 @@ export function sectionLinkTargetFields() {
       validation: (Rule) =>
         Rule.custom((value, context) => {
           const parent = context.parent as SectionLinkParent | undefined
-          if (!hasButtonLabel(parent) || parent?.linkType !== 'path') {
-            return true
-          }
-          const raw = typeof value === 'string' ? value.trim() : ''
-          if (!raw) return 'Site path is required.'
-          if (/^https?:\/\//i.test(raw)) {
-            return 'Do not include a domain. Use a path like /products.'
-          }
-          if (!raw.startsWith('/')) {
-            return 'Path must start with / (e.g. /products).'
-          }
-          return true
+          return validateRelativeSitePath(value, {
+            required:
+              hasButtonLabel(parent) && parent?.linkType === 'path',
+          })
         }),
     }),
     defineField({

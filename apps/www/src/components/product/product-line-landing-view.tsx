@@ -21,7 +21,6 @@ import type {
 import {
     expertiseHref,
     productHref,
-    productStyleHref,
     WWW_ROUTES,
 } from '@/lib/www-routes';
 
@@ -107,36 +106,6 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
                 kitMarkAlt={model.kitMarkAlt}
                 hasStyles={Boolean(model.styles)}
             />
-
-            {model.styles ? (
-                <PageDielineSection
-                    as="section"
-                    id="styles"
-                    borderBottom
-                    paddingBlock="md"
-                    className="scroll-mt-32"
-                >
-                    <div className="flex flex-col gap-8">
-                        <SectionHeading title="Styles" />
-                        <div className={TILE_GRID_CLASS}>
-                            {model.styles.map((style) => (
-                                <CatalogCard
-                                    key={style.slug}
-                                    href={productStyleHref(
-                                        model.slug,
-                                        style.slug,
-                                    )}
-                                    title={style.title}
-                                    description={style.description}
-                                    imageSrc={style.imageUrl}
-                                    imageAlt={style.imageAlt}
-                                    emptyMedia="mark"
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </PageDielineSection>
-            ) : null}
 
             {model.expertise ? (
                 <ExpertiseRow content={mapExpertiseContent(model.expertise)} />

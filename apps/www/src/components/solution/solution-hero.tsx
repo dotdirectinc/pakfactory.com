@@ -5,6 +5,7 @@ import {
     pageDielineBorderYClass,
     pageDielineInnerClass,
     pageDielineOuterClass,
+    pageDielinePaddingBlockClass,
 } from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -55,8 +56,6 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
               type: 'image',
               src: kit.src,
               alt: kit.alt,
-              width: 128,
-              height: 128,
           }
         : undefined;
 
@@ -71,7 +70,7 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
             )}
         >
             <div className={pageDielineInnerClass()}>
-                <div className="py-16 sm:py-24">
+                <div className={pageDielinePaddingBlockClass('sm')}>
                     <PageHeadingContent
                         align="center"
                         eyebrow={eyebrow}
@@ -79,7 +78,7 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
                         titleId={HERO_HEADING_ID}
                         description={content.subtitle || undefined}
                         primaryCta={isMobile ? content.cta : undefined}
-                        titleClassName="max-w-[1066px] text-[clamp(2.25rem,5vw,4rem)] font-bold leading-[1.1] tracking-[-0.82px]"
+                        titleClassName="max-w-[1066px] text-display font-bold tracking-[-0.82px]"
                         descriptionClassName="max-w-[732px] text-xl leading-7 text-foreground"
                     />
                 </div>

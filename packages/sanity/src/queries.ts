@@ -185,6 +185,7 @@ export {
     type PageSectionFaqSectionDoc,
     type PageSectionInspirationsCardDoc,
     type PageSectionInspirationsGridDoc,
+    type PageSectionProductStylesRowDoc,
     type PageSectionLinkDoc,
     type PageSectionLogoWallDoc,
     type PageSectionLogoWallItemDoc,

@@ -213,7 +213,8 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "productStylesRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "cards": cards[]${INSPIRATIONS_CARD}
   },
   _type == "productsRow" => {
     ${SECTION_CHROME}
@@ -425,6 +426,13 @@ export type PageSectionInspirationsGridDoc = PageSectionChromeFields & {
     cards?: PageSectionInspirationsCardDoc[] | null;
 };
 
+/** Same chrome + cards shape as inspirationsGrid; product-line Styles band. */
+export type PageSectionProductStylesRowDoc = PageSectionChromeFields & {
+    _type: 'productStylesRow';
+    _key: string;
+    cards?: PageSectionInspirationsCardDoc[] | null;
+};
+
 export type PageSectionVideoCaseStudyMetricDoc = {
     title?: string | null;
     body?: string | null;
@@ -544,6 +552,7 @@ export type PageSectionDoc =
     | PageSectionExpertiseSequenceDoc
     | PageSectionCaseStudiesRowDoc
     | PageSectionInspirationsGridDoc
+    | PageSectionProductStylesRowDoc
     | PageSectionVideoCaseStudiesRowDoc
     | PageSectionTestimonialsRowDoc
     | PageSectionSignatureSystemDoc

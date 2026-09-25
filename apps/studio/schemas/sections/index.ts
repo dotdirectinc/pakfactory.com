@@ -8,6 +8,7 @@ import { conversionSections } from './conversion-sections'
 import { customizationsCatalog } from './customizations-catalog'
 import { inspirationsGrid } from './inspirations-grid'
 import { benefits } from './benefits'
+import { productStylesRow } from './product-styles-row'
 import { signatureSystem } from './signature-system'
 import { testimonialsRow } from './testimonials-row'
 import { videoCaseStudiesRow } from './video-case-studies-row'
@@ -23,7 +24,7 @@ export {
  * Insert menu is grouped by **core CMS entity** (Solutions · Case studies ·
  * Products · …), not Proof / Catalogue / Market. Every row section shares one
  * field-set (`rowSectionFields`). Gap types: `inspirationsGrid`,
- * `videoCaseStudiesRow`. Presentation-free (D35).
+ * `productStylesRow`, `videoCaseStudiesRow`. Presentation-free (D35).
  *
  * `pageSectionsField(allow)` returns the single `sections` field for a page,
  * scoped to the families that page may use — never two section fields on one form.
@@ -42,6 +43,7 @@ export const websiteSections = [
   ...contentSections,
   ...rowSections,
   inspirationsGrid,
+  productStylesRow,
   videoCaseStudiesRow,
   testimonialsRow,
   customizationsCatalog,

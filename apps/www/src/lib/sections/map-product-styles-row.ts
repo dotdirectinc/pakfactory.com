@@ -1,32 +1,32 @@
 import type {
     PageSectionInspirationsCardDoc,
-    PageSectionInspirationsGridDoc,
+    PageSectionProductStylesRowDoc,
 } from '@pakfactory/sanity/queries';
 
+import type {
+    ProductStylesCard,
+} from '@/components/product/product-styles-section';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
 import {mapSectionChrome} from '@/lib/sections/map-section-chrome';
-import type {
-    InspirationGalleryCard,
-    InspirationGalleryContent,
-} from '@/lib/solutions/types';
 import {
     productHref,
     productStyleHref,
-    solutionStyleHref,
     WWW_ROUTES,
 } from '@/lib/www-routes';
+
+export type ProductStylesRowMapped = {
+    eyebrow?: string;
+    headline: string;
+    description?: string;
+    cta?: {label: string; href: string};
+    cards: ProductStylesCard[];
+};
 
 function resolveCatalogueHref(
     card: PageSectionInspirationsCardDoc,
 ): string | null {
     const docType = card._type?.trim();
     const slug = card.slug?.trim();
-
-    if (docType === 'solutionStyle') {
-        const solutionSlug = card.solutionSlug?.trim();
-        if (solutionSlug && slug) return solutionStyleHref(solutionSlug, slug);
-        return null;
-    }
 
     if (docType === 'productStyle') {
         const lineSlug = card.lineSlug?.trim();
@@ -51,10 +51,9 @@ function resolveCatalogueHref(
 function mapCard(
     card: PageSectionInspirationsCardDoc,
     index: number,
-): InspirationGalleryCard | null {
+): ProductStylesCard | null {
     const title = card.title?.trim();
-    const imageSrc = card.imageSrc?.trim();
-    if (!title || !imageSrc) return null;
+    if (!title) return null;
 
     let href: string | null = null;
     if (card.kind === 'typed' || card._type === 'inspirationsCard') {
@@ -67,6 +66,7 @@ function mapCard(
     if (!href) return null;
 
     const description = card.description?.trim();
+    const imageSrc = card.imageSrc?.trim() || null;
     const id =
         card._key?.trim() ||
         `${card._id?.trim() || title}-${index}`;
@@ -75,38 +75,35 @@ function mapCard(
         id,
         title,
         href,
-        image: {
-            src: imageSrc,
-            alt: card.imageAlt?.trim() || title,
-        },
         ...(description ? {description} : {}),
+        imageSrc,
+        imageAlt: card.imageAlt?.trim() || title,
     };
 }
 
 /**
- * Map Sanity `inspirationsGrid` → InspirationGallery props (ADR-020 / WP3).
- * Studio chrome → align / borders / CTA label; heading/intro → headline/description.
+ * Map Sanity `productStylesRow` → ProductStylesSection props.
+ * Allows cards without images (emptyMedia mark on the section).
  */
-export function mapInspirationsGrid(
-    section: PageSectionInspirationsGridDoc,
-): InspirationGalleryContent {
-    const cards: InspirationGalleryCard[] = [];
+export function mapProductStylesRow(
+    section: PageSectionProductStylesRowDoc,
+): ProductStylesRowMapped {
+    const cards: ProductStylesCard[] = [];
     for (const [index, row] of (section.cards ?? []).entries()) {
         const mapped = mapCard(row, index);
         if (mapped) cards.push(mapped);
     }
 
     const chrome = mapSectionChrome(section);
-    const headline = section.heading?.trim() || 'Inspirations';
-    const description = section.intro?.trim();
+    const headline = section.heading?.trim() || 'Styles';
+    const description =
+        section.intro?.trim() ||
+        'Compare constructions side by side before you add to a request.';
 
     return {
         headline,
-        align: chrome.align,
-        borderTop: chrome.borderTop,
-        borderBottom: chrome.borderBottom,
-        ...(chrome.eyebrow ? {eyebrow: chrome.eyebrow} : {}),
-        ...(description ? {description} : {}),
+        description,
+        ...(chrome.eyebrow ? {eyebrow: chrome.eyebrow} : {eyebrow: 'Styles'}),
         ...(chrome.cta ? {cta: chrome.cta} : {}),
         cards,
     };

@@ -6,6 +6,7 @@ import type {
     PageSectionFaqSectionDoc,
     PageSectionInspirationsCardDoc,
     PageSectionInspirationsGridDoc,
+    PageSectionProductStylesRowDoc,
     PageSectionVideoCaseStudiesRowDoc,
     PageSectionVideoCaseStudyCardDoc,
 } from '@pakfactory/sanity/queries';
@@ -182,6 +183,33 @@ export function applyInspirationsInherit(
     return sections.map((section) => {
         if (section._type !== 'inspirationsGrid') return section;
         const row = section as PageSectionInspirationsGridDoc;
+        const cards = row.cards ?? [];
+        if (!shouldInheritSectionList(row.listSource, cards)) return section;
+        return {...row, cards: fallback};
+    });
+}
+
+/**
+ * Fill empty `productStylesRow.cards` from product-line styles when listSource allows.
+ * Images are optional (ProductStylesSection uses emptyMedia mark).
+ */
+export function applyProductStylesInherit(
+    sections: PageSectionDoc[],
+    lineStyles?: PageSectionInspirationsCardDoc[] | null,
+): PageSectionDoc[] {
+    const fallback = (lineStyles ?? []).filter(
+        (item): item is PageSectionInspirationsCardDoc =>
+            Boolean(
+                item?.title?.trim() &&
+                    item?.slug?.trim() &&
+                    item?.lineSlug?.trim(),
+            ),
+    );
+    if (fallback.length === 0) return sections;
+
+    return sections.map((section) => {
+        if (section._type !== 'productStylesRow') return section;
+        const row = section as PageSectionProductStylesRowDoc;
         const cards = row.cards ?? [];
         if (!shouldInheritSectionList(row.listSource, cards)) return section;
         return {...row, cards: fallback};
