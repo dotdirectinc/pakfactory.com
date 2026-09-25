@@ -12,9 +12,12 @@
  *   3. unsets `stage.sections`.
  * One transaction per stage, so a stage is never left half-moved.
  *
- * Drafts are handled the same way: a draft stage's sections go to the draft
- * template (`drafts.expertiseStagePage.<slug>`), and a human publishes both in
- * the Studio — this script never publishes.
+ * Drafts: published stages are processed first, so a draft stage's reference
+ * to the published template id resolves. A draft whose sections differ from the
+ * published stage gets a draft template (`drafts.expertiseStagePage.<slug>`) —
+ * publish it in the Studio; a draft with identical sections just links. A
+ * draft-only stage (nothing published) gets a weak reference, strengthened when
+ * the template is published. This script never publishes.
  *
  * Refuses (and says so) when the template id already exists with sections of
  * its own: overwriting it could drop edits made on the template. Resolve by hand.
@@ -91,7 +94,18 @@ async function main() {
   const stages = await client.fetch(
     `*[_type == "expertiseStage" && defined(sections)]{
       _id, title, "slug": slug.current, sections, "templateRef": template._ref
-    } | order(_id asc)`,
+    }`,
+  )
+  // Published before drafts: a draft stage references the PUBLISHED template id,
+  // which must exist by the time its patch commits (Sanity rejects a strong
+  // reference to a missing document — first run on development failed exactly so).
+  stages.sort(
+    (a, b) =>
+      Number(a._id.startsWith('drafts.')) - Number(b._id.startsWith('drafts.')) ||
+      a._id.localeCompare(b._id),
+  )
+  const publishedBySlug = new Map(
+    stages.filter((s) => !s._id.startsWith('drafts.')).map((s) => [s.slug, s]),
   )
 
   if (stages.length === 0) {
@@ -125,15 +139,34 @@ async function main() {
       )
       continue
     }
-    plans.push({ stage, templateId, baseId, isDraft })
+    let draftMatchesPublished = false
+    let weakRef = false
+    if (isDraft) {
+      const published = publishedBySlug.get(stage.slug)
+      // Draft body identical to the published one → no draft template needed.
+      draftMatchesPublished =
+        Boolean(published) && JSON.stringify(published.sections) === JSON.stringify(stage.sections)
+      // Will the published template exist when this draft is patched? Yes if it
+      // already exists or this run creates it (published stages go first).
+      const publishedTemplateExists = await client.fetch(`count(*[_id == $id]) > 0`, { id: baseId })
+      const createdThisRun = plans.some((p) => !p.isDraft && p.baseId === baseId)
+      weakRef = !publishedTemplateExists && !createdThisRun
+    }
+    plans.push({ stage, templateId, baseId, isDraft, draftMatchesPublished, weakRef })
   }
 
   console.log(`Planned (${plans.length} of ${stages.length} stage document(s)):`)
-  for (const { stage, templateId } of plans) {
+  for (const { stage, templateId, baseId, draftMatchesPublished, weakRef } of plans) {
     const types = (stage.sections ?? []).map((s) => s._type).join(' → ')
     console.log(`  ${stage._id} (${stage.title})`)
-    console.log(`     create ${templateId} "${stage.title}" with ${stage.sections.length} section(s): ${types}`)
-    console.log(`     set template → ${templateId.replace(/^drafts\./, '')}, unset sections`)
+    if (draftMatchesPublished) {
+      console.log(`     sections identical to the published stage — no draft template`)
+    } else {
+      console.log(`     create ${templateId} "${stage.title}" with ${stage.sections.length} section(s): ${types}`)
+    }
+    console.log(
+      `     set template → ${baseId}${weakRef ? ' (weak until the template is published)' : ''}, unset sections`,
+    )
   }
 
   if (!apply) {
@@ -143,17 +176,27 @@ async function main() {
     return
   }
 
-  for (const { stage, templateId, baseId } of plans) {
+  for (const { stage, templateId, baseId, draftMatchesPublished, weakRef } of plans) {
     const tx = client.transaction()
-    tx.createOrReplace({
-      _id: templateId,
-      _type: TEMPLATE_TYPE,
-      title: stage.title,
-      sections: stage.sections,
-    })
-    tx.patch(stage._id, (p) =>
-      p.set({ template: { _type: 'reference', _ref: baseId } }).unset(['sections']),
-    )
+    if (!draftMatchesPublished) {
+      tx.createOrReplace({
+        _id: templateId,
+        _type: TEMPLATE_TYPE,
+        title: stage.title,
+        sections: stage.sections,
+      })
+    }
+    // Draft-only stage with no published template yet: weak reference that the
+    // Studio strengthens on publish (its own pattern for refs to drafts).
+    const templateRef = weakRef
+      ? {
+          _type: 'reference',
+          _ref: baseId,
+          _weak: true,
+          _strengthenOnPublish: { type: TEMPLATE_TYPE },
+        }
+      : { _type: 'reference', _ref: baseId }
+    tx.patch(stage._id, (p) => p.set({ template: templateRef }).unset(['sections']))
     const result = await tx.commit()
     console.log(`  ✅ ${stage._id} → ${templateId} (transaction ${result.transactionId})`)
   }
