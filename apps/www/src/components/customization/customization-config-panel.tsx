@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {Bookmark, Download, Search} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {
     initialPropertySelection,
     OptionPropertyControllers,
@@ -189,6 +190,36 @@ export function CustomizationConfigPanel({
                         Download spec sheet
                     </Button>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Loading chrome for {@link CustomizationConfigPanel} — same dashed config
+ * band and CTA stack spacing as the live panel.
+ */
+export function CustomizationConfigPanelSkeleton() {
+    return (
+        <div
+            className="mt-8 flex flex-col gap-6"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="sr-only">Loading configuration</span>
+            <div
+                className="flex flex-col gap-4 border-t border-dashed border-border pt-4"
+                aria-hidden
+            >
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-10 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+            </div>
+            <div className="flex flex-col gap-2" aria-hidden>
+                <Skeleton className="h-12 w-full rounded-md" />
+                <Skeleton className="h-12 w-full rounded-md" />
+                <Skeleton className="ml-auto h-4 w-36" />
             </div>
         </div>
     );

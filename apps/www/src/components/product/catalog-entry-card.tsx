@@ -36,6 +36,7 @@ export function CatalogEntryCard({
     return (
         <Link
             href={href}
+            prefetch
             aria-label={headline}
             className={cn(
                 'group relative flex h-full min-h-0 w-full flex-row items-stretch overflow-hidden rounded-2xl bg-muted outline-none md:flex-col',

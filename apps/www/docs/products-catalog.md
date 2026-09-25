@@ -8,7 +8,8 @@ How the filterable products library is wired for humans and AI agents. Binding p
 | --- | --- | --- |
 | Route | `/products` → [`src/app/(site)/products/page.tsx`](../src/app/(site)/products/page.tsx) | Full page chrome; **URL sync** for filters |
 | Studio singleton | `_type` / id **`productCatalogPage`** (Main Website → Product Pages) | Owns `sections[]` **below** the fixed grid (PROD-2589). H1 / intro / SEO stay route fallbacks. |
-| Line / style drill-down | `/products/[slug]`, `/products/[slug]/[styleSlug]` | Unchanged hierarchy (`ProductLineView` / `ProductStyleView`) |
+| Line landing | `/products/[slug]` | `ProductLineLanding` |
+| Style landing | `/products/[slug]/[styleSlug]` → [`product-style-view.tsx`](../src/components/product/product-style-view.tsx) | Heading + media + scoped `ProductCatalogView` (same shape as solution style). Studio singleton **`productStylePage`** owns `sections[]` below the grid. |
 
 **No Categories panel** — unlike `/customizations`, there are no category tabs, no `category` URL param, and no category-dependent facets.
 

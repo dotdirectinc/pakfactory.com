@@ -24,6 +24,15 @@ export const PRODUCT_CATALOG_PAGE_QUERY = /* groq */ `*[
   "sections": sections[]${PAGE_SECTIONS_PROJECTION}
 }`
 
+export const PRODUCT_STYLE_PAGE_QUERY = /* groq */ `*[
+  _id == "productStylePage"
+][0]{
+  _id,
+  _type,
+  title,
+  "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+}`
+
 export const CUSTOMIZATION_CATALOG_PAGE_QUERY = /* groq */ `*[
   _id == "customizationCatalogPage"
 ][0]{

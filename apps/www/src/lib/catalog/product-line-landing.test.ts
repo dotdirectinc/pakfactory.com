@@ -20,7 +20,7 @@ function product(
         Pick<Product, 'title' | 'slug' | 'productStyle'>,
 ): Product {
     return {
-        sku: partial.sku ?? partial.slug,
+        sku: partial.sku ?? '-',
         kind: partial.kind ?? 'standard',
         media: partial.media ?? [],
         description: partial.description ?? '',

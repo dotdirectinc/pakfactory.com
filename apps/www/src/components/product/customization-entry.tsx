@@ -43,6 +43,11 @@ type CustomizationEntryProps = {
     productTitle?: string;
     dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
+    /**
+     * Inspiration products: options are pre-selected. Shows preset copy,
+     * "Change" row actions, and hides the specialist revert link.
+     */
+    preset?: boolean;
 };
 
 type SummaryRowProps = {
@@ -50,6 +55,7 @@ type SummaryRowProps = {
     answer: StepAnswer;
     propertySummaries?: PropertySelectionSummaryItem[];
     onCustomize: () => void;
+    rowActionLabel: string;
 };
 
 function SummaryRow({
@@ -57,6 +63,7 @@ function SummaryRow({
     answer,
     propertySummaries,
     onCustomize,
+    rowActionLabel,
 }: SummaryRowProps) {
     const summaryText = summarizeAnswer(
         answer,
@@ -88,7 +95,7 @@ function SummaryRow({
                 </div>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
-                {REQUEST_COPY.customizeRow}
+                {rowActionLabel}
                 <ChevronRight className="size-4" aria-hidden />
             </span>
         </button>
@@ -100,6 +107,7 @@ type SummaryGroupProps = {
     rows: {key: BuilderStepKey; label: string}[];
     builderState: CustomizationBuilderState;
     onCustomize: (key: BuilderStepKey) => void;
+    rowActionLabel: string;
 };
 
 function SummaryGroup({
@@ -107,6 +115,7 @@ function SummaryGroup({
     rows,
     builderState,
     onCustomize,
+    rowActionLabel,
 }: SummaryGroupProps) {
     if (rows.length === 0) return null;
     return (
@@ -134,6 +143,7 @@ function SummaryGroup({
                                     : undefined
                             }
                             onCustomize={() => onCustomize(row.key)}
+                            rowActionLabel={rowActionLabel}
                         />
                     );
                 })}
@@ -150,12 +160,16 @@ export function CustomizationEntry({
     productTitle,
     dimensionInput,
     dimensionRange,
+    preset = false,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
     const [initialStepKey, setInitialStepKey] = useState<
         BuilderStepKey | undefined
     >(undefined);
     const configured = isBuilderConfigured(builderState);
+    const rowActionLabel = preset
+        ? REQUEST_COPY.changeRow
+        : REQUEST_COPY.customizeRow;
 
     const steps = useMemo(
         () => buildStepsFromCatalog(availableCustomizations),
@@ -183,6 +197,11 @@ export function CustomizationEntry({
             <h2 className="text-base font-semibold text-brand-blue">
                 {REQUEST_COPY.customizationHeading}
             </h2>
+            {preset ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                    {REQUEST_COPY.customizationPresetDescription}
+                </p>
+            ) : null}
 
             {configured ? (
                 <div className="mt-4 space-y-4">
@@ -191,24 +210,28 @@ export function CustomizationEntry({
                         rows={sizeRows}
                         builderState={builderState}
                         onCustomize={openBuilder}
+                        rowActionLabel={rowActionLabel}
                     />
                     <SummaryGroup
                         title={REQUEST_COPY.materialFinishGroup}
                         rows={materialFinishRows}
                         builderState={builderState}
                         onCustomize={openBuilder}
+                        rowActionLabel={rowActionLabel}
                     />
-                    <button
-                        type="button"
-                        className={cn(
-                            'cursor-pointer text-xs font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground',
-                        )}
-                        onClick={() =>
-                            onBuilderStateChange(createEmptyBuilderState())
-                        }
-                    >
-                        {REQUEST_COPY.revertToSpecialist}
-                    </button>
+                    {!preset ? (
+                        <button
+                            type="button"
+                            className={cn(
+                                'cursor-pointer text-xs font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground',
+                            )}
+                            onClick={() =>
+                                onBuilderStateChange(createEmptyBuilderState())
+                            }
+                        >
+                            {REQUEST_COPY.revertToSpecialist}
+                        </button>
+                    ) : null}
                 </div>
             ) : (
                 <div className="mt-4 flex flex-col gap-4 rounded-xl bg-background p-4">

@@ -20,6 +20,7 @@ import {
     hasReferenceWorksWith,
 } from '@/components/customization/customization-reference-works-with';
 import {CustomizationShowcase} from '@/components/customization/customization-showcase';
+import {PageEnter} from '@/components/layout/page-enter';
 import {AnchorNav, type AnchorNavItem} from '@/components/product/anchor-nav';
 import {FaqSection} from '@/components/sections/faq-section';
 import {
@@ -74,7 +75,7 @@ export function CustomizationDetailView({
         showOverview || showSpecs || showWorksWith;
 
     return (
-        <>
+        <PageEnter>
             <PageBreadcrumbSection
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
@@ -149,6 +150,6 @@ export function CustomizationDetailView({
                 footerHref={WWW_ROUTES.contact}
                 footerLabel="Let's chat"
             />
-        </>
+        </PageEnter>
     );
 }

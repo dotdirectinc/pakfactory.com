@@ -163,13 +163,15 @@ export function buildProductLibraryResult(
         });
     }
 
-    shared.push({
-        id: PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
-        title: 'Product Line',
-        options: [...productLineOptions.values()].sort((a, b) =>
-            a.label.localeCompare(b.label),
-        ),
-    });
+    if (!omit.has(PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID)) {
+        shared.push({
+            id: PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+            title: 'Product Line',
+            options: [...productLineOptions.values()].sort((a, b) =>
+                a.label.localeCompare(b.label),
+            ),
+        });
+    }
 
     if (
         industryOptions.size > 0 &&

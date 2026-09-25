@@ -35,6 +35,8 @@ type ProductCatalogPanelProps = {
     library: ProductLibraryResult;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
+    /** Drop the desktop search strip top border (style landing under a headed section). */
+    hideCatalogBorderTop?: boolean;
 };
 
 function toggleValue(list: string[], value: string): string[] {
@@ -46,6 +48,7 @@ function toggleValue(list: string[], value: string): string[] {
 export function ProductCatalogPanel({
     library,
     urlSync = true,
+    hideCatalogBorderTop = false,
 }: ProductCatalogPanelProps) {
     const facetIds = useMemo(() => {
         const ids = library.facetCatalog.shared.map((facet) => facet.id);
@@ -316,7 +319,12 @@ export function ProductCatalogPanel({
             </div>
 
             {/* Desktop: sticky search bar (no category tabs) */}
-            <div className="-mx-layout-gutter-inner hidden border-y border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block">
+            <div
+                className={cn(
+                    '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
+                    hideCatalogBorderTop ? 'border-b' : 'border-y',
+                )}
+            >
                 <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
                     <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
                         {renderSearchField()}

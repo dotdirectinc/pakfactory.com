@@ -2,6 +2,8 @@
 
 import {useState} from 'react';
 import {PackageIcon} from 'lucide-react';
+import {Badge} from '@pakfactory/ui/components/badge';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 import {SanityImage} from '@/components/ui/sanity-image';
@@ -11,9 +13,15 @@ import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
 type ProductGalleryProps = {
     media: CatalogMedia[];
     productTitle: string;
+    /** Optional chip overlaid on the feature image (e.g. Inspiration). */
+    badgeLabel?: string;
 };
 
-export function ProductGallery({media, productTitle}: ProductGalleryProps) {
+export function ProductGallery({
+    media,
+    productTitle,
+    badgeLabel,
+}: ProductGalleryProps) {
     const [activeIndex, setActiveIndex] = useState(0);
     const items = media.length > 0 ? media : [{alt: productTitle}];
     const active = items[activeIndex] ?? items[0];
@@ -86,6 +94,33 @@ export function ProductGallery({media, productTitle}: ProductGalleryProps) {
                         />
                     </span>
                 )}
+                {badgeLabel ? (
+                    <Badge
+                        variant="default"
+                        className="pointer-events-none absolute right-4 top-4 z-10"
+                    >
+                        {badgeLabel}
+                    </Badge>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Loading chrome for {@link ProductGallery} — main square well only (common
+ * single-image PDP). Same sticky flex shell as the live gallery.
+ */
+export function ProductGallerySkeleton() {
+    return (
+        <div
+            className="flex items-start gap-6 self-start lg:sticky lg:top-8"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="sr-only">Loading product gallery</span>
+            <div className="relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-muted">
+                <Skeleton className="absolute inset-0 rounded-2xl" />
             </div>
         </div>
     );

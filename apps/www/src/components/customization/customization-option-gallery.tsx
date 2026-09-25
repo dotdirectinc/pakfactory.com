@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {PackageIcon} from 'lucide-react';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {CatalogMedia} from '@/lib/catalog/types';
@@ -92,6 +93,25 @@ export function CustomizationOptionGallery({
                     })}
                 </div>
             ) : null}
+        </div>
+    );
+}
+
+/**
+ * Loading chrome for {@link CustomizationOptionGallery} — hero well only
+ * (common single-image CDP). Same sticky column shell as the live gallery.
+ */
+export function CustomizationOptionGallerySkeleton() {
+    return (
+        <div
+            className="flex w-full flex-col gap-3 self-start lg:sticky lg:top-8"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="sr-only">Loading customization gallery</span>
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted">
+                <Skeleton className="absolute inset-0 rounded-2xl" />
+            </div>
         </div>
     );
 }

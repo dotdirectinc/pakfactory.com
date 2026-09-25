@@ -38,7 +38,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "caseStudy", "listingPage", "client",
  *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "productLinePage", "expertiseStage", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
- *     "productCatalogPage", "customizationCatalogPage",
+ *     "productCatalogPage", "productStylePage", "customizationCatalogPage",
  *     "websiteNavigation", "settings"
  *   ]
  *
@@ -151,6 +151,7 @@ export async function POST(request: Request) {
     CATALOG_PRODUCT_TYPES.has(type) ||
     type === "customizationOption" ||
     type === "productCatalogPage" ||
+    type === "productStylePage" ||
     type === "productLinePage";
   if (touchesProducts) {
     tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);

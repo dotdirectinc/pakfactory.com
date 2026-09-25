@@ -275,10 +275,8 @@ const LINE_KIT_MARK = /* groq */ `kitMark{
   "alt": ${IMAGE_ALT}
 }`;
 
-export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
-  _type == "productLine" &&
-  defined(slug.current)
-] | order(title asc) {
+/** Shared projection for list + single-line fetches (PROD-1914 landing). */
+export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   _id,
   title,
   h1,
@@ -341,7 +339,30 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   ) && defined(slug.current) && (status == "active" || !defined(status))] | order(title asc) {
     ${CATALOG_PRODUCT_CARD_FIELDS}
   }
+`;
+
+export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  defined(slug.current)
+] | order(title asc) {
+  ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
+
+export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  slug.current == $slug
+][0]{
+  ${CATALOG_PRODUCT_LINE_FIELDS}
+}`;
+
+/**
+ * Existence probe for `/products/[slug]` segment resolution.
+ * Product clicks wait on this (not the full line landing document).
+ */
+export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
+  _type == "productLine" &&
+  slug.current == $slug
+][0]._id`;
 
 const PROPERTY_VALUE_PROJ = /* groq */ `{
   _id,

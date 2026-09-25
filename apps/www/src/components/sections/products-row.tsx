@@ -10,6 +10,7 @@ import {
     SectionCarousel,
 } from '@/components/ui/section-carousel';
 import {SectionHeading} from '@/components/ui/section-heading';
+import {displayProductSku} from '@/lib/catalog/display-sku';
 import {
     sectionThemeShell,
     type SectionTheme,
@@ -83,7 +84,13 @@ export function ProductsRow({
                             <CatalogCard
                                 href={product.href}
                                 title={product.title}
-                                eyebrow={product.sku}
+                                eyebrow={displayProductSku(
+                                    product.sku,
+                                    product.href
+                                        .split('/')
+                                        .filter(Boolean)
+                                        .pop() ?? '',
+                                )}
                                 align="left"
                                 ctaLabel={null}
                                 imageSrc={product.imageSrc}

@@ -300,7 +300,8 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     return {
         title: doc.title,
         slug,
-        sku: doc.sku?.trim() || slug,
+        // Never substitute the URL slug for a missing SKU (catalog / PDP eyebrow).
+        sku: doc.sku?.trim() || '-',
         kind,
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
