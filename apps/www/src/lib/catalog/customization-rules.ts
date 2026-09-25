@@ -82,6 +82,8 @@ export function prepareRules(
             _id: t._id,
             ...(t.title ? {title: t.title} : {}),
             availabilityDecidedBy: t.availabilityDecidedBy,
+            // Only a `many` type's picks are checked against each other (Ink, Embossing).
+            ...(t.customerSelects === 'many' ? {customerSelects: 'many' as const} : {}),
             ...(t.categoryId ? {categoryId: t.categoryId} : {}),
             requirements: (t.requirements ?? [])
                 .map((group) => ids(group))

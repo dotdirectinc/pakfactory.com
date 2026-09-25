@@ -46,17 +46,20 @@ const rulesDoc = (): CatalogCustomizationRulesDoc => ({
         {_id: 't.sfnp', title: 'Surface Finish (non-paper)', availabilityDecidedBy: 'customization', customerSelects: 'one', categoryId: 'c.finishing', requirements: [['c.materials']]},
         {_id: 't.spot', title: 'Spot Coating', availabilityDecidedBy: 'customization', customerSelects: 'many', categoryId: 'c.finishing', requirements: [['t.sf', 't.sfnp']]},
     ],
+    // Pairs are COMPLETE, as the fill writes them: every two options that can be ordered
+    // together are paired, not only an option and what it works on. Unpaired = incompatible
+    // (Metallic × UV play two inks of one group; Offset prints on tinplate, not blackplate).
     options: [
-        option('o.tinplate', 'Tinplate', 't.tin'),
-        option('o.blackplate', 'Blackplate', 't.tin'),
+        option('o.tinplate', 'Tinplate', 't.tin', ['o.canvas']),
+        option('o.blackplate', 'Blackplate', 't.tin', ['o.canvas']),
         option('o.canvas', 'Canvas', 't.fabric'),
         option('o.metallic', 'Metallic Ink', 't.ink', ['o.tinplate', 'o.blackplate', 'o.canvas']),
         option('o.uv', 'UV Ink', 't.ink', ['o.tinplate', 'o.canvas']),
         option('o.offset', 'Offset', 't.method', ['o.tinplate', 'o.metallic']),
         option('o.htp', 'Heat Transfer Printing', 't.method', ['o.canvas', 'o.metallic']),
-        option('o.matte', 'Matte', 't.sf', ['o.canvas']),
-        option('o.mattenp', 'Matte (for non-paper)', 't.sfnp', ['o.tinplate']),
-        option('o.spotuv', 'Spot UV', 't.spot', ['o.matte', 'o.mattenp']),
+        option('o.matte', 'Matte', 't.sf', ['o.canvas', 'o.metallic', 'o.uv', 'o.htp']),
+        option('o.mattenp', 'Matte (for non-paper)', 't.sfnp', ['o.tinplate', 'o.metallic', 'o.uv', 'o.offset']),
+        option('o.spotuv', 'Spot UV', 't.spot', ['o.matte', 'o.mattenp', 'o.tinplate', 'o.canvas', 'o.metallic', 'o.uv', 'o.offset', 'o.htp']),
         // A reference option: never shown to the customer, still a partner.
         option('o.lining', 'Lining', 't.sfnp', ['o.tinplate'], 'reference'),
     ],
@@ -218,13 +221,28 @@ describe('builder narrowing', () => {
         assert.ok(ids.includes('o.tinplate'), 'the Type still lists its alternative, so the customer can switch');
     });
 
-    it('a Type not yet answered still counts: tinplate alone keeps canvas-only Heat Transfer', () => {
-        // Materials allow one option per Type, so this product can take tinplate AND canvas.
+    it('a pick hides what it is not paired with: tinplate hides canvas-only Heat Transfer', () => {
+        // Canvas stays listed — one option per material Type, and the two are paired.
         const {availableCustomizations, customizationRules} = resolve(product);
         const state = pick(createEmptyBuilderState(), 'materials', 't.tin', 'o.tinplate');
         const ids = idsOf(narrowByRules(availableCustomizations, customizationRules, state).available);
-        assert.ok(ids.includes('o.htp'));
+        assert.ok(!ids.includes('o.htp'));
         assert.ok(ids.includes('o.canvas'));
+    });
+
+    it('a many Type\'s pick hides the options of its own Type it does not pair with', () => {
+        const {availableCustomizations, customizationRules} = resolve(product);
+        const state = pick(createEmptyBuilderState(), 'printing', 't.ink', 'o.metallic');
+        const ids = idsOf(narrowByRules(availableCustomizations, customizationRules, state).available);
+        assert.ok(!ids.includes('o.uv'), 'Metallic and UV are not paired');
+    });
+
+    it('a board a printing pick cannot go on is hidden, not offered and then cleared', () => {
+        const {availableCustomizations, customizationRules} = resolve(['o.tinplate', 'o.blackplate']);
+        const state = pick(createEmptyBuilderState(), 'printing', 't.method', 'o.offset');
+        const ids = idsOf(narrowByRules(availableCustomizations, customizationRules, state).available);
+        assert.ok(!ids.includes('o.blackplate'));
+        assert.ok(ids.includes('o.tinplate'));
     });
 
     it('a requirement inside the same category holds: Offset is kept before any Ink is picked', () => {
@@ -235,12 +253,13 @@ describe('builder narrowing', () => {
         assert.equal(narrowByRules(availableCustomizations, customizationRules, state).invalidOptionIds.size, 0);
     });
 
-    it('flags an earlier pick a later one makes impossible, so the builder can clear it', () => {
+    it('in saved state that clashes, the earlier pick stands and the later one is flagged', () => {
+        // The builder hides clashing options, so only a preset or an old request line gets here.
         const {availableCustomizations, customizationRules} = resolve(['o.tinplate', 'o.blackplate']);
         let state = pick(createEmptyBuilderState(), 'printing', 't.method', 'o.offset');
         state = pick(state, 'materials', 't.tin', 'o.blackplate');
         const {invalidOptionIds} = narrowByRules(availableCustomizations, customizationRules, state);
-        assert.deepEqual([...invalidOptionIds], ['o.offset']);
+        assert.deepEqual([...invalidOptionIds], ['o.blackplate']);
     });
 
     it('everything listed can be picked and stays picked', () => {
