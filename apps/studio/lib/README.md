@@ -16,7 +16,7 @@ true`, or an insert menu by hand — stop and import instead.
 | **Tabs (field groups)** — the §2.4 eight-tab set, fixed order, Content default | `groupsFor([...])`, `GROUPS` | `./field-groups` |
 | **SEO + Social fields** — meta, robots toggles (defaulted from the type's settings singleton), OG | `seoFields()`, `socialFields()` | `./seo-fields` |
 | **Settings singleton** — per-type metadata formats + indexation defaults | `typeDefaultFields()` | `./type-default-fields` |
-| **Internal/external link** — reference or URL, picker filtered to routable types | `linkTargetFields()` | `./link-target-fields` |
+| **Internal / External link** — reference or URL; pass `{ includeSitePath: true }` for www nav / in-card Site path | `linkTargetFields()` | `./link-target-fields` |
 | **Section chrome link** — Internal · Site path · External (+ freeform `query`) | `sectionLinkTargetFields()` | `./section-link-target-fields` |
 | **Linkable-type list / picker filter** | `LINKABLE_DOCUMENT_TYPES`, `LINKABLE_TYPE_FILTER` | `./linkable-document-types` |
 | **Social links array** (author / footer) | `socialLinksField()`, `socialLinkArrayMember()` | `./social-link-schema` |

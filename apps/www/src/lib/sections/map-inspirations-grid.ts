@@ -2,7 +2,6 @@ import type {
     PageSectionInspirationsCardDoc,
     PageSectionInspirationsGridDoc,
 } from '@pakfactory/sanity/queries';
-import type {WebsiteNavLinkDoc} from '@pakfactory/sanity/queries';
 
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
 import {mapSectionChrome} from '@/lib/sections/map-section-chrome';
@@ -59,12 +58,7 @@ function mapCard(
 
     let href: string | null = null;
     if (card.kind === 'typed' || card._type === 'inspirationsCard') {
-        const resolved = resolveWwwNavHref(
-            card.link as Pick<
-                WebsiteNavLinkDoc,
-                'linkType' | 'externalUrl' | 'internalLink'
-            > | null | undefined,
-        );
+        const resolved = resolveWwwNavHref(card.link);
         href = resolved?.href ?? null;
     } else {
         href = resolveCatalogueHref(card);

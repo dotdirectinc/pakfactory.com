@@ -2,7 +2,6 @@ import type {
     PageSectionInspirationsCardDoc,
     PageSectionProductStylesRowDoc,
 } from '@pakfactory/sanity/queries';
-import type {WebsiteNavLinkDoc} from '@pakfactory/sanity/queries';
 
 import type {
     ProductStylesCard,
@@ -58,12 +57,7 @@ function mapCard(
 
     let href: string | null = null;
     if (card.kind === 'typed' || card._type === 'inspirationsCard') {
-        const resolved = resolveWwwNavHref(
-            card.link as Pick<
-                WebsiteNavLinkDoc,
-                'linkType' | 'externalUrl' | 'internalLink'
-            > | null | undefined,
-        );
+        const resolved = resolveWwwNavHref(card.link);
         href = resolved?.href ?? null;
     } else {
         href = resolveCatalogueHref(card);

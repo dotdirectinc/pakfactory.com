@@ -2,7 +2,6 @@ import type {
     PageSectionVideoCaseStudiesRowDoc,
     PageSectionVideoCaseStudyCardDoc,
 } from '@pakfactory/sanity/queries';
-import type {WebsiteNavLinkDoc} from '@pakfactory/sanity/queries';
 
 import type {
     VideoCaseStudiesRowCard,
@@ -16,12 +15,7 @@ function resolveCardHref(
     card: PageSectionVideoCaseStudyCardDoc,
 ): string | null {
     if (card.kind === 'typed' || card._type === 'videoCaseStudyCard') {
-        const resolved = resolveWwwNavHref(
-            card.link as Pick<
-                WebsiteNavLinkDoc,
-                'linkType' | 'externalUrl' | 'internalLink'
-            > | null | undefined,
-        );
+        const resolved = resolveWwwNavHref(card.link);
         return resolved?.href ?? null;
     }
 
