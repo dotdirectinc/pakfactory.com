@@ -21,6 +21,8 @@ type CustomizationGuidedViewProps = {
     activeKey: BuilderStepKey;
     activeTypeId: string | null;
     activeOptionId: string | null;
+    /** Options the rules rule out given the other picks: listed, not selectable. */
+    disabledOptionIds?: ReadonlySet<string>;
     state: CustomizationBuilderState;
     /** Highest rail index unlocked by Next/Skip commit. */
     maxReachableIndex: number;
@@ -50,6 +52,7 @@ export function CustomizationGuidedView({
     activeKey,
     activeTypeId,
     activeOptionId,
+    disabledOptionIds,
     state,
     maxReachableIndex,
     dimensionRange,
@@ -92,6 +95,7 @@ export function CustomizationGuidedView({
             activeKey={activeKey}
             activeTypeId={activeTypeId}
             activeOptionId={activeOptionId}
+            disabledOptionIds={disabledOptionIds}
             state={state}
             numberedRail
             maxReachableIndex={maxReachableIndex}

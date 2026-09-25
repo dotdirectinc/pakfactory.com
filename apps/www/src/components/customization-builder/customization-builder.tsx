@@ -103,16 +103,25 @@ export function CustomizationBuilder({
         [dimensionInput, dimensionRange],
     );
 
-    // Every pick in every step goes to the shared rules, which decide what each Type still lists.
+    // Every pick in every step goes to the shared rules, which decide what can still be picked.
+    // Everything the product offers stays listed; what the rules rule out is shown disabled,
+    // so the customer sees the option exists and that their other choices exclude it.
     const narrowed = useMemo(
         () => narrowByRules(availableCustomizations, customizationRules, value),
         [availableCustomizations, customizationRules, value],
     );
-    const filteredCustomizations = narrowed.available;
+    const disabledOptionIds = useMemo(() => {
+        const pickable = new Set(narrowed.available.map((option) => option.id));
+        return new Set(
+            availableCustomizations
+                .filter((option) => !pickable.has(option.id))
+                .map((option) => option.id),
+        );
+    }, [availableCustomizations, narrowed]);
 
     const steps = useMemo(
-        () => buildStepsFromCatalog(filteredCustomizations),
-        [filteredCustomizations],
+        () => buildStepsFromCatalog(availableCustomizations),
+        [availableCustomizations],
     );
 
     // Clear picks another pick has made impossible (e.g. a printing method the newly chosen
@@ -162,6 +171,7 @@ export function CustomizationBuilder({
         const picked = answerSelections(getAnswer(value, activeKey)).some(
             (item) => item.optionId === option.id,
         );
+        if (!picked && disabledOptionIds.has(option.id)) return;
         if (picked && activeOptionId !== option.id) {
             setActiveOptionId(option.id);
             setActiveTypeId(option.typeId);
@@ -344,6 +354,7 @@ export function CustomizationBuilder({
                             activeKey={activeKey}
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
+                            disabledOptionIds={disabledOptionIds}
                             state={value}
                             maxReachableIndex={guidedMaxIndex}
                             dimensionInput={dimensionInput}
@@ -370,6 +381,7 @@ export function CustomizationBuilder({
                             activeKey={activeKey}
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
+                            disabledOptionIds={disabledOptionIds}
                             state={value}
                             dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
