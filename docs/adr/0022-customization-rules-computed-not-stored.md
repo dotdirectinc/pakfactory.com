@@ -72,6 +72,15 @@ Registry coverage is deliberately **not** the signal. Surface Coating is gated b
 
 Resolution is a **fixpoint, not one pass** — removing an option can remove the option that depended on it. And a later selection can invalidate an earlier one, in which case the earlier choice is **removed *and* reported**: silently dropping it produces a spec the customer never agreed to, silently keeping it produces one that cannot be made.
 
+**Amended 2026-09-25 (PROD-2556): picks check each other, pair by pair — "not ticked" is incompatible.** `compatibleCustomizations` is **complete for every two options a product offers together**: the backend fill (`relationship-fill.ts`) asked the registry's own engine — Crystal's 20 `exclude` rules included — whether each option survives the other on every product offering both, and ticked the pair when it did on at least one. An unticked pair between two options one product offers is therefore a real clash (Soy-Based × Water-Based Ink, Soft Touch × Blind Debossing), never an undrawn one. Pairs no product offers together are unticked too, but never meet in one configurator. So `resolveWithSelections`:
+
+- hides, once an option is picked, every option it is not paired with — in any Type, including its own when that Type is `customerSelects: many` (a `one` Type's alternatives stay listed, so the customer can switch). Requirements alone never saw these clashes: they read pairs only along `dependsOn`, and never within a Type;
+- skips options with **no pairs at all** on both sides — empty there means "nothing recorded" (an Add exception, a hand-made option), not "clashes with everything";
+- takes clashing picks (only reachable from a preset or a saved request, since the configurator hides clashes) in order: the earlier stands, the later is invalidated with `conflictsWith`;
+- with `lookahead` (the configurator's mode), lists an option only if picking it invalidates nothing — two picks can each be fine alone yet leave no board that takes both.
+
+**No `excludes` field** (Richard, 2026-09-25): the compatible lists already carry the excludes; a second field would state them twice.
+
 ### 6. Availability is direct ∪ derived — and the derived half is displayed, never stored
 
 ✅ **Accepted 2026-09-24 — implemented in PROD-2595 (#630).** The product's Customization tab shows a read-only **Derived** section, computed by `resolveForProduct`, with the partner that keeps each option. Nothing derived is stored.
@@ -90,7 +99,7 @@ This un-parks what PROD-2529 listed as out of scope (*"the derived read-only Fin
 |---|---|
 | Shape | **One array** of `{customization, mode: 'add' \| 'remove', reason}`. Two arrays would answer one question in two places. The reason is required. |
 | Target | **Option only**, and only an option whose Type another customization decides. A product-decided option is already the product's to list in `availableCustomizations`; a Type-level exception would be the coarse enumeration D61 and D62 removed. |
-| Precedence against a hard exclude | **An Add is never blocked, and always flagged.** Sanity cannot tell a physically impossible pairing from one nobody has drawn: Crystal's exclude rules reached Sanity only as missing pairs in `compatibleCustomizations`, and the registry's rule API is paused. So every Add carries a Studio warning to confirm with production, and the product appears on the exceptions list. Bringing hard excludes into Sanity as their own field was considered and not taken: it would reintroduce an explicit incompatibility list, which D62 removed. |
+| Precedence against a hard exclude | **An Add is never blocked, and always flagged.** Crystal's exclude rules reached Sanity as missing pairs in `compatibleCustomizations`, and the registry's rule API is paused. *(Corrected 2026-09-25 — see decision 5: those missing pairs are reliable wherever two options meet on one product, and the configurator now enforces them. An Add is still never blocked, because an added option has no pairs of its own to check.)* So every Add carries a Studio warning to confirm with production, and the product appears on the exceptions list. Bringing hard excludes into Sanity as their own field was considered and not taken: it would reintroduce an explicit incompatibility list, which D62 removed. |
 | Report | **Yes.** A Studio list, *Products with Exceptions*, in the Products workspace now; admin gets its own with PROD-2560. |
 
 How the rules apply it: a **Remove** comes out before the rules settle, so what depended on it cascades out too; an **Add** is pinned, so the rules never take it back and what depends on it can pair with it. Each exception reports its effect against the rules alone — `added`, `removed`, or `redundant` when the rules already agree — and an Add says why the rules left the option out.
