@@ -100,7 +100,8 @@ const client = createClient({
 })
 
 /** Dependencies first: a strong reference to a document not yet written is rejected. */
-const TYPE_ORDER = ['property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'customizationOption', 'product']
+// solutionStyle after solution / productLine / productStyle: it references all three (PROD-2605).
+const TYPE_ORDER = ['property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'customizationOption', 'product']
 const BATCH = 50
 
 function fail(msg) {
