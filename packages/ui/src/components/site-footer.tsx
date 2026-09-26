@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Link from "next/link";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { Button } from "@pakfactory/ui/components/button";
 import {
@@ -7,7 +8,11 @@ import {
   pageDielineOuterClass,
 } from "@pakfactory/ui/components/page-dieline-section";
 import { AI_ENGINE_ICONS } from "@pakfactory/ui/icons/ai-brand-icon";
-import { EXTERNAL_LINK_REL, externalLinkAttributes } from "@pakfactory/utilities/external-link";
+import {
+  EXTERNAL_LINK_REL,
+  externalLinkAttributes,
+  isExternalHref,
+} from "@pakfactory/utilities/external-link";
 
 export type FooterLink = { label: string; href: string; external?: boolean };
 export type FooterSection = { title: string; links: FooterLink[] };
@@ -103,12 +108,32 @@ function StaticWordmark() {
   );
 }
 
+function isSameSiteFooterHref(href: string, external?: boolean): boolean {
+  if (external) return false;
+  const trimmed = href.trim();
+  if (!trimmed) return false;
+  if (isExternalHref(trimmed)) return false;
+  if (trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) return false;
+  return trimmed.startsWith("/");
+}
+
 function FooterLinkItem({ link }: { link: FooterLink }) {
-  const className = "block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground";
-  // Footer nav links stay in the same tab — categories/topics/company links are
-  // part of the site experience (incl. the blog served under the same domain).
-  // Social/AI icons keep their own new-tab rendering below.
-  return <a href={link.href} className={className}>{link.label}</a>;
+  const className =
+    "block text-base font-normal leading-6 text-muted-foreground transition-colors hover:text-foreground";
+  // Same-site footer links use App Router client navigation. Social/AI icons
+  // and external destinations keep plain <a> (new tab when absolute http(s)).
+  if (isSameSiteFooterHref(link.href, link.external)) {
+    return (
+      <Link href={link.href} className={className}>
+        {link.label}
+      </Link>
+    );
+  }
+  return (
+    <a href={link.href} className={className} {...externalLinkAttributes(link.href)}>
+      {link.label}
+    </a>
+  );
 }
 
 function FooterSectionBlock({ section }: { section: FooterSection }) {
@@ -123,6 +148,35 @@ function FooterSectionBlock({ section }: { section: FooterSection }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+function FooterContactCta({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+}) {
+  if (isSameSiteFooterHref(href)) {
+    return (
+      <Button
+        className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        asChild
+      >
+        <Link href={href}>{label}</Link>
+      </Button>
+    );
+  }
+  return (
+    <Button
+      className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+      asChild
+    >
+      <a href={href} {...externalLinkAttributes(href)}>
+        {label}
+      </a>
+    </Button>
   );
 }
 
@@ -146,14 +200,7 @@ export function SiteFooter({
           <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
             Let&apos;s collaborate and craft <br /> your vision
           </h2>
-          <Button
-            className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            asChild
-          >
-            <a href={contactHref} {...externalLinkAttributes(contactHref)}>
-              {contactLabel}
-            </a>
-          </Button>
+          <FooterContactCta href={contactHref} label={contactLabel} />
         </div>
 
         <div

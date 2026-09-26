@@ -2,6 +2,7 @@
 
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
+import {useLinkStatus} from 'next/link';
 import {Columns2, Package} from 'lucide-react';
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
@@ -14,6 +15,7 @@ import {
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
 import {displayProductSku} from '@/lib/catalog/display-sku';
+import {cn} from '@pakfactory/ui/lib/utils';
 
 export type ProductCardImage = {
     src: string;
@@ -58,8 +60,9 @@ const compareAction = {
 /**
  * **Transactional card** — product catalog tile (SKU eyebrow, bookmark / compare).
  * Composes {@link MediaCardFrame}.
- * Prefetch stays off for the grid; the card under the pointer opts into full
- * route prefetch so a click is more likely to hit a warm payload.
+ * Prefetch stays off for the grid; the card under the pointer (hover,
+ * focus, or pointerdown) opts into full route prefetch so a click is more
+ * likely to hit a warm payload without prefetching every PDP.
  */
 export function ProductCard({data}: ProductCardProps) {
     // Missing SKU shows "-" — never fall back to slug or style/line title.
@@ -111,6 +114,7 @@ export function ProductCard({data}: ProductCardProps) {
             href={data.href}
             prefetch={prefetch}
             onPointerEnter={enablePrefetch}
+            onPointerDown={enablePrefetch}
             onFocus={enablePrefetch}
             className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={data.title}
@@ -166,15 +170,28 @@ export function ProductCard({data}: ProductCardProps) {
                         href={data.href}
                         prefetch={prefetch}
                         onPointerEnter={enablePrefetch}
+                        onPointerDown={enablePrefetch}
                         onFocus={enablePrefetch}
                         className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
-                            {data.title}
-                        </h3>
+                        <ProductCardTitlePending title={data.title} />
                     </Link>
                 </div>
             }
         />
+    );
+}
+
+function ProductCardTitlePending({title}: {title: string}) {
+    const {pending} = useLinkStatus();
+    return (
+        <h3
+            className={cn(
+                'line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground transition-opacity duration-200',
+                pending && 'opacity-70',
+            )}
+        >
+            {title}
+        </h3>
     );
 }
