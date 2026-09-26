@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import {ChevronDown} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -86,7 +87,7 @@ export function ProductStylesSection({
                                 description={card.description}
                                 imageSrc={card.imageSrc}
                                 imageAlt={card.imageAlt}
-                                surface={shell.cardSurface}
+                                surface="elevated"
                                 emptyMedia="mark"
                             />
                         </li>
@@ -96,10 +97,12 @@ export function ProductStylesSection({
                     <div className="mt-8 flex justify-center">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="link"
                             onClick={() => setExpanded(true)}
+                            className="gap-1 font-semibold text-primary"
                         >
                             See more
+                            <ChevronDown className="size-4" aria-hidden />
                         </Button>
                     </div>
                 ) : null}
