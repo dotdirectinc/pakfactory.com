@@ -418,7 +418,7 @@ export function ProductLineHero({
                     <div
                         ref={markRef}
                         className={cn(
-                            'relative mx-auto shrink-0 overflow-hidden rounded-xl border border-blue-950 bg-background/50',
+                            'relative mx-auto shrink-0 overflow-hidden rounded-xl border border-dashed border-background-muted bg-background/20',
                             'size-display-mark',
                             enterPhase === 'pending' && 'opacity-0',
                         )}
