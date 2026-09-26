@@ -2,12 +2,8 @@ import type {PageSectionDoc, PageSectionInspirationsCardDoc} from '@pakfactory/s
 
 import type {
     Product,
-    ProductFaq,
     ProductLine,
-    ProductLineCaseStudyRef,
-    ProductLineExpertiseRef,
     ProductLineFrame,
-    ProductLineRelatedRef,
     ProductStyleRef,
 } from '@/lib/catalog/types';
 import {
@@ -24,7 +20,7 @@ export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
 
 /**
  * Placeholder intro until design supplies copy. Used only when both
- * description and shortDescription are empty on rigid-boxes.
+ * shortDescription and description are empty on rigid-boxes.
  */
 export const RIGID_BOXES_MOCK_INTRO =
     'Premium rigid packaging built to be kept, gifted, and remembered.';
@@ -73,17 +69,13 @@ export type ProductLineLandingModel = {
     kitMarkUrl: string | null;
     kitMarkAlt: string;
     styles: ProductLineLandingStyleCard[] | null;
-    expertise: ProductLineExpertiseRef[] | null;
-    featuredStudies: ProductLineCaseStudyRef[] | null;
-    faqs: ProductFaq[] | null;
-    relatedLines: ProductLineRelatedRef[] | null;
     /**
      * Merged Product Line Page template × line sections (order/chrome × content).
      * Empty when neither template nor line has sections.
+     * Document faqs / featuredStudies / expertise / relatedLines feed inherit
+     * into these sections — they are not separate route bands.
      */
     pageSections: PageSectionDoc[];
-    /** No line field yet. */
-    logos: null;
 };
 
 type RigidBoxesMock = {
@@ -185,10 +177,10 @@ function resolveH1(line: ProductLine): string {
 }
 
 function resolveIntro(line: ProductLine): string {
-    const fromDescription = line.description?.trim();
-    if (fromDescription) return fromDescription;
     const fromShort = line.shortDescription?.trim();
     if (fromShort) return fromShort;
+    const fromDescription = line.description?.trim();
+    if (fromDescription) return fromDescription;
     const mock = LINE_MOCKS[line.slug];
     if (mock) return mock.intro;
     return '';
@@ -270,24 +262,44 @@ export function assembleProductLineLanding(
         }),
     );
 
-    const expertise = line.expertise?.length ? line.expertise : null;
     const featuredStudies = line.featuredStudies?.length
         ? line.featuredStudies
         : null;
     const faqs = line.faqs?.length ? line.faqs : null;
-    const relatedLines = line.relatedLines?.length ? line.relatedLines : null;
 
     const contentSections = line.sections ?? [];
     const templateSections = line.templateSections ?? [];
+    const documentFaqs = faqs?.map((faq) => ({
+        question: faq.question,
+        answerPlain: faq.answerPlain,
+    }));
+    const documentVideoStudies = featuredStudies
+        ?.filter((study) => study.imageUrl?.trim())
+        .map((study) => ({
+            kind: 'ref' as const,
+            title: study.title,
+            brand: study.title,
+            slug: study.slug,
+            imageSrc: study.imageUrl,
+            imageAlt: study.imageAlt ?? study.title,
+        }));
     const mergedSections =
         templateSections.length > 0
-            ? mergeSolutionSections(templateSections, contentSections)
+            ? mergeSolutionSections(
+                  templateSections,
+                  contentSections,
+                  undefined,
+                  documentFaqs,
+                  undefined,
+                  documentVideoStudies,
+              )
             : contentSections;
     const pageSections = applySectionTokens(
         applyProductStylesInherit(mergedSections, inheritStyleCards),
         sectionTokenContextFromHost({
             title: line.title,
             h1: resolveH1(line),
+            shortName: line.shortName,
             shortDescription: line.shortDescription,
             descriptionText: line.description,
             slug: line.slug,
@@ -310,11 +322,6 @@ export function assembleProductLineLanding(
         kitMarkUrl: kitMark.url,
         kitMarkAlt: kitMark.alt,
         styles: styles.length > 0 ? styles : null,
-        expertise,
-        featuredStudies,
-        faqs,
-        relatedLines,
         pageSections,
-        logos: null,
     };
 }

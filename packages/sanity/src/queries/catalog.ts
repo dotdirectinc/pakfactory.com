@@ -278,6 +278,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   _id,
   title,
   h1,
+  shortName,
   "slug": slug.current,
   shortDescription,
   "description": pt::text(description),
@@ -814,6 +815,7 @@ export type CatalogProductLineDoc = {
   title: string;
   slug: string | null;
   h1?: string | null;
+  shortName?: string | null;
   shortDescription?: string | null;
   /** Plain text from `pt::text(description)`. */
   description?: string | null;

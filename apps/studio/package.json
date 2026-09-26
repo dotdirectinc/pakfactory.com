@@ -17,6 +17,8 @@
     "seed:expertise-strategy": "node scripts/seed-expertise-strategy.mjs",
     "seed:beauty-style-products": "node scripts/seed-beauty-style-products.mjs",
     "seed:test-solution-hero-products": "node scripts/seed-test-solution-hero-products.mjs",
+    "clone:test-rigid-book-style": "node scripts/clone-test-rigid-book-style.mjs",
+    "seed:test-rigid-line-lp": "node scripts/seed-test-rigid-line-lp.mjs",
     "seed:product-line-page-styles": "node scripts/seed-product-line-page-styles.mjs",
     "seed:test-kids-solution-lp": "node scripts/seed-test-kids-solution-lp.mjs",
     "import:notion-customization-demo": "node scripts/import-notion-customization-demo.mjs",
