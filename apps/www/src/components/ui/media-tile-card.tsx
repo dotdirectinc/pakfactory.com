@@ -1,5 +1,8 @@
-import type {MouseEvent} from 'react';
+'use client';
+
+import type {MouseEvent, ReactNode} from 'react';
 import Link from 'next/link';
+import {useLinkStatus} from 'next/link';
 import {ChevronRight, Package} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
@@ -221,8 +224,24 @@ export function MediaTileCard({
 
     return (
         <Link href={href} className={shellClassName}>
-            {media}
-            {meta}
+            <MediaTilePendingBody>
+                {media}
+                {meta}
+            </MediaTilePendingBody>
         </Link>
+    );
+}
+
+function MediaTilePendingBody({children}: {children: ReactNode}) {
+    const {pending} = useLinkStatus();
+    return (
+        <span
+            className={cn(
+                'flex h-full w-full flex-col',
+                pending && 'opacity-70 transition-opacity duration-200',
+            )}
+        >
+            {children}
+        </span>
     );
 }

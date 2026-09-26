@@ -260,7 +260,10 @@ export function ProductLineHero({
             // decide whether the hero is still in view (reload mid-page).
             await waitFrame();
             await waitFrame();
-            if (cancelled) return;
+            if (cancelled) {
+                settleToDone();
+                return;
+            }
 
             const sectionRect = section.getBoundingClientRect();
             const heroOffScreen =
@@ -315,7 +318,10 @@ export function ProductLineHero({
                 (el): el is HTMLElement => Boolean(el),
             );
 
-            if (cancelled) return;
+            if (cancelled) {
+                settleToDone();
+                return;
+            }
 
             gsap.set(mark, {
                 scale: startScale,
@@ -332,7 +338,10 @@ export function ProductLineHero({
                 });
             });
             if (media) gsap.set(media, {opacity: 0, y: 80});
-            if (cancelled) return;
+            if (cancelled) {
+                settleToDone();
+                return;
+            }
             // GSAP owns opacity; allow Y overflow while the mark is oversized.
             setEnterPhase('active');
 
@@ -394,6 +403,8 @@ export function ProductLineHero({
         return () => {
             cancelled = true;
             ctx?.revert();
+            // Never leave the hero at opacity-0 after unmount / remount (Back).
+            settleToDone();
         };
     }, [isMobile, reduceMotion]);
 

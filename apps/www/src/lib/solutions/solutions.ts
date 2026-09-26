@@ -1,5 +1,6 @@
 import 'server-only';
 
+import {cache} from 'react';
 import {unstable_cache} from 'next/cache';
 import {
     CATALOG_PRODUCT_LIBRARY_FIELDS,
@@ -286,21 +287,22 @@ async function getSolutionBySlugResult(
  * Industry Solution LP payload for `/solutions/[slug]`.
  * Hero from Sanity page fields; body from merged template × content sections.
  * Requires a hasPage solution in Sanity (no local fixture fallback).
+ * `cache()` dedupes metadata + page within one request.
  */
-export async function getSolutionLandingContent(
-    slug: string,
-): Promise<SolutionLandingContent | null> {
-    const key = normalizeSlug(slug);
-    const fromSanity = await getSolutionBySlugResult(key);
-    if (!fromSanity) return null;
+export const getSolutionLandingContent = cache(
+    async (slug: string): Promise<SolutionLandingContent | null> => {
+        const key = normalizeSlug(slug);
+        const fromSanity = await getSolutionBySlugResult(key);
+        if (!fromSanity) return null;
 
-    return buildSolutionLandingContent(
-        fromSanity.page,
-        fromSanity.sections,
-        undefined,
-        fromSanity.heroProducts,
-    );
-}
+        return buildSolutionLandingContent(
+            fromSanity.page,
+            fromSanity.sections,
+            undefined,
+            fromSanity.heroProducts,
+        );
+    },
+);
 
 export async function getSolutionLineCatalog(
     solutionSlug: string,

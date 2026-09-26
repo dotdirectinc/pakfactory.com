@@ -27,7 +27,7 @@ export function buildExpertiseStageJsonLd(stage: ExpertiseStagePage): string {
 
     const seen = new Set<string>();
     const items: {question: string; answer: string}[] = [];
-    for (const section of stage.sections) {
+    for (const section of stage.sections ?? []) {
         if (section._type !== 'faqSection') continue;
         for (const faq of (section as PageSectionFaqSectionDoc).faqs ?? []) {
             const question = faq?.question?.trim();
