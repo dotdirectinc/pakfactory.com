@@ -173,6 +173,8 @@ export type ProductLine = {
     description: string;
     /** Page H1 override; empty falls back to title in the landing assembler. */
     h1?: string;
+    /** Card/nav label; empty falls back to title for section tokens. */
+    shortName?: string;
     shortDescription?: string;
     metaTitle?: string;
     metaDescription?: string;

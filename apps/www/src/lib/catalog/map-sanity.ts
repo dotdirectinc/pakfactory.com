@@ -527,6 +527,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
     }
 
     const h1 = doc.h1?.trim();
+    const shortName = doc.shortName?.trim();
     const shortDescription = doc.shortDescription?.trim();
     const metaTitle = doc.metaTitle?.trim();
     const metaDescription = doc.metaDescription?.trim();
@@ -547,6 +548,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         title: doc.title,
         description,
         ...(h1 ? {h1} : {}),
+        ...(shortName ? {shortName} : {}),
         ...(shortDescription ? {shortDescription} : {}),
         ...(metaTitle ? {metaTitle} : {}),
         ...(metaDescription ? {metaDescription} : {}),

@@ -167,7 +167,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.frames.length, 1);
     });
 
-    it('omits empty FAQ and expertise bands', () => {
+    it('omits empty styles and page sections when none are authored', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'folding-cartons',
@@ -176,12 +176,7 @@ describe('assembleProductLineLanding', () => {
                 expertise: [],
             }),
         );
-        assert.equal(model.faqs, null);
-        assert.equal(model.expertise, null);
-        assert.equal(model.featuredStudies, null);
-        assert.equal(model.relatedLines, null);
         assert.equal(model.styles, null);
-        assert.equal(model.logos, null);
         assert.deepEqual(model.pageSections, []);
     });
 
@@ -219,6 +214,58 @@ describe('assembleProductLineLanding', () => {
         );
     });
 
+    it('resolves %shortName% from the line shortName, not the title', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'test-rigid-boxes',
+                title: '[Test] Rigid Boxes',
+                shortName: 'Rigid Boxes',
+                templateSections: [
+                    {
+                        _key: 'styles',
+                        _type: 'productStylesRow',
+                        eyebrow: '%shortName% Styles',
+                        heading: 'Explore %title% by style',
+                    } as never,
+                ],
+            }),
+        );
+        const section = model.pageSections[0] as {
+            eyebrow?: string;
+            heading?: string;
+        };
+        assert.equal(section.eyebrow, 'Rigid Boxes Styles');
+        assert.equal(section.heading, 'Explore [Test] Rigid Boxes by style');
+    });
+
+    it('inherits FAQs from the line when the template faqSection listSource is page', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'test-rigid-boxes',
+                title: '[Test] Rigid Boxes',
+                faqs: [
+                    {
+                        question: 'What is MOQ?',
+                        answerPlain: 'Usually 500 units.',
+                    },
+                ],
+                templateSections: [
+                    {
+                        _key: 'faq',
+                        _type: 'faqSection',
+                        listSource: 'page',
+                        faqs: [],
+                    } as never,
+                ],
+            }),
+        );
+        const section = model.pageSections[0] as {
+            faqs?: {question?: string}[];
+        };
+        assert.equal(section.faqs?.length, 1);
+        assert.equal(section.faqs?.[0]?.question, 'What is MOQ?');
+    });
+
     it('uses line sections when no template is set', () => {
         const model = assembleProductLineLanding(
             line({
@@ -237,7 +284,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.pageSections[0]?._type, 'testimonialsRow');
     });
 
-    it('keeps authored FAQ and expertise bands', () => {
+    it('inherits FAQs and featured studies into template pageSections only', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'folding-cartons',
@@ -248,13 +295,100 @@ describe('assembleProductLineLanding', () => {
                         answerPlain: 'Usually 500.',
                     },
                 ],
+                featuredStudies: [
+                    {
+                        slug: 'east-west-bank',
+                        title: 'East West Bank',
+                        imageUrl: 'https://cdn.example/ewb.jpg',
+                        imageAlt: 'East West Bank',
+                    },
+                ],
                 expertise: [
                     {slug: 'design', title: 'Design', description: 'Briefing'},
                 ],
+                templateSections: [
+                    {
+                        _key: 'cases',
+                        _type: 'videoCaseStudiesRow',
+                        listSource: 'page',
+                        cards: [],
+                    } as never,
+                    {
+                        _key: 'faq',
+                        _type: 'faqSection',
+                        listSource: 'page',
+                        faqs: [],
+                    } as never,
+                ],
             }),
         );
-        assert.equal(model.faqs?.length, 1);
-        assert.equal(model.expertise?.length, 1);
+        assert.equal(model.pageSections.length, 2);
+        const cases = model.pageSections[0] as {
+            _type?: string;
+            cards?: {slug?: string}[];
+        };
+        const faq = model.pageSections[1] as {
+            _type?: string;
+            faqs?: {question?: string}[];
+        };
+        assert.equal(cases._type, 'videoCaseStudiesRow');
+        assert.equal(cases.cards?.length, 1);
+        assert.equal(cases.cards?.[0]?.slug, 'east-west-bank');
+        assert.equal(faq._type, 'faqSection');
+        assert.equal(faq.faqs?.length, 1);
+        assert.equal(faq.faqs?.[0]?.question, 'What is MOQ?');
+    });
+
+    it('keeps Product Line Page template order with logoWall first', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'test-rigid-boxes',
+                title: '[Test] Rigid Boxes',
+                shortName: 'Rigid Boxes',
+                faqs: [
+                    {
+                        question: 'What is MOQ?',
+                        answerPlain: 'Usually 500.',
+                    },
+                ],
+                featuredStudies: [
+                    {
+                        slug: 'east-west-bank',
+                        title: 'East West Bank',
+                        imageUrl: 'https://cdn.example/ewb.jpg',
+                    },
+                ],
+                templateSections: [
+                    {_key: '1', _type: 'logoWall'} as never,
+                    {_key: '2', _type: 'productStylesRow', listSource: 'page'} as never,
+                    {_key: '3', _type: 'mediaFeature'} as never,
+                    {
+                        _key: '4',
+                        _type: 'videoCaseStudiesRow',
+                        listSource: 'page',
+                        cards: [],
+                    } as never,
+                    {_key: '5', _type: 'testimonialsRow'} as never,
+                    {
+                        _key: '6',
+                        _type: 'faqSection',
+                        listSource: 'page',
+                        faqs: [],
+                    } as never,
+                ],
+            }),
+        );
+        assert.deepEqual(
+            model.pageSections.map((s) => s._type),
+            [
+                'logoWall',
+                'productStylesRow',
+                'mediaFeature',
+                'videoCaseStudiesRow',
+                'testimonialsRow',
+                'faqSection',
+            ],
+        );
     });
 
     it('fills rigid-boxes H1 from mock when empty', () => {
@@ -276,11 +410,23 @@ describe('assembleProductLineLanding', () => {
                 slug: 'rigid-boxes',
                 title: 'Rigid Boxes',
                 h1: 'Custom Rigid Boxes',
-                description: 'Authored intro.',
+                shortDescription: 'Authored intro.',
             }),
         );
         assert.equal(model.h1, 'Custom Rigid Boxes');
         assert.equal(model.intro, 'Authored intro.');
+    });
+
+    it('prefers shortDescription over description for the hero intro', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'test-rigid-boxes',
+                title: '[Test] Rigid Boxes',
+                shortDescription: 'Short hero line.',
+                description: 'Long body copy that should not appear in the hero.',
+            }),
+        );
+        assert.equal(model.intro, 'Short hero line.');
     });
 
     it('prefers authored kit mark and featured image over rigid-boxes mocks', () => {
