@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
  * Educate → RFQ content for Product Line LPs:
- *   1. Patch shared `productLinePage` section chrome (tokenized copy)
+ *   1. Patch shared `productLinePage` section chrome (tokenized copy; case-study
+ *      cards / listSource left alone so template Custom list wins)
  *   2. Create 4 contextual FAQs for rigid boxes
- *   3. Patch `[Test] Rigid Boxes` hero + faqs + band content
+ *   3. Patch `[Test] Rigid Boxes` hero + faqs + logo wall only (clears any
+ *      videoCaseStudiesRow line override that would shadow the template list)
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -89,11 +91,6 @@ const LOGO_CLIENT_IDS = [
   'client.beauty-seed-benefit', // Benefit
 ]
 
-const FEATURED_STUDY_IDS = [
-  '044d8f1d-fc04-404d-be92-4f7c2c566a04', // East West Bank
-  '0d6555b6-8039-4df8-9b4a-3629c8c2ef41', // Hello Adorn
-]
-
 const HERO = {
   shortName: 'Rigid Boxes',
   h1: 'Rigid boxes built for the unboxing',
@@ -153,14 +150,6 @@ function ref(id, key) {
   }
 }
 
-function videoCaseStudyRef(id, key) {
-  return {
-    _type: 'videoCaseStudyRef',
-    _ref: id,
-    _key: key ?? randomUUID().replace(/-/g, '').slice(0, 12),
-  }
-}
-
 /** Patch chrome on a template section; leave content fields unless overridden. */
 function patchTemplateChrome(sections) {
   return sections.map((section) => {
@@ -195,14 +184,13 @@ function patchTemplateChrome(sections) {
       }
     }
     if (section._key === KEY.caseStudies) {
+      // Chrome only — do not touch listSource or cards (template custom list wins).
       return {
         ...section,
         eyebrow: 'Case studies',
         heading: 'How brands use packaging like this',
         intro:
           'Real projects — structure, print, and production decisions that held up in market.',
-        listSource: 'page',
-        cards: [],
       }
     }
     if (section._key === KEY.testimonials) {
@@ -240,9 +228,10 @@ async function main() {
     process.exit(1)
   }
 
-  const line = await client.fetch(`*[_id == $id][0]{_id, title, slug}`, {
-    id: LINE_ID,
-  })
+  const line = await client.fetch(
+    `*[_id == $id][0]{_id, title, slug, "sectionKeys": sections[]._key}`,
+    { id: LINE_ID },
+  )
   if (!line) {
     console.error(
       `❌  Missing ${LINE_ID}. Run clone:test-rigid-book-style --confirm first.`,
@@ -272,15 +261,6 @@ async function main() {
     process.exit(1)
   }
 
-  const studies = await client.fetch(
-    `*[_id in $ids]{_id, title, "slug": slug.current, "hasImage": defined(cardImage.asset)}`,
-    { ids: FEATURED_STUDY_IDS },
-  )
-  if (studies.length !== FEATURED_STUDY_IDS.length) {
-    console.error('❌  One or more featured case studies are missing')
-    process.exit(1)
-  }
-
   const nextTemplateSections = patchTemplateChrome(template.sections)
 
   const faqDocs = FAQ_SPECS.map((spec) => ({
@@ -293,28 +273,25 @@ async function main() {
     category: { _type: 'reference', _ref: HELP_CATEGORY_ID },
   }))
 
+  // Logo wall only — do not override template videoCaseStudiesRow (custom list).
   const lineSections = [
     {
       _key: KEY.logoWall,
       _type: 'logoWall',
       curatedItems: LOGO_CLIENT_IDS.map((id, i) => ref(id, `logo-${i}`)),
     },
-    {
-      _key: KEY.caseStudies,
-      _type: 'videoCaseStudiesRow',
-      listSource: 'custom',
-      cards: FEATURED_STUDY_IDS.map((id, i) =>
-        videoCaseStudyRef(id, `study-${i}`),
-      ),
-    },
   ]
+
+  const clearingCaseOverride = (line.sectionKeys ?? []).includes(
+    KEY.caseStudies,
+  )
 
   /** @type {{ kind: string, id: string, detail: string }[]} */
   const planned = [
     {
       kind: 'patch',
       id: TEMPLATE_ID,
-      detail: 'Product Line Page chrome (6 sections)',
+      detail: 'Product Line Page chrome (preserve case-study cards)',
     },
     ...faqDocs.map((f) => ({
       kind: 'createOrReplace',
@@ -324,12 +301,18 @@ async function main() {
     {
       kind: 'patch',
       id: LINE_ID,
-      detail: 'Hero + faqs + logo wall + case study cards',
+      detail: clearingCaseOverride
+        ? 'Hero + faqs + logo wall; remove videoCaseStudiesRow override'
+        : 'Hero + faqs + logo wall only',
     },
   ]
 
   console.log(`\nLine: ${line.title} (${line._id})`)
-  console.log(`Featured studies: ${studies.map((s) => s.title).join('; ')}`)
+  if (clearingCaseOverride) {
+    console.log(
+      `Will clear line section override ${KEY.caseStudies} so template custom list shows.`,
+    )
+  }
   console.log(`Logo clients: ${clients.map((c) => c.name).join(', ')}`)
 
   console.log(`\nPlanned writes (${planned.length}):`)
@@ -348,23 +331,24 @@ async function main() {
   tx.patch(TEMPLATE_ID, (p) => p.set({ sections: nextTemplateSections }))
   for (const faq of faqDocs) tx.createOrReplace(faq)
   tx.patch(LINE_ID, (p) =>
-    p.set({
-      shortName: HERO.shortName,
-      h1: HERO.h1,
-      shortDescription: HERO.shortDescription,
-      description: [plainBlock(HERO.description, 'test-rigid-desc')],
-      allowIndex: false,
-      faqs: FAQ_SPECS.map((f, i) => ref(f.id, `faq-${i}`)),
-      featuredStudies: FEATURED_STUDY_IDS.map((id, i) =>
-        ref(id, `feat-${i}`),
-      ),
-      sections: lineSections,
-    }),
+    p
+      .set({
+        shortName: HERO.shortName,
+        h1: HERO.h1,
+        shortDescription: HERO.shortDescription,
+        description: [plainBlock(HERO.description, 'test-rigid-desc')],
+        allowIndex: false,
+        faqs: FAQ_SPECS.map((f, i) => ref(f.id, `faq-${i}`)),
+        sections: lineSections,
+      })
+      .unset(['featuredStudies']),
   )
   await tx.commit()
 
   console.log(`\n✅  Wrote ${planned.length} operation(s) to ${DATASET}.`)
-  console.log('Open /products/test-rigid-boxes to review.\n')
+  console.log(
+    'Open /products/test-rigid-boxes — case studies should match the template custom list.\n',
+  )
 }
 
 main().catch((err) => {
