@@ -14,7 +14,7 @@ const TILE_GRID_CLASS =
 
 /**
  * Fixed breadcrumb + heading for `/solutions` — shared by the page and
- * `loading.tsx` so the title does not jump when the grid resolves.
+ * Suspense fallbacks so the title does not jump when the grid resolves.
  */
 export function SolutionCatalogPageChrome() {
     return (
@@ -48,7 +48,7 @@ function SolutionCatalogTileSkeleton() {
     );
 }
 
-/** Tile grid — used by route `loading.tsx` and in-view Suspense. */
+/** Tile grid — used by in-view Suspense under live chrome. */
 export function SolutionCatalogPanelLoading({count = 6}: {count?: number} = {}) {
     return (
         <PageDielineSection innerClassName="pb-24 pt-8">
@@ -63,18 +63,5 @@ export function SolutionCatalogPanelLoading({count = 6}: {count?: number} = {}) 
                 ))}
             </div>
         </PageDielineSection>
-    );
-}
-
-/**
- * Full `/solutions` route shell — real chrome + tile grid.
- * In-view Suspense under live chrome should use {@link SolutionCatalogPanelLoading}.
- */
-export function SolutionCatalogPageLoading() {
-    return (
-        <>
-            <SolutionCatalogPageChrome />
-            <SolutionCatalogPanelLoading />
-        </>
     );
 }

@@ -1,12 +1,11 @@
-'use client';
-
-import {useEffect, useState} from 'react';
+import Link from 'next/link';
 import {
     pageDielineBorderYClass,
     pageDielineInnerClass,
     pageDielineOuterClass,
     pageDielinePaddingBlockClass,
 } from '@pakfactory/ui/components/page-dieline-section';
+import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {
@@ -14,10 +13,8 @@ import {
     type PageHeadingEyebrow,
 } from '@/components/common/page-heading-section';
 import {SolutionProductCarousel} from '@/components/solution/solution-product-carousel';
-import {
-    HERO_SECTION_ID,
-    SolutionHeroScrollCue,
-} from '@/components/solution/solution-hero-scroll-cue';
+import {HERO_SECTION_ID} from '@/components/solution/solution-hero-ids';
+import {SolutionHeroScrollCue} from '@/components/solution/solution-hero-scroll-cue';
 import type {SolutionHeroContent} from '@/lib/solutions/types';
 
 const HERO_HEADING_ID = 'solution-hero-heading';
@@ -29,27 +26,13 @@ function composeHeroTitle(content: SolutionHeroContent): string {
     return [lead, keyword, trail].filter(Boolean).join(' ');
 }
 
-function useIsMobile(): boolean {
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 639px)');
-        const sync = () => setIsMobile(mq.matches);
-        sync();
-        mq.addEventListener('change', sync);
-        return () => mq.removeEventListener('change', sync);
-    }, []);
-
-    return isMobile;
-}
-
 /**
- * Industry Solution LP hero — heading + responsive scroll-scrubbed tiles.
- * Mobile: primary CTA in the heading. Desktop/tablet: fixed scroll cue.
+ * Industry Solution LP hero — RSC shell (heading + copy) with client islands
+ * for the product carousel and desktop scroll cue. Mobile CTA is SSR’d and
+ * hidden from `sm` up via CSS (no breakpoint JS).
  */
 export function SolutionHero({content}: {content: SolutionHeroContent}) {
     const title = composeHeroTitle(content);
-    const isMobile = useIsMobile();
     const kit = content.kitMark;
     const eyebrow: PageHeadingEyebrow | undefined = kit?.src
         ? {
@@ -77,10 +60,17 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
                         title={title}
                         titleId={HERO_HEADING_ID}
                         description={content.subtitle || undefined}
-                        primaryCta={isMobile ? content.cta : undefined}
                         titleClassName="max-w-[1066px] text-display font-bold tracking-[-0.82px]"
                         descriptionClassName="max-w-[732px] text-xl leading-7 text-foreground"
-                    />
+                    >
+                        <div className="flex justify-center sm:hidden">
+                            <Button asChild size="xl" variant="default">
+                                <Link href={content.cta.href}>
+                                    {content.cta.label}
+                                </Link>
+                            </Button>
+                        </div>
+                    </PageHeadingContent>
                 </div>
                 <div className="pb-12">
                     <SolutionProductCarousel
@@ -89,9 +79,9 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
                     />
                 </div>
             </div>
-            {!isMobile ? (
+            <div className="hidden sm:contents">
                 <SolutionHeroScrollCue label={content.cta.label} />
-            ) : null}
+            </div>
         </section>
     );
 }

@@ -4,7 +4,6 @@ import {Suspense} from 'react';
 
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import type {PageSection} from '@/components/sections/registry';
-import {PageEnter} from '@/components/layout/page-enter';
 import {ProductCatalogPanelLoading} from '@/components/product/product-catalog-page-loading';
 import {ProductCatalogView} from '@/components/product/product-catalog-view';
 import {ProductStyleChrome} from '@/components/product/product-style-view';
@@ -76,7 +75,7 @@ export default async function ProductStylePage({params}: PageProps) {
     if (!match) notFound();
 
     return (
-        <PageEnter>
+        <>
             <ProductStyleChrome line={match.line} style={match.style} />
             <Suspense fallback={<ProductCatalogPanelLoading />}>
                 <ProductStyleCatalogBody
@@ -84,6 +83,6 @@ export default async function ProductStylePage({params}: PageProps) {
                     style={match.style}
                 />
             </Suspense>
-        </PageEnter>
+        </>
     );
 }

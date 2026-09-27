@@ -3,7 +3,6 @@ import {Suspense} from 'react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
-import {PageEnter} from '@/components/layout/page-enter';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
 import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
@@ -155,8 +154,8 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ...(faqs.length > 0 ? [{id: 'pdp-faqs', label: 'FAQs'}] : []),
     ];
 
-    return (
-        <PageEnter>
+return (
+        <>
             <PageBreadcrumbSection
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
@@ -227,6 +226,6 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     <SectionRenderer sections={pageSections} />
                 ) : null}
             </div>
-        </PageEnter>
+        </>
     );
 }

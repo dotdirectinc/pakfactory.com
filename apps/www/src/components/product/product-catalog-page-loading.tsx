@@ -12,7 +12,7 @@ const PRODUCTS_INTRO =
 
 /**
  * Fixed breadcrumb + heading for `/products` — shared by the page and
- * `loading.tsx` so the title does not jump when the grid resolves.
+ * Suspense fallbacks so the title does not jump when the grid resolves.
  */
 export function ProductCatalogPageChrome({
     heading,
@@ -41,7 +41,7 @@ export function ProductCatalogPageChrome({
     );
 }
 
-/** Facet rail + card grid — used by route `loading.tsx` and in-view Suspense. */
+/** Facet rail + card grid — used by in-view Suspense under live chrome. */
 export function ProductCatalogPanelLoading() {
     return (
         <PageDielineSection
@@ -60,18 +60,5 @@ export function ProductCatalogPanelLoading() {
                 </div>
             </div>
         </PageDielineSection>
-    );
-}
-
-/**
- * Full `/products` route shell — real chrome + facet rail + card grid.
- * In-view Suspense under live chrome should use {@link ProductCatalogPanelLoading}.
- */
-export function ProductCatalogPageLoading() {
-    return (
-        <>
-            <ProductCatalogPageChrome />
-            <ProductCatalogPanelLoading />
-        </>
     );
 }

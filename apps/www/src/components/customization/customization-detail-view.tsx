@@ -19,7 +19,6 @@ import {
     hasReferenceWorksWith,
 } from '@/components/customization/customization-reference-works-with';
 import {CustomizationShowcase} from '@/components/customization/customization-showcase';
-import {PageEnter} from '@/components/layout/page-enter';
 import {AnchorNav, type AnchorNavItem} from '@/components/product/anchor-nav';
 import {FaqSection} from '@/components/sections/faq-section';
 import {SectionRenderer} from '@/components/sections/section-renderer';
@@ -78,7 +77,7 @@ export function CustomizationDetailView({
     const showReferenceBand = showOverview || showSpecs || showWorksWith;
 
     return (
-        <PageEnter>
+        <>
             <PageBreadcrumbSection
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
@@ -154,6 +153,6 @@ export function CustomizationDetailView({
                 footerLabel="Let's chat"
             />
             <SectionRenderer sections={pageSections} />
-        </PageEnter>
+        </>
     );
 }
