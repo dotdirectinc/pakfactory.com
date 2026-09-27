@@ -6,8 +6,9 @@ import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
+import {HERO_SECTION_ID} from '@/components/solution/solution-hero-ids';
 
-export const HERO_SECTION_ID = 'solution-hero';
+export {HERO_SECTION_ID} from '@/components/solution/solution-hero-ids';
 
 /** Delay before fade+rise entrance (Option A). */
 const ENTRANCE_DELAY_MS = 500;

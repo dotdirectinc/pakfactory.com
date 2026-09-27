@@ -12,7 +12,7 @@ const CUSTOMIZATIONS_INTRO =
 
 /**
  * Fixed breadcrumb + heading for `/customizations` — shared by the page and
- * `loading.tsx` so the title does not jump when the grid resolves.
+ * Suspense fallbacks so the title does not jump when the grid resolves.
  */
 export function CustomizationCatalogPageChrome({
     heading,
@@ -41,7 +41,7 @@ export function CustomizationCatalogPageChrome({
     );
 }
 
-/** Facet rail + card grid — used by route `loading.tsx` and in-view Suspense. */
+/** Facet rail + card grid — used by in-view Suspense under live chrome. */
 export function CustomizationCatalogPanelLoading({
     categoryGroupCount = 0,
 }: {
@@ -66,24 +66,5 @@ export function CustomizationCatalogPanelLoading({
                 </div>
             </div>
         </PageDielineSection>
-    );
-}
-
-/**
- * Full `/customizations` route shell — real chrome + facet rail + card grid.
- * In-view Suspense under live chrome should use {@link CustomizationCatalogPanelLoading}.
- */
-export function CustomizationCatalogPageLoading({
-    categoryGroupCount = 0,
-}: {
-    categoryGroupCount?: number;
-} = {}) {
-    return (
-        <>
-            <CustomizationCatalogPageChrome />
-            <CustomizationCatalogPanelLoading
-                categoryGroupCount={categoryGroupCount}
-            />
-        </>
     );
 }

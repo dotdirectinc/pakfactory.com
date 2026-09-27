@@ -1,6 +1,5 @@
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingWithMedia} from '@/components/common/page-heading-section';
-import {PageEnter} from '@/components/layout/page-enter';
 import {ProductCatalogView} from '@/components/product/product-catalog-view';
 import {resolveStyleCardImage} from '@/lib/catalog/product-line-landing';
 import type {
@@ -68,7 +67,7 @@ export function ProductStyleView({
     library: ProductLibraryResult;
 }) {
     return (
-        <PageEnter>
+        <>
             <ProductStyleChrome line={line} style={style} />
             <ProductCatalogView
                 library={library}
@@ -76,6 +75,6 @@ export function ProductStyleView({
                 showPageChrome={false}
                 hideCatalogBorderTop
             />
-        </PageEnter>
+        </>
     );
 }
