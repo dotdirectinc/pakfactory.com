@@ -6,10 +6,16 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
+
 export type PageHeadingCta = {
     label: string;
     href: string;
 };
+
+function isInPageHashHref(href: string): href is `#${string}` {
+    return href.startsWith('#') && href.length > 1;
+}
 
 export type PageHeadingEyebrow =
     | {type: 'text'; content: ReactNode}
@@ -214,16 +220,29 @@ export function PageHeadingContent({
 
     const primaryButton = primaryCta ? (
         <Button asChild size="xl" variant="default">
-            <Link href={primaryCta.href}>{primaryCta.label}</Link>
+            {isInPageHashHref(primaryCta.href) ? (
+                <InPageAnchorLink href={primaryCta.href}>
+                    {primaryCta.label}
+                </InPageAnchorLink>
+            ) : (
+                <Link href={primaryCta.href}>{primaryCta.label}</Link>
+            )}
         </Button>
     ) : null;
 
     const secondaryButton = secondaryCta ? (
         <Button asChild size="xl" variant="link" className="gap-2">
-            <Link href={secondaryCta.href}>
-                {secondaryCta.label}
-                <ChevronDown className="size-4" aria-hidden />
-            </Link>
+            {isInPageHashHref(secondaryCta.href) ? (
+                <InPageAnchorLink href={secondaryCta.href}>
+                    {secondaryCta.label}
+                    <ChevronDown className="size-4" aria-hidden />
+                </InPageAnchorLink>
+            ) : (
+                <Link href={secondaryCta.href}>
+                    {secondaryCta.label}
+                    <ChevronDown className="size-4" aria-hidden />
+                </Link>
+            )}
         </Button>
     ) : null;
 
