@@ -63,17 +63,29 @@ Then confirm in Studio → Main Website → Navigation. If the doc is draft-only
 
 Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page** (`solutionIndustryPage`) for section **order + chrome**, selected on the solution’s **Template** tab. Band **content** stays on `solution.sections[]`, matched by `_key`. www merges via `mergeSolutionSections` → `SectionRenderer`. **No local Beauty fixture dual-path** (Phase C / WP5).
 
-## Product / Customization catalog sections (PROD-2589)
+## Product / Customization catalog sections (PROD-2589 / PROD-2607)
 
 `/products` and `/customizations` keep route-owned faceted grids. Optional below-grid bands come from pinned singletons `productCatalogPage` / `customizationCatalogPage` (Main Website → Product Pages / Customization Pages). Empty or missing doc → grid only (today’s UX).
+
+| Singleton | Route |
+| --- | --- |
+| `productStylePage` | below grid on `/products/[line]/[style]` |
+| `productDetailPage` | PDP template × `product.sections` (select on product Template tab) |
+| `customizationDetailPage` | below chrome on `/customizations/[category]/[handle]` |
+| `solutionStylePage` | below grid on `/solutions/[slug]/[style]` |
 
 **Hero tiles:** union of inspiration products matching any child `solutionStyle` via `@pakfactory/sanity/solution-style-filter` (cap 16). No mock carousel. Empty styles / empty matches → empty hero grid. Test fixtures: [`apps/studio/memory.md`](../studio/memory.md) § Test Kids Packaging seed → `/solutions/test-kids-packaging`. Beauty Pouches catalog fixtures: [`apps/studio/memory.md`](../studio/memory.md) § Beauty Pouches style products seed → `/solutions/beauty-cosmetics/beauty-pouches`.
 
 **Studio**
 
-- Main Website → Solution Pages → **Solution Industry Page**
+- Main Website → Solution Pages → **Solution Industry Page** / **Solution Style Page**
+- Main Website → Product Pages → **Product Detail Page** (plus Catalog / Line / Style)
+- Main Website → Customization Pages → **Customization Detail Page**
 - Solution → Template tab → Solution Industry Page (**required** for industry + `hasPage`)
-- Solution → Sections tab → page-specific content (keys aligned with the template)
+- Product → Template tab → Product Detail Page (optional; empty → hardcoded PDP bands only)
+- Solution / Product → Sections tab → page-specific content (keys aligned with the template)
+
+**General CTA:** CTAs → **General** (`generalCta`) is the only conversion band (former footer strip + Expertise closing CTA). Studio: **theme** (colors only), **align**, **paddingBlock**, dieline borders, optional **body**, **Button** link. Empty link → `FOOTER_CTA`. Chrome footer no longer renders this strip. Human seeds: [`apps/studio/memory.md`](../studio/memory.md) § General CTA closing band + Expertise closing band reseed. Empty/missing section → no band.
 
 **Human verify (agents do not write Sanity docs):**
 
@@ -88,7 +100,7 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 9. Unwired type (e.g. `richText`) → page loads; dev shows amber placeholder; prod skips until wired.
 10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden. PDP still uses mocks until wired.
 
-Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
+Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
 
 **Insert menu:** Studio tabs are entity-named (Solutions · Case studies · Products · …). Editor titles may say “Case study row” / “Image with text” while `_type` / React names stay as above — three-layer drift is intentional ([ADR-020 §10](../../docs/adr/0020-component-to-section-playbook.md)).
 

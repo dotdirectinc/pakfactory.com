@@ -188,14 +188,14 @@ describe('assembleProductLineLanding', () => {
                 templateSections: [
                     {
                         _key: 'a',
-                        _type: 'quoteCta',
+                        _type: 'generalCta',
                         heading: 'Template heading',
                     } as never,
                 ],
                 sections: [
                     {
                         _key: 'a',
-                        _type: 'quoteCta',
+                        _type: 'generalCta',
                         heading: 'Line heading',
                         body: 'Line body',
                     } as never,

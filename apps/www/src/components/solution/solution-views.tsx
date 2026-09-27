@@ -169,7 +169,7 @@ export function SolutionStyleCatalogView({
 }: {
     catalog: SolutionStyleCatalog;
 }) {
-    const {solution, style, library} = catalog;
+    const {solution, style, library, pageSections} = catalog;
     const description =
         style.descriptionText.trim() ||
         style.shortDescription.trim() ||
@@ -205,6 +205,9 @@ export function SolutionStyleCatalogView({
                 urlSync
                 showPageChrome={false}
             />
+            {pageSections && pageSections.length > 0 ? (
+                <SectionRenderer sections={pageSections} />
+            ) : null}
         </>
     );
 }

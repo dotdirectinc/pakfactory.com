@@ -297,6 +297,15 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         .map(mapSanityProduct)
         .filter((item): item is Product => item != null);
 
+    const sections = (doc.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
+    const templateSections = (doc.template?.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
+
     return {
         title: doc.title,
         slug,
@@ -320,6 +329,8 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         ...(properties.length > 0 ? {properties} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
+        ...(sections.length > 0 ? {sections} : {}),
+        ...(templateSections.length > 0 ? {templateSections} : {}),
     };
 }
 

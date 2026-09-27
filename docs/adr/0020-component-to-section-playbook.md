@@ -135,7 +135,7 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `resource` | Resources | `guidesRow`, `dielinesRow`, `glossaryStrip`, `postsRow` |
 | `client` | Clients | `logoWall` |
 | `layout` | Layout | `richText`, `mediaFeature`, `stats`, `steps`, `faqSection`, `testimonialsRow`, `benefits` |
-| `cta` | CTAs | `quoteCta`, `newsletterCta`, `linkCards`, `contactForm` |
+| `cta` | CTAs | `generalCta`, `newsletterCta`, `linkCards`, `contactForm` |
 
 **Studio `title` patterns** (editor chrome only — `_type` stays stable per [ADR-014](0014-sanity-studio-naming.md)):
 
@@ -170,7 +170,7 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 | `guidesRow` / `dielinesRow` / `glossaryStrip` / `postsRow` | (row inventory) | Guide / Dieline / Glossary / Post row |
 | `steps` | `Steps` | Steps |
 | `richText` / `stats` | — | Rich text / Stats |
-| `quoteCta` | `QuoteCta` | Get a quote |
+| `generalCta` | `GeneralCta` | General (Button link → contact/request/etc.) |
 | `newsletterCta` / `linkCards` / `contactForm` | — | Newsletter / Link cards / Contact form |
 
 Do **not** casually rename `_type` or drive-by rename React files outside the locked §6 list. Three-layer drift is intentional; editors only see Studio titles.
@@ -257,7 +257,7 @@ Second proof of the playbook: `/expertise/[slug]`, starting with Strategy (Consu
 | 4 | Why it's certain | `caseStudiesRow` | §8 inherit: `featuredStudies`, else tagged case studies |
 | 5 | Where this fits | `expertiseSequence` | Host override: stage path with current stage (see below) |
 | 6 | FAQ | `faqSection` | §8 inherit from `expertiseStage.faqs`; FAQPage JSON-LD from rendered FAQs |
-| 7 | Final CTA | `quoteCta` | Now wired in www (`body`, `ctaLabel` projected) |
+| 7 | Final CTA | `generalCta` | Wired in www (`theme`, `align`, `body`, `link`) |
 
 **Design (PROD-2578, Experiential)** reuses the same set. Work showcase → `inspirationsGrid`. What's possible → `signatureSystem` with no System name (the services list, with service images beside it instead of the ring; new optional `expertiseService.image`). How it works → `steps`, now wired in www with an optional per-step link. Why it's certain → `caseStudiesRow`. Then the same tail. No new `_type`.
 

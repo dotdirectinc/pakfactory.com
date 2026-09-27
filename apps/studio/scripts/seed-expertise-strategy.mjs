@@ -22,7 +22,7 @@
  *
  * Body order: logoWall (trust strip) → signatureSystem (why it matters + framework) → mediaFeature (how an
  * engagement starts) → benefits (what you walk away with) → caseStudiesRow (why it's
- * certain) → expertiseSequence (where this fits) → faqSection → quoteCta.
+ * certain) → expertiseSequence (where this fits) → faqSection → generalCta.
  * Lists are left empty on purpose so they inherit from the stage (ADR-020 §8):
  * services → signatureSystem, faqs → faqSection, featuredStudies → caseStudiesRow,
  * every stage in hub order → expertiseSequence.
@@ -257,11 +257,13 @@ function buildSections({ serviceId, clientIdBySlug }) {
       listSource: 'page',
     },
     {
-      _type: 'quoteCta',
+      _type: 'generalCta',
       _key: 'strategy-final-cta',
       heading: 'Get your packaging strategy right.',
       body: "Start with a conversation about your brand, your portfolio, and where you're headed.",
-      ctaLabel: 'Book a strategy consultation',
+      theme: 'inverse',
+      align: 'left',
+      link: pathLink('Book a strategy consultation', '/request'),
     },
   ]
 }

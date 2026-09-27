@@ -185,6 +185,11 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
   },
   "relatedProducts": relatedProducts[]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
+  },
+  "sections": sections[]${PAGE_SECTIONS_PROJECTION},
+  "template": template->{
+    _id,
+    "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   }
 `;
 
@@ -783,6 +788,12 @@ export type CatalogProductDoc = {
   properties?: CatalogProductPropertyDoc[] | null;
   faqs?: CatalogProductFaqDoc[] | null;
   relatedProducts?: CatalogProductDoc[] | null;
+  /** PDP sections (content). Merged with `template.sections` when set. */
+  sections?: PageSectionDoc[] | null;
+  template?: {
+    _id?: string | null;
+    sections?: PageSectionDoc[] | null;
+  } | null;
 };
 
 export type CatalogProductLineExpertiseDoc = {

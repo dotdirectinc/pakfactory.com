@@ -47,8 +47,6 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
       {children}
       <SiteFooter
         columns={footer.columns}
-        contactHref={footer.cta.href}
-        contactLabel={footer.cta.label}
         social={footer.social}
         aiLinks={footer.aiLinks}
         wordmark={<FooterWordmark />}

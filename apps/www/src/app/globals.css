@@ -249,6 +249,14 @@ html:has(body[data-scroll-locked]) {
 }
 
 /*
+  Inverse section bands (SectionTheme) — lighten dieline `border-border` so
+  PageDielineSection guides stay visible on dark (`bg-foreground`) bands.
+*/
+[data-section-theme="inverse"] {
+  --border: rgb(255 255 255 / 0.15);
+}
+
+/*
   Expertise stage pages — section headings in the POC style (PROD-2578): quiet
   muted small-caps label with no V5 brackets, a lighter 28 → 40px title and a
   larger intro. Scoped to `.expertise-stage` and addressed by SectionHeading's

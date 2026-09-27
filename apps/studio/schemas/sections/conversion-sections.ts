@@ -1,43 +1,132 @@
 import { defineArrayMember, defineField, defineType } from 'sanity'
-import { RocketIcon, EnvelopeIcon, LinkIcon, DocumentIcon } from '@sanity/icons'
+import { EnvelopeIcon, LinkIcon, DocumentIcon, CommentIcon } from '@sanity/icons'
 import { SectionItemPreview } from '../../components/SectionItemPreview'
+import { dielineBorderFields } from '../../lib/dieline-border-fields'
 import { linkTargetFields } from '../../lib/link-target-fields'
 import { sectionFieldGroups, SECTION_GROUPS } from '../../lib/section-field-groups'
 import { sectionHeaderFields } from '../../lib/section-header-fields'
+import { sectionLinkTargetFields } from '../../lib/section-link-target-fields'
+import { SectionTokenStringInput } from '../../components/SectionTokenStringInput'
 
 /**
  * CTA sections (ADR-020 §10 — CTAs insert tab). Shared chrome with
  * Heading/Content/Layout field groups.
  */
 
-/** Get a quote — harvested from `ctaRfq`. The site-wide primary action. */
-export const quoteCta = defineType({
-  name: 'quoteCta',
-  title: 'Get a quote',
+/**
+ * General — former SiteFooter collaborate band as a page section.
+ * Defaults: muted + center; empty Button → FOOTER_CTA (/contact). Theme flips
+ * band/text/button colors only. Button uses design-system link (label + targets).
+ */
+export const generalCta = defineType({
+  name: 'generalCta',
+  title: 'General',
   type: 'object',
-  icon: RocketIcon,
+  icon: CommentIcon,
   groups: sectionFieldGroups(),
   fields: [
-    ...sectionHeaderFields(),
+    defineField({
+      name: 'heading',
+      title: 'Heading',
+      type: 'string',
+      group: SECTION_GROUPS.heading,
+      description:
+        'Headline. Leave empty to use the site default (“Let’s collaborate…”).',
+      initialValue: "Let's collaborate and craft your vision",
+    }),
     defineField({
       name: 'body',
       title: 'Body',
       type: 'text',
       rows: 2,
       group: SECTION_GROUPS.content,
+      description: 'Optional supporting line under the heading.',
     }),
     defineField({
-      name: 'ctaLabel',
-      title: 'Quote button label',
-      type: 'string',
+      name: 'link',
+      title: 'Button',
+      type: 'object',
       group: SECTION_GROUPS.content,
       description:
-        'Label for the quote-flow button (not the optional section link above). Defaults to the site-wide quote label when empty.',
+        'Optional. Empty → site default (“Let’s talk packaging” → /contact).',
+      fields: [
+        defineField({
+          name: 'label',
+          title: 'Button label',
+          type: 'string',
+          description: 'Leave empty for no custom button (site default applies).',
+          initialValue: "Let's talk packaging",
+        }),
+        ...sectionLinkTargetFields(),
+        defineField({
+          name: 'query',
+          title: 'Query',
+          type: 'string',
+          description: 'No leading ?. Example: industry=%slug%',
+          components: {input: SectionTokenStringInput},
+        }),
+      ],
     }),
+    defineField({
+      name: 'theme',
+      title: 'Theme',
+      type: 'string',
+      group: SECTION_GROUPS.layout,
+      description:
+        'Section color band (not site dark mode). Dark uses inverse tokens and dieline borders — not type or button size.',
+      initialValue: 'muted',
+      options: {
+        list: [
+          {title: 'Muted', value: 'muted'},
+          {title: 'Dark', value: 'inverse'},
+        ],
+        layout: 'radio' as const,
+      },
+    }),
+    defineField({
+      name: 'align',
+      title: 'Alignment',
+      type: 'string',
+      group: SECTION_GROUPS.layout,
+      description: 'Horizontal alignment of heading, body, and button.',
+      initialValue: 'center',
+      options: {
+        list: [
+          {title: 'Left', value: 'left'},
+          {title: 'Center', value: 'center'},
+        ],
+        layout: 'radio' as const,
+      },
+    }),
+    defineField({
+      name: 'paddingBlock',
+      title: 'Vertical padding',
+      type: 'string',
+      group: SECTION_GROUPS.layout,
+      description:
+        'Space above and below the section content (PageDielineSection). Default Medium.',
+      initialValue: 'md',
+      options: {
+        list: [
+          {title: 'Extra small', value: 'xs'},
+          {title: 'Small', value: 'sm'},
+          {title: 'Medium', value: 'md'},
+          {title: 'Large', value: 'lg'},
+        ],
+        layout: 'radio' as const,
+      },
+    }),
+    ...dielineBorderFields().map((field) => ({
+      ...field,
+      group: SECTION_GROUPS.layout,
+    })),
   ],
   preview: {
-    select: { title: 'heading' },
-    prepare: ({ title }) => ({ title: title || 'Get a quote' }),
+    select: { title: 'heading', subtitle: 'link.label' },
+    prepare: ({ title, subtitle }) => ({
+      title: title || 'General',
+      subtitle: subtitle || "Let's talk packaging",
+    }),
   },
   components: { preview: SectionItemPreview },
 })
@@ -157,4 +246,4 @@ export const contactForm = defineType({
   components: { preview: SectionItemPreview },
 })
 
-export const conversionSections = [quoteCta, newsletterCta, linkCards, contactForm]
+export const conversionSections = [generalCta, newsletterCta, linkCards, contactForm]

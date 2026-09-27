@@ -24,8 +24,8 @@ import { AvailableCustomizationsInput } from '../components/AvailableCustomizati
  * kept EDITABLE — decision b, PROD-2295: they flip to readOnly when the
  * Registry/SPECs system ships.
  *
- * `sections` (page-builder) is confirmed needed but deferred until the shared
- * section inventory exists (PROD-2292).
+ * Layout template: products select `productDetailPage` via `template`
+ * (Main Website → Product Pages → Product Detail Page) — twin of productLinePage.
  */
 
 const SOURCE_OWNED_NOTE =
@@ -57,7 +57,15 @@ export const product = defineType({
   title: 'Product',
   type: 'document',
   icon: PackageIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'specs', 'seo', 'social']),
+  groups: groupsFor([
+    'content',
+    'template',
+    'categorization',
+    'sections',
+    'specs',
+    'seo',
+    'social',
+  ]),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -230,6 +238,20 @@ export const product = defineType({
           },
         },
       ],
+    }),
+
+    // ─── TEMPLATE (layout singleton) ──────────────────────────────────────────
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{type: 'productDetailPage'}],
+      options: {disableNew: true},
+      description:
+        'Page layout — section order and default headings. Rearrange sections on ' +
+        'the template document (Main Website → Product Pages → Product Detail Page), ' +
+        'not on this product. Band content stays on the Sections tab, matched by key.',
     }),
 
     // ─── CATEGORIZATION (classification refs + curated lists) ─────────────────

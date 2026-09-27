@@ -15,8 +15,10 @@ import {
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
+    CUSTOMIZATION_DETAIL_PAGE_QUERY,
     PRODUCT_CATALOG_PAGE_QUERY,
     PRODUCT_STYLE_PAGE_QUERY,
+    SOLUTION_STYLE_PAGE_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogIndexPageDoc,
@@ -67,6 +69,7 @@ import {
     WWW_CATALOG_LINES_CACHE_TAG,
     WWW_CATALOG_PRODUCTS_CACHE_TAG,
     WWW_CONTENT_REVALIDATE_SECONDS,
+    WWW_SOLUTIONS_CACHE_TAG,
     wwwProductTag,
 } from '@/lib/www-cache';
 
@@ -515,6 +518,59 @@ export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc
         fetchCustomizationCatalogPage,
         getCachedCustomizationCatalogPage,
     );
+}
+
+async function fetchCustomizationDetailPage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            CUSTOMIZATION_DETAIL_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedCustomizationDetailPage = unstable_cache(
+    fetchCustomizationDetailPage,
+    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+    },
+);
+
+/** Sections below every `/customizations/[category]/[handle]` detail chrome. */
+export async function getCustomizationDetailPage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(
+        fetchCustomizationDetailPage,
+        getCachedCustomizationDetailPage,
+    );
+}
+
+async function fetchSolutionStylePage(): Promise<CatalogIndexPageDoc | null> {
+    if (!isSanityConfigured()) return null;
+    try {
+        return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
+            SOLUTION_STYLE_PAGE_QUERY,
+        );
+    } catch {
+        return null;
+    }
+}
+
+const getCachedSolutionStylePage = unstable_cache(
+    fetchSolutionStylePage,
+    [`${WWW_SOLUTIONS_CACHE_TAG}-style-page`],
+    {
+        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+        tags: [WWW_SOLUTIONS_CACHE_TAG],
+    },
+);
+
+/** Sections below every `/solutions/[solution]/[style]` catalog grid. */
+export async function getSolutionStylePage(): Promise<CatalogIndexPageDoc | null> {
+    return readThrough(fetchSolutionStylePage, getCachedSolutionStylePage);
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */

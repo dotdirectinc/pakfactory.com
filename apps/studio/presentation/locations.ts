@@ -268,6 +268,50 @@ export const siteLocations: DocumentLocationResolvers = {
     }),
   }),
 
+  productStylePage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        {
+          title: doc?.title || 'Product Style Page',
+          href: '/products',
+        },
+      ],
+    }),
+  }),
+
+  productDetailPage: defineLocations({
+    select: { title: 'title' },
+    resolve: () =>
+      notOnSite(
+        'Applies to every product detail page that selects this template.',
+      ),
+  }),
+
+  customizationDetailPage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        {
+          title: doc?.title || 'Customization Detail Page',
+          href: '/customizations',
+        },
+      ],
+    }),
+  }),
+
+  solutionStylePage: defineLocations({
+    select: { title: 'title' },
+    resolve: (doc) => ({
+      locations: [
+        {
+          title: doc?.title || 'Solution Style Page',
+          href: '/solutions',
+        },
+      ],
+    }),
+  }),
+
   // `/products/{slug}` resolves a LINE first, then a product
   // (`getByProductsSegment` in lib/catalog/catalog.ts). Both types therefore
   // share one namespace: a product whose slug equals a line's slug is

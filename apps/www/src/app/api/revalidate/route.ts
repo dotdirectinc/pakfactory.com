@@ -36,9 +36,9 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "solutionIndustryPage", "solutionStyle", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
+ *     "solution", "solutionIndustryPage", "solutionStyle", "solutionStylePage", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
- *     "productCatalogPage", "productStylePage", "customizationCatalogPage",
+ *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationDetailPage",
  *     "websiteNavigation", "settings"
  *   ]
  *
@@ -145,13 +145,14 @@ export async function POST(request: Request) {
     }
   }
 
-  // productLinePage edits reorder every product-line LP that references the template.
+  // productLinePage / productDetailPage edits reorder every LP/PDP that references the template.
   const touchesProducts =
     !type ||
     CATALOG_PRODUCT_TYPES.has(type) ||
     type === "customizationOption" ||
     type === "productCatalogPage" ||
     type === "productStylePage" ||
+    type === "productDetailPage" ||
     type === "productLinePage";
   if (touchesProducts) {
     tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);
@@ -172,7 +173,8 @@ export async function POST(request: Request) {
   const touchesCustomizations =
     !type ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
-    type === "customizationCatalogPage";
+    type === "customizationCatalogPage" ||
+    type === "customizationDetailPage";
   if (touchesCustomizations) {
     tags.add(WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG);
     // Product PDP embeds available customizations.
@@ -190,11 +192,13 @@ export async function POST(request: Request) {
 
   // Solution LPs + nested style catalogues (product/line edits change filtered grids).
   // solutionIndustryPage edits reorder every industry LP that references the template.
+  // solutionStylePage edits add shared bands under every solution style catalog.
   const touchesSolutions =
     !type ||
     type === "solution" ||
     type === "solutionIndustryPage" ||
     type === "solutionStyle" ||
+    type === "solutionStylePage" ||
     CATALOG_PRODUCT_TYPES.has(type);
   if (touchesSolutions) {
     tags.add(WWW_SOLUTIONS_CACHE_TAG);

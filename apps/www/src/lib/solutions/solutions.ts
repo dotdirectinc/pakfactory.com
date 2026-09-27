@@ -30,6 +30,7 @@ import {
     SOLUTION_STYLE_ORDER,
 } from '@pakfactory/sanity/solution-style-filter';
 import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
+import {getSolutionStylePage} from '@/lib/catalog/catalog';
 import {
     mapSanityProduct,
     mapSanityProductLibraryItem,
@@ -459,6 +460,11 @@ async function fetchSolutionStyleCatalog(
         const library = await fetchStyleProductLibrary(doc);
         const shortName =
             doc.solution.shortName?.trim() || parentTitle;
+        const stylePage = await getSolutionStylePage();
+        const pageSections = (stylePage?.sections ?? []).filter(
+            (section): section is PageSectionDoc =>
+                Boolean(section?._key && section?._type),
+        );
 
         return {
             solution: {
@@ -470,6 +476,7 @@ async function fetchSolutionStyleCatalog(
             },
             style,
             library,
+            ...(pageSections.length > 0 ? {pageSections} : {}),
         };
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {

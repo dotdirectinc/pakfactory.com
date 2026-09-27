@@ -19,11 +19,17 @@ import {
     ProductsRow,
     type ProductsRowItem,
 } from '@/components/sections/products-row';
+import {SectionRenderer} from '@/components/sections/section-renderer';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
 import {displayProductSku} from '@/lib/catalog/display-sku';
 import {MOCK_PRODUCT_TESTIMONIALS, MOCK_TESTIMONIALS_AGGREGATE} from '@/lib/catalog/mock-testimonials';
 import type {Product} from '@/lib/catalog/types';
+import {mergeSolutionSections} from '@/lib/sections/merge-solution-sections';
+import {
+    applySectionTokens,
+    sectionTokenContextFromHost,
+} from '@/lib/sections/resolve-section-tokens';
 import {
     productHref,
     productStyleHref,
@@ -104,6 +110,33 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ? undefined
         : MOCK_TESTIMONIALS_AGGREGATE;
     const faqs = product.faqs ?? [];
+
+    const contentSections = product.sections ?? [];
+    const templateSections = product.templateSections ?? [];
+    const documentFaqs = faqs.map((faq) => ({
+        question: faq.question,
+        answerPlain: faq.answerPlain,
+    }));
+    const mergedSections =
+        templateSections.length > 0
+            ? mergeSolutionSections(
+                  templateSections,
+                  contentSections,
+                  undefined,
+                  documentFaqs,
+              )
+            : contentSections;
+    const pageSections = applySectionTokens(
+        mergedSections,
+        sectionTokenContextFromHost({
+            title: product.title,
+            h1: product.title,
+            shortName: product.title,
+            shortDescription: product.description,
+            descriptionText: product.description,
+            slug: product.slug,
+        }),
+    );
 
     const navItems: AnchorNavItem[] = [
         ...(specRows.length > 0
@@ -190,6 +223,9 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     footerHref={WWW_ROUTES.contact}
                     footerLabel="Let's chat"
                 />
+                {pageSections.length > 0 ? (
+                    <SectionRenderer sections={pageSections} />
+                ) : null}
             </div>
         </PageEnter>
     );

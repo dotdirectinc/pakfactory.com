@@ -25,7 +25,7 @@ There is no per-stage layout in code. The body lives on an **Expertise Stage Pag
 | 4 | Why it's certain (Strategic clarity) | `caseStudiesRow` | `CaseStudiesRow` |
 | 5 | Where this fits | `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath` (this host only) |
 | 6 | FAQ | `faqSection` | `FaqSection` |
-| 7 | Final CTA | `quoteCta` (now wired) | `QuoteCta` |
+| 7 | Final CTA | `generalCta` | `GeneralCta` |
 
 ## Band → Section map (Design, Experiential — PROD-2578)
 
@@ -38,7 +38,7 @@ Show first, then explain. The template is the same; only the stage's `sections[]
 | 2 | What's possible ("What our designers do") | `signatureSystem` with **no System name** | `SignatureSystem`: the services list, with the open service's image beside it instead of the ring |
 | 3 | How it works | `steps` (now wired; each step can link on, e.g. to the Prototyping stage) | `Steps` |
 | 4 | Why it's certain (Design fidelity) | `caseStudiesRow` | `CaseStudiesRow` |
-| 5–7 | Where this fits · FAQ · Final CTA | `expertiseSequence` · `faqSection` · `quoteCta` | as Strategy |
+| 5–7 | Where this fits · FAQ · Final CTA | `expertiseSequence` · `faqSection` · `generalCta` | as Strategy |
 
 Service images are a new optional field, `expertiseService.image`.
 
@@ -88,7 +88,7 @@ Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
 | `logoWall` | `LogoWall variant="strip"`: the thin trust strip (dashed rules, 72px logos at natural width, heading as the visible label, 40s lap) | `LogoWall` |
 | `inspirationsGrid` | `WorkShowcase` when cards link to case studies; else `InspirationGallery` | `InspirationGallery` |
 | `faqSection` | `FaqSection variant="rows"`: left-aligned, full-width divider rows, no stock intro | `FaqSection` (centred cards) |
-| `quoteCta` | `QuoteCta` with `theme="inverse"` (dark band, 44px title), left-aligned | `QuoteCta` (muted, centred) |
+| `generalCta` | Studio `theme: inverse` + `align: left` + Button link Site path `/request` (dark band colors only) | `theme: muted` + `align: center` + contact fallback |
 
 Band rhythm follows the POC:
 - `signatureSystem` (the "why" on white, the method on muted)

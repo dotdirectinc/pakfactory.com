@@ -9,7 +9,7 @@ import type {
     PageSectionLogoWallDoc,
     PageSectionMediaFeatureDoc,
     PageSectionProductStylesRowDoc,
-    PageSectionQuoteCtaDoc,
+    PageSectionGeneralCtaDoc,
     PageSectionSignatureSystemDoc,
     PageSectionStepsDoc,
     PageSectionTestimonialsRowDoc,
@@ -23,7 +23,7 @@ import {ExpertiseRow} from '@/components/sections/expertise-row';
 import {FaqSection} from '@/components/sections/faq-section';
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
-import {QuoteCta} from '@/components/sections/quote-cta';
+import {GeneralCta} from '@/components/sections/general-cta';
 import {SignatureSystem} from '@/components/sections/signature-system';
 import {Steps} from '@/components/sections/steps';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
@@ -34,11 +34,11 @@ import {getGooglePlaceReviews} from '@/lib/places/reviews';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
 import {mapExpertiseSequence} from '@/lib/sections/map-expertise-sequence';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
+import {mapGeneralCta} from '@/lib/sections/map-general-cta';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaFeature} from '@/lib/sections/map-media-feature';
 import {mapProductStylesRow} from '@/lib/sections/map-product-styles-row';
-import {mapQuoteCta} from '@/lib/sections/map-quote-cta';
 import {mapSignatureSystem} from '@/lib/sections/map-signature-system';
 import {mapSteps} from '@/lib/sections/map-steps';
 import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
@@ -212,16 +212,20 @@ function StepsFromSanity(section: PageSectionStepsDoc) {
     return <Steps content={mapped} id={`steps-${section._key}`} />;
 }
 
-function QuoteCtaFromSanity(section: PageSectionQuoteCtaDoc) {
-    const mapped = mapQuoteCta(section);
+function GeneralCtaFromSanity(section: PageSectionGeneralCtaDoc) {
+    const mapped = mapGeneralCta(section);
     return (
-        <QuoteCta
-            id={`quote-cta-${section._key}`}
+        <GeneralCta
+            id={`general-cta-${section._key}`}
             heading={mapped.heading}
-            // Empty string, not undefined — the component's default body is PDP copy.
-            body={mapped.body ?? ''}
+            body={mapped.body}
             ctaLabel={mapped.ctaLabel}
             href={mapped.href}
+            theme={mapped.theme}
+            align={mapped.align}
+            paddingBlock={mapped.paddingBlock}
+            borderTop={mapped.borderTop}
+            borderBottom={mapped.borderBottom}
         />
     );
 }
@@ -248,6 +252,6 @@ export const SECTION_COMPONENTS: Record<
     testimonialsRow: TestimonialsRowFromSanity as ComponentType<PageSection>,
     signatureSystem: SignatureSystemFromSanity as ComponentType<PageSection>,
     benefits: BenefitsFromSanity as ComponentType<PageSection>,
-    quoteCta: QuoteCtaFromSanity as ComponentType<PageSection>,
+    generalCta: GeneralCtaFromSanity as ComponentType<PageSection>,
     steps: StepsFromSanity as ComponentType<PageSection>,
 };

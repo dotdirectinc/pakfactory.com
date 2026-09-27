@@ -15,7 +15,7 @@
  *
  * Body order: logoWall (trust strip) → inspirationsGrid (our work) → signatureSystem with no system name (what
  * our designers do) → steps (how the work happens) → caseStudiesRow (why it holds up)
- * → expertiseSequence (where this fits) → faqSection → quoteCta.
+ * → expertiseSequence (where this fits) → faqSection → generalCta.
  *
  * Not written (editors do these in Studio):
  *   - The design team's curated work set (the seeded gallery reuses 5 case studies).
@@ -238,11 +238,13 @@ function buildSections({ stageIdBySlug, clientIdBySlug, caseStudyBySlug, catalog
       listSource: 'page',
     },
     {
-      _type: 'quoteCta',
+      _type: 'generalCta',
       _key: 'design-final-cta',
       heading: 'Ready for packaging that impresses and performs?',
       body: 'Tell us about your brand and your product, and we’ll take it from there.',
-      ctaLabel: 'Request a sample',
+      theme: 'inverse',
+      align: 'left',
+      link: pathLink('Request a sample', '/request'),
     },
   ]
 }

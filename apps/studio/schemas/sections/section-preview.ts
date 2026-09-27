@@ -12,7 +12,7 @@ export const SECTION_PREVIEW_TYPES = new Set<string>([
   'caseStudiesRow',
   'videoCaseStudiesRow',
   'faqSection',
-  'quoteCta',
+  'generalCta',
   'solutionsRow',
 ])
 
