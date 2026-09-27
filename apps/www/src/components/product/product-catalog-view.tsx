@@ -1,14 +1,11 @@
 import {Suspense} from 'react';
 
-import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
-import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {
-    ProductCatalogListSkeleton,
-} from '@/components/product/product-catalog-list';
-import {ProductCatalogFiltersSkeleton} from '@/components/product/product-catalog-filters';
+    ProductCatalogPageChrome,
+    ProductCatalogPanelLoading,
+} from '@/components/product/product-catalog-page-loading';
 import {ProductCatalogPanel} from '@/components/product/product-catalog-panel';
 import type {ProductLibraryResult} from '@/lib/catalog/types';
-import {WWW_ROUTES} from '@/lib/www-routes';
 
 export {
     ProductCardSkeleton,
@@ -19,7 +16,7 @@ type ProductCatalogViewProps = {
     library: ProductLibraryResult;
     /** Sync filters to URL (route). Section embeds should set false. */
     urlSync?: boolean;
-    /** When false, omit breadcrumb + page heading (section embed). */
+    /** When false, omit breadcrumb + page heading (section embed / page-owned chrome). */
     showPageChrome?: boolean;
     /** Drop the desktop search strip top border (style landing under a headed section). */
     hideCatalogBorderTop?: boolean;
@@ -36,27 +33,10 @@ export function ProductCatalogView({
     heading,
     intro,
 }: ProductCatalogViewProps) {
-    const title = heading?.trim() || 'Products';
-    const description =
-        intro?.trim() ||
-        'Custom packaging solutions tailored to your brand.';
-
     return (
         <>
             {showPageChrome ? (
-                <>
-                    <PageBreadcrumbSection
-                        items={[
-                            {label: 'Home', href: WWW_ROUTES.home},
-                            {label: 'Products'},
-                        ]}
-                    />
-                    <PageHeadingSection
-                        title={title}
-                        description={description}
-                        borderBottom={false}
-                    />
-                </>
+                <ProductCatalogPageChrome heading={heading} intro={intro} />
             ) : heading || intro ? (
                 <div className="mx-auto w-full max-w-7xl px-4 pb-2 pt-8 sm:px-6 lg:px-8">
                     {heading ? (
@@ -71,18 +51,7 @@ export function ProductCatalogView({
                     ) : null}
                 </div>
             ) : null}
-            <Suspense
-                fallback={
-                    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-                            <ProductCatalogFiltersSkeleton />
-                            <div className="min-w-0 flex-1">
-                                <ProductCatalogListSkeleton />
-                            </div>
-                        </div>
-                    </div>
-                }
-            >
+            <Suspense fallback={<ProductCatalogPanelLoading />}>
                 <ProductCatalogPanel
                     library={library}
                     urlSync={urlSync}

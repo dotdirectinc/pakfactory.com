@@ -131,14 +131,14 @@ export function ProductCard({data}: ProductCardProps) {
                     pressed={saved}
                     onClick={handleBookmark}
                     ariaLabel="Bookmark product"
-                    tooltipSide="top"
+                    tooltipSide="bottom"
                 />
             }
             mediaActions={
                 <IconActionRow
                     className="shrink-0"
                     variant="media"
-                    tooltipSide="top"
+                    tooltipSide="bottom"
                     actions={[compareAction]}
                 />
             }
@@ -157,11 +157,11 @@ export function ProductCard({data}: ProductCardProps) {
                                 pressed={saved}
                                 onClick={handleBookmark}
                                 ariaLabel="Bookmark product"
-                                tooltipSide="top"
+                                tooltipSide="bottom"
                             />
                             <IconActionRow
                                 variant="media"
-                                tooltipSide="top"
+                                tooltipSide="bottom"
                                 actions={[compareAction]}
                             />
                         </div>

@@ -1,4 +1,10 @@
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
+
+import {
+    SolutionCatalogPageChrome,
+    SolutionCatalogPanelLoading,
+} from '@/components/solution/solution-catalog-page-loading';
 import {SolutionCatalogView} from '@/components/solution/solution-views';
 import {listSolutionsWithPages} from '@/lib/solutions/solutions';
 
@@ -10,7 +16,18 @@ export const metadata: Metadata = {
         'Browse industry and channel packaging solutions tailored to how you sell.',
 };
 
-export default async function SolutionsPage() {
+async function SolutionsCatalogBody() {
     const solutions = await listSolutionsWithPages();
-    return <SolutionCatalogView solutions={solutions} />;
+    return <SolutionCatalogView solutions={solutions} showPageChrome={false} />;
+}
+
+export default function SolutionsPage() {
+    return (
+        <>
+            <SolutionCatalogPageChrome />
+            <Suspense fallback={<SolutionCatalogPanelLoading />}>
+                <SolutionsCatalogBody />
+            </Suspense>
+        </>
+    );
 }

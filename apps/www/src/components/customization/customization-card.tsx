@@ -114,14 +114,14 @@ export function CustomizationCard({item}: CustomizationCardProps) {
                     pressed={saved}
                     onClick={handleBookmark}
                     ariaLabel="Bookmark customization"
-                    tooltipSide="top"
+                    tooltipSide="bottom"
                 />
             }
             mediaActions={
                 <IconActionRow
                     className="shrink-0"
                     variant="media"
-                    tooltipSide="top"
+                    tooltipSide="bottom"
                     actions={[compareAction]}
                 />
             }
@@ -136,11 +136,11 @@ export function CustomizationCard({item}: CustomizationCardProps) {
                                 pressed={saved}
                                 onClick={handleBookmark}
                                 ariaLabel="Bookmark customization"
-                                tooltipSide="top"
+                                tooltipSide="bottom"
                             />
                             <IconActionRow
                                 variant="media"
-                                tooltipSide="top"
+                                tooltipSide="bottom"
                                 actions={[compareAction]}
                             />
                         </div>

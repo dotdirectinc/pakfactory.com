@@ -2,7 +2,6 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
 import {CustomizationConfigPanel} from '@/components/customization/customization-config-panel';
-import {CustomizationFormed} from '@/components/customization/customization-formed';
 import {CustomizationOptionGallery} from '@/components/customization/customization-option-gallery';
 import {
     CustomizationReferenceOverview,
@@ -71,8 +70,7 @@ export function CustomizationDetailView({
         });
     }
 
-    const showReferenceBand =
-        showOverview || showSpecs || showWorksWith;
+    const showReferenceBand = showOverview || showSpecs || showWorksWith;
 
     return (
         <PageEnter>
@@ -87,10 +85,13 @@ export function CustomizationDetailView({
                     {label: detail.title},
                 ]}
             />
-            <PageDielineSection innerClassName="border-b border-dashed border-border">
+            <PageDielineSection
+                paddingBlock="sm"
+                innerClassName="border-b border-dashed border-border"
+            >
                 <article
                     id="customization-overview"
-                    className="scroll-mt-32 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+                    className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
                 >
                     <CustomizationOptionGallery
                         media={detail.media}
@@ -115,14 +116,12 @@ export function CustomizationDetailView({
 
             {showReferenceBand ? (
                 <PageDielineSection innerClassName="border-b border-dashed border-border">
-                    <div className="pt-16 pb-8 sm:pt-20">
-                        <SectionHeading
-                            eyebrow={reference.eyebrow}
-                            title={reference.title}
-                            description={reference.description}
-                            descriptionClassName="text-base leading-6"
-                        />
-                    </div>
+                    <SectionHeading
+                        eyebrow={reference.eyebrow}
+                        title={reference.title}
+                        description={reference.description}
+                        descriptionClassName="text-base leading-6 mb-20 sm:mb-10"
+                    />
 
                     <AnchorNav embedded items={navItems} />
 
@@ -143,7 +142,6 @@ export function CustomizationDetailView({
 
             <CustomizationComparison detail={detail} peers={peers} />
             <CustomizationShowcase detail={detail} />
-            <CustomizationFormed />
             <FaqSection
                 sectionId="customization-faqs"
                 items={detail.faqs ?? []}
