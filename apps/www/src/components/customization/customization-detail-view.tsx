@@ -22,6 +22,8 @@ import {CustomizationShowcase} from '@/components/customization/customization-sh
 import {PageEnter} from '@/components/layout/page-enter';
 import {AnchorNav, type AnchorNavItem} from '@/components/product/anchor-nav';
 import {FaqSection} from '@/components/sections/faq-section';
+import {SectionRenderer} from '@/components/sections/section-renderer';
+import type {PageSection} from '@/components/sections/registry';
 import {
     formatSectionEyebrow,
     SectionHeading,
@@ -33,6 +35,8 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 type CustomizationDetailViewProps = {
     detail: CustomizationDetail;
     peers?: CustomizationDetail[];
+    /** Shared bands from `customizationDetailPage` singleton. */
+    pageSections?: PageSection[] | null;
 };
 
 /**
@@ -41,6 +45,7 @@ type CustomizationDetailViewProps = {
 export function CustomizationDetailView({
     detail,
     peers = [],
+    pageSections = null,
 }: CustomizationDetailViewProps) {
     const categoryLabel = detail.categoryLabel || detail.categoryValue;
     const categoryListHref = `${WWW_ROUTES.customizations}?category=${encodeURIComponent(detail.categoryValue)}`;
@@ -148,6 +153,7 @@ export function CustomizationDetailView({
                 footerHref={WWW_ROUTES.contact}
                 footerLabel="Let's chat"
             />
+            <SectionRenderer sections={pageSections} />
         </PageEnter>
     );
 }

@@ -23,7 +23,10 @@ import { expertiseStagePage } from './expertiseStagePage'
 import { productLinePage } from './productLinePage'
 import { productCatalogPage } from './productCatalogPage'
 import { productStylePage } from './productStylePage'
+import { productDetailPage } from './productDetailPage'
 import { customizationCatalogPage } from './customizationCatalogPage'
+import { customizationDetailPage } from './customizationDetailPage'
+import { solutionStylePage } from './solutionStylePage'
 import { expertiseStage } from './expertiseStage'
 import { expertiseService } from './expertiseService'
 import { client } from './client'
@@ -86,11 +89,14 @@ export const schemaTypes = [
   solution,
   solutionStyle,
   solutionIndustryPage,
+  solutionStylePage,
   expertiseStagePage,
   productLinePage,
   productCatalogPage,
   productStylePage,
+  productDetailPage,
   customizationCatalogPage,
+  customizationDetailPage,
   expertiseStage,
   expertiseService,
   client,

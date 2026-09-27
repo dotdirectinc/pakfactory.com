@@ -1085,6 +1085,15 @@ export const mainWebsiteStructure = (
                                         .schemaType('productStylePage')
                                         .documentId('productStylePage'),
                                 ),
+                            S.listItem()
+                                .title('Product Detail Page')
+                                .icon(PackageIcon)
+                                .child(
+                                    S.editor()
+                                        .id('productDetailPage')
+                                        .schemaType('productDetailPage')
+                                        .documentId('productDetailPage'),
+                                ),
                         ]),
                 ),
             S.listItem()
@@ -1102,6 +1111,15 @@ export const mainWebsiteStructure = (
                                         .id('solutionIndustryPage')
                                         .schemaType('solutionIndustryPage')
                                         .documentId('solutionIndustryPage'),
+                                ),
+                            S.listItem()
+                                .title('Solution Style Page')
+                                .icon(BulbOutlineIcon)
+                                .child(
+                                    S.editor()
+                                        .id('solutionStylePage')
+                                        .schemaType('solutionStylePage')
+                                        .documentId('solutionStylePage'),
                                 ),
                         ]),
                 ),
@@ -1169,6 +1187,15 @@ export const mainWebsiteStructure = (
                                         .id('customizationCatalogPage')
                                         .schemaType('customizationCatalogPage')
                                         .documentId('customizationCatalogPage'),
+                                ),
+                            S.listItem()
+                                .title('Customization Detail Page')
+                                .icon(ComponentIcon)
+                                .child(
+                                    S.editor()
+                                        .id('customizationDetailPage')
+                                        .schemaType('customizationDetailPage')
+                                        .documentId('customizationDetailPage'),
                                 ),
                         ]),
                 ),

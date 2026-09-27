@@ -75,7 +75,7 @@ const FAMILY = {
     'testimonialsRow',
     'benefits',
   ],
-  cta: ['quoteCta', 'newsletterCta', 'linkCards', 'contactForm'],
+  cta: ['generalCta', 'newsletterCta', 'linkCards', 'contactForm'],
 } as const
 
 const INSERT_GROUPS: SectionInsertGroup[] = [
@@ -119,7 +119,7 @@ export const SECTION_ALLOW = {
     ...FAMILY.expertise,
     ...FAMILY.resource,
     'faqSection',
-    'quoteCta',
+    'generalCta',
     'richText',
   ],
   // Product / Customization catalog indexes (PROD-2589) — sections below the
@@ -151,7 +151,7 @@ export const SECTION_ALLOW = {
     ...FAMILY.expertise,
     ...FAMILY.client,
     ...FAMILY.layout,
-    'quoteCta',
+    'generalCta',
   ],
   marketPage: [
     ...FAMILY.solution,
@@ -162,7 +162,7 @@ export const SECTION_ALLOW = {
     ...FAMILY.resource,
     ...FAMILY.client,
     ...FAMILY.layout,
-    'quoteCta',
+    'generalCta',
   ],
 } as const
 

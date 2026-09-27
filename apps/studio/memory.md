@@ -69,7 +69,7 @@ Creates/updates `productLinePage` with a `productStylesRow` (`_key` `product-lin
 
 Humans may also open the pin in Studio, add **Product style row**, set List source to Line styles, publish, then set `template` on each customer-facing line.
 
-## Product / Customization catalog pages (PROD-2589)
+## Product / Customization catalog pages (PROD-2589 / PROD-2607)
 
 Pinned singletons mirror `solutionIndustryPage` (title + sections only; fixed id = type name):
 
@@ -77,9 +77,40 @@ Pinned singletons mirror `solutionIndustryPage` (title + sections only; fixed id
 | --- | --- | --- |
 | `productCatalogPage` | Main Website → Product Pages → Product Catalog Page | `/products` |
 | `productLinePage` | Main Website → Product Pages → Product Line Page | template (no public URL) |
+| `productStylePage` | Main Website → Product Pages → Product Style Page | below grid on `/products/[line]/[style]` |
+| `productDetailPage` | Main Website → Product Pages → Product Detail Page | template for PDPs (`product.template`) |
 | `customizationCatalogPage` | Main Website → Customization Pages → Customization Catalog Page | `/customizations` |
+| `customizationDetailPage` | Main Website → Customization Pages → Customization Detail Page | below chrome on `/customizations/[category]/[handle]` |
+| `solutionIndustryPage` | Main Website → Solution Pages → Solution Industry Page | template for industry LPs |
+| `solutionStylePage` | Main Website → Solution Pages → Solution Style Page | below grid on `/solutions/[slug]/[style]` |
 
-The faceted grids stay route-owned. CMS `sections[]` render **below** the grid. H1 / intro / SEO stay hardcoded on www until a follow-up. Humans open each pin, add sections, publish — agents do not create documents.
+The faceted grids / detail chrome stay route-owned. CMS `sections[]` render **below** the grid (catalog/style) or merge as a template (line / industry / PDP). H1 / intro / SEO stay hardcoded on www catalog indexes until a follow-up. Humans open each pin, add sections, publish — agents do not create documents.
+
+For PDPs: select **Product Detail Page** on the product’s Template tab; band content stays on the product Sections tab (matched by `_key`). Empty template → current hardcoded PDP bands only.
+
+## General CTA closing band (PROD-2607)
+
+Studio section **CTAs → General** (`generalCta`) is the single conversion band (former footer collaborate strip + Expertise closing CTA). Studio: **theme** (muted / dark — colors only), **align**, **paddingBlock**, dieline borders, optional **body**, **Button** link (label + Internal / Site path / External). Empty button → `FOOTER_CTA` (/contact). www renders via `GeneralCta` only — `quoteCta` removed. Chrome footer no longer includes that band.
+
+Human seed appends `_key: general-cta-closing` to the eight page singletons above (creates stubs if missing). Agents do not `--confirm`.
+
+```bash
+pnpm --filter @pakfactory/studio run seed:general-cta-pages -- --dataset development
+pnpm --filter @pakfactory/studio run seed:general-cta-pages -- --dataset development --confirm
+```
+
+After `--confirm`: publish each pin if draft; verify a catalog/LP/PDP page shows the collaborate band above the site footer.
+
+### Expertise closing band reseed (replace `quoteCta` / ctaTarget)
+
+After schema deploy, reseed Expertise stages so the final CTA is `generalCta` (`theme: inverse`, `align: left`, `link` → Site path `/request`). Until reseed, closing bands with leftover `quoteCta` / `ctaTarget` fields will not render correctly.
+
+```bash
+pnpm --filter @pakfactory/studio run seed:expertise-design -- --dataset development --confirm
+pnpm --filter @pakfactory/studio run seed:expertise-strategy -- --dataset development --confirm
+```
+
+Verify `/expertise/packaging-design` (and strategy) shows the dark left-aligned closing band; button opens the request flow.
 
 ## Beauty Solution LP seed (WP4 / Phase B)
 

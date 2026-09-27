@@ -35,10 +35,11 @@ import { uniqueSlugWithinParent } from '../lib/slug-rules'
  * solution-scoped query is inspiration-scoped by construction). Storing either
  * would be one rule copied onto every document.
  *
- * No `sections`: a collection page is a catalogue, not an argument, and its body
- * is the product grid. No `pinned` list either — ordering is `_createdAt` desc,
- * and per-collection pinning is the answer WHEN merchandising order starts to
- * matter, deferred on purpose until then.
+ * No per-style `sections` on this document: shared below-grid bands live on the
+ * `solutionStylePage` singleton (Main Website → Solution Pages → Solution Style
+ * Page), twin of `productStylePage`. No `pinned` list either — ordering is
+ * `_createdAt` desc, and per-collection pinning is the answer WHEN merchandising
+ * order starts to matter, deferred on purpose until then.
  *
  * Schema + Studio experience are real; the catalogue page is the PROD-2584 FE.
  */

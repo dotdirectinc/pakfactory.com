@@ -1,11 +1,11 @@
 import type {
     PageSectionCaseStudiesRowDoc,
     PageSectionFaqSectionDoc,
+    PageSectionGeneralCtaDoc,
     PageSectionInspirationsGridDoc,
     PageSectionLogoWallDoc,
     PageSectionExpertiseSequenceDoc,
     PageSectionMediaFeatureDoc,
-    PageSectionQuoteCtaDoc,
 } from '@pakfactory/sanity/queries';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
@@ -14,10 +14,10 @@ import {ExpertiseHero} from '@/components/expertise/expertise-hero';
 import {ExpertiseLifecycle} from '@/components/expertise/expertise-lifecycle';
 import {CaseStudyRail} from '@/components/sections/case-study-rail';
 import {FaqSection} from '@/components/sections/faq-section';
+import {GeneralCta} from '@/components/sections/general-cta';
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
 import {WorkShowcase} from '@/components/sections/work-showcase';
-import {QuoteCta} from '@/components/sections/quote-cta';
 import type {PageSection} from '@/components/sections/registry';
 import {
     SectionRenderer,
@@ -36,13 +36,13 @@ import {
 } from '@/lib/expertise/section-anchor';
 import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
+import {
+    GENERAL_CTA_REQUEST_LABEL,
+    mapGeneralCta,
+} from '@/lib/sections/map-general-cta';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaPanel} from '@/lib/sections/map-media-panel';
-import {
-    mapQuoteCta,
-    QUOTE_CTA_DEFAULT_LABEL,
-} from '@/lib/sections/map-quote-cta';
 import type {
     ExpertiseStageCard,
     ExpertiseStagePage,
@@ -107,7 +107,7 @@ export function ExpertiseCatalogView({
  * `expertiseSequence` → the lifecycle path with this stage current (inheriting
  * every stage in hub order when its list is empty), `mediaFeature` →
  * MediaPanel, `caseStudiesRow` on the muted band, `logoWall` as the trust
- * strip, `inspirationsGrid` → WorkShowcase, `quoteCta` as the dark closing band.
+ * strip, `inspirationsGrid` → WorkShowcase, `generalCta` as the dark closing band.
  */
 export function ExpertiseStageView({
     stage,
@@ -199,17 +199,20 @@ export function ExpertiseStageView({
                 />
             );
         },
-        quoteCta: (section: PageSection) => {
-            const mapped = mapQuoteCta(section as PageSectionQuoteCtaDoc);
+        generalCta: (section: PageSection) => {
+            const mapped = mapGeneralCta(section as PageSectionGeneralCtaDoc);
             return (
-                <QuoteCta
-                    id={`quote-cta-${section._key}`}
+                <GeneralCta
+                    id={`general-cta-${section._key}`}
                     heading={mapped.heading}
-                    body={mapped.body ?? ''}
+                    body={mapped.body}
                     ctaLabel={mapped.ctaLabel}
                     href={mapped.href}
-                    theme="inverse"
-                    align="left"
+                    theme={mapped.theme}
+                    align={mapped.align}
+                    paddingBlock={mapped.paddingBlock}
+                    borderTop={mapped.borderTop}
+                    borderBottom={mapped.borderBottom}
                 />
             );
         },
@@ -241,7 +244,7 @@ export function ExpertiseStageView({
                 {...(stage.tagline ? {eyebrow: stage.tagline} : {})}
                 {...(stage.description ? {subhead: stage.description} : {})}
                 primaryCta={{
-                    label: stage.heroCtaLabel ?? QUOTE_CTA_DEFAULT_LABEL,
+                    label: stage.heroCtaLabel ?? GENERAL_CTA_REQUEST_LABEL,
                     href: WWW_ROUTES.request,
                 }}
                 {...(heroLinkHref && stage.heroSecondary

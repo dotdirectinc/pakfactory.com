@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
-import { Button } from "@pakfactory/ui/components/button";
 import {
   PageDielineSection,
   pageDielineInnerClass,
@@ -90,8 +89,6 @@ const DOTTED_GRID_BG =
 
 type SiteFooterProps = {
   columns: FooterColumns;
-  contactHref: string;
-  contactLabel?: string;
   social?: SocialLink[];
   aiLinks?: AiLink[];
   /** Optional override for the bottom PAKFACTORY mark (e.g. animated). */
@@ -151,39 +148,8 @@ function FooterSectionBlock({ section }: { section: FooterSection }) {
   );
 }
 
-function FooterContactCta({
-  href,
-  label,
-}: {
-  href: string;
-  label: string;
-}) {
-  if (isSameSiteFooterHref(href)) {
-    return (
-      <Button
-        className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        asChild
-      >
-        <Link href={href}>{label}</Link>
-      </Button>
-    );
-  }
-  return (
-    <Button
-      className="mt-6 h-10 bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-      asChild
-    >
-      <a href={href} {...externalLinkAttributes(href)}>
-        {label}
-      </a>
-    </Button>
-  );
-}
-
 export function SiteFooter({
   columns,
-  contactHref,
-  contactLabel = "Let's talk",
   social = [],
   aiLinks = [],
   wordmark,
@@ -196,13 +162,6 @@ export function SiteFooter({
   return (
     <footer className="bg-muted">
       <PageDielineSection paddingBlock="none" innerClassName="px-0 sm:px-0">
-        <div className="px-layout-gutter-inner py-16 text-center">
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
-            Let&apos;s collaborate and craft <br /> your vision
-          </h2>
-          <FooterContactCta href={contactHref} label={contactLabel} />
-        </div>
-
         <div
           className="grid grid-cols-1 gap-16 border-t border-dashed border-border px-layout-gutter-inner py-16 md:grid-cols-3 md:gap-x-0 md:gap-y-16 md:px-0 md:py-0 md:[grid-template-rows:repeat(var(--footer-section-rows),auto)]"
           style={

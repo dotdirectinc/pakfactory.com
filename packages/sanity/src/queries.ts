@@ -144,7 +144,10 @@ export {
 export {
     PRODUCT_CATALOG_PAGE_QUERY,
     PRODUCT_STYLE_PAGE_QUERY,
+    PRODUCT_DETAIL_PAGE_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
+    CUSTOMIZATION_DETAIL_PAGE_QUERY,
+    SOLUTION_STYLE_PAGE_QUERY,
     type CatalogIndexPageDoc,
 } from './queries/catalog-pages';
 
@@ -194,7 +197,7 @@ export {
     type PageSectionLogoWallDoc,
     type PageSectionLogoWallItemDoc,
     type PageSectionMediaFeatureDoc,
-    type PageSectionQuoteCtaDoc,
+    type PageSectionGeneralCtaDoc,
     type PageSectionSignatureProblemDoc,
     type PageSectionSignatureSystemDoc,
     type PageSectionStepDoc,

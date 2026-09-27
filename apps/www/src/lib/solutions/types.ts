@@ -94,6 +94,8 @@ export type SolutionStyleCatalog = {
     };
     style: SolutionStylePage;
     library: ProductLibraryResult;
+    /** Shared bands from `solutionStylePage` singleton (below the grid). */
+    pageSections?: PageSectionDoc[] | null;
 };
 
 /** Shared link shape for CTAs across landing bands (Fork 0 → Sanity later). */

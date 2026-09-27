@@ -279,10 +279,15 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   _type == "postsRow" => {
     ${SECTION_CHROME}
   },
-  _type == "quoteCta" => {
-    ${SECTION_CHROME},
+  _type == "generalCta" => {
+    heading,
     body,
-    ctaLabel
+    link ${LINK_OBJECT},
+    theme,
+    align,
+    paddingBlock,
+    showTopBorder,
+    showBottomBorder
   },
   _type == "newsletterCta" => {
     ${SECTION_CHROME}
@@ -521,11 +526,18 @@ export type PageSectionStepsDoc = PageSectionChromeFields & {
     items?: PageSectionStepDoc[] | null;
 };
 
-export type PageSectionQuoteCtaDoc = PageSectionChromeFields & {
-    _type: 'quoteCta';
+/** General CTA band (heading + body + button link); theme/align/padding/borders Studio-controlled. */
+export type PageSectionGeneralCtaDoc = {
+    _type: 'generalCta';
     _key: string;
+    heading?: string | null;
     body?: string | null;
-    ctaLabel?: string | null;
+    link?: PageSectionLinkDoc | null;
+    theme?: 'muted' | 'inverse' | string | null;
+    align?: 'left' | 'center' | string | null;
+    paddingBlock?: string | null;
+    showTopBorder?: boolean | null;
+    showBottomBorder?: boolean | null;
 };
 
 /** Chrome-only Reviews band; quote items still mock on www. */
@@ -557,6 +569,6 @@ export type PageSectionDoc =
     | PageSectionTestimonialsRowDoc
     | PageSectionSignatureSystemDoc
     | PageSectionBenefitsDoc
-    | PageSectionQuoteCtaDoc
+    | PageSectionGeneralCtaDoc
     | PageSectionStepsDoc
     | PageSectionStubDoc;

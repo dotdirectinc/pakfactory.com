@@ -136,6 +136,12 @@ export type Product = {
     relatedProducts?: Product[];
     /** Props-ready; empty until testimonial docs land (PROD-2293). */
     testimonials?: ProductTestimonial[];
+    /**
+     * Page-builder sections on this product (content). Merged with
+     * `templateSections` for the PDP lower body.
+     */
+    sections?: PageSectionDoc[];
+    templateSections?: PageSectionDoc[];
 };
 
 export type ProductLineExpertiseRef = {
