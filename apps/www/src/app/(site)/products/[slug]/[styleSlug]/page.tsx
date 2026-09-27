@@ -1,15 +1,20 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
+import {Suspense} from 'react';
 
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import type {PageSection} from '@/components/sections/registry';
-import {ProductStyleView} from '@/components/product/product-style-view';
+import {PageEnter} from '@/components/layout/page-enter';
+import {ProductCatalogPanelLoading} from '@/components/product/product-catalog-page-loading';
+import {ProductCatalogView} from '@/components/product/product-catalog-view';
+import {ProductStyleChrome} from '@/components/product/product-style-view';
 import {
     getProductStylePage,
     getStyle,
     listLines,
     listProductStyleLibrary,
 } from '@/lib/catalog/catalog';
+import type {ProductLine, ProductStyleRef} from '@/lib/catalog/types';
 
 export const revalidate = 60;
 
@@ -39,25 +44,46 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     };
 }
 
-export default async function ProductStylePage({params}: PageProps) {
-    const {slug, styleSlug} = await params;
-    const match = await getStyle(slug, styleSlug);
-    if (!match) notFound();
-
+async function ProductStyleCatalogBody({
+    line,
+    style,
+}: {
+    line: ProductLine;
+    style: ProductStyleRef;
+}) {
     const [library, page] = await Promise.all([
-        listProductStyleLibrary(match.line.slug, match.style.slug),
+        listProductStyleLibrary(line.slug, style.slug),
         getProductStylePage(),
     ]);
     const sections = (page?.sections ?? null) as PageSection[] | null;
 
     return (
         <>
-            <ProductStyleView
-                line={match.line}
-                style={match.style}
+            <ProductCatalogView
                 library={library}
+                urlSync
+                showPageChrome={false}
+                hideCatalogBorderTop
             />
             <SectionRenderer sections={sections} />
         </>
+    );
+}
+
+export default async function ProductStylePage({params}: PageProps) {
+    const {slug, styleSlug} = await params;
+    const match = await getStyle(slug, styleSlug);
+    if (!match) notFound();
+
+    return (
+        <PageEnter>
+            <ProductStyleChrome line={match.line} style={match.style} />
+            <Suspense fallback={<ProductCatalogPanelLoading />}>
+                <ProductStyleCatalogBody
+                    line={match.line}
+                    style={match.style}
+                />
+            </Suspense>
+        </PageEnter>
     );
 }

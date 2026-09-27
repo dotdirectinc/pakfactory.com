@@ -104,6 +104,17 @@ When implementing a marketing section from Figma (e.g. Industry Solution LP fork
 - Feature tiles compose the cores: **ProductCard** / **CustomizationCard** → transactional; product lines / styles / formats → general (`CatalogCard`).
 - Settle scale is shared (`PRODUCT_MEDIA_SCALE` 0.98 → 1.0): general cards settle the **whole tile**; transactional cards settle **media only**. Do not invent a second scale or grow past 1.
 
+### Tooltip
+
+Use `@pakfactory/ui` **`Tooltip`** / **`TooltipContent`** — do not invent CSS-only hover labels in feature files.
+
+| Variant | When | Look |
+| --- | --- | --- |
+| **`pill`** | Icon / utility tips (nav Quote request, catalog bookmark / compare) | `rounded-full`, 13px medium label, caret (Arrow) visible, centered on the trigger |
+| **`default`** | Denser form / inline tips (swatches, avatar names) | `rounded-md`, `text-xs` |
+
+Always keep the caret — do not hide `TooltipPrimitive.Arrow` with `[&>svg]:hidden`. Wrap the app (or surface) in `TooltipProvider` once.
+
 ### Focus & interaction
 
 - Use existing focus/ring behavior from primitives (`--ring`).

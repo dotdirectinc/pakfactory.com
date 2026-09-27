@@ -9,6 +9,7 @@ import {
     type ProductCardData,
 } from '@/components/product/product-card';
 import {ProductCatalogView} from '@/components/product/product-catalog-view';
+import {SolutionCatalogPageChrome} from '@/components/solution/solution-catalog-page-loading';
 import {SolutionHero} from '@/components/solution/solution-hero';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import {CatalogCard} from '@/components/ui/catalog-card';
@@ -55,21 +56,15 @@ function toProductCardData(product: Product): ProductCardData {
 
 export function SolutionCatalogView({
     solutions,
+    showPageChrome = true,
 }: {
     solutions: SolutionCard[];
+    /** When false, omit breadcrumb + page heading (page-owned chrome). */
+    showPageChrome?: boolean;
 }) {
     return (
         <>
-            <PageBreadcrumbSection
-                items={[
-                    {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Solutions'},
-                ]}
-            />
-            <PageHeadingSection
-                title="Solutions"
-                description="Industry and channel packaging tailored to how you sell."
-            />
+            {showPageChrome ? <SolutionCatalogPageChrome /> : null}
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>
                     {solutions.map((solution) => (

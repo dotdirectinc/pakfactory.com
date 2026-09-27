@@ -1,7 +1,12 @@
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
 
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import type {PageSection} from '@/components/sections/registry';
+import {
+    ProductCatalogPageChrome,
+    ProductCatalogPanelLoading,
+} from '@/components/product/product-catalog-page-loading';
 import {ProductCatalogView} from '@/components/product/product-catalog-view';
 import {
     getProductCatalogPage,
@@ -16,7 +21,7 @@ export const metadata: Metadata = {
     description: 'Browse packaging products and styles.',
 };
 
-export default async function ProductsIndexPage() {
+async function ProductsCatalogBody() {
     const [library, page] = await Promise.all([
         listProductLibrary(),
         getProductCatalogPage(),
@@ -25,8 +30,19 @@ export default async function ProductsIndexPage() {
 
     return (
         <>
-            <ProductCatalogView library={library} urlSync />
+            <ProductCatalogView library={library} urlSync showPageChrome={false} />
             <SectionRenderer sections={sections} />
+        </>
+    );
+}
+
+export default function ProductsIndexPage() {
+    return (
+        <>
+            <ProductCatalogPageChrome />
+            <Suspense fallback={<ProductCatalogPanelLoading />}>
+                <ProductsCatalogBody />
+            </Suspense>
         </>
     );
 }

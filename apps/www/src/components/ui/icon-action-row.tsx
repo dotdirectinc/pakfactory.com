@@ -3,11 +3,15 @@
 import type {LucideIcon} from 'lucide-react';
 import type {MouseEvent} from 'react';
 import {Button} from '@pakfactory/ui/components/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@pakfactory/ui/components/tooltip';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {Icon} from '@/components/ui/icon';
 import {
     mediaUtilityButtonClass,
-    mediaUtilityTooltipClass,
     type MediaUtilityTooltipSide,
 } from '@/components/ui/media-utility-button';
 
@@ -37,11 +41,8 @@ export function IconActionRow({
     return (
         <div className={cn('flex items-center gap-0.5', className)}>
             {actions.map(
-                ({id, label, ariaLabel, icon, onClick, disabled}) => (
-                    <span
-                        key={id}
-                        className="relative inline-flex items-center justify-center"
-                    >
+                ({id, label, ariaLabel, icon, onClick, disabled}) => {
+                    const button = (
                         <Button
                             type="button"
                             variant="ghost"
@@ -50,7 +51,7 @@ export function IconActionRow({
                             disabled={disabled}
                             onClick={onClick}
                             className={cn(
-                                'peer aspect-square shrink-0 rounded-full p-0',
+                                'aspect-square shrink-0 rounded-full p-0',
                                 variant === 'media'
                                     ? mediaUtilityButtonClass
                                     : 'text-muted-foreground hover:text-foreground',
@@ -58,17 +59,32 @@ export function IconActionRow({
                         >
                             <Icon icon={icon} />
                         </Button>
-                        {!disabled ? (
+                    );
+
+                    if (disabled) {
+                        return (
                             <span
-                                className={mediaUtilityTooltipClass(
-                                    tooltipSide,
-                                )}
+                                key={id}
+                                className="inline-flex items-center justify-center"
+                            >
+                                {button}
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <Tooltip key={id}>
+                            <TooltipTrigger asChild>{button}</TooltipTrigger>
+                            <TooltipContent
+                                side={tooltipSide}
+                                sideOffset={8}
+                                variant="pill"
                             >
                                 {label}
-                            </span>
-                        ) : null}
-                    </span>
-                ),
+                            </TooltipContent>
+                        </Tooltip>
+                    );
+                },
             )}
         </div>
     );

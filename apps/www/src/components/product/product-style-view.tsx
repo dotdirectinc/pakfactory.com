@@ -11,18 +11,15 @@ import type {
 import {productHref, WWW_ROUTES} from '@/lib/www-routes';
 
 /**
- * Product style landing — same shape as the solution style catalog page:
- * breadcrumb, heading with optional media, then the faceted product library
- * scoped to this line and style.
+ * Breadcrumb + heading for a product style landing — available once
+ * `getStyle` resolves; the library grid can load after.
  */
-export function ProductStyleView({
+export function ProductStyleChrome({
     line,
     style,
-    library,
 }: {
     line: ProductLine;
     style: ProductStyleRef;
-    library: ProductLibraryResult;
 }) {
     const description =
         style.shortDescription?.trim() ||
@@ -31,7 +28,7 @@ export function ProductStyleView({
     const {imageUrl, imageAlt} = resolveStyleCardImage(style, line);
 
     return (
-        <PageEnter>
+        <>
             <PageBreadcrumbSection
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
@@ -52,6 +49,27 @@ export function ProductStyleView({
                         : null
                 }
             />
+        </>
+    );
+}
+
+/**
+ * Product style landing — same shape as the solution style catalog page:
+ * breadcrumb, heading with optional media, then the faceted product library
+ * scoped to this line and style.
+ */
+export function ProductStyleView({
+    line,
+    style,
+    library,
+}: {
+    line: ProductLine;
+    style: ProductStyleRef;
+    library: ProductLibraryResult;
+}) {
+    return (
+        <PageEnter>
+            <ProductStyleChrome line={line} style={style} />
             <ProductCatalogView
                 library={library}
                 urlSync

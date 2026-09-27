@@ -100,11 +100,11 @@ export function ProductCustomizationsPreview({
 
                 <div
                     className={cn(
-                        'mt-8 max-h-[min(40rem,70vh)] overflow-y-auto overscroll-contain',
-                        'rounded-3xl bg-muted p-6 sm:mt-10 sm:p-8 lg:p-10',
+                        'mt-8 rounded-3xl bg-muted p-6 sm:mt-10 sm:p-8 md:p-0',
+                        'md:h-[min(40rem,70vh)] md:overflow-hidden',
                     )}
                 >
-                    <div className="grid items-start gap-6 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-0 lg:grid-cols-[12rem_minmax(0,1fr)]">
+                    <div className="grid h-full items-start gap-6 md:min-h-0 md:grid-cols-[15rem_minmax(0,1fr)] md:items-stretch md:gap-0 lg:grid-cols-[17rem_minmax(0,1fr)]">
                         <nav
                             aria-label="Customization categories"
                             className="flex flex-wrap gap-2 md:hidden"
@@ -121,7 +121,7 @@ export function ProductCustomizationsPreview({
                         </nav>
                         <nav
                             aria-label="Customization categories"
-                            className="hidden flex-col gap-1 md:sticky md:top-0 md:flex md:self-start md:pr-6"
+                            className="hidden flex-col gap-1 md:flex md:py-8 md:pl-8 md:pr-6 lg:py-10 lg:pl-10"
                         >
                             {categories.map((cat) => (
                                 <CategoryPill
@@ -133,35 +133,42 @@ export function ProductCustomizationsPreview({
                             ))}
                         </nav>
 
-                        <div className="min-w-0 md:pl-10">
-                            {visibleItems.length ? (
-                                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                    {visibleItems.map((item) => (
-                                        <li key={item.href}>
-                                            <CustomizationCatalogCard
-                                                href={item.href}
-                                                title={item.label}
-                                                eyebrow={
-                                                    item.typeTitle ??
-                                                    item.categoryTitle
-                                                }
-                                                imageSrc={item.imageUrl}
-                                                imageAlt={
-                                                    item.imageAlt ?? item.label
-                                                }
-                                                surface="elevated"
-                                                onCloserLook={() =>
-                                                    setActiveItem(item)
-                                                }
-                                            />
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="py-8 text-sm text-muted-foreground">
-                                    No customizations in this category yet.
-                                </p>
-                            )}
+                        <div className="min-w-0 md:flex md:h-full md:min-h-0">
+                            <div className="min-w-0 md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:py-8 md:pl-10 md:pr-4 lg:py-10 lg:pr-5">
+                                {visibleItems.length ? (
+                                    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                        {visibleItems.map((item) => (
+                                            <li key={item.href}>
+                                                <CustomizationCatalogCard
+                                                    href={item.href}
+                                                    title={item.label}
+                                                    eyebrow={
+                                                        item.typeTitle ??
+                                                        item.categoryTitle
+                                                    }
+                                                    imageSrc={item.imageUrl}
+                                                    imageAlt={
+                                                        item.imageAlt ??
+                                                        item.label
+                                                    }
+                                                    surface="elevated"
+                                                    onCloserLook={() =>
+                                                        setActiveItem(item)
+                                                    }
+                                                />
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="py-8 text-sm text-muted-foreground">
+                                        No customizations in this category yet.
+                                    </p>
+                                )}
+                            </div>
+                            <div
+                                aria-hidden
+                                className="hidden md:block md:w-4 md:shrink-0 lg:w-5"
+                            />
                         </div>
                     </div>
                 </div>

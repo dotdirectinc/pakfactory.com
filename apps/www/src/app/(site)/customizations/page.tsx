@@ -1,7 +1,12 @@
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
 
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import type {PageSection} from '@/components/sections/registry';
+import {
+    CustomizationCatalogPageChrome,
+    CustomizationCatalogPanelLoading,
+} from '@/components/customization/customization-catalog-page-loading';
 import {CustomizationCatalogView} from '@/components/customization/customization-catalog-view';
 import {
     getCustomizationCatalogPage,
@@ -15,7 +20,7 @@ export const metadata: Metadata = {
     title: 'Customizations',
 };
 
-export default async function CustomizationsIndexPage() {
+async function CustomizationsCatalogBody() {
     const [library, page] = await Promise.all([
         listCustomizations(),
         getCustomizationCatalogPage(),
@@ -24,8 +29,23 @@ export default async function CustomizationsIndexPage() {
 
     return (
         <>
-            <CustomizationCatalogView library={library} urlSync />
+            <CustomizationCatalogView
+                library={library}
+                urlSync
+                showPageChrome={false}
+            />
             <SectionRenderer sections={sections} />
+        </>
+    );
+}
+
+export default function CustomizationsIndexPage() {
+    return (
+        <>
+            <CustomizationCatalogPageChrome />
+            <Suspense fallback={<CustomizationCatalogPanelLoading />}>
+                <CustomizationsCatalogBody />
+            </Suspense>
         </>
     );
 }

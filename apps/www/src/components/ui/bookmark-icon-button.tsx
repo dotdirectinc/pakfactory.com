@@ -3,11 +3,15 @@
 import type {MouseEvent} from 'react';
 import {Bookmark} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@pakfactory/ui/components/tooltip';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {Icon} from '@/components/ui/icon';
 import {
     mediaUtilityButtonClass,
-    mediaUtilityTooltipClass,
     type MediaUtilityTooltipSide,
 } from '@/components/ui/media-utility-button';
 
@@ -31,28 +35,30 @@ export function BookmarkIconButton({
     const tooltipLabel = pressed ? 'Remove' : 'Save';
 
     return (
-        <span className="relative inline-flex">
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={accessibleLabel}
-                aria-pressed={pressed}
-                className={cn(
-                    'peer',
-                    mediaUtilityButtonClass,
-                    className,
-                )}
-                onClick={onClick}
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={accessibleLabel}
+                    aria-pressed={pressed}
+                    className={cn(mediaUtilityButtonClass, className)}
+                    onClick={onClick}
+                >
+                    <Icon
+                        icon={Bookmark}
+                        className={cn(pressed && 'fill-white text-white')}
+                    />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent
+                side={tooltipSide}
+                sideOffset={8}
+                variant="pill"
             >
-                <Icon
-                    icon={Bookmark}
-                    className={cn(pressed && 'fill-white text-white')}
-                />
-            </Button>
-            <span className={mediaUtilityTooltipClass(tooltipSide)}>
                 {tooltipLabel}
-            </span>
-        </span>
+            </TooltipContent>
+        </Tooltip>
     );
 }

@@ -1,5 +1,5 @@
-import {ProductsSegmentLoading} from '@/components/product/products-segment-loading';
+import {ProductDetailLoading} from '@/components/product/product-detail-loading';
 
-export default function ProductsSegmentLoadingRoute() {
-    return <ProductsSegmentLoading />;
+export default function ProductDetailLoadingRoute() {
+    return <ProductDetailLoading />;
 }
