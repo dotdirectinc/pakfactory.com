@@ -21,8 +21,8 @@ import { defineField } from 'sanity'
  * (PROD-2610). Coupling them breaks it silently: no error, the filter simply never
  * appears.
  *
- * On a page type that resolves through `template->` (solutionStylePage, and
- * productLinePage / productStylePage if they are added later) this list belongs to
+ * On a page type that resolves through `template->` (solutionStylePage and
+ * productStylePage today, productLinePage if it is added later) this list belongs to
  * the LAYOUT, so every style pointing at the same layout document shares it. That
  * is intended — Eric confirmed it: two styles needing different sidebars get two
  * layout documents. Do not "fix" it by moving the field onto the content type.
