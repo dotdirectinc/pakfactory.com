@@ -196,7 +196,8 @@ export type ProductLine = {
      */
     featuredVideoUrl?: string | null;
     /**
-     * Landing hero chrome. `stack` (default) = featured icon + copy above media;
+     * Landing hero chrome from the selected Product Line Page layout.
+     * `stack` (default) = featured icon + copy above media;
      * `bottomBar` = media-first with icon/copy/CTAs along the bottom.
      */
     heroLayout?: 'stack' | 'bottomBar';

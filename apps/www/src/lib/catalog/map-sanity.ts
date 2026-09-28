@@ -456,7 +456,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
 
     const {imageUrl, imageAlt} = cardImageFromSanity(doc.cardImage, doc.title);
     const featuredVideoUrl = doc.featuredVideoUrl?.trim() || null;
-    const heroLayoutRaw = doc.heroLayout?.trim();
+    const heroLayoutRaw = doc.template?.heroLayout?.trim();
     const heroLayout =
         heroLayoutRaw === 'bottomBar' || heroLayoutRaw === 'stack'
             ? heroLayoutRaw

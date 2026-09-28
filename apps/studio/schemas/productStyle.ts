@@ -45,7 +45,7 @@ export const productStyle = defineType({
   title: 'Product Style',
   type: 'document',
   icon: ThLargeIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'sections', 'template', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -193,6 +193,20 @@ export const productStyle = defineType({
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+
+    // ─── TEMPLATE (layout version) ────────────────────────────────────────────
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{type: 'productStylePage'}],
+      options: {disableNew: true},
+      description:
+        'Pick a Product Style Page layout version — shared bands below the style catalog grid. ' +
+        'Manage layouts under Main Website → Product Pages → Product Style Pages. ' +
+        'Empty → seeded Default layout (`productStylePage`).',
+    }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
     defineField({

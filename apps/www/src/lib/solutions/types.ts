@@ -94,7 +94,7 @@ export type SolutionStyleCatalog = {
     };
     style: SolutionStylePage;
     library: ProductLibraryResult;
-    /** Shared bands from `solutionStylePage` singleton (below the grid). */
+    /** Shared bands from `solutionStylePage` layout (template → Default; below the grid). */
     pageSections?: PageSectionDoc[] | null;
 };
 

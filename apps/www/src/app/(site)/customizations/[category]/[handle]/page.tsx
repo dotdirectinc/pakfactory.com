@@ -47,7 +47,7 @@ export default async function CustomizationDetailPage({
     const {category, handle} = await params;
     const [result, page] = await Promise.all([
         getCustomizationDetail(category, handle),
-        getCustomizationDetailPage(),
+        getCustomizationDetailPage(category, handle),
     ]);
     if (!result) {
         notFound();

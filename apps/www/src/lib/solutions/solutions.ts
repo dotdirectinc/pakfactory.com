@@ -460,7 +460,7 @@ async function fetchSolutionStyleCatalog(
         const library = await fetchStyleProductLibrary(doc);
         const shortName =
             doc.solution.shortName?.trim() || parentTitle;
-        const stylePage = await getSolutionStylePage();
+        const stylePage = await getSolutionStylePage(solutionSlug, styleSlug);
         const pageSections = (stylePage?.sections ?? []).filter(
             (section): section is PageSectionDoc =>
                 Boolean(section?._key && section?._type),

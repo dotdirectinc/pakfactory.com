@@ -45,17 +45,52 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 
 **Agents do not run seeds** — humans only ([`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails).
 
-## Solution Industry Page template
+## Main Website page templates (desk pattern)
 
-Industry LP **order + chrome** live on the pinned singleton `solutionIndustryPage` (Main Website → Solution Pages → Solution Industry Page). Each industry `solution` with `hasPage` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). Logo wall may also carry a **shared default** client list on the template (Beauty seed); per-solution curatedItems override when set.
+**Main Website → {Domain} Pages** mirrors the public URL tree. Each row is a **template slot** for that level (section order/chrome; Product Line Pages also own hero shell). Entities live in their content workspaces and **pick** a template when the slot is listable.
 
-**Human seed:** run Beauty seed below with `--confirm` (creates template + Beauty wiring + solutionStyles). Agents author the script only — never `--confirm`.
+| Domain | Levels (desk) | Today | Listable? |
+| --- | --- | --- | --- |
+| **Products** | Catalog → Line → Style → PDP | Four slots | **All listable.** Line / Style / Detail = entity-picked (`template`). Catalog hub = listable but www serves **Default** fixed id only |
+| **Solutions** | Industry → Style | Both listable | **Industry + Style** entity-picked (`template`). Seeded Default ids keep fallback |
+| **Expertise** | Hub → Stage Pages | Hub pin + listable stage templates | Already listable versions |
+| **Case Studies** | Landing → Detail | Landing only (`caseStudiesPage`) | Landing stays **pinned** (shared `listingPage` type with Expertise hub). Detail out of MVP |
+| **Customizations** | Catalog → Detail | Both listable | **Detail** entity-picked (`template`). Catalog hub = listable; www serves **Default** fixed id only |
 
-## Product Line Page template
+**Rule:** **entity-picked** when many URLs share a slot — listable layout docs + `template` on the entity; www merges/uses `template.sections` with fallback to seeded Default id. **Hub Default-id live** when one URL — listable in Studio for draft layouts, but www still loads the fixed Default id until a settings “active layout” pointer exists. **Pinned** when the type is shared across hubs (`listingPage` for Case Studies / Expertise) so a type list would mix unrelated docs. Seed **Default** at the stable id (`productLinePage`, `productStylePage`, `productCatalogPage`, …).
 
-Product Line LP **order + chrome** live on the pinned singleton `productLinePage` (Main Website → Product Pages → Product Line Page) — twin of `solutionIndustryPage`. Each customer-facing `productLine` **must** select it on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merges template × line sections; `productStylesRow` with `listSource` = Line styles inherits each line’s styles.
+### Wave 2 pattern (entity-picked vs hub Default-id vs pinned)
 
-**Human seed (Product style row on the template):**
+| Pattern | Types | Studio | www |
+| --- | --- | --- | --- |
+| Entity-picked | `productStylePage`, `solutionStylePage`, `customizationDetailPage` (+ Wave 1 Line / Industry / PDP) | Listable; entity **Template** tab | Prefer `entity.template->sections`; fallback Default fixed id |
+| Hub Default-id live | `productCatalogPage`, `customizationCatalogPage` | Listable (prep drafts OK) | Always `_id == "…CatalogPage"` until settings pointer |
+| Still pinned | `caseStudiesPage` (`listingPage`) | Fixed-id editor | Fixed id |
+
+## Solution Industry Page layouts
+
+Industry LP **order + chrome** live on listable `solutionIndustryPage` documents (Main Website → Solution Pages → Solution Industry Pages). Each industry `solution` with `hasPage` **must** select one on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). Logo wall may also carry a **shared default** client list on the layout (Beauty seed); per-solution curatedItems override when set. Seeded Default id: `solutionIndustryPage`.
+
+Optional **Preview image** on each layout (Studio list + Template picker only).
+
+**Human seed:** run Beauty seed below with `--confirm` (creates/updates Default layout + Beauty wiring + solutionStyles). Agents author the script only — never `--confirm`.
+
+## Product Line Page layouts
+
+Product Line LP **hero shell + section order/chrome** live on listable `productLinePage` documents (Main Website → Product Pages → Product Line Pages) — not a pinned singleton. Each customer-facing `productLine` **must** select one on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merges template × line sections; `productStylesRow` with `listSource` = Line styles inherits each line’s styles. Shell (`heroLayout`: `stack` \| `bottomBar`) is a field on the layout doc.
+
+Seeded layout ids:
+
+| Doc id | Title | Shell | Typical use |
+| --- | --- | --- | --- |
+| `productLinePage` | Default | `stack` | Most customer-facing lines |
+| `productLinePage.bottomBar` | Bottom bar | `bottomBar` | `rigid-boxes` |
+
+Need a different section arrangement for one line later? Create another Product Line Page layout (same type), rearrange `sections[]`, point that line’s `template` at it.
+
+**Preview image (Studio chrome):** optional **Preview image** on each layout. Upload a ~640×360 crop of that shell’s hero from staging (or Figma). It appears in the Product Line Pages list and in the product line **Template** picker so editors can tell Default vs Bottom bar at a glance. Leave empty to keep the default package icon. Not shown on the site. Agents do not upload images.
+
+**Human seed (layouts + Product style row):**
 
 ```bash
 # Dry-run
@@ -65,41 +100,59 @@ pnpm --filter @pakfactory/studio run seed:product-line-page-styles -- --dataset 
 pnpm --filter @pakfactory/studio run seed:product-line-page-styles -- --dataset development --confirm
 ```
 
-Creates/updates `productLinePage` with a `productStylesRow` (`_key` `product-line-styles`, heading `Explore %title% styles`, empty cards → inherit). Sets `template` on customer-facing lines that lack it. Agents do not run `--confirm`.
+Creates/updates **Default** + **Bottom bar** layouts with a `productStylesRow` (`_key` `product-line-styles`, heading `Explore %title% styles`, empty cards → inherit). Sets `template` → Default (`productLinePage`) on customer-facing lines that lack it; points `rigid-boxes` at Bottom bar; unsets retired per-line `heroLayout`. Agents do not run `--confirm`.
 
-Humans may also open the pin in Studio, add **Product style row**, set List source to Line styles, publish, then set `template` on each customer-facing line.
+Humans may also create layouts in Studio, set **Hero layout**, optionally upload **Preview image**, publish, then set `template` on each customer-facing line. Re-running the seed with `--confirm` retitles existing docs to Default / Bottom bar when those ids are updated.
 
-## Product / Customization catalog pages (PROD-2589 / PROD-2607)
+## Product Detail Page layouts
 
-Pinned singletons mirror `solutionIndustryPage` (title + sections only; fixed id = type name):
+PDP **order + chrome** live on listable `productDetailPage` documents (Main Website → Product Pages → Product Detail Pages). Each `product` may select one on the **Template** tab; band **content** stays on the product **Sections** tab (matched by `_key`). Seeded Default id: `productDetailPage`. Empty template → current hardcoded PDP bands only.
 
-| Doc | Studio path | Route |
+Optional **Preview image** on each layout (Studio chrome only).
+
+## Product / Customization / Style catalog pages (PROD-2589 / PROD-2607 / Wave 2)
+
+Listable layout types; entity-picked slots use `template` with Default-id fallback. Catalog hubs are listable in Studio but www still serves the Default fixed id only.
+
+| Doc | Studio path | Role |
 | --- | --- | --- |
-| `productCatalogPage` | Main Website → Product Pages → Product Catalog Page | `/products` |
-| `productLinePage` | Main Website → Product Pages → Product Line Page | template (no public URL) |
-| `productStylePage` | Main Website → Product Pages → Product Style Page | below grid on `/products/[line]/[style]` |
-| `productDetailPage` | Main Website → Product Pages → Product Detail Page | template for PDPs (`product.template`) |
-| `customizationCatalogPage` | Main Website → Customization Pages → Customization Catalog Page | `/customizations` |
-| `customizationDetailPage` | Main Website → Customization Pages → Customization Detail Page | below chrome on `/customizations/[category]/[handle]` |
-| `solutionIndustryPage` | Main Website → Solution Pages → Solution Industry Page | template for industry LPs |
-| `solutionStylePage` | Main Website → Solution Pages → Solution Style Page | below grid on `/solutions/[slug]/[style]` |
+| `productCatalogPage` | Product Pages → Product Catalog Pages | hub `/products` — **Default id live** |
+| `productLinePage` / `…bottomBar` | Product Pages → Product Line Pages | listable line LP layouts (`productLine.template`) |
+| `productStylePage` | Product Pages → Product Style Pages | listable style catalog bands (`productStyle.template` → Default fallback) |
+| `productDetailPage` | Product Pages → Product Detail Pages | listable PDP layouts (`product.template`) |
+| `customizationCatalogPage` | Customization Pages → Catalog Pages | hub `/customizations` — **Default id live** |
+| `customizationDetailPage` | Customization Pages → Detail Pages | listable detail bands (`customizationOption.template` → Default fallback) |
+| `solutionIndustryPage` | Solution Pages → Solution Industry Pages | listable industry LP layouts |
+| `solutionStylePage` | Solution Pages → Solution Style Pages | listable style catalog bands (`solutionStyle.template` → Default fallback) |
 
-The faceted grids / detail chrome stay route-owned. CMS `sections[]` render **below** the grid (catalog/style) or merge as a template (line / industry / PDP). H1 / intro / SEO stay hardcoded on www catalog indexes until a follow-up. Humans open each pin, add sections, publish — agents do not create documents.
+The faceted grids / detail chrome stay route-owned. CMS `sections[]` render **below** the grid (catalog/style/detail) or merge as a template (line / industry / PDP). H1 / intro / SEO stay hardcoded on www catalog indexes until a follow-up. Humans open each layout list, add sections, publish — agents do not create documents.
 
-For PDPs: select **Product Detail Page** on the product’s Template tab; band content stays on the product Sections tab (matched by `_key`). Empty template → current hardcoded PDP bands only.
+For style / customization detail: select a layout on the entity’s **Template** tab; empty → seeded Default bands. For catalog hubs: only edit/publish the Default id until an active-layout settings pointer ships — extra docs are prep only.
+
+For PDPs: select a **Product Detail Page** layout on the product’s Template tab; band content stays on the product Sections tab (matched by `_key`). Empty template → current hardcoded PDP bands only.
+
+## Product Style / Solution Style / Customization Detail layouts
+
+Shared below-grid (or below-chrome) bands live on listable layout docs. Each `productStyle` / `solutionStyle` / `customizationOption` (when `hasPage`) may select one on the **Template** tab. Seeded Default ids: `productStylePage`, `solutionStylePage`, `customizationDetailPage`. www coalesce: entity `template->sections` else Default.
+
+Optional **Preview image** on each layout (Studio list + Template picker only).
+
+## Product / Customization catalog hubs (Default-id live)
+
+`productCatalogPage` and `customizationCatalogPage` are listable so editors can draft alternate layouts, but www always fetches `_id == "productCatalogPage"` / `"customizationCatalogPage"`. Promote content onto Default (or wait for settings active-layout) before extra docs affect the site.
 
 ## General CTA closing band (PROD-2607)
 
 Studio section **CTAs → General** (`generalCta`) is the single conversion band (former footer collaborate strip + Expertise closing CTA). Studio: **theme** (muted / dark — colors only), **align**, **paddingBlock**, dieline borders, optional **body**, **Button** link (label + Internal / Site path / External). Empty button → `FOOTER_CTA` (/contact). www renders via `GeneralCta` only — `quoteCta` removed. Chrome footer no longer includes that band.
 
-Human seed appends `_key: general-cta-closing` to the eight page singletons above (creates stubs if missing). Agents do not `--confirm`.
+Human seed appends `_key: general-cta-closing` to the page templates above (catalog/style/PDP/industry pins + both Product Line Page layouts; creates stubs if missing). Agents do not `--confirm`.
 
 ```bash
 pnpm --filter @pakfactory/studio run seed:general-cta-pages -- --dataset development
 pnpm --filter @pakfactory/studio run seed:general-cta-pages -- --dataset development --confirm
 ```
 
-After `--confirm`: publish each pin if draft; verify a catalog/LP/PDP page shows the collaborate band above the site footer.
+After `--confirm`: publish each pin/layout if draft; verify a catalog/LP/PDP page shows the collaborate band above the site footer.
 
 ### Expertise closing band reseed (replace `quoteCta` / ctaTarget)
 

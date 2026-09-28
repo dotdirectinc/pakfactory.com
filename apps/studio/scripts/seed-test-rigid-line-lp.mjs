@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * Educate → RFQ content for Product Line LPs:
- *   1. Patch shared `productLinePage` section chrome (tokenized copy; case-study
- *      cards / listSource left alone so template Custom list wins)
+ *   1. Patch Product Line Page layout chrome on Stack + Bottom bar (tokenized
+ *      copy; case-study cards / listSource left alone so template Custom list wins)
  *   2. Create 4 contextual FAQs for rigid boxes
  *   3. Patch `[Test] Rigid Boxes` hero + faqs + logo wall only (clears any
- *      videoCaseStudiesRow line override that would shadow the template list)
+ *      videoCaseStudiesRow line override that would shadow the template list);
+ *      point the line at the Bottom bar layout
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -68,11 +69,13 @@ const client = createClient({
   perspective: 'published',
 })
 
-const TEMPLATE_ID = 'productLinePage'
+const STACK_ID = 'productLinePage'
+const BOTTOM_BAR_ID = 'productLinePage.bottomBar'
+const LAYOUT_IDS = [STACK_ID, BOTTOM_BAR_ID]
 const LINE_ID = 'line.test-rigid-boxes'
 const HELP_CATEGORY_ID = '893d649a-31d3-4e43-9438-0c3c8719e99c'
 
-/** Template section keys (order stays as-authored on productLinePage). */
+/** Template section keys (order stays as-authored on each Product Line Page layout). */
 const KEY = {
   logoWall: '8830d609b3cb',
   styles: 'a0eaf49b6425',
@@ -220,11 +223,17 @@ async function main() {
   )
   console.log(`project ${PROJECT_ID} / dataset ${DATASET}`)
 
-  const template = await client.fetch(`*[_id == $id][0]{_id, sections}`, {
-    id: TEMPLATE_ID,
-  })
-  if (!template?.sections?.length) {
-    console.error(`❌  Missing ${TEMPLATE_ID} or it has no sections`)
+  const layouts = await client.fetch(
+    `*[_id in $ids]{_id, sections}`,
+    {ids: LAYOUT_IDS},
+  )
+  const byId = new Map((layouts ?? []).map((doc) => [doc._id, doc]))
+  const missingLayouts = LAYOUT_IDS.filter((id) => !byId.get(id)?.sections?.length)
+  if (missingLayouts.length) {
+    console.error(
+      `❌  Missing layout(s) or empty sections: ${missingLayouts.join(', ')}. ` +
+        'Run seed:product-line-page-styles --confirm first.',
+    )
     process.exit(1)
   }
 
@@ -261,7 +270,9 @@ async function main() {
     process.exit(1)
   }
 
-  const nextTemplateSections = patchTemplateChrome(template.sections)
+  const nextById = Object.fromEntries(
+    LAYOUT_IDS.map((id) => [id, patchTemplateChrome(byId.get(id).sections)]),
+  )
 
   const faqDocs = FAQ_SPECS.map((spec) => ({
     _id: spec.id,
@@ -288,11 +299,11 @@ async function main() {
 
   /** @type {{ kind: string, id: string, detail: string }[]} */
   const planned = [
-    {
+    ...LAYOUT_IDS.map((id) => ({
       kind: 'patch',
-      id: TEMPLATE_ID,
-      detail: 'Product Line Page chrome (preserve case-study cards)',
-    },
+      id,
+      detail: 'Product Line Page layout chrome (preserve case-study cards)',
+    })),
     ...faqDocs.map((f) => ({
       kind: 'createOrReplace',
       id: f._id,
@@ -302,8 +313,8 @@ async function main() {
       kind: 'patch',
       id: LINE_ID,
       detail: clearingCaseOverride
-        ? 'Hero + faqs + logo wall; remove videoCaseStudiesRow override'
-        : 'Hero + faqs + logo wall only',
+        ? `Hero + faqs + logo wall; template → ${BOTTOM_BAR_ID}; remove videoCaseStudiesRow override`
+        : `Hero + faqs + logo wall; template → ${BOTTOM_BAR_ID}`,
     },
   ]
 
@@ -328,7 +339,9 @@ async function main() {
   }
 
   const tx = client.transaction()
-  tx.patch(TEMPLATE_ID, (p) => p.set({ sections: nextTemplateSections }))
+  for (const id of LAYOUT_IDS) {
+    tx.patch(id, (p) => p.set({sections: nextById[id]}))
+  }
   for (const faq of faqDocs) tx.createOrReplace(faq)
   tx.patch(LINE_ID, (p) =>
     p
@@ -340,8 +353,9 @@ async function main() {
         allowIndex: false,
         faqs: FAQ_SPECS.map((f, i) => ref(f.id, `faq-${i}`)),
         sections: lineSections,
+        template: {_type: 'reference', _ref: BOTTOM_BAR_ID},
       })
-      .unset(['featuredStudies']),
+      .unset(['featuredStudies', 'heroLayout']),
   )
   await tx.commit()
 

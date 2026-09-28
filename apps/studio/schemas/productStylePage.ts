@@ -4,13 +4,15 @@ import {groupsFor, GROUPS} from '../lib/field-groups'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
- * Product Style Page — singleton for shared bands under every
- * `/products/[line]/[style]` catalog (same role as `productCatalogPage`).
+ * Product Style Page — listable layout version for shared bands under
+ * `/products/[line]/[style]` catalogs.
  *
  * The faceted product grid is route-owned; `sections` render **below** that
  * grid. Per-style copy (H1, description, media) stays on each `productStyle`.
+ * Styles pick a layout via `productStyle.template`. Seeded Default id
+ * `productStylePage` keeps unpublished picks working (www fallback).
  *
- * Document ID `productStylePage`, fixed; not creatable from "create new".
+ * Optional `previewImage` is Studio chrome only (list + Template picker).
  */
 export const productStylePage = defineType({
   name: 'productStylePage',
@@ -24,23 +26,35 @@ export const productStylePage = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Internal Studio label.',
-      initialValue: 'Product Style Page',
+      description:
+        'Internal Studio label shown when a product style picks this layout (e.g. "Default").',
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'previewImage',
+      title: 'Preview image',
+      type: 'image',
+      group: GROUPS.content,
+      options: {hotspot: true},
+      description:
+        'Screenshot of this style-catalog layout. Shown in the Product Style Pages list and when a ' +
+        'product style picks this template. Leave empty to use the default icon. Not shown on the site.',
     }),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',
-      'Sections below the fixed products catalog grid on every product style page. ' +
-        'The faceted grid itself is not editable here — rearrange or add bands ' +
-        'under the library only.',
+      'Sections below the fixed products catalog grid on product style pages that select this layout. ' +
+        'The faceted grid itself is not editable here — rearrange or add bands under the library only.',
     ),
   ],
   preview: {
-    prepare() {
+    select: {title: 'title', sections: 'sections', media: 'previewImage'},
+    prepare({title, sections, media}) {
+      const count = Array.isArray(sections) ? sections.length : 0
       return {
-        title: 'Product Style Page',
-        subtitle: 'Product style catalog template',
+        title: title || 'Untitled product style page',
+        subtitle: `Style catalog layout · ${count} section(s)`,
+        media: media || ThLargeIcon,
       }
     },
   },
