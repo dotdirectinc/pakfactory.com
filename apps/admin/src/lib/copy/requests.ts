@@ -70,6 +70,7 @@ export const ADMIN_REQUESTS_COPY = {
   customizationRowLabel: "Customization",
   notesAndImageRowLabel: "Notes & Image",
   notAdded: "Not added",
+  sizeLabel: "Size",
   contentsLabel: "Packaging contents",
   notesLabel: "Notes",
   customizeLine: "Customize",

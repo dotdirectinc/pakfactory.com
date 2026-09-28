@@ -18,6 +18,11 @@ export type RequestLine = {
   quantities: number[];
   contents: string;
   customizations: RequestCustomization[];
+  /**
+   * The buyer's size as one readable line ("Ext 10 × 5 × 3 in (Length × Width × Height)"), for
+   * display where the request is read back (admin). Optional — requests before PROD-2605 have none.
+   */
+  dimensionsSummary?: string;
   notes?: string;
   referenceImages?: RequestReferenceImage[];
   addedAt: string;
