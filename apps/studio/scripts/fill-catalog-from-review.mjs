@@ -28,6 +28,14 @@
  *     the fill the moment an editor presses Publish.
  *   · `publish: false` on a NEW document writes `drafts.<id>` only. An existing published
  *     document is never unpublished — the review report lists those conflicts.
+ *   · `publish: true` on a document that exists ONLY as `drafts.<id>` publishes it (PROD-2605,
+ *     2026-09-28: every catalog document is published): the published document is created
+ *     from the draft's full content plus the fill's fields, and the draft is removed — what
+ *     Studio's Publish button does. Nothing an editor wrote in the draft is lost.
+ *   · Then every WEAK reference to a document published here is strengthened (`_weak` and
+ *     `_strengthenOnPublish` unset). Studio does that when a person presses Publish; an API
+ *     publish does not, and a weak reference to a published document is what Studio flags
+ *     as "points at a draft".
  *   · A reference to a document with no published version (a new draft-only option, say)
  *     is written weak with `_strengthenOnPublish`, the shape Studio writes, because a
  *     strong reference to it is rejected. Publishing the target strengthens it.
@@ -263,6 +271,11 @@ async function main() {
     console.log(`    ${t.padEnd(22)} ${String(c.create).padStart(6)}  ${String(c.patch).padStart(5)}  ${String(c.publish).padStart(7)}  ${String(c.draft).padStart(5)}`)
   }
 
+  // Documents this run publishes out of draft, and the weak references that then strengthen.
+  const toPublish = docs.filter((d) => d._fill.publish && !present.has(d._id) && present.has(`drafts.${d._id}`)).map((d) => d._id)
+  const strengthen = await weakReferencesTo(new Set(toPublish))
+  if (toPublish.length) console.log(`\n    drafts to publish: ${toPublish.length} · weak references to strengthen: ${strengthen.refs} in ${plural(strengthen.docs.length, 'document')}`)
+
   if (errors.length) {
     console.error(`\n✖ ${plural(errors.length, 'preflight error')} — nothing written:`)
     errors.slice(0, 40).forEach((e) => console.error(`  · ${e}`))
@@ -321,7 +334,13 @@ async function main() {
     return out
   }
 
-  const log = { dataset: DATASET, startedAt: new Date().toISOString(), written: [] }
+  const draftContent = new Map()
+  for (let i = 0; i < toPublish.length; i += 200) {
+    const rows = await client.fetch(`*[_id in $ids]`, { ids: toPublish.slice(i, i + 200).map((id) => `drafts.${id}`) })
+    for (const r of rows) draftContent.set(r._id, r)
+  }
+
+  const log = { dataset: DATASET, startedAt: new Date().toISOString(), written: [], published: [], strengthened: [] }
   let tx = client.transaction()
   let pending = 0
   const flush = async () => {
@@ -330,6 +349,25 @@ async function main() {
     tx = client.transaction()
     pending = 0
   }
+
+  // Phase 1 — publish out of draft, each document EXACTLY as its draft holds it. Its own
+  // references to other drafts are weak already, so every write is valid on its own; the
+  // fill's fields (which may reference each other strongly) go on in phase 2, once every
+  // target exists as a published document.
+  for (const id of toPublish) {
+    const full = draftContent.get(`drafts.${id}`)
+    if (!full) throw new Error(`draft ${id} vanished since the preflight — re-run`)
+    const { _id: _drop, _rev, _createdAt, _updatedAt, ...content } = full
+    tx.createIfNotExists({ ...content, _id: id })
+    tx.delete(`drafts.${id}`)
+    present.set(id, { _id: id, _type: full._type, title: full.title })
+    present.delete(`drafts.${id}`)
+    log.published.push(id)
+    pending += 2
+    if (pending >= BATCH) await flush()
+  }
+  await flush()
+  if (toPublish.length) console.log(`    ✓ ${plural(toPublish.length, 'draft')} published`)
   for (const d of docs) {
     const owned = d._fill.owned
     const pub = present.get(d._id)
@@ -353,12 +391,58 @@ async function main() {
     if (pending >= BATCH) await flush()
   }
   await flush()
+
+  // Strengthen weak references to what was just published (see header).
+  if (strengthen.docs.length) {
+    const fresh = await weakReferencesTo(new Set(toPublish))
+    for (const { _id, paths } of fresh.docs) {
+      tx.patch(_id, (p) => p.unset(paths.flatMap((path) => [`${path}._weak`, `${path}._strengthenOnPublish`])))
+      log.strengthened.push({ _id, references: paths.length })
+      pending++
+      if (pending >= BATCH) await flush()
+    }
+    await flush()
+    console.log(`    ✓ ${plural(fresh.refs, 'weak reference')} strengthened in ${plural(fresh.docs.length, 'document')}`)
+  }
   log.finishedAt = new Date().toISOString()
   const logPath = join(REVIEW, `upload-${DATASET}-${log.finishedAt.replace(/[:.]/g, '-')}.json`)
   writeFileSync(logPath, `${JSON.stringify(log, null, 2)}\n`)
   console.log(`\n    ✓ ${plural(log.written.length, 'document')} written to dataset=${DATASET}`)
   console.log(`    log → ${logPath}`)
   console.log(`    next: open Studio on ${DATASET} and spot-check; run \`sanity documents validate --dataset ${DATASET}\`.\n`)
+}
+
+/**
+ * Every weak reference to one of `ids`, as Sanity patch paths per document (drafts included).
+ * Array items are addressed by `_key`, the way Sanity patches expect.
+ */
+async function weakReferencesTo(ids) {
+  if (!ids.size) return { docs: [], refs: 0 }
+  const list = [...ids]
+  const holders = new Map()
+  for (let i = 0; i < list.length; i += 100) {
+    const rows = await client.fetch(`*[references($ids)]`, { ids: list.slice(i, i + 100) })
+    for (const r of rows) holders.set(r._id, r)
+  }
+  const docs = []
+  let refs = 0
+  for (const doc of holders.values()) {
+    const paths = []
+    const walk = (v, path) => {
+      if (Array.isArray(v)) {
+        v.forEach((item, i) => walk(item, `${path}[${item && typeof item === 'object' && item._key ? `_key=="${item._key}"` : i}]`))
+      } else if (v && typeof v === 'object') {
+        if (typeof v._ref === 'string' && v._weak === true && ids.has(v._ref)) paths.push(path)
+        for (const [k, x] of Object.entries(v)) if (!k.startsWith('_')) walk(x, path ? `${path}.${k}` : k)
+      }
+    }
+    walk(doc, '')
+    if (paths.length) {
+      docs.push({ _id: doc._id, paths })
+      refs += paths.length
+    }
+  }
+  return { docs, refs }
 }
 
 function collectRefs(doc) {
