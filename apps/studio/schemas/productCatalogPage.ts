@@ -19,7 +19,7 @@ export const productCatalogPage = defineType({
   title: 'Product Catalog Page',
   type: 'document',
   icon: PackageIcon,
-  groups: groupsFor(['content', 'sections']),
+  groups: groupsFor(['content', 'filters', 'sections']),
   fields: [
     defineField({
       name: 'title',
@@ -40,7 +40,7 @@ export const productCatalogPage = defineType({
         'Screenshot of this catalog layout. Shown in the Product Catalog Pages list. ' +
         'Leave empty to use the default icon. Not shown on the site.',
     }),
-    filtersField({ group: GROUPS.content, declaredBy: 'productLine' }),
+    filtersField({ group: GROUPS.filters, declaredBy: 'productLine' }),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',
