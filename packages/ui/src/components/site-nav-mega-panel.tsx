@@ -199,7 +199,7 @@ export function SiteNavMegaPanel({
   return (
     <div className={cn("flex w-full flex-col text-left", className)}>
       <div className="grid w-full grid-cols-4 items-stretch gap-0">
-        <div className="col-span-2 min-w-0 py-5 pr-6">
+        <div className="col-span-2 min-w-0 py-5 pr-6 pl-layout-gutter-inner">
           {primary ? (
             <>
               <GroupHeading
@@ -237,8 +237,10 @@ export function SiteNavMegaPanel({
       </div>
 
       {footerCta ? (
-        <div className="border-t border-dashed border-border py-4">
-          <FooterCtaLink cta={footerCta} />
+        <div className="w-full border-t border-dashed border-border">
+          <div className="py-4 pl-layout-gutter-inner">
+            <FooterCtaLink cta={footerCta} />
+          </div>
         </div>
       ) : null}
     </div>
