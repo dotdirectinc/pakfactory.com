@@ -4,13 +4,15 @@ import {groupsFor, GROUPS} from '../lib/field-groups'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
- * Customization Detail Page — singleton for shared bands under every
- * `/customizations/[category]/[handle]` detail (same role as `productStylePage`).
+ * Customization Detail Page — listable layout version for shared bands under
+ * `/customizations/[category]/[handle]` detail pages.
  *
  * Hero / gallery / peer chrome stay route-owned; `sections` render **below**
- * that chrome. Per-option copy stays on each `customizationOption`.
+ * that chrome. Per-option copy stays on each `customizationOption`. Options
+ * pick a layout via `customizationOption.template`. Seeded Default id
+ * `customizationDetailPage` keeps unpublished picks working (www fallback).
  *
- * Document ID `customizationDetailPage`, fixed; not creatable from "create new".
+ * Optional `previewImage` is Studio chrome only (list + Template picker).
  */
 export const customizationDetailPage = defineType({
   name: 'customizationDetailPage',
@@ -24,22 +26,35 @@ export const customizationDetailPage = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Internal Studio label.',
-      initialValue: 'Customization Detail Page',
+      description:
+        'Internal Studio label shown when a customization option picks this layout (e.g. "Default").',
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'previewImage',
+      title: 'Preview image',
+      type: 'image',
+      group: GROUPS.content,
+      options: {hotspot: true},
+      description:
+        'Screenshot of this detail layout. Shown in the Customization Detail Pages list and when an ' +
+        'option picks this template. Leave empty to use the default icon. Not shown on the site.',
     }),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',
-      'Sections below the fixed customization detail chrome on every option page. ' +
+      'Sections below the fixed customization detail chrome on option pages that select this layout. ' +
         'The overview itself is not editable here — rearrange or add bands under the detail only.',
     ),
   ],
   preview: {
-    prepare() {
+    select: {title: 'title', sections: 'sections', media: 'previewImage'},
+    prepare({title, sections, media}) {
+      const count = Array.isArray(sections) ? sections.length : 0
       return {
-        title: 'Customization Detail Page',
-        subtitle: 'Customization detail template',
+        title: title || 'Untitled customization detail page',
+        subtitle: `Detail layout · ${count} section(s)`,
+        media: media || ComponentIcon,
       }
     },
   },

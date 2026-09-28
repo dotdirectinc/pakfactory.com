@@ -384,7 +384,7 @@ function resolveHeroLayout(line: ProductLine): ProductLineHeroLayout {
     if (line.heroLayout === 'bottomBar' || line.heroLayout === 'stack') {
         return line.heroLayout;
     }
-    // Local preview: rigid-boxes demos the bottom-bar marquee composition.
+    // Local preview: rigid-boxes demos the bottom-bar marquee when no layout shell is set.
     if (line.slug === 'rigid-boxes') return 'bottomBar';
     return 'stack';
 }

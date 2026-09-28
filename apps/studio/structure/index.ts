@@ -1058,41 +1058,45 @@ export const mainWebsiteStructure = (
                     S.list()
                         .title('Product Pages')
                         .items([
+                            // Hub layouts — www serves Default fixed id only until active-layout settings.
                             S.listItem()
-                                .title('Product Catalog Page')
+                                .title('Product Catalog Pages')
                                 .icon(PackageIcon)
+                                .schemaType('productCatalogPage')
                                 .child(
-                                    S.editor()
-                                        .id('productCatalogPage')
-                                        .schemaType('productCatalogPage')
-                                        .documentId('productCatalogPage'),
+                                    S.documentTypeList('productCatalogPage').title(
+                                        'Product Catalog Pages',
+                                    ),
                                 ),
+                            // Layout versions — each productLine selects one (shell + section order).
                             S.listItem()
-                                .title('Product Line Page')
+                                .title('Product Line Pages')
                                 .icon(PackageIcon)
+                                .schemaType('productLinePage')
                                 .child(
-                                    S.editor()
-                                        .id('productLinePage')
-                                        .schemaType('productLinePage')
-                                        .documentId('productLinePage'),
+                                    S.documentTypeList('productLinePage').title(
+                                        'Product Line Pages',
+                                    ),
                                 ),
+                            // Layout versions — each productStyle selects one (bands below grid).
                             S.listItem()
-                                .title('Product Style Page')
+                                .title('Product Style Pages')
                                 .icon(PackageIcon)
+                                .schemaType('productStylePage')
                                 .child(
-                                    S.editor()
-                                        .id('productStylePage')
-                                        .schemaType('productStylePage')
-                                        .documentId('productStylePage'),
+                                    S.documentTypeList('productStylePage').title(
+                                        'Product Style Pages',
+                                    ),
                                 ),
+                            // Layout versions — each product selects one (section order/chrome).
                             S.listItem()
-                                .title('Product Detail Page')
+                                .title('Product Detail Pages')
                                 .icon(PackageIcon)
+                                .schemaType('productDetailPage')
                                 .child(
-                                    S.editor()
-                                        .id('productDetailPage')
-                                        .schemaType('productDetailPage')
-                                        .documentId('productDetailPage'),
+                                    S.documentTypeList('productDetailPage').title(
+                                        'Product Detail Pages',
+                                    ),
                                 ),
                         ]),
                 ),
@@ -1103,23 +1107,25 @@ export const mainWebsiteStructure = (
                     S.list()
                         .title('Solution Pages')
                         .items([
+                            // Layout versions — each industry solution selects one.
                             S.listItem()
-                                .title('Solution Industry Page')
+                                .title('Solution Industry Pages')
                                 .icon(BulbOutlineIcon)
+                                .schemaType('solutionIndustryPage')
                                 .child(
-                                    S.editor()
-                                        .id('solutionIndustryPage')
-                                        .schemaType('solutionIndustryPage')
-                                        .documentId('solutionIndustryPage'),
+                                    S.documentTypeList('solutionIndustryPage').title(
+                                        'Solution Industry Pages',
+                                    ),
                                 ),
+                            // Layout versions — each solutionStyle selects one (bands below grid).
                             S.listItem()
-                                .title('Solution Style Page')
+                                .title('Solution Style Pages')
                                 .icon(BulbOutlineIcon)
+                                .schemaType('solutionStylePage')
                                 .child(
-                                    S.editor()
-                                        .id('solutionStylePage')
-                                        .schemaType('solutionStylePage')
-                                        .documentId('solutionStylePage'),
+                                    S.documentTypeList('solutionStylePage').title(
+                                        'Solution Style Pages',
+                                    ),
                                 ),
                         ]),
                 ),
@@ -1179,23 +1185,25 @@ export const mainWebsiteStructure = (
                     S.list()
                         .title('Customization Pages')
                         .items([
+                            // Hub layouts — www serves Default fixed id only until active-layout settings.
                             S.listItem()
-                                .title('Customization Catalog Page')
+                                .title('Customization Catalog Pages')
                                 .icon(ComponentIcon)
+                                .schemaType('customizationCatalogPage')
                                 .child(
-                                    S.editor()
-                                        .id('customizationCatalogPage')
-                                        .schemaType('customizationCatalogPage')
-                                        .documentId('customizationCatalogPage'),
+                                    S.documentTypeList('customizationCatalogPage').title(
+                                        'Customization Catalog Pages',
+                                    ),
                                 ),
+                            // Layout versions — each option with a page selects one.
                             S.listItem()
-                                .title('Customization Detail Page')
+                                .title('Customization Detail Pages')
                                 .icon(ComponentIcon)
+                                .schemaType('customizationDetailPage')
                                 .child(
-                                    S.editor()
-                                        .id('customizationDetailPage')
-                                        .schemaType('customizationDetailPage')
-                                        .documentId('customizationDetailPage'),
+                                    S.documentTypeList('customizationDetailPage').title(
+                                        'Customization Detail Pages',
+                                    ),
                                 ),
                         ]),
                 ),

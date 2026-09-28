@@ -15,10 +15,10 @@ import {
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
-    CUSTOMIZATION_DETAIL_PAGE_QUERY,
+    CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
     PRODUCT_CATALOG_PAGE_QUERY,
-    PRODUCT_STYLE_PAGE_QUERY,
-    SOLUTION_STYLE_PAGE_QUERY,
+    PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
+    SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogIndexPageDoc,
@@ -467,29 +467,38 @@ export async function getProductCatalogPage(): Promise<CatalogIndexPageDoc | nul
     return readThrough(fetchProductCatalogPage, getCachedProductCatalogPage);
 }
 
-async function fetchProductStylePage(): Promise<CatalogIndexPageDoc | null> {
+async function fetchProductStylePage(
+    lineSlug: string,
+    styleSlug: string,
+): Promise<CatalogIndexPageDoc | null> {
     if (!isSanityConfigured()) return null;
     try {
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
-            PRODUCT_STYLE_PAGE_QUERY,
+            PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
+            {lineSlug, styleSlug},
         );
     } catch {
         return null;
     }
 }
 
-const getCachedProductStylePage = unstable_cache(
-    fetchProductStylePage,
-    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-style-page`],
-    {
-        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-        tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
-    },
-);
-
-/** Sections below every `/products/[line]/[style]` catalog grid. */
-export async function getProductStylePage(): Promise<CatalogIndexPageDoc | null> {
-    return readThrough(fetchProductStylePage, getCachedProductStylePage);
+/** Sections below a `/products/[line]/[style]` catalog grid (template → Default). */
+export async function getProductStylePage(
+    lineSlug: string,
+    styleSlug: string,
+): Promise<CatalogIndexPageDoc | null> {
+    const lineKey = normalizeSlug(lineSlug);
+    const styleKey = normalizeSlug(styleSlug);
+    const fetchUncached = () => fetchProductStylePage(lineKey, styleKey);
+    const getCached = unstable_cache(
+        fetchUncached,
+        [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-style-page`, lineKey, styleKey],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+        },
+    );
+    return readThrough(fetchUncached, getCached);
 }
 
 async function fetchCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {
@@ -512,7 +521,7 @@ const getCachedCustomizationCatalogPage = unstable_cache(
     },
 );
 
-/** Sections below the `/customizations` grid (PROD-2599). */
+/** Sections below the `/customizations` grid (PROD-2599). Default fixed id only. */
 export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | null> {
     return readThrough(
         fetchCustomizationCatalogPage,
@@ -520,57 +529,77 @@ export async function getCustomizationCatalogPage(): Promise<CatalogIndexPageDoc
     );
 }
 
-async function fetchCustomizationDetailPage(): Promise<CatalogIndexPageDoc | null> {
+async function fetchCustomizationDetailPage(
+    category: string,
+    handle: string,
+): Promise<CatalogIndexPageDoc | null> {
     if (!isSanityConfigured()) return null;
     try {
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
-            CUSTOMIZATION_DETAIL_PAGE_QUERY,
+            CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
+            {category, handle},
         );
     } catch {
         return null;
     }
 }
 
-const getCachedCustomizationDetailPage = unstable_cache(
-    fetchCustomizationDetailPage,
-    [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`],
-    {
-        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-        tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
-    },
-);
-
-/** Sections below every `/customizations/[category]/[handle]` detail chrome. */
-export async function getCustomizationDetailPage(): Promise<CatalogIndexPageDoc | null> {
-    return readThrough(
-        fetchCustomizationDetailPage,
-        getCachedCustomizationDetailPage,
+/** Sections below a `/customizations/[category]/[handle]` detail chrome (template → Default). */
+export async function getCustomizationDetailPage(
+    category: string,
+    handle: string,
+): Promise<CatalogIndexPageDoc | null> {
+    const categoryKey = normalizeSlug(category);
+    const handleKey = normalizeSlug(handle);
+    const fetchUncached = () =>
+        fetchCustomizationDetailPage(categoryKey, handleKey);
+    const getCached = unstable_cache(
+        fetchUncached,
+        [
+            `${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`,
+            categoryKey,
+            handleKey,
+        ],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
+        },
     );
+    return readThrough(fetchUncached, getCached);
 }
 
-async function fetchSolutionStylePage(): Promise<CatalogIndexPageDoc | null> {
+async function fetchSolutionStylePage(
+    solutionSlug: string,
+    styleSlug: string,
+): Promise<CatalogIndexPageDoc | null> {
     if (!isSanityConfigured()) return null;
     try {
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
-            SOLUTION_STYLE_PAGE_QUERY,
+            SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
+            {solutionSlug, styleSlug},
         );
     } catch {
         return null;
     }
 }
 
-const getCachedSolutionStylePage = unstable_cache(
-    fetchSolutionStylePage,
-    [`${WWW_SOLUTIONS_CACHE_TAG}-style-page`],
-    {
-        revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
-        tags: [WWW_SOLUTIONS_CACHE_TAG],
-    },
-);
-
-/** Sections below every `/solutions/[solution]/[style]` catalog grid. */
-export async function getSolutionStylePage(): Promise<CatalogIndexPageDoc | null> {
-    return readThrough(fetchSolutionStylePage, getCachedSolutionStylePage);
+/** Sections below a `/solutions/[solution]/[style]` catalog grid (template → Default). */
+export async function getSolutionStylePage(
+    solutionSlug: string,
+    styleSlug: string,
+): Promise<CatalogIndexPageDoc | null> {
+    const solutionKey = normalizeSlug(solutionSlug);
+    const styleKey = normalizeSlug(styleSlug);
+    const fetchUncached = () => fetchSolutionStylePage(solutionKey, styleKey);
+    const getCached = unstable_cache(
+        fetchUncached,
+        [`${WWW_SOLUTIONS_CACHE_TAG}-style-page`, solutionKey, styleKey],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_SOLUTIONS_CACHE_TAG],
+        },
+    );
+    return readThrough(fetchUncached, getCached);
 }
 
 /** Primary customizations library fetch (PROD-1288). Ticket name: getCustomizations. */

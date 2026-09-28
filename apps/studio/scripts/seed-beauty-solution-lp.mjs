@@ -4,8 +4,9 @@
  * (WP4 / ADR-020 / Phase B).
  *
  * Upserts dependency docs (clients, FAQs, demo case-study stubs, Beauty
- * solutionStyles), creates the pinned `solutionIndustryPage` singleton
- * (section order + chrome; logo wall also gets shared default clients), and
+ * solutionStyles), creates the Default `solutionIndustryPage` layout
+ * (listable Solution Industry Pages; section order + chrome; logo wall also
+ * gets shared default clients), and
  * patches `solution` slug `beauty-cosmetics` with matching `_key` **content**
  * sections plus `template` → solutionIndustryPage.
  *
@@ -893,7 +894,7 @@ async function main() {
   tx.createOrReplace({
     _id: TEMPLATE_ID,
     _type: 'solutionIndustryPage',
-    title: 'Solution Industry Page',
+    title: 'Default',
     sections: templateSections,
   })
 

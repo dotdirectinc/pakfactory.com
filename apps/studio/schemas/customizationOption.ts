@@ -13,6 +13,7 @@ export const customizationOption = defineType({
     { name: 'content', title: 'Content' },
     { name: 'categorization', title: 'Categorization' },
     { name: 'specs', title: 'Specs' },
+    { name: 'template', title: 'Template' },
     { name: 'seo', title: 'SEO' },
     { name: 'social', title: 'Social' },
   ],
@@ -227,6 +228,27 @@ export const customizationOption = defineType({
       // see the TODO(capability) in `presentation/locations.ts`. D55 records the
       // fact; wiring it to a URL is a separate piece of work.
       initialValue: false,
+    }),
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: 'template',
+      to: [{type: 'customizationDetailPage'}],
+      options: {disableNew: true},
+      description:
+        'Pick a Customization Detail Page layout version — shared bands below the detail chrome. ' +
+        'Manage layouts under Main Website → Customization Pages → Customization Detail Pages. ' +
+        'Empty → seeded Default layout (`customizationDetailPage`).',
+      hidden: ({document}) => document?.hasPage !== true,
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const doc = ctx.document as {hasPage?: boolean} | undefined
+          if (doc?.hasPage !== true) return true
+          return value
+            ? true
+            : 'Options with a page should select a Customization Detail Page layout'
+        }).warning(),
     }),
     defineField({
       name: 'media',

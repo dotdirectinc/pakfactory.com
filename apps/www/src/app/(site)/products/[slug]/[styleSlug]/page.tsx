@@ -52,7 +52,7 @@ async function ProductStyleCatalogBody({
 }) {
     const [library, page] = await Promise.all([
         listProductStyleLibrary(line.slug, style.slug),
-        getProductStylePage(),
+        getProductStylePage(line.slug, style.slug),
     ]);
     const sections = (page?.sections ?? null) as PageSection[] | null;
 

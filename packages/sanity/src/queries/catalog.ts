@@ -298,7 +298,6 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   "description": pt::text(description),
   ${LINE_FEATURED_IMAGE},
   ${LINE_FEATURED_VIDEO},
-  heroLayout,
   ${LINE_FEATURED_ICON},
   media[]{
     ...,
@@ -338,6 +337,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   "sections": sections[]${PAGE_SECTIONS_PROJECTION},
   "template": template->{
     _id,
+    heroLayout,
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
   "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
@@ -847,8 +847,6 @@ export type CatalogProductLineDoc = {
   cardImage?: unknown | null;
   /** Desktop scroll-scrub hero MP4 URL from `featuredVideo`. */
   featuredVideoUrl?: string | null;
-  /** Hero chrome: `stack` | `bottomBar`. */
-  heroLayout?: string | null;
   /** Featured icon (CMS field name `kitMark`). */
   kitMark?: unknown | null;
   media?: unknown[] | null;
@@ -861,6 +859,8 @@ export type CatalogProductLineDoc = {
   sections?: PageSectionDoc[] | null;
   template?: {
     _id?: string | null;
+    /** Hero chrome from the selected Product Line Page layout: `stack` | `bottomBar`. */
+    heroLayout?: string | null;
     sections?: PageSectionDoc[] | null;
   } | null;
   styles?: CatalogStyleRefDoc[] | null;

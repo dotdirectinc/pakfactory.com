@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Seed General CTA (`generalCta`) onto Main Website page singletons.
+ * Seed General CTA (`generalCta`) onto Main Website page templates.
  *
  * Appends a closing collaborate band (footer-style CTA) with stable `_key`
- * `general-cta-closing` when missing. Creates stub singleton docs if absent.
+ * `general-cta-closing` when missing. Creates stub docs if absent (including
+ * both Product Line Page layout versions).
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -78,49 +79,66 @@ const GENERAL_CTA = {
   },
 }
 
-/** Fixed-id page singletons + default Studio titles / _type. */
+/** Fixed-id page layouts + default Studio titles / _type. */
 const TARGETS = [
   {
     id: 'productCatalogPage',
     type: 'productCatalogPage',
-    title: 'Product Catalog Page',
+    title: 'Default',
   },
   {
     id: 'productLinePage',
     type: 'productLinePage',
-    title: 'Product Line Page',
+    title: 'Default',
+  },
+  {
+    id: 'productLinePage.bottomBar',
+    type: 'productLinePage',
+    title: 'Bottom bar',
   },
   {
     id: 'productStylePage',
     type: 'productStylePage',
-    title: 'Product Style Page',
+    title: 'Default',
   },
   {
     id: 'productDetailPage',
     type: 'productDetailPage',
-    title: 'Product Detail Page',
+    title: 'Default',
   },
   {
     id: 'customizationCatalogPage',
     type: 'customizationCatalogPage',
-    title: 'Customization Catalog Page',
+    title: 'Default',
   },
   {
     id: 'customizationDetailPage',
     type: 'customizationDetailPage',
-    title: 'Customization Detail Page',
+    title: 'Default',
   },
   {
     id: 'solutionIndustryPage',
     type: 'solutionIndustryPage',
-    title: 'Solution Industry Page',
+    title: 'Default',
   },
   {
     id: 'solutionStylePage',
     type: 'solutionStylePage',
-    title: 'Solution Style Page',
+    title: 'Default',
   },
 ]
+
+/** Layout types that carry optional Studio-only previewImage. */
+const PREVIEW_IMAGE_TYPES = new Set([
+  'productLinePage',
+  'productDetailPage',
+  'productStylePage',
+  'productCatalogPage',
+  'customizationCatalogPage',
+  'customizationDetailPage',
+  'solutionIndustryPage',
+  'solutionStylePage',
+])
 
 function appendGeneralCta(existing) {
   const sections = Array.isArray(existing) ? [...existing] : []
@@ -140,22 +158,36 @@ async function seed() {
         _id,
         _type,
         title,
+        heroLayout,
+        previewImage,
         sections
       }`,
       {id: target.id},
     )
     const {sections, changed} = appendGeneralCta(doc?.sections)
+    const nextDoc = {
+      _id: target.id,
+      _type: target.type,
+      title: doc?.title?.trim() || target.title,
+      sections,
+    }
+    if (target.type === 'productLinePage') {
+      nextDoc.heroLayout =
+        doc?.heroLayout === 'bottomBar' || doc?.heroLayout === 'stack'
+          ? doc.heroLayout
+          : target.id === 'productLinePage.bottomBar'
+            ? 'bottomBar'
+            : 'stack'
+    }
+    if (PREVIEW_IMAGE_TYPES.has(target.type) && doc?.previewImage) {
+      nextDoc.previewImage = doc.previewImage
+    }
     plans.push({
       ...target,
       exists: Boolean(doc),
       changed,
       sectionCount: sections.length,
-      nextDoc: {
-        _id: target.id,
-        _type: target.type,
-        title: doc?.title?.trim() || target.title,
-        sections,
-      },
+      nextDoc,
     })
   }
 
@@ -189,9 +221,9 @@ async function seed() {
   }
   await tx.commit()
 
-  console.log(`\n  ✓  Wrote ${toWrite.length} singleton(s)`)
+  console.log(`\n  ✓  Wrote ${toWrite.length} layout doc(s)`)
   console.log(
-    '\n✅  Done. Publish each pin in Studio if draft, then check catalog / LP / PDP pages.\n',
+    '\n✅  Done. Publish each Default layout in Studio if draft, then check catalog / LP / PDP pages.\n',
   )
 }
 

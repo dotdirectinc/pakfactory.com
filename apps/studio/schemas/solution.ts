@@ -181,7 +181,7 @@ export const solution = defineType({
       ],
     }),
 
-    // ─── TEMPLATE (layout singleton) ──────────────────────────────────────────
+    // ─── TEMPLATE (layout version) ────────────────────────────────────────────
     defineField({
       name: 'template',
       title: 'Template',
@@ -190,9 +190,9 @@ export const solution = defineType({
       to: [{type: 'solutionIndustryPage'}],
       options: {disableNew: true},
       description:
-        'Page layout — section order and default headings. Rearrange sections on ' +
-        'the template document (Main Website → Solution Pages → Solution Industry Page), ' +
-        'not on this solution. Band content stays on the Sections tab, matched by key.',
+        'Pick a Solution Industry Page layout version — section order and default headings. ' +
+        'Manage layouts under Main Website → Solution Pages → Solution Industry Pages. ' +
+        'Band content stays on the Sections tab, matched by key.',
       hidden: ({document}) => document?.hasPage !== true,
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
@@ -202,7 +202,7 @@ export const solution = defineType({
           if (!doc?.hasPage || doc.solutionType !== 'industry') return true
           return value
             ? true
-            : 'Industry solutions with a landing page must select Solution Industry Page'
+            : 'Industry solutions with a landing page must select a Solution Industry Page layout'
         }),
     }),
 

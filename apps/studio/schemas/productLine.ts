@@ -16,8 +16,9 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
  * Declaring is not inheriting: the Line declares WHICH properties its products
  * state (`properties`), never their values — each product still states its own.
  *
- * Layout template: customer-facing lines select `productLinePage` via `template`
- * (Main Website → Product Pages → Product Line Page) — twin of solutionIndustryPage.
+ * Layout template: customer-facing lines select a `productLinePage` layout version
+ * via `template` (Main Website → Product Pages → Product Line Pages). Hero shell
+ * and body section order live on that layout doc — not on this line.
  *
  * The styles grid is DERIVED, not listed. Every Style carries a required
  * `productLine` reference (97/97 in production), so membership is a query and the
@@ -136,26 +137,10 @@ export const productLine = defineType({
       options: {accept: 'video/*'},
       description: 'Optional desktop scroll-scrub MP4. Mobile and reduced-motion keep Featured image.',
     }),
-    // Hero chrome only — body section order still comes from Product Line Page.
-    defineField({
-      name: 'heroLayout',
-      title: 'Hero layout',
-      type: 'string',
-      group: GROUPS.content,
-      description:
-        'Landing hero chrome for this line only. Stack = featured icon and copy above the media; Bottom bar = media-first with featured icon, heading, and CTAs along the bottom (Vision Pro–style). Does not change Product Line Page section order.',
-      options: {
-        list: [
-          {title: 'Stack (default)', value: 'stack'},
-          {title: 'Bottom bar', value: 'bottomBar'},
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'stack',
-    }),
     // Featured icon on the product-line landing. Stack: above the H1.
     // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.
-    // Schema field name stays `kitMark` (no content migration).
+    // Schema field name stays `kitMark` (no content migration). Hero shell
+    // (stack vs bottomBar) lives on the selected Product Line Page layout.
     defineField(taggedImageField({
       name: 'kitMark',
       title: 'Featured icon',
@@ -164,7 +149,7 @@ export const productLine = defineType({
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
       description:
-        'Icon on the landing hero. Stack layout: above the H1. Bottom bar layout: bottom-left brand signal. Leave empty to use the placeholder.',
+        'Icon on the landing hero. Stack layout: above the H1. Bottom bar layout: bottom-left brand signal. Leave empty to use the placeholder. Which shell applies comes from the Template tab.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the icon for screen readers and SEO.' })],
     })),
     defineField({
@@ -214,7 +199,7 @@ export const productLine = defineType({
       initialValue: true,
     }),
 
-    // ─── TEMPLATE (layout singleton) ──────────────────────────────────────────
+    // ─── TEMPLATE (layout version) ────────────────────────────────────────────
     defineField({
       name: 'template',
       title: 'Template',
@@ -223,9 +208,9 @@ export const productLine = defineType({
       to: [{type: 'productLinePage'}],
       options: {disableNew: true},
       description:
-        'Page layout — section order and default headings. Rearrange sections on ' +
-        'the template document (Main Website → Product Pages → Product Line Page), ' +
-        'not on this product line. Band content stays on the Sections tab, matched by key.',
+        'Pick a Product Line Page layout version — hero shell plus section order and ' +
+        'default headings. Manage layouts under Main Website → Product Pages → ' +
+        'Product Line Pages. Band content stays on the Sections tab, matched by key.',
       hidden: ({document}) => document?.customerFacing !== true,
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
@@ -233,7 +218,7 @@ export const productLine = defineType({
           if (doc?.customerFacing !== true) return true
           return value
             ? true
-            : 'Customer-facing product lines must select Product Line Page'
+            : 'Customer-facing product lines must select a Product Line Page layout'
         }),
     }),
 

@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 /**
- * Seed Product Line Page template with a Product style row (listSource = Line styles).
+ * Seed Product Line Page layout versions + Product style row (listSource = Line styles).
  *
- * Upserts the pinned singleton `productLinePage` and prepends (or refreshes) a
- * `productStylesRow` with stable `_key` so www inherit fills cards from each
- * product line's styles. Also sets `template` → productLinePage on customer-facing
- * product lines that are missing it.
+ * Upserts two listable `productLinePage` layouts:
+ *   - `productLinePage` — Default (stack shell; most lines)
+ *   - `productLinePage.bottomBar` — Bottom bar shell (rigid-boxes)
+ *
+ * Prepends (or refreshes) a `productStylesRow` with stable `_key` so www inherit
+ * fills cards from each product line's styles. Sets `template` on customer-facing
+ * lines that are missing it (Stack), and points `rigid-boxes` at Bottom bar.
+ * Preserves any Studio-uploaded `previewImage` on existing layouts.
  *
  * ⚠️ Written by an agent, RUN BY A HUMAN. Agents never write documents on any
  * dataset (AGENTS.md § Sanity content — agent guardrails).
@@ -67,8 +71,10 @@ const client = createClient({
   perspective: 'raw',
 })
 
-const TEMPLATE_ID = 'productLinePage'
+const STACK_ID = 'productLinePage'
+const BOTTOM_BAR_ID = 'productLinePage.bottomBar'
 const STYLES_KEY = 'product-line-styles'
+const RIGID_SLUG = 'rigid-boxes'
 
 /** Chrome only — cards inherit from each product line's styles (listSource page). */
 const PRODUCT_STYLES_ROW = {
@@ -97,43 +103,94 @@ function mergeSections(existing) {
   return [PRODUCT_STYLES_ROW, ...withoutDupType]
 }
 
+async function fetchLayout(id) {
+  return client.fetch(
+    `*[_id == $id || _id == "drafts." + $id] | order(_updatedAt desc)[0]{
+      _id,
+      _type,
+      title,
+      heroLayout,
+      previewImage,
+      sections
+    }`,
+    {id},
+  )
+}
+
 async function seed() {
   console.log(
-    `\n🌱  Product Line Page styles → ${DATASET} (${PROJECT_ID})\n`,
+    `\n🌱  Product Line Page layouts → ${DATASET} (${PROJECT_ID})\n`,
   )
 
-  const [template, linesMissingTemplate] = await Promise.all([
-    client.fetch(
-      `*[_id == $id || _id == "drafts." + $id] | order(_updatedAt desc)[0]{
-        _id,
-        _type,
-        title,
-        sections
-      }`,
-      {id: TEMPLATE_ID},
-    ),
-    client.fetch(
-      `*[_type == "productLine" && customerFacing == true && !defined(template)]{
-        _id,
-        title,
-        "slug": slug.current
-      }`,
-    ),
-  ])
+  const [stackExisting, bottomExisting, linesMissingTemplate, rigidLines] =
+    await Promise.all([
+      fetchLayout(STACK_ID),
+      fetchLayout(BOTTOM_BAR_ID),
+      client.fetch(
+        `*[_type == "productLine" && customerFacing == true && !defined(template)]{
+          _id,
+          title,
+          "slug": slug.current
+        }`,
+      ),
+      client.fetch(
+        `*[_type == "productLine" && slug.current == $slug]{
+          _id,
+          title,
+          "slug": slug.current,
+          "templateRef": template._ref
+        }`,
+        {slug: RIGID_SLUG},
+      ),
+    ])
 
-  const nextSections = mergeSections(template?.sections)
-  const templateDoc = {
-    _id: TEMPLATE_ID,
+  const stackSections = mergeSections(stackExisting?.sections)
+  const bottomSections = mergeSections(
+    bottomExisting?.sections?.length
+      ? bottomExisting.sections
+      : stackSections,
+  )
+
+  const stackDoc = {
+    _id: STACK_ID,
     _type: 'productLinePage',
-    title: template?.title?.trim() || 'Product Line Page',
-    sections: nextSections,
+    title: 'Default',
+    heroLayout: 'stack',
+    sections: stackSections,
+    ...(stackExisting?.previewImage
+      ? {previewImage: stackExisting.previewImage}
+      : {}),
+  }
+  const bottomDoc = {
+    _id: BOTTOM_BAR_ID,
+    _type: 'productLinePage',
+    title: 'Bottom bar',
+    heroLayout: 'bottomBar',
+    sections: bottomSections,
+    ...(bottomExisting?.previewImage
+      ? {previewImage: bottomExisting.previewImage}
+      : {}),
   }
 
+  const rigidNeedingBottomBar = rigidLines.filter(
+    (line) => line.templateRef !== BOTTOM_BAR_ID,
+  )
+
+  // Patch only IDs returned by the query (never invent published from draft-only).
+  const unsetIds = [
+    ...new Set(
+      [...linesMissingTemplate, ...rigidLines].map((line) => line._id),
+    ),
+  ]
+
   console.log(
-    `  Template ${TEMPLATE_ID}: ${template ? 'exists' : 'missing (will create)'}`,
+    `  Default ${STACK_ID}: ${stackExisting ? 'exists' : 'missing (will create)'}`,
   )
   console.log(
-    `  Sections after merge: ${nextSections.length} (styles key=${STYLES_KEY})`,
+    `  Bottom bar ${BOTTOM_BAR_ID}: ${bottomExisting ? 'exists' : 'missing (will create)'}`,
+  )
+  console.log(
+    `  Default sections after merge: ${stackSections.length} (styles key=${STYLES_KEY})`,
   )
   console.log(
     `  Customer-facing lines missing template: ${linesMissingTemplate.length}`,
@@ -144,6 +201,9 @@ async function seed() {
   if (linesMissingTemplate.length > 12) {
     console.log(`    … +${linesMissingTemplate.length - 12} more`)
   }
+  console.log(
+    `  rigid-boxes → Bottom bar: ${rigidNeedingBottomBar.length} doc(s) to point`,
+  )
 
   if (!apply) {
     console.log(
@@ -153,49 +213,62 @@ async function seed() {
   }
 
   const tx = client.transaction()
-  tx.createOrReplace(templateDoc)
+  tx.createOrReplace(stackDoc)
+  tx.createOrReplace(bottomDoc)
+
   for (const line of linesMissingTemplate) {
-    const publishedId = line._id.replace(/^drafts\./, '')
-    tx.patch(publishedId, (p) =>
+    tx.patch(line._id, (p) =>
       p.set({
-        template: {_type: 'reference', _ref: TEMPLATE_ID},
+        template: {_type: 'reference', _ref: STACK_ID},
       }),
     )
-    if (line._id.startsWith('drafts.')) {
-      tx.patch(line._id, (p) =>
-        p.set({
-          template: {_type: 'reference', _ref: TEMPLATE_ID},
-        }),
-      )
-    }
   }
+
+  for (const line of rigidNeedingBottomBar) {
+    tx.patch(line._id, (p) =>
+      p.set({
+        template: {_type: 'reference', _ref: BOTTOM_BAR_ID},
+      }),
+    )
+  }
+
+  // Drop retired per-line heroLayout if still present (shell lives on the layout).
+  for (const id of unsetIds) {
+    tx.patch(id, (p) => p.unset(['heroLayout']))
+  }
+
   await tx.commit()
 
   const verify = await client.fetch(
-    `*[_id == $id][0]{
+    `*[_id in $ids]{
       _id,
+      title,
+      heroLayout,
       "sectionCount": count(sections),
-      "hasStyles": count(sections[_type == "productStylesRow"]) > 0,
-      "stylesHeading": sections[_type == "productStylesRow"][0].heading,
-      "listSource": sections[_type == "productStylesRow"][0].listSource
+      "hasStyles": count(sections[_type == "productStylesRow"]) > 0
     }`,
-    {id: TEMPLATE_ID},
+    {ids: [STACK_ID, BOTTOM_BAR_ID]},
   )
 
-  console.log(`  ✓  ${TEMPLATE_ID}`)
-  console.log(`     sections: ${verify?.sectionCount ?? 0}`)
-  console.log(`     productStylesRow: ${verify?.hasStyles ? 'yes' : 'no'}`)
-  console.log(`     heading: ${verify?.stylesHeading ?? '(none)'}`)
-  console.log(`     listSource: ${verify?.listSource ?? '(none)'}`)
+  for (const row of verify ?? []) {
+    console.log(`  ✓  ${row._id}`)
+    console.log(`     title: ${row.title}`)
+    console.log(`     heroLayout: ${row.heroLayout}`)
+    console.log(`     sections: ${row.sectionCount ?? 0}`)
+    console.log(`     productStylesRow: ${row.hasStyles ? 'yes' : 'no'}`)
+  }
   console.log(
-    `  ✓  template set on ${linesMissingTemplate.length} product line(s)`,
+    `  ✓  template set on ${linesMissingTemplate.length} product line(s) (Default)`,
   )
   console.log(
-    '\n✅  Done. Publish Product Line Page in Studio if needed, then check /products/rigid-boxes#styles\n',
+    `  ✓  rigid-boxes pointed at Bottom bar (${rigidNeedingBottomBar.length} patch(es))`,
+  )
+  console.log(
+    '\n✅  Done. Publish Product Line Pages in Studio if needed, then check /products/rigid-boxes\n',
   )
 }
 
 seed().catch((err) => {
-  console.error('❌  Product Line Page styles seed failed:', err.message)
+  console.error('❌  Product Line Page layouts seed failed:', err.message)
   process.exit(1)
 })

@@ -24,8 +24,8 @@ import { AvailableCustomizationsInput } from '../components/AvailableCustomizati
  * kept EDITABLE — decision b, PROD-2295: they flip to readOnly when the
  * Registry/SPECs system ships.
  *
- * Layout template: products select `productDetailPage` via `template`
- * (Main Website → Product Pages → Product Detail Page) — twin of productLinePage.
+ * Layout template: products select a `productDetailPage` layout version via
+ * `template` (Main Website → Product Pages → Product Detail Pages).
  */
 
 const SOURCE_OWNED_NOTE =
@@ -251,7 +251,7 @@ export const product = defineType({
       ],
     }),
 
-    // ─── TEMPLATE (layout singleton) ──────────────────────────────────────────
+    // ─── TEMPLATE (layout version) ────────────────────────────────────────────
     defineField({
       name: 'template',
       title: 'Template',
@@ -260,9 +260,9 @@ export const product = defineType({
       to: [{type: 'productDetailPage'}],
       options: {disableNew: true},
       description:
-        'Page layout — section order and default headings. Rearrange sections on ' +
-        'the template document (Main Website → Product Pages → Product Detail Page), ' +
-        'not on this product. Band content stays on the Sections tab, matched by key.',
+        'Pick a Product Detail Page layout version — section order and default headings. ' +
+        'Manage layouts under Main Website → Product Pages → Product Detail Pages. ' +
+        'Band content stays on the Sections tab, matched by key.',
     }),
 
     // ─── CATEGORIZATION (classification refs + curated lists) ─────────────────

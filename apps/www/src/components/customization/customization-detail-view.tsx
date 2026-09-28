@@ -34,7 +34,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 type CustomizationDetailViewProps = {
     detail: CustomizationDetail;
     peers?: CustomizationDetail[];
-    /** Shared bands from `customizationDetailPage` singleton. */
+    /** Shared bands from `customizationDetailPage` layout (template → Default). */
     pageSections?: PageSection[] | null;
 };
 

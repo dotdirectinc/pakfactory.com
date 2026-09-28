@@ -451,7 +451,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.heroLayout, 'stack');
     });
 
-    it('honors authored stack hero layout on rigid-boxes', () => {
+    it('honors layout shell stack on rigid-boxes', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'rigid-boxes',
@@ -462,7 +462,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.heroLayout, 'stack');
     });
 
-    it('honors authored bottomBar hero layout', () => {
+    it('honors layout shell bottomBar', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'folding-cartons',
