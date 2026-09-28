@@ -1,12 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Input } from "@pakfactory/ui/components/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@pakfactory/ui/components/tabs";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CurrentRules, PartnerLine, RuleOptionRow, RuleTypeRow } from "@/lib/spec/current-rules";
-import { ADMIN_SPEC_RULES_COPY as COPY } from "@/lib/copy/spec";
+import {
+  ADMIN_SPEC_RULES_COPY as COPY,
+  LEGACY_RULE_COVERAGE,
+  LEGACY_STATUS_LABEL,
+} from "@/lib/copy/spec";
 
 /**
  * The current rules at three levels: per type (the statements), per option (its pairs,
@@ -34,6 +39,7 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
           <TabsTrigger value="attention">
             {COPY.tabs.attention} ({attentionCount})
           </TabsTrigger>
+          <TabsTrigger value="legacy">{COPY.tabs.legacy}</TabsTrigger>
         </TabsList>
         <TabsContent value="types" className="mt-3">
           <TypeTable types={rules.types} />
@@ -46,6 +52,9 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
         </TabsContent>
         <TabsContent value="attention" className="mt-3">
           <Attention rules={rules} />
+        </TabsContent>
+        <TabsContent value="legacy" className="mt-3">
+          <LegacyCoverage />
         </TabsContent>
       </Tabs>
     </div>
@@ -206,7 +215,12 @@ function OptionList({ options }: { options: RuleOptionRow[] }) {
               {rows.map((o) => (
                 <li key={o.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-medium text-foreground">{o.title}</span>
+                    <Link
+                      href={`/spec/customizations/${encodeURIComponent(o.id)}`}
+                      className="font-medium text-foreground hover:underline"
+                    >
+                      {o.title}
+                    </Link>
                     <span className={cn("text-xs tabular-nums", STATUS_TONE[o.status])}>
                       {o.status === "offered"
                         ? `${o.productCount} products`
@@ -341,6 +355,39 @@ function Attention({ rules }: { rules: CurrentRules }) {
       <AttentionSection title={COPY.attention.unknownDeps} empty={unknownDependencyReferences.length === 0}>
         <ul className="font-mono text-xs">{unknownDependencyReferences.map((r) => <li key={r}>{r}</li>)}</ul>
       </AttentionSection>
+    </div>
+  );
+}
+
+/** The old Property Controls explorer's L1–L15, and where each stands now (PROD-2614). */
+function LegacyCoverage() {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="max-w-2xl text-sm text-muted-foreground">{COPY.legacyLead}</p>
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[48rem] text-sm">
+          <thead className="bg-muted/40 text-left text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">Rule</th>
+              <th className="px-3 py-2 font-medium">Said</th>
+              <th className="px-3 py-2 font-medium">Now</th>
+              <th className="px-3 py-2 font-medium">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {LEGACY_RULE_COVERAGE.map((r) => (
+              <tr key={r.id} className="border-t border-border align-top">
+                <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
+                <td className="px-3 py-2">{r.rule}</td>
+                <td className={cn("px-3 py-2", r.status === "not-modelled" && "text-destructive")}>
+                  {LEGACY_STATUS_LABEL[r.status]}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">{r.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

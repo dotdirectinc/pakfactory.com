@@ -51,7 +51,7 @@ const NAV: readonly NavEntry[] = [
   {
     type: "group",
     id: "spec",
-    label: "Spec registry",
+    label: "Spec System",
     icon: FileText,
     children: [
       {
@@ -63,7 +63,15 @@ const NAV: readonly NavEntry[] = [
         href: "/spec",
         label: "Frames to approve",
         match: (path) =>
-          path === "/spec" || (path.startsWith("/spec/") && !path.startsWith("/spec/rules")),
+          path === "/spec" ||
+          (path.startsWith("/spec/") &&
+            !["/spec/rules", "/spec/products", "/spec/customizations"].some((p) => path.startsWith(p))),
+      },
+      // Products & Customizations (PROD-2614) — read-only until V1; edits happen in Studio.
+      {
+        href: "/spec/products",
+        label: "Products",
+        match: (path) => path.startsWith("/spec/products") || path.startsWith("/spec/customizations"),
       },
     ],
   },

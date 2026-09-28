@@ -186,7 +186,7 @@ the reason was only visible in the box's own journal:
 sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attachment url"
 ```
 
-## Spec registry — current rules
+## Spec System — current rules
 
 `/spec/rules` shows the customization rules **as they are now** (PROD-2560): read from Sanity with the storefront's own query (`CATALOG_CUSTOMIZATION_RULES_QUERY`) and computed by the shared package (`@pakfactory/sanity/customization-rules/summary` → `summarizeRules`). Sanity is the source of truth for V1 (option A, 2026-09-18), so admin never computes rules itself and never stores the summary — it is recomputed on each load (60 s CDN revalidate).
 
@@ -200,7 +200,23 @@ sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attach
 - **Dataset is pinned to `development`** (`ADMIN_SPEC_RULES_DATASET` overrides) until the production fill runs (PROD-2596). It does not follow `NEXT_PUBLIC_SANITY_DATASET`, which would show an empty rule set on the deployed app.
 - Gated like the rest of `/spec`: 404 without a registry grant.
 - `/spec` (Frames to approve) is unchanged: registry changesets from the board, approved in admin.
-- Not built yet: per-product view, "from board / changed in Studio" provenance, history (needs PROD-2559).
+- An **Old explorer rules** tab lists the L1–L15 rules of the retired Property Controls sandbox and where each stands now (in Sanity · product data · builder UI · not modelled) — the gap list, not an implementation.
+- Not built yet: "from board / changed in Studio" provenance, history (needs PROD-2559).
+
+## Spec System — Products & Customizations (read-only until V1)
+
+PROD-2614. The customer-facing view of the same rules, for staff: **read-only until V1** — edits happen in Studio, and every page links there.
+
+| Route | Shows |
+|---|---|
+| `/spec/products` | every standard product: listed / derived / exception counts, filterable |
+| `/spec/products/[id]` | **What it offers** (per type; each derived option names the partner that allows it; what the rules took away and why) · **Configure as a customer** · **Exceptions** |
+| `/spec/customizations/[id]` | one option: its pairs, and every product that ends up offering it |
+
+- **One read** for every Spec System page: [`lib/spec/rules-source.ts`](src/lib/spec/rules-source.ts) (memoised per request; same query family as the storefront).
+- **Configure as a customer** runs `resolveWithSelections(…, { lookahead: true })` in the browser — the storefront builder's exact call — on the **whole** catalog with ids shortened to tokens (~245 KB). It is deliberately not pruned per product: pruning changes eligibility unless done exactly as www does, and a second copy of that is how two screens drift. Verified 2026-09-28 on development: 1,220/1,220 snapshot checks match the real-id resolution, and a rigid box, the tin and a pouch offer the identical options admin vs www.
+- **Edit in Studio** links need `ADMIN_SANITY_STUDIO_URL` — the Studio serving the dataset admin reads. Unset, the link is hidden rather than pointing at the wrong dataset.
+- Rules Sanity does not model (print sides, Pantone form logic, foam conditionals, tin sizes) are **left out**, not reimplemented.
 
 ## Customization Library
 
