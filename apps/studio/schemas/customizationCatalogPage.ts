@@ -21,7 +21,7 @@ export const customizationCatalogPage = defineType({
   title: 'Customization Catalog Page',
   type: 'document',
   icon: ComponentIcon,
-  groups: groupsFor(['content', 'sections']),
+  groups: groupsFor(['content', 'filters', 'sections']),
   fields: [
     defineField({
       name: 'title',
@@ -42,7 +42,7 @@ export const customizationCatalogPage = defineType({
         'Screenshot of this catalog layout. Shown in the Customization Catalog Pages list. ' +
         'Leave empty to use the default icon. Not shown on the site.',
     }),
-    filtersField({ group: GROUPS.content, declaredBy: 'customizationType' }),
+    filtersField({ group: GROUPS.filters, declaredBy: 'customizationType' }),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',
