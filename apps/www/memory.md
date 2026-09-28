@@ -112,6 +112,13 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 
 Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
 
+**Catalog FAQs inherit down the tree — line → style → product** (Richard, 2026-09-28; #675). A page shows the **nearest level with any FAQ**, and that list replaces everything above it: one FAQ curated on a product = that one only, nothing merges. Nothing is copied into the dataset — it resolves at render:
+
+- **Product (PDP):** GROQ `PRODUCT_FAQS_INHERITED` in `packages/sanity/src/queries/catalog.ts` — own → first style (`productStyle[0]`, the one its card shows) → line. The line is the product's own `productLine` (presets: via `basedOn`), falling back to the style's line; 78 dev products have a line none of their styles belong to, so "via the style" would be wrong.
+- **Style page:** `resolveStyleFaqs` (`src/lib/catalog/faq-inheritance.ts`) → `applyFaqInherit` into the template's FAQ section. ⚠️ The `productStylePage` template has **no `faqSection`** in development — until a designer adds one (list source *page*), style pages show no FAQs even though they resolve.
+- Only expertise pages emit `FAQPage` JSON-LD, so inherited FAQs add no duplicate markup across ~1,250 PDPs.
+- The FAQs themselves come from Notion via `populate:faqs` — [`scripts/sanity/CATALOG-REBUILD.md`](../../scripts/sanity/CATALOG-REBUILD.md) § FAQs.
+
 **Insert menu:** Studio tabs are entity-named (Solutions · Case studies · Products · …). Editor titles may say “Case study row” / “Image with text” while `_type` / React names stay as above — three-layer drift is intentional ([ADR-020 §10](../../docs/adr/0020-component-to-section-playbook.md)).
 
 **Heading tokens:** section `heading` / `intro` / `link.query` may include `%h1%` / `%title%` / `%description%` / `%shortName%` / `%shortDescription%` / `%slug%`; `applySectionTokens` runs after template merge using the host solution (`descriptionText` + `slug` from GROQ). Catalog CTAs: Site path `/products` + Query `industry=%slug%` (root-relative — current host on staging or prod). **List inherit:** `listSource` / `curatedSource` — `shouldInheritSectionList` skips fill when `custom`; host-agnostic for Product LPs later.

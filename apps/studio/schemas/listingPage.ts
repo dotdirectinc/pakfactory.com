@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { ThLargeIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
+import { filtersField } from '../lib/filters-field'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
@@ -65,44 +66,7 @@ export const listingPage = defineType({
       ],
       validation: (Rule) => Rule.unique(),
     }),
-    defineField({
-      name: 'filters',
-      title: 'Filters',
-      type: 'array',
-      group: GROUPS.categorization,
-      description:
-        'Which properties filter this listing, in display order. Leave it empty and every ' +
-        'property in use appears, alphabetically. Fill it only to change the order, trim the ' +
-        'list, or rename one. The values inside each filter always come from the content.',
-      of: [
-        {
-          type: 'object',
-          name: 'listingFilter',
-          fields: [
-            defineField({
-              name: 'property',
-              title: 'Property',
-              type: 'reference',
-              to: [{ type: 'property' }],
-              options: { disableNew: true },
-              validation: (Rule) => Rule.required(),
-            }),
-            defineField({
-              name: 'label',
-              title: 'Label',
-              type: 'string',
-              description: 'Optional override for the filter’s heading. Blank uses the property’s own title.',
-            }),
-          ],
-          preview: {
-            select: { title: 'label', property: 'property.title' },
-            prepare({ title, property }) {
-              return { title: title || property || 'Filter' }
-            },
-          },
-        },
-      ],
-    }),
+    filtersField({ group: GROUPS.categorization }),
 
     // The collection row (route-scoped), FAQs, Quote CTA, rich text.
     pageSectionsField(SECTION_ALLOW.listing),

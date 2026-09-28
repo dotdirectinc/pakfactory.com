@@ -1,6 +1,7 @@
 import {defineField, defineType} from 'sanity'
 import {ComponentIcon} from '@sanity/icons'
 import {groupsFor, GROUPS} from '../lib/field-groups'
+import {filtersField} from '../lib/filters-field'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
@@ -41,6 +42,7 @@ export const customizationCatalogPage = defineType({
         'Screenshot of this catalog layout. Shown in the Customization Catalog Pages list. ' +
         'Leave empty to use the default icon. Not shown on the site.',
     }),
+    filtersField({ group: GROUPS.content, declaredBy: 'customizationType' }),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',
