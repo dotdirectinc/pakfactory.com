@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Input } from "@pakfactory/ui/components/input";
@@ -18,7 +19,22 @@ import {
  * summarised), and what needs attention. Everything shown was computed by the shared package
  * on the server; this only filters and words it.
  */
+const TABS = ["types", "options", "exceptions", "attention", "legacy"] as const;
+
 export function SpecRulesView({ rules }: { rules: CurrentRules }) {
+  // The tab lives in the URL (?tab=options) so a view can be linked and survives a reload.
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const requested = params.get("tab");
+  const tab = (TABS as readonly string[]).includes(requested ?? "") ? requested! : "types";
+  const setTab = (next: string) => {
+    const sp = new URLSearchParams(params.toString());
+    if (next === "types") sp.delete("tab");
+    else sp.set("tab", next);
+    router.replace(sp.size ? `${pathname}?${sp}` : pathname, { scroll: false });
+  };
+
   const attentionCount =
     rules.attention.missingReferences.length +
     rules.attention.siblingPairs.length +
@@ -29,7 +45,7 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
   return (
     <div className="flex flex-col gap-4">
       <Totals rules={rules} />
-      <Tabs defaultValue="types">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="types">{COPY.tabs.types}</TabsTrigger>
           <TabsTrigger value="options">{COPY.tabs.options}</TabsTrigger>
@@ -169,18 +185,21 @@ const STATUS_TONE: Record<RuleOptionRow["status"], string> = {
   "unknown-type": "text-destructive",
 };
 
+/**
+ * Options grouped by type, collapsed. Rows carry only their heading; an option's partner lines
+ * load when it is opened (PROD-2614 performance) — they were 97% of this page's data. So the
+ * filter matches option and type names, not partner names; the customization page has those.
+ */
 function OptionList({ options }: { options: RuleOptionRow[] }) {
   const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter(
-      (o) =>
-        o.title.toLowerCase().includes(q) ||
-        o.typeTitle.toLowerCase().includes(q) ||
-        o.partners.some((p) => p.typeTitle.toLowerCase().includes(q) || p.names.some((n) => n.toLowerCase().includes(q))),
-    );
-  }, [options, query]);
+  const q = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () =>
+      q
+        ? options.filter((o) => o.title.toLowerCase().includes(q) || o.typeTitle.toLowerCase().includes(q))
+        : options,
+    [options, q],
+  );
 
   const byType = useMemo(() => {
     const groups = new Map<string, RuleOptionRow[]>();
@@ -199,7 +218,7 @@ function OptionList({ options }: { options: RuleOptionRow[] }) {
           aria-label="Filter options"
         />
         <span className="text-sm tabular-nums text-muted-foreground">
-          {query ? `${filtered.length} of ${options.length}` : `${options.length} options`}
+          {q ? `${filtered.length} of ${options.length}` : `${options.length} options`}
         </span>
       </div>
 
@@ -207,50 +226,91 @@ function OptionList({ options }: { options: RuleOptionRow[] }) {
         <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">{COPY.noMatch(query)}</p>
       ) : (
         byType.map(([typeTitle, rows]) => (
-          <section key={typeTitle} className="rounded-md border border-border">
-            <h2 className="border-b border-border bg-muted/40 px-3 py-2 text-sm font-semibold text-foreground">
-              {typeTitle}
-            </h2>
+          <details
+            key={typeTitle}
+            // Collapsed by default; a search opens every group it narrows.
+            open={Boolean(q)}
+            className="group rounded-md border border-border"
+          >
+            <summary className="flex cursor-pointer items-baseline justify-between gap-2 bg-muted/40 px-3 py-2 text-sm">
+              <span className="font-semibold text-foreground">{typeTitle}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {rows.length} options
+                {rows.some((o) => o.status !== "offered") &&
+                  ` · ${rows.filter((o) => o.status !== "offered").length} not offered`}
+              </span>
+            </summary>
             <ul className="divide-y divide-border">
               {rows.map((o) => (
-                <li key={o.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <Link
-                      href={`/spec/customizations/${encodeURIComponent(o.id)}`}
-                      className="font-medium text-foreground hover:underline"
-                    >
-                      {o.title}
-                    </Link>
-                    <span className={cn("text-xs tabular-nums", STATUS_TONE[o.status])}>
-                      {o.status === "offered"
-                        ? `${o.productCount} products`
-                        : COPY.optionStatus[o.status]}
-                      {o.addedByException > 0 && ` · ${o.addedByException} by exception`}
-                      {o.removedByException > 0 && ` · removed on ${o.removedByException}`}
-                    </span>
-                  </div>
-                  {o.unmetRequirements.length > 0 && (
-                    <p className="text-xs text-destructive">{COPY.unmet(o.unmetRequirements.join("; "))}</p>
-                  )}
-                  {o.partners.length > 0 && (
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-                      {o.partners.map((p) => (
-                        <div key={p.typeTitle} className="contents">
-                          <dt className="text-muted-foreground">
-                            {COPY.relation[p.relation]} {p.typeTitle}
-                          </dt>
-                          <dd className="text-foreground">{partnerText(p)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                </li>
+                <OptionRow key={o.id} option={o} />
               ))}
             </ul>
-          </section>
+          </details>
         ))
       )}
     </div>
+  );
+}
+
+function OptionRow({ option: o }: { option: RuleOptionRow }) {
+  const [partners, setPartners] = useState<PartnerLine[] | null>(null);
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+
+  const load = async () => {
+    if (partners || state === "loading") return;
+    setState("loading");
+    try {
+      const res = await fetch(`/api/spec/options/${encodeURIComponent(o.id)}/partners`);
+      if (!res.ok) throw new Error(String(res.status));
+      setPartners((await res.json()) as PartnerLine[]);
+      setState("idle");
+    } catch {
+      setState("error");
+    }
+  };
+
+  return (
+    <li className="px-3 py-2 text-sm">
+      <details onToggle={(e) => (e.currentTarget.open ? void load() : undefined)}>
+        <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-2">
+          <span className="flex items-baseline gap-2">
+            <span className="font-medium text-foreground">{o.title}</span>
+            <Link
+              href={`/spec/customizations/${encodeURIComponent(o.id)}`}
+              className="text-xs text-muted-foreground hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {COPY.openOption}
+            </Link>
+          </span>
+          <span className={cn("text-xs tabular-nums", STATUS_TONE[o.status])}>
+            {o.status === "offered" ? `${o.productCount} products` : COPY.optionStatus[o.status]}
+            {o.addedByException > 0 && ` · ${o.addedByException} by exception`}
+            {o.removedByException > 0 && ` · removed on ${o.removedByException}`}
+            {o.partnerTypes > 0 && ` · pairs with ${o.partnerTypes} types`}
+          </span>
+        </summary>
+        {o.unmetRequirements.length > 0 && (
+          <p className="mt-1 text-xs text-destructive">{COPY.unmet(o.unmetRequirements.join("; "))}</p>
+        )}
+        <div className="mt-1">
+          {state === "loading" && <p className="text-xs text-muted-foreground">{COPY.loadingPartners}</p>}
+          {state === "error" && <p className="text-xs text-destructive">{COPY.partnersFailed}</p>}
+          {partners && partners.length > 0 && (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+              {partners.map((p) => (
+                <div key={p.typeTitle} className="contents">
+                  <dt className="text-muted-foreground">
+                    {COPY.relation[p.relation]} {p.typeTitle}
+                  </dt>
+                  <dd className="text-foreground">{partnerText(p)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      </details>
+    </li>
   );
 }
 

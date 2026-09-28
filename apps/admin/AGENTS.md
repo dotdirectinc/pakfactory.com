@@ -218,6 +218,13 @@ PROD-2614. The customer-facing view of the same rules, for staff: **read-only un
 - **Edit in Studio** links need `ADMIN_SANITY_STUDIO_URL` — the Studio serving the dataset admin reads. Unset, the link is hidden rather than pointing at the wrong dataset.
 - Rules Sanity does not model (print sides, Pantone form logic, foam conditionals, tin sizes) are **left out**, not reimplemented.
 
+### Loading speed (measured 2026-09-28, development)
+
+- **Computed views are cached for 60 s** ([`lib/spec/cache.ts`](src/lib/spec/cache.ts), tag `spec-rules`): Current rules, option partners, product rows, each product and each customization. A miss costs the Sanity read (~0.9 s) and the package's work; a hit costs neither. Failures are never cached. The raw Sanity response is **not** cached — at ~2.4 MB it is over Next's 2 MB data-cache limit.
+- **Load on demand:** By option sends headings only (partner lines via `GET /api/spec/options/[id]/partners` when a row opens); the configurator catalog comes from `GET /api/spec/rules-snapshot` when "Configure as a customer" first opens, once per browser session. Both 404 without a registry grant.
+- **Payloads:** Current rules 432 → 68 KB; product page ~285 → 38 KB; customization page 11 KB; products list 109 KB (all rows, so the filter searches everything; drawn 50 at a time with **Load more**).
+- Current rules' tab is in the URL (`?tab=options`), and `/spec/loading.tsx` shows a skeleton while a view builds.
+
 ## Customization Library
 
 Staff gallery for shared configurator UI and draft build-spec logic (PROD-1299 / related).

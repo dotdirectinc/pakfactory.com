@@ -1,5 +1,6 @@
 import type { PartnerGroup } from "@pakfactory/sanity/customization-rules/summary";
-import { loadRulesSummary, RULES_DATASET } from "./rules-source";
+import { loadRulesSummary, RULES_DATASET, type Loaded } from "./rules-source";
+import { cachedSpec } from "./cache";
 
 /**
  * The current rules, read from Sanity and computed by the shared package (PROD-2560).
@@ -38,6 +39,7 @@ export type RuleTypeRow = {
   productsOffering: number;
 };
 
+/** An option as the list shows it. Its partner lines load on demand (see `getOptionPartners`). */
 export type RuleOptionRow = {
   id: string;
   title: string;
@@ -47,7 +49,8 @@ export type RuleOptionRow = {
   productCount: number;
   addedByException: number;
   removedByException: number;
-  partners: PartnerLine[];
+  /** How many partner types it has — the lines themselves load when the row is expanded. */
+  partnerTypes: number;
   /** Names of the requirements it can never meet ("Ink"). */
   unmetRequirements: string[];
 };
@@ -74,11 +77,30 @@ export type CurrentRules = {
   };
 };
 
-export type CurrentRulesResult =
-  | { ok: true; data: CurrentRules }
-  | { ok: false; error: string };
+export type CurrentRulesResult = Loaded<CurrentRules>;
 
-export async function getCurrentRules(): Promise<CurrentRulesResult> {
+/**
+ * Current rules, cached (see `cache.ts`). Option rows carry no partner lines: those were 422 of
+ * the page's 432 KB, and most visits never open them.
+ */
+export const getCurrentRules = cachedSpec("current-rules", async (): Promise<CurrentRulesResult> => {
+  const res = await buildCurrentRules();
+  if (!res.ok) return res;
+  const { partners: _partners, ...rest } = res.data;
+  void _partners;
+  return { ok: true, data: rest };
+});
+
+/** Every option's partner lines, cached as one entry; the API route hands out one at a time. */
+export const getOptionPartners = cachedSpec(
+  "option-partners",
+  async (): Promise<Loaded<Record<string, PartnerLine[]>>> => {
+    const res = await buildCurrentRules();
+    return res.ok ? { ok: true, data: res.data.partners } : res;
+  },
+);
+
+async function buildCurrentRules(): Promise<Loaded<CurrentRules & { partners: Record<string, PartnerLine[]> }>> {
   const res = await loadRulesSummary();
   if (!res.ok) return res;
   const { source, summary } = res.data;
@@ -100,6 +122,7 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
     productsOffering: t.productsOffering,
   }));
 
+  const partners: Record<string, PartnerLine[]> = {};
   const options: RuleOptionRow[] = summary.options.map((o) => {
     const type = typeById.get(o.typeId);
     const groups = type?.groups ?? [];
@@ -109,6 +132,15 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
     const written = type && type.requirements.length === groups.length ? type.requirements : null;
     const requirementName = (i: number) =>
       (written?.[i] ?? (groups[i] ?? []).map((id) => ({ id }))).map((e) => label(e.id)).join(" or ");
+    partners[o.optionId] = o.partners.map((p) => ({
+      typeTitle: label(p.typeId),
+      relation: p.relation,
+      coverage: p.coverage,
+      typeSize: p.typeSize,
+      count: p.partnerIds.length,
+      names:
+        p.coverage === "all" ? [] : (p.coverage === "all-but" ? p.missing ?? [] : p.partnerIds).map(label),
+    }));
     return {
       id: o.optionId,
       title: label(o.optionId),
@@ -118,15 +150,7 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
       productCount: o.productCount,
       addedByException: o.addedByException,
       removedByException: o.removedByException,
-      partners: o.partners.map((p) => ({
-        typeTitle: label(p.typeId),
-        relation: p.relation,
-        coverage: p.coverage,
-        typeSize: p.typeSize,
-        count: p.partnerIds.length,
-        names:
-          p.coverage === "all" ? [] : (p.coverage === "all-but" ? p.missing ?? [] : p.partnerIds).map(label),
-      })),
+      partnerTypes: o.partners.length,
       unmetRequirements: o.unpairedRequirements.map(requirementName),
     };
   });
@@ -153,6 +177,7 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
       totals: summary.totals,
       types,
       options,
+      partners,
       exceptions,
       attention: {
         missingReferences: [...missing]

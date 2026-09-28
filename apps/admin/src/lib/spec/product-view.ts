@@ -61,13 +61,16 @@ export type ProductExceptionRow = {
 };
 
 /**
- * The rules for the browser-side configurator: the WHOLE catalog, ids shortened to tokens.
+ * The catalog half of the browser-side configurator: the WHOLE catalog, ids shortened to tokens
+ * (`ids[n]` is token `n`). The same for every product, so it is served once from
+ * `/api/spec/rules-snapshot` and cached, and only loaded when "Configure as a customer" opens.
  *
- * Deliberately not pruned to this product. Pruning changes which options are eligible unless it
- * is done exactly as www does it, and a second copy of that logic is how two screens start to
- * disagree. Tokens keep the whole catalog at ~245 KB (dev, 225 options).
+ * Deliberately not pruned to a product. Pruning changes which options are eligible unless it is
+ * done exactly as www does it, and a second copy of that logic is how two screens start to
+ * disagree.
  */
-export type ConfiguratorSnapshot = {
+export type CatalogSnapshot = {
+  ids: string[];
   types: {
     _id: string;
     title: string;
@@ -77,16 +80,17 @@ export type ConfiguratorSnapshot = {
     categoryId?: string;
     requirements?: string[][];
   }[];
-  /** `options[n]` is token `n`; `compatibleCustomizations` holds tokens. */
   options: { _id: string; typeId: string; compatibleCustomizations: string[] }[];
   titles: Record<string, string>;
   /** Tokens of reference-role options — shown, never pickable. */
   reference: string[];
-  product: {
-    _id: string;
-    availableCustomizations: { optionId: string }[];
-    customizationExceptions: { optionId: string; mode: "add" | "remove"; reason?: string }[];
-  };
+};
+
+/** The product half, with REAL ids — the client maps them onto whatever snapshot it holds. */
+export type ConfiguratorProduct = {
+  _id: string;
+  available: string[];
+  exceptions: { optionId: string; mode: "add" | "remove"; reason?: string }[];
 };
 
 export type ProductView = {
@@ -99,7 +103,7 @@ export type ProductView = {
   categories: ProductCategoryBlock[];
   exceptions: ProductExceptionRow[];
   dimensions: UiDescriptor | null;
-  configurator: ConfiguratorSnapshot;
+  configurator: ConfiguratorProduct;
 };
 
 export function findProduct(source: RulesSource, id: string): SourceProduct | undefined {
@@ -198,7 +202,15 @@ export function buildProductView(source: RulesSource, product: SourceProduct): P
     categories,
     exceptions,
     dimensions: dimensionsFor(product),
-    configurator: snapshotFor(source, product),
+    configurator: {
+      _id: product._id,
+      available: (product.availableCustomizations ?? []).map((a) => a.optionId),
+      exceptions: (product.customizationExceptions ?? []).map((e) => ({
+        optionId: e.optionId,
+        mode: e.mode,
+        ...(e.reason ? { reason: e.reason } : {}),
+      })),
+    },
   };
 }
 
@@ -214,14 +226,16 @@ function dimensionsFor(product: SourceProduct): UiDescriptor | null {
   } as UiDescriptor;
 }
 
-function snapshotFor(source: RulesSource, product: SourceProduct): ConfiguratorSnapshot {
+export function catalogSnapshot(source: RulesSource): CatalogSnapshot {
   const { catalog, name } = source;
-  const token = new Map(catalog.options.map((o, n) => [o._id, n.toString(36)]));
+  const ids = catalog.options.map((o) => o._id);
+  const token = new Map(ids.map((id, n) => [id, n.toString(36)]));
   const tok = (id: string) => token.get(id) ?? id;
   const titles: Record<string, string> = {};
   for (const o of catalog.options) titles[tok(o._id)] = name(o._id);
 
   return {
+    ids,
     types: catalog.types.map((t) => ({
       _id: t._id,
       title: name(t._id),
@@ -238,14 +252,5 @@ function snapshotFor(source: RulesSource, product: SourceProduct): ConfiguratorS
     })),
     titles,
     reference: catalog.options.filter((o) => o.configuratorRole === "reference").map((o) => tok(o._id)),
-    product: {
-      _id: product._id,
-      availableCustomizations: (product.availableCustomizations ?? []).map((a) => ({ optionId: tok(a.optionId) })),
-      customizationExceptions: (product.customizationExceptions ?? []).map((e) => ({
-        optionId: tok(e.optionId),
-        mode: e.mode,
-        ...(e.reason ? { reason: e.reason } : {}),
-      })),
-    },
   };
 }

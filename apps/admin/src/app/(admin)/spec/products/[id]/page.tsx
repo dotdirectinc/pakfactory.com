@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
-import { loadRulesSource } from "@/lib/spec/rules-source";
-import { buildProductView, findProduct } from "@/lib/spec/product-view";
+import { getProductView } from "@/lib/spec/cached-views";
 import { SpecProductDetail } from "@/components/spec/spec-product-detail";
 import { ADMIN_SPEC_PRODUCTS_COPY as COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 
@@ -11,7 +10,7 @@ export const metadata = { title: "Product rules" };
 export default async function SpecProductPage({ params }: { params: Promise<{ id: string }> }) {
   await requireRegistryGrant();
   const { id } = await params;
-  const res = await loadRulesSource();
+  const res = await getProductView(decodeURIComponent(id));
   if (!res.ok) {
     return (
       <p role="alert" className="rounded-md border border-border bg-muted/30 p-4 text-sm text-destructive">
@@ -19,9 +18,8 @@ export default async function SpecProductPage({ params }: { params: Promise<{ id
       </p>
     );
   }
-  const product = findProduct(res.data, decodeURIComponent(id));
-  if (!product) notFound();
-  const view = buildProductView(res.data, product);
+  const view = res.data;
+  if (!view) notFound();
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">

@@ -47,7 +47,7 @@ export function SpecProductDetail({ view }: { view: ProductView }) {
 
       <TabsContent value="configure" className="mt-3">
         <ProductConfigurator
-          snapshot={view.configurator}
+          product={view.configurator}
           categoryOrder={view.categories.map((c) => c.title)}
           dimensions={view.dimensions}
         />

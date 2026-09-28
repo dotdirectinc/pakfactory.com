@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { buildCompatibilityIndex } from "@pakfactory/sanity/customization-rules";
 import { buildDependencyGraph } from "@pakfactory/sanity/customization-rules/dependencies";
 import {
@@ -11,8 +11,48 @@ import { PropertyController } from "@pakfactory/ui/components/customization/prop
 import type { UiDescriptor } from "@pakfactory/ui/components/customization/types";
 import { Button } from "@pakfactory/ui/components/button";
 import { cn } from "@pakfactory/ui/lib/utils";
-import type { ConfiguratorSnapshot } from "@/lib/spec/product-view";
+import type { CatalogSnapshot, ConfiguratorProduct } from "@/lib/spec/product-view";
 import { ADMIN_SPEC_PRODUCTS_COPY as COPY } from "@/lib/copy/spec";
+
+/**
+ * The catalog snapshot is the same for every product, so it is fetched once per browser session
+ * (and the server caches it too). Loaded only when this tab first opens — Radix mounts a tab's
+ * content on activation.
+ */
+let snapshotRequest: Promise<CatalogSnapshot> | null = null;
+function loadSnapshot(): Promise<CatalogSnapshot> {
+  snapshotRequest ??= fetch("/api/spec/rules-snapshot").then((res) => {
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json() as Promise<CatalogSnapshot>;
+  });
+  snapshotRequest.catch(() => {
+    snapshotRequest = null;
+  });
+  return snapshotRequest;
+}
+
+export function ProductConfigurator(props: {
+  product: ConfiguratorProduct;
+  categoryOrder: string[];
+  dimensions: UiDescriptor | null;
+}) {
+  const [snapshot, setSnapshot] = useState<CatalogSnapshot | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    loadSnapshot().then(
+      (s) => live && setSnapshot(s),
+      () => live && setFailed(true),
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  if (failed) return <p className="text-sm text-destructive">{COPY.configuratorFailed}</p>;
+  if (!snapshot) return <p className="text-sm text-muted-foreground">{COPY.configuratorLoading}</p>;
+  return <Configurator {...props} snapshot={snapshot} />;
+}
 
 /**
  * Configure the product the way a customer does, with the reasons a customer never sees
@@ -23,29 +63,40 @@ import { ADMIN_SPEC_PRODUCTS_COPY as COPY } from "@/lib/copy/spec";
  * disappears disappears there too. Reference options are left out, as the storefront leaves
  * them out.
  */
-export function ProductConfigurator({
+function Configurator({
   snapshot,
+  product,
   categoryOrder,
   dimensions,
 }: {
-  snapshot: ConfiguratorSnapshot;
+  snapshot: CatalogSnapshot;
+  product: ConfiguratorProduct;
   categoryOrder: string[];
   dimensions: UiDescriptor | null;
 }) {
   const prepared = useMemo(() => {
     const catalog = { types: snapshot.types, options: snapshot.options };
+    // The product arrives with real ids; the snapshot speaks tokens. An id the snapshot does not
+    // know (a document published since it was cached) is passed through and ignored as unknown.
+    const token = new Map(snapshot.ids.map((id, n) => [id, n.toString(36)]));
+    const tok = (id: string) => token.get(id) ?? id;
     return {
       catalog,
       graph: buildDependencyGraph(catalog),
       index: buildCompatibilityIndex(snapshot.options),
       reference: new Set(snapshot.reference),
+      product: {
+        _id: product._id,
+        availableCustomizations: product.available.map((id) => ({ optionId: tok(id) })),
+        customizationExceptions: product.exceptions.map((e) => ({ ...e, optionId: tok(e.optionId) })),
+      },
     };
-  }, [snapshot]);
+  }, [snapshot, product]);
 
   const [selections, setSelections] = useState<Selections>({});
 
   const { pickable, offered, invalidated } = useMemo(() => {
-    const args = [prepared.catalog, snapshot.product, prepared.graph, selections, prepared.index] as const;
+    const args = [prepared.catalog, prepared.product, prepared.graph, selections, prepared.index] as const;
     const withLookahead = resolveWithSelections(...args, { lookahead: true });
     const plain = resolveWithSelections(...args);
     return {
@@ -53,7 +104,7 @@ export function ProductConfigurator({
       offered: plain.availableByType,
       invalidated: withLookahead.invalidated,
     };
-  }, [prepared, snapshot.product, selections]);
+  }, [prepared, selections]);
 
   const title = (token: string) => snapshot.titles[token] ?? token;
   const picked = (typeId: string) => new Set(selections[typeId] ?? []);

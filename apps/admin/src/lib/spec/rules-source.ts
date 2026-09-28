@@ -91,7 +91,10 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
 
   let result: QueryResult;
   try {
-    result = await client.fetch<QueryResult>(QUERY, {}, { next: { revalidate: 60 } });
+    // Not cached here: the raw response (~2.4 MB on development) is over Next's 2 MB data-cache
+    // limit, so every attempt failed and logged. The computed views are cached instead
+    // (`cache.ts`), which means this read only runs on a miss.
+    result = await client.fetch<QueryResult>(QUERY, {}, { cache: "no-store" });
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Sanity query failed" };
   }

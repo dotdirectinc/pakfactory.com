@@ -70,7 +70,10 @@ export const ADMIN_SPEC_RULES_COPY = {
     dependent: "Decides",
     other: "Ordered with",
   },
-  filterOptions: "Filter — an option, a type, a material…",
+  filterOptions: "Filter by option or type name…",
+  openOption: "open",
+  loadingPartners: "Loading pairs…",
+  partnersFailed: "Could not load this option's pairs — reload and try again.",
   noMatch: (q: string) => `Nothing matches “${q}”.`,
   unmet: (names: string) => `Can never be offered: no partner in ${names}`,
   exceptionsEmpty: "No product has an exception yet.",
@@ -106,6 +109,7 @@ export const ADMIN_SPEC_PRODUCTS_COPY = {
     exceptions: "Exceptions",
   },
   backToList: "All products",
+  loadMore: (n: number, left: number) => `Load ${n} more (${left} left)`,
   editInStudio: "Edit in Studio",
   tabs: { offers: "What it offers", configure: "Configure as a customer", exceptions: "Exceptions" },
   offersLead:
@@ -120,6 +124,8 @@ export const ADMIN_SPEC_PRODUCTS_COPY = {
   configureLead:
     "Pick as a customer would. Options narrow exactly as on the storefront — the same code runs both. Nothing here is saved.",
   reset: "Clear picks",
+  configuratorLoading: "Loading the rules…",
+  configuratorFailed: "Could not load the rules — reload the page and try again.",
   dimensions: "Dimensions",
   pickOne: "pick one",
   pickSeveral: "pick several",

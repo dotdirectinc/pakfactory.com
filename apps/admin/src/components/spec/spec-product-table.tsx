@@ -5,18 +5,19 @@ import Link from "next/link";
 import { Input } from "@pakfactory/ui/components/input";
 import { ADMIN_SPEC_PRODUCTS_COPY as COPY } from "@/lib/copy/spec";
 
-export type ProductListRow = {
-  id: string;
-  title: string;
-  line: string;
-  listed: number;
-  derived: number;
-  exceptions: number;
-};
+import type { ProductListRow } from "@/lib/spec/cached-views";
 
-/** Every standard product, filterable in place — ~600 rows, which a browser handles. */
+export type { ProductListRow };
+
+const PAGE = 50;
+
+/**
+ * Every standard product. All rows arrive (~60 KB) so the filter searches the whole list;
+ * only drawing them is paged — 50, then "Load more".
+ */
 export function SpecProductTable({ rows }: { rows: ProductListRow[] }) {
   const [query, setQuery] = useState("");
+  const [limit, setLimit] = useState(PAGE);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return rows;
@@ -28,7 +29,10 @@ export function SpecProductTable({ rows }: { rows: ProductListRow[] }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setLimit(PAGE);
+          }}
           placeholder={COPY.filter}
           className="max-w-sm"
           aria-label="Filter products"
@@ -52,7 +56,7 @@ export function SpecProductTable({ rows }: { rows: ProductListRow[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {filtered.slice(0, limit).map((r) => (
                 <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                   <td className="px-3 py-2">
                     <Link href={`/spec/products/${encodeURIComponent(r.id)}`} className="font-medium text-foreground hover:underline">
@@ -68,6 +72,15 @@ export function SpecProductTable({ rows }: { rows: ProductListRow[] }) {
             </tbody>
           </table>
         </div>
+      )}
+      {filtered.length > limit && (
+        <button
+          type="button"
+          onClick={() => setLimit((n) => n + PAGE)}
+          className="self-center rounded-md border border-border px-4 py-1.5 text-sm text-foreground hover:bg-muted"
+        >
+          {COPY.loadMore(Math.min(PAGE, filtered.length - limit), filtered.length - limit)}
+        </button>
       )}
     </div>
   );
