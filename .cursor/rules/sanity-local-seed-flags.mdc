@@ -1,0 +1,19 @@
+---
+description: Local Sanity seed/migration handoffs must use --dataset development --confirm; agents never run seeds.
+alwaysApply: true
+---
+
+# Local Sanity seed commands
+
+Canonical detail: [`AGENTS.md`](../../AGENTS.md) § Sanity content — agent guardrails, and [`.claude/rules/dataset-script-placement-and-flags.md`](../../.claude/rules/dataset-script-placement-and-flags.md).
+
+- **Never run** seed or dataset-write scripts yourself.
+- When documenting or suggesting a command for **local** work, always include explicit flags:
+
+```bash
+pnpm <task> -- --dataset development --confirm
+```
+
+- Dry-run preview only: `--dataset development` (no `--confirm`).
+- Production: `--dataset production --confirm --yes-production`.
+- Never omit `--dataset` or rely on `NEXT_PUBLIC_SANITY_DATASET` / env defaults.

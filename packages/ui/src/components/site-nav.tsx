@@ -1,6 +1,11 @@
 "use client";
 
-import type {ReactNode} from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import {Box, ClipboardList, ClipboardPlus} from "lucide-react";
 import {Button} from "@pakfactory/ui/components/button";
@@ -20,10 +25,41 @@ export type SiteNavCta = {
   label: string;
 };
 
+export type SiteNavPanelLink = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+
+export type SiteNavPanelGroup = {
+  key: string;
+  label: string;
+  descriptor?: string;
+  links: SiteNavPanelLink[];
+};
+
+/** Featured card; omit from UI when empty (no heading/image/href). */
+export type SiteNavPanelPromo = {
+  heading?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  href?: string;
+  external?: boolean;
+};
+
+export type SiteNavPanel = {
+  groups: SiteNavPanelGroup[];
+  promo?: SiteNavPanelPromo | null;
+  /** Stripe-style second-row link under the grid (e.g. See all products). */
+  footerCta?: SiteNavPanelLink | null;
+};
+
 export type SiteNavItem = {
   key: string;
   label: string;
   href?: string;
+  /** When set with groups and/or promo, desktop/mobile render a mega-menu. */
+  panel?: SiteNavPanel;
 };
 
 export type SiteNavRequest = {
@@ -42,7 +78,29 @@ export type SiteNavProps = {
   /** Takes the signIn link's place on desktop when the visitor has a session. */
   account?: ReactNode;
   request?: SiteNavRequest;
+  /**
+   * Optional desktop nav override (e.g. www MegaMenu). When omitted,
+   * {@link SiteNavLinks} renders flat + mega items from `items`.
+   */
+  desktopNav?: ReactNode;
 };
+
+export function siteNavPromoIsVisible(
+  promo: SiteNavPanelPromo | null | undefined,
+): boolean {
+  if (!promo) return false;
+  return Boolean(
+    promo.heading?.trim() ||
+      promo.imageUrl?.trim() ||
+      promo.href?.trim(),
+  );
+}
+
+export function siteNavItemHasPanel(item: SiteNavItem): boolean {
+  if (!item.panel) return false;
+  const hasGroups = item.panel.groups.some((g) => g.links.length > 0);
+  return hasGroups || siteNavPromoIsVisible(item.panel.promo);
+}
 
 function DefaultLogo() {
   return (
@@ -67,15 +125,36 @@ export function SiteNav({
   signIn,
   account,
   request,
+  desktopNav,
 }: SiteNavProps) {
+  const headerRef = useRef<HTMLElement>(null);
   const requestCount = request?.count ?? 0;
   const requestAria =
     request && requestCount > 0
       ? `${request.label}, ${requestCount} ${requestCount === 1 ? "item" : "items"}`
       : request?.label;
 
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const syncOffset = () => {
+      el.style.setProperty("--site-nav-offset", `${el.offsetHeight}px`);
+    };
+    syncOffset();
+
+    const observer = new ResizeObserver(syncOffset);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <header className="relative z-50 border-b border-dashed border-border bg-background">
+    <header
+      ref={headerRef}
+      data-site-nav-header=""
+      className="relative z-50 border-b border-dashed border-border bg-background"
+      style={{"--site-nav-offset": "4.5rem"} as CSSProperties}
+    >
       <PageDielineSection
         paddingBlock="xs"
         innerClassName="flex items-center justify-between"
@@ -88,7 +167,7 @@ export function SiteNav({
         </Link>
 
         <div className="flex items-center gap-5">
-          <SiteNavLinks items={items} />
+          {desktopNav ?? <SiteNavLinks items={items} />}
           <SiteNavMobile
             items={items}
             cta={cta}
