@@ -8,6 +8,7 @@ import {Input} from '@pakfactory/ui/components/input';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {SectionReveal} from '@/components/common/section-reveal';
 import {ProductCatalogFilters} from '@/components/product/product-catalog-filters';
 import {ProductCatalogFiltersDrawer} from '@/components/product/product-catalog-filters-drawer';
 import {
@@ -290,100 +291,105 @@ export function ProductCatalogPanel({
             paddingBlock="none"
             innerClassName="pb-24 flex flex-col gap-8"
         >
-            {/* Mobile: sticky search + filters */}
-            <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
-                <div className="flex items-center gap-2 py-3">
-                    {renderSearchField()}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="relative size-10 shrink-0"
-                        aria-label={
-                            activeFilterCount > 0
-                                ? `Filters, ${activeFilterCount} active`
-                                : 'Filters'
-                        }
-                        onClick={() => setFiltersOpen(true)}
-                    >
-                        <SlidersHorizontal className="size-5" />
-                        {activeFilterCount > 0 ? (
-                            <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                                {activeFilterCount > 9
-                                    ? '9+'
-                                    : activeFilterCount}
-                            </span>
-                        ) : null}
-                    </Button>
-                </div>
-            </div>
-
-            {/* Desktop: sticky search bar (no category tabs) */}
-            <div
-                className={cn(
-                    '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
-                    hideCatalogBorderTop ? 'border-b' : 'border-y',
-                )}
-            >
-                <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
-                    <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
+            <SectionReveal className="flex flex-col gap-8">
+                {/* Mobile: sticky search + filters */}
+                <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
+                    <div className="flex items-center gap-2 py-3">
                         {renderSearchField()}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="relative size-10 shrink-0"
+                            aria-label={
+                                activeFilterCount > 0
+                                    ? `Filters, ${activeFilterCount} active`
+                                    : 'Filters'
+                            }
+                            onClick={() => setFiltersOpen(true)}
+                        >
+                            <SlidersHorizontal className="size-5" />
+                            {activeFilterCount > 0 ? (
+                                <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                                    {activeFilterCount > 9
+                                        ? '9+'
+                                        : activeFilterCount}
+                                </span>
+                            ) : null}
+                        </Button>
                     </div>
                 </div>
-            </div>
 
-            <ProductCatalogFiltersDrawer
-                open={filtersOpen}
-                onOpenChange={setFiltersOpen}
-                resultCount={filtered.length}
-                {...filterProps}
-            />
+                {/* Desktop: sticky search bar (no category tabs) */}
+                <div
+                    className={cn(
+                        '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
+                        hideCatalogBorderTop ? 'border-b' : 'border-y',
+                    )}
+                >
+                    <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
+                        <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
+                            {renderSearchField()}
+                        </div>
+                    </div>
+                </div>
 
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-                <ProductCatalogFilters
+                <ProductCatalogFiltersDrawer
+                    open={filtersOpen}
+                    onOpenChange={setFiltersOpen}
                     resultCount={filtered.length}
-                    totalCount={library.items.length}
                     {...filterProps}
                 />
 
-                <div
-                    className={cn(
-                        'flex min-w-0 flex-1 flex-col gap-6 transition-opacity duration-(--motion-fast)',
-                        isSearchUpdating &&
-                            !isAppending &&
-                            'pointer-events-none opacity-60',
-                    )}
-                    aria-busy={isAppending || isSearchUpdating}
-                >
-                    <ProductCatalogList
-                        items={shown}
-                        lineEntry={lineEntry}
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                    <ProductCatalogFilters
+                        resultCount={filtered.length}
+                        totalCount={library.items.length}
+                        {...filterProps}
                     />
-                    {isAppending ? (
-                        <ProductCatalogListSkeleton count={appendCount} />
-                    ) : null}
-                    <div className="mt-4 flex flex-col items-center gap-2">
-                        {canAutoReveal ? (
-                            <div
-                                ref={sentinelRef}
-                                className="h-1 w-full"
-                                aria-hidden
-                            />
+
+                    <div
+                        className={cn(
+                            'flex min-w-0 flex-1 flex-col gap-6 transition-opacity duration-(--motion-fast)',
+                            isSearchUpdating &&
+                                !isAppending &&
+                                'pointer-events-none opacity-60',
+                        )}
+                        aria-busy={isAppending || isSearchUpdating}
+                    >
+                        <ProductCatalogList
+                            items={shown}
+                            lineEntry={lineEntry}
+                        />
+                        {isAppending ? (
+                            <ProductCatalogListSkeleton count={appendCount} />
                         ) : null}
-                        {showLoadMore ? (
-                            <Button
-                                type="button"
-                                variant="link"
-                                onClick={revealNextBatch}
-                                className="gap-1 text-primary"
-                            >
-                                Load more
-                                <ChevronDown className="size-4" aria-hidden />
-                            </Button>
-                        ) : null}
+                        <div className="mt-4 flex flex-col items-center gap-2">
+                            {canAutoReveal ? (
+                                <div
+                                    ref={sentinelRef}
+                                    className="h-1 w-full"
+                                    aria-hidden
+                                />
+                            ) : null}
+                            {showLoadMore ? (
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    onClick={revealNextBatch}
+                                    className="gap-1 text-primary"
+                                >
+                                    Load more
+                                    <ChevronDown
+                                        className="size-4"
+                                        aria-hidden
+                                    />
+                                </Button>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </SectionReveal>
         </PageDielineSection>
     );
 }

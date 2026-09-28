@@ -2,6 +2,7 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {SectionReveal} from '@/components/common/section-reveal';
 import {CustomizationCatalogFiltersSkeleton} from '@/components/customization/customization-catalog-filters';
 import {CustomizationCatalogListSkeleton} from '@/components/customization/customization-catalog-list';
 import {WWW_ROUTES} from '@/lib/www-routes';
@@ -53,19 +54,21 @@ export function CustomizationCatalogPanelLoading({
             paddingBlock="none"
             innerClassName="flex flex-col gap-8 pb-24 pt-8"
         >
-            <div
-                className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8"
-                aria-busy="true"
-                aria-live="polite"
-            >
-                <span className="sr-only">Loading customizations catalog</span>
-                <CustomizationCatalogFiltersSkeleton
-                    categoryGroupCount={categoryGroupCount}
-                />
-                <div className="min-w-0 flex-1">
-                    <CustomizationCatalogListSkeleton />
+            <SectionReveal>
+                <div
+                    className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8"
+                    aria-busy="true"
+                    aria-live="polite"
+                >
+                    <span className="sr-only">Loading customizations catalog</span>
+                    <CustomizationCatalogFiltersSkeleton
+                        categoryGroupCount={categoryGroupCount}
+                    />
+                    <div className="min-w-0 flex-1">
+                        <CustomizationCatalogListSkeleton />
+                    </div>
                 </div>
-            </div>
+            </SectionReveal>
         </PageDielineSection>
     );
 }

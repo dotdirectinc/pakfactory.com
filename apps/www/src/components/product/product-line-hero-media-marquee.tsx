@@ -16,9 +16,9 @@ import {isSanityCdnUrl} from '@/lib/sanity/image';
 import {headingSettleProps} from '@/lib/ui/heading-settle';
 
 /** Seconds for one card-width of travel — keeps scroll slow as density grows. */
-const MARQUEE_SECONDS_PER_CARD = 8;
+const MARQUEE_SECONDS_PER_CARD = 48;
 /** Never faster than this full-loop time (~12 cards × 8s ≈ 95). */
-const MARQUEE_DURATION_FLOOR_S = 95;
+const MARQUEE_DURATION_FLOOR_S = 560;
 const MARQUEE_GAP_REM = 1;
 
 function marqueeDurationForCards(count: number): number {
@@ -119,7 +119,7 @@ function HeroMediaCard({
 
     const shellClass = cn(
         'group/tile relative aspect-4/3 shrink-0 overflow-hidden rounded-2xl',
-        'w-[calc((100vw-2rem)/2.5)] max-w-none h-auto',
+        'h-[min(40svh,20rem)] w-auto',
         'sm:h-[min(52svh,28rem)] sm:w-auto',
         settle.className,
         (hasVideo || isInteractive) && 'cursor-pointer',

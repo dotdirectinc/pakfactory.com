@@ -374,16 +374,19 @@ function ProductLineHeroBottomBar({
             className={cn(
                 pageDielineOuterClass(),
                 pageDielineBorderYClass({borderBottom: true}),
-                'relative overflow-x-clip bg-gradient-to-b from-muted from-0% via-background via-[65%] to-background',
+                'relative flex flex-1 flex-col overflow-x-clip bg-gradient-to-b from-muted from-0% via-background via-[65%] to-background',
             )}
         >
             <div
                 className={pageDielineInnerClass(
-                    'flex flex-col pt-8 sm:pt-10 lg:pt-12',
+                    'flex min-h-0 flex-1 flex-col pt-8 sm:pt-10 lg:pt-12',
                 )}
             >
+                {/* Grows under breadcrumb / above marquee (all breakpoints). */}
+                <div className="flex-1" aria-hidden />
+
                 {/* Full-viewport track; vertical dielines stay on this column. */}
-                <div className="relative right-1/2 left-1/2 -mr-[50vw] -ml-[50vw] w-screen max-w-[100vw]">
+                <div className="relative right-1/2 left-1/2 -mr-[50vw] -ml-[50vw] w-screen max-w-[100vw] shrink-0">
                     <ProductLineHeroMediaMarquee
                         cards={mediaCards}
                         className={mediaSettle.className}
@@ -391,8 +394,12 @@ function ProductLineHeroBottomBar({
                     />
                 </div>
 
-                {/* 40px (pt-10) clearance above the heading — muted→white reads here. */}
-                <div className="pb-10 pt-10 sm:pb-12">
+                {/* Grows between marquee and heading (all breakpoints). */}
+                <div className="flex-1" aria-hidden />
+
+                {/* 40px (pt-10) clearance above the heading — muted→white reads here.
+                    Flex spacers own extra height; keep a floor of pt-10. */}
+                <div className="shrink-0 pb-10 pt-10 sm:pb-12">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
                         <div className="flex min-w-0 flex-col gap-3 lg:max-w-3xl">
                             <h1
