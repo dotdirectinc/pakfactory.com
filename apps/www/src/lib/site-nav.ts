@@ -1,6 +1,17 @@
-import type {SiteNavCta, SiteNavItem} from '@pakfactory/ui/components/site-nav';
-import type {WebsiteNavigationDoc} from '@pakfactory/sanity/queries';
+import type {
+  SiteNavCta,
+  SiteNavItem,
+  SiteNavPanel,
+  SiteNavPanelGroup,
+  SiteNavPanelLink,
+  SiteNavPanelPromo,
+} from '@pakfactory/ui/components/site-nav';
+import type {
+  WebsiteNavLinkDoc,
+  WebsiteNavigationDoc,
+} from '@pakfactory/sanity/queries';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
+import {sanityImageBaseUrl} from '@/lib/sanity/image';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 export type WwwSiteNavModel = {
@@ -32,9 +43,50 @@ function fallbackHrefForLabel(label: string): string | undefined {
   return LABEL_ROUTE_FALLBACK[label.trim().toLowerCase()];
 }
 
-function flattenChromeItems(
-  chrome: WebsiteNavigationDoc,
-): SiteNavItem[] | null {
+function mapNavLink(
+  link: WebsiteNavLinkDoc | null | undefined,
+): SiteNavPanelLink | null {
+  if (!link?.label?.trim()) return null;
+  const resolved = resolveWwwNavHref(link);
+  if (!resolved?.href) return null;
+  return {
+    label: link.label.trim(),
+    href: resolved.href,
+    ...(resolved.external ? {external: true} : {}),
+  };
+}
+
+function mapPromo(
+  promo:
+    | {
+        heading?: string | null;
+        image?: {
+          alt?: string | null;
+          [key: string]: unknown;
+        } | null;
+        link?: WebsiteNavLinkDoc | null;
+      }
+    | null
+    | undefined,
+): SiteNavPanelPromo | null {
+  if (!promo) return null;
+  const heading = promo.heading?.trim() ?? '';
+  const imageUrl = promo.image ? sanityImageBaseUrl(promo.image) : undefined;
+  const imageAlt = promo.image?.alt?.trim();
+  const link = mapNavLink(promo.link);
+
+  if (!heading && !imageUrl && !link?.href) return null;
+
+  return {
+    ...(heading ? {heading} : {}),
+    ...(imageUrl ? {imageUrl, imageAlt: imageAlt || heading || 'Featured'} : {}),
+    ...(link
+      ? {href: link.href, ...(link.external ? {external: true} : {})}
+      : {}),
+  };
+}
+
+function mapChromeItems(chrome: WebsiteNavigationDoc): SiteNavItem[] | null {
   if (!chrome?._id || !chrome.items?.length) return null;
 
   const items: SiteNavItem[] = [];
@@ -42,27 +94,80 @@ function flattenChromeItems(
   for (const item of chrome.items) {
     if (!item?.label?.trim()) continue;
     const label = item.label.trim();
-    let href: string | undefined;
+    const key = slugKey(label);
 
-    for (const group of item.groups ?? []) {
-      if (!group?.items) continue;
-      for (const link of group.items) {
-        const resolved = resolveWwwNavHref(link);
-        if (resolved?.href) {
-          href = resolved.href;
-          break;
-        }
+    const groups: SiteNavPanelGroup[] = [];
+    for (const [groupIndex, group] of (item.groups ?? []).entries()) {
+      if (!group) continue;
+      const links: SiteNavPanelLink[] = [];
+      for (const link of group.items ?? []) {
+        const mapped = mapNavLink(link);
+        if (mapped) links.push(mapped);
       }
-      if (href) break;
+      if (links.length === 0) continue;
+      const groupLabel = group.label?.trim() || label;
+      groups.push({
+        key: `${key}-g${groupIndex}-${slugKey(groupLabel)}`,
+        label: groupLabel,
+        ...(group.descriptor?.trim()
+          ? {descriptor: group.descriptor.trim()}
+          : {}),
+        links,
+      });
     }
 
-    href ??= fallbackHrefForLabel(label);
-    if (!href) continue;
+    const promo = mapPromo(item.promo ?? null);
+    const footerCta = mapNavLink(item.footerCta ?? null);
+    const totalLinks = groups.reduce((n, g) => n + g.links.length, 0);
+    /** One group with a single link and no promo → flat bar link (hub items). */
+    const hasMega =
+      Boolean(promo) ||
+      Boolean(footerCta) ||
+      groups.length > 1 ||
+      totalLinks > 1;
+
+    let href: string | undefined;
+    if (hasMega) {
+      href = fallbackHrefForLabel(label);
+      if (!href) {
+        for (const group of groups) {
+          const first = group.links[0];
+          if (first && !first.external) {
+            href = first.href;
+            break;
+          }
+        }
+      }
+    } else {
+      href = groups[0]?.links[0]?.href;
+      href ??= fallbackHrefForLabel(label);
+      for (const group of item.groups ?? []) {
+        if (href) break;
+        for (const link of group?.items ?? []) {
+          const resolved = resolveWwwNavHref(link);
+          if (resolved?.href) {
+            href = resolved.href;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!hasMega && !href) continue;
+
+    const panel: SiteNavPanel | undefined = hasMega
+      ? {
+          groups,
+          ...(promo ? {promo} : {}),
+          ...(footerCta ? {footerCta} : {}),
+        }
+      : undefined;
 
     items.push({
-      key: slugKey(label) || href,
+      key: key || href || label,
       label,
-      href,
+      ...(href ? {href} : {}),
+      ...(panel ? {panel} : {}),
     });
   }
 
@@ -99,7 +204,7 @@ export function buildSiteNavProps(options?: {
   chrome?: WebsiteNavigationDoc;
 }): WwwSiteNavModel {
   const authenticated = Boolean(options?.authenticated);
-  const chromeItems = flattenChromeItems(options?.chrome ?? null);
+  const chromeItems = mapChromeItems(options?.chrome ?? null);
   const chromeCta = resolveChromeCta(options?.chrome ?? null);
 
   return {

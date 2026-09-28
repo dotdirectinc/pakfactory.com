@@ -6,6 +6,7 @@ import {
     type AccountMenuProps,
 } from '@/components/account/account-menu';
 import Logo from '@/components/layout/logo';
+import {MegaMenu} from '@/components/layout/mega-menu';
 import {useRequest} from '@/lib/request/request-provider';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -32,6 +33,7 @@ export function SiteNavRequestSlot({
             homeHref={homeHref}
             logo={<Logo className="gap-3" />}
             items={navItems}
+            desktopNav={<MegaMenu items={navItems} />}
             cta={cta}
             signIn={signIn}
             account={

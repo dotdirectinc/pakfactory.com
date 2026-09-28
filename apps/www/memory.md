@@ -48,16 +48,26 @@ When adding a new env var, update **both** `.env.example` and `turbo.json` `@pak
 
 ## Website navigation singleton (chrome)
 
-Site header + footer read Sanity `websiteNavigation` (not page sections). Seed mirrors the hardcoded V5 chrome for parity.
+Site header + footer read Sanity `websiteNavigation` (not page sections). Header **MegaMenu** (PROD-2611) consumes each primary item’s **Mega-menu groups** + optional **Promo** (Featured hidden when empty) + optional **Footer CTA** (second row under the grid, e.g. “See all products”). Flat items (no real mega groups) stay simple links. Desktop panel is a persistent **4-column** grid (cols 1–2 primary split, no divider; col 3 secondary; col 4 promo rail) with `rounded-b-md` sheet.
 
-**Humans only** (agents must not run seeds — `AGENTS.md`):
+After schema/seed updates (e.g. clearing Solutions group descriptors), humans re-run with an explicit dataset:
 
 ```bash
-pnpm seed:website-navigation              # write + attempt publish
-pnpm seed:website-navigation -- --dry-run # print payload only
+pnpm seed:website-navigation -- --dataset development
+pnpm seed:website-navigation -- --dataset development --confirm
 ```
 
-Then confirm in Studio → Main Website → Navigation. If the doc is draft-only, publish it. Refresh local www (`pnpm dev:www`) and check header labels/hrefs + footer columns/social/AI.
+Or set Footer CTA per item in Studio → Navigation. Agents must not run seeds.
+
+**Seed (humans only — agents must not run):** fetches live `productLine` + `hasPage` solutions and builds Products / Solutions mega groups. Prefer `path` links for product lines (`productLine` is not Studio-linkable) and `internal` refs for solutions. Solutions groups are seeded **without** `descriptor` (label only). Footer/social/AI preserved. `createOrReplace` overwrites the singleton. `--dataset` is **required** (no env fallback); without `--confirm` the run is a dry run.
+
+```bash
+pnpm seed:website-navigation -- --dataset development              # preview JSON + catalog counts
+pnpm seed:website-navigation -- --dataset development --confirm    # write + attempt publish
+pnpm seed:website-navigation -- --dataset production --confirm --yes-production
+```
+
+Then in Studio → Main Website → Navigation: confirm Products / Solutions groups; attach **Solutions promo image** if desired; publish. Refresh www (`pnpm dev:www`). Revalidate tag: `www-website-navigation`.
 
 ## Solution LP sections (CMS template path)
 

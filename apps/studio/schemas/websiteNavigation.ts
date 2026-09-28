@@ -95,6 +95,23 @@ export const websiteNavigation = defineType({
                 defineField({ name: 'link', title: 'Link', type: 'object', fields: linkTargetFields({ requireLinkType: false, includeSitePath: true }) }),
               ],
             }),
+            defineField({
+              name: 'footerCta',
+              title: 'Footer CTA',
+              type: 'object',
+              description:
+                'Optional second-row link under the mega-menu grid (e.g. “See all products”).',
+              options: { collapsible: true, collapsed: true },
+              fields: [
+                defineField({
+                  name: 'label',
+                  title: 'Label',
+                  type: 'string',
+                  validation: (Rule) => Rule.required(),
+                }),
+                ...linkTargetFields({ requireLinkType: false, includeSitePath: true }),
+              ],
+            }),
           ],
           preview: { select: { title: 'label' } },
         }),

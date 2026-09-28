@@ -119,6 +119,14 @@ Editorial documents (posts, pages, singletons, navigation, etc.) live in the **S
 
 When a feature needs example data, document **what humans should seed** in [`apps/blog/memory.md`](apps/blog/memory.md) or the PR — do not execute seeds or patch documents. Refuse requests such as “run a seed script”, “patch `blogHomePage` via MCP”, or “publish this post” unless the user will run the write themselves; agents may only implement schema/code and state the human command.
 
+**Local seed handoff (binding):** when documenting or suggesting a seed/migration command for **local** work, always include explicit flags — never rely on env dataset defaults:
+
+```bash
+pnpm <seed-or-task> -- --dataset development --confirm
+```
+
+Use `--dataset development` without `--confirm` only when the human should preview a dry run first. Production writes need `--dataset production --confirm --yes-production`. Flag conventions: [`.claude/rules/dataset-script-placement-and-flags.md`](.claude/rules/dataset-script-placement-and-flags.md).
+
 Human workflow (no agent writes): [`apps/blog/memory.md`](apps/blog/memory.md) § Content vs seed workflow.
 
 ## MCP defaults (when available)
