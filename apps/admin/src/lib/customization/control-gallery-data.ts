@@ -1,6 +1,8 @@
 /**
- * Catalog data ported from public/customization-logic-explorer.html CATS.
- * HTML “Option” row ≈ Studio customizationType (Type panel).
+ * Control gallery examples (PROD-2614): the 13 shared `PropertyController` kinds, each shown with
+ * demo values. Originally ported from the retired HTML explorer; its rule text (values, defaults,
+ * conditions, required/source) was removed when the rules moved to Sanity + the shared package —
+ * for what a product actually offers see Spec System → Products.
  * Control UI types live in @pakfactory/ui (shared with www).
  */
 
@@ -61,15 +63,9 @@ function dimensionUi(
   };
 }
 
+/** One gallery example: a label and the control(s) it demonstrates. No rule data. */
 export type CatalogOption = {
   n: string;
-  type: string;
-  card: "Single" | "Multi" | string;
-  req: boolean;
-  src: string;
-  vals: string;
-  def: string;
-  cond?: string;
   ui: UiDescriptor;
   uiCap?: string;
   ui2?: UiDescriptor;
@@ -91,13 +87,6 @@ export const CATS: Category[] = [
     opts: [
       {
         n: "Product/Structure",
-        type: "Read-only (from PDP)",
-        card: "Single",
-        req: true,
-        src: "Buyer",
-        vals: "= the chosen product",
-        def: "—",
-        cond: "Sets the Product Line/Style, which drives some of the options below.",
         ui: { kind: "readonly", value: "Rigid Book-Style Hinged Box" },
       },
     ],
@@ -109,57 +98,22 @@ export const CATS: Category[] = [
     opts: [
       {
         n: "Dimensions",
-        type: "Dimension form",
-        card: "Single",
-        req: true,
-        src: "Buyer + confirm",
-        vals: "L×W×H / D(Diameter)×H / W×H×G / W×H×G + Drop / W×H / Diameter",
-        def: "L×W×H",
-        cond: "Dictated by the “Property — Shape” field of the chosen product. For example, Cylinder shape product = Diameter × Height, Bag/Pouch = Width × Height × Gusset.",
         ui: dimensionUi("rectangular", DEMO_RECT_RANGE_MM),
       },
       {
         n: "Dimensions (Cylinder)",
-        type: "Dimension form",
-        card: "Single",
-        req: true,
-        src: "Buyer + confirm",
-        vals: "Diameter × Height",
-        def: "D×H",
-        cond: "Demo — cylinder dimensionInput → diameter + height axes.",
         ui: dimensionUi("cylinder", DEMO_CYLINDER_RANGE_MM),
       },
       {
         n: "Dimensions (Bag / Pouch)",
-        type: "Dimension form",
-        card: "Single",
-        req: true,
-        src: "Buyer + confirm",
-        vals: "Width × Height × Gusset",
-        def: "W×H×G",
-        cond: "Demo — bag-pouch dimensionInput → width, height, gusset.",
         ui: dimensionUi("bag-pouch", DEMO_BAG_RANGE_MM),
       },
       {
         n: "Dimensions (No Shape)",
-        type: "Dimension form",
-        card: "Single",
-        req: false,
-        src: "Buyer",
-        vals: "—",
-        def: "No measurements",
-        cond: "Demo — no-shape → empty axes (DimensionField renders no inputs).",
         ui: dimensionUi("no-shape", null),
       },
       {
         n: "Size mode (Tin)",
-        type: "Radio + picklist",
-        card: "Single",
-        req: true,
-        src: "Buyer",
-        vals: "Stock size / Custom",
-        def: "Stock",
-        cond: "Tin only. Custom routes to specialist.",
         ui: {
           kind: "radioPick",
           choices: ["Stock size", "Custom"],
@@ -170,13 +124,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Board caliper",
-        type: "Spec table",
-        card: "Single",
-        req: false,
-        src: "Buyer",
-        vals: "pt / gsm by board family",
-        def: "SBS",
-        cond: "Demo control — Property / Property Value presentation; not a live mapping rule.",
         ui: {
           kind: "specTable",
           segments: [
@@ -199,13 +146,6 @@ export const CATS: Category[] = [
     opts: [
       {
         n: "Material",
-        type: "List",
-        card: "Single per type",
-        req: false,
-        src: "Buyer",
-        vals: "per line/style/product",
-        def: "—",
-        cond: "List depends on Product Line / Style / Product; refer to Products &lt;&gt; Materials mapping.",
         ui: {
           kind: "listbox",
           value: "",
@@ -226,13 +166,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Thickness",
-        type: "Radio",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "per material",
-        def: "—",
-        cond: "List depends on Material Type &amp; gated by Product Style.",
         ui: {
           kind: "radio",
           choices: ["12 pt", "16 pt", "18 pt", "24 pt"],
@@ -241,13 +174,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Board color",
-        type: "Swatch",
-        card: "Single",
-        req: false,
-        src: "Buyer",
-        vals: "White / Kraft / Black",
-        def: "White",
-        cond: "Demo control — Property / Property Value presentation; not a live mapping rule.",
         ui: {
           kind: "swatch",
           value: "white",
@@ -260,13 +186,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Corrugated flute",
-        type: "Card grid",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "E / B / C flute",
-        def: "E",
-        cond: "Demo control — Property / Property Value presentation; not a live mapping rule.",
         ui: {
           kind: "cardGrid",
           value: "e",
@@ -286,18 +205,6 @@ export const CATS: Category[] = [
     opts: [
       {
         n: "Printed Side",
-        type: "Toggle",
-        card: "Single per toggle",
-        req: true,
-        src: "Buyer",
-        vals: "Yes / No",
-        def: "Yes (Print Outside only)",
-        cond: `<ul>
-      <li>Only show the “Print Outside” toggle for: Tin, Pouches, Mailers, Cotton &amp; Canvas Tote Bags (Style), Reusable Shopping Bags (Style), Insulated Cooler Bags (Style)</li>
-      <li>Only show a “Printed?: Yes/No” toggle for Labels, Stickers, Accessories, Cardboard Insert (Style)</li>
-      <li>For Product Styles: Foam Inserts, Molded Pulp Inserts, Plastic Tray Inserts, which cannot be printed, this part does not exist</li>
-      <li><b>If user chooses “No” for all toggles, hides all other printing options below.</b></li>
-    </ul>`,
         uiCap: "Standard — most products & styles",
         ui: {
           kind: "toggles",
@@ -314,13 +221,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Printing Method",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Offset / Digital / Flexo / Roto, etc.",
-        def: "—",
-        cond: "List depends on Materials &amp; Product Line/Style; refer to Material/Product &lt;&gt; Printing Method mapping.",
         ui: {
           kind: "listbox",
           value: "",
@@ -337,13 +237,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Color System",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "CMYK Full Color / Pantone Spot Color / Hybrid Color (CMYK + Pantone)",
-        def: "—",
-        cond: "List gated by chosen Printing Method.",
         ui: {
           kind: "listbox",
           value: "",
@@ -356,35 +249,14 @@ export const CATS: Category[] = [
       },
       {
         n: "Pantone Count",
-        type: "Stepper",
-        card: "Single",
-        req: false,
-        src: "Buyer",
-        vals: "1 / 2 / 3 (Max)",
-        def: "1",
-        cond: "Shown only if chosen Color System = Pantone / Hybrid. Max 3.",
         ui: { kind: "stepper", value: 1, max: 3 },
       },
       {
         n: "Pantone (PMS) codes",
-        type: "Text (repeatable)",
-        card: "Multi",
-        req: false,
-        src: "Buyer",
-        vals: "PMS code entries",
-        def: "—",
-        cond: "One entry per Pantone count.",
         ui: { kind: "repeat", placeholder: "e.g. PMS 185 C" },
       },
       {
         n: "Ink",
-        type: "List",
-        card: "Multi",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Water-based / Soy-based / Solvent-based, etc.",
-        def: "—",
-        cond: "List depends on Materials, gated by chosen Printing Method.",
         ui: {
           kind: "listbox",
           multi: true,
@@ -407,13 +279,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Ink set (chips)",
-        type: "Chip",
-        card: "Multi",
-        req: false,
-        src: "Buyer",
-        vals: "Water / Soy / UV / Metallic",
-        def: "—",
-        cond: "Demo control — Property / Property Value presentation; not a live mapping rule.",
         ui: {
           kind: "chip",
           valuesPerItem: "many",
@@ -435,13 +300,6 @@ export const CATS: Category[] = [
     opts: [
       {
         n: "Surface Finish",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer",
-        vals: "Uncoated / Gloss / Matte / Soft Touch, etc.",
-        def: "—",
-        cond: "List depends on Materials.",
         ui: {
           kind: "listbox",
           value: "",
@@ -462,13 +320,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Spot Coating",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Spot UV/Spot Gloss, Matte Spot UV, Spot Glitter, Raised Spot UV, Textured Spot UV",
-        def: "—",
-        cond: "List gated by chosen Surface Finish.",
         ui: {
           kind: "listbox",
           value: "",
@@ -483,15 +334,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Foiling",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Hot Foil Stamping, Cold Foiling, Edge Foiling / Gilt Edging",
-        def: "—",
-        cond: `List depends on Materials.<ul class="sub">
-      <li>Foam materials can only be compatible with foiling when Flocking / Paper Lamination / Leather Lamination is chosen.</li>
-    </ul>`,
         ui: {
           kind: "listbox",
           value: "",
@@ -504,18 +346,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Embossing & Debossing",
-        type: "List",
-        card: "Multi",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Blind Embossing, Blind Debossing, Registered Embossing, etc.",
-        def: "—",
-        cond: `List depends on Materials.<ul class="sub">
-      <li>Foam materials can only be compatible with embossing/debossing when Paper Lamination / Leather Lamination is chosen.</li>
-      <li>All debossing options not compatible with Soft Touch surface finish.</li>
-      <li>“Textured Embossing &amp; Debossing” incompatible with all other embossing &amp; debossing options.</li>
-      <li>“Textured Embossing &amp; Debossing” is only compatible with the “Uncoated” surface finish.</li>
-    </ul>`,
         ui: {
           kind: "listbox",
           multi: true,
@@ -538,13 +368,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Food-Safe Treatment",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Food-Grade Material, Internal PE Lining, Internal Aqueous Lining, Wax Coating, Food-Grade Lacquer",
-        def: "—",
-        cond: "List depends on Product Line/Style.",
         ui: {
           kind: "listbox",
           value: "",
@@ -566,13 +389,6 @@ export const CATS: Category[] = [
     opts: [
       {
         n: "Handles",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Twisted Paper Handle, Flat Paper Handle, Diecut Handle, Satin Ribbon Handle, etc.",
-        def: "—",
-        cond: "List depends on Product Style.",
         ui: {
           kind: "listbox",
           value: "",
@@ -591,13 +407,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Opening & Access",
-        type: "List",
-        card: "Multi",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Ribbon Pull Tabs, Plastic Knob, Thumb Notch, Tear Strip, etc.",
-        def: "—",
-        cond: "List depends on Product Style.",
         ui: {
           kind: "listbox",
           multi: true,
@@ -617,13 +426,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Closures",
-        type: "List",
-        card: "Multi",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Velcro, Magnetic Closure, Standard Zipper, Tin Tie, etc.",
-        def: "—",
-        cond: "List depends on Product Style.",
         ui: {
           kind: "listbox",
           multi: true,
@@ -644,13 +446,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Windows",
-        type: "List",
-        card: "Single",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Window Patching, Diecut Window, Pouch Window",
-        def: "—",
-        cond: "List depends on Product Style.",
         ui: {
           kind: "listbox",
           value: "",
@@ -659,13 +454,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Reinforcement & Utility",
-        type: "List",
-        card: "Multi",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Paper Wallet, Sleeve Pocket, Bubble Lining, Hang Hole, etc.",
-        def: "—",
-        cond: "List depends on Product Style.",
         ui: {
           kind: "listbox",
           multi: true,
@@ -683,13 +471,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Embellishment",
-        type: "List",
-        card: "Multi",
-        req: false,
-        src: "Buyer + confirm",
-        vals: "Metal Plaque, Mirror, Embedded LED Lighting, Sound Module",
-        def: "—",
-        cond: "List depends on Product Style.",
         ui: {
           kind: "listbox",
           multi: true,
@@ -704,13 +485,6 @@ export const CATS: Category[] = [
       },
       {
         n: "Need help?",
-        type: "Link out",
-        card: "Single",
-        req: false,
-        src: "Buyer",
-        vals: "Reference links",
-        def: "—",
-        cond: "Demo control — Property / Property Value presentation; not a live mapping rule.",
         ui: {
           kind: "linkOut",
           links: [

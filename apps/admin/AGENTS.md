@@ -227,15 +227,17 @@ PROD-2614. The customer-facing view of the same rules, for staff: **read-only un
 
 ## Customization Library
 
-Staff gallery for shared configurator UI and draft build-spec logic (PROD-1299 / related).
-
 | Route | Role today |
 | --- | --- |
-| `/customization-library/property-controls` | React port of the draft HTML explorer (catalog Type panels, sandbox L1–L15, rules) |
+| `/customization-library/property-controls` | **Control gallery** — every shared `PropertyController` kind with demo values ([`control-gallery.tsx`](src/components/customization-library/control-gallery.tsx), data in [`lib/customization/control-gallery-data.ts`](src/lib/customization/control-gallery-data.ts)). A design reference, **not rules**. |
 
-**Structure map:** [`docs/configurator-html-structure.md`](docs/configurator-html-structure.md) — HTML Category → “Option” row (`ui.kind` + `cond`) maps to Studio **Category → Type** (list choices ≈ Options); separate sandbox (`S` / L1–L15); DEPS reference only. The iframe Configurator Logic route is removed; Property Controls hosts the React port.
+Formerly **Property Controls**, a React port of the draft HTML explorer with its own catalog rows, a sandbox that applied hand-written rules L1–L15, and DEPS/LOGIC tables. Retired 2026-09-28 (PROD-2614, agreed with Richard Chang):
 
-Static HTML reference (kept for now): [`public/customization-logic-explorer.html`](public/customization-logic-explorer.html). Shared field dispatcher: `@pakfactory/ui` `PropertyController` (admin `CatalogControl` re-exports it).
+- the sandbox → **Spec System → Products → Configure as a customer**, on Sanity + the shared rules package (the storefront builder's own call);
+- the L1–L15 rules → **Spec System → Current rules → Old explorer rules**, each with where it stands now; rules Sanity does not model are not reimplemented;
+- deleted: `rules-data.ts`, `sandbox-engine.ts`, the sandbox/rules/catalog sections, the rule text in the gallery data, and `public/customization-logic-explorer.html`.
+
+The old structure map ([`docs/configurator-html-structure.md`](docs/configurator-html-structure.md)) is kept as history. Shared field dispatcher: `@pakfactory/ui` `PropertyController` (admin `CatalogControl` re-exports it).
 
 ## Troubleshooting
 

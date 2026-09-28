@@ -86,7 +86,7 @@ const NAV: readonly NavEntry[] = [
     children: [
       {
         href: "/customization-library/property-controls",
-        label: "Property Controls",
+        label: "Control gallery",
         match: (path) =>
           path === "/customization-library/property-controls" ||
           path.startsWith("/customization-library/property-controls/"),

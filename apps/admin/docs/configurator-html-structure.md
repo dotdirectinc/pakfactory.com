@@ -1,5 +1,7 @@
 # Configurator HTML — structure map
 
+> **Retired 2026-09-28 (PROD-2614).** The HTML explorer, its React port's sandbox (L1–L15) and rule tables are deleted; the rules now come from Sanity through the shared package. See Spec System → Products (configure as a customer) and Current rules → Old explorer rules. `/customization-library/property-controls` is now a Control gallery of the shared controls only. The map below is kept as history; the files it names no longer exist.
+
 Source of truth for the draft explorer; **Property Controls** is the React port.
 
 | | |
