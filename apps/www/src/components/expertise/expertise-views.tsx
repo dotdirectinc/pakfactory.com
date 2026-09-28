@@ -68,6 +68,7 @@ export function ExpertiseCatalogView({
             <PageHeadingSection
                 title="Expertise"
                 description="Packaging expertise across design, prototyping, manufacturing, strategy, logistics, and fulfillment."
+                settle
             />
             <PageDielineSection innerClassName="pb-24 pt-8">
                 {stages.length === 0 ? (

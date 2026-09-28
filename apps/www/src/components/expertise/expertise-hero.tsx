@@ -3,8 +3,10 @@ import Link from 'next/link';
 import {ArrowRight} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
+import {headingSettleProps} from '@/lib/ui/heading-settle';
 
 export type ExpertiseHeroProps = {
     eyebrow?: string;
@@ -32,24 +34,57 @@ export function ExpertiseHero({
     secondaryCta,
     image,
 }: ExpertiseHeroProps) {
+    let step = 0;
+    const nextSettle = () => headingSettleProps(step++);
+
+    const eyebrowSettle = eyebrow ? nextSettle() : {};
+    const titleSettle = nextSettle();
+    const subheadSettle = subhead ? nextSettle() : {};
+    const ctaSettle = nextSettle();
+    const imageSettle = image ? nextSettle() : {};
+
     return (
         <header>
             <PageDielineSection paddingBlock="none" innerClassName="pb-16 pt-22">
                 <div className="flex max-w-252 flex-col gap-6">
                     {eyebrow ? (
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        <p
+                            className={cn(
+                                'text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground',
+                                eyebrowSettle.className,
+                            )}
+                            style={eyebrowSettle.style}
+                        >
                             {eyebrow}
                         </p>
                     ) : null}
-                    <h1 className="text-[clamp(2.5rem,5.5vw,4.5rem)] font-medium leading-[1.05] tracking-[-0.03em] text-foreground">
+                    <h1
+                        className={cn(
+                            'text-[clamp(2.5rem,5.5vw,4.5rem)] font-medium leading-[1.05] tracking-[-0.03em] text-foreground',
+                            titleSettle.className,
+                        )}
+                        style={titleSettle.style}
+                    >
                         {title}
                     </h1>
                     {subhead ? (
-                        <p className="max-w-190 text-xl leading-9 text-muted-foreground">
+                        <p
+                            className={cn(
+                                'max-w-190 text-xl leading-9 text-muted-foreground',
+                                subheadSettle.className,
+                            )}
+                            style={subheadSettle.style}
+                        >
                             {subhead}
                         </p>
                     ) : null}
-                    <div className="mt-2 flex flex-wrap items-center gap-x-8 gap-y-4">
+                    <div
+                        className={cn(
+                            'mt-2 flex flex-wrap items-center gap-x-8 gap-y-4',
+                            ctaSettle.className,
+                        )}
+                        style={ctaSettle.style}
+                    >
                         <Button asChild size="xl">
                             <Link href={primaryCta.href}>{primaryCta.label}</Link>
                         </Button>
@@ -70,7 +105,13 @@ export function ExpertiseHero({
             </PageDielineSection>
             {image ? (
                 <PageDielineSection borderTop paddingBlock="none" flush>
-                    <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
+                    <div
+                        className={cn(
+                            'relative aspect-[21/9] w-full overflow-hidden bg-muted',
+                            imageSettle.className,
+                        )}
+                        style={imageSettle.style}
+                    >
                         <Image
                             src={image.src}
                             alt={image.alt}

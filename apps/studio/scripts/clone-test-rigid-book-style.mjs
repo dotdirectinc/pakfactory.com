@@ -3,7 +3,11 @@
  * Clone a minimal [Test] Rigid Boxes experience on a dataset:
  *   1 productLine  → [Test] Rigid Boxes / test-rigid-boxes
  *   1 productStyle → [Test] Book Style Rigid Boxes / test-book-style-rigid-boxes
- *   3 standard products under that style
+ *   First 6 published standard products on the source Rigid Boxes line
+ *
+ * Cloned products get a shared kraft mock as featuredImage + sole media
+ * (apps/www/public/products/rigid-boxes/mock-rigid-box.png) and a shared
+ * hover MP4 as featuredVideo (…/hero-scrub.mp4).
  *
  * Customization options are NOT cloned — products keep live
  * availableCustomizations / customizationExceptions refs.
@@ -21,11 +25,12 @@
  *   pnpm --filter @pakfactory/studio run clone:test-rigid-book-style -- --dataset production --confirm --yes-production
  *
  * Cleanup (human):
- *   *[_id in ["line.test-rigid-boxes","style.test-book-style-rigid-boxes"] || _id match "product.test-custom-book-style*" || _id match "product.test-custom-fitted-insert*"]
+ *   *[_id in ["line.test-rigid-boxes","style.test-book-style-rigid-boxes"] || _id match "product.test-*"]
  */
 
 import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
+import { createReadStream, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseScriptArgs, describeMode } from './lib/script-args.mjs'
@@ -79,15 +84,18 @@ const client = createClient({
 /** Source documents (published) on development as of the clone plan. */
 const SOURCE_LINE_ID = 'line-3c0eb5db19ec8032b295ebc618320e76'
 const SOURCE_STYLE_ID = 'style-3c0eb5db19ec80c7a144ec5f85cceffd'
-/** First three published standard products under Book Style, by title. */
-const SOURCE_PRODUCT_IDS = [
-  'product-529eb5db19ec82d79a6181b63c063497', // Buffer Wall Tray
-  'product-ff1eb5db19ec834b97de81a5547c9f5b', // Display Window
-  'product-758eb5db19ec83fb9e1201a27c1cb00b', // Fitted Insert
-]
+/** How many standard products on the source line to clone (hero marquee density). */
+const PRODUCT_CLONE_COUNT = 6
 
 const CLONE_LINE_ID = 'line.test-rigid-boxes'
 const CLONE_STYLE_ID = 'style.test-book-style-rigid-boxes'
+
+const PUBLIC_DIR = join(repoRoot, 'apps/www/public')
+/** Shared kraft still for all cloned product featuredImage + media[0]. */
+const MOCK_IMAGE_REL = 'products/rigid-boxes/mock-rigid-box.png'
+const MOCK_IMAGE_ALT = 'Kraft rigid box with lid floating above base'
+/** Shared hover-play MP4 for cloned product featuredVideo. */
+const MOCK_VIDEO_REL = 'products/rigid-boxes/hero-scrub.mp4'
 
 const SYSTEM_KEYS = new Set([
   '_id',
@@ -99,7 +107,7 @@ const SYSTEM_KEYS = new Set([
 ])
 
 const CLEANUP_GROQ =
-  '*[_id in ["line.test-rigid-boxes","style.test-book-style-rigid-boxes"] || _id match "product.test-custom-book-style*" || _id match "product.test-custom-fitted-insert*"]'
+  '*[_id in ["line.test-rigid-boxes","style.test-book-style-rigid-boxes"] || _id match "product.test-*"]'
 
 function withTestTitle(value) {
   if (typeof value !== 'string' || !value.trim()) return value
@@ -146,9 +154,99 @@ function ref(id) {
   return { _type: 'reference', _ref: id }
 }
 
+function imageField(assetId, alt, key) {
+  return {
+    _type: 'image',
+    ...(key ? { _key: key } : {}),
+    asset: { _type: 'reference', _ref: assetId },
+    ...(alt ? { alt } : {}),
+  }
+}
+
+function fileField(assetId) {
+  return {
+    _type: 'file',
+    asset: { _type: 'reference', _ref: assetId },
+  }
+}
+
+/** @type {Map<string, string>} */
+const assetCache = new Map()
+
+/**
+ * Resolve a local public image to a Sanity image asset id.
+ * Dry-run: verify file exists; look up existing by filename; do not upload.
+ * Confirm: upload when missing.
+ */
+async function resolveImageAsset(relativePath, { upload }) {
+  if (assetCache.has(relativePath)) return assetCache.get(relativePath)
+  const abs = join(PUBLIC_DIR, relativePath)
+  if (!existsSync(abs)) {
+    throw new Error(`Missing asset file: ${abs}`)
+  }
+  const filename = relativePath.split('/').pop()
+  const existing = await client.fetch(
+    `*[_type == "sanity.imageAsset" && originalFilename == $filename][0]._id`,
+    { filename },
+  )
+  if (existing) {
+    assetCache.set(relativePath, existing)
+    return existing
+  }
+  if (!upload) {
+    return null
+  }
+  const doc = await client.assets.upload('image', createReadStream(abs), {
+    filename,
+  })
+  assetCache.set(relativePath, doc._id)
+  return doc._id
+}
+
+/**
+ * Resolve a local public file (e.g. MP4) to a Sanity file asset id.
+ */
+async function resolveFileAsset(relativePath, { upload }) {
+  const cacheKey = `file:${relativePath}`
+  if (assetCache.has(cacheKey)) return assetCache.get(cacheKey)
+  const abs = join(PUBLIC_DIR, relativePath)
+  if (!existsSync(abs)) {
+    throw new Error(`Missing asset file: ${abs}`)
+  }
+  const filename = relativePath.split('/').pop()
+  const existing = await client.fetch(
+    `*[_type == "sanity.fileAsset" && originalFilename == $filename][0]._id`,
+    { filename },
+  )
+  if (existing) {
+    assetCache.set(cacheKey, existing)
+    return existing
+  }
+  if (!upload) {
+    return null
+  }
+  const doc = await client.assets.upload('file', createReadStream(abs), {
+    filename,
+    contentType: 'video/mp4',
+  })
+  assetCache.set(cacheKey, doc._id)
+  return doc._id
+}
+
 async function main() {
   console.log(`\nClone [Test] Rigid Boxes / Book Style — ${describeMode(args)}\n`)
   console.log(`project ${PROJECT_ID} / dataset ${DATASET}`)
+
+  const mockAbs = join(PUBLIC_DIR, MOCK_IMAGE_REL)
+  if (!existsSync(mockAbs)) {
+    console.error(`❌  Missing mock image: ${mockAbs}`)
+    process.exit(1)
+  }
+  const videoAbs = join(PUBLIC_DIR, MOCK_VIDEO_REL)
+  if (!existsSync(videoAbs)) {
+    console.error(`❌  Missing mock video: ${videoAbs}`)
+    process.exit(1)
+  }
 
   const line = await client.fetch(`*[_id == $id][0]`, { id: SOURCE_LINE_ID })
   if (!line) {
@@ -163,14 +261,53 @@ async function main() {
   }
 
   const products = await client.fetch(
-    `*[_id in $ids] | order(title asc)`,
-    { ids: SOURCE_PRODUCT_IDS },
+    `*[
+      _type == "product" &&
+      kind == "standard" &&
+      productLine._ref == $lineId &&
+      !(_id in path("drafts.**")) &&
+      defined(slug.current)
+    ] | order(title asc) [0...$count]`,
+    { lineId: SOURCE_LINE_ID, count: PRODUCT_CLONE_COUNT },
   )
-  if (products.length !== SOURCE_PRODUCT_IDS.length) {
-    const found = new Set(products.map((p) => p._id))
-    const missing = SOURCE_PRODUCT_IDS.filter((id) => !found.has(id))
-    console.error(`❌  Missing products: ${missing.join(', ')}`)
+  if (products.length === 0) {
+    console.error(
+      `❌  No standard products on line ${SOURCE_LINE_ID} to clone.`,
+    )
     process.exit(1)
+  }
+  if (products.length < PRODUCT_CLONE_COUNT) {
+    console.warn(
+      `⚠️  Only ${products.length} standard product(s) found (wanted ${PRODUCT_CLONE_COUNT}).`,
+    )
+  }
+
+  const existingImageId = await resolveImageAsset(MOCK_IMAGE_REL, {
+    upload: false,
+  })
+  console.log(`\nMock image: ${MOCK_IMAGE_REL}`)
+  if (existingImageId) {
+    console.log(`  will reuse asset ${existingImageId}`)
+  } else {
+    console.log(
+      apply
+        ? '  will upload (not yet in dataset)'
+        : '  will upload on --confirm (not yet in dataset)',
+    )
+  }
+
+  const existingVideoId = await resolveFileAsset(MOCK_VIDEO_REL, {
+    upload: false,
+  })
+  console.log(`Mock video: ${MOCK_VIDEO_REL}`)
+  if (existingVideoId) {
+    console.log(`  will reuse asset ${existingVideoId}`)
+  } else {
+    console.log(
+      apply
+        ? '  will upload (not yet in dataset)'
+        : '  will upload on --confirm (not yet in dataset)',
+    )
   }
 
   const lineClone = applyTestLabels(cloneDocBody(line))
@@ -181,6 +318,67 @@ async function main() {
   styleClone._id = CLONE_STYLE_ID
   styleClone._type = 'productStyle'
   styleClone.productLine = ref(CLONE_LINE_ID)
+
+  /** @type {{ kind: string, id: string, detail: string }[]} */
+  const planned = [
+    {
+      kind: 'createOrReplace',
+      id: lineClone._id,
+      detail: `${lineClone.title} → /products/${lineClone.slug.current}`,
+    },
+    {
+      kind: 'createOrReplace',
+      id: styleClone._id,
+      detail: `${styleClone.title} → …/${styleClone.slug.current}`,
+    },
+  ]
+
+  console.log(`\nSource line:   ${line.title} (${line._id})`)
+  console.log(`Source style:  ${style.title} (${style._id})`)
+  console.log(`Source products (${products.length}):`)
+  for (const p of products) {
+    console.log(`  - ${p.title} (${p._id})`)
+  }
+
+  if (!apply) {
+    for (const product of products) {
+      const sourceSlug = product.slug?.current
+      if (!sourceSlug) {
+        console.error(`❌  Product ${product._id} has no slug`)
+        process.exit(1)
+      }
+      const clone = applyTestLabels(cloneDocBody(product))
+      planned.push({
+        kind: 'createOrReplace',
+        id: cloneIdForProduct(sourceSlug),
+        detail: `${clone.title} → /products/${withTestSlug(sourceSlug)} (kraft image + hover video)`,
+      })
+    }
+
+    console.log(`\nPlanned writes (${planned.length}):`)
+    for (const row of planned) {
+      console.log(`  ${row.kind.padEnd(14)} ${row.id} — ${row.detail}`)
+    }
+    console.log(`\nCleanup: ${CLEANUP_GROQ}`)
+    console.log(
+      `\n${planned.length} write(s) pending on ${DATASET}. DRY-RUN — re-run with \`--confirm\`.\n`,
+    )
+    return
+  }
+
+  const imageId = await resolveImageAsset(MOCK_IMAGE_REL, { upload: true })
+  if (!imageId) {
+    console.error('❌  Failed to resolve mock image asset')
+    process.exit(1)
+  }
+  console.log(`  using image asset ${imageId}`)
+
+  const videoId = await resolveFileAsset(MOCK_VIDEO_REL, { upload: true })
+  if (!videoId) {
+    console.error('❌  Failed to resolve mock video asset')
+    process.exit(1)
+  }
+  console.log(`  using video asset ${videoId}`)
 
   const productClones = products.map((product) => {
     const sourceSlug = product.slug?.current
@@ -195,34 +393,19 @@ async function main() {
     // Drop live sibling styles (e.g. Rigid Window Boxes on the display-window
     // product) so the test product only appears under the cloned Book Style.
     clone.productStyle = [ref(CLONE_STYLE_ID)]
+    clone.featuredImage = imageField(imageId, MOCK_IMAGE_ALT)
+    clone.media = [imageField(imageId, MOCK_IMAGE_ALT, 'media-mock-0')]
+    clone.featuredVideo = fileField(videoId)
     // availableCustomizations / customizationExceptions stay on live options.
     return clone
   })
 
-  /** @type {{ kind: string, id: string, detail: string }[]} */
-  const planned = [
-    {
-      kind: 'createOrReplace',
-      id: lineClone._id,
-      detail: `${lineClone.title} → /products/${lineClone.slug.current}`,
-    },
-    {
-      kind: 'createOrReplace',
-      id: styleClone._id,
-      detail: `${styleClone.title} → …/${styleClone.slug.current}`,
-    },
-    ...productClones.map((p) => ({
+  for (const p of productClones) {
+    planned.push({
       kind: 'createOrReplace',
       id: p._id,
-      detail: `${p.title} → /products/${p.slug.current}`,
-    })),
-  ]
-
-  console.log(`\nSource line:   ${line.title} (${line._id})`)
-  console.log(`Source style:  ${style.title} (${style._id})`)
-  console.log(`Source products (${products.length}):`)
-  for (const p of products) {
-    console.log(`  - ${p.title} (${p._id})`)
+      detail: `${p.title} → /products/${p.slug.current} (kraft image + hover video)`,
+    })
   }
 
   console.log(`\nPlanned writes (${planned.length}):`)
@@ -230,13 +413,6 @@ async function main() {
     console.log(`  ${row.kind.padEnd(14)} ${row.id} — ${row.detail}`)
   }
   console.log(`\nCleanup: ${CLEANUP_GROQ}`)
-
-  if (!apply) {
-    console.log(
-      `\n${planned.length} write(s) pending on ${DATASET}. DRY-RUN — re-run with \`--confirm\`.\n`,
-    )
-    return
-  }
 
   const tx = client.transaction()
   tx.createOrReplace(lineClone)

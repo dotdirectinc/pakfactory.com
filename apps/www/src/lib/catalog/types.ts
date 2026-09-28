@@ -116,6 +116,10 @@ export type Product = {
     sku: string;
     kind: ProductKind;
     media: CatalogMedia[];
+    /**
+     * Hover-play MP4 from Sanity `featuredVideo` (product-line hero marquee).
+     */
+    featuredVideoUrl?: string | null;
     description: string;
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;
@@ -186,9 +190,19 @@ export type ProductLine = {
     metaDescription?: string;
     imageUrl?: string | null;
     imageAlt?: string;
-    /** Kit-mark icon above the landing H1. */
-    kitMarkUrl?: string | null;
-    kitMarkAlt?: string;
+    /**
+     * Featured hero MP4 from Sanity `featuredVideo`. Used for bottomBar
+     * marquee hover-play; stack shows a static featured image.
+     */
+    featuredVideoUrl?: string | null;
+    /**
+     * Landing hero chrome. `stack` (default) = featured icon + copy above media;
+     * `bottomBar` = media-first with icon/copy/CTAs along the bottom.
+     */
+    heroLayout?: 'stack' | 'bottomBar';
+    /** Featured icon on the landing hero (Sanity field `kitMark`). */
+    featuredIconUrl?: string | null;
+    featuredIconAlt?: string;
     /** Ordered hero frames from Sanity `media` (featured image is separate). */
     frames?: ProductLineFrame[];
     expertise?: ProductLineExpertiseRef[];

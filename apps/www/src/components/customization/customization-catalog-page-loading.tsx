@@ -36,6 +36,7 @@ export function CustomizationCatalogPageChrome({
                 title={title}
                 description={description}
                 borderBottom={false}
+                settle
             />
         </>
     );

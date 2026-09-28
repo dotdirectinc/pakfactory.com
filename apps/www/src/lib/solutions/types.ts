@@ -151,7 +151,7 @@ export type SolutionHeroContent = {
     subtitle: string;
     cta: SolutionCta;
     secondaryCta?: SolutionCta;
-    kitMark?: SolutionMedia | null;
+    featuredIcon?: SolutionMedia | null;
     tiles: SolutionHeroTile[];
 };
 

@@ -315,6 +315,9 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
         media: mediaFromSanity(doc.media, doc.title),
+        ...(doc.featuredVideoUrl?.trim()
+            ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
+            : {}),
         productLine,
         productStyle,
         availableCustomizations,
@@ -452,10 +455,14 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
     }
 
     const {imageUrl, imageAlt} = cardImageFromSanity(doc.cardImage, doc.title);
-    const {imageUrl: kitMarkUrl, imageAlt: kitMarkAlt} = cardImageFromSanity(
-        doc.kitMark,
-        `${doc.title} kit mark`,
-    );
+    const featuredVideoUrl = doc.featuredVideoUrl?.trim() || null;
+    const heroLayoutRaw = doc.heroLayout?.trim();
+    const heroLayout =
+        heroLayoutRaw === 'bottomBar' || heroLayoutRaw === 'stack'
+            ? heroLayoutRaw
+            : undefined;
+    const {imageUrl: featuredIconUrl, imageAlt: featuredIconAlt} =
+        cardImageFromSanity(doc.kitMark, `${doc.title} featured icon`);
 
     const frames: ProductLineFrame[] = [];
     for (const item of doc.media ?? []) {
@@ -564,7 +571,9 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         ...(metaTitle ? {metaTitle} : {}),
         ...(metaDescription ? {metaDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
-        ...(kitMarkUrl ? {kitMarkUrl, kitMarkAlt} : {}),
+        ...(featuredVideoUrl ? {featuredVideoUrl} : {}),
+        ...(heroLayout ? {heroLayout} : {}),
+        ...(featuredIconUrl ? {featuredIconUrl, featuredIconAlt} : {}),
         ...(frames.length > 0 ? {frames} : {}),
         ...(expertise.length > 0 ? {expertise} : {}),
         ...(featuredStudies.length > 0 ? {featuredStudies} : {}),

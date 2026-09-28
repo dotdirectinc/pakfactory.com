@@ -110,6 +110,9 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
   "slug": slug.current
 }`;
 
+/** Hover-play / hero MP4 URL from product `featuredVideo`; empty when unset. */
+const PRODUCT_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
+
 /** Shared product projection used by by-slug and list queries. */
 export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   _id,
@@ -123,6 +126,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   dimensionInput,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
+  ${PRODUCT_FEATURED_VIDEO},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -148,6 +152,7 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   status,
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
+  ${PRODUCT_FEATURED_VIDEO},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -273,10 +278,14 @@ const LINE_FEATURED_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, car
   "alt": ${IMAGE_ALT}
 }`;
 
-const LINE_KIT_MARK = /* groq */ `kitMark{
+/** CMS field remains `kitMark`; app maps to featuredIcon*. */
+const LINE_FEATURED_ICON = /* groq */ `kitMark{
   ...,
   "alt": ${IMAGE_ALT}
 }`;
+
+/** Desktop scroll-scrub hero MP4; empty when unset. */
+const LINE_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
 
 /** Shared projection for list + single-line fetches (PROD-1914 landing). */
 export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
@@ -288,7 +297,9 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   shortDescription,
   "description": pt::text(description),
   ${LINE_FEATURED_IMAGE},
-  ${LINE_KIT_MARK},
+  ${LINE_FEATURED_VIDEO},
+  heroLayout,
+  ${LINE_FEATURED_ICON},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -777,6 +788,8 @@ export type CatalogProductDoc = {
     depthMax?: number | null;
   } | null;
   primarySolution?: string | null;
+  /** Hover-play MP4 URL from `featuredVideo`. */
+  featuredVideoUrl?: string | null;
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
@@ -832,7 +845,11 @@ export type CatalogProductLineDoc = {
   description?: string | null;
   /** Featured image cascade: featuredImage → cardImage → heroMedia. */
   cardImage?: unknown | null;
-  /** Kit-mark icon above the landing H1. */
+  /** Desktop scroll-scrub hero MP4 URL from `featuredVideo`. */
+  featuredVideoUrl?: string | null;
+  /** Hero chrome: `stack` | `bottomBar`. */
+  heroLayout?: string | null;
+  /** Featured icon (CMS field name `kitMark`). */
   kitMark?: unknown | null;
   media?: unknown[] | null;
   metaTitle?: string | null;

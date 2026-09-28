@@ -29,10 +29,13 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
                 intro={model.intro}
                 frames={model.frames}
                 heroMode={model.heroMode}
+                heroLayout={model.heroLayout}
                 featuredImageUrl={model.featuredImageUrl}
                 featuredImageAlt={model.featuredImageAlt}
-                kitMarkUrl={model.kitMarkUrl}
-                kitMarkAlt={model.kitMarkAlt}
+                featuredVideoUrl={model.featuredVideoUrl}
+                featuredIconUrl={model.featuredIconUrl}
+                featuredIconAlt={model.featuredIconAlt}
+                products={line.products}
                 hasStyles={Boolean(model.styles)}
             />
 

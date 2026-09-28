@@ -60,11 +60,11 @@ export function buildSolutionHeroContent(
     heroProducts: Product[] = [],
 ): SolutionHeroContent {
     const hasFeatured = Boolean(page.featuredImageUrl);
-    const kitMark = {
+    const featuredIcon = {
         src: page.featuredImageUrl ?? '/solutions/hero-kit-placeholder.svg',
         alt: hasFeatured
             ? page.featuredImageAlt || page.h1
-            : `${page.h1} kit mark placeholder`,
+            : `${page.h1} featured icon placeholder`,
     };
 
     return {
@@ -79,7 +79,7 @@ export function buildSolutionHeroContent(
             label: 'Get a quote',
             href: WWW_ROUTES.request,
         },
-        kitMark,
+        featuredIcon,
         tiles: productsToHeroTiles(heroProducts),
     };
 }

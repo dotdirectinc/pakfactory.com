@@ -112,6 +112,7 @@ export function SolutionLandingView({
                     description={
                         solution.shortDescription || undefined
                     }
+                    settle
                 />
             )}
             {sections && sections.length > 0 ? (
