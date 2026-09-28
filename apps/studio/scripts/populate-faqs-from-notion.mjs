@@ -229,8 +229,8 @@ const rows = [...notion.rows].sort((a, b) => (a.createdTime ?? '').localeCompare
 const existing = await client.fetch(`{
   "faqs": *[_type == "faq"]{ _id, _rev, question },
   "helpCategories": *[_type == "helpCategory"]{ _id, _rev, title },
-  "lines": *[_type == "productLine"]{ _id, _rev, title, "n": count(faqs) },
-  "stages": *[_type == "expertiseStage"]{ _id, _rev, title, "n": count(faqs) }
+  "lines": *[_type == "productLine"]{ _id, _rev, title, "n": count(faqs), "wrongType": count(faqs[_type != "faqRef"]) },
+  "stages": *[_type == "expertiseStage"]{ _id, _rev, title, "n": count(faqs), "wrongType": count(faqs[_type != "faqRef"]) }
 }`)
 
 const problems = []
@@ -314,10 +314,13 @@ const deleting = new Set([...deleteFaqs, ...deleteCategories].map((d) => d._id))
 
 // The pages whose `faqs` this script owns outright — replaced wholesale, drafts included.
 const listPatches = []
-const refList = (ids) => ids.map((ref) => ({ _type: 'reference', _key: keyFor(ref.slice(4)), _ref: ref }))
+// `_type` must be the array member's NAME, not `reference`: faqsField declares the member as
+// `faqRef` (apps/studio/lib/faq-field.ts), and Studio rejects any other _type with "Item of type
+// reference not valid for this list". GROQ's `faqs[]->` follows _ref either way.
+const refList = (ids) => ids.map((ref) => ({ _type: 'faqRef', _key: keyFor(ref.slice(4)), _ref: ref }))
 for (const doc of [...existing.lines, ...existing.stages]) {
   const target = (byLine.get(publishedId(doc._id)) ?? byStage.get(publishedId(doc._id))) || null
-  if (target) listPatches.push({ id: doc._id, rev: doc._rev, title: doc.title, before: doc.n ?? 0, faqs: refList(target) })
+  if (target) listPatches.push({ id: doc._id, rev: doc._rev, title: doc.title, before: doc.n ?? 0, retype: doc.wrongType ?? 0, faqs: refList(target) })
   else if (doc.n) listPatches.push({ id: doc._id, rev: doc._rev, title: doc.title, before: doc.n, faqs: null })
 }
 const owned = new Set(listPatches.map((p) => p.id))
@@ -376,7 +379,9 @@ if (hasCategoryColumn) {
 console.log(`\nReplace faqs on ${plural(listPatches.length, 'page')}:`)
 for (const p of listPatches.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))) {
   const n = p.faqs?.length ?? 0
-  const flag = n > 6 ? '  ⚠️ over the 6-item limit' : n && n < 3 ? '  ⚠️ under the 3-item minimum' : ''
+  const flag =
+    (n > 6 ? '  ⚠️ over the 6-item limit' : n && n < 3 ? '  ⚠️ under the 3-item minimum' : '') +
+    (p.retype ? `  (retypes ${p.retype} item${p.retype === 1 ? '' : 's'} to faqRef)` : '')
   console.log(`          ${p.title.padEnd(28)} ${String(p.before).padStart(2)} → ${String(n).padStart(2)}  ${p.id}${flag}`)
 }
 if (unsetPatches.length) {
