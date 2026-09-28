@@ -198,6 +198,17 @@ export const product = defineType({
       description: 'The one image that represents this product — cards, listings, nav and the social fallback. Not part of the gallery.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
+    // Hover-play MP4 for catalog / product-line hero tiles. Role name mirrors
+    // Featured image and the same field on Product Line (line uses scroll-scrub).
+    defineField({
+      name: 'featuredVideo',
+      title: 'Featured video',
+      type: 'file',
+      group: GROUPS.content,
+      options: { accept: 'video/*' },
+      description:
+        'Optional hover-play MP4 for catalog / product-line hero tiles. Mobile and reduced-motion keep Featured image.',
+    }),
     defineField({
       name: 'media',
       title: 'Media',

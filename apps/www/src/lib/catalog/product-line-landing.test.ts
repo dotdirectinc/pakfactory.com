@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 import {
+    assembleHeroMediaCards,
     assembleProductLineLanding,
     resolveStyleCardImage,
     RIGID_BOXES_MOCK_FEATURE,
+    RIGID_BOXES_MOCK_FEATURED_VIDEO,
     RIGID_BOXES_MOCK_H1,
     RIGID_BOXES_MOCK_INTRO,
 } from './product-line-landing';
@@ -400,8 +402,75 @@ describe('assembleProductLineLanding', () => {
         );
         assert.equal(model.h1, RIGID_BOXES_MOCK_H1);
         assert.equal(model.intro, RIGID_BOXES_MOCK_INTRO);
-        assert.equal(model.kitMarkUrl, '/products/rigid-boxes/kit-mark.png');
+        assert.equal(model.featuredIconUrl, '/products/rigid-boxes/kit-mark.png');
         assert.equal(model.featuredImageUrl, '/products/rigid-boxes/feature.png');
+        assert.equal(model.featuredVideoUrl, RIGID_BOXES_MOCK_FEATURED_VIDEO);
+    });
+
+    it('prefers authored featured video over rigid-boxes mock', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'rigid-boxes',
+                title: 'Rigid Boxes',
+                featuredVideoUrl: 'https://cdn.example/hero-scrub.mp4',
+            }),
+        );
+        assert.equal(
+            model.featuredVideoUrl,
+            'https://cdn.example/hero-scrub.mp4',
+        );
+    });
+
+    it('leaves featured video empty for non-mock lines without authored video', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'folding-cartons',
+                title: 'Folding Cartons',
+            }),
+        );
+        assert.equal(model.featuredVideoUrl, null);
+    });
+
+    it('defaults rigid-boxes hero layout to bottomBar when unset', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'rigid-boxes',
+                title: 'Rigid Boxes',
+            }),
+        );
+        assert.equal(model.heroLayout, 'bottomBar');
+    });
+
+    it('defaults other lines to stack hero layout when unset', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'folding-cartons',
+                title: 'Folding Cartons',
+            }),
+        );
+        assert.equal(model.heroLayout, 'stack');
+    });
+
+    it('honors authored stack hero layout on rigid-boxes', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'rigid-boxes',
+                title: 'Rigid Boxes',
+                heroLayout: 'stack',
+            }),
+        );
+        assert.equal(model.heroLayout, 'stack');
+    });
+
+    it('honors authored bottomBar hero layout', () => {
+        const model = assembleProductLineLanding(
+            line({
+                slug: 'folding-cartons',
+                title: 'Folding Cartons',
+                heroLayout: 'bottomBar',
+            }),
+        );
+        assert.equal(model.heroLayout, 'bottomBar');
     });
 
     it('keeps an authored rigid-boxes H1', () => {
@@ -429,21 +498,21 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.intro, 'Short hero line.');
     });
 
-    it('prefers authored kit mark and featured image over rigid-boxes mocks', () => {
+    it('prefers authored featured icon and featured image over rigid-boxes mocks', () => {
         const model = assembleProductLineLanding(
             line({
                 slug: 'rigid-boxes',
                 title: 'Rigid Boxes',
                 imageUrl: 'https://cdn.example/hero.jpg',
                 imageAlt: 'Authored hero',
-                kitMarkUrl: 'https://cdn.example/mark.png',
-                kitMarkAlt: 'Authored mark',
+                featuredIconUrl: 'https://cdn.example/mark.png',
+                featuredIconAlt: 'Authored mark',
             }),
         );
         assert.equal(model.featuredImageUrl, 'https://cdn.example/hero.jpg');
         assert.equal(model.featuredImageAlt, 'Authored hero');
-        assert.equal(model.kitMarkUrl, 'https://cdn.example/mark.png');
-        assert.equal(model.kitMarkAlt, 'Authored mark');
+        assert.equal(model.featuredIconUrl, 'https://cdn.example/mark.png');
+        assert.equal(model.featuredIconAlt, 'Authored mark');
     });
 
     it('pads rigid-boxes frames from catalog images when media is empty', () => {
@@ -564,5 +633,98 @@ describe('assembleProductLineLanding', () => {
             'https://cdn.example/product.jpg',
         );
         assert.equal(model.styles?.[2]?.imageUrl, null);
+    });
+
+    it('assembles hero media cards with featured video and 6× density', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: 'https://cdn.example/hero.jpg',
+            featuredImageAlt: 'Hero',
+            featuredVideoUrl: 'https://cdn.example/hero.mp4',
+            frames: [
+                {src: 'https://cdn.example/hero.jpg', alt: 'Dup'},
+                {src: 'https://cdn.example/frame-2.jpg', alt: 'Two'},
+            ],
+        });
+
+        assert.equal(cards.length, 12);
+        assert.equal(cards[0]?.src, 'https://cdn.example/hero.jpg');
+        assert.equal(cards[0]?.videoUrl, 'https://cdn.example/hero.mp4');
+        assert.equal(cards[0]?.settleIndex, 0);
+        assert.equal(cards[1]?.src, 'https://cdn.example/frame-2.jpg');
+        assert.equal(cards[1]?.videoUrl, undefined);
+        assert.equal(cards[1]?.settleIndex, 1);
+        assert.equal(cards[2]?.id, 'featured-1');
+        assert.equal(cards[2]?.settleIndex, 0);
+        assert.equal(cards[2]?.videoUrl, 'https://cdn.example/hero.mp4');
+    });
+
+    it('prefers standard products over frames for hero media cards', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: 'https://cdn.example/hero.jpg',
+            featuredImageAlt: 'Hero',
+            featuredVideoUrl: 'https://cdn.example/line-hero.mp4',
+            frames: [{src: 'https://cdn.example/frame.jpg', alt: 'Frame'}],
+            products: [
+                product({
+                    title: 'Box A',
+                    slug: 'box-a',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    featuredVideoUrl: 'https://cdn.example/box-a.mp4',
+                    media: [
+                        {src: 'https://cdn.example/box-a.jpg', alt: 'Box A'},
+                    ],
+                }),
+                product({
+                    title: 'Box B',
+                    slug: 'box-b',
+                    kind: 'inspiration',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {src: 'https://cdn.example/box-b.jpg', alt: 'Box B'},
+                    ],
+                }),
+                product({
+                    title: 'Box C',
+                    slug: 'box-c',
+                    productStyle: {slug: 'drawer', title: 'Drawer'},
+                    media: [
+                        {src: 'https://cdn.example/box-c.jpg', alt: 'Box C'},
+                    ],
+                    availableCustomizations: [
+                        {
+                            id: 'foil',
+                            label: 'Foil stamp',
+                            category: 'finishing',
+                            categoryTitle: 'Finishing',
+                            shortDescription: 'Metallic foil.',
+                        },
+                    ],
+                }),
+            ],
+        });
+
+        // 2 standard products × 6 copies
+        assert.equal(cards.length, 12);
+        assert.equal(cards[0]?.id, 'box-a-0');
+        assert.equal(cards[0]?.title, 'Box A');
+        assert.equal(cards[0]?.detailHref, '/products/box-a');
+        assert.equal(cards[0]?.settleIndex, 0);
+        assert.equal(cards[0]?.videoUrl, 'https://cdn.example/box-a.mp4');
+        assert.equal(cards[1]?.id, 'box-c-0');
+        assert.equal(cards[1]?.title, 'Box C');
+        assert.equal(cards[1]?.settleIndex, 1);
+        assert.equal(cards[1]?.customizations?.[0]?.title, 'Foil stamp');
+        // No product video — line video must not stamp onto product cards
+        assert.equal(cards[1]?.videoUrl, undefined);
+    });
+
+    it('returns empty hero media cards when there is no media', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+        });
+        assert.deepEqual(cards, []);
     });
 });

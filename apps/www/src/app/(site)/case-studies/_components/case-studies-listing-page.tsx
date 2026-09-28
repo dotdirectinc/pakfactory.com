@@ -162,6 +162,7 @@ export async function CaseStudiesListingPage({
         variant="compact"
         eyebrow={eyebrow}
         title={heading}
+        settle
         description={
           hasHeroIntro ? (
             <PortableText

@@ -33,12 +33,12 @@ function composeHeroTitle(content: SolutionHeroContent): string {
  */
 export function SolutionHero({content}: {content: SolutionHeroContent}) {
     const title = composeHeroTitle(content);
-    const kit = content.kitMark;
-    const eyebrow: PageHeadingEyebrow | undefined = kit?.src
+    const featuredIcon = content.featuredIcon;
+    const eyebrow: PageHeadingEyebrow | undefined = featuredIcon?.src
         ? {
               type: 'image',
-              src: kit.src,
-              alt: kit.alt,
+              src: featuredIcon.src,
+              alt: featuredIcon.alt,
           }
         : undefined;
 
@@ -60,6 +60,7 @@ export function SolutionHero({content}: {content: SolutionHeroContent}) {
                         title={title}
                         titleId={HERO_HEADING_ID}
                         description={content.subtitle || undefined}
+                        settle
                         titleClassName="max-w-[1066px] text-display font-bold tracking-[-0.82px]"
                         descriptionClassName="max-w-[732px] text-xl leading-7 text-foreground"
                     >

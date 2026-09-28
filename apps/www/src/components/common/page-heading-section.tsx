@@ -1,4 +1,4 @@
-import type {ReactNode} from 'react';
+import type {CSSProperties, ReactNode} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {ChevronDown} from 'lucide-react';
@@ -7,6 +7,10 @@ import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {InPageAnchorLink} from '@/components/common/in-page-anchor-link';
+import {
+    headingSettleClassName,
+    headingSettleStyle,
+} from '@/lib/ui/heading-settle';
 
 export type PageHeadingCta = {
     label: string;
@@ -58,6 +62,13 @@ export type PageHeadingContentProps = {
     titleId?: string;
     titleClassName?: string;
     descriptionClassName?: string;
+    /**
+     * Apple Mac–style fade + rise settle on eyebrow → title → description →
+     * CTAs → children. CSS-only; keeps this module an RSC. Default off.
+     */
+    settle?: boolean;
+    /** Starting stagger step when `settle` is true (100ms steps). Default 0. */
+    settleOffset?: number;
     children?: ReactNode;
 };
 
@@ -89,9 +100,13 @@ function isStructuredEyebrow(
 function PageHeadingEyebrowSlot({
     eyebrow,
     align,
+    className,
+    style,
 }: {
     eyebrow: ReactNode | PageHeadingEyebrow;
     align: 'start' | 'center';
+    className?: string;
+    style?: CSSProperties;
 }) {
     const centered = align === 'center';
 
@@ -101,7 +116,9 @@ function PageHeadingEyebrowSlot({
                 className={cn(
                     'text-xs font-semibold uppercase tracking-wider text-muted-foreground',
                     centered && 'text-center',
+                    className,
                 )}
+                style={style}
             >
                 {eyebrow}
             </p>
@@ -115,7 +132,9 @@ function PageHeadingEyebrowSlot({
                     className={cn(
                         'text-xs font-semibold uppercase tracking-wider text-muted-foreground',
                         centered && 'text-center',
+                        className,
                     )}
+                    style={style}
                 >
                     {eyebrow.content}
                 </p>
@@ -133,12 +152,14 @@ function PageHeadingEyebrowSlot({
                         'relative shrink-0 overflow-hidden',
                         !hasFixedSize && 'size-display-mark',
                         centered && 'mx-auto',
+                        className,
                     )}
-                    style={
-                        hasFixedSize
+                    style={{
+                        ...(hasFixedSize
                             ? {width: eyebrow.width, height: eyebrow.height}
-                            : undefined
-                    }
+                            : undefined),
+                        ...style,
+                    }}
                 >
                     <Image
                         src={eyebrow.src}
@@ -162,12 +183,14 @@ function PageHeadingEyebrowSlot({
                         'relative shrink-0 overflow-hidden',
                         !hasFixedSize && 'size-display-mark',
                         centered && 'mx-auto',
+                        className,
                     )}
-                    style={
-                        hasFixedSize
+                    style={{
+                        ...(hasFixedSize
                             ? {width: eyebrow.width, height: eyebrow.height}
-                            : undefined
-                    }
+                            : undefined),
+                        ...style,
+                    }}
                 >
                     <video
                         src={eyebrow.src}
@@ -188,7 +211,9 @@ function PageHeadingEyebrowSlot({
                     className={cn(
                         'flex size-10 shrink-0 items-center justify-center text-foreground [&_svg]:size-10',
                         centered && 'mx-auto',
+                        className,
                     )}
+                    style={style}
                 >
                     {eyebrow.icon}
                 </div>
@@ -211,12 +236,23 @@ export function PageHeadingContent({
     titleId,
     titleClassName,
     descriptionClassName,
+    settle = false,
+    settleOffset = 0,
     children,
 }: PageHeadingContentProps) {
     const isCompact = variant === 'compact';
     const centered = align === 'center';
     const hasCtas = Boolean(primaryCta || secondaryCta);
     const secondaryFirst = ctaOrder === 'secondary-first';
+    const settleClass = headingSettleClassName(settle);
+
+    let step = settleOffset;
+    const nextSettleStyle = (): CSSProperties | undefined => {
+        if (!settle) return undefined;
+        const style = headingSettleStyle(step);
+        step += 1;
+        return style;
+    };
 
     const primaryButton = primaryCta ? (
         <Button asChild size="xl" variant="default">
@@ -246,6 +282,12 @@ export function PageHeadingContent({
         </Button>
     ) : null;
 
+    const eyebrowSettleStyle = eyebrow ? nextSettleStyle() : undefined;
+    const titleSettleStyle = nextSettleStyle();
+    const descriptionSettleStyle = description ? nextSettleStyle() : undefined;
+    const ctaSettleStyle = hasCtas ? nextSettleStyle() : undefined;
+    const childrenSettleStyle = children ? nextSettleStyle() : undefined;
+
     return (
         <div
             className={cn(
@@ -254,7 +296,12 @@ export function PageHeadingContent({
             )}
         >
             {eyebrow ? (
-                <PageHeadingEyebrowSlot eyebrow={eyebrow} align={align} />
+                <PageHeadingEyebrowSlot
+                    eyebrow={eyebrow}
+                    align={align}
+                    className={settleClass}
+                    style={eyebrowSettleStyle}
+                />
             ) : null}
             <h1
                 id={titleId}
@@ -262,7 +309,9 @@ export function PageHeadingContent({
                     'font-medium tracking-tight text-foreground',
                     isCompact ? 'text-display' : 'text-display-lg',
                     titleClassName,
+                    settleClass,
                 )}
+                style={titleSettleStyle}
             >
                 {title}
             </h1>
@@ -274,7 +323,9 @@ export function PageHeadingContent({
                             ? 'max-w-2xl text-lg leading-7'
                             : 'max-w-3xl text-xl leading-7',
                         descriptionClassName,
+                        settleClass,
                     )}
+                    style={descriptionSettleStyle}
                 >
                     {description}
                 </div>
@@ -284,7 +335,9 @@ export function PageHeadingContent({
                     className={cn(
                         'flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center',
                         centered && 'items-center justify-center',
+                        settleClass,
                     )}
+                    style={ctaSettleStyle}
                 >
                     {secondaryFirst ? (
                         <>
@@ -299,7 +352,15 @@ export function PageHeadingContent({
                     )}
                 </div>
             ) : null}
-            {children}
+            {children ? (
+                settle ? (
+                    <div className={settleClass} style={childrenSettleStyle}>
+                        {children}
+                    </div>
+                ) : (
+                    children
+                )
+            ) : null}
         </div>
     );
 }

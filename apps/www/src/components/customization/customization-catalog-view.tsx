@@ -16,6 +16,8 @@ type CustomizationCatalogViewProps = {
     initialCategory?: string | null;
     /** When false, omit breadcrumb + page heading (section embed / page-owned chrome). */
     showPageChrome?: boolean;
+    /** Drop the desktop sticky strip top border (embed under a headed section). */
+    hideCatalogBorderTop?: boolean;
     heading?: string | null;
     intro?: string | null;
 };
@@ -25,6 +27,7 @@ export function CustomizationCatalogView({
     urlSync = true,
     initialCategory = null,
     showPageChrome = true,
+    hideCatalogBorderTop = false,
     heading,
     intro,
 }: CustomizationCatalogViewProps) {
@@ -61,6 +64,7 @@ export function CustomizationCatalogView({
                     library={library}
                     urlSync={urlSync}
                     initialCategory={initialCategory}
+                    hideCatalogBorderTop={hideCatalogBorderTop}
                 />
             </Suspense>
         </>

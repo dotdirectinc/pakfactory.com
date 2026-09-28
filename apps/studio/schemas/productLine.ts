@@ -126,18 +126,46 @@ export const productLine = defineType({
         'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback. Leave empty to use the hero placeholder.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
-    // Icon above the H1 on the product-line landing (dieline / mark). Distinct from
-    // Featured image, which is the large hero photo and card art.
+    // Desktop scroll-scrub hero (MP4). Role name mirrors Featured image — when set,
+    // the landing enables the scroll animation; mobile / reduced-motion keep the image.
+    defineField({
+      name: 'featuredVideo',
+      title: 'Featured video',
+      type: 'file',
+      group: GROUPS.content,
+      options: {accept: 'video/*'},
+      description: 'Optional desktop scroll-scrub MP4. Mobile and reduced-motion keep Featured image.',
+    }),
+    // Hero chrome only — body section order still comes from Product Line Page.
+    defineField({
+      name: 'heroLayout',
+      title: 'Hero layout',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'Landing hero chrome for this line only. Stack = featured icon and copy above the media; Bottom bar = media-first with featured icon, heading, and CTAs along the bottom (Vision Pro–style). Does not change Product Line Page section order.',
+      options: {
+        list: [
+          {title: 'Stack (default)', value: 'stack'},
+          {title: 'Bottom bar', value: 'bottomBar'},
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'stack',
+    }),
+    // Featured icon on the product-line landing. Stack: above the H1.
+    // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.
+    // Schema field name stays `kitMark` (no content migration).
     defineField(taggedImageField({
       name: 'kitMark',
-      title: 'Kit mark',
+      title: 'Featured icon',
       type: 'image',
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
       description:
-        'Icon above the H1 on the product-line landing (dieline / mark). Leave empty to use the placeholder.',
-      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the mark for screen readers and SEO.' })],
+        'Icon on the landing hero. Stack layout: above the H1. Bottom bar layout: bottom-left brand signal. Leave empty to use the placeholder.',
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the icon for screen readers and SEO.' })],
     })),
     defineField({
       name: 'media',

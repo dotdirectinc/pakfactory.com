@@ -49,13 +49,15 @@ type CustomizationCatalogPanelProps = {
     urlSync?: boolean;
     /** Optional initial category slug from Studio section embeds. */
     initialCategory?: string | null;
-    showHeroChrome?: boolean;
+    /** Drop the desktop sticky strip top border (embed under a headed section). */
+    hideCatalogBorderTop?: boolean;
 };
 
 export function CustomizationCatalogPanel({
     library,
     urlSync = true,
     initialCategory = null,
+    hideCatalogBorderTop = false,
 }: CustomizationCatalogPanelProps) {
     const tabs: CustomizationCatalogTab[] = useMemo(
         () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
@@ -354,7 +356,12 @@ export function CustomizationCatalogPanel({
             </div>
 
             {/* Desktop: sticky underline tabs + search */}
-            <div className="-mx-layout-gutter-inner hidden border-y border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block">
+            <div
+                className={cn(
+                    '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
+                    hideCatalogBorderTop ? 'border-b' : 'border-y',
+                )}
+            >
                 <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">
                     <nav
                         ref={navRef}
@@ -408,7 +415,7 @@ export function CustomizationCatalogPanel({
                             );
                         })}
                     </nav>
-                    <div className="relative flex w-full min-w-[14rem] items-center py-2 sm:ml-auto sm:w-64">
+                    <div className="relative flex w-full min-w-56 items-center py-2 sm:ml-auto sm:w-64">
                         {renderSearchField()}
                     </div>
                 </div>

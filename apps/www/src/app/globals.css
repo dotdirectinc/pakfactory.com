@@ -177,6 +177,30 @@ html:has(body[data-scroll-locked]) {
   animation: page-enter var(--motion-slow) ease-out;
 }
 
+/*
+  Hero / PageHeading settle — Apple Mac–style build-in (opacity + 30px rise).
+  Opt-in via `animate-heading-settle`; stagger with `--settle-delay` (see
+  `headingSettleProps` in lib/ui/heading-settle.ts). Keyframes define only
+  `from` so the element’s own styles are the end state. Keep www-only.
+*/
+@keyframes heading-settle {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+@utility animate-heading-settle {
+  animation: heading-settle var(--motion-reveal) cubic-bezier(0.45, 0, 0.55, 1)
+    both;
+  animation-delay: var(--settle-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-heading-settle {
+    animation: none;
+  }
+}
 
 /*
   Expertise stage pages — scroll-driven entrances (POC parity, PROD-2577).

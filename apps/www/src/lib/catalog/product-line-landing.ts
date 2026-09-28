@@ -14,6 +14,8 @@ import {
     applySectionTokens,
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
+import type {SolutionHeroCustomization} from '@/lib/solutions/types';
+import {productHref, WWW_ROUTES} from '@/lib/www-routes';
 
 /** Storyboard H1 for rigid-boxes when Sanity `h1` is empty (PROD-1914). */
 export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
@@ -34,11 +36,18 @@ export const RIGID_BOXES_MOCK_FEATURE: ProductLineFrame = {
     alt: 'Kraft rigid box with lid floating above base',
 };
 
-/** Kit-mark icon until Studio supplies a product-line mark asset. */
-export const RIGID_BOXES_MOCK_KIT_MARK: ProductLineFrame = {
+/** Featured-icon until Studio supplies a product-line icon asset. */
+export const RIGID_BOXES_MOCK_FEATURED_ICON: ProductLineFrame = {
     src: '/products/rigid-boxes/kit-mark.png',
-    alt: 'Rigid box dieline mark',
+    alt: 'Rigid box dieline icon',
 };
+
+/**
+ * Local hero MP4 until Studio `featuredVideo` is authored on rigid-boxes.
+ * Used by bottomBar marquee hover-play (not stack).
+ */
+export const RIGID_BOXES_MOCK_FEATURED_VIDEO =
+    '/products/rigid-boxes/hero-scrub.mp4';
 
 export const RIGID_BOXES_MOCK_FRAMES: ProductLineFrame[] = [
     RIGID_BOXES_MOCK_FEATURE,
@@ -52,6 +61,139 @@ export type ProductLineLandingStyleCard = {
     imageAlt: string;
 };
 
+export type ProductLineHeroLayout = 'stack' | 'bottomBar';
+
+/** Card for the bottomBar hero media marquee. */
+export type ProductLineHeroMediaCard = {
+    id: string;
+    src: string;
+    alt: string;
+    /** Hover-play MP4 on the featured card when set. */
+    videoUrl?: string;
+    /** 0-based index within the unique set — L→R settle stagger. */
+    settleIndex: number;
+    /** Preview dialog — set when card is backed by a catalog product. */
+    title?: string;
+    detailHref?: string;
+    customizations?: SolutionHeroCustomization[];
+};
+
+/**
+ * Temporary marquee density so a short catalog still scrolls.
+ * Remove or gate when authored product counts are enough.
+ */
+const HERO_MEDIA_CARD_DUPLICATE = 6;
+
+function mapHeroCustomizations(
+    product: Product,
+): SolutionHeroCustomization[] {
+    return (product.availableCustomizations ?? []).slice(0, 4).map((opt) => ({
+        id: opt.id || opt.slug || opt.label,
+        category: (
+            opt.categoryTitle ||
+            opt.category ||
+            'CUSTOMIZATION'
+        ).toUpperCase(),
+        title: opt.label,
+        description:
+            opt.shortDescription?.trim() ||
+            'Available on this product.',
+        learnMoreHref: WWW_ROUTES.customizations,
+    }));
+}
+
+function duplicateHeroCards(
+    unique: ProductLineHeroMediaCard[],
+): ProductLineHeroMediaCard[] {
+    if (unique.length === 0) return [];
+    const cards: ProductLineHeroMediaCard[] = [];
+    for (let copy = 0; copy < HERO_MEDIA_CARD_DUPLICATE; copy += 1) {
+        for (const card of unique) {
+            cards.push({
+                ...card,
+                id: `${card.id}-${copy}`,
+            });
+        }
+    }
+    return cards;
+}
+
+/**
+ * Build bottomBar marquee cards.
+ * Prefer `standard` products on the line (with media); fall back to featured
+ * image + frames. Duplicates the unique list for scroll density.
+ */
+export function assembleHeroMediaCards(input: {
+    featuredImageUrl: string | null;
+    featuredImageAlt: string;
+    featuredVideoUrl: string | null;
+    frames: ProductLineFrame[];
+    products?: Product[];
+}): ProductLineHeroMediaCard[] {
+    const videoUrl = input.featuredVideoUrl?.trim() || '';
+    const unique: ProductLineHeroMediaCard[] = [];
+
+    const fromProducts = (input.products ?? []).filter(
+        (product) =>
+            product.kind === 'standard' &&
+            Boolean(
+                product.media?.some((m) => Boolean(m.src?.trim())),
+            ),
+    );
+
+    for (const product of fromProducts) {
+        const media = product.media.find((m) => Boolean(m.src?.trim()));
+        if (!media?.src?.trim()) continue;
+        const productVideo = product.featuredVideoUrl?.trim() || '';
+        unique.push({
+            id: product.slug,
+            src: media.src.trim(),
+            alt: media.alt?.trim() || product.title,
+            settleIndex: unique.length,
+            title: product.title,
+            detailHref: productHref(product.slug),
+            customizations: mapHeroCustomizations(product),
+            ...(productVideo ? {videoUrl: productVideo} : {}),
+        });
+    }
+
+    if (unique.length === 0) {
+        const seen = new Set<string>();
+        const push = (
+            src: string | null | undefined,
+            alt: string,
+            id: string,
+        ) => {
+            const url = src?.trim();
+            if (!url || seen.has(url)) return;
+            seen.add(url);
+            unique.push({
+                id,
+                src: url,
+                alt: alt.trim() || 'Product media',
+                settleIndex: unique.length,
+            });
+        };
+
+        const featuredUrl = input.featuredImageUrl?.trim() || '';
+        if (featuredUrl) {
+            push(featuredUrl, input.featuredImageAlt, 'featured');
+        }
+        input.frames.forEach((frame, index) => {
+            push(frame.src, frame.alt, `frame-${index}`);
+        });
+
+        // Frames path: line-level featured video on the first card only.
+        if (videoUrl && unique[0]) {
+            unique[0] = {...unique[0], videoUrl};
+        }
+    }
+
+    if (unique.length === 0) return [];
+
+    return duplicateHeroCards(unique);
+}
+
 export type ProductLineLandingModel = {
     slug: string;
     title: string;
@@ -63,11 +205,22 @@ export type ProductLineLandingModel = {
     frames: ProductLineFrame[];
     /** `sequence` when ≥2 frames; otherwise static frame-1 / featured. */
     heroMode: 'sequence' | 'static';
+    /**
+     * Landing hero chrome. Sanity wins; unset/unknown → `stack`, except
+     * rigid-boxes mock defaults to `bottomBar` for local preview.
+     */
+    heroLayout: ProductLineHeroLayout;
     featuredImageUrl: string | null;
     featuredImageAlt: string;
-    /** Kit-mark icon above the H1; Sanity wins, mock fills blanks for rigid-boxes. */
-    kitMarkUrl: string | null;
-    kitMarkAlt: string;
+    /**
+     * Hero MP4 for bottomBar marquee hover-play on the featured card.
+     * Stack ignores this (static featured still). Sanity wins; rigid-boxes
+     * mock fills when empty.
+     */
+    featuredVideoUrl: string | null;
+    /** Featured icon on the hero; Sanity wins, mock fills blanks for rigid-boxes. */
+    featuredIconUrl: string | null;
+    featuredIconAlt: string;
     styles: ProductLineLandingStyleCard[] | null;
     /**
      * Merged Product Line Page template × line sections (order/chrome × content).
@@ -203,21 +356,37 @@ function resolveFeaturedImage(line: ProductLine): {
     return {url: null, alt: line.title};
 }
 
-function resolveKitMark(line: ProductLine): {url: string | null; alt: string} {
-    const authored = line.kitMarkUrl?.trim();
+function resolveFeaturedIcon(line: ProductLine): {url: string | null; alt: string} {
+    const authored = line.featuredIconUrl?.trim();
     if (authored) {
         return {
             url: authored,
-            alt: line.kitMarkAlt?.trim() || `${line.title} kit mark`,
+            alt: line.featuredIconAlt?.trim() || `${line.title} featured icon`,
         };
     }
     if (line.slug === 'rigid-boxes') {
         return {
-            url: RIGID_BOXES_MOCK_KIT_MARK.src,
-            alt: RIGID_BOXES_MOCK_KIT_MARK.alt,
+            url: RIGID_BOXES_MOCK_FEATURED_ICON.src,
+            alt: RIGID_BOXES_MOCK_FEATURED_ICON.alt,
         };
     }
-    return {url: null, alt: `${line.title} kit mark`};
+    return {url: null, alt: `${line.title} featured icon`};
+}
+
+function resolveFeaturedVideo(line: ProductLine): string | null {
+    const authored = line.featuredVideoUrl?.trim();
+    if (authored) return authored;
+    if (line.slug === 'rigid-boxes') return RIGID_BOXES_MOCK_FEATURED_VIDEO;
+    return null;
+}
+
+function resolveHeroLayout(line: ProductLine): ProductLineHeroLayout {
+    if (line.heroLayout === 'bottomBar' || line.heroLayout === 'stack') {
+        return line.heroLayout;
+    }
+    // Local preview: rigid-boxes demos the bottom-bar marquee composition.
+    if (line.slug === 'rigid-boxes') return 'bottomBar';
+    return 'stack';
 }
 
 /**
@@ -229,8 +398,10 @@ export function assembleProductLineLanding(
 ): ProductLineLandingModel {
     const frames = resolveFrames(line);
     const heroMode = frames.length >= 2 ? 'sequence' : 'static';
+    const heroLayout = resolveHeroLayout(line);
     const featured = resolveFeaturedImage(line);
-    const kitMark = resolveKitMark(line);
+    const featuredVideoUrl = resolveFeaturedVideo(line);
+    const featuredIcon = resolveFeaturedIcon(line);
 
     const styles: ProductLineLandingStyleCard[] = line.styles.map((style) => {
         const {imageUrl, imageAlt} = resolveStyleCardImage(style, line);
@@ -317,10 +488,12 @@ export function assembleProductLineLanding(
             : {}),
         frames,
         heroMode,
+        heroLayout,
         featuredImageUrl: featured.url,
         featuredImageAlt: featured.alt,
-        kitMarkUrl: kitMark.url,
-        kitMarkAlt: kitMark.alt,
+        featuredVideoUrl,
+        featuredIconUrl: featuredIcon.url,
+        featuredIconAlt: featuredIcon.alt,
         styles: styles.length > 0 ? styles : null,
         pageSections,
     };

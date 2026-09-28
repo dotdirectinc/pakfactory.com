@@ -28,6 +28,7 @@ export function SolutionCatalogPageChrome() {
             <PageHeadingSection
                 title={SOLUTIONS_HEADING}
                 description={SOLUTIONS_INTRO}
+                settle
             />
         </>
     );
