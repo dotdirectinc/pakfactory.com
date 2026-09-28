@@ -173,7 +173,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
                 borderTop
                 borderBottom={false}
                 paddingBlock="none"
-                innerClassName="pl-layout-gutter-inner pr-0"
+                flush
                 className="overflow-hidden rounded-b-md bg-popover text-popover-foreground shadow-md"
               >
                 <SiteNavMegaPanel

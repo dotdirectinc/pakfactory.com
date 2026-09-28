@@ -49,7 +49,8 @@ export function pageDielineContentClass(className?: string) {
 
 /**
  * Centered column with dashed vertical guides; gutters via `--layout-gutter-inner`.
- * Flush to the dieline: pass `px-0` — twMerge clears `px-layout-gutter-inner`.
+ * Flush to the dieline: use {@link PageDielineSection} `flush` (omits the gutter token —
+ * twMerge does not conflict `px-layout-gutter-inner` with `px-0`).
  */
 export function pageDielineInnerClass(className?: string) {
   return cn(
@@ -150,15 +151,17 @@ export function PageDielineSection({
     pageDielineBorderYClass({borderTop, borderBottom}),
   );
 
-  const columnClass = borderX ? pageDielineInnerClass : pageDielineContentClass;
+  // Omit the gutter token when flush — twMerge does not treat
+  // `px-layout-gutter-inner` as conflicting with `px-0`.
   const inner = (
     <div
-      className={columnClass(
-        cn(
-          pageDielinePaddingBlockClass(paddingBlock),
-          flush && "px-0",
-          innerClassName,
-        ),
+      className={cn(
+        "mx-auto w-full max-w-[var(--layout-max)]",
+        borderX && "border-x border-dashed border-border",
+        !flush && "px-layout-gutter-inner",
+        flush && "px-0",
+        pageDielinePaddingBlockClass(paddingBlock),
+        innerClassName,
       )}
     >
       {children}
