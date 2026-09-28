@@ -52,6 +52,7 @@ function toProductCardData(product: Product): ProductCardData {
         imageAlt: images[0]?.alt ?? product.media[0]?.alt ?? product.title,
         images: images.length > 0 ? images : undefined,
         moq: product.moq,
+        ...(product.status ? {status: product.status} : {}),
     };
 }
 
