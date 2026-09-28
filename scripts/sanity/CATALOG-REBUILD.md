@@ -207,10 +207,10 @@ Product / Expertise → contextual. Other documents that referenced a deleted FA
 items removed.
 
 **Help Categories.** `category` comes from Notion's **Help Category** select, matched by exact title
-to a `helpCategory` document. The categories are the nine options of that Notion column (Crystal,
-2026-09-28), created by `seed:help-categories` (create-if-missing, never overwrites; slugs are
-proposals until Eric confirms them). A new Notion option needs adding to the seed's list first. The
-content model still names eight categories; the nine rename one, add three and drop two. Run the seed **before** `populate:faqs`: a Notion value with no matching category stops the
+to a `helpCategory` document. The categories are the content model's eight with Crystal's changes (2026-09-28): one renamed,
+three added, eleven in all, created by `seed:help-categories` (create-if-missing, never overwrites;
+slugs are proposals until Eric confirms them). Reorders & Account and Billing have no FAQs yet, so
+Notion's select does not list them. A new Notion option needs adding to the seed's list first. Run the seed **before** `populate:faqs`: a Notion value with no matching category stops the
 run. An empty cell, or no column yet, leaves `category` blank and Studio flags it.
 
 ```bash

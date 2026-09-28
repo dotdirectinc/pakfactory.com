@@ -2,12 +2,12 @@
  * Create the Help Center's categories. FAQs point at these through their required `category`;
  * `populate:faqs` maps Notion's "Help Category" column onto them by title.
  *
- * The list is Notion's Help Category options as Crystal set them on 2026-09-28 — nine, not the
- * content model's eight (Entities/Help Category.md). Against the spec: "Pricing, MOQ & Lead Times"
- * became "Pricing & MOQ" (lead times now sit under Production & Timelines); Sustainability,
- * Products & Customization and Services & Expertise are new, for the product-knowledge and
- * service questions none of the eight covered; Reorders & Account and Billing are not in Notion
- * and are not created. The content model still lists the eight — Eric to reconcile.
+ * The list is the content model's eight (Entities/Help Category.md) with Crystal's changes of
+ * 2026-09-28: "Pricing, MOQ & Lead Times" → "Pricing & MOQ" (lead times now sit under Production &
+ * Timelines), plus Sustainability, Products & Customization and Services & Expertise for the
+ * product-knowledge and service questions none of the eight covered. Eleven in all. Reorders &
+ * Account and Billing have no FAQs yet, which is why Notion's select does not list them — they are
+ * kept, not dropped. The content model still lists the eight — Eric to reconcile.
  *
  * ⚠️ SLUGS ARE PROPOSALS pending Eric. The spec gives one example, `/help/shipping`; the rest
  * follow the same short form. After the first run a slug is Studio's to edit — this never
@@ -53,9 +53,9 @@ const fail = (msg) => {
 }
 
 /**
- * Notion's Help Category options, in Crystal's order (2026-09-28). Titles must match those options
- * EXACTLY — populate:faqs matches by title and stops on a value it cannot find. `slug` values are
- * proposals (see header).
+ * Titles must match Notion's Help Category options EXACTLY — populate:faqs matches by title and
+ * stops on a value it cannot find. The first nine are Notion's options in Crystal's order; the
+ * last two have no Notion option until an FAQ uses them. `slug` values are proposals (see header).
  */
 const CATEGORIES = [
   { key: 'pricing', title: 'Pricing & MOQ', slug: 'pricing' },
@@ -67,6 +67,8 @@ const CATEGORIES = [
   { key: 'ordering', title: 'Ordering & Quotes', slug: 'ordering' },
   { key: 'services', title: 'Services & Expertise', slug: 'services' },
   { key: 'artwork', title: 'Artwork & Files', slug: 'artwork' },
+  { key: 'reorders', title: 'Reorders & Account', slug: 'reorders' },
+  { key: 'billing', title: 'Billing', slug: 'billing' },
 ]
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '8293wrxp'
