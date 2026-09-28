@@ -251,11 +251,41 @@ export const productLine = defineType({
                 'On — every product in this line must state a value for this property, and any that doesn\'t shows a warning. Off — a product may state it or leave it out, and nothing is flagged. It\'s a warning rather than a block because these products arrive from the product data source, so an editor often can\'t fix what the sync sent.',
               initialValue: false,
             }),
+            // PROD-2610. Stating a value and rendering it were the same thing until
+            // now. They are not: a property can be stated, hidden on the product page,
+            // and still a filter on the catalog.
+            //
+            // ❌ DO NOT make `listingPage.filters` read this. Hidden-but-filterable is
+            // the case this field exists for, and dropping hidden properties from the
+            // filter derivation would break it silently — no error, the filter just
+            // never appears.
+            //
+            // No `hidden` condition, unlike the twin on `customizationType`: everything
+            // on the product side is stated. There is no `usage` on this link by design
+            // (PROD-2588) — a customer picks a product, not a value on one.
+            defineField({
+              name: 'showOnDetailPage',
+              title: 'Show on the detail page',
+              type: 'boolean',
+              description:
+                "On — the value each product states for this property appears on that product's page. " +
+                'E.g. Closure Type shows as a spec row. Off — the product still states the value and it ' +
+                "can still be a filter on the catalog, it just doesn't render on the page. E.g. Material " +
+                'Family, where the line name already says it. Filtering is decided separately, in the ' +
+                "listing page's Filters list, so turning this off never removes a filter.",
+              // undefined and true both mean SHOW — only an explicit false hides, so
+              // nothing authored before this shipped changes. Test `=== false`.
+              initialValue: true,
+            }),
           ],
           preview: {
-            select: { title: 'property.title', required: 'required' },
-            prepare({ title, required }) {
-              return { title: title || 'Property', subtitle: required ? 'Required' : 'Optional' }
+            select: { title: 'property.title', required: 'required', shown: 'showOnDetailPage' },
+            prepare({ title, required, shown }) {
+              const label = required ? 'Required' : 'Optional'
+              return {
+                title: title || 'Property',
+                subtitle: shown === false ? `${label} · hidden` : label,
+              }
             },
           },
         },

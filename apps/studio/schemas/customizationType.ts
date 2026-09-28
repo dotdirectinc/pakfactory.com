@@ -398,9 +398,47 @@ export const customizationType = defineType({
             initialValue: 'stated',
             validation: (Rule) => Rule.required(),
           }),
+          // PROD-2610. `usage: stated` used to mean two things at once — the option
+          // asserts this fact AND render it on the detail page. Splitting them is the
+          // whole point: a property can be stated, hidden, and still a filter.
+          //
+          // ❌ DO NOT make `listingPage.filters` read this. Hidden-but-filterable is
+          // the case this field exists for, and dropping hidden properties from the
+          // filter derivation would break it silently — no error, the filter just
+          // never appears. Which properties filter a listing is the listing page's
+          // call, per page; this one only answers whether the detail page renders it.
+          //
+          // Hidden on `selectable` because a selectable property is not a spec row —
+          // it is the customer's picker in the configurator. Hiding it would mean the
+          // customer cannot choose, so the toggle has no meaning there.
+          defineField({
+            name: 'showOnDetailPage',
+            title: 'Show on the detail page',
+            type: 'boolean',
+            description:
+              "On — the value each option states for this property appears on that option's page. " +
+              'E.g. a board states Sustainability: Recyclable and it shows as a spec row. Off — the ' +
+              "option still states the value and it can still be a filter, it just doesn't render on " +
+              'the page. E.g. Material Family, where the page copy already says it. Filtering is ' +
+              "decided separately, in the listing page's Filters list, so turning this off never " +
+              'removes a filter.',
+            // `initialValue` fires on newly created array items only, so every row
+            // authored before this shipped reads `undefined`. undefined and true both
+            // mean SHOW — only an explicit false hides. Test `=== false`, never
+            // falsiness. That is what makes this a no-backfill, no-migration change.
+            initialValue: true,
+            hidden: ({ parent }) => (parent as { usage?: string } | undefined)?.usage === 'selectable',
+          }),
         ],
         preview: {
-          select: { title: 'property.title', subtitle: 'usage' },
+          select: { title: 'property.title', usage: 'usage', shown: 'showOnDetailPage' },
+          prepare({ title, usage, shown }) {
+            const label = usage === 'selectable' ? 'Selectable' : 'Stated'
+            return {
+              title: title || 'Property',
+              subtitle: usage !== 'selectable' && shown === false ? `${label} · hidden` : label,
+            }
+          },
         },
       }],
     }),
