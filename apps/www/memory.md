@@ -45,6 +45,8 @@ When adding a new env var, update **both** `.env.example` and `turbo.json` `@pak
 - Webhook target: `/api/revalidate`
 - Secret: `SANITY_REVALIDATE_SECRET` (Bearer or `?secret=`)
 - Include `_type == "websiteNavigation"` so header/footer chrome cache busts (`www-website-navigation`)
+- Include `_type == "faq"` so an FAQ answer edit refreshes every page that shows it — catalog (lines, styles, products, customizations), solutions and expertise. **The production webhook's filter needs `"faq"` added in the Sanity dashboard**; the route handles it but the webhook must send it.
+- Dev test webhook (`development` → `staging.pakfactory.com`) sends **no `_type`** (projection `{"sweep": true}`), so every publish clears everything and skips IndexNow / `publishedAt` stamping. Staging's firewall rule exempts only `/api/revalidate`.
 
 ## Website navigation singleton (chrome)
 
