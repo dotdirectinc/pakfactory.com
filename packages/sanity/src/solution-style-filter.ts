@@ -133,6 +133,8 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
     '_type == "product"',
     'kind == "inspiration"',
     '$solutionId in solutions[]._ref',
+    // Hidden in Notion → customerFacing false → no listing anywhere, collections included.
+    'customerFacing != false',
     `(${any.join(' || ')})`,
     '!(_id in $excludedIds)',
   ].join(' && ')

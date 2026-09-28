@@ -17,6 +17,7 @@ const products = [
   { _id: "p.bag", _type: "product", kind: "inspiration", title: "Paper Bakery Bag", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.bag" }, productStyle: [{ _ref: "style.gusset" }, { _ref: "style.handle" }] },
   { _id: "p.other", _type: "product", kind: "inspiration", title: "Cookie Tin", solutions: [{ _ref: "other" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
   { _id: "p.std", _type: "product", kind: "standard", title: "Cookie Box Standard", solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
+  { _id: "p.hidden", _type: "product", kind: "inspiration", title: "Cookie Box Hidden", customerFacing: false, solutions: [{ _ref: "sol" }], productLine: { _ref: "line.box" }, productStyle: [{ _ref: "style.tuck" }] },
 ];
 
 const ids = async (filter: Parameters<typeof filterParams>[1], excluded: { _ref: string }[] = []) => {
@@ -51,6 +52,11 @@ test("the three conditions widen the collection (OR), never narrow it", async ()
 test("scoped to the parent solution and to inspiration products", async () => {
   // p.other is in another solution; p.std is a standard product — both match the line.
   assert.deepEqual(await ids({ productLines: [{ _ref: "line.box" }] }), ["p.box"]);
+});
+
+test("a product Notion marks Hidden (customerFacing false) is never listed", async () => {
+  assert.ok(!(await ids({ productLines: [{ _ref: "line.box" }] })).includes("p.hidden"));
+  assert.ok(!(await ids({ keywords: ["Cookie"] })).includes("p.hidden"));
 });
 
 test("an excluded product stays out", async () => {
