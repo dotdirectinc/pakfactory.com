@@ -39,6 +39,7 @@ export function ProductStyleChrome({
             <PageHeadingWithMedia
                 title={style.title}
                 description={description}
+                settle
                 media={
                     imageUrl
                         ? {

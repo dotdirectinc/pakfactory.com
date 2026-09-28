@@ -14,6 +14,8 @@ import {ChevronDown, Search, SlidersHorizontal} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+
+import {SectionReveal} from '@/components/common/section-reveal';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {CustomizationCatalogFilters} from '@/components/customization/customization-catalog-filters';
@@ -293,6 +295,7 @@ export function CustomizationCatalogPanel({
             paddingBlock="none"
             innerClassName="pb-24 flex flex-col gap-8"
         >
+            <SectionReveal className="flex flex-col gap-8">
             {/* Mobile: sticky search + filters + category chips */}
             <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                 <div className="flex items-center gap-2 py-3">
@@ -490,6 +493,7 @@ export function CustomizationCatalogPanel({
                     </div>
                 </div>
             </div>
+            </SectionReveal>
         </PageDielineSection>
     );
 }

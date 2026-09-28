@@ -29,3 +29,33 @@ export function headingSettleProps(step = 0, enabled = true) {
         style: headingSettleStyle(step),
     };
 }
+
+/**
+ * Delay before below-heading section content starts settling.
+ * Short lead so catalogs begin while the H1 cascade is still finishing
+ * (not a full `--motion-reveal` wait).
+ */
+export const AFTER_HEADING_SETTLE_DELAY_MS = 200;
+
+type SectionRevealPropsOptions = {
+    /** Override delay; default {@link AFTER_HEADING_SETTLE_DELAY_MS}. */
+    delayMs?: number;
+    enabled?: boolean;
+};
+
+/**
+ * Settle props for content inside a visible section shell (dieline, etc.).
+ * Keep the shell outside the animated node so rails stay opaque during delay.
+ */
+export function sectionRevealProps({
+    delayMs = AFTER_HEADING_SETTLE_DELAY_MS,
+    enabled = true,
+}: SectionRevealPropsOptions = {}) {
+    if (!enabled) return {};
+    return {
+        className: headingSettleClassName(true),
+        style: {
+            '--settle-delay': `${delayMs}ms`,
+        } as CSSProperties,
+    };
+}
