@@ -10,6 +10,7 @@ import type {
     PageSectionVideoCaseStudiesRowDoc,
     PageSectionVideoCaseStudyCardDoc,
 } from '@pakfactory/sanity/queries';
+import {stegaClean} from 'next-sanity';
 
 /** Section chrome owned by the template (order + defaults). */
 const TEMPLATE_CHROME_KEYS = new Set([
@@ -31,12 +32,16 @@ function isNonEmptyContent(value: unknown): boolean {
 /**
  * Whether to fill an empty section list from the host (ADR-020 §8).
  * `custom` never inherits. Non-empty lists never inherit.
- * Unset + empty = legacy inherit.
+ * Unset + empty = legacy inherit. Stega-safe (draft mode).
  */
 export function shouldInheritSectionList(
-    source: string | null | undefined,
+    rawSource: string | null | undefined,
     list: unknown[] | null | undefined,
 ): boolean {
+    // In draft mode (Presentation / staging preview) string fields arrive
+    // stega-encoded — "page" plus invisible characters — so compare the clean
+    // value, or every "This page" list silently stops inheriting.
+    const source = stegaClean(rawSource);
     if (source === 'custom') return false;
     if ((list?.length ?? 0) > 0) return false;
     return source === 'page' || source === 'derive' || source == null;
