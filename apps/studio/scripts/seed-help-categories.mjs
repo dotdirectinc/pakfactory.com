@@ -1,11 +1,17 @@
 /**
- * Create the Help Center's categories — the fixed set named in the site architecture
- * (content model, Entities/Help Category.md). FAQs point at these through their required
- * `category`; `populate:faqs` maps Notion's "Help Category" column onto them by title.
+ * Create the Help Center's categories. FAQs point at these through their required `category`;
+ * `populate:faqs` maps Notion's "Help Category" column onto them by title.
  *
- * ⚠️ SLUGS ARE PROPOSALS pending Eric (2026-09-28). The spec gives one example, `/help/shipping`;
- * the other seven follow the same short form. Confirm them before running on a dataset whose URLs
- * matter. After the first run a slug is Studio's to edit — this never overwrites one.
+ * The list is Notion's Help Category options as Crystal set them on 2026-09-28 — nine, not the
+ * content model's eight (Entities/Help Category.md). Against the spec: "Pricing, MOQ & Lead Times"
+ * became "Pricing & MOQ" (lead times now sit under Production & Timelines); Sustainability,
+ * Products & Customization and Services & Expertise are new, for the product-knowledge and
+ * service questions none of the eight covered; Reorders & Account and Billing are not in Notion
+ * and are not created. The content model still lists the eight — Eric to reconcile.
+ *
+ * ⚠️ SLUGS ARE PROPOSALS pending Eric. The spec gives one example, `/help/shipping`; the rest
+ * follow the same short form. After the first run a slug is Studio's to edit — this never
+ * overwrites one.
  *
  * Each category gets a stable id from its key (`helpCategory-<key>`) and is created only if
  * missing (`createIfNotExists`), so a re-run adds new entries and leaves edited ones alone. A
@@ -46,16 +52,21 @@ const fail = (msg) => {
   process.exit(1)
 }
 
-/** The eight, in the site architecture's order. `slug` values are proposals (see header). */
+/**
+ * Notion's Help Category options, in Crystal's order (2026-09-28). Titles must match those options
+ * EXACTLY — populate:faqs matches by title and stops on a value it cannot find. `slug` values are
+ * proposals (see header).
+ */
 const CATEGORIES = [
-  { key: 'pricing', title: 'Pricing, MOQ & Lead Times', slug: 'pricing' },
-  { key: 'ordering', title: 'Ordering & Quotes', slug: 'ordering' },
-  { key: 'artwork', title: 'Artwork & Files', slug: 'artwork' },
+  { key: 'pricing', title: 'Pricing & MOQ', slug: 'pricing' },
   { key: 'proofs', title: 'Proofs & Approval', slug: 'proofs' },
-  { key: 'production', title: 'Production & Timelines', slug: 'production' },
+  { key: 'sustainability', title: 'Sustainability', slug: 'sustainability' },
   { key: 'shipping', title: 'Shipping & Delivery', slug: 'shipping' },
-  { key: 'reorders', title: 'Reorders & Account', slug: 'reorders' },
-  { key: 'billing', title: 'Billing', slug: 'billing' },
+  { key: 'production', title: 'Production & Timelines', slug: 'production' },
+  { key: 'products', title: 'Products & Customization', slug: 'products' },
+  { key: 'ordering', title: 'Ordering & Quotes', slug: 'ordering' },
+  { key: 'services', title: 'Services & Expertise', slug: 'services' },
+  { key: 'artwork', title: 'Artwork & Files', slug: 'artwork' },
 ]
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '8293wrxp'
