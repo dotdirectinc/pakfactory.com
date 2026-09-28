@@ -441,6 +441,7 @@ export const TASKS = [
   // rebuilt successors, from the purge map. Idempotent — anything already in place is skipped.
   { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
+  { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]

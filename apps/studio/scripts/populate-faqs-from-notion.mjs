@@ -17,11 +17,14 @@
  *   Product Line → about[] and that line's `faqs`
  *   Expertise    → that stage's `faqs`   (Type = Expertise only; Type decides, so a Generic
  *                                   row that names a stage is NOT attached — it is reported)
+ *   Help Category → category       (select; matched to a helpCategory by exact title)
  *
- * `category` is left EMPTY. Notion has no category column and the only Help Category in the
- * dataset was test data (Richard, 2026-09-25): every FAQ shows a required-field error until
- * real categories exist. Page lists follow Notion's creation order, and are written in full
- * even past the schema's 6-item limit (Corrugated Boxes has 7) — Studio flags it, Notion fixes it.
+ * The categories themselves come from `seed:help-categories`, not Notion. A Help Category value
+ * that matches no category in the dataset stops the run — a typo must not quietly blank the field.
+ * An empty cell, or no such column yet, leaves `category` EMPTY and Studio shows the
+ * required-field error (Richard, 2026-09-25). Page lists follow Notion's creation order, and are
+ * written in full even past the schema's 6-item limit (Corrugated Boxes has 7) — Studio flags
+ * it, Notion fixes it.
  *
  * ── WHAT IS DELETED ──────────────────────────────────────────────────────────────
  *
@@ -132,6 +135,8 @@ async function pullNotion() {
         expertise: p.Expertise?.select?.name ?? null,
         lines: lines.map((r) => hex32(r.id)),
         handle: p.Handle?.formula?.string ?? null,
+        // undefined = the column does not exist yet; null = the cell is empty.
+        helpCategory: p['Help Category'] === undefined ? undefined : (p['Help Category'].select?.name ?? null),
       })
     }
     cursor = body.has_more ? body.next_cursor : undefined
@@ -232,6 +237,13 @@ const byStage = new Map() // stage published id → [faq id]
 const lineIds = new Set(existing.lines.map((l) => publishedId(l._id)))
 const stageIds = new Set(existing.stages.map((s) => publishedId(s._id)))
 const slugs = new Map()
+// Published categories only — a reference to a draft-only category would have to be weak.
+const categoryByTitle = new Map(
+  existing.helpCategories
+    .filter((c) => !c._id.startsWith('drafts.') && !/test/i.test(c.title ?? ''))
+    .map((c) => [c.title?.trim().toLowerCase(), c._id]),
+)
+const hasCategoryColumn = rows.some((r) => r.helpCategory !== undefined)
 
 for (const row of rows) {
   const id = `faq-${row.id}`
@@ -263,6 +275,16 @@ for (const row of rows) {
     reports.push(`not attached to a stage — Type is ${row.type}, Expertise says ${row.expertise}: "${row.question}"`)
   }
 
+  let category
+  if (row.helpCategory) {
+    const categoryId = categoryByTitle.get(row.helpCategory.trim().toLowerCase())
+    if (!categoryId) {
+      problems.push(`${row.id} "${row.question}": Help Category "${row.helpCategory}" matches no published helpCategory in ${DATASET} — run seed:help-categories, or fix the Notion value`)
+    } else {
+      category = { _type: 'reference', _ref: categoryId }
+    }
+  }
+
   faqDocs.push({
     _id: id,
     _type: 'faq',
@@ -270,6 +292,7 @@ for (const row of rows) {
     slug: { _type: 'slug', current: slug },
     answer: toPortableText(row.answer, row.id),
     scope,
+    ...(category ? { category } : {}),
     ...(about.length ? { about } : {}),
   })
 }
@@ -329,7 +352,20 @@ console.log(`Notion: ${plural(rows.length, 'FAQ row')} (${notion.via}, ${notion.
 console.log(`Delete  ${plural(deleteFaqs.length, 'FAQ document')} not in Notion` + (deleteFaqs.length ? ':' : ''))
 for (const f of deleteFaqs) console.log(`          ${f._id}  ${f.question ?? ''}`)
 console.log(`Delete  ${plural(deleteCategories.length, 'test Help Category', 'test Help Categories')}` + deleteCategories.map((c) => `  ${c._id} "${c.title}"`).join(''))
-console.log(`\nWrite   ${plural(faqDocs.length, 'FAQ')}: ${counts('general')} general, ${counts('contextual')} contextual · category left blank on all`)
+const categorised = faqDocs.filter((d) => d.category).length
+const categoryNote = hasCategoryColumn
+  ? `${categorised} with a Help Category, ${faqDocs.length - categorised} blank`
+  : 'no "Help Category" column in Notion yet — category left blank on all'
+console.log(`\nWrite   ${plural(faqDocs.length, 'FAQ')}: ${counts('general')} general, ${counts('contextual')} contextual · ${categoryNote}`)
+if (hasCategoryColumn) {
+  const perCategory = new Map()
+  for (const d of faqDocs) if (d.category) perCategory.set(d.category._ref, (perCategory.get(d.category._ref) ?? 0) + 1)
+  for (const c of existing.helpCategories.filter((c) => perCategory.has(c._id))) {
+    console.log(`          ${c.title.padEnd(28)} ${String(perCategory.get(c._id)).padStart(3)}`)
+  }
+  const blankGeneral = faqDocs.filter((d) => d.scope === 'general' && !d.category).length
+  if (blankGeneral) console.log(`          ⚠️ ${plural(blankGeneral, 'general FAQ')} with no category — the Help Center cannot list ${blankGeneral === 1 ? 'it' : 'them'}`)
+}
 console.log(`\nReplace faqs on ${plural(listPatches.length, 'page')}:`)
 for (const p of listPatches.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))) {
   const n = p.faqs?.length ?? 0
