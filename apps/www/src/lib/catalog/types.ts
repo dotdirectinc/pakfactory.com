@@ -31,6 +31,17 @@ export type CustomizationOption = {
     status?: string;
 };
 
+/**
+ * Lifecycle of a product or customization with a page (Richard's baseline, 2026-09-28):
+ * active = normal; coming-soon = page says coming soon, listed with a badge, not orderable;
+ * discontinued = page says no longer available, not listed, not orderable. Unset reads active.
+ */
+export type CatalogLifecycle = 'active' | 'coming-soon' | 'discontinued';
+
+export function toLifecycle(status: string | null | undefined): CatalogLifecycle {
+    return status === 'coming-soon' || status === 'discontinued' ? status : 'active';
+}
+
 export type CatalogMedia = {
     src?: string;
     alt: string;
@@ -113,6 +124,8 @@ export type GoogleReviewsBand = {
 };
 
 export type Product = {
+    /** Lifecycle — drives the PDP notice and whether it can be added to a request. */
+    status?: CatalogLifecycle;
     title: string;
     slug: string;
     sku: string;
@@ -260,6 +273,7 @@ export type CustomizationLibraryItem = {
     propertyTitles: Record<string, string>;
     /** propertyValue.slug → display title */
     valueTitles: Record<string, string>;
+    status?: CatalogLifecycle;
 };
 
 export type CustomizationLibraryResult = {
@@ -315,6 +329,7 @@ export type ProductLibraryItem = {
     imageAlt?: string | null;
     images?: {src: string; alt?: string}[];
     moq?: number;
+    status?: CatalogLifecycle;
     /** Industry solutions tagged on the product (`solutionType == "industry"`). */
     industries: {slug: string; title: string}[];
     /** property.slug → propertyValue.slug[] */
@@ -375,6 +390,8 @@ export type CustomizationDeclaredProperty = {
 export type CustomizationDetail = {
     id: string;
     title: string;
+    /** Coming soon / discontinued show a badge and a notice (PROD-2605). */
+    status?: CatalogLifecycle;
     slug: string;
     categoryValue: string;
     categoryLabel: string;

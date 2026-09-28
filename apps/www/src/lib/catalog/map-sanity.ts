@@ -34,6 +34,7 @@ import type {
     ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
+import {toLifecycle} from '@/lib/catalog/types';
 
 function mediaFromSanity(
     media: unknown[] | null | undefined,
@@ -329,6 +330,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         // Never substitute the URL slug for a missing SKU (catalog / PDP eyebrow).
         sku: doc.sku?.trim() || '-',
         kind,
+        status: toLifecycle(doc.status),
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
         media: mediaFromSanity(doc.media, doc.title),
@@ -418,6 +420,7 @@ export function mapSanityProductLibraryItem(
             },
             imageUrl: first?.src ?? null,
             imageAlt: first?.alt ?? product.title,
+            ...(product.status && product.status !== 'active' ? {status: product.status} : {}),
             images: images.length > 0 ? images : undefined,
             ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
             industries,
@@ -655,6 +658,7 @@ export function mapSanityLibraryOption(
         slug,
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,
+        ...(toLifecycle(doc.status) !== 'active' ? {status: toLifecycle(doc.status)} : {}),
         imageUrl: first?.src ?? null,
         imageAlt: first?.alt ?? doc.title,
         images: images.length > 0 ? images : undefined,
@@ -774,6 +778,7 @@ export function mapSanityCustomizationDetail(
     }
 
     return {
+        status: toLifecycle(doc.status),
         id: doc._id,
         title,
         slug,
