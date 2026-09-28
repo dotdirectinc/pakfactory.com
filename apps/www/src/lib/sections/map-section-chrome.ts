@@ -1,5 +1,6 @@
 import type {PageSectionLinkDoc} from '@pakfactory/sanity/queries';
 import type {PageDielinePaddingBlock} from '@pakfactory/ui/components/page-dieline-section';
+import {stegaClean} from 'next-sanity';
 
 import {
     resolveDielineBorders,
@@ -18,15 +19,20 @@ export type SectionChromeMapped = {
     cta?: {label: string; href: string};
 };
 
+/*
+ * Enum-like Studio strings are compared after `stegaClean`: in draft mode they
+ * arrive stega-encoded, and a raw `=== 'center'` would silently fall back.
+ */
 export function mapSectionAlign(
     align: string | null | undefined,
 ): SectionAlign {
-    return align === 'center' ? 'center' : 'left';
+    return stegaClean(align) === 'center' ? 'center' : 'left';
 }
 
 export function mapSectionPaddingBlock(
-    paddingBlock: string | null | undefined,
+    rawPaddingBlock: string | null | undefined,
 ): PageDielinePaddingBlock {
+    const paddingBlock = stegaClean(rawPaddingBlock);
     if (
         paddingBlock === 'xs' ||
         paddingBlock === 'sm' ||
