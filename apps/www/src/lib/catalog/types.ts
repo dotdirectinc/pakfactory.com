@@ -48,6 +48,8 @@ export type ProductStyleRef = {
     shortDescription?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    /** The style's own FAQs. Empty → the style page uses its line's (see `resolveStyleFaqs`). */
+    faqs?: ProductFaq[];
 };
 
 export type ProductDimensionRange = {

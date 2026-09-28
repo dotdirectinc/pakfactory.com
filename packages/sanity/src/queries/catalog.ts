@@ -113,6 +113,30 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
 /** Hover-play / hero MP4 URL from product `featuredVideo`; empty when unset. */
 const PRODUCT_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
 
+/** One FAQ as the catalog pages render it. */
+const FAQ_ITEM_PROJ = /* groq */ `{
+    question,
+    "answerPlain": pt::text(answer)
+  }`;
+
+/**
+ * A product's FAQs, inherited down the catalog: product → its style → its line (Richard,
+ * 2026-09-28). The nearest level with ANY FAQ wins outright — one curated FAQ on a product
+ * replaces everything above it, nothing merges. A preset reads its style and line through
+ * `basedOn`, as the card fields do. The style is the product's first (`productStyle[0]`), the
+ * one its card shows; the line is the product's own, falling back to that style's line.
+ */
+const PRODUCT_FAQS_INHERITED = /* groq */ `"faqs": select(
+    count(faqs) > 0 => faqs[]->${FAQ_ITEM_PROJ},
+    count(coalesce(productStyle[0], basedOn->productStyle[0])->faqs) > 0 =>
+      coalesce(productStyle[0], basedOn->productStyle[0])->faqs[]->${FAQ_ITEM_PROJ},
+    coalesce(
+      productLine,
+      basedOn->productLine,
+      coalesce(productStyle[0], basedOn->productStyle[0])->productLine
+    )->faqs[]->${FAQ_ITEM_PROJ}
+  )`;
+
 /** Shared product projection used by by-slug and list queries. */
 export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   _id,
@@ -184,10 +208,7 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
     "label": property->title,
     "values": values[]->title
   },
-  "faqs": faqs[]->{
-    question,
-    "answerPlain": pt::text(answer)
-  },
+  ${PRODUCT_FAQS_INHERITED},
   "relatedProducts": relatedProducts[]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
@@ -346,7 +367,9 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     "slug": slug.current,
     shortDescription,
     "description": coalesce(pt::text(description), shortDescription),
-    ${STYLE_CARD_IMAGE}
+    ${STYLE_CARD_IMAGE},
+    // The style's own FAQs; the style page falls back to the line's when empty.
+    "faqs": faqs[]->${FAQ_ITEM_PROJ}
   },
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
@@ -731,6 +754,8 @@ export type CatalogStyleRefDoc = {
   shortDescription?: string | null;
   description?: string | null;
   cardImage?: unknown | null;
+  /** The style's own FAQs (line query only). */
+  faqs?: CatalogProductFaqDoc[] | null;
 };
 
 export type CatalogProductPropertyDoc = {
