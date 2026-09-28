@@ -20,13 +20,11 @@ type LogoWallProps = {
     /**
      * `band` (default) — padded section with a muted label.
      * `strip` — the thin trust strip under a hero (POC `TrustedBrands`): dashed
-     * rules both sides, tight padding, label in body ink, logos at a fixed
-     * 72px height and natural width.
+     * rules both sides, tight padding, label in body ink, logos taller at
+     * natural width.
      */
     variant?: 'band' | 'strip';
 };
-
-const STRIP_MARK_HEIGHT = 72;
 
 function toLogoMarqueeItems(content: LogoWallContent): LogoMarqueeItem[] {
     return content.items.map((item) => ({
@@ -77,7 +75,7 @@ export function LogoWall({
                     <LogoMarquee
                         items={items}
                         gap={4}
-                        markHeight={STRIP_MARK_HEIGHT}
+                        naturalWidth
                         {...(marqueeDuration ? {duration: marqueeDuration} : {})}
                     />
                 </div>

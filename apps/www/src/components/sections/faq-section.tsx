@@ -35,8 +35,8 @@ type FaqSectionProps = {
     cta?: {label: string; href: string};
     /**
      * `cards` (default) — separate muted accordion cards under a centred column.
-     * `rows` — full-width divider rows, larger questions (expertise pages, POC
-     * `ExpertiseFaq`).
+     * `rows` — full-width divider rows instead of cards (expertise pages).
+     * Structure only: the Accordion trigger, chip and type stay the shared ones.
      */
     variant?: 'cards' | 'rows';
 };
