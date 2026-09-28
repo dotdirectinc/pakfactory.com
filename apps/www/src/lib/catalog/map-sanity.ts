@@ -71,6 +71,20 @@ function cardImageFromSanity(
     return {imageUrl, imageAlt};
 }
 
+/** FAQ rows → `ProductFaq[]`, dropping any without both a question and an answer. */
+function mapFaqs(
+    rows: ({question?: string | null; answerPlain?: string | null} | null)[] | null | undefined,
+): ProductFaq[] {
+    const faqs: ProductFaq[] = [];
+    for (const row of rows ?? []) {
+        const question = row?.question?.trim();
+        const answerPlain = row?.answerPlain?.trim();
+        if (!question || !answerPlain) continue;
+        faqs.push({question, answerPlain});
+    }
+    return faqs;
+}
+
 function mapStyleRef(
     style: {
         slug: string | null;
@@ -78,6 +92,7 @@ function mapStyleRef(
         description?: string | null;
         shortDescription?: string | null;
         cardImage?: unknown | null;
+        faqs?: ({question?: string | null; answerPlain?: string | null} | null)[] | null;
     },
 ): ProductStyleRef | null {
     const styleSlug = style.slug?.trim();
@@ -89,12 +104,14 @@ function mapStyleRef(
             : undefined;
     const shortDescription = style.shortDescription?.trim();
     const {imageUrl, imageAlt} = cardImageFromSanity(style.cardImage, title);
+    const faqs = mapFaqs(style.faqs);
     return {
         slug: styleSlug,
         title,
         ...(description ? {description} : {}),
         ...(shortDescription ? {shortDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
+        ...(faqs.length ? {faqs} : {}),
     };
 }
 
