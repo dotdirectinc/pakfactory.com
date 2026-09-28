@@ -38,7 +38,10 @@ export const ADMIN_SPEC_RULES_COPY = {
     options: "By option",
     exceptions: "Product exceptions",
     attention: "Needs attention",
+    legacy: "Old explorer rules",
   },
+  legacyLead:
+    "The hand-written rules the old Property Controls explorer applied, and where each one stands now that the rules come from Sanity. Rules Sanity does not model are left out, not reimplemented — this is the gap list.",
   totals: {
     products: "standard products",
     types: "types",
@@ -67,7 +70,10 @@ export const ADMIN_SPEC_RULES_COPY = {
     dependent: "Decides",
     other: "Ordered with",
   },
-  filterOptions: "Filter — an option, a type, a material…",
+  filterOptions: "Filter by option or type name…",
+  openOption: "open",
+  loadingPartners: "Loading pairs…",
+  partnersFailed: "Could not load this option's pairs — reload and try again.",
   noMatch: (q: string) => `Nothing matches “${q}”.`,
   unmet: (names: string) => `Can never be offered: no partner in ${names}`,
   exceptionsEmpty: "No product has an exception yet.",
@@ -86,4 +92,85 @@ export const ADMIN_SPEC_RULES_COPY = {
     unknownDeps: "Requirements naming nothing that exists",
     none: "Nothing to report.",
   },
+} as const;
+
+/** Products & Customizations (PROD-2614): read-only until V1 — edits happen in Studio. */
+export const ADMIN_SPEC_PRODUCTS_COPY = {
+  listTitle: "Products",
+  listLead:
+    "Every standard product and what the rules make of it, read from Sanity. Read-only until V1 — edit in Studio.",
+  filter: "Filter — a product, a line, a style…",
+  noMatch: (q: string) => `No product matches “${q}”.`,
+  columns: {
+    product: "Product",
+    line: "Line · style",
+    listed: "Listed",
+    derived: "Derived",
+    exceptions: "Exceptions",
+  },
+  backToList: "All products",
+  loadMore: (n: number, left: number) => `Load ${n} more (${left} left)`,
+  editInStudio: "Edit in Studio",
+  tabs: { offers: "What it offers", configure: "Configure as a customer", exceptions: "Exceptions" },
+  offersLead:
+    "Listed options are the product's own choice. Derived options come from the rules: each says which of the product's options allows it.",
+  state: { listed: "Listed", derived: "Derived", added: "Added by exception" },
+  because: "allowed by",
+  unconstrained: "Nothing narrows this type — every option that pairs with anything is offered.",
+  removedHeading: (n: number) => `${n} not offered on this product`,
+  removedBecause: (names: string) => `no partner in ${names}`,
+  removedByException: "removed by an exception",
+  referenceNote: "reference only",
+  configureLead:
+    "Pick as a customer would. Options narrow exactly as on the storefront — the same code runs both. Nothing here is saved.",
+  reset: "Clear picks",
+  configuratorLoading: "Loading the rules…",
+  configuratorFailed: "Could not load the rules — reload the page and try again.",
+  dimensions: "Dimensions",
+  pickOne: "pick one",
+  pickSeveral: "pick several",
+  hiddenByPicks: (names: string) => `Hidden by your picks: ${names}`,
+  invalidated: (names: string) => `No longer possible with your other picks: ${names}`,
+  exceptionsEmpty: "This product has no exceptions — the rules alone decide what it offers.",
+  notFound: "No standard product with this id in the dataset.",
+  customizationLead:
+    "One option: what it pairs with, and which products end up offering it. Read-only until V1 — edit in Studio.",
+  productsOffering: (n: number) => `Offered on ${n} products`,
+  pairsHeading: "Pairs with",
+  productsHeading: "Products offering it",
+} as const;
+
+/**
+ * The old Property Controls explorer's hand-written rules (L1–L15), and where each one stands
+ * now that the rules come from Sanity (PROD-2614). Rules Sanity does not model are left out of
+ * every screen, not reimplemented; this table is the gap list.
+ */
+export const LEGACY_RULE_COVERAGE: {
+  id: string;
+  rule: string;
+  status: "sanity" | "product-data" | "builder-ui" | "not-modelled";
+  note: string;
+}[] = [
+  { id: "L1", rule: "Tin · Pouches · Mailers · Bags → print outside only", status: "not-modelled", note: "Needs a print-sides field on the product; not modelled (no schema change for now)." },
+  { id: "L2", rule: "Labels · Stickers · Accessories · Cardboard Insert → one “Printed?” toggle", status: "not-modelled", note: "Same as L1." },
+  { id: "L3", rule: "Foam · Molded Pulp · Plastic Tray Insert → no printing section", status: "sanity", note: "Follows from the rules: a product whose Printing Method resolves to nothing has no printing." },
+  { id: "L4", rule: "All print toggles No → hide the other printing options", status: "builder-ui", note: "Form behaviour, not a rule." },
+  { id: "L5", rule: "Pantone Spot or Hybrid → Pantone count + PMS codes", status: "builder-ui", note: "Form behaviour of the colour system." },
+  { id: "L6", rule: "Pantone count capped at 3", status: "builder-ui", note: "Form validation." },
+  { id: "L7", rule: "One PMS code per Pantone count", status: "builder-ui", note: "Form validation." },
+  { id: "L8", rule: "Soft Touch → no debossing", status: "sanity", note: "Holds as pairs (checked 2026-09-28). Soft Touch (for non-paper) DOES pair with every debossing option — confirm with Crystal." },
+  { id: "L9", rule: "Textured Embossing & Debossing → no other embossing", status: "sanity", note: "Holds: it is paired with no other embossing option (checked 2026-09-28)." },
+  { id: "L10", rule: "Textured Embossing & Debossing → requires Uncoated", status: "sanity", note: "Does NOT hold in the data: it pairs with 12 finishes, not only Uncoated (checked 2026-09-28) — confirm with Crystal." },
+  { id: "L11", rule: "Foam + Foiling → requires Flocking, Paper or Leather Lamination", status: "not-modelled", note: "A requirement that depends on the material; the requirements model cannot say it." },
+  { id: "L12", rule: "Foam + Embossing → requires Paper or Leather Lamination", status: "not-modelled", note: "Same as L11." },
+  { id: "L13", rule: "Tin → stock size picklist, or custom L × W × H", status: "not-modelled", note: "Size logic, not modelled." },
+  { id: "L14", rule: "Cylinder → Diameter × Height", status: "product-data", note: "product.dimensionInput." },
+  { id: "L15", rule: "Bag / Pouch → Width × Height × Gusset", status: "product-data", note: "product.dimensionInput." },
+];
+
+export const LEGACY_STATUS_LABEL = {
+  sanity: "In Sanity",
+  "product-data": "Product data",
+  "builder-ui": "Builder UI",
+  "not-modelled": "Not modelled",
 } as const;

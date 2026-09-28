@@ -25,6 +25,8 @@ type NavLinkItem = {
 type NavGroupItem = {
   type: "group";
   id: string;
+  /** Hidden from staff without a registry grant (Spec System). */
+  requiresRegistryGrant?: boolean;
   label: string;
   icon: NavIcon;
   children: readonly NavChild[];
@@ -46,12 +48,13 @@ const NAV: readonly NavEntry[] = [
       },
     ],
   },
-  // Shown to everyone; /spec itself 404s anyone without a registry grant, so a
-  // sales member who clicks it learns nothing about what lives there.
+  // Hidden without a registry grant (the layout asks the backend). /spec still 404s
+  // anyone without one, so a direct URL learns nothing either.
   {
     type: "group",
     id: "spec",
-    label: "Spec registry",
+    requiresRegistryGrant: true,
+    label: "Spec System",
     icon: FileText,
     children: [
       {
@@ -63,7 +66,15 @@ const NAV: readonly NavEntry[] = [
         href: "/spec",
         label: "Frames to approve",
         match: (path) =>
-          path === "/spec" || (path.startsWith("/spec/") && !path.startsWith("/spec/rules")),
+          path === "/spec" ||
+          (path.startsWith("/spec/") &&
+            !["/spec/rules", "/spec/products", "/spec/customizations"].some((p) => path.startsWith(p))),
+      },
+      // Products & Customizations (PROD-2614) — read-only until V1; edits happen in Studio.
+      {
+        href: "/spec/products",
+        label: "Products",
+        match: (path) => path.startsWith("/spec/products") || path.startsWith("/spec/customizations"),
       },
     ],
   },
@@ -163,13 +174,16 @@ function NavGroup({
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ specAccess }: { specAccess: boolean }) {
   const pathname = usePathname();
+  const nav = NAV.filter(
+    (entry) => !(entry.type === "group" && entry.requiresRegistryGrant && !specAccess),
+  );
 
   return (
     <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-muted/40 md:flex">
       <nav aria-label="Primary" className="flex flex-col gap-0.5 p-2 pt-3">
-        {NAV.map((entry) =>
+        {nav.map((entry) =>
           entry.type === "link" ? (
             <LeafLink key={entry.href} item={entry} pathname={pathname} />
           ) : (

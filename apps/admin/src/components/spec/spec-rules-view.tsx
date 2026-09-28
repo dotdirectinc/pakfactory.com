@@ -1,19 +1,40 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Input } from "@pakfactory/ui/components/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@pakfactory/ui/components/tabs";
 import { cn } from "@pakfactory/ui/lib/utils";
 import type { CurrentRules, PartnerLine, RuleOptionRow, RuleTypeRow } from "@/lib/spec/current-rules";
-import { ADMIN_SPEC_RULES_COPY as COPY } from "@/lib/copy/spec";
+import {
+  ADMIN_SPEC_RULES_COPY as COPY,
+  LEGACY_RULE_COVERAGE,
+  LEGACY_STATUS_LABEL,
+} from "@/lib/copy/spec";
 
 /**
  * The current rules at three levels: per type (the statements), per option (its pairs,
  * summarised), and what needs attention. Everything shown was computed by the shared package
  * on the server; this only filters and words it.
  */
+const TABS = ["types", "options", "exceptions", "attention", "legacy"] as const;
+
 export function SpecRulesView({ rules }: { rules: CurrentRules }) {
+  // The tab lives in the URL (?tab=options) so a view can be linked and survives a reload.
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const requested = params.get("tab");
+  const tab = (TABS as readonly string[]).includes(requested ?? "") ? requested! : "types";
+  const setTab = (next: string) => {
+    const sp = new URLSearchParams(params.toString());
+    if (next === "types") sp.delete("tab");
+    else sp.set("tab", next);
+    router.replace(sp.size ? `${pathname}?${sp}` : pathname, { scroll: false });
+  };
+
   const attentionCount =
     rules.attention.missingReferences.length +
     rules.attention.siblingPairs.length +
@@ -24,7 +45,7 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
   return (
     <div className="flex flex-col gap-4">
       <Totals rules={rules} />
-      <Tabs defaultValue="types">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="types">{COPY.tabs.types}</TabsTrigger>
           <TabsTrigger value="options">{COPY.tabs.options}</TabsTrigger>
@@ -34,6 +55,7 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
           <TabsTrigger value="attention">
             {COPY.tabs.attention} ({attentionCount})
           </TabsTrigger>
+          <TabsTrigger value="legacy">{COPY.tabs.legacy}</TabsTrigger>
         </TabsList>
         <TabsContent value="types" className="mt-3">
           <TypeTable types={rules.types} />
@@ -46,6 +68,9 @@ export function SpecRulesView({ rules }: { rules: CurrentRules }) {
         </TabsContent>
         <TabsContent value="attention" className="mt-3">
           <Attention rules={rules} />
+        </TabsContent>
+        <TabsContent value="legacy" className="mt-3">
+          <LegacyCoverage />
         </TabsContent>
       </Tabs>
     </div>
@@ -160,18 +185,21 @@ const STATUS_TONE: Record<RuleOptionRow["status"], string> = {
   "unknown-type": "text-destructive",
 };
 
+/**
+ * Options grouped by type, collapsed. Rows carry only their heading; an option's partner lines
+ * load when it is opened (PROD-2614 performance) — they were 97% of this page's data. So the
+ * filter matches option and type names, not partner names; the customization page has those.
+ */
 function OptionList({ options }: { options: RuleOptionRow[] }) {
   const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter(
-      (o) =>
-        o.title.toLowerCase().includes(q) ||
-        o.typeTitle.toLowerCase().includes(q) ||
-        o.partners.some((p) => p.typeTitle.toLowerCase().includes(q) || p.names.some((n) => n.toLowerCase().includes(q))),
-    );
-  }, [options, query]);
+  const q = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () =>
+      q
+        ? options.filter((o) => o.title.toLowerCase().includes(q) || o.typeTitle.toLowerCase().includes(q))
+        : options,
+    [options, q],
+  );
 
   const byType = useMemo(() => {
     const groups = new Map<string, RuleOptionRow[]>();
@@ -190,7 +218,7 @@ function OptionList({ options }: { options: RuleOptionRow[] }) {
           aria-label="Filter options"
         />
         <span className="text-sm tabular-nums text-muted-foreground">
-          {query ? `${filtered.length} of ${options.length}` : `${options.length} options`}
+          {q ? `${filtered.length} of ${options.length}` : `${options.length} options`}
         </span>
       </div>
 
@@ -198,45 +226,91 @@ function OptionList({ options }: { options: RuleOptionRow[] }) {
         <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">{COPY.noMatch(query)}</p>
       ) : (
         byType.map(([typeTitle, rows]) => (
-          <section key={typeTitle} className="rounded-md border border-border">
-            <h2 className="border-b border-border bg-muted/40 px-3 py-2 text-sm font-semibold text-foreground">
-              {typeTitle}
-            </h2>
+          <details
+            key={typeTitle}
+            // Collapsed by default; a search opens every group it narrows.
+            open={Boolean(q)}
+            className="group rounded-md border border-border"
+          >
+            <summary className="flex cursor-pointer items-baseline justify-between gap-2 bg-muted/40 px-3 py-2 text-sm">
+              <span className="font-semibold text-foreground">{typeTitle}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {rows.length} options
+                {rows.some((o) => o.status !== "offered") &&
+                  ` · ${rows.filter((o) => o.status !== "offered").length} not offered`}
+              </span>
+            </summary>
             <ul className="divide-y divide-border">
               {rows.map((o) => (
-                <li key={o.id} className="flex flex-col gap-1 px-3 py-2 text-sm">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-medium text-foreground">{o.title}</span>
-                    <span className={cn("text-xs tabular-nums", STATUS_TONE[o.status])}>
-                      {o.status === "offered"
-                        ? `${o.productCount} products`
-                        : COPY.optionStatus[o.status]}
-                      {o.addedByException > 0 && ` · ${o.addedByException} by exception`}
-                      {o.removedByException > 0 && ` · removed on ${o.removedByException}`}
-                    </span>
-                  </div>
-                  {o.unmetRequirements.length > 0 && (
-                    <p className="text-xs text-destructive">{COPY.unmet(o.unmetRequirements.join("; "))}</p>
-                  )}
-                  {o.partners.length > 0 && (
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-                      {o.partners.map((p) => (
-                        <div key={p.typeTitle} className="contents">
-                          <dt className="text-muted-foreground">
-                            {COPY.relation[p.relation]} {p.typeTitle}
-                          </dt>
-                          <dd className="text-foreground">{partnerText(p)}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                </li>
+                <OptionRow key={o.id} option={o} />
               ))}
             </ul>
-          </section>
+          </details>
         ))
       )}
     </div>
+  );
+}
+
+function OptionRow({ option: o }: { option: RuleOptionRow }) {
+  const [partners, setPartners] = useState<PartnerLine[] | null>(null);
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+
+  const load = async () => {
+    if (partners || state === "loading") return;
+    setState("loading");
+    try {
+      const res = await fetch(`/api/spec/options/${encodeURIComponent(o.id)}/partners`);
+      if (!res.ok) throw new Error(String(res.status));
+      setPartners((await res.json()) as PartnerLine[]);
+      setState("idle");
+    } catch {
+      setState("error");
+    }
+  };
+
+  return (
+    <li className="px-3 py-2 text-sm">
+      <details onToggle={(e) => (e.currentTarget.open ? void load() : undefined)}>
+        <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-2">
+          <span className="flex items-baseline gap-2">
+            <span className="font-medium text-foreground">{o.title}</span>
+            <Link
+              href={`/spec/customizations/${encodeURIComponent(o.id)}`}
+              className="text-xs text-muted-foreground hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {COPY.openOption}
+            </Link>
+          </span>
+          <span className={cn("text-xs tabular-nums", STATUS_TONE[o.status])}>
+            {o.status === "offered" ? `${o.productCount} products` : COPY.optionStatus[o.status]}
+            {o.addedByException > 0 && ` · ${o.addedByException} by exception`}
+            {o.removedByException > 0 && ` · removed on ${o.removedByException}`}
+            {o.partnerTypes > 0 && ` · pairs with ${o.partnerTypes} types`}
+          </span>
+        </summary>
+        {o.unmetRequirements.length > 0 && (
+          <p className="mt-1 text-xs text-destructive">{COPY.unmet(o.unmetRequirements.join("; "))}</p>
+        )}
+        <div className="mt-1">
+          {state === "loading" && <p className="text-xs text-muted-foreground">{COPY.loadingPartners}</p>}
+          {state === "error" && <p className="text-xs text-destructive">{COPY.partnersFailed}</p>}
+          {partners && partners.length > 0 && (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+              {partners.map((p) => (
+                <div key={p.typeTitle} className="contents">
+                  <dt className="text-muted-foreground">
+                    {COPY.relation[p.relation]} {p.typeTitle}
+                  </dt>
+                  <dd className="text-foreground">{partnerText(p)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      </details>
+    </li>
   );
 }
 
@@ -341,6 +415,39 @@ function Attention({ rules }: { rules: CurrentRules }) {
       <AttentionSection title={COPY.attention.unknownDeps} empty={unknownDependencyReferences.length === 0}>
         <ul className="font-mono text-xs">{unknownDependencyReferences.map((r) => <li key={r}>{r}</li>)}</ul>
       </AttentionSection>
+    </div>
+  );
+}
+
+/** The old Property Controls explorer's L1–L15, and where each stands now (PROD-2614). */
+function LegacyCoverage() {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="max-w-2xl text-sm text-muted-foreground">{COPY.legacyLead}</p>
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[48rem] text-sm">
+          <thead className="bg-muted/40 text-left text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">Rule</th>
+              <th className="px-3 py-2 font-medium">Said</th>
+              <th className="px-3 py-2 font-medium">Now</th>
+              <th className="px-3 py-2 font-medium">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {LEGACY_RULE_COVERAGE.map((r) => (
+              <tr key={r.id} className="border-t border-border align-top">
+                <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
+                <td className="px-3 py-2">{r.rule}</td>
+                <td className={cn("px-3 py-2", r.status === "not-modelled" && "text-destructive")}>
+                  {LEGACY_STATUS_LABEL[r.status]}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">{r.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

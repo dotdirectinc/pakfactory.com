@@ -1,12 +1,6 @@
-import { createClient } from "next-sanity";
-import { CATALOG_CUSTOMIZATION_RULES_QUERY } from "@pakfactory/sanity/queries";
-import {
-  summarizeRules,
-  type SummaryCatalog,
-  type SummaryProduct,
-  type PartnerGroup,
-} from "@pakfactory/sanity/customization-rules/summary";
-import { getSanityApiVersion, getSanityProjectId } from "@/lib/sanity/env";
+import type { PartnerGroup } from "@pakfactory/sanity/customization-rules/summary";
+import { loadRulesSummary, RULES_DATASET, type Loaded } from "./rules-source";
+import { cachedSpec } from "./cache";
 
 /**
  * The current rules, read from Sanity and computed by the shared package (PROD-2560).
@@ -15,36 +9,11 @@ import { getSanityApiVersion, getSanityProjectId } from "@/lib/sanity/env";
  * documents with the same query the storefront uses and hands them to the same code. The
  * registry is not consulted: its copy is the approved seed, which editors move away from.
  *
- * Computed on every read, never stored (2026-09-25).
+ * Computed on every read, never stored (2026-09-25). The read lives in `rules-source.ts`,
+ * shared by every Spec System page.
  */
 
-/**
- * Pinned to `development` (decision 2026-09-25): the rules exist only there until the
- * production fill runs (PROD-2596). Deliberately NOT the ambient `NEXT_PUBLIC_SANITY_DATASET`,
- * which admin's search reads and which will say `production` on the deployed app — that would
- * show an empty rule set that looks like an answer.
- */
-export const RULES_DATASET = process.env.ADMIN_SPEC_RULES_DATASET?.trim() || "development";
-
-const QUERY = /* groq */ `{
-  "rules": ${CATALOG_CUSTOMIZATION_RULES_QUERY},
-  "categories": *[_type == "customizationCategory" && !(_id in path("drafts.**"))]{ _id, title },
-  "products": *[_type == "product" && kind == "standard" && !(_id in path("drafts.**"))] | order(title asc) {
-    _id,
-    title,
-    "availableCustomizations": coalesce(availableCustomizations[]{ "optionId": customization._ref }, []),
-    "customizationExceptions": coalesce(
-      customizationExceptions[]{ "optionId": customization._ref, mode, reason },
-      []
-    )
-  }
-}`;
-
-type QueryResult = {
-  rules: SummaryCatalog;
-  categories: { _id: string; title?: string }[];
-  products: SummaryProduct[];
-};
+export { RULES_DATASET };
 
 /** A partner group as the screen shows it: names, not ids, and only the short list. */
 export type PartnerLine = {
@@ -70,6 +39,7 @@ export type RuleTypeRow = {
   productsOffering: number;
 };
 
+/** An option as the list shows it. Its partner lines load on demand (see `getOptionPartners`). */
 export type RuleOptionRow = {
   id: string;
   title: string;
@@ -79,7 +49,8 @@ export type RuleOptionRow = {
   productCount: number;
   addedByException: number;
   removedByException: number;
-  partners: PartnerLine[];
+  /** How many partner types it has — the lines themselves load when the row is expanded. */
+  partnerTypes: number;
   /** Names of the requirements it can never meet ("Ink"). */
   unmetRequirements: string[];
 };
@@ -106,38 +77,35 @@ export type CurrentRules = {
   };
 };
 
-export type CurrentRulesResult =
-  | { ok: true; data: CurrentRules }
-  | { ok: false; error: string };
+export type CurrentRulesResult = Loaded<CurrentRules>;
 
-export async function getCurrentRules(): Promise<CurrentRulesResult> {
-  const projectId = getSanityProjectId();
-  if (!projectId) return { ok: false, error: "Sanity is not configured for admin" };
+/**
+ * Current rules, cached (see `cache.ts`). Option rows carry no partner lines: those were 422 of
+ * the page's 432 KB, and most visits never open them.
+ */
+export const getCurrentRules = cachedSpec("current-rules", async (): Promise<CurrentRulesResult> => {
+  const res = await buildCurrentRules();
+  if (!res.ok) return res;
+  const { partners: _partners, ...rest } = res.data;
+  void _partners;
+  return { ok: true, data: rest };
+});
 
-  const client = createClient({
-    projectId,
-    dataset: RULES_DATASET,
-    apiVersion: getSanityApiVersion(),
-    useCdn: true,
-    perspective: "published",
-  });
+/** Every option's partner lines, cached as one entry; the API route hands out one at a time. */
+export const getOptionPartners = cachedSpec(
+  "option-partners",
+  async (): Promise<Loaded<Record<string, PartnerLine[]>>> => {
+    const res = await buildCurrentRules();
+    return res.ok ? { ok: true, data: res.data.partners } : res;
+  },
+);
 
-  let result: QueryResult;
-  try {
-    result = await client.fetch<QueryResult>(QUERY, {}, { next: { revalidate: 60 } });
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Sanity query failed" };
-  }
-
-  const catalog: SummaryCatalog = { ...result.rules, categories: result.categories };
-  const summary = summarizeRules({ catalog, products: result.products });
-
-  const name = new Map<string, string>();
-  for (const c of result.categories) name.set(c._id, c.title ?? c._id);
-  for (const t of catalog.types) name.set(t._id, t.title ?? t._id);
-  for (const o of catalog.options) name.set(o._id, o.title ?? o._id);
-  const productName = new Map(result.products.map((p) => [p._id, p.title ?? p._id]));
-  const label = (id: string) => name.get(id) ?? id;
+async function buildCurrentRules(): Promise<Loaded<CurrentRules & { partners: Record<string, PartnerLine[]> }>> {
+  const res = await loadRulesSummary();
+  if (!res.ok) return res;
+  const { source, summary } = res.data;
+  const label = source.name;
+  const productName = new Map(source.products.map((p) => [p._id, p.title ?? p._id]));
   const typeById = new Map(summary.types.map((t) => [t.typeId, t]));
 
   const types: RuleTypeRow[] = summary.types.map((t) => ({
@@ -154,6 +122,7 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
     productsOffering: t.productsOffering,
   }));
 
+  const partners: Record<string, PartnerLine[]> = {};
   const options: RuleOptionRow[] = summary.options.map((o) => {
     const type = typeById.get(o.typeId);
     const groups = type?.groups ?? [];
@@ -163,6 +132,15 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
     const written = type && type.requirements.length === groups.length ? type.requirements : null;
     const requirementName = (i: number) =>
       (written?.[i] ?? (groups[i] ?? []).map((id) => ({ id }))).map((e) => label(e.id)).join(" or ");
+    partners[o.optionId] = o.partners.map((p) => ({
+      typeTitle: label(p.typeId),
+      relation: p.relation,
+      coverage: p.coverage,
+      typeSize: p.typeSize,
+      count: p.partnerIds.length,
+      names:
+        p.coverage === "all" ? [] : (p.coverage === "all-but" ? p.missing ?? [] : p.partnerIds).map(label),
+    }));
     return {
       id: o.optionId,
       title: label(o.optionId),
@@ -172,15 +150,7 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
       productCount: o.productCount,
       addedByException: o.addedByException,
       removedByException: o.removedByException,
-      partners: o.partners.map((p) => ({
-        typeTitle: label(p.typeId),
-        relation: p.relation,
-        coverage: p.coverage,
-        typeSize: p.typeSize,
-        count: p.partnerIds.length,
-        names:
-          p.coverage === "all" ? [] : (p.coverage === "all-but" ? p.missing ?? [] : p.partnerIds).map(label),
-      })),
+      partnerTypes: o.partners.length,
       unmetRequirements: o.unpairedRequirements.map(requirementName),
     };
   });
@@ -203,10 +173,11 @@ export async function getCurrentRules(): Promise<CurrentRulesResult> {
   return {
     ok: true,
     data: {
-      dataset: RULES_DATASET,
+      dataset: source.dataset,
       totals: summary.totals,
       types,
       options,
+      partners,
       exceptions,
       attention: {
         missingReferences: [...missing]

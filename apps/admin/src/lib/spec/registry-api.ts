@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@pakfactory/supabase/server";
 
 /**
@@ -98,10 +99,14 @@ async function call<T>(
 }
 
 /** Who the backend thinks this person is, and what their grant allows. */
-export async function fetchSpecMe(): Promise<SpecMe | null> {
+/**
+ * Memoised per request: the admin layout asks (to decide whether Spec System is in the
+ * sidebar) and so does every /spec page (to 404 without a grant) — one backend call serves both.
+ */
+export const fetchSpecMe = cache(async (): Promise<SpecMe | null> => {
   const res = await call<SpecMe>("/api/spec-me");
   return res.ok ? res.data : null;
-}
+});
 
 export async function listDraftChangesets() {
   return call<ChangesetSummary[]>("/api/v1/changesets?state=draft&page_size=100");

@@ -19,6 +19,18 @@ export async function requireRegistryGrant(): Promise<SpecMe> {
   return me;
 }
 
+/**
+ * Whether Spec System belongs in this person's sidebar at all.
+ *
+ * Hidden rather than greyed out: a disabled entry still tells a sales member the registry
+ * exists, which is what the 404 above is careful not to do. Fails closed — a backend that is
+ * down hides the entry, and the pages themselves still 404.
+ */
+export async function hasRegistryGrant(): Promise<boolean> {
+  const me = await fetchSpecMe();
+  return Boolean(me?.authenticated && me.role);
+}
+
 /** Whether this person may decide a frame, as opposed to only reading one. */
 export function canApprove(me: SpecMe): boolean {
   return me.capabilities.includes("value.approve");

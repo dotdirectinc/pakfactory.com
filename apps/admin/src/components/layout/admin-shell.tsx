@@ -9,10 +9,13 @@ import { AdminSearchProvider } from "@/components/search/admin-search-provider";
 export function AdminShell({
   children,
   devBypassActive,
+  specAccess,
   account,
 }: {
   children: ReactNode;
   devBypassActive: boolean;
+  /** Registry grant — Spec System is hidden without one. */
+  specAccess: boolean;
   account: AdminAccountMenuProps;
 }) {
   return (
@@ -20,7 +23,7 @@ export function AdminShell({
       <div className="flex h-dvh flex-col bg-foreground">
         <AdminTopBar devBypassActive={devBypassActive} account={account} />
         <div className="flex min-h-0 flex-1 overflow-hidden rounded-t-xl bg-muted">
-          <AdminSidebar />
+          <AdminSidebar specAccess={specAccess} />
           <main className="min-w-0 flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-6">
             {children}
           </main>
