@@ -227,9 +227,19 @@ NOTION_TOKEN=<from backend .env.local> pnpm --filter @pakfactory/studio run popu
 NOTION_TOKEN=<from backend .env.local> pnpm --filter @pakfactory/studio run populate:faqs -- --dataset development --confirm
 ```
 
-Dry run on 2026-09-25: 23 test FAQs + 1 test Help Category deleted, 101 FAQs written (7 general,
-94 contextual), 13 lines and 5 stages re-listed. Corrugated Boxes gets 7 (over the 6-item limit,
-left for Notion to fix); the two page templates lose their test FAQ picks.
+Page lists are written as `faqRef` items — the member name `faqsField` declares — not
+`reference`, which Studio rejects ("Item of type reference not valid for this list").
+
+**Status (2026-09-28, `development`):** 101 FAQs (7 general, 94 contextual), every one with a Help
+Category; 11 Help Categories; 13 lines and 5 stages listing their FAQs, 0 Studio drafts. Styles and
+products show their line's FAQs at render — see [`apps/www/memory.md`](../../apps/www/memory.md)
+§ Catalog FAQs inherit. Production untouched. Backups: `~/cf/dev-before-faq-20260925-1811.tar.gz`,
+`~/cf/dev-before-faq-0928.tar.gz`.
+
+⚠️ **Hold before the next run.** Crystal removed "How do you ensure the quality of corrugated boxes?"
+from Corrugated Boxes **in Studio** (6-item limit); the Notion row still links that line, so a run
+would put it back. Fix the row first — delete it, or set Type → Generic *and* unlink the line
+(unlinking alone stops the run: a Product row with no line is rejected).
 
 ## Preconditions
 
