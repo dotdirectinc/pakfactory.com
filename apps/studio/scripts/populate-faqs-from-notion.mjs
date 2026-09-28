@@ -29,6 +29,10 @@
  * ── WHAT IS DELETED ──────────────────────────────────────────────────────────────
  *
  *   every `faq` (published and draft) that is not a Notion row
+ *   every DRAFT of a Notion FAQ — a draft is left over from someone having the FAQ open in Studio
+ *   during an earlier run; it predates what this run writes, so Studio would show the stale copy
+ *   and a Publish would put it back (Richard, 2026-09-28). Notion is the source, so an unsaved
+ *   Studio edit to an FAQ is discarded too — edit the Notion row instead.
  *   every `helpCategory` whose title contains "test", once nothing else references it
  *
  * A reference from a document this script does not rewrite (a Help Category's `featured`, a
@@ -304,6 +308,7 @@ if (problems.length) {
 
 const keep = new Set(faqDocs.map((d) => d._id))
 const deleteFaqs = existing.faqs.filter((f) => !keep.has(publishedId(f._id)))
+const staleDrafts = existing.faqs.filter((f) => f._id.startsWith('drafts.') && keep.has(publishedId(f._id)))
 const deleteCategories = existing.helpCategories.filter((c) => /test/i.test(c.title ?? ''))
 const deleting = new Set([...deleteFaqs, ...deleteCategories].map((d) => d._id))
 
@@ -351,6 +356,8 @@ console.log(`\n${describeMode({ dataset: DATASET, confirm: apply })}`)
 console.log(`Notion: ${plural(rows.length, 'FAQ row')} (${notion.via}, ${notion.fetchedAt})\n`)
 console.log(`Delete  ${plural(deleteFaqs.length, 'FAQ document')} not in Notion` + (deleteFaqs.length ? ':' : ''))
 for (const f of deleteFaqs) console.log(`          ${f._id}  ${f.question ?? ''}`)
+console.log(`Discard ${plural(staleDrafts.length, 'Studio draft')} of a Notion FAQ (the published copy is rewritten below)` + (staleDrafts.length ? ':' : ''))
+for (const f of staleDrafts) console.log(`          ${f._id}  ${f.question ?? ''}`)
 console.log(`Delete  ${plural(deleteCategories.length, 'test Help Category', 'test Help Categories')}` + deleteCategories.map((c) => `  ${c._id} "${c.title}"`).join(''))
 const categorised = faqDocs.filter((d) => d.category).length
 const categoryNote = hasCategoryColumn
@@ -379,7 +386,7 @@ if (unsetPatches.length) {
 if (reports.length) console.log(`\nReported, not acted on:\n   • ${reports.join('\n   • ')}`)
 
 if (emitPlan) {
-  writeFileSync(resolvePath(emitPlan), JSON.stringify({ dataset: DATASET, notion: { via: notion.via, fetchedAt: notion.fetchedAt }, deleteFaqs, deleteCategories, faqDocs, listPatches, unsetPatches, reports }, null, 2))
+  writeFileSync(resolvePath(emitPlan), JSON.stringify({ dataset: DATASET, notion: { via: notion.via, fetchedAt: notion.fetchedAt }, deleteFaqs, staleDrafts, deleteCategories, faqDocs, listPatches, unsetPatches, reports }, null, 2))
   console.log(`\nPlan written to ${resolvePath(emitPlan)}`)
 }
 
@@ -402,6 +409,7 @@ for (const p of listPatches) {
   })
 }
 for (const d of deleteFaqs) tx.delete(d._id)
+for (const d of staleDrafts) tx.delete(d._id)
 for (const c of deleteCategories) tx.delete(c._id)
 
 const result = await tx.commit({ visibility: 'sync' })

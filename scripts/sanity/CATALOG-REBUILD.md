@@ -204,7 +204,8 @@ is not a Notion row (and any Help Category titled "test"), writes the Notion row
 `faq-<Notion page id>`, and replaces the `faqs` list on each product line (Notion `Product Line`)
 and expertise stage (Notion `Expertise`, Type = Expertise only). Type → scope: Generic → general,
 Product / Expertise → contextual. Other documents that referenced a deleted FAQ have just those
-items removed.
+items removed. A Studio **draft** of a Notion FAQ is discarded too: it predates the run, so Studio
+would show the stale copy and a Publish would restore it. Edit the Notion row, not the FAQ in Studio.
 
 **Help Categories.** `category` comes from Notion's **Help Category** select, matched by exact title
 to a `helpCategory` document. The categories are the content model's eight with Crystal's changes (2026-09-28): one renamed,
