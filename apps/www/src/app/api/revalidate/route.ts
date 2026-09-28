@@ -39,7 +39,7 @@ const INDEXNOW_HOST = "pakfactory.com";
  *     "solution", "solutionIndustryPage", "solutionStyle", "solutionStylePage", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
  *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationDetailPage",
- *     "websiteNavigation", "settings"
+ *     "faq", "websiteNavigation", "settings"
  *   ]
  *
  * Case studies: the listing always revalidates. A slugged `caseStudy` edit
@@ -49,6 +49,11 @@ const INDEXNOW_HOST = "pakfactory.com";
  * Catalog: matching cache tags are busted (`revalidateTag`) and product /
  * customization paths are refreshed. `revalidatePath` alone does not invalidate
  * `unstable_cache` tags.
+ *
+ * FAQ: an `faq` is shown by reference on lines, styles and products (inherited down the
+ * catalog), customization details, solutions and expertise pages, and in their templates'
+ * FAQ sections — so an answer edit refreshes all four. `helpCategory` renders nowhere in www
+ * yet (no Help Center route), so it has nothing to refresh.
  *
  * A slugged `caseStudy` publish/update/unpublish (PROD-2172) also pings IndexNow
  * with that study's canonical URL.
@@ -72,6 +77,9 @@ const CATALOG_PRODUCT_TYPES = new Set([
   "productLine",
   "productStyle",
 ]);
+
+/** Referenced by catalog, solution and expertise pages — see the header. */
+const FAQ_TYPE = "faq";
 
 const CATALOG_CUSTOMIZATION_TYPES = new Set([
   "customizationOption",
@@ -150,6 +158,7 @@ export async function POST(request: Request) {
     !type ||
     CATALOG_PRODUCT_TYPES.has(type) ||
     type === "customizationOption" ||
+    type === FAQ_TYPE ||
     type === "productCatalogPage" ||
     type === "productStylePage" ||
     type === "productDetailPage" ||
@@ -173,6 +182,7 @@ export async function POST(request: Request) {
   const touchesCustomizations =
     !type ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === FAQ_TYPE ||
     type === "customizationCatalogPage" ||
     type === "customizationDetailPage";
   if (touchesCustomizations) {
@@ -199,6 +209,7 @@ export async function POST(request: Request) {
     type === "solutionIndustryPage" ||
     type === "solutionStyle" ||
     type === "solutionStylePage" ||
+    type === FAQ_TYPE ||
     CATALOG_PRODUCT_TYPES.has(type);
   if (touchesSolutions) {
     tags.add(WWW_SOLUTIONS_CACHE_TAG);
@@ -228,6 +239,7 @@ export async function POST(request: Request) {
     type === "expertiseStage" ||
     type === "expertiseStagePage" ||
     type === "expertiseService" ||
+    type === FAQ_TYPE ||
     type === "listingPage";
   if (touchesExpertise) {
     tags.add(WWW_EXPERTISE_CACHE_TAG);
@@ -307,6 +319,7 @@ export async function POST(request: Request) {
     type === "expertiseStage" ||
     type === "expertiseStagePage" ||
     type === "expertiseService" ||
+    type === FAQ_TYPE ||
     type === "websiteNavigation" ||
     type === "settings";
 
