@@ -203,8 +203,19 @@ source, so `populate:faqs` **replaces** every `faq` rather than merging. It dele
 is not a Notion row (and any Help Category titled "test"), writes the Notion rows as
 `faq-<Notion page id>`, and replaces the `faqs` list on each product line (Notion `Product Line`)
 and expertise stage (Notion `Expertise`, Type = Expertise only). Type → scope: Generic → general,
-Product / Expertise → contextual. `category` is left blank — Notion has no category column
-(2026-09-25). Other documents that referenced a deleted FAQ have just those items removed.
+Product / Expertise → contextual. Other documents that referenced a deleted FAQ have just those
+items removed.
+
+**Help Categories.** `category` comes from Notion's **Help Category** select, matched by exact title
+to a `helpCategory` document. The categories are Eric's fixed list, created by
+`seed:help-categories` (create-if-missing, never overwrites; slugs are proposals until Eric confirms
+them). Run the seed **before** `populate:faqs`: a Notion value with no matching category stops the
+run. An empty cell, or no column yet, leaves `category` blank and Studio flags it.
+
+```bash
+pnpm --filter @pakfactory/studio run seed:help-categories -- --dataset development
+pnpm --filter @pakfactory/studio run seed:help-categories -- --dataset development --confirm
+```
 
 ```bash
 # back up first, then dry run, read the plan, then confirm
