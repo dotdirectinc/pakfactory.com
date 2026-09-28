@@ -25,6 +25,8 @@ type NavLinkItem = {
 type NavGroupItem = {
   type: "group";
   id: string;
+  /** Hidden from staff without a registry grant (Spec System). */
+  requiresRegistryGrant?: boolean;
   label: string;
   icon: NavIcon;
   children: readonly NavChild[];
@@ -46,11 +48,12 @@ const NAV: readonly NavEntry[] = [
       },
     ],
   },
-  // Shown to everyone; /spec itself 404s anyone without a registry grant, so a
-  // sales member who clicks it learns nothing about what lives there.
+  // Hidden without a registry grant (the layout asks the backend). /spec still 404s
+  // anyone without one, so a direct URL learns nothing either.
   {
     type: "group",
     id: "spec",
+    requiresRegistryGrant: true,
     label: "Spec System",
     icon: FileText,
     children: [
@@ -171,13 +174,16 @@ function NavGroup({
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ specAccess }: { specAccess: boolean }) {
   const pathname = usePathname();
+  const nav = NAV.filter(
+    (entry) => !(entry.type === "group" && entry.requiresRegistryGrant && !specAccess),
+  );
 
   return (
     <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-muted/40 md:flex">
       <nav aria-label="Primary" className="flex flex-col gap-0.5 p-2 pt-3">
-        {NAV.map((entry) =>
+        {nav.map((entry) =>
           entry.type === "link" ? (
             <LeafLink key={entry.href} item={entry} pathname={pathname} />
           ) : (
