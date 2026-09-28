@@ -7,7 +7,7 @@ How `/expertise/[slug]` is wired, for humans and AI agents. This is the **one te
 | Part | Owner | Source |
 | --- | --- | --- |
 | Breadcrumb | Route | Home → Expertise → stage title |
-| Hero | Route (ADR-020 §2) | `ExpertiseHero` (POC values): `expertiseStage.tagline` (eyebrow), `h1` (falls back to `title`), `description` (subhead), `heroCtaLabel` (button to the quote request, `WWW_ROUTES.request`; empty falls back to "Get a quote"), `heroSecondaryLabel` + `heroSecondaryTarget` (in-page text link to the first body section of that type, e.g. "See our work" → `inspirationsGrid`; ids come from [`section-anchor.ts`](../src/lib/expertise/section-anchor.ts)), `heroImage` (optional full-width 21:9 band; empty on Design, which opens on its work gallery). `diagram` is the hub card image only |
+| Hero | Route (ADR-020 §2) | Shared `PageHeadingSection` (with `settle`): `expertiseStage.tagline` (eyebrow), `h1` (falls back to `title`), `description` (subhead), `heroCtaLabel` (button to the quote request, `WWW_ROUTES.request`; empty falls back to "Get a quote"), `heroSecondaryLabel` + `heroSecondaryTarget` (the shared secondary link, jumping to the first body section of that type, e.g. "See our work" → `inspirationsGrid`; ids come from [`section-anchor.ts`](../src/lib/expertise/section-anchor.ts)), `heroImage` (optional full-width 21:9 band; empty on Design, which opens on its work gallery). `diagram` is the hub card image only |
 | Body | Editors | The stage's **Expertise Stage Page template** (`expertiseStage.template` → `expertiseStagePage`, Main Website → Expertise Pages → Expertise Stage Pages): its `sections[]` (`SECTION_ALLOW.marketPage`), rendered in editor order by `SectionRenderer`. Legacy `expertiseStage.sections` is read as a fallback until `migrate-expertise-stage-template` has run |
 | SEO | Route | `metaTitle` / `metaDescription` / robots / canonical; OG image comes from `ogImage`, then `diagram`, then Global Settings `defaultOgImage` |
 | JSON-LD | Route | BreadcrumbList, plus FAQPage built from the FAQ sections the page actually renders ([`expertise-jsonld.ts`](../src/lib/expertise/expertise-jsonld.ts)) |
@@ -85,9 +85,9 @@ Page-field tokens (`%h1%`, `%title%`, `%slug%`, …) resolve from the stage.
 | `expertiseSequence` | `ExpertiseLifecycle` → `ui/StagePath`: every stage, the current one highlighted (`aria-current="step"`); `coming-soon` stages are not linked; previous/next links skip them | `ExpertiseRow` (StagesBoard) |
 | `mediaFeature` | `ui/MediaPanel`: one rounded panel with the copy over the image. Renders solid until an image is uploaded | `TextWithImage` |
 | `caseStudiesRow` | `CaseStudyRail` (4:3 image cards on a snap rail, muted band) | `CaseStudiesRow` |
-| `logoWall` | `LogoWall variant="strip"`: the thin trust strip (dashed rules, 72px logos at natural width, heading as the visible label, 40s lap) | `LogoWall` |
+| `logoWall` | `LogoWall variant="strip"`: the thin trust strip (dashed rules, taller logos (`h-18`) at natural width, heading as the visible label, 40s lap) | `LogoWall` |
 | `inspirationsGrid` | `WorkShowcase` when cards link to case studies; else `InspirationGallery` | `InspirationGallery` |
-| `faqSection` | `FaqSection variant="rows"`: left-aligned, full-width divider rows, no stock intro | `FaqSection` (centred cards) |
+| `faqSection` | `FaqSection variant="rows"`: left-aligned, full-width divider rows, no stock intro. Structure only — the Accordion trigger, chip and type are the shared ones | `FaqSection` (centred cards) |
 | `generalCta` | Studio `theme: inverse` + `align: left` + Button link Site path `/request` (dark band colors only) | `theme: muted` + `align: center` + contact fallback |
 
 Band rhythm follows the POC:
@@ -96,9 +96,7 @@ Band rhythm follows the POC:
 - case studies (muted)
 - the dark closing CTA
 
-The body is wrapped in `.expertise-stage`, which restyles every `SectionHeading` by `data-slot` (`app/globals.css`): muted 0.14em label with **no V5 brackets**, 28 → 40px weight-500 title, 18px intro. Other pages keep the bracketed V5 heading.
-
-The POC runs an 18px root and www a 16px one, so the expertise components use the POC's *rendered* pixel values (e.g. the H1 is 40 → 72px, the intro 18px), not its class names.
+**Reuse rule (PROD-2577 review, 2026-09-26):** the POC shows the UX, not the styles. Every band uses the shared `SectionHeading` (bracketed V5 label and type), shared Accordion typography, and `GeneralCta` for the close. Host overrides may change *structure* (layout, borders, alignment), never type scales, chips or primitive chrome.
 
 ## Signature system behaviour
 
