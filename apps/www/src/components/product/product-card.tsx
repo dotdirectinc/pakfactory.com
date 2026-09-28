@@ -1,5 +1,7 @@
 'use client';
 
+import {LifecycleBadge} from '@/components/ui/lifecycle-badge';
+import type {CatalogLifecycle} from '@/lib/catalog/types';
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
 import {useLinkStatus} from 'next/link';
@@ -33,6 +35,8 @@ export type ProductCardData = {
     images?: ProductCardImage[];
     moq?: number | string;
     leadTime?: string;
+    /** Coming soon shows a badge on the image; listings never carry discontinued. */
+    status?: CatalogLifecycle;
 };
 
 type ProductCardProps = {
@@ -92,8 +96,12 @@ export function ProductCard({data}: ProductCardProps) {
     );
 
     const hero = gallery[0];
+    const badge = data.status && data.status !== 'active' ? (
+        <LifecycleBadge status={data.status} className="absolute left-3 top-3 z-10" />
+    ) : null;
     const media = hero ? (
         <div className="pointer-events-none absolute inset-0">
+            {badge}
             <SanityImage
                 src={hero.src}
                 alt={hero.alt ?? data.title}
@@ -105,6 +113,7 @@ export function ProductCard({data}: ProductCardProps) {
         </div>
     ) : (
         <div className="pointer-events-none absolute inset-0">
+            {badge}
             {placeholder}
         </div>
     );

@@ -5,7 +5,7 @@
  */
 
 import type {SolutionStyleFilter} from '../solution-style-filter';
-import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, CUSTOMER_FACING} from './catalog';
+import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, CUSTOMER_FACING, LISTED_STATUS} from './catalog';
 import {
     PAGE_SECTIONS_PROJECTION,
     type PageSectionDoc,
@@ -157,7 +157,7 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
 export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status)) &&
+  ${LISTED_STATUS} &&
   ${CUSTOMER_FACING} &&
   (
     primarySolution->slug.current == $solutionSlug ||
@@ -175,7 +175,7 @@ export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
 export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status)) &&
+  ${LISTED_STATUS} &&
   ${CUSTOMER_FACING} &&
   (
     primarySolution->slug.current == $solutionSlug ||
@@ -193,7 +193,7 @@ export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
 export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status)) &&
+  ${LISTED_STATUS} &&
   ${CUSTOMER_FACING} &&
   (
     primarySolution->slug.current == $solutionSlug ||
