@@ -24,7 +24,8 @@
     "./customization-rules": "./src/customization-rules/index.ts",
     "./customization-rules/dependencies": "./src/customization-rules/dependencies.ts",
     "./customization-rules/resolve": "./src/customization-rules/resolve.ts",
-    "./customization-rules/selections": "./src/customization-rules/selections.ts"
+    "./customization-rules/selections": "./src/customization-rules/selections.ts",
+    "./customization-rules/summary": "./src/customization-rules/summary.ts"
   },
   "scripts": {
     "test": "find src -name '*.test.ts' -exec node --import tsx --test {} +",

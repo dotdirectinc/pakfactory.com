@@ -36,6 +36,7 @@ keeps the tests free of Sanity altogether.
 | `…/customization-rules/dependencies` | `buildDependencyGraph` — expands `dependsOn` into the type-id graph the rules take |
 | `…/customization-rules/resolve` | `resolveForProduct` — what a product can actually offer once the rules settle and its exceptions apply; `derivedBecause` says which partner keeps each derived option, `exceptions` what each exception did |
 | `…/customization-rules/selections` | `resolveWithSelections` — what survives after the customer has chosen |
+| `…/customization-rules/summary` | `summarizeRules` — the whole rule set at once for admin (PROD-2560): per type its requirements as written and how many products it reaches; per option its partners grouped by type (`all` / `all-but` / `some`), which way each dependency runs, requirements it can never meet, and reach with exceptions counted; plus catalog-wide diagnostics. A composition of `resolveForProduct` over the products passed, computed on read and never stored |
 
 Consumed **source-level** through `workspace:*` — there is no build artifact, so a change here
 reaches Studio, www and admin without a publish step.
