@@ -122,7 +122,9 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
 
   const any: string[] = []
   if (p.lineIds.length) any.push('productLine._ref in $lineIds')
-  if (p.styleIds.length) any.push('count(productStyle[._ref in $styleIds]) > 0')
+  // `_ref`, not `._ref`: inside a GROQ filter the attribute is bare. The dotted form is a parse
+  // error, which made every collection with a style condition fail to load (PROD-2605).
+  if (p.styleIds.length) any.push('count(productStyle[_ref in $styleIds]) > 0')
   // One clause per keyword: `match` takes a single pattern, and OR-ing them is
   // what makes several keywords widen the collection rather than narrow it.
   p.keywords.forEach((_, i) => any.push(`title match $kw${i}`))
