@@ -25,7 +25,7 @@ export const post = defineType({
             title: 'Title',
             type: 'string',
             group: 'content',
-            description: 'The H1 shown on the page, written for readers. Ideally ≤ ~80 characters.',
+            description: 'The H1 heading shown on the post, written for readers. Best kept under 80 characters.',
             validation: (Rule) => Rule.required(),
         }),
         defineField({
@@ -60,7 +60,7 @@ export const post = defineType({
                     title: 'Alt text override',
                     type: 'string',
                     description:
-                        'Optional. Falls back to the alt text set on the image asset in the Media library.',
+                        'Optional. Falls back to the alt text on the image asset.',
                 }),
             ],
         })),
@@ -71,7 +71,7 @@ export const post = defineType({
             group: 'content',
             readOnly: true,
             description:
-                'Read-only provenance from the WordPress → Sanity blog migration: the original S3 featured-image URL. Kept as a fallback while images are served from Sanity Media; removed once the S3 bucket is decommissioned. Set by the migration, not edited by hand.',
+                'Set by the WordPress migration, not by hand. The original image URL, kept as a fallback while images move to Sanity.',
         }),
         defineField({
             name: 'body',
@@ -93,7 +93,7 @@ export const post = defineType({
             type: 'reference',
             to: [{type: 'blogCategory'}],
             group: 'categorization',
-            description: 'Every post belongs to exactly one category (the six pillars).',
+            description: 'Every post belongs to exactly one category.',
             validation: (Rule) => Rule.required(),
         }),
         defineField({
@@ -102,7 +102,7 @@ export const post = defineType({
             type: 'array',
             group: 'categorization',
             description:
-                'Apply 3–5 structured topics from the relevant axes + 0–3 subject topics. See the Tagging Reference Guide.',
+                'Apply 3–5 topics, each drawn from one of the topic groups.',
             of: [{type: 'reference', to: [{type: 'blogTag'}]}],
         }),
         defineField({
@@ -111,7 +111,7 @@ export const post = defineType({
             type: 'array',
             group: 'categorization',
             description:
-                'Optional 3–5 manually chosen posts. Falls back to category-based suggestions when empty.',
+                'Up to 5, manually chosen. Empty falls back to the newest posts in the same category.',
             of: [{type: 'reference', to: [{type: 'post'}]}],
             validation: (Rule) => Rule.max(5),
         }),
@@ -140,7 +140,7 @@ export const post = defineType({
             type: 'datetime',
             group: 'publishing',
             description:
-                "The publish date shown on the post and used for Article datePublished + blog sorting. Auto-set when the document goes live (Publish, or when a scheduled publish fires); edit only to back-date migrated content or set a future date for a soft launch/embargo. Editing this does NOT publish the post — use Publish (or Schedule when your Sanity plan includes it).",
+                "The publish date shown on the post, used for structured data and blog sorting. Set automatically when the post goes live. Edit it only to back-date migrated content or to set a future date. Editing it does not publish the post — use Publish.",
         }),
         defineField({
             name: 'lastModified',
@@ -148,7 +148,7 @@ export const post = defineType({
             type: 'datetime',
             group: 'publishing',
             description:
-                "The 'Updated' date shown on the post and used for Google's Article dateModified + sitemap lastmod. Set it only for substantive content updates — not typos or metadata. Editor-controlled; separate from Sanity's automatic last-edited timestamp.",
+                "The “Updated” date shown on the post, and the date in the sitemap and structured data. Set it only for substantive changes, not typos or metadata. Separate from Sanity’s own last-edited timestamp.",
         }),
         defineField({
             name: 'viewCount',
@@ -156,7 +156,7 @@ export const post = defineType({
             type: 'number',
             group: 'publishing',
             description:
-                'View count used to rank this post in the Popular row (higher = more prominent). Manually set or analytics-synced.',
+                'Ranks this post in the Popular row — higher is more prominent. Set by hand; nothing syncs it yet.',
             initialValue: 0,
             validation: (Rule) => Rule.min(0).integer(),
         }),
@@ -174,7 +174,7 @@ export const post = defineType({
             type: 'array',
             group: 'schemaAi',
             description:
-                'Required. Answer-first summary rendered at the top of the post — the highest-leverage block for AI engines and skimmers. May also populate the Article abstract.',
+                'Answer-first summary shown at the top of the post. Also used as the structured-data description, ahead of the excerpt.',
             of: [
                 {
                     type: 'block',
@@ -211,7 +211,7 @@ export const post = defineType({
             type: 'array',
             group: 'schemaAi',
             description:
-                'Optional Q&A pairs. Renders a visible FAQ section and emits FAQPage JSON-LD (no Google rich result; value is the visible block + AI extraction).',
+                'Q&A pairs. Renders a visible FAQ section on the post and adds FAQ structured data.',
             of: [
                 {
                     type: 'object',

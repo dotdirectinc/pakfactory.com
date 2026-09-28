@@ -14,7 +14,9 @@ import {
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {CatalogFacetGroup} from '@/components/ui/catalog-facet-group';
-import type {CustomizationFacetDef} from '@/lib/catalog/types';
+import {ProductLineFacetGroup} from '@/components/product/product-line-facet-group';
+import type {CustomizationFacetDef, CustomizationFacetOption} from '@/lib/catalog/types';
+import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
 
 type ProductCatalogFiltersDrawerProps = {
     open: boolean;
@@ -25,6 +27,10 @@ type ProductCatalogFiltersDrawerProps = {
     countsByFacet: Record<string, Record<string, number>>;
     onToggle: (facetId: string, value: string) => void;
     onReset: () => void;
+    styleOptions?: CustomizationFacetOption[];
+    selectedStyles?: string[];
+    styleCounts?: Record<string, number>;
+    onToggleStyle?: (value: string) => void;
 };
 
 export function ProductCatalogFiltersDrawer({
@@ -36,6 +42,10 @@ export function ProductCatalogFiltersDrawer({
     countsByFacet,
     onToggle,
     onReset,
+    styleOptions = [],
+    selectedStyles = [],
+    styleCounts = {},
+    onToggleStyle,
 }: ProductCatalogFiltersDrawerProps) {
     const visibleFacets = sharedFacets.filter(
         (facet) => facet.options.length > 0,
@@ -76,14 +86,34 @@ export function ProductCatalogFiltersDrawer({
                                     'border-b border-dashed border-border',
                             )}
                         >
-                            <CatalogFacetGroup
-                                title={facet.title}
-                                options={facet.options}
-                                selected={selections[facet.id] ?? []}
-                                counts={countsByFacet[facet.id] ?? {}}
-                                onToggle={(value) => onToggle(facet.id, value)}
-                                defaultOpen
-                            />
+                            {facet.id ===
+                            PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID ? (
+                                <ProductLineFacetGroup
+                                    title={facet.title}
+                                    options={facet.options}
+                                    selected={selections[facet.id] ?? []}
+                                    counts={countsByFacet[facet.id] ?? {}}
+                                    onToggle={(value) =>
+                                        onToggle(facet.id, value)
+                                    }
+                                    styleOptions={styleOptions}
+                                    selectedStyles={selectedStyles}
+                                    styleCounts={styleCounts}
+                                    onToggleStyle={onToggleStyle}
+                                    defaultOpen
+                                />
+                            ) : (
+                                <CatalogFacetGroup
+                                    title={facet.title}
+                                    options={facet.options}
+                                    selected={selections[facet.id] ?? []}
+                                    counts={countsByFacet[facet.id] ?? {}}
+                                    onToggle={(value) =>
+                                        onToggle(facet.id, value)
+                                    }
+                                    defaultOpen
+                                />
+                            )}
                         </div>
                     ))}
                 </div>

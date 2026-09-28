@@ -1,10 +1,10 @@
-import type { PrimaryNavItem } from "@pakfactory/components/layout/primary-nav-types";
+import type { PrimaryNavItem } from "@/lib/primary-nav-types";
 import type {
   AiLink,
   FooterColumns,
   FooterLink,
   SocialLink,
-} from "@pakfactory/components/layout/site-footer";
+} from "@pakfactory/ui/components/site-footer";
 import { getWwwUrl } from "@/lib/site";
 import { policyHref, WWW_ROUTES } from "@/lib/www-routes";
 

@@ -2,6 +2,7 @@ import type {
     CustomizationDetail,
     CustomizationPropertyValue,
 } from '@/lib/catalog/types';
+import {swatchColorForSlug} from '@/lib/catalog/swatch-colors';
 
 export type PropertyValuesPerItem = 'one' | 'many';
 
@@ -10,6 +11,8 @@ export type PropertyFieldOption = {
     title: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    /** Design-system CSS var when no image (e.g. var(--swatch-gold)). */
+    color?: string;
 };
 
 export type PropertyFieldDescriptor = {
@@ -66,13 +69,19 @@ export function mapDetailToPropertyFields(
             declaredMatch?.propertyTitle?.trim() ||
             values.find((v) => v.propertyTitle)?.propertyTitle?.trim() ||
             propertyKey;
-        const options: PropertyFieldOption[] = values.map((v) => ({
-            id: v.slug,
-            title: v.title,
-            ...(v.imageUrl !== undefined ? {imageUrl: v.imageUrl} : {}),
-            ...(v.imageAlt ? {imageAlt: v.imageAlt} : {}),
-        }));
-        const kind = options.some((o) => Boolean(o.imageUrl))
+        const options: PropertyFieldOption[] = values.map((v) => {
+            const imageUrl = v.imageUrl;
+            const hasImage = Boolean(imageUrl);
+            const color = hasImage ? undefined : swatchColorForSlug(v.slug);
+            return {
+                id: v.slug,
+                title: v.title,
+                ...(imageUrl !== undefined ? {imageUrl} : {}),
+                ...(v.imageAlt ? {imageAlt: v.imageAlt} : {}),
+                ...(color ? {color} : {}),
+            };
+        });
+        const kind = options.some((o) => Boolean(o.imageUrl) || Boolean(o.color))
             ? 'swatch'
             : 'chip';
         fields.push({

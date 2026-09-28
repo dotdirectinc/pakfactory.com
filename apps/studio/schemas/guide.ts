@@ -75,7 +75,7 @@ export const guide = defineType({
       title: 'Body',
       type: 'array',
       group: GROUPS.content,
-      description: 'The guide itself. Same block set as a blog post — one body field, not two.',
+      description: 'The guide itself. Same editing tools as a blog post.',
       of: [
         { type: 'block' },
         { type: 'bodyImage' },
@@ -91,7 +91,8 @@ export const guide = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        "What the guide is about — its only organising axis. Commercial pages surface the guide by querying this, and the listing filters derive from the values in use.",
+        'What the guide is about. Product and solution pages use this to surface it, and the ' +
+        'listing filters come from the values in use.',
       of: [
         {
           type: 'reference',
@@ -119,7 +120,7 @@ export const guide = defineType({
       title: 'Related guides',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Optional 3–5. Empty derives related guides from the shared `relatedTo` values.',
+      description: 'Optional, three to five. Empty uses guides with the same "Related to" values.',
       of: [{ type: 'reference', to: [{ type: 'guide' }] }],
       validation: (Rule) => Rule.max(5).unique(),
     }),
@@ -128,7 +129,7 @@ export const guide = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.categorization,
-      description: 'Editorial state of the guide.',
+      description: 'Editorial state — Draft, Published or Archived.',
       options: {
         layout: 'radio',
         list: [
@@ -148,7 +149,8 @@ export const guide = defineType({
       type: 'array',
       group: GROUPS.schemaAi,
       description:
-        'Required, as on Post. The answer-first opener — the highest-leverage block for AI answer engines. Two or three sentences that stand on their own.',
+        'Answer-first summary shown at the top of the guide. Two or three sentences that stand ' +
+        'on their own.',
       of: [{ type: 'block' }],
       validation: (Rule) => Rule.required(),
     }),

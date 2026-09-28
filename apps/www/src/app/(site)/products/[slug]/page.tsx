@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
-import {ProductLineView} from '@/components/product/product-catalog-view';
 import {ProductDetailView} from '@/components/product/product-detail-view';
+import {ProductLineLanding} from '@/components/product/product-line-landing-view';
 import {getByProductsSegment, listLines, listProducts} from '@/lib/catalog/catalog';
 
 export const revalidate = 60;
@@ -33,7 +33,7 @@ export default async function ProductsSegmentPage({params}: PageProps) {
     const result = await getByProductsSegment(slug);
     if (!result) notFound();
     if (result.type === 'line') {
-        return <ProductLineView line={result.line} />;
+        return <ProductLineLanding line={result.line} />;
     }
     return <ProductDetailView product={result.product} />;
 }

@@ -3,6 +3,7 @@ import type {
     CustomizationOption,
     ProductDimensionRange,
 } from '@/lib/catalog/types';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 import {
     parseBuilderState,
     type CustomizationBuilderState,
@@ -43,6 +44,10 @@ export type RequestLine = {
     productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
+    /** The product's customization rules at add time (PROD-2556), so /request narrows the same way. */
+    customizationRules?: CustomizationRulesSnapshot;
+    /** Product dimensionInput shape key (snapshotted at add). */
+    dimensionInput?: string;
     /** Product dimensionRange in mm from Sanity (snapshotted at add). */
     dimensionRange?: ProductDimensionRange;
     quantities: number[];
@@ -62,6 +67,8 @@ export type AddLineInput = {
     productLineTitle?: string;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
+    customizationRules?: CustomizationRulesSnapshot;
+    dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
     quantities: number[];
     contents: string;
@@ -198,6 +205,14 @@ function isRequestLine(value: unknown): value is RequestLine {
         if (parsed) line.dimensionRange = parsed;
         else delete line.dimensionRange;
     }
+    if (
+        line.dimensionInput !== undefined &&
+        (typeof line.dimensionInput !== 'string' || !line.dimensionInput.trim())
+    ) {
+        delete line.dimensionInput;
+    } else if (typeof line.dimensionInput === 'string') {
+        line.dimensionInput = line.dimensionInput.trim();
+    }
     return true;
 }
 
@@ -218,6 +233,14 @@ function parseDimensionRange(value: unknown): ProductDimensionRange | undefined 
         'lengthMax',
         'widthMin',
         'widthMax',
+        'heightMin',
+        'heightMax',
+        'diameterMin',
+        'diameterMax',
+        'gussetMin',
+        'gussetMax',
+        'dropMin',
+        'dropMax',
         'depthMin',
         'depthMax',
     ] as const) {
@@ -453,6 +476,10 @@ export function createRequestLine(input: AddLineInput): RequestLine {
         ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
         ...(input.availableCustomizations?.length
             ? {availableCustomizations: input.availableCustomizations}
+            : {}),
+        ...(input.customizationRules ? {customizationRules: input.customizationRules} : {}),
+        ...(input.dimensionInput?.trim()
+            ? {dimensionInput: input.dimensionInput.trim()}
             : {}),
         ...(input.dimensionRange
             ? {dimensionRange: input.dimensionRange}

@@ -6,7 +6,7 @@ import type {
   RequestAttachment,
   RequestEntryKind,
   ShippingAddress,
-} from "@pakfactory/domain/request";
+} from "@pakfactory/request/request";
 
 /**
  * Maps a `public.rfq` row onto the domain shapes the admin views render.

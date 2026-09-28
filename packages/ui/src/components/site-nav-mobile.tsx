@@ -56,7 +56,7 @@ export function SiteNavMobile({items, cta, signIn, request}: SiteNavMobileProps)
 
       {open ? (
         <div className="absolute inset-x-0 top-full z-50 max-h-[75vh] overflow-y-auto border-b border-border bg-background shadow-lg md:hidden">
-          <PageDielineSection innerClassName="py-4">
+          <PageDielineSection paddingBlock="xs">
             <nav className="mb-4 space-y-1" aria-label="Mobile navigation">
               {items.map((item) => {
                 if (item.href) {

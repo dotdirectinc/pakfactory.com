@@ -1,0 +1,17 @@
+{
+  "name": "@pakfactory/utilities",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./length-units": "./src/length-units.ts",
+    "./dimension-axes": "./src/dimension-axes.ts",
+    "./external-link": "./src/external-link.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

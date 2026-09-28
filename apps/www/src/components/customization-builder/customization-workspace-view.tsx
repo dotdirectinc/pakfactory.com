@@ -8,6 +8,7 @@ import type {
     BuilderStep,
     BuilderStepKey,
     CustomizationBuilderState,
+    PropertySelectionSummaryItem,
     StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -16,8 +17,12 @@ type CustomizationWorkspaceViewProps = {
     activeKey: BuilderStepKey;
     activeTypeId: string | null;
     activeOptionId: string | null;
+    /** Options the rules rule out given the other picks: listed, not selectable. */
+    disabledOptionIds?: ReadonlySet<string>;
     state: CustomizationBuilderState;
     dimensionRange?: ProductDimensionRange;
+    dimensionInput?: string;
+    dimensionAxisIds?: readonly string[];
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -28,6 +33,7 @@ type CustomizationWorkspaceViewProps = {
     onPropertySelectionsChange: (
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) => void;
 };
 
@@ -36,8 +42,11 @@ export function CustomizationWorkspaceView({
     activeKey,
     activeTypeId,
     activeOptionId,
+    disabledOptionIds,
     state,
     dimensionRange,
+    dimensionInput,
+    dimensionAxisIds,
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -53,8 +62,11 @@ export function CustomizationWorkspaceView({
             activeKey={activeKey}
             activeTypeId={activeTypeId}
             activeOptionId={activeOptionId}
+            disabledOptionIds={disabledOptionIds}
             state={state}
             dimensionRange={dimensionRange}
+            dimensionInput={dimensionInput}
+            dimensionAxisIds={dimensionAxisIds}
             onSelectCategory={onSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}

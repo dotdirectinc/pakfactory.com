@@ -2,6 +2,7 @@
 
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
+import {useLinkStatus} from 'next/link';
 import {Columns2, Package} from 'lucide-react';
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
@@ -13,6 +14,8 @@ import {
     stubBookmarkAction,
     stubCompareAction,
 } from '@/lib/catalog-card-actions';
+import {displayProductSku} from '@/lib/catalog/display-sku';
+import {cn} from '@pakfactory/ui/lib/utils';
 
 export type ProductCardImage = {
     src: string;
@@ -57,15 +60,26 @@ const compareAction = {
 /**
  * **Transactional card** — product catalog tile (SKU eyebrow, bookmark / compare).
  * Composes {@link MediaCardFrame}.
+ * Prefetch stays off for the grid; the card under the pointer (hover,
+ * focus, or pointerdown) opts into full route prefetch so a click is more
+ * likely to hit a warm payload without prefetching every PDP.
  */
 export function ProductCard({data}: ProductCardProps) {
-    const eyebrow = (data.sku ?? data.eyebrowLabel ?? '').toUpperCase();
+    // Missing SKU shows "-" — never fall back to slug or style/line title.
+    const slugFromHref =
+        data.href.split('/').filter(Boolean).pop() ?? '';
+    const eyebrow = displayProductSku(data.sku, slugFromHref).toUpperCase();
     const [saved, setSaved] = useState(false);
+    const [prefetch, setPrefetch] = useState(false);
     const gallery = resolveGallery(data);
 
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
         stubBookmarkAction(event);
         setSaved((prev) => !prev);
+    }
+
+    function enablePrefetch() {
+        setPrefetch(true);
     }
 
     const placeholder = (
@@ -98,6 +112,10 @@ export function ProductCard({data}: ProductCardProps) {
     const mediaOverlay = (
         <Link
             href={data.href}
+            prefetch={prefetch}
+            onPointerEnter={enablePrefetch}
+            onPointerDown={enablePrefetch}
+            onFocus={enablePrefetch}
             className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={data.title}
         />
@@ -113,14 +131,14 @@ export function ProductCard({data}: ProductCardProps) {
                     pressed={saved}
                     onClick={handleBookmark}
                     ariaLabel="Bookmark product"
-                    tooltipSide="top"
+                    tooltipSide="bottom"
                 />
             }
             mediaActions={
                 <IconActionRow
                     className="shrink-0"
                     variant="media"
-                    tooltipSide="top"
+                    tooltipSide="bottom"
                     actions={[compareAction]}
                 />
             }
@@ -139,25 +157,41 @@ export function ProductCard({data}: ProductCardProps) {
                                 pressed={saved}
                                 onClick={handleBookmark}
                                 ariaLabel="Bookmark product"
-                                tooltipSide="top"
+                                tooltipSide="bottom"
                             />
                             <IconActionRow
                                 variant="media"
-                                tooltipSide="top"
+                                tooltipSide="bottom"
                                 actions={[compareAction]}
                             />
                         </div>
                     </div>
                     <Link
                         href={data.href}
+                        prefetch={prefetch}
+                        onPointerEnter={enablePrefetch}
+                        onPointerDown={enablePrefetch}
+                        onFocus={enablePrefetch}
                         className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
-                            {data.title}
-                        </h3>
+                        <ProductCardTitlePending title={data.title} />
                     </Link>
                 </div>
             }
         />
+    );
+}
+
+function ProductCardTitlePending({title}: {title: string}) {
+    const {pending} = useLinkStatus();
+    return (
+        <h3
+            className={cn(
+                'line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground transition-opacity duration-200',
+                pending && 'opacity-70',
+            )}
+        >
+            {title}
+        </h3>
     );
 }

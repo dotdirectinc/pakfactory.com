@@ -40,7 +40,8 @@ export const contentPage = defineType({
       type: 'slug',
       group: GROUPS.content,
       description:
-        'Required for new pages. The four launch pages (about, contact, search, 404) are pinned by semantic ID instead, so their slug may be empty.',
+        'Required for new pages. The four launch pages — about, contact, search and 404 — ' +
+        'sit at fixed URLs, so their slug can be empty.',
       options: { source: 'title' },
     }),
     // Content + proof + conversion sections — no catalogue (scoped per §2.4).

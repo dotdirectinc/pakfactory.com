@@ -6,11 +6,13 @@ import {Check, ChevronRight} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import {SelectionSummaryDisplay} from '@/components/customization-builder/ui/selection-summary-display';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import type {
     CustomizationOption,
     ProductDimensionRange,
 } from '@/lib/catalog/types';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 import {
     buildStepsFromCatalog,
     createEmptyBuilderState,
@@ -20,6 +22,8 @@ import {
     summarizeAnswer,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PropertySummariesByOption,
+    type StepAnswer,
 } from '@/lib/customization-builder';
 
 const CustomizationBuilder = dynamic(
@@ -32,19 +36,42 @@ const CustomizationBuilder = dynamic(
 
 type CustomizationEntryProps = {
     availableCustomizations: CustomizationOption[];
+    /** The product's customization rules (PROD-2556); the builder narrows on them. */
+    customizationRules?: CustomizationRulesSnapshot;
     builderState: CustomizationBuilderState;
     onBuilderStateChange: (next: CustomizationBuilderState) => void;
     productTitle?: string;
+    dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
+    /**
+     * Inspiration products: options are pre-selected. Shows preset copy,
+     * "Change" row actions, and hides the specialist revert link.
+     */
+    preset?: boolean;
 };
 
 type SummaryRowProps = {
     label: string;
-    summary: string;
+    answer: StepAnswer;
+    propertySummaries?: PropertySummariesByOption;
     onCustomize: () => void;
+    rowActionLabel: string;
 };
 
-function SummaryRow({label, summary, onCustomize}: SummaryRowProps) {
+function SummaryRow({
+    label,
+    answer,
+    propertySummaries,
+    onCustomize,
+    rowActionLabel,
+}: SummaryRowProps) {
+    const summaryText = summarizeAnswer(
+        answer,
+        CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+        {propertySummaries},
+    );
+    const isUnset = summaryText === 'Not set';
+
     return (
         <button
             type="button"
@@ -53,14 +80,22 @@ function SummaryRow({label, summary, onCustomize}: SummaryRowProps) {
         >
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">{label}</p>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {summary === 'Not set'
-                        ? REQUEST_COPY.notSet
-                        : summary}
-                </p>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                    {isUnset ? (
+                        REQUEST_COPY.notSet
+                    ) : (
+                        <SelectionSummaryDisplay
+                            answer={answer}
+                            specialistLabel={
+                                CUSTOMIZATION_BUILDER_COPY.specialistToAdvise
+                            }
+                            propertySummaries={propertySummaries}
+                        />
+                    )}
+                </div>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
-                {REQUEST_COPY.customizeRow}
+                {rowActionLabel}
                 <ChevronRight className="size-4" aria-hidden />
             </span>
         </button>
@@ -72,6 +107,7 @@ type SummaryGroupProps = {
     rows: {key: BuilderStepKey; label: string}[];
     builderState: CustomizationBuilderState;
     onCustomize: (key: BuilderStepKey) => void;
+    rowActionLabel: string;
 };
 
 function SummaryGroup({
@@ -79,6 +115,7 @@ function SummaryGroup({
     rows,
     builderState,
     onCustomize,
+    rowActionLabel,
 }: SummaryGroupProps) {
     if (rows.length === 0) return null;
     return (
@@ -87,17 +124,21 @@ function SummaryGroup({
                 {title}
             </p>
             <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-background">
-                {rows.map((row) => (
-                    <SummaryRow
-                        key={row.key}
-                        label={row.label}
-                        summary={summarizeAnswer(
-                            getAnswer(builderState, row.key),
-                            CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
-                        )}
-                        onCustomize={() => onCustomize(row.key)}
-                    />
-                ))}
+                {rows.map((row) => {
+                    const answer = getAnswer(builderState, row.key);
+                    return (
+                        <SummaryRow
+                            key={row.key}
+                            label={row.label}
+                            answer={answer}
+                            propertySummaries={
+                                builderState.propertySelectionSummaries
+                            }
+                            onCustomize={() => onCustomize(row.key)}
+                            rowActionLabel={rowActionLabel}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
@@ -105,16 +146,22 @@ function SummaryGroup({
 
 export function CustomizationEntry({
     availableCustomizations,
+    customizationRules,
     builderState,
     onBuilderStateChange,
     productTitle,
+    dimensionInput,
     dimensionRange,
+    preset = false,
 }: CustomizationEntryProps) {
     const [open, setOpen] = useState(false);
     const [initialStepKey, setInitialStepKey] = useState<
         BuilderStepKey | undefined
     >(undefined);
     const configured = isBuilderConfigured(builderState);
+    const rowActionLabel = preset
+        ? REQUEST_COPY.changeRow
+        : REQUEST_COPY.customizeRow;
 
     const steps = useMemo(
         () => buildStepsFromCatalog(availableCustomizations),
@@ -142,6 +189,11 @@ export function CustomizationEntry({
             <h2 className="text-base font-semibold text-brand-blue">
                 {REQUEST_COPY.customizationHeading}
             </h2>
+            {preset ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                    {REQUEST_COPY.customizationPresetDescription}
+                </p>
+            ) : null}
 
             {configured ? (
                 <div className="mt-4 space-y-4">
@@ -150,24 +202,28 @@ export function CustomizationEntry({
                         rows={sizeRows}
                         builderState={builderState}
                         onCustomize={openBuilder}
+                        rowActionLabel={rowActionLabel}
                     />
                     <SummaryGroup
                         title={REQUEST_COPY.materialFinishGroup}
                         rows={materialFinishRows}
                         builderState={builderState}
                         onCustomize={openBuilder}
+                        rowActionLabel={rowActionLabel}
                     />
-                    <button
-                        type="button"
-                        className={cn(
-                            'cursor-pointer text-xs font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground',
-                        )}
-                        onClick={() =>
-                            onBuilderStateChange(createEmptyBuilderState())
-                        }
-                    >
-                        {REQUEST_COPY.revertToSpecialist}
-                    </button>
+                    {!preset ? (
+                        <button
+                            type="button"
+                            className={cn(
+                                'cursor-pointer text-xs font-medium text-muted-foreground underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground',
+                            )}
+                            onClick={() =>
+                                onBuilderStateChange(createEmptyBuilderState())
+                            }
+                        >
+                            {REQUEST_COPY.revertToSpecialist}
+                        </button>
+                    ) : null}
                 </div>
             ) : (
                 <div className="mt-4 flex flex-col gap-4 rounded-xl bg-background p-4">
@@ -199,7 +255,9 @@ export function CustomizationEntry({
                 onChange={onBuilderStateChange}
                 productTitle={productTitle}
                 initialStepKey={initialStepKey}
+                dimensionInput={dimensionInput}
                 dimensionRange={dimensionRange}
+                customizationRules={customizationRules}
             />
         </div>
     );

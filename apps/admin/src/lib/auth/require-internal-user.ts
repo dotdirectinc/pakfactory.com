@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { InternalAccount } from "@pakfactory/domain/internal-account";
+import type { InternalAccount } from "@pakfactory/request/internal-account";
 import type { User } from "@supabase/supabase-js";
 import { getUser } from "@pakfactory/supabase/session";
 import { getInternalAccountAdapter } from "@/lib/adapters";

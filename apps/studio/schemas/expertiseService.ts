@@ -1,4 +1,4 @@
-import { defineField, defineType } from 'sanity'
+import { defineArrayMember, defineField, defineType } from 'sanity'
 import { ComponentIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
@@ -15,7 +15,8 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * child pages in a later phase, and embedded content can't become a page without
  * being deleted and re-created (breaking every link). A document with `hasPage`
  * off costs nothing. At launch it renders as `title` + `summary` on its stage's
- * page; `intro`/`body`/`faqs`/SEO apply only once `hasPage` is on.
+ * page (plus `points`, PROD-2577); `intro`/`body`/`faqs`/SEO apply only once
+ * `hasPage` is on.
  *
  * Expect ZERO documents when this ships — that is the intended end state, not an
  * unfinished one. Nothing else in the model depends on it, and the service list
@@ -34,7 +35,7 @@ export const expertiseService = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: "The service's name.",
+      description: 'The service’s name, as it appears on its stage page.',
       validation: (Rule) => Rule.required(),
     }),
     // No H1 or Short name here: this type has no page at launch. Its empty
@@ -45,7 +46,7 @@ export const expertiseService = defineType({
       title: 'Stage',
       type: 'reference',
       group: GROUPS.content,
-      description: 'The Expertise Stage this service belongs to — required, and permanent (a service belongs to exactly one stage).',
+      description: 'The Expertise Stage this service belongs to — exactly one, and not meant to change.',
       to: [{ type: 'expertiseStage' }],
       options: { disableNew: true },
       validation: (Rule) => Rule.required(),
@@ -56,14 +57,63 @@ export const expertiseService = defineType({
       type: 'text',
       rows: 2,
       group: GROUPS.content,
-      description: 'The sentence or two that renders on the stage page. This is all phase one needs.',
+      description: 'The sentence or two that renders on the stage page.',
+    }),
+    defineField({
+      name: 'image',
+      title: 'Image',
+      type: 'image',
+      group: GROUPS.content,
+      description:
+        'Optional — shown beside the service when its stage lists services without a named method (e.g. Design).',
+      options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
+    }),
+    defineField({
+      name: 'points',
+      title: 'Points',
+      type: 'array',
+      group: GROUPS.content,
+      description:
+        'What this service covers, as short points (e.g. "Packaging audit"). Shown under the summary where the stage lists its services (the Signature system section). Add a gloss to explain a term in plain language on first use.',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'servicePoint',
+          title: 'Point',
+          fields: [
+            defineField({
+              name: 'label',
+              title: 'Label',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+            }),
+            defineField({
+              name: 'gloss',
+              title: 'Gloss',
+              type: 'string',
+              description:
+                'Optional plain-language explanation (e.g. for LCA, EPR, TCO).',
+            }),
+          ],
+          preview: { select: { title: 'label', subtitle: 'gloss' } },
+        }),
+      ],
+      validation: (Rule) => Rule.max(6),
     }),
     defineField({
       name: 'hasPage',
       title: 'Has a page',
       type: 'boolean',
       group: GROUPS.content,
-      description: 'Terms are free, pages are earned. Off at launch — turn on only when this service earns its own page.',
+      description: 'An editorial judgement — turn it on only when this service earns its own page.',
       initialValue: false,
     }),
     defineField({
@@ -71,7 +121,7 @@ export const expertiseService = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'Only meaningful once "Has a page" is on.',
+      description: 'Only meaningful once "Has a page" is on. Must be unique across services.',
       options: { source: 'title' },
       validation: (Rule) => Rule.custom(uniqueSlugAcross(['expertiseService'])),
     }),
@@ -80,7 +130,7 @@ export const expertiseService = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle of the service.',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -96,7 +146,7 @@ export const expertiseService = defineType({
       title: 'Intro',
       type: 'array',
       group: GROUPS.content,
-      description: 'Only written when the service gets a page.',
+      description: 'Opening copy — only written once the service has a page.',
       of: [{ type: 'block' }],
     }),
     defineField({
@@ -104,7 +154,7 @@ export const expertiseService = defineType({
       title: 'Body',
       type: 'array',
       group: GROUPS.content,
-      description: 'Only written when the service gets a page. Optional and mostly unwritten.',
+      description: 'The main copy — only written once the service has a page. Optional.',
       of: [{ type: 'block' }],
     }),
 

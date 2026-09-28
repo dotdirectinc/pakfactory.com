@@ -70,9 +70,16 @@ export function ProductSpecs({
 }: ProductSpecsProps) {
     if (rows.length === 0) return null;
 
+    const multiRow = rows.length > 1;
+
     return (
         <section id="pdp-specs" className={cn('scroll-mt-32', className)}>
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection
+                innerClassName={cn(
+                    'border-b border-dashed border-border pt-16 sm:pt-20',
+                    multiRow && 'pb-0 sm:pb-0 lg:pb-0',
+                )}
+            >
                 <SectionHeading
                     eyebrow="Specifications"
                     title={heading}
@@ -83,12 +90,16 @@ export function ProductSpecs({
                 <div className="-mx-layout-gutter-inner mt-16">
                     <table className="w-full border-collapse border-t border-dashed border-border">
                         <tbody>
-                            {rows.map((row) => {
+                            {rows.map((row, index) => {
                                 const Glyph = row.icon ?? CircleDot;
+                                const isLast = index === rows.length - 1;
                                 return (
                                     <tr
                                         key={row.label}
-                                        className="border-b border-dashed border-border"
+                                        className={cn(
+                                            !(multiRow && isLast) &&
+                                                'border-b border-dashed border-border',
+                                        )}
                                     >
                                         <th
                                             scope="row"

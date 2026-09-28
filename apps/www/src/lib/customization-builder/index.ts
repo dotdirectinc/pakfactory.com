@@ -1,4 +1,5 @@
 export type {
+    BuilderCardinality,
     BuilderChoice,
     BuilderMode,
     BuilderOption,
@@ -12,11 +13,12 @@ export type {
     FaceMeasurements,
     SelectionValue,
     StepAnswer,
+    PropertySelectionSummaryItem,
 } from '@/lib/customization-builder/types';
 
 export {
+    answerSelections,
     buildStepsFromCatalog,
-    buildStepsFromOffer,
     createEmptyBuilderState,
     emptyDimensions,
     emptyFace,
@@ -37,11 +39,16 @@ export {
     patchEntryNote,
     patchFace,
     patchPropertySelections,
+    removeSelections,
     seedFromCustomizations,
     shouldEnterGuided,
     summarizeAnswer,
+    summarizeSelection,
+    toggleSelection,
+    visiblePropertySummaries,
     toRequestCustomizations,
     type BuilderRequestCustomization,
+    type PropertySummariesByOption,
 } from '@/lib/customization-builder/state';
 
 export {

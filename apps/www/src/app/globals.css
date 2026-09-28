@@ -1,6 +1,5 @@
 @import "@pakfactory/ui/globals.css";
 @import "@pakfactory/ui/tailwind-sources.css";
-@import "@pakfactory/components/tailwind-sources.css";
 @import "@pakfactory/brief-builder-ui/tailwind-sources.css";
 
 /*
@@ -147,9 +146,176 @@
   background-color: var(--border);
 }
 
+/* Reserve scrollbar space so RemoveScroll / html overflow:hidden does not
+   shift fixed UI (e.g. CompareFloatDock) when a Select or Dialog opens. */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Radix RemoveScroll locks body; also lock html so the window scrollbar
    disappears and fixed dialogs stay visually centered. */
 html:has(body[data-scroll-locked]) {
   overflow: hidden;
 }
 
+/*
+  (site)/template.tsx remount enter — opacity + 8px settle.
+  Keep www-only; do not promote to @pakfactory/ui until another app needs it.
+*/
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-page-enter {
+  animation: page-enter var(--motion-slow) ease-out;
+}
+
+/*
+  Hero / PageHeading settle — Apple Mac–style build-in (opacity + 30px rise).
+  Opt-in via `animate-heading-settle`; stagger with `--settle-delay` (see
+  `headingSettleProps` in lib/ui/heading-settle.ts). Keyframes define only
+  `from` so the element’s own styles are the end state. Keep www-only.
+*/
+@keyframes heading-settle {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+@utility animate-heading-settle {
+  animation: heading-settle var(--motion-reveal) cubic-bezier(0.45, 0, 0.55, 1)
+    both;
+  animation-delay: var(--settle-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-heading-settle {
+    animation: none;
+  }
+}
+
+/*
+  Expertise stage pages — scroll-driven entrances (POC parity, PROD-2577).
+  Each keyframe defines only `from`, so the element's own styles are the end
+  state: no animation-timeline support (e.g. Firefox) or reduced motion simply
+  renders the finished layout.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Engagement panel: starts full-bleed, pulls back into the column. */
+    .motion-pullback {
+      animation: motion-pullback linear both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 100%;
+    }
+    /* …while its card corners round in over the same range. */
+    .motion-unround {
+      animation: motion-unround linear both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 100%;
+    }
+    /* Benefits grid: rises in as it enters. */
+    .motion-rise {
+      animation: motion-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 45% entry 100%;
+    }
+  }
+}
+
+@keyframes motion-pullback {
+  from {
+    padding-inline: 0;
+  }
+}
+
+@keyframes motion-unround {
+  from {
+    border-radius: 0;
+  }
+}
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--spacing-grid-unit) * 1.75));
+  }
+}
+
+/* Steps: active tab fills over one autoplay cycle (--motion-cycle). */
+@keyframes motion-tab-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.motion-tab-progress {
+  transform-origin: left center;
+  animation: motion-tab-progress var(--motion-cycle, 6000ms) linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-tab-progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+/*
+  Inverse section bands (SectionTheme) — lighten dieline `border-border` so
+  PageDielineSection guides stay visible on dark (`bg-foreground`) bands.
+*/
+[data-section-theme="inverse"] {
+  --border: rgb(255 255 255 / 0.15);
+}
+
+/*
+  Expertise stage pages — section headings in the POC style (PROD-2578): quiet
+  muted small-caps label with no V5 brackets, a lighter 28 → 40px title and a
+  larger intro. Scoped to `.expertise-stage` and addressed by SectionHeading's
+  `data-slot`s, so every other page keeps the V5 heading. Deliberately
+  unlayered: it has to beat the component's own utility classes.
+*/
+.expertise-stage [data-slot="section-heading"] {
+  gap: calc(var(--spacing) * 4);
+}
+
+.expertise-stage [data-slot="section-eyebrow"] {
+  color: var(--color-muted-foreground);
+  letter-spacing: 0.14em;
+}
+
+.expertise-stage [data-slot="section-eyebrow-bracket"] {
+  display: none;
+}
+
+.expertise-stage [data-slot="section-title"]:not([data-sized]) {
+  max-width: 54rem;
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.expertise-stage [data-slot="section-description"] {
+  max-width: 47.25rem;
+  font-size: 1.125rem;
+  line-height: calc(var(--spacing) * 8);
+}
+
+@media (width >= 40rem) {
+  .expertise-stage [data-slot="section-title"]:not([data-sized]) {
+    font-size: 2.5rem;
+  }
+}

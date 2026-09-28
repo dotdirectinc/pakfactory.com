@@ -7,7 +7,7 @@ import type {
 import {
     CUSTOMIZATION_PRODUCT_LINE_FACET_ID,
 } from '@/lib/catalog/types';
-import {compareCategorySlugs} from '@/lib/catalog/customization-category-policy';
+import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
 import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
 
 function upsertOption(

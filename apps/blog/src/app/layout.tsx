@@ -20,7 +20,7 @@ import {fetchBlogFooterNavigation, fetchBlogNavCategories} from '@/lib/blog-data
 import {fetchBlogGlobalSettings} from '@/lib/blog-global-settings';
 import {toWatermarkConfig} from '@/lib/watermark';
 import {buildFaviconIcons} from '@pakfactory/sanity/favicon';
-import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
+import {WatermarkProvider} from '@pakfactory/ui/components/watermark-context';
 import {absoluteUrl, sitePath} from '@/lib/site';
 import './globals.css';
 

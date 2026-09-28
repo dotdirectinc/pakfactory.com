@@ -17,6 +17,49 @@ export type {
 } from "@pakfactory/ui/components/customization/types";
 
 import type { UiDescriptor } from "@pakfactory/ui/components/customization/types";
+import { resolveProductDims } from "@pakfactory/sanity/resolve-product-dims";
+import { dimensionAxesFor } from "@pakfactory/utilities/dimension-axes";
+import { convertDimensionRangeToUnit } from "@pakfactory/utilities/length-units";
+
+/** Demo mm ranges for Property Controls explorer (not live catalog data). */
+const DEMO_RECT_RANGE_MM = {
+  lengthMin: 50,
+  lengthMax: 400,
+  widthMin: 40,
+  widthMax: 300,
+  heightMin: 20,
+  heightMax: 200,
+} as const;
+
+const DEMO_CYLINDER_RANGE_MM = {
+  diameterMin: 30,
+  diameterMax: 120,
+  heightMin: 40,
+  heightMax: 250,
+} as const;
+
+const DEMO_BAG_RANGE_MM = {
+  widthMin: 80,
+  widthMax: 350,
+  heightMin: 100,
+  heightMax: 450,
+  gussetMin: 20,
+  gussetMax: 120,
+} as const;
+
+function dimensionUi(
+  dimensionInput: string,
+  rangeMm: Parameters<typeof convertDimensionRangeToUnit>[0],
+  unit: "in" | "mm" = "in",
+): UiDescriptor {
+  const { axes } = resolveProductDims(dimensionInput, rangeMm);
+  return {
+    kind: "dimension",
+    unit,
+    axes: dimensionAxesFor(axes),
+    ranges: convertDimensionRangeToUnit(rangeMm, unit, axes),
+  };
+}
 
 export type CatalogOption = {
   n: string;
@@ -73,7 +116,40 @@ export const CATS: Category[] = [
         vals: "L×W×H / D(Diameter)×H / W×H×G / W×H×G + Drop / W×H / Diameter",
         def: "L×W×H",
         cond: "Dictated by the “Property — Shape” field of the chosen product. For example, Cylinder shape product = Diameter × Height, Bag/Pouch = Width × Height × Gusset.",
-        ui: { kind: "dims", unit: "in" },
+        ui: dimensionUi("rectangular", DEMO_RECT_RANGE_MM),
+      },
+      {
+        n: "Dimensions (Cylinder)",
+        type: "Dimension form",
+        card: "Single",
+        req: true,
+        src: "Buyer + confirm",
+        vals: "Diameter × Height",
+        def: "D×H",
+        cond: "Demo — cylinder dimensionInput → diameter + height axes.",
+        ui: dimensionUi("cylinder", DEMO_CYLINDER_RANGE_MM),
+      },
+      {
+        n: "Dimensions (Bag / Pouch)",
+        type: "Dimension form",
+        card: "Single",
+        req: true,
+        src: "Buyer + confirm",
+        vals: "Width × Height × Gusset",
+        def: "W×H×G",
+        cond: "Demo — bag-pouch dimensionInput → width, height, gusset.",
+        ui: dimensionUi("bag-pouch", DEMO_BAG_RANGE_MM),
+      },
+      {
+        n: "Dimensions (No Shape)",
+        type: "Dimension form",
+        card: "Single",
+        req: false,
+        src: "Buyer",
+        vals: "—",
+        def: "No measurements",
+        cond: "Demo — no-shape → empty axes (DimensionField renders no inputs).",
+        ui: dimensionUi("no-shape", null),
       },
       {
         n: "Size mode (Tin)",

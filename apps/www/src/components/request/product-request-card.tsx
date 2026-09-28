@@ -422,7 +422,9 @@ export function ProductRequestCard({
                 value={builderDraft}
                 onChange={setBuilderDraft}
                 productTitle={title}
+                dimensionInput={line.dimensionInput}
                 dimensionRange={line.dimensionRange}
+                customizationRules={line.customizationRules}
             />
 
             <Dialog open={qtyOpen} onOpenChange={setQtyOpen}>

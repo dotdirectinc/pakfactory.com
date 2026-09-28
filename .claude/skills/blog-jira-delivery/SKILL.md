@@ -13,7 +13,7 @@ Use this skill when the user asks to implement a Blog 3.0 story, move a PROD tic
 ## Preconditions
 
 - Branch: `feature/blog` (or `feat/PROD-###-slug` per team habit).
-- **Schema source of truth:** `apps/studio/schemas/` and `apps/studio/scripts/seed.mjs` — never `studio-old` or stub `packages/sanity` post schema for CMS fields.
+- **Schema source of truth:** `apps/studio/schemas/` — never `studio-old` or stub `packages/sanity` post schema for CMS fields.
 - **Stack:** pnpm only; JSON-LD via `@pakfactory/seo`; GROQ in `packages/sanity/src/queries/` (re-export `queries.ts`); no edits to `packages/ui/src/components` or shared `globals.css`.
 - Read [`AGENTS.md`](../../../AGENTS.md), [`apps/blog/CLAUDE.md`](../../../apps/blog/CLAUDE.md), [`docs/blog-3-jira-conventions.md`](../../../docs/blog-3-jira-conventions.md).
 

@@ -96,6 +96,8 @@ type FaqsFieldOptions = {
   min?: number
   /** Override the field description. */
   description?: string
+  /** Conditional hide (e.g. section listSource !== custom). */
+  hidden?: (ctx: {parent?: unknown}) => boolean
 }
 
 /**
@@ -111,6 +113,7 @@ export function faqsField({
   max = 6,
   min,
   description,
+  hidden,
 }: FaqsFieldOptions = {}) {
   const of =
     mode === 'mixed' ? [faqReferenceMember, typedFaqMember] : [faqReferenceMember]
@@ -126,5 +129,6 @@ export function faqsField({
     description: description ?? defaultDescription,
     of,
     validation: maxCurated(max, min),
+    ...(hidden ? {hidden} : {}),
   })
 }

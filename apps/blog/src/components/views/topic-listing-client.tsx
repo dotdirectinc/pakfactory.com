@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pagination, LISTING_TOP_ID } from "@pakfactory/components/modules/pagination";
+import { Pagination, LISTING_TOP_ID } from "@pakfactory/ui/components/pagination";
 import {
   parsePathPage,
   scrollToPaginationTarget,
-} from "@pakfactory/components/commons/path-pagination";
+} from "@pakfactory/ui/lib/pagination/path-pagination";
 import {
   ListingFilterBar,
   type FilterOption,

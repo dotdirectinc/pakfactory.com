@@ -27,9 +27,12 @@
  * the answer and the model had no field for it.
  *
  * ⚠️ ADDITIVE ONLY. `role` is NOT unset here. Conventions §4.3: never remove a
- * populated field in the change that stops using it. It stays deployed, read-only
- * and deprecated, until the split is verified; removal is a later sweep through
- * `migrate:unset-removed-deprecated`.
+ * populated field in the change that stops using it.
+ *
+ * ✅ That sweep has since happened (PROD-2538). The split was verified — 126 of
+ * 126 carried both successors with zero disagreements — and
+ * `migrate:unset-verified-deprecations` removed the field and unset the key.
+ * This script is a record of step 2, not outstanding work.
  *
  * Drafts included (`perspective: 'raw'`) — publishing a stale draft would otherwise
  * restore the pre-split shape on a document this script had already fixed.
@@ -58,6 +61,17 @@
  *
  * Written by an agent, RUN BY A HUMAN (AGENTS.md § Sanity content).
  *
+ * 🔴 Run it through the register, not the command below:
+ *   pnpm sanity:migrate up --dataset <development|production> \
+ *     --only 20260913-split-customization-role --confirm
+ *
+ * `migrate.mjs` writes the ledger row; this script does not, and never has.
+ * A direct run applies the same changes but records NOTHING — no ranAt, no
+ * gitSha, no checksum and no run log — and someone has to notice and `adopt`
+ * it afterwards. See MIGRATIONS.md.
+ *
+ * The invocation below is this script's own interface. It is what the runner
+ * calls, and it is still the right way to take a dry run:
  *   pnpm --filter @pakfactory/studio run migrate:split-customization-role -- --dataset development
  *   ...                                                                     --dataset development --confirm
  *   ...                                                                     --dataset production --confirm --yes-production
@@ -258,7 +272,7 @@ async function main() {
   )
   const expected = new Set(docs.map((d) => publishedId(d._id))).size
   console.log(`    ${after} document(s) now carry both fields (${docs.length} incl. drafts, ${expected} published ids).`)
-  console.log(`    \`role\` is untouched and still deployed — removal is a later sweep.`)
+  console.log(`    \`role\` is untouched by this script — its removal shipped separately.`)
   console.log(`    Re-run with \`--verify\` to compare values rather than counts.\n`)
 }
 

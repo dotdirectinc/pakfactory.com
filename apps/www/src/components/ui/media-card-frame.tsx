@@ -126,15 +126,19 @@ export function MediaCardFrame({
                     {hasUtilities ? (
                         <div
                             className={cn(
-                                // Desktop only: full-width bottom row, hover reveal
-                                'absolute inset-x-4 bottom-4 z-30 hidden items-center justify-between sm:flex',
+                                // Desktop only: full-width bottom row, hover reveal.
+                                // Pass clicks through the gap to the media link;
+                                // only the button wrappers capture pointer events.
+                                'pointer-events-none absolute inset-x-4 bottom-4 z-30 hidden items-center justify-between sm:flex',
                                 hoverReveal,
                             )}
                         >
-                            <div className="flex items-center">
+                            <div className="pointer-events-auto flex items-center">
                                 {mediaActions}
                             </div>
-                            <div className="flex items-center">{bookmark}</div>
+                            <div className="pointer-events-auto flex items-center">
+                                {bookmark}
+                            </div>
                         </div>
                     ) : null}
                 </div>

@@ -39,6 +39,7 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 | Border / input | `--border`, `--input` | Dividers, field chrome |
 | Brand cream band | `--brand-cream`, `--brand-cream-foreground` | Warm section surfaces |
 | Soft highlight | `--brand-highlight` | Meta/CTA highlight surfaces |
+| Catalog swatches | `--swatch-*` / `bg-swatch-*` | Configurator Color fallbacks when a property value has no image (values in `globals.css` only) |
 | Destructive | `--destructive` | Errors / danger only |
 | Primary tints | `--opacity-primary-10` … `--opacity-primary-60` | Soft fills, hover washes |
 | Neutral scrims | `--opacity-neutral-*` | Overlays, faded chrome |
@@ -65,6 +66,15 @@ Map roles to **CSS variables** in `@pakfactory/ui/globals.css`. Do not hardcode 
 
 From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/content/footer), **`Badge`**, **`Input`**, and other existing shadcn-style primitives. Avoid raw bordered `div`s when a primitive fits.
 
+### Designer / Figma handoff
+
+When implementing a marketing section from Figma (e.g. Industry Solution LP forks), clarify **before coding** whether each control maps to an existing `@pakfactory/ui` / app shared primitive (`Button`, `Dialog`, carousel nav, etc.) or is a **new** component ([ADR-006](docs/adr/0006-design-system-and-tokens.md), [ADR-013](docs/adr/0013-shared-core-vs-feature-composition.md)). Separately ask whether the **band** is a CMS **Section** or route-owned chrome — [ADR-020](docs/adr/0020-component-to-section-playbook.md) (route gate, D35, allowlists, document default + section override).
+
+1. **Ask (or decide with design):** stock primitive vs new component.
+2. **Default:** stock primitives + tokens — do not invent one-off CTA chrome (custom fills, dashed borders, radii) when `Button` variants cover the job.
+3. **If new:** name it, place it under `components/…`, and note whether it stays app-local or should become a shared primitive later. Do not silently fork an existing primitive’s look in a feature file.
+4. **Lesson (Solution hero CTAs):** Figma forest pill / dashed secondary → stock `Button` `default` + `ghost` unless design opens a design-system ticket for a new variant.
+
 ### Links
 
 - **Text links** (inline anchors or `Button variant="link"`) always use `underline underline-offset-4` at rest. Prefer the shared `link` button variant or the same classes on a Next.js `Link`.
@@ -75,6 +85,7 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 ### CTAs (domain)
 
 - Primary actions: quote / RFQ / “Talk to packaging experts” — `Button` with primary (forest) styling.
+- Sizes: prefer `lg` for most CTAs; marketing heroes / page headings may use `size="xl"` (48px / `h-12`).
 - Do **not** introduce cart, checkout, or “Add to cart” patterns unless product explicitly requests them.
 
 ### Cards
@@ -92,6 +103,17 @@ From `@pakfactory/ui`: **`Button`**, **`Card`** (+ header/title/description/cont
 
 - Feature tiles compose the cores: **ProductCard** / **CustomizationCard** → transactional; product lines / styles / formats → general (`CatalogCard`).
 - Settle scale is shared (`PRODUCT_MEDIA_SCALE` 0.98 → 1.0): general cards settle the **whole tile**; transactional cards settle **media only**. Do not invent a second scale or grow past 1.
+
+### Tooltip
+
+Use `@pakfactory/ui` **`Tooltip`** / **`TooltipContent`** — do not invent CSS-only hover labels in feature files.
+
+| Variant | When | Look |
+| --- | --- | --- |
+| **`pill`** | Icon / utility tips (nav Quote request, catalog bookmark / compare) | `rounded-full`, 13px medium label, caret (Arrow) visible, centered on the trigger |
+| **`default`** | Denser form / inline tips (swatches, avatar names) | `rounded-md`, `text-xs` |
+
+Always keep the caret — do not hide `TooltipPrimitive.Arrow` with `[&>svg]:hidden`. Wrap the app (or surface) in `TooltipProvider` once.
 
 ### Focus & interaction
 
@@ -167,6 +189,12 @@ Primitives may use CSS `border` via shadcn patterns — **do not** mandate Verce
 | `--motion-base` (300ms) | Hovers |
 | `--motion-slow` (500ms) | Text entrances |
 | `--motion-reveal` (700ms) | Section reveals / hero |
+
+**Soft page transitions (`(site)`):** Every client-side route change scrolls the window to the top and plays page-enter (`animate-page-enter`: opacity + 8px settle over `--motion-slow`, skipped under `motion-reduce`). Owned by [`SoftPageTransition`](apps/www/src/components/layout/soft-page-transition.tsx), mounted from [`apps/www/src/app/(site)/template.tsx`](apps/www/src/app/(site)/template.tsx). Do not reimplement scroll-to-top or enter wrappers in feature views, cards, or nav. Catalog indexes stream the grid via in-page `Suspense` under live chrome — do **not** put a segment `loading.tsx` on a route that also owns detail children (Next inherits it and flashes the catalog skeleton on catalog → detail soft-nav).
+
+**Hero / PageHeading settle:** Apple Mac–style build-in — opacity `0 → 1` with `translateY(30px → 0)` over `--motion-reveal`, ease `cubic-bezier(0.45, 0, 0.55, 1)`, staggered 100ms. CSS-only (`animate-heading-settle` in www `globals.css`); opt in via `PageHeadingContent` / `PageHeadingSection` `settle` (and `settleOffset`), or `headingSettleProps` for sibling media. Skipped under `prefers-reduced-motion`. Keeps heading stacks as RSC — do not introduce GSAP/client islands for this pattern.
+
+**Product-line hero layout:** Shell lives on listable Product Line Page layout docs (`heroLayout`: `stack` \| `bottomBar`), not on `productLine`. Lines pick a layout via `template`. `stack` (default) = centered featured icon + copy above static featured media. `bottomBar` = full-bleed media cards marquee above the dieline type (`duration` 80s, transparent cards / no card fill); featured video plays on hover on the featured card (no scroll-scrub); featured icon hidden for now; muted→background gradient with 40px clearance above the heading; intro left / CTAs right. Body section order is also per layout doc — fork a new layout when a line needs a different band arrangement.
 
 **Settle zoom (catalog / media tiles):** rest `PRODUCT_MEDIA_SCALE` (`0.98`) → hover `scale-100` over `--motion-base` (`duration-300 ease-out`), with `motion-reduce` keeping rest scale. Digit + classes: [`apps/www/src/lib/ui/product-media-scale.ts`](apps/www/src/lib/ui/product-media-scale.ts). Hover wrapper: www `MediaSettleZoom`; static thumbs use `productMediaLayerClass` only. Apply to **all product tiles** (catalog, PDP, request/account, customization options, legacy modules); do not invent competing scales (`1.02` / `1.05`). Parent must be `group` + `relative overflow-hidden` for hover settle.
 

@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {AddToRequestButton} from '@/components/product/add-to-request-button';
 import {ContentsField} from '@/components/product/contents-field';
 import {CustomizationEntry} from '@/components/product/customization-entry';
@@ -26,12 +27,18 @@ type ProductRequestRailProps = {
 
 export function ProductRequestRail({product}: ProductRequestRailProps) {
     const {addLine, draft} = useRequest();
+    const isInspiration = product.kind === 'inspiration';
     const initialBuilder = useMemo(() => {
-        if (product.kind === 'inspiration' && product.availableCustomizations.length) {
-            return seedFromCustomizations(product.availableCustomizations);
+        // A preset starts from the options it names. Without any, the builder starts empty —
+        // seeding from the whole offer would pick every option now that a step holds several.
+        const preselected = product.availableCustomizations.filter(
+            (item) => item.preselected === true,
+        );
+        if (isInspiration && preselected.length) {
+            return seedFromCustomizations(preselected);
         }
         return createEmptyBuilderState();
-    }, [product]);
+    }, [isInspiration, product.availableCustomizations]);
     const [volumes, setVolumes] = useState<number[]>([]);
     const [contents, setContents] = useState('');
     const [detailsOptIn, setDetailsOptIn] = useState(false);
@@ -69,6 +76,12 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             productLineTitle: product.productLine.title,
             productMedia: product.media,
             availableCustomizations: product.availableCustomizations,
+            ...(product.customizationRules
+                ? {customizationRules: product.customizationRules}
+                : {}),
+            ...(product.dimensionInput
+                ? {dimensionInput: product.dimensionInput}
+                : {}),
             ...(product.dimensionRange
                 ? {dimensionRange: product.dimensionRange}
                 : {}),
@@ -101,7 +114,14 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
         setDetailsOptIn(false);
         setNotes('');
         setReferenceImages([]);
-        setBuilderState(createEmptyBuilderState());
+        const preselected = product.availableCustomizations.filter(
+            (item) => item.preselected === true,
+        );
+        setBuilderState(
+            isInspiration && preselected.length
+                ? seedFromCustomizations(preselected)
+                : createEmptyBuilderState(),
+        );
     }
 
     return (
@@ -141,14 +161,50 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             <section className="rounded-2xl bg-muted p-6">
                 <CustomizationEntry
                     availableCustomizations={product.availableCustomizations}
+                    customizationRules={product.customizationRules}
                     builderState={builderState}
                     onBuilderStateChange={setBuilderState}
                     productTitle={product.title}
+                    dimensionInput={product.dimensionInput}
                     dimensionRange={product.dimensionRange}
+                    preset={isInspiration}
                 />
             </section>
 
             <AddToRequestButton disabled={!ready} onClick={handleAdd} />
+        </div>
+    );
+}
+
+/**
+ * Loading chrome for {@link ProductRequestRail} — same muted section wells
+ * and spacing as the live quantity / contents / customization rail.
+ */
+export function ProductRequestRailSkeleton() {
+    return (
+        <div
+            className="mt-8 space-y-6"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="sr-only">Loading request options</span>
+            {Array.from({length: 3}, (_, index) => (
+                <section
+                    key={index}
+                    className="rounded-2xl bg-muted p-6"
+                    aria-hidden
+                >
+                    <Skeleton className="h-5 w-28" />
+                    <div className="mt-4 space-y-2">
+                        <Skeleton className="h-10 w-full rounded-md" />
+                        <Skeleton className="h-10 w-3/4 max-w-xs rounded-md" />
+                    </div>
+                </section>
+            ))}
+            <div className="space-y-2" aria-hidden>
+                <Skeleton className="h-12 w-full rounded-md" />
+                <Skeleton className="mx-auto h-3 w-40" />
+            </div>
         </div>
     );
 }

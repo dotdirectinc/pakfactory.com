@@ -5,4 +5,4 @@ export {
   formatAnnualSpendDisplay,
   formatSpendInput,
   formatSpendLabel,
-} from "@pakfactory/domain/annual-spend";
+} from "@pakfactory/request/annual-spend";

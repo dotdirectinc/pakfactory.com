@@ -1,6 +1,7 @@
 import type {
     CustomizationFacetDef,
     CustomizationFacetOption,
+    ProductKind,
     ProductLibraryItem,
     ProductLibraryLineMeta,
     ProductLibraryResult,
@@ -8,8 +9,16 @@ import type {
 import {
     PRODUCT_CATALOG_INDUSTRY_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
+    PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
 } from '@/lib/catalog/types';
 import {isSustainabilityProperty} from '@/lib/catalog/customization-filter-taxonomy';
+
+const PRODUCT_TYPE_LABELS: Record<ProductKind, string> = {
+    standard: 'Standard',
+    inspiration: 'Inspiration',
+};
+
+const PRODUCT_TYPE_ORDER: ProductKind[] = ['standard', 'inspiration'];
 
 function upsertOption(
     map: Map<string, CustomizationFacetOption>,
@@ -40,17 +49,31 @@ function preferLineMeta(
     };
 }
 
+export type BuildProductLibraryOptions = {
+    omitFacetIds?: string[];
+    /** Hoisted property.slug → title (no longer duplicated on each item). */
+    propertyTitles?: Record<string, string>;
+    /** Hoisted propertyValue.slug → title for facet option labels. */
+    valueTitles?: Record<string, string>;
+};
+
 /**
- * Build shared facet catalog + linesBySlug from mapped product library items
- * (no category tabs).
+ * Build shared facet catalog + linesBySlug + stylesByLineSlug from mapped
+ * product library items (no category tabs).
  */
 export function buildProductLibraryResult(
     items: ProductLibraryItem[],
     lineMetas: ProductLibraryLineMeta[] = [],
+    options?: BuildProductLibraryOptions,
 ): ProductLibraryResult {
+    const omit = new Set(options?.omitFacetIds ?? []);
+    const propertyTitles = {...(options?.propertyTitles ?? {})};
+    const valueTitles = {...(options?.valueTitles ?? {})};
     const productLineOptions = new Map<string, CustomizationFacetOption>();
+    const productTypeKinds = new Set<ProductKind>();
     const industryOptions = new Map<string, CustomizationFacetOption>();
     const sustainabilityOptions = new Map<string, CustomizationFacetOption>();
+    const stylesByLine = new Map<string, Map<string, CustomizationFacetOption>>();
     const linesBySlug: Record<string, ProductLibraryLineMeta> = {};
     let sustainabilityFacetId = 'sustainability';
     let sustainabilityTitle = 'Sustainability';
@@ -68,6 +91,18 @@ export function buildProductLibraryResult(
             productLineOptions,
             lineSlug,
             item.productLine.title,
+        );
+        productTypeKinds.add(item.kind);
+
+        let styleMap = stylesByLine.get(lineSlug);
+        if (!styleMap) {
+            styleMap = new Map();
+            stylesByLine.set(lineSlug, styleMap);
+        }
+        upsertOption(
+            styleMap,
+            item.productStyle.slug,
+            item.productStyle.title,
         );
 
         if (!linesBySlug[lineSlug]) {
@@ -93,7 +128,8 @@ export function buildProductLibraryResult(
 
         for (const [propSlug, valueSlugs] of Object.entries(item.attrs)) {
             const propTitle =
-                item.propertyTitles[propSlug] ?? labelFromSlug(propSlug);
+                propertyTitles[propSlug] ?? labelFromSlug(propSlug);
+            if (!propertyTitles[propSlug]) propertyTitles[propSlug] = propTitle;
 
             if (!isSustainabilityProperty(propSlug, propTitle)) continue;
 
@@ -103,23 +139,44 @@ export function buildProductLibraryResult(
                 upsertOption(
                     sustainabilityOptions,
                     vs,
-                    item.valueTitles[vs] ?? labelFromSlug(vs),
+                    valueTitles[vs] ?? labelFromSlug(vs),
                 );
             }
         }
     }
 
-    const shared: CustomizationFacetDef[] = [
-        {
+    const shared: CustomizationFacetDef[] = [];
+
+    if (
+        productTypeKinds.size > 0 &&
+        !omit.has(PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID)
+    ) {
+        shared.push({
+            id: PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
+            title: 'Product type',
+            options: PRODUCT_TYPE_ORDER.filter((kind) =>
+                productTypeKinds.has(kind),
+            ).map((kind) => ({
+                value: kind,
+                label: PRODUCT_TYPE_LABELS[kind],
+            })),
+        });
+    }
+
+    if (!omit.has(PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID)) {
+        shared.push({
             id: PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
             title: 'Product Line',
             options: [...productLineOptions.values()].sort((a, b) =>
                 a.label.localeCompare(b.label),
             ),
-        },
-    ];
+        });
+    }
 
-    if (industryOptions.size > 0) {
+    if (
+        industryOptions.size > 0 &&
+        !omit.has(PRODUCT_CATALOG_INDUSTRY_FACET_ID)
+    ) {
         shared.push({
             id: PRODUCT_CATALOG_INDUSTRY_FACET_ID,
             title: 'Industries',
@@ -129,7 +186,10 @@ export function buildProductLibraryResult(
         });
     }
 
-    if (sustainabilityOptions.size > 0) {
+    if (
+        sustainabilityOptions.size > 0 &&
+        !omit.has(sustainabilityFacetId)
+    ) {
         shared.push({
             id: sustainabilityFacetId,
             title: sustainabilityTitle,
@@ -139,5 +199,18 @@ export function buildProductLibraryResult(
         });
     }
 
-    return {items, linesBySlug, facetCatalog: {shared}};
+    const stylesByLineSlug: Record<string, CustomizationFacetOption[]> = {};
+    for (const [lineSlug, styleMap] of stylesByLine) {
+        stylesByLineSlug[lineSlug] = [...styleMap.values()].sort((a, b) =>
+            a.label.localeCompare(b.label),
+        );
+    }
+
+    return {
+        items,
+        linesBySlug,
+        stylesByLineSlug,
+        propertyTitles,
+        facetCatalog: {shared},
+    };
 }

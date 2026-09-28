@@ -16,7 +16,7 @@ import {
   jsonLdGraph,
   serializeJsonLd,
 } from "@pakfactory/seo";
-import { pathPaginationHref } from "@pakfactory/components/commons/path-pagination";
+import { pathPaginationHref } from "@pakfactory/ui/lib/pagination/path-pagination";
 import { absoluteUrl } from "@/lib/site";
 import { pakfactoryOrganization } from "@/lib/case-study-jsonld";
 import {
@@ -162,7 +162,7 @@ export async function CaseStudiesListingPage({
         variant="compact"
         eyebrow={eyebrow}
         title={heading}
-        innerClassName="border-b border-dashed border-border"
+        settle
         description={
           hasHeroIntro ? (
             <PortableText

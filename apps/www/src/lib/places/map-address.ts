@@ -1,4 +1,4 @@
-import {countryLabel, listRegions, regionLabel} from '@pakfactory/geo';
+import {countryLabel, listRegions, regionLabel} from '@pakfactory/request/geo';
 import type {ShippingAddress} from '@/lib/request/request.storage';
 
 type GoogleAddressComponent = {

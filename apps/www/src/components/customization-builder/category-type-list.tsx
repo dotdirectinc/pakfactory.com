@@ -1,6 +1,8 @@
 'use client';
 
+import {Check} from 'lucide-react';
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {BuilderOption, BuilderType} from '@/lib/customization-builder';
 import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
@@ -11,6 +13,10 @@ type CategoryTypeListProps = {
     options: BuilderOption[];
     activeTypeId: string | null;
     activeOptionId: string | null;
+    /** Every option picked in this step (several Types, each per its `customerSelects`). */
+    selectedOptionIds?: ReadonlySet<string>;
+    /** Ruled out by the customer's other picks: listed, greyed, not selectable. */
+    disabledOptionIds?: ReadonlySet<string>;
     consultationSelected?: boolean;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -23,6 +29,8 @@ export function CategoryTypeList({
     options,
     activeTypeId,
     activeOptionId,
+    selectedOptionIds,
+    disabledOptionIds,
     consultationSelected = false,
     onSelectConsultation,
     onSelectType,
@@ -62,14 +70,35 @@ export function CategoryTypeList({
                           if (typeOptions.length === 0) return null;
                           return (
                               <div key={type.id}>
-                                  <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                      {type.title}
+                                  <p className="mb-2 flex items-baseline justify-between gap-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                      <span>{type.title}</span>
+                                      <span className="shrink-0 font-normal normal-case tracking-normal">
+                                          {type.cardinality === 'many'
+                                              ? CUSTOMIZATION_BUILDER_COPY.chooseAny
+                                              : CUSTOMIZATION_BUILDER_COPY.chooseOne}
+                                      </span>
                                   </p>
                                   <ul className="flex flex-col gap-1">
                                       {typeOptions.map((option) => {
-                                          const active =
+                                          const picked =
                                               !consultationSelected &&
+                                              Boolean(
+                                                  selectedOptionIds?.has(
+                                                      option.id,
+                                                  ),
+                                              );
+                                          const open =
+                                              picked &&
                                               option.id === activeOptionId;
+                                          // A pick is never disabled: the rules keep what
+                                          // stands, and clear what does not.
+                                          const disabled =
+                                              !picked &&
+                                              Boolean(
+                                                  disabledOptionIds?.has(
+                                                      option.id,
+                                                  ),
+                                              );
                                           const blurb =
                                               option.shortDescription?.trim() ||
                                               option.description?.trim() ||
@@ -77,11 +106,27 @@ export function CategoryTypeList({
                                           return (
                                               <li key={option.id}>
                                                   <HighlightItem
-                                                      selected={active}
+                                                      selected={picked}
+                                                      disabled={disabled}
+                                                      title={
+                                                          disabled
+                                                              ? CUSTOMIZATION_BUILDER_COPY.unavailableWithSelections
+                                                              : undefined
+                                                      }
+                                                      aria-pressed={picked}
+                                                      aria-current={
+                                                          open
+                                                              ? 'true'
+                                                              : undefined
+                                                      }
                                                       onClick={() =>
                                                           onSelectOption(option)
                                                       }
-                                                      className="flex w-full items-start gap-3"
+                                                      className={cn(
+                                                          'flex w-full items-start gap-3',
+                                                          disabled &&
+                                                              'opacity-50 hover:bg-transparent',
+                                                      )}
                                                   >
                                                       <span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
                                                           {option.imageUrl ? (
@@ -100,7 +145,7 @@ export function CategoryTypeList({
                                                               </div>
                                                           ) : null}
                                                       </span>
-                                                      <span className="min-w-0">
+                                                      <span className="min-w-0 flex-1">
                                                           <span className="block truncate text-sm font-medium">
                                                               {option.title}
                                                           </span>
@@ -109,7 +154,20 @@ export function CategoryTypeList({
                                                                   {blurb}
                                                               </p>
                                                           ) : null}
+                                                          {disabled ? (
+                                                              <span className="sr-only">
+                                                                  {
+                                                                      CUSTOMIZATION_BUILDER_COPY.unavailableWithSelections
+                                                                  }
+                                                              </span>
+                                                          ) : null}
                                                       </span>
+                                                      {picked ? (
+                                                          <Check
+                                                              className="mt-0.5 size-4 shrink-0 text-brand-forest"
+                                                              aria-hidden
+                                                          />
+                                                      ) : null}
                                                   </HighlightItem>
                                               </li>
                                           );

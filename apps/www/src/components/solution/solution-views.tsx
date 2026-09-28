@@ -1,16 +1,24 @@
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
-import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {
+    PageHeadingSection,
+    PageHeadingWithMedia,
+} from '@/components/common/page-heading-section';
 import {
     ProductCard,
     type ProductCardData,
 } from '@/components/product/product-card';
+import {ProductCatalogView} from '@/components/product/product-catalog-view';
+import {SolutionCatalogPageChrome} from '@/components/solution/solution-catalog-page-loading';
+import {SolutionHero} from '@/components/solution/solution-hero';
+import {SectionRenderer} from '@/components/sections/section-renderer';
 import {CatalogCard} from '@/components/ui/catalog-card';
 import type {Product} from '@/lib/catalog/types';
 import type {
     SolutionCard,
+    SolutionLandingContent,
     SolutionLineCatalog,
-    SolutionPage,
+    SolutionStyleCatalog,
 } from '@/lib/solutions/types';
 import {
     productHref,
@@ -48,21 +56,15 @@ function toProductCardData(product: Product): ProductCardData {
 
 export function SolutionCatalogView({
     solutions,
+    showPageChrome = true,
 }: {
     solutions: SolutionCard[];
+    /** When false, omit breadcrumb + page heading (page-owned chrome). */
+    showPageChrome?: boolean;
 }) {
     return (
         <>
-            <PageBreadcrumbSection
-                items={[
-                    {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Solutions'},
-                ]}
-            />
-            <PageHeadingSection
-                title="Solutions"
-                description="Industry and channel packaging tailored to how you sell."
-            />
+            {showPageChrome ? <SolutionCatalogPageChrome /> : null}
             <PageDielineSection innerClassName="pb-24 pt-8">
                 <div className={TILE_GRID_CLASS}>
                     {solutions.map((solution) => (
@@ -81,7 +83,18 @@ export function SolutionCatalogView({
     );
 }
 
-export function SolutionLandingView({solution}: {solution: SolutionPage}) {
+/**
+ * Industry Solution LP shell.
+ * Breadcrumb + hero are route-owned. Body is CMS sections via SectionRenderer
+ * (merged Solution Industry Page template × solution content).
+ */
+export function SolutionLandingView({
+    content,
+}: {
+    content: SolutionLandingContent;
+}) {
+    const {solution, hero, sections} = content;
+
     return (
         <>
             <PageBreadcrumbSection
@@ -91,28 +104,19 @@ export function SolutionLandingView({solution}: {solution: SolutionPage}) {
                     {label: solution.shortName},
                 ]}
             />
-            <PageHeadingSection
-                title={solution.h1}
-                description={
-                    solution.shortDescription || undefined
-                }
-            />
-            {solution.relatedProducts.length > 0 ? (
-                <PageDielineSection innerClassName="pb-24 pt-8">
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-medium tracking-tight text-foreground">
-                            Related products
-                        </h2>
-                    </div>
-                    <div className={PRODUCT_GRID_CLASS}>
-                        {solution.relatedProducts.map((product) => (
-                            <ProductCard
-                                key={product.slug}
-                                data={toProductCardData(product)}
-                            />
-                        ))}
-                    </div>
-                </PageDielineSection>
+            {hero ? (
+                <SolutionHero content={hero} />
+            ) : (
+                <PageHeadingSection
+                    title={solution.h1}
+                    description={
+                        solution.shortDescription || undefined
+                    }
+                    settle
+                />
+            )}
+            {sections && sections.length > 0 ? (
+                <SectionRenderer sections={sections} />
             ) : null}
         </>
     );
@@ -157,6 +161,54 @@ export function SolutionLineCatalogView({
                     </p>
                 )}
             </PageDielineSection>
+        </>
+    );
+}
+
+export function SolutionStyleCatalogView({
+    catalog,
+}: {
+    catalog: SolutionStyleCatalog;
+}) {
+    const {solution, style, library, pageSections} = catalog;
+    const description =
+        style.descriptionText.trim() ||
+        style.shortDescription.trim() ||
+        undefined;
+
+    return (
+        <>
+            <PageBreadcrumbSection
+                items={[
+                    {label: 'Home', href: WWW_ROUTES.home},
+                    {label: 'Solutions', href: WWW_ROUTES.solutions},
+                    {
+                        label: solution.shortName,
+                        href: solutionHref(solution.slug),
+                    },
+                    {label: style.shortName},
+                ]}
+            />
+            <PageHeadingWithMedia
+                title={style.h1}
+                description={description}
+                media={
+                    style.featuredImageUrl
+                        ? {
+                              src: style.featuredImageUrl,
+                              alt: style.featuredImageAlt,
+                          }
+                        : null
+                }
+            />
+            <ProductCatalogView
+                library={library}
+                urlSync
+                showPageChrome={false}
+            />
+            {pageSections && pageSections.length > 0 ? (
+                <SectionRenderer sections={pageSections} />
+            ) : null}
         </>
     );
 }

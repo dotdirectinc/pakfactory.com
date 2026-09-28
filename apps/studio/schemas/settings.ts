@@ -39,7 +39,7 @@ export const settings = defineType({
   type: 'document',
   // Singleton — only one document of this type ever exists.
   groups: [
-    { name: 'identity', title: 'Identity & brand', default: true },
+    { name: 'identity', title: 'Identity & brand' },
     { name: 'company', title: 'Company' },
     { name: 'seoDefaults', title: 'SEO defaults' },
     { name: 'socialDefaults', title: 'Social defaults' },
@@ -79,7 +79,11 @@ export const settings = defineType({
       group: 'identity',
       options: { accept: FAVICON_ACCEPT },
       description:
-        'Browser tab / bookmark icon for the website and blog (PROD-2200). Accepts .ico, .png or .svg. Upload a SQUARE icon — 512×512 for PNG (also used as the iOS touch icon), any size for SVG. The file is served exactly as uploaded, so keep it small (< 50 KB). Leave empty to keep the built-in PakFactory favicon.',
+        
+          'Browser tab and bookmark icon for the website and blog. Accepts .ico, .png or .svg — ' +
+          'square, 512×512 for PNG, which is also the iOS touch icon. The file is served ' +
+          'exactly as uploaded, so keep it under 50 KB. Leave empty to keep the built-in ' +
+          'PakFactory favicon.',
       validation: (Rule) =>
         Rule.custom((value) => {
           const extension = parseFileExtension(value)
@@ -96,7 +100,7 @@ export const settings = defineType({
       type: 'object',
       group: 'company',
       description:
-        'Company identity — used in the blog header logo and Organization JSON-LD.',
+        'Company identity. Used for the blog header logo and in structured data.',
       options: { collapsible: true, collapsed: false },
       fields: [
         defineField({
@@ -113,7 +117,9 @@ export const settings = defineType({
             mediaTags: [MEDIA_TAG.website],
             options: { hotspot: true },
             description:
-              'Used in the blog header (replaces the default PakFactory wordmark) and Organization JSON-LD.',
+              
+                'Shown in the blog header in place of the PakFactory wordmark, and in ' +
+                'structured data.',
             fields: [
               defineField({
                 name: 'alt',
@@ -180,7 +186,10 @@ export const settings = defineType({
       type: 'object',
       group: 'identity',
       description:
-        'Render-time logo overlay on public website and blog imagery (PROD-2206). Upload light and dark marks — the site picks by photo corner brightness. Originals in Media stay clean for team download. Product catalog images are never watermarked.',
+        
+          'A logo added to images as they are served, on case study and blog post body content ' +
+          'only. Originals in Media stay clean. Upload light and dark marks — the site picks by ' +
+          'the brightness behind the mark.',
       options: { collapsible: true, collapsed: false },
       fields: [
         defineField({
@@ -197,7 +206,9 @@ export const settings = defineType({
             type: 'image',
             mediaTags: [MEDIA_TAG.website],
             description:
-              'White / light transparent SVG or PNG (e.g. pakfactory_white-logo_watermark.svg). Used when the image corner behind the mark is dark.',
+              
+                'White or light transparent SVG or PNG. Used when the image corner behind the ' +
+                'mark is dark.',
           }),
         ),
         defineField(
@@ -284,7 +295,7 @@ export const settings = defineType({
       title: 'Brand X/Twitter handle',
       type: 'string',
       group: 'socialDefaults',
-      description: 'e.g. @pakfactory — emits twitter:site.',
+      description: 'The brand handle (e.g. @pakfactory), used for the twitter:site tag.',
     }),
 
     // ── Crawlers & AI ─────────────────────────────────────────────────────────
@@ -301,7 +312,10 @@ export const settings = defineType({
       rows: 8,
       group: 'crawlers',
       description:
-        'Leave EMPTY for the normal, auto-generated llms.txt (live case studies + blog posts, refreshed hourly). Anything entered here is served verbatim at pakfactory.com/llms.txt instead — emergency/editorial override only.',
+        
+          'Leave empty for the normal, auto-generated llms.txt (live case studies + blog posts, ' +
+          'refreshed hourly). Anything entered here is served verbatim at ' +
+          'pakfactory.com/llms.txt instead — emergency/editorial override only.',
     }),
     defineField({
       name: 'llmsTxtStorefront',
@@ -319,7 +333,7 @@ export const settings = defineType({
       title: 'GTM container ID',
       type: 'string',
       group: 'integrations',
-      description: 'e.g. GTM-XXXXXXX',
+      description: 'The Google Tag Manager container ID (e.g. GTM-XXXXXXX).',
     }),
     defineField({
       name: 'gscVerification',

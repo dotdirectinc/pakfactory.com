@@ -8,11 +8,8 @@ export type BuilderStepKey = 'dimensions' | (string & {});
 
 export type DimensionFace = 'external' | 'internal';
 
-export type FaceMeasurements = {
-    length: string;
-    width: string;
-    height: string;
-};
+/** Axis id (Sanity length/width/height/…) → numeric string. */
+export type FaceMeasurements = Record<string, string>;
 
 /** Dual external/internal measurements for the Dimensions category. */
 export type DimensionsValue = {
@@ -27,11 +24,27 @@ export type SelectionValue = {
     label: string;
 };
 
+/**
+ * A category step's answer. A selection step holds EVERY option picked in that category:
+ * several Types can each contribute (a rigid box is a Chipboard AND an Exterior Wrap), and
+ * each Type allows one or several of its own options per its `customerSelects` (ADR-017 §4b).
+ * Never empty — a step with no picks is `unset`.
+ */
 export type StepAnswer =
     | {status: 'unset'}
     | {status: 'not-sure'}
     | {status: 'set'; dimensions: DimensionsValue}
-    | {status: 'set'; selection: SelectionValue};
+    | {status: 'set'; selections: SelectionValue[]};
+
+/** Display chip for a selected property value (rail / overview). */
+export type PropertySelectionSummaryItem = {
+    kind: 'swatch' | 'chip';
+    label: string;
+    /** True for Need consultation — omit from front UI, keep in payload. */
+    omitFromSummary: boolean;
+    color?: string;
+    imageUrl?: string;
+};
 
 export type CustomizationBuilderState = {
     answers: Partial<Record<string, StepAnswer>>;
@@ -46,6 +59,12 @@ export type CustomizationBuilderState = {
      * Option id → Property key → selected propertyValue slugs.
      */
     propertySelections?: Partial<Record<string, Record<string, string[]>>>;
+    /**
+     * Option id → ordered property summary items for rail / overview UI.
+     */
+    propertySelectionSummaries?: Partial<
+        Record<string, PropertySelectionSummaryItem[]>
+    >;
 };
 
 export type BuilderChoice = {
@@ -96,6 +115,7 @@ export type BuilderMode = 'guided' | 'workspace';
 /** Dimensions always leads; selection steps follow category order from the product. */
 export const DIMENSIONS_STEP_KEY: BuilderStepKey = 'dimensions';
 
+/** Default rectangular L×W×H until product axes are applied. */
 export const EMPTY_FACE: FaceMeasurements = {
     length: '',
     width: '',
@@ -122,6 +142,7 @@ export const EMPTY_BUILDER_STATE: CustomizationBuilderState = {
     guidedComplete: false,
     entryNotes: {},
     propertySelections: {},
+    propertySelectionSummaries: {},
 };
 
 export type CatalogOptionLike = Pick<
@@ -130,7 +151,6 @@ export type CatalogOptionLike = Pick<
     | 'label'
     | 'category'
     | 'categoryTitle'
-    | 'categoryOrder'
     | 'categoryDescription'
     | 'typeId'
     | 'typeSlug'
@@ -143,8 +163,6 @@ export type CatalogOptionLike = Pick<
     | 'description'
     | 'imageUrl'
     | 'preselected'
-    | 'worksOnIds'
-    | 'incompatibleIds'
     | 'configuratorRole'
     | 'role'
 >;

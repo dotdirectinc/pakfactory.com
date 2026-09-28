@@ -2,7 +2,6 @@ import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
 import {CustomizationConfigPanel} from '@/components/customization/customization-config-panel';
-import {CustomizationFormed} from '@/components/customization/customization-formed';
 import {CustomizationOptionGallery} from '@/components/customization/customization-option-gallery';
 import {
     CustomizationReferenceOverview,
@@ -22,6 +21,8 @@ import {
 import {CustomizationShowcase} from '@/components/customization/customization-showcase';
 import {AnchorNav, type AnchorNavItem} from '@/components/product/anchor-nav';
 import {FaqSection} from '@/components/sections/faq-section';
+import {SectionRenderer} from '@/components/sections/section-renderer';
+import type {PageSection} from '@/components/sections/registry';
 import {
     formatSectionEyebrow,
     SectionHeading,
@@ -32,12 +33,19 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 type CustomizationDetailViewProps = {
     detail: CustomizationDetail;
+    peers?: CustomizationDetail[];
+    /** Shared bands from `customizationDetailPage` layout (template → Default). */
+    pageSections?: PageSection[] | null;
 };
 
 /**
  * Customization detail (PROD-1299: above-fold, Material Reference, comparison + Slice H chrome).
  */
-export function CustomizationDetailView({detail}: CustomizationDetailViewProps) {
+export function CustomizationDetailView({
+    detail,
+    peers = [],
+    pageSections = null,
+}: CustomizationDetailViewProps) {
     const categoryLabel = detail.categoryLabel || detail.categoryValue;
     const categoryListHref = `${WWW_ROUTES.customizations}?category=${encodeURIComponent(detail.categoryValue)}`;
     const reference = getReferenceCopy(detail.categoryValue, categoryLabel);
@@ -66,8 +74,7 @@ export function CustomizationDetailView({detail}: CustomizationDetailViewProps) 
         });
     }
 
-    const showReferenceBand =
-        showOverview || showSpecs || showWorksWith;
+    const showReferenceBand = showOverview || showSpecs || showWorksWith;
 
     return (
         <>
@@ -82,10 +89,13 @@ export function CustomizationDetailView({detail}: CustomizationDetailViewProps) 
                     {label: detail.title},
                 ]}
             />
-            <PageDielineSection innerClassName="border-b border-dashed border-border">
+            <PageDielineSection
+                paddingBlock="sm"
+                innerClassName="border-b border-dashed border-border"
+            >
                 <article
                     id="customization-overview"
-                    className="scroll-mt-32 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+                    className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
                 >
                     <CustomizationOptionGallery
                         media={detail.media}
@@ -110,14 +120,12 @@ export function CustomizationDetailView({detail}: CustomizationDetailViewProps) 
 
             {showReferenceBand ? (
                 <PageDielineSection innerClassName="border-b border-dashed border-border">
-                    <div className="pt-16 pb-8 sm:pt-20">
-                        <SectionHeading
-                            eyebrow={reference.eyebrow}
-                            title={reference.title}
-                            description={reference.description}
-                            descriptionClassName="text-base leading-6"
-                        />
-                    </div>
+                    <SectionHeading
+                        eyebrow={reference.eyebrow}
+                        title={reference.title}
+                        description={reference.description}
+                        descriptionClassName="text-base leading-6 mb-20 sm:mb-10"
+                    />
 
                     <AnchorNav embedded items={navItems} />
 
@@ -136,15 +144,15 @@ export function CustomizationDetailView({detail}: CustomizationDetailViewProps) 
                 </PageDielineSection>
             ) : null}
 
-            <CustomizationComparison />
+            <CustomizationComparison detail={detail} peers={peers} />
             <CustomizationShowcase detail={detail} />
-            <CustomizationFormed />
             <FaqSection
                 sectionId="customization-faqs"
                 items={detail.faqs ?? []}
                 footerHref={WWW_ROUTES.contact}
                 footerLabel="Let's chat"
             />
+            <SectionRenderer sections={pageSections} />
         </>
     );
 }

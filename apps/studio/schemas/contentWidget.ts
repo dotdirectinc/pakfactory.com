@@ -23,14 +23,17 @@ export const contentWidget = defineType({
       title: 'Internal title',
       type: 'string',
       description:
-        'Editor-facing label used in search and the embed picker. Not shown on the website. E.g. "Q2 Promo CTA" or "Mailer Box Product Card".',
+        
+          'Editor-facing label used in search and the embed picker. Not shown on the website. ' +
+          'E.g. "Q2 Promo CTA" or "Mailer Box Product Card".',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'widgetType',
       title: 'Widget type',
       type: 'string',
-      description: 'Select the type of widget. Cannot be changed after creation.',
+      description:
+        'Which kind of widget this is. Changing it later hides whatever you already filled in.',
       options: {
         list: [
           { title: '📣  CTA Block', value: 'cta' },
@@ -78,7 +81,8 @@ export const contentWidget = defineType({
       name: 'buttonUrl',
       title: 'Button URL',
       type: 'url',
-      description: 'Destination URL. Use a full URL including https://, or a relative path like /quote.',
+      description:
+        'Destination URL. Must be a full URL including https:// — a relative path is rejected.',
       hidden: ({ document }) => document?.widgetType !== 'cta',
       validation: (Rule) =>
         Rule.custom((value, context) => {

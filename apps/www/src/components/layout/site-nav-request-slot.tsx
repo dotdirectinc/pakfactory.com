@@ -1,7 +1,6 @@
 'use client';
 
-import type {PrimaryNavItem} from '@pakfactory/components/layout/primary-nav-types';
-import {SiteNav} from '@pakfactory/components/layout/site-nav';
+import {SiteNav, type SiteNavItem} from '@pakfactory/ui/components/site-nav';
 import {
     AccountMenu,
     type AccountMenuProps,
@@ -12,7 +11,7 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 
 export type SiteNavRequestSlotProps = {
     homeHref: string;
-    navItems: PrimaryNavItem[];
+    navItems: SiteNavItem[];
     cta: {href: string; label: string};
     signIn: {href: string; label: string};
     account?: AccountMenuProps;
@@ -30,10 +29,9 @@ export function SiteNavRequestSlot({
 
     return (
         <SiteNav
-            variant="marketing"
             homeHref={homeHref}
             logo={<Logo className="gap-3" />}
-            navItems={navItems}
+            items={navItems}
             cta={cta}
             signIn={signIn}
             account={

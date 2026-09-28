@@ -6,7 +6,7 @@ import {
   type RequestReviewPageSlice,
 } from "@pakfactory/brief-builder-ui/request-review-paper";
 import { DEFAULT_REQUEST_REVIEW_COPY } from "@pakfactory/brief-builder-ui/request-review-copy";
-import type { RequestDraft, RequestLine } from "@pakfactory/domain/request";
+import type { RequestDraft, RequestLine } from "@pakfactory/request/request";
 import {
   Carousel,
   CarouselContent,

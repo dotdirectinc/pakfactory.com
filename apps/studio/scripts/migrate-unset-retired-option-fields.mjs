@@ -25,13 +25,30 @@
  * The script RE-CHECKS both conditions per dataset and refuses to unset anything if
  * either fails, because "it was safe on production" is not a fact about development.
  *
- * THREE FIELDS ARE DELIBERATELY NOT TOUCHED — they are still in the schema:
+ * THREE FIELDS WERE DELIBERATELY NOT TOUCHED by this script, because at the time
+ * they were still in the schema and each needed a decision about where the
+ * content goes:
  *   whatIsBlock      8 populated, destination `glossaryTerm` holds 0 documents
  *   comparedAgainst  8 populated, no successor field
  *   faqs             2 populated, not in the designed list, no successor
- * Each needs a decision about where the content goes. None is a migration.
+ *
+ * ⚠️ Two of those three have since gone. `whatIsBlock` and `comparedAgainst`
+ * were removed and swept by `migrate:unset-removed-deprecated` — the 8
+ * definitions were deleted rather than migrated to Glossary Terms, which was the
+ * decision that unblocked them. `faqs` is still deployed and still undecided.
  *
  * Follows `.claude/rules/dataset-script-placement-and-flags.md`:
+ * 🔴 Run it through the register, not the command below:
+ *   pnpm sanity:migrate up --dataset <development|production> \
+ *     --only 20260828-unset-retired-option-fields --confirm
+ *
+ * `migrate.mjs` writes the ledger row; this script does not, and never has.
+ * A direct run applies the same changes but records NOTHING — no ranAt, no
+ * gitSha, no checksum and no run log — and someone has to notice and `adopt`
+ * it afterwards. See MIGRATIONS.md.
+ *
+ * The invocation below is this script's own interface. It is what the runner
+ * calls, and it is still the right way to take a dry run:
  *   pnpm --filter @pakfactory/studio run migrate:unset-retired-fields -- --dataset development
  *   pnpm --filter @pakfactory/studio run migrate:unset-retired-fields -- --dataset development --confirm
  *   pnpm --filter @pakfactory/studio run migrate:unset-retired-fields -- --dataset production --confirm --yes-production

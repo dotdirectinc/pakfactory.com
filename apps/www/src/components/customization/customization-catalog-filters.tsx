@@ -10,6 +10,16 @@ import {
 } from '@/components/customization/customization-facet-group';
 import type {CustomizationFacetDef} from '@/lib/catalog/types';
 
+/** Desktop filter rail: stable gutter + centered thin thumb (PROD-2599). */
+const FILTER_RAIL_CLASS = cn(
+    'hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto lg:[scrollbar-gutter:stable]',
+    '[&::-webkit-scrollbar]:w-3',
+    '[&::-webkit-scrollbar-thumb]:rounded-full',
+    '[&::-webkit-scrollbar-thumb]:border-2',
+    '[&::-webkit-scrollbar-thumb]:border-transparent',
+    '[&::-webkit-scrollbar-thumb]:bg-clip-padding',
+);
+
 type CustomizationCatalogFiltersProps = {
     resultCount: number;
     totalCount: number;
@@ -38,7 +48,7 @@ export function CustomizationCatalogFilters({
     );
 
     return (
-        <aside className="hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
+        <aside className={FILTER_RAIL_CLASS}>
             <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">
                     {resultCount} of {totalCount}
@@ -104,7 +114,7 @@ export function CustomizationCatalogFiltersSkeleton({
 
     return (
         <aside
-            className="hidden w-full flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto"
+            className={FILTER_RAIL_CLASS}
             aria-busy="true"
             aria-live="polite"
         >

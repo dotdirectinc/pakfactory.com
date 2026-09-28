@@ -1,29 +1,40 @@
 import { defineField } from 'sanity'
 import type { Rule } from 'sanity'
+import { sectionHeaderFields } from './section-header-fields'
+import { SECTION_GROUPS } from './section-field-groups'
+import {
+  hideUnlessCustomList,
+  hideWhenCustomList,
+  sectionListSourceField,
+} from './section-list-source-fields'
 
 /**
  * The row-section field set — Foundations (PROD-2286).
  *
  * A "row" is a section that shows a strip of other documents: a rail of posts, a
- * shelf of products, a set of related solutions. Every row shares the same five
- * fields, so they are defined once here and imported by each row section rather
- * than re-typed — the blog's four post rows are the pattern this generalises.
+ * shelf of products, a set of related solutions. Every row shares the same chrome
+ * plus curated-override fields, so they are defined once here and imported by
+ * each row section rather than re-typed — the blog's four post rows are the
+ * pattern this generalises.
  *
- * The behaviour the fields encode: **curated override with a derive fallback.**
- * Leave the curated list empty and the row fills itself from `source`, newest or
- * highest-ranked first, up to `count`. Fill the curated list and those exact
- * items show, in that order — `source` and `count` are then ignored. An editor
- * gets a good row for free and an exact row when they want one, from one section.
+ * **Explicit list source:** when `sourceTo` is set, editors choose Derive from
+ * source (chip) vs Custom list. When `pageListChip` is set (document inherit,
+ * e.g. case studies), they choose Page field vs Custom. Curation-only rows have
+ * no chip — always a custom list.
  */
 
 type RowSectionFieldsOptions = {
-  /** Field group/tab id these fields belong to (usually the row object has none). */
-  group?: string
   /**
    * Types the `source` reference may point at — what the row derives from
-   * (a taxonomy term, a listing page). Omit to leave the row curation-only.
+   * (a taxonomy term, a listing page). Omit to leave the row curation-only
+   * unless `pageListChip` is set.
    */
   sourceTo?: { type: string }[]
+  /**
+   * Host-document list inherit (ADR-020 §8). When set, adds `listSource` with
+   * a Page field chip instead of derive-from-source.
+   */
+  pageListChip?: { label: string }
   /** Types the curated override array holds — the documents shown in the row. */
   curatedTo: { type: string }[]
   /** Default derive count for a new row. Defaults to 3. */
@@ -32,85 +43,105 @@ type RowSectionFieldsOptions = {
   curatedTitle?: string
   /** Noun for the derived items in descriptions, e.g. "posts", "products". */
   itemNoun?: string
+  /**
+   * When false, skip in-section Heading/Content/Layout groups (flat form).
+   * Defaults to true for www sections.
+   */
+  withSectionGroups?: boolean
 }
 
 /**
- * The five shared row fields: heading, intro, source, count, curated override.
- * Spread into a row section's `fields`.
- *
- * @example
- *   defineType({
- *     name: 'productShelfRow',
- *     type: 'object',
- *     fields: [
- *       ...rowSectionFields({
- *         sourceTo: [{ type: 'productLine' }],
- *         curatedTo: [{ type: 'product' }],
- *         itemNoun: 'products',
- *       }),
- *     ],
- *   })
+ * Shared row fields: section chrome (heading · intro · align · link · borders)
+ * plus source, count, curated override. Spread into a row section's `fields`.
  */
 export function rowSectionFields({
-  group,
   sourceTo,
+  pageListChip,
   curatedTo,
   defaultCount = 3,
   curatedTitle = 'Curated items',
   itemNoun = 'items',
+  withSectionGroups = true,
 }: RowSectionFieldsOptions) {
-  const withGroup = <T extends Record<string, unknown>>(field: T): T =>
-    group ? { ...field, group } : field
+  const contentGroup = withSectionGroups ? SECTION_GROUPS.content : undefined
+  const withGroup =
+    (group: string | undefined) =>
+    <T extends Record<string, unknown>>(field: T): T =>
+      group ? ({...field, group} as T) : field
+
+  const usePageList = Boolean(pageListChip)
+  const useDerive = Boolean(sourceTo) && !usePageList
 
   return [
-    defineField(
-      withGroup({
-        name: 'heading',
-        title: 'Heading',
-        type: 'string',
-        description: `The row's title, shown above the ${itemNoun}.`,
-      }),
-    ),
-    defineField(
-      withGroup({
-        name: 'intro',
-        title: 'Intro',
-        type: 'text',
-        rows: 2,
-        description: 'Optional line under the heading. Leave blank for none.',
-      }),
-    ),
-    ...(sourceTo
+    ...sectionHeaderFields({withSectionGroups}),
+    ...(usePageList && pageListChip
       ? [
+          sectionListSourceField({
+            mode: 'page',
+            chipLabel: pageListChip.label,
+            group: contentGroup,
+          }),
+        ]
+      : []),
+    ...(useDerive
+      ? [
+          sectionListSourceField({
+            mode: 'derive',
+            chipLabel: 'Derive from source',
+            group: contentGroup,
+          }),
           defineField(
-            withGroup({
+            withGroup(contentGroup)({
               name: 'source',
               title: 'Derive from',
               type: 'reference',
-              to: sourceTo,
-              description: `Fill the row automatically from this. Ignored when ${curatedTitle} below has entries.`,
+              to: sourceTo!,
+              description: `Fill the row from this when List source is Derive.`,
+              hidden: hideWhenCustomList,
+            }),
+          ),
+          defineField(
+            withGroup(contentGroup)({
+              name: 'count',
+              title: 'How many to show',
+              type: 'number',
+              initialValue: defaultCount,
+              validation: (rule: Rule) => rule.min(1).integer(),
+              description: `Number of ${itemNoun} when deriving.`,
+              hidden: hideWhenCustomList,
+            }),
+          ),
+        ]
+      : []),
+    // Curation-only (no source, no page inherit): still show count for legacy rows
+    // that had it; only when neither page nor derive mode.
+    ...(!usePageList && !useDerive
+      ? [
+          defineField(
+            withGroup(contentGroup)({
+              name: 'count',
+              title: 'How many to show',
+              type: 'number',
+              initialValue: defaultCount,
+              validation: (rule: Rule) => rule.min(1).integer(),
+              description: `Hint for how many ${itemNoun} to show.`,
             }),
           ),
         ]
       : []),
     defineField(
-      withGroup({
-        name: 'count',
-        title: 'How many to show',
-        type: 'number',
-        initialValue: defaultCount,
-        validation: (rule: Rule) => rule.min(1).integer(),
-        description: `Number of ${itemNoun} to show when deriving. Ignored when ${curatedTitle} is set.`,
-      }),
-    ),
-    defineField(
-      withGroup({
+      withGroup(contentGroup)({
         name: 'curatedItems',
         title: curatedTitle,
         type: 'array',
-        of: curatedTo.map((ref) => ({ type: 'reference', to: [ref] })),
+        of: curatedTo.map((ref) => ({type: 'reference', to: [ref]})),
         validation: (rule: Rule) => rule.unique(),
-        description: `Override. When set, these exact ${itemNoun} show, in this order, and the source and count above are ignored. Leave empty to derive.`,
+        description: usePageList || useDerive
+          ? `Custom ${itemNoun} only. Shown when List source is Custom.`
+          : `The ${itemNoun} to show, in order.`,
+        ...(usePageList || useDerive
+          ? {hidden: hideUnlessCustomList}
+          : {}),
       }),
     ),
   ]

@@ -70,15 +70,15 @@ Import via `@/components/<folder>/…`. Prefer **kebab-case file ≈ export**. S
 | [`product/`](./src/components/product/) | Product catalog + PDP | `ProductCatalogView` / panel / filters / list, `CatalogEntryCard`, `ProductCard` (+ skeleton grid), detail, gallery, request rail |
 | [`customization-builder/`](./src/components/customization-builder/) | Product configurator | builder shell, guided/workspace views, category rail, material/finish/print/dimension options |
 | [`solution/`](./src/components/solution/) | Solutions catalog | `solution-views` |
-| [`sections/`](./src/components/sections/) | Studio page sections | `customizations-catalog`, packaging / product / homepage heroes, advertisement card |
+| [`sections/`](./src/components/sections/) | Sanity page sections (Studio `schemas/sections`) | `customizations-catalog`, packaging / product / homepage heroes, advertisement card, FAQ / products / testimonials rows |
+| [`case-study/`](./src/components/case-study/) | Case study surfaces | `CaseStudyCard` |
 | [`request/`](./src/components/request/) | RFQ / brief builder | wizard steps, brief builder, product request card, express entry |
 | [`account/`](./src/components/account/) | Buyer account area | `account-shell`, request list/detail, profile views |
 | [`auth/`](./src/components/auth/) | Auth form primitives | card, form, field |
 | [`login/`](./src/components/login/) | Auth route views | login / sign-up / forgot-password pages, Google button |
-| [`layout/`](./src/components/layout/) | Site chrome | nav menu/dropdown, logo, footer wordmark, hero header, visual editing |
+| [`layout/`](./src/components/layout/) | Site chrome | nav menu/dropdown, logo, footer wordmark, hero header, visual editing, `VirtualPageviewTracker` |
 | [`common/`](./src/components/common/) | Shared page chrome | breadcrumb + page heading sections, confirm dialog |
 | [`ui/`](./src/components/ui/) | App-local shared cores | `MediaCardFrame`, `MediaCardSkeleton`, gallery, bookmark, catalog card, toasts |
-| [`modules/`](./src/components/modules/) | Older marketing blocks | product list/category, case study card, category filter, analytics tracker |
 | [`views/`](./src/components/views/) | Multi-route templates | reserved (empty placeholder today) |
 
 Detail for products wiring: [`docs/products-catalog.md`](./docs/products-catalog.md). Customizations: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md). Filter operators / product-line ids: [`docs/customization-filter-taxonomy.md`](./docs/customization-filter-taxonomy.md).

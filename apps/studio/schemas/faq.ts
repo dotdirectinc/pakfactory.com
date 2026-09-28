@@ -45,7 +45,8 @@ export const faq = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'Must be self-contained. Links and lists allowed. State a per-product number never (it is a field and a typed copy goes stale) — a category-level range may, and always point at where the exact number lives.',
+        'Must be self-contained. Never quote a per-product number — it lives in a field and a ' +
+        'typed copy goes stale. A category range is fine, if you point at where the exact number lives.',
       of: [{ type: 'block' }],
       validation: (Rule) => Rule.required(),
     }),
@@ -55,7 +56,8 @@ export const faq = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'General answers are browsable in the Help Center and get a URL. Contextual answers are searchable there and served on the pages that reference them — they never appear in a category browse listing and have no URL of their own.',
+        'General answers are browsable in the Help Center at their own URL. Contextual answers ' +
+        'only appear on the pages that reference them.',
       options: {
         layout: 'radio',
         list: [
@@ -72,7 +74,8 @@ export const faq = defineType({
       type: 'reference',
       group: GROUPS.categorization,
       description:
-        'Required on every FAQ, including contextual ones the Help Center never lists — the reference is what builds each category page.',
+        'Required even on contextual answers the Help Center never lists — this reference is ' +
+        'what builds each category page.',
       to: [{ type: 'helpCategory' }],
       // §4.2: pick an existing category; the eight are a fixed set.
       options: { disableNew: true },

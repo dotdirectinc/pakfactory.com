@@ -12,6 +12,7 @@ import {
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -20,10 +21,14 @@ type CustomizationGuidedViewProps = {
     activeKey: BuilderStepKey;
     activeTypeId: string | null;
     activeOptionId: string | null;
+    /** Options the rules rule out given the other picks: listed, not selectable. */
+    disabledOptionIds?: ReadonlySet<string>;
     state: CustomizationBuilderState;
     /** Highest rail index unlocked by Next/Skip commit. */
     maxReachableIndex: number;
     dimensionRange?: ProductDimensionRange;
+    dimensionInput?: string;
+    dimensionAxisIds?: readonly string[];
     onSelectStep: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -34,6 +39,7 @@ type CustomizationGuidedViewProps = {
     onPropertySelectionsChange: (
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) => void;
     onBack: () => void;
     onNext: () => void;
@@ -46,9 +52,12 @@ export function CustomizationGuidedView({
     activeKey,
     activeTypeId,
     activeOptionId,
+    disabledOptionIds,
     state,
     maxReachableIndex,
     dimensionRange,
+    dimensionInput,
+    dimensionAxisIds,
     onSelectStep,
     onSelectConsultation,
     onSelectType,
@@ -68,7 +77,11 @@ export function CustomizationGuidedView({
     );
     const isFirst = stepIndex <= 0;
     const isLast = stepIndex >= steps.length - 1;
-    const canAdvance = isAnswerReady(getAnswer(state, activeKey));
+    const step = steps[stepIndex];
+    const canAdvance =
+        step?.kind === 'dimensions'
+            ? isAnswerReady(getAnswer(state, activeKey), dimensionAxisIds)
+            : isAnswerReady(getAnswer(state, activeKey));
 
     function handleSelectStep(key: BuilderStepKey) {
         const index = steps.findIndex((step) => step.key === key);
@@ -82,10 +95,13 @@ export function CustomizationGuidedView({
             activeKey={activeKey}
             activeTypeId={activeTypeId}
             activeOptionId={activeOptionId}
+            disabledOptionIds={disabledOptionIds}
             state={state}
             numberedRail
             maxReachableIndex={maxReachableIndex}
             dimensionRange={dimensionRange}
+            dimensionInput={dimensionInput}
+            dimensionAxisIds={dimensionAxisIds}
             onSelectCategory={handleSelectStep}
             onSelectConsultation={onSelectConsultation}
             onSelectType={onSelectType}

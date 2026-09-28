@@ -48,11 +48,15 @@ export function solutionHref(slug: string): string {
     return `${WWW_ROUTES.solutions}/${slug}`;
 }
 
-export function solutionLineHref(
+export function expertiseHref(slug: string): string {
+    return `${WWW_ROUTES.expertise}/${slug}`;
+}
+
+export function solutionStyleHref(
     solutionSlug: string,
-    lineSlug: string,
+    styleSlug: string,
 ): string {
-    return `${WWW_ROUTES.solutions}/${solutionSlug}/${lineSlug}`;
+    return `${WWW_ROUTES.solutions}/${solutionSlug}/${styleSlug}`;
 }
 
 export function policyHref(slug: string): string {

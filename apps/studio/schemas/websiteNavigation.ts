@@ -16,7 +16,7 @@ import { socialLinksField } from '../lib/social-link-schema'
 /** A labelled link — internal reference or external URL (slug changes follow). */
 const navLinkFields = [
   defineField({ name: 'label', title: 'Label', type: 'string', validation: (Rule) => Rule.required() }),
-  ...linkTargetFields({ requireLinkType: true }),
+  ...linkTargetFields({ requireLinkType: true, includeSitePath: true }),
 ]
 
 export const websiteNavigation = defineType({
@@ -25,7 +25,7 @@ export const websiteNavigation = defineType({
   type: 'document',
   icon: ThLargeIcon,
   groups: [
-    { name: 'primary', title: 'Primary Navigation', default: true },
+    { name: 'primary', title: 'Primary Navigation' },
     { name: 'footer', title: 'Footer Navigation' },
   ],
   fields: [
@@ -39,7 +39,7 @@ export const websiteNavigation = defineType({
         'The quote button — site-wide in the header, its own button on the right of the bar, never a menu entry.',
       fields: [
         defineField({ name: 'label', title: 'Button label', type: 'string', validation: (Rule) => Rule.required() }),
-        ...linkTargetFields({ requireLinkType: false }),
+        ...linkTargetFields({ requireLinkType: false, includeSitePath: true }),
       ],
     }),
     defineField({
@@ -92,7 +92,7 @@ export const websiteNavigation = defineType({
                   options: { hotspot: true },
                   fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
                 }),
-                defineField({ name: 'link', title: 'Link', type: 'object', fields: linkTargetFields({ requireLinkType: false }) }),
+                defineField({ name: 'link', title: 'Link', type: 'object', fields: linkTargetFields({ requireLinkType: false, includeSitePath: true }) }),
               ],
             }),
           ],
@@ -154,7 +154,7 @@ export const websiteNavigation = defineType({
       title: 'AI answer links',
       type: 'array',
       group: 'footer',
-      description: 'Pre-built query URLs for answer engines — an answer-engine surface built for the blog.',
+      description: 'Pre-built query URLs — the same answer-engine row the blog already has.',
       of: [
         defineArrayMember({
           type: 'object',

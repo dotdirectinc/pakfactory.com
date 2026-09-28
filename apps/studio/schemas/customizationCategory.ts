@@ -5,14 +5,14 @@ export const customizationCategory = defineType({
   name: 'customizationCategory',
   title: 'Customization Category',
   type: 'document',
-  groups: [{ name: 'content', title: 'Content', default: true }],
+  groups: [{ name: 'content', title: 'Content' }],
   fields: [
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
       group: 'content',
-      description: 'The customization category name — the top grouping in the sidebar (e.g. "Print", "Finish").',
+      description: 'The customization category name.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle()),
     }),
     defineField({
@@ -20,7 +20,7 @@ export const customizationCategory = defineType({
       title: 'Slug',
       type: 'slug',
       group: 'content',
-      description: 'URL-safe identifier, generated from the title.',
+      description: 'URL-safe identifier, generated from the title. Nothing links to it, so changing it is safe.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required(),
     }),
@@ -30,7 +30,7 @@ export const customizationCategory = defineType({
       type: 'text',
       rows: 3,
       group: 'content',
-      description: 'One sentence on what this category groups, for the content team.',
+      description: 'One sentence on what this category groups.',
     }),
     // `order` was REMOVED here on 2026-09-11, completing the sweep that took the
     // other five on 2026-09-01 (ADR-017). It was left behind then only because

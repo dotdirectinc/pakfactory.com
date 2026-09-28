@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1050" viewBox="0 0 1400 1050" fill="none" role="img" aria-hidden="true">
+  <!-- Matches catalog empty media: bg-muted (#F5F5F3) + Package icon at muted-foreground/50 -->
+  <rect width="1400" height="1050" rx="16" fill="#F5F5F3"/>
+  <!-- Lucide Package (24) scaled to 128, centered in 1400x1050 -->
+  <g transform="translate(636 461)" stroke="#A3A3A3" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5">
+    <g transform="scale(5.333333)">
+      <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/>
+      <path d="M12 22V12"/>
+      <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/>
+      <path d="m7.5 4.27 9 5.15"/>
+    </g>
+  </g>
+</svg>

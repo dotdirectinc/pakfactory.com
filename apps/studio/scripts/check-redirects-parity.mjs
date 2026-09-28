@@ -16,19 +16,24 @@
  *   BAD / ERROR unexpected status or request failure
  *
  * Usage:
- *   node scripts/check-redirects-parity.mjs                 # checks prod
- *   REDIRECT_CHECK_ORIGIN=https://staging… node scripts/check-redirects-parity.mjs
+ *   pnpm --filter @pakfactory/studio run check:redirects-parity -- --dataset production
+ *   REDIRECT_CHECK_ORIGIN=https://staging… pnpm --filter @pakfactory/studio run check:redirects-parity -- --dataset production
  * Exits non-zero when any doc is not OK/OK-GONE (so CI can gate on it).
  */
+
+import { parseScriptArgs } from './lib/script-args.mjs'
+
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run check:redirects-parity -- --dataset <development|production>
+
+  --dataset  REQUIRED. Which dataset to read. No env fallback.`
+const args = parseScriptArgs({ usage: USAGE })
 
 const PROJECT =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
   process.env.SANITY_STUDIO_PROJECT_ID ||
   '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  'production'
+const DATASET = args.dataset
 const API = process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2025-01-01'
 const ORIGIN = (process.env.REDIRECT_CHECK_ORIGIN || 'https://pakfactory.com').replace(/\/$/, '')
 const CONCURRENCY = 10

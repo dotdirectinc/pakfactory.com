@@ -1,5 +1,5 @@
 import type {ReactNode} from 'react';
-import {LISTING_TOP_ID} from '@pakfactory/components/modules/pagination';
+import {LISTING_TOP_ID} from '@pakfactory/ui/components/pagination';
 import {AuthorLandingSection} from '@/components/views/author-landing-layout';
 
 type AuthorListingSectionProps = {

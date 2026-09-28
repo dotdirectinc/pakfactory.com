@@ -15,7 +15,6 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'author',
   'blogPage',
   // Website
-  'page',
   'product',
   'solution',
   'expertiseStage',
@@ -31,6 +30,9 @@ export const LINKABLE_DOCUMENT_TYPES = [
   'listingPage',
   'contentPage',
   'legalPage',
+  // Catalog index singletons (PROD-2589)
+  'productCatalogPage',
+  'customizationCatalogPage',
 ] as const
 
 export type LinkableDocumentType = (typeof LINKABLE_DOCUMENT_TYPES)[number]

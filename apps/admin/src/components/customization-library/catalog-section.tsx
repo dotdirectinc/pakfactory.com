@@ -1,14 +1,66 @@
 "use client";
 
-import { useState } from "react";
-import { Badge } from "@pakfactory/ui/components/badge";
-import { cn } from "@pakfactory/ui/lib/utils";
+import {useState} from "react";
+import {Badge} from "@pakfactory/ui/components/badge";
+import {PropertyFieldPanel} from "@pakfactory/ui/components/customization/property-controller/property-field-panel";
+import {SwatchField} from "@pakfactory/ui/components/customization/property-controller/swatch-field";
+import {TooltipProvider} from "@pakfactory/ui/components/tooltip";
+import {cn} from "@pakfactory/ui/lib/utils";
+import type {UiDescriptor} from "@pakfactory/ui/components/customization/types";
 import {
   CATS,
   type CatalogOption,
   type Category,
 } from "@/lib/customization/catalog-data";
-import { CatalogControl } from "./catalog-control";
+import {CatalogControl} from "./catalog-control";
+
+function SwatchCatalogPreview({
+  baseTitle,
+  ui,
+}: {
+  baseTitle: string;
+  ui: Extract<UiDescriptor, {kind: "swatch"}>;
+}) {
+  const [value, setValue] = useState(
+    ui.value ?? ui.swatches[0]?.id ?? "",
+  );
+  const selectedLabel =
+    ui.swatches.find((s) => s.id === value)?.label ?? undefined;
+  const panelTitle = selectedLabel
+    ? `${baseTitle}: ${selectedLabel}`
+    : baseTitle;
+
+  return (
+    <PropertyFieldPanel title={panelTitle}>
+      <SwatchField
+        swatches={ui.swatches}
+        value={value}
+        onChange={setValue}
+        defaultValue={ui.value}
+      />
+    </PropertyFieldPanel>
+  );
+}
+
+function CatalogPreview({
+  baseTitle,
+  ui,
+  controlId,
+}: {
+  baseTitle: string;
+  ui: UiDescriptor;
+  controlId: string;
+}) {
+  if (ui.kind === "swatch") {
+    return <SwatchCatalogPreview baseTitle={baseTitle} ui={ui} />;
+  }
+
+  return (
+    <PropertyFieldPanel title={baseTitle}>
+      <CatalogControl ui={ui} controlId={controlId} />
+    </PropertyFieldPanel>
+  );
+}
 
 function OptionCard({
   option,
@@ -19,6 +71,8 @@ function OptionCard({
 }) {
   const isMulti =
     option.card === "Multi" || option.card.toLowerCase().includes("multi");
+  const previewTitle = option.uiCap ?? option.n;
+  const variantTitle = option.ui2Cap ?? `${option.n} (variant)`;
 
   return (
     <div className="border-b border-muted px-4 py-4 last:border-b-0">
@@ -32,65 +86,45 @@ function OptionCard({
         >
           {option.type}
         </Badge>
-        <Badge variant="outline" className={cn(isMulti && "bg-primary/10 text-primary")}>
+        <Badge
+          variant="outline"
+          className={cn(isMulti && "bg-primary/10 text-primary")}
+        >
           {option.card}
         </Badge>
-        {option.req ? (
-          <Badge variant="destructive">Required</Badge>
-        ) : null}
+        {option.req ? <Badge variant="destructive">Required</Badge> : null}
         <Badge variant="outline">{option.src}</Badge>
       </div>
 
       <div className="mt-3 grid gap-4 md:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-3">
-          <div className="rounded-[var(--radius-control)] border border-border bg-transparent p-4">
-            <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <span className="text-primary" aria-hidden>
-                ◆
-              </span>
-              Live preview
-            </div>
-            {option.uiCap ? (
-              <div className="mb-3 text-xs font-semibold text-muted-foreground">
-                {option.uiCap}
-              </div>
-            ) : null}
-            <CatalogControl ui={option.ui} controlId={controlId} />
-          </div>
+          <CatalogPreview
+            baseTitle={previewTitle}
+            ui={option.ui}
+            controlId={controlId}
+          />
           {option.ui2 ? (
-            <div className="rounded-[var(--radius-control)] border border-border bg-transparent p-4">
-              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <span className="text-primary" aria-hidden>
-                  ◆
-                </span>
-                Live preview — variant
-              </div>
-              {option.ui2Cap ? (
-                <div className="mb-3 text-xs font-semibold text-muted-foreground">
-                  {option.ui2Cap}
-                </div>
-              ) : null}
-              <CatalogControl
-                ui={option.ui2}
-                controlId={`${controlId}-b`}
-              />
-            </div>
+            <CatalogPreview
+              baseTitle={variantTitle}
+              ui={option.ui2}
+              controlId={`${controlId}-b`}
+            />
           ) : null}
         </div>
 
         <div className="min-w-0">
           <dl className="grid grid-cols-[5rem_1fr] gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <dt className="font-semibold text-muted-foreground/80">Values</dt>
-            <dd dangerouslySetInnerHTML={{ __html: option.vals }} />
+            <dd dangerouslySetInnerHTML={{__html: option.vals}} />
             <dt className="font-semibold text-muted-foreground/80">Default</dt>
-            <dd dangerouslySetInnerHTML={{ __html: option.def }} />
+            <dd dangerouslySetInnerHTML={{__html: option.def}} />
           </dl>
           {option.cond ? (
             <div className="mt-2 flex items-start gap-2 rounded-[var(--radius-control)] bg-brand-cream p-2 text-xs text-foreground">
               <b className="shrink-0 font-bold text-[var(--chart-4)]">
                 ▸ Condition
               </b>
-              <span dangerouslySetInnerHTML={{ __html: option.cond }} />
+              <span dangerouslySetInnerHTML={{__html: option.cond}} />
             </div>
           ) : null}
         </div>
@@ -99,7 +133,7 @@ function OptionCard({
   );
 }
 
-function CategoryBlock({ category }: { category: Category }) {
+function CategoryBlock({category}: {category: Category}) {
   const [collapsed, setCollapsed] = useState(true);
   const count = category.opts.length;
 
@@ -155,22 +189,25 @@ function CategoryBlock({ category }: { category: Category }) {
 
 export function CatalogSection() {
   return (
-    <section id="catalog" className="pt-8">
-      <div className="mb-2 flex items-baseline gap-3 border-t border-border pt-4">
-        <h2 className="text-base font-semibold tracking-tight text-foreground">
-          Categories &amp; options
-        </h2>
-      </div>
-      <p className="mb-4 max-w-[74ch] text-sm text-muted-foreground">
-        Grouped as the configurator would present them. Interact with each
-        preview to feel the interaction. Click a category header to collapse.
-        Each row is a Type panel (HTML “Option”); list choices ≈ Studio Options.
-      </p>
-      <div>
-        {CATS.map((cat) => (
-          <CategoryBlock key={cat.id} category={cat} />
-        ))}
-      </div>
-    </section>
+    <TooltipProvider>
+      <section id="catalog" className="pt-8">
+        <div className="mb-2 flex items-baseline gap-3 border-t border-border pt-4">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
+            Categories &amp; options
+          </h2>
+        </div>
+        <p className="mb-4 max-w-[74ch] text-sm text-muted-foreground">
+          Grouped as the configurator would present them. Interact with each
+          preview to feel the interaction. Click a category header to collapse.
+          Each row is a Type panel (HTML “Option”); list choices ≈ Studio
+          Options.
+        </p>
+        <div>
+          {CATS.map((cat) => (
+            <CategoryBlock key={cat.id} category={cat} />
+          ))}
+        </div>
+      </section>
+    </TooltipProvider>
   );
 }

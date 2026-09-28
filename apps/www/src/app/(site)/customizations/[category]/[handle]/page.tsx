@@ -2,8 +2,10 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 
 import {CustomizationDetailView} from '@/components/customization/customization-detail-view';
+import type {PageSection} from '@/components/sections/registry';
 import {
     getCustomizationDetail,
+    getCustomizationDetailPage,
     listCustomizations,
 } from '@/lib/catalog/catalog';
 
@@ -43,10 +45,21 @@ export default async function CustomizationDetailPage({
     params: Promise<PageParams>;
 }) {
     const {category, handle} = await params;
-    const result = await getCustomizationDetail(category, handle);
+    const [result, page] = await Promise.all([
+        getCustomizationDetail(category, handle),
+        getCustomizationDetailPage(category, handle),
+    ]);
     if (!result) {
         notFound();
     }
 
-    return <CustomizationDetailView detail={result.detail} />;
+    const pageSections = (page?.sections ?? null) as PageSection[] | null;
+
+    return (
+        <CustomizationDetailView
+            detail={result.detail}
+            peers={result.peers}
+            pageSections={pageSections}
+        />
+    );
 }

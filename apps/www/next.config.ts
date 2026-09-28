@@ -34,9 +34,10 @@ const repoRoot = join(appDir, "../..");
  * is in both files, Supabase is root-only.
  *
  * It is not only Supabase: `SERVICE_SHARED_SECRET`, `BACKEND_API_BASE_URL`,
- * `WWW_ORIGIN_PROXY_SECRET` and `GOOGLE_PLACES_API_KEY` are all root-only too,
- * so the backend API calls, the origin lockdown and Places autocomplete were
- * silently unconfigured in dev by the same mechanism.
+ * `WWW_ORIGIN_PROXY_SECRET`, `GOOGLE_PLACES_API_KEY`, and `GOOGLE_PLACES_PLACE_ID`
+ * are all root-only too, so the backend API calls, the origin lockdown, Places
+ * autocomplete, and solution Reviews were silently unconfigured in dev by the
+ * same mechanism.
  *
  * PRECEDENCE: the app file wins. Only keys the app-dir pass left undefined are
  * restored from the root snapshot. That matches what `scripts/env/switch-env.mjs`
@@ -86,13 +87,9 @@ const workspaceCssAliases = {
     repoRoot,
     "packages/ui/src/tailwind-sources.css",
   ),
-  "@pakfactory/components/tailwind-sources.css": join(
-    repoRoot,
-    "packages/components/src/tailwind-sources.css",
-  ),
   "@pakfactory/brief-builder-ui/tailwind-sources.css": join(
     repoRoot,
-    "packages/brief-builder-ui/src/tailwind-sources.css",
+    "packages/features/brief-builder-ui/src/tailwind-sources.css",
   ),
 } as const;
 
@@ -113,7 +110,7 @@ const nextConfig: NextConfig = {
       "node_modules/@img/sharp-linux-x64/**/*",
     ],
   },
-  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/components", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "@pakfactory/geo", "next-sanity"],
+  transpilePackages: ["@pakfactory/ui", "@pakfactory/sanity", "@pakfactory/utilities", "@pakfactory/request", "@pakfactory/redirects", "@pakfactory/sitemap", "@pakfactory/supabase", "@pakfactory/auth-ui", "@pakfactory/brief-builder-ui", "next-sanity"],
   turbopack: {
     resolveAlias: workspaceCssAliases,
   },

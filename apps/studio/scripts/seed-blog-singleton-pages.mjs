@@ -3,7 +3,9 @@
  * (no posts, nav, or industries).
  *
  * From repo root:
- *   node apps/studio/scripts/seed-blog-singleton-pages.mjs
+ *   pnpm --filter @pakfactory/studio run seed:blog-singleton-pages -- --dataset development
+ *   pnpm --filter @pakfactory/studio run seed:blog-singleton-pages -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run seed:blog-singleton-pages -- --dataset production --confirm --yes-production
  *
  * Humans only — agents must not run this script (AGENTS.md Sanity content guardrails).
  */
@@ -12,20 +14,26 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseScriptArgs } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
 loadEnv({ path: join(repoRoot, '.env.local') })
 loadEnv({ path: join(repoRoot, 'apps/blog/.env.local'), override: true })
 
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run seed:blog-singleton-pages -- --dataset <development|production> [--confirm] [--yes-production]
+
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
+const args = parseScriptArgs({ usage: USAGE })
+
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
   process.env.SANITY_STUDIO_PROJECT_ID ||
   '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  'development'
+const DATASET = args.dataset
 const TOKEN =
   process.env.SANITY_API_READ_TOKEN ||
   process.env.SANITY_API_WRITE_TOKEN ||
@@ -191,6 +199,18 @@ async function seed() {
   console.log(
     `\n🌱  Blog singleton pages → ${DATASET} (${PROJECT_ID}) — home + topics + 404 + search + contribute\n`,
   )
+
+  // Dry run is the default. This seed had no such mode: it `createOrReplace`d five
+  // singletons the moment it was invoked, against whatever dataset the ambient env
+  // happened to name. Overwriting a live singleton is not recoverable by re-running.
+  if (!args.confirm) {
+    console.log(`  Would createOrReplace 5 singletons on dataset=${DATASET}:`)
+    for (const d of [blogHomePageDoc, blogTopicsPageDoc, blogNotFoundPageDoc, blogSearchPageDoc, blogContributePageDoc]) {
+      console.log(`    · ${d._id}`)
+    }
+    console.log(`\n  DRY-RUN on dataset=${DATASET} — nothing written. Re-run with --confirm.\n`)
+    return
+  }
 
   const tx = client.transaction()
   tx.createOrReplace(blogHomePageDoc)

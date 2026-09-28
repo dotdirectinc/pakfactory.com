@@ -1,3 +1,4 @@
+import {createFacetEngine} from '@/lib/catalog/facet-engine';
 import type {
     CustomizationFacetDef,
     CustomizationLibraryItem,
@@ -33,6 +34,16 @@ function matchesFacet(
     return selected.some((slug) => values.includes(slug));
 }
 
+function engineForCategory(category: string) {
+    return createFacetEngine<CustomizationLibraryItem>({
+        getSearchText: (item) => item.title,
+        matchesFacet,
+        matchesContext: (item) =>
+            category === CUSTOMIZATION_CATALOG_ALL_CATEGORY ||
+            item.categoryValue === category,
+    });
+}
+
 /** Whether an item carries a single facet option. */
 export function itemHasFacetValue(
     item: CustomizationLibraryItem,
@@ -53,23 +64,7 @@ export function matchesCustomizationItem(
     item: CustomizationLibraryItem,
     {category, query, selections}: CustomizationCatalogFilterInput,
 ): boolean {
-    if (
-        category !== CUSTOMIZATION_CATALOG_ALL_CATEGORY &&
-        item.categoryValue !== category
-    ) {
-        return false;
-    }
-    const q = query.trim().toLowerCase();
-    if (q && !item.title.toLowerCase().includes(q)) return false;
-
-    const activeFacets = Object.entries(selections).filter(
-        ([, selected]) => selected.length > 0,
-    );
-    if (activeFacets.length === 0) return true;
-
-    return activeFacets.every(([facetId, selected]) =>
-        matchesFacet(item, facetId, selected),
-    );
+    return engineForCategory(category).matchesItem(item, {query, selections});
 }
 
 /**
@@ -81,26 +76,8 @@ export function buildCustomizationFacetCounts(
     facets: CustomizationFacetDef[],
     {category, query, selections}: CustomizationCatalogFilterInput,
 ): Record<string, Record<string, number>> {
-    const result: Record<string, Record<string, number>> = {};
-
-    for (const facet of facets) {
-        const selectionsExcept = {...selections};
-        delete selectionsExcept[facet.id];
-        const base = items.filter((item) =>
-            matchesCustomizationItem(item, {
-                category,
-                query,
-                selections: selectionsExcept,
-            }),
-        );
-        const counts: Record<string, number> = {};
-        for (const opt of facet.options) {
-            counts[opt.value] = base.filter((item) =>
-                itemHasFacetValue(item, facet.id, opt.value),
-            ).length;
-        }
-        result[facet.id] = counts;
-    }
-
-    return result;
+    return engineForCategory(category).buildFacetCounts(items, facets, {
+        query,
+        selections,
+    });
 }

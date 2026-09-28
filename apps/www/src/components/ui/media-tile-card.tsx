@@ -1,5 +1,8 @@
-import type {MouseEvent} from 'react';
+'use client';
+
+import type {MouseEvent, ReactNode} from 'react';
 import Link from 'next/link';
+import {useLinkStatus} from 'next/link';
 import {ChevronRight, Package} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
@@ -35,6 +38,12 @@ export type MediaTileCardProps = {
     imageAlt?: string;
     className?: string;
     /**
+     * Empty media well when `imageSrc` is missing.
+     * `package` (default) — grey well + package icon (elevated keeps white well).
+     * `mark` — white well + PakFactory mark (product-line styles grid).
+     */
+    emptyMedia?: 'package' | 'mark';
+    /**
      * `elevated` — white chrome on a muted section band (no hover→muted washout;
      * empty media well stays white).
      * `muted` — muted chrome at rest (no hover washout).
@@ -60,6 +69,7 @@ export function MediaTileCard({
     imageSrc,
     imageAlt,
     className,
+    emptyMedia = 'package',
     surface = 'default',
 }: MediaTileCardProps) {
     const elevated = surface === 'elevated';
@@ -68,6 +78,7 @@ export function MediaTileCard({
     const compact = size === 'sm';
     const eyebrowText = eyebrow?.trim().toUpperCase();
     const interactive = onCtaClick != null;
+    const markEmpty = emptyMedia === 'mark';
 
     const shellClassName = cn(
         'group flex h-full w-full flex-col overflow-hidden rounded-2xl outline-none',
@@ -83,11 +94,14 @@ export function MediaTileCard({
         className,
     );
 
+    const emptyWellClass =
+        markEmpty || elevated ? 'bg-background' : 'bg-muted';
+
     const media = (
         <div
             className={cn(
                 'relative aspect-square w-full overflow-hidden',
-                !imageSrc && (elevated ? 'bg-background' : 'bg-muted'),
+                !imageSrc && emptyWellClass,
             )}
         >
             {imageSrc ? (
@@ -99,6 +113,10 @@ export function MediaTileCard({
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover"
                 />
+            ) : markEmpty ? (
+                <span className="flex size-full items-center justify-center text-muted-foreground/40">
+                    <PakFactoryMarkIcon size={40} className="-rotate-15" />
+                </span>
             ) : (
                 <span className="flex size-full items-center justify-center">
                     <Icon
@@ -206,8 +224,24 @@ export function MediaTileCard({
 
     return (
         <Link href={href} className={shellClassName}>
-            {media}
-            {meta}
+            <MediaTilePendingBody>
+                {media}
+                {meta}
+            </MediaTilePendingBody>
         </Link>
+    );
+}
+
+function MediaTilePendingBody({children}: {children: ReactNode}) {
+    const {pending} = useLinkStatus();
+    return (
+        <span
+            className={cn(
+                'flex h-full w-full flex-col',
+                pending && 'opacity-70 transition-opacity duration-200',
+            )}
+        >
+            {children}
+        </span>
     );
 }

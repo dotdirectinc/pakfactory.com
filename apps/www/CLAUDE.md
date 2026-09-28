@@ -45,7 +45,8 @@ Use **Server Components** by default. Do not add cart or checkout UX unless expl
 - `src/` = `app/`, `components/`, `lib/` only
 - `app/` is routing-only; importable components live under `src/components/`
 - **Known deferred violation:** `app/case-studies/_components/` and `app/case-studies/[slug]/_components/` — remediation deferred per [ADR-005](../../docs/adr/0005-component-organization.md); do not add new `_components/` folders elsewhere
-- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in `lib/` / modules — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles.
+- **Reuse (ADR-013):** props-only shared UI (`components/ui/`, `@pakfactory/ui`); features own data/URL wiring in feature folders / `lib/` — never fork or cross-import feature controllers. Extract shared cores (e.g. `CatalogCard`) instead of duplicating tiles.
+- **Do not** reintroduce `components/modules/` on www — put new work in a feature folder (`product/`, `case-study/`, …), `sections/` (Sanity page body), `layout/` (site chrome), or `ui/` (props-only).
 
 ## Composition: chrome vs structured routes vs Sections
 
@@ -53,10 +54,10 @@ Do **not** collapse these layers:
 
 | Layer | Owns | www practice |
 | ----- | ---- | ------------ |
-| **Site chrome** | Global nav / footer | Layout + modules; Sanity `websiteNavigation` singleton (not `sections[]`) |
+| **Site chrome** | Global nav / footer | `components/layout/`; Sanity `websiteNavigation` singleton (not `sections[]`) |
 | **Structured routes** | Catalog URL trees | Code owns breadcrumb, H1, primary grids/cards (`/products…`, `/solutions…`, `/customizations`); optional `doc.sections` only as a body slot |
-| **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; presentation-free (D35); allowlisted per page type |
-| **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features |
+| **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; React under `components/sections/`; presentation-free (D35); allowlisted per page type |
+| **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features. Figma section handoff: ask stock primitive vs new component ([DESIGN.md § Designer / Figma handoff](../../DESIGN.md#designer--figma-handoff)) |
 
 **Customizations catalog (PROD-1288):** route `/customizations` + Studio section `customizationsCatalog` share `listCustomizations()` and `CustomizationCatalog*` components. Distinct from `customizationsRow` (catalogue strip). How-built: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md).
 
@@ -69,7 +70,7 @@ Do **not** collapse these layers:
 - Editorial layout that editors must reorder? → **section** type + shared renderer, allowlist updated.
 - New visual band that is only “grey background / 3 columns”? → reject (presentation in CMS); keep in design system / code.
 
-www prefers **Sections** language for page composition ([ADR-015](../../docs/adr/0015-page-composition-sections-terminology.md) Proposed). Blog still uses **block** / `pageBuilder` until ADR-015 Accepted + PROD-2293 — do not rename blog fields in www PRs.
+www prefers **Sections** language for page composition ([ADR-015](../../docs/adr/0015-page-composition-sections-terminology.md) Proposed). **When a Figma/React band may become a CMS Section** (route gate, D35, allowlists, Beauty inventory, mixed merchandising cards, **document default + section override**): [ADR-020](../../docs/adr/0020-component-to-section-playbook.md). Blog still uses **block** / `pageBuilder` until ADR-015 Accepted + PROD-2293 — do not rename blog fields in www PRs.
 
 **Blog:** no change required for www chrome or SectionRenderer work.
 
@@ -92,6 +93,6 @@ www prefers **Sections** language for page composition ([ADR-015](../../docs/adr
 | `@pakfactory/sanity` | GROQ queries, shared content types |
 | `@pakfactory/seo` | JSON-LD generators |
 | `@pakfactory/ui` | Design tokens and primitives — do not edit for features |
-| `@pakfactory/components` | Shared marketing blocks |
+| `@pakfactory/utilities` | General pure helpers (length units, dim axes, external-link) |
 | `@pakfactory/supabase` | Auth client + session |
 | `@pakfactory/auth-ui` | Shared login form (props-only) |

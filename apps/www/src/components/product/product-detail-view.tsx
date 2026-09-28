@@ -1,9 +1,11 @@
-import {Badge} from '@pakfactory/ui/components/badge';
+import {Suspense} from 'react';
+
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
-import {ProductCustomizationsMansoryPreview} from '@/components/product/product-customizations-mansory-preview';
+import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {ProductRequestRail} from '@/components/product/product-request-rail';
 import {
@@ -16,9 +18,17 @@ import {
     ProductsRow,
     type ProductsRowItem,
 } from '@/components/sections/products-row';
+import {SectionRenderer} from '@/components/sections/section-renderer';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
+import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
+import {displayProductSku} from '@/lib/catalog/display-sku';
 import {MOCK_PRODUCT_TESTIMONIALS, MOCK_TESTIMONIALS_AGGREGATE} from '@/lib/catalog/mock-testimonials';
 import type {Product} from '@/lib/catalog/types';
+import {mergeSolutionSections} from '@/lib/sections/merge-solution-sections';
+import {
+    applySectionTokens,
+    sectionTokenContextFromHost,
+} from '@/lib/sections/resolve-section-tokens';
 import {
     productHref,
     productStyleHref,
@@ -40,13 +50,57 @@ function toProductsRowItem(product: Product): ProductsRowItem {
     };
 }
 
+function RelatedProductsSkeleton() {
+    return (
+        <section
+            id="pdp-related"
+            aria-busy="true"
+            aria-live="polite"
+            className="scroll-mt-32 bg-muted"
+        >
+            <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
+                <span className="sr-only">Loading related products</span>
+                <div className="flex flex-col gap-6">
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-full max-w-xl" />
+                    </div>
+                    <div className="flex gap-4 overflow-hidden">
+                        {Array.from({length: 4}, (_, index) => (
+                            <Skeleton
+                                key={index}
+                                className="aspect-square w-56 shrink-0 rounded-2xl"
+                            />
+                        ))}
+                    </div>
+                </div>
+            </PageDielineSection>
+        </section>
+    );
+}
+
+async function RelatedProductsFromLine({product}: {product: Product}) {
+    const siblings = await listRelatedProductSiblings(product);
+    if (siblings.length === 0) return null;
+    return (
+        <ProductsRow
+            theme="muted"
+            products={siblings.map(toProductsRowItem)}
+        />
+    );
+}
+
 export function ProductDetailView({product}: ProductDetailViewProps) {
     const {productLine: line, productStyle: style} = product;
+    const displaySku = displayProductSku(product.sku, product.slug);
     const specRows = buildProductSpecRows(product);
     const customizationItems = mapCustomizationPreviewItems(
         product.availableCustomizations,
     );
-    const relatedCards = (product.relatedProducts ?? []).map(toProductsRowItem);
+    const curatedRelated = product.relatedProducts ?? [];
+    const relatedCards = curatedRelated.map(toProductsRowItem);
+    const hasCuratedRelated = relatedCards.length > 0;
     const hasCmsTestimonials = Boolean(product.testimonials?.length);
     const testimonials = hasCmsTestimonials
         ? product.testimonials!
@@ -56,6 +110,33 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         : MOCK_TESTIMONIALS_AGGREGATE;
     const faqs = product.faqs ?? [];
 
+    const contentSections = product.sections ?? [];
+    const templateSections = product.templateSections ?? [];
+    const documentFaqs = faqs.map((faq) => ({
+        question: faq.question,
+        answerPlain: faq.answerPlain,
+    }));
+    const mergedSections =
+        templateSections.length > 0
+            ? mergeSolutionSections(
+                  templateSections,
+                  contentSections,
+                  undefined,
+                  documentFaqs,
+              )
+            : contentSections;
+    const pageSections = applySectionTokens(
+        mergedSections,
+        sectionTokenContextFromHost({
+            title: product.title,
+            h1: product.title,
+            shortName: product.title,
+            shortDescription: product.description,
+            descriptionText: product.description,
+            slug: product.slug,
+        }),
+    );
+
     const navItems: AnchorNavItem[] = [
         ...(specRows.length > 0
             ? [{id: 'pdp-specs', label: 'Specifications'}]
@@ -63,7 +144,8 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ...(customizationItems.length > 0
             ? [{id: 'pdp-customizations', label: 'Customization'}]
             : []),
-        ...(relatedCards.length > 0
+        // Sibling fallback may still populate related when curated is empty.
+        ...(hasCuratedRelated || Boolean(line.slug)
             ? [{id: 'pdp-related', label: 'Related Products'}]
             : []),
         ...(testimonials.length > 0
@@ -72,7 +154,7 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ...(faqs.length > 0 ? [{id: 'pdp-faqs', label: 'FAQs'}] : []),
     ];
 
-    return (
+return (
         <>
             <PageBreadcrumbSection
                 items={[
@@ -86,24 +168,24 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     {label: product.title},
                 ]}
             />
-            <PageDielineSection innerClassName="border-b border-dashed border-border">
+            <PageDielineSection paddingBlock="sm">
                 <article
                     id="pdp-overview"
-                    className="scroll-mt-32 grid gap-10 py-12 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+                    className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
                 >
                     <ProductGallery
                         media={product.media}
                         productTitle={product.title}
+                        badgeLabel={
+                            product.kind === 'inspiration'
+                                ? 'Inspiration'
+                                : undefined
+                        }
                     />
                     <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                                {product.sku}
-                            </p>
-                            {product.kind === 'inspiration' ? (
-                                <Badge variant="secondary">Inspiration</Badge>
-                            ) : null}
-                        </div>
+                        <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                            {displaySku}
+                        </p>
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {product.title}
                         </h1>
@@ -120,13 +202,17 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
             <div className="relative">
                 <AnchorNav items={navItems} />
                 <ProductSpecs rows={specRows} />
-                <ProductCustomizationsMansoryPreview
-                    theme="muted"
+                <ProductCustomizationsPreview
                     styleTitle={style.title}
                     items={customizationItems}
-                    productLineSlug={line.slug}
                 />
-                <ProductsRow theme="muted" products={relatedCards} />
+                {hasCuratedRelated ? (
+                    <ProductsRow theme="muted" products={relatedCards} />
+                ) : (
+                    <Suspense fallback={<RelatedProductsSkeleton />}>
+                        <RelatedProductsFromLine product={product} />
+                    </Suspense>
+                )}
                 <TestimonialsRow
                     items={testimonials}
                     aggregate={testimonialsAggregate}
@@ -136,6 +222,9 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                     footerHref={WWW_ROUTES.contact}
                     footerLabel="Let's chat"
                 />
+                {pageSections.length > 0 ? (
+                    <SectionRenderer sections={pageSections} />
+                ) : null}
             </div>
         </>
     );

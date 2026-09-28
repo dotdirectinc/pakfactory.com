@@ -21,6 +21,7 @@ export function ProfileView({profile}: ProfileViewProps) {
         <div className="mx-auto flex max-w-2xl flex-col gap-8">
             <PageHeadingSection
                 variant="compact"
+                borderBottom={false}
                 title={ACCOUNT_COPY.profileTitle}
                 className="px-0 sm:px-0"
                 innerClassName="border-x-0 px-0 pb-0 pt-0 md:px-0"

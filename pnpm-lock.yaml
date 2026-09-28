@@ -21,6 +21,9 @@ importers:
       '@pakfactory/sanity':
         specifier: workspace:^
         version: link:packages/sanity
+      '@sanity/client':
+        specifier: 7.22.1
+        version: 7.22.1
       turbo:
         specifier: ^2.3.3
         version: 2.9.9
@@ -35,16 +38,13 @@ importers:
         version: 5.2.9
       '@pakfactory/auth-ui':
         specifier: workspace:*
-        version: link:../../packages/auth-ui
+        version: link:../../packages/features/auth-ui
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
-        version: link:../../packages/brief-builder-ui
-      '@pakfactory/domain':
+        version: link:../../packages/features/brief-builder-ui
+      '@pakfactory/request':
         specifier: workspace:*
-        version: link:../../packages/domain
-      '@pakfactory/geo':
-        specifier: workspace:*
-        version: link:../../packages/geo
+        version: link:../../packages/request
       '@pakfactory/sanity':
         specifier: workspace:*
         version: link:../../packages/sanity
@@ -54,6 +54,9 @@ importers:
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       algoliasearch:
         specifier: ^5.55.2
         version: 5.55.2
@@ -121,9 +124,6 @@ importers:
       '@next/third-parties':
         specifier: ^16.2.10
         version: 16.2.10(next@16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
-      '@pakfactory/components':
-        specifier: workspace:*
-        version: link:../../packages/components
       '@pakfactory/redirects':
         specifier: workspace:*
         version: link:../../packages/redirects
@@ -139,6 +139,9 @@ importers:
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       '@portabletext/react':
         specifier: ^6.0.3
         version: 6.0.3(react@19.2.5)
@@ -281,22 +284,16 @@ importers:
         version: 16.2.10(next@16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
       '@pakfactory/auth-ui':
         specifier: workspace:*
-        version: link:../../packages/auth-ui
+        version: link:../../packages/features/auth-ui
       '@pakfactory/brief-builder-ui':
         specifier: workspace:*
-        version: link:../../packages/brief-builder-ui
-      '@pakfactory/components':
-        specifier: workspace:*
-        version: link:../../packages/components
-      '@pakfactory/domain':
-        specifier: workspace:*
-        version: link:../../packages/domain
-      '@pakfactory/geo':
-        specifier: workspace:*
-        version: link:../../packages/geo
+        version: link:../../packages/features/brief-builder-ui
       '@pakfactory/redirects':
         specifier: workspace:*
         version: link:../../packages/redirects
+      '@pakfactory/request':
+        specifier: workspace:*
+        version: link:../../packages/request
       '@pakfactory/sanity':
         specifier: workspace:*
         version: link:../../packages/sanity
@@ -312,6 +309,9 @@ importers:
       '@pakfactory/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       '@portabletext/react':
         specifier: ^6.0.3
         version: 6.0.3(react@19.2.5)
@@ -330,6 +330,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.112.4
         version: 2.112.4
+      embla-carousel-autoplay:
+        specifier: ^8.6.0
+        version: 8.6.0(embla-carousel@8.6.0)
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.5)
@@ -434,14 +437,14 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@aws-lite/client@0.23.6)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)
 
-  packages/auth-ui:
+  packages/features/auth-ui:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(@standard-schema/spec@1.1.0)(react-hook-form@7.86.0(react@19.2.5))(valibot@1.3.1(typescript@5.9.3))(zod@4.4.3)
       '@pakfactory/ui':
         specifier: workspace:*
-        version: link:../ui
+        version: link:../../ui
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.5)
@@ -471,14 +474,14 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/brief-builder-ui:
+  packages/features/brief-builder-ui:
     dependencies:
-      '@pakfactory/domain':
+      '@pakfactory/request':
         specifier: workspace:*
-        version: link:../domain
+        version: link:../../request
       '@pakfactory/ui':
         specifier: workspace:*
-        version: link:../ui
+        version: link:../../ui
       next:
         specifier: '>=15.0.0'
         version: 16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -499,47 +502,16 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/components:
-    dependencies:
-      '@pakfactory/sanity':
-        specifier: workspace:*
-        version: link:../sanity
-      '@pakfactory/ui':
-        specifier: workspace:*
-        version: link:../ui
-      jpeg-js:
-        specifier: ^0.4.4
-        version: 0.4.4
-      lucide-react:
-        specifier: ^0.468.0
-        version: 0.468.0(react@19.2.5)
-      next:
-        specifier: '>=15.0.0'
-        version: 16.2.4(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.5
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.5(react@19.2.5)
+  packages/redirects:
     devDependencies:
-      '@types/jpeg-js':
-        specifier: ^0.3.7
-        version: 0.3.7
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.14
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/domain:
-    devDependencies:
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-
-  packages/geo:
+  packages/request:
     dependencies:
       i18n-iso-countries:
         specifier: ^7.14.0
@@ -555,15 +527,6 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/redirects:
-    devDependencies:
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-
   packages/sanity:
     dependencies:
       '@sanity/client':
@@ -573,6 +536,9 @@ importers:
       dotenv:
         specifier: ^16.6.1
         version: 16.6.1
+      groq-js:
+        specifier: 1.30.1
+        version: 1.30.1
       sanity:
         specifier: ^5.20.0
         version: 5.23.0(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.2.0)(@oclif/core@4.11.0)(@sanity/cli-core@1.3.1(@noble/hashes@2.2.0)(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(yaml@2.8.4))(@types/node@22.19.17)(@types/react@19.2.14)(immer@11.1.8)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(styled-components@6.4.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
@@ -622,12 +588,18 @@ importers:
 
   packages/ui:
     dependencies:
+      '@pakfactory/utilities':
+        specifier: workspace:*
+        version: link:../utilities
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      jpeg-js:
+        specifier: ^0.4.4
+        version: 0.4.4
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.5)
@@ -665,12 +637,21 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
+      '@types/jpeg-js':
+        specifier: ^0.3.7
+        version: 0.3.7
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.14
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/utilities:
+    devDependencies:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
@@ -5457,6 +5438,11 @@ packages:
 
   electron-to-chromium@1.5.349:
     resolution: {integrity: sha512-QsWVGyRuY07Aqb234QytTfwd5d9AJlfNIQ5wIOl1L+PZDzI9d9+Fn0FRale/QYlFxt/bUnB0/nLd1jFPGxGK1A==}
+
+  embla-carousel-autoplay@8.6.0:
+    resolution: {integrity: sha512-OBu5G3nwaSXkZCo1A6LTaFMZ8EpkYbwIaH+bPqdBnDGQ2fh4+NbzjXjs2SktoPNKCtflfVMc75njaDHOYXcrsA==}
+    peerDependencies:
+      embla-carousel: 8.6.0
 
   embla-carousel-react@8.6.0:
     resolution: {integrity: sha512-0/PjqU7geVmo6F734pmPqpyHqiM99olvyecY7zdweCw+6tKEXnrE90pBiBbMMU8s5tICemzpQ3hi5EpxzGW+JA==}
@@ -14263,6 +14249,10 @@ snapshots:
       jake: 10.9.4
 
   electron-to-chromium@1.5.349: {}
+
+  embla-carousel-autoplay@8.6.0(embla-carousel@8.6.0):
+    dependencies:
+      embla-carousel: 8.6.0
 
   embla-carousel-react@8.6.0(react@19.2.5):
     dependencies:

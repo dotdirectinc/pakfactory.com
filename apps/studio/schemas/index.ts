@@ -18,6 +18,15 @@ import { contentWidget } from './contentWidget'
 import { widgetEmbed } from './widgetEmbed'
 import { solution } from './solution'
 import { solutionStyle } from './solutionStyle'
+import { solutionIndustryPage } from './solutionIndustryPage'
+import { expertiseStagePage } from './expertiseStagePage'
+import { productLinePage } from './productLinePage'
+import { productCatalogPage } from './productCatalogPage'
+import { productStylePage } from './productStylePage'
+import { productDetailPage } from './productDetailPage'
+import { customizationCatalogPage } from './customizationCatalogPage'
+import { customizationDetailPage } from './customizationDetailPage'
+import { solutionStylePage } from './solutionStylePage'
 import { expertiseStage } from './expertiseStage'
 import { expertiseService } from './expertiseService'
 import { client } from './client'
@@ -36,7 +45,6 @@ import {
   pageSettings,
 } from './blogTypeSettings'
 import { blogPage } from './blogPage'
-import { page } from './page'
 import { homePage } from './homePage'
 import { listingPage } from './listingPage'
 import { contentPage } from './contentPage'
@@ -48,6 +56,7 @@ import { videoPost } from './videoPost'
 import { redirect } from './redirect'
 import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
+import { migrationRun } from './migrationRun'
 import {
   pageBuilderBlocks,
   pageBuilderHome,
@@ -79,6 +88,15 @@ export const schemaTypes = [
   // Solutions & Core Entities
   solution,
   solutionStyle,
+  solutionIndustryPage,
+  solutionStylePage,
+  expertiseStagePage,
+  productLinePage,
+  productCatalogPage,
+  productStylePage,
+  productDetailPage,
+  customizationCatalogPage,
+  customizationDetailPage,
   expertiseStage,
   expertiseService,
   client,
@@ -112,7 +130,6 @@ export const schemaTypes = [
   ...caseStudyInlineBlocks,
   contentWidget,
   widgetEmbed,
-  page,
   post,
   videoPost,
   redirect,
@@ -126,6 +143,7 @@ export const schemaTypes = [
 
   // Singletons
   settings,
+  migrationRun,
   blogNavigation,
   postSettings,
   categorySettings,

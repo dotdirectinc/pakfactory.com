@@ -2,78 +2,24 @@ import Link from 'next/link';
 import {ChevronDown} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {CUSTOMIZATION_COMPARISON_ID} from '@/components/customization/customization-comparison';
 import {Icon} from '@/components/ui/icon';
-import type {
-    CustomizationDetail,
-    CustomizationPropertyValue,
-} from '@/lib/catalog/types';
+import {
+    buildReferenceSpecRows,
+    CUSTOMIZATION_COMPARISON_ID,
+} from '@/lib/catalog/compare-matrix';
+import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export const CUSTOMIZATION_REFERENCE_SPECS_ID =
     'customization-reference-specs';
 
-export type ReferenceSpecRow = {
-    label: string;
-    value: string;
-};
+export {buildReferenceSpecRows, CUSTOMIZATION_COMPARISON_ID} from '@/lib/catalog/compare-matrix';
+export type {ReferenceSpecRow} from '@/lib/catalog/compare-matrix';
 
 type CustomizationReferenceSpecsProps = {
     detail: CustomizationDetail;
     compareLabel: string;
     className?: string;
 };
-
-function groupKey(value: CustomizationPropertyValue): string | null {
-    return value.propertySlug?.trim() || value.propertyId?.trim() || null;
-}
-
-/**
- * Spec rows from stated declared Properties on the Option's Type (Sanity only).
- */
-export function buildReferenceSpecRows(
-    detail: CustomizationDetail,
-): ReferenceSpecRow[] {
-    const statedKeys = new Set(
-        detail.declaredProperties
-            .filter((d) => d.usage === 'stated')
-            .map((d) => d.propertySlug?.trim() || d.propertyId?.trim())
-            .filter((k): k is string => Boolean(k)),
-    );
-
-    if (statedKeys.size === 0) return [];
-
-    const groups = new Map<string, CustomizationPropertyValue[]>();
-    for (const value of detail.properties) {
-        const key = groupKey(value);
-        if (!key || !statedKeys.has(key)) continue;
-        const list = groups.get(key) ?? [];
-        list.push(value);
-        groups.set(key, list);
-    }
-
-    const rows: ReferenceSpecRow[] = [];
-    for (const [key, values] of groups) {
-        if (values.length === 0) continue;
-        const declared = detail.declaredProperties.find(
-            (d) => d.propertySlug === key || d.propertyId === key,
-        );
-        const label =
-            declared?.propertyTitle?.trim() ||
-            values.find((v) => v.propertyTitle)?.propertyTitle?.trim() ||
-            key;
-        const factDisplays = values.flatMap((v) =>
-            v.facts.map((f) => f.display).filter(Boolean),
-        );
-        const titles = values.map((v) => v.title).filter(Boolean);
-        const value =
-            factDisplays.length > 0
-                ? factDisplays.join(' · ')
-                : titles.join(' · ');
-        if (!value) continue;
-        rows.push({label, value});
-    }
-    return rows;
-}
 
 /**
  * Material Reference — Specs & performance subsection (PROD-1299).

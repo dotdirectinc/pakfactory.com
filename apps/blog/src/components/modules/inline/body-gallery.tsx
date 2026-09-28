@@ -2,7 +2,7 @@ import { CAPTION_CLASS } from "@/lib/blog-caption";
 import type { PostBodyGallery } from "@/lib/blog-post";
 import { resolveImageAlt, sanityImageBaseUrl } from "@/lib/sanity-image";
 import { resolveWatermarkVariantFromLqip } from "@/lib/watermark-lqip-variant";
-import { GallerySlider, type SliderImage } from "@pakfactory/components/modules/gallery-slider";
+import { GallerySlider, type SliderImage } from "@pakfactory/ui/components/gallery-slider";
 
 type BodyGalleryProps = {
   value: PostBodyGallery;

@@ -18,13 +18,13 @@ export const testimonialBlock = defineType({
       name: 'attributionName',
       title: 'Name',
       type: 'string',
-      description: 'e.g. Jane Smith',
+      description: 'The name of the person quoted (e.g. Jane Smith).',
     }),
     defineField({
       name: 'attributionRole',
       title: 'Role',
       type: 'string',
-      description: 'e.g. Founder at Venture Co.',
+      description: 'Their role and company (e.g. Founder at Venture Co.).',
     }),
     defineField({
       name: 'backgroundImage',

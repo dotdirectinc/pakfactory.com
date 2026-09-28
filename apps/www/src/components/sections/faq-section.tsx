@@ -1,16 +1,9 @@
-'use client';
-
 import Link from 'next/link';
 
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@pakfactory/ui/components/accordion';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {FaqAccordion} from '@/components/sections/faq-accordion';
 import {SectionHeading} from '@/components/ui/section-heading';
 import type {ProductFaq} from '@/lib/catalog/types';
 import {
@@ -24,6 +17,8 @@ const DEFAULT_DESCRIPTION =
 type FaqSectionProps = {
     heading?: string;
     description?: string;
+    /** Section kicker above the heading. Defaults to FAQs. */
+    eyebrow?: string;
     items: ProductFaq[];
     footerHref?: string;
     footerLabel?: string;
@@ -32,27 +27,44 @@ type FaqSectionProps = {
     theme?: SectionTheme;
     /** Anchor id for in-page nav (PDP default). */
     sectionId?: string;
+    /** Heading alignment. Defaults to center (historical FAQ layout). */
+    align?: 'left' | 'center';
+    borderTop?: boolean;
+    /** Outer full-bleed dashed bottom border. Defaults on for PDP. */
+    borderBottom?: boolean;
+    cta?: {label: string; href: string};
+    /**
+     * `cards` (default) — separate muted accordion cards under a centred column.
+     * `rows` — full-width divider rows, larger questions (expertise pages, POC
+     * `ExpertiseFaq`).
+     */
+    variant?: 'cards' | 'rows';
 };
 
 /**
- * FAQ accordion — maps to Studio `faqSection` later.
- * Centered SectionHeading + separate muted Accordion cards.
+ * FAQ section — maps to Studio `faqSection`.
+ * RSC shell (heading + chrome) with a client accordion leaf.
  */
 export function FaqSection({
     heading = 'Questions & Answers',
     description = DEFAULT_DESCRIPTION,
+    eyebrow = 'FAQs',
     items,
     footerHref,
     footerLabel = "Let's chat",
     className,
     theme = 'default',
     sectionId = 'pdp-faqs',
+    align = 'center',
+    borderTop = false,
+    borderBottom = true,
+    cta,
+    variant = 'cards',
 }: FaqSectionProps) {
+    const rows = variant === 'rows';
     const shell = sectionThemeShell(theme);
 
     if (items.length === 0) return null;
-
-    const defaultOpen = 'faq-0';
 
     return (
         <section
@@ -60,47 +72,26 @@ export function FaqSection({
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32', shell.bandClass, className)}
         >
-            <PageDielineSection borderBottom paddingBlock="md">
-                <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+            <PageDielineSection
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                paddingBlock={rows ? 'lg' : 'md'}
+            >
+                <div
+                    className={cn(
+                        'flex w-full flex-col',
+                        rows ? 'gap-12' : 'mx-auto max-w-4xl gap-8',
+                    )}
+                >
                     <SectionHeading
-                        align="center"
-                        eyebrow="FAQs"
+                        align={align}
+                        eyebrow={eyebrow}
                         title={heading}
                         description={description}
+                        cta={cta}
                     />
 
-                    <Accordion
-                        type="single"
-                        collapsible
-                        defaultValue={defaultOpen}
-                        className="flex flex-col gap-4"
-                    >
-                        {items.map((item, index) => {
-                            const value = `faq-${index}`;
-
-                            return (
-                                <AccordionItem
-                                    key={`${item.question}-${index}`}
-                                    value={value}
-                                    className="rounded-2xl border-0 bg-muted px-6 sm:px-8"
-                                >
-                                    <AccordionTrigger
-                                        className={cn(
-                                            'gap-4 py-6 hover:no-underline',
-                                            'items-center text-base font-semibold text-foreground',
-                                        )}
-                                    >
-                                        <span className="min-w-0 flex-1 text-left leading-snug">
-                                            {item.question}
-                                        </span>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pb-6 text-sm leading-relaxed text-muted-foreground">
-                                        {item.answerPlain}
-                                    </AccordionContent>
-                                </AccordionItem>
-                            );
-                        })}
-                    </Accordion>
+                    <FaqAccordion items={items} variant={variant} />
 
                     {footerHref ? (
                         <div className="flex justify-center">

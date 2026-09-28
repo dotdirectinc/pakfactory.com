@@ -5,7 +5,7 @@ import type {
   FooterLink,
   SocialLink,
   SocialPlatform,
-} from '@pakfactory/components/layout/site-footer';
+} from '@pakfactory/ui/components/site-footer';
 import type {
   WebsiteNavigationDoc,
   WebsiteNavLinkDoc,

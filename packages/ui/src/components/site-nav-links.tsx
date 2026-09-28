@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {useLinkStatus} from "next/link";
 import {usePathname} from "next/navigation";
 import {cn} from "@pakfactory/ui/lib/utils";
 import type {SiteNavItem} from "@pakfactory/ui/components/site-nav";
@@ -11,6 +12,20 @@ type SiteNavLinksProps = {
 
 export function isSiteNavHrefActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavLinkLabel({label}: {label: string}) {
+  const {pending} = useLinkStatus();
+  return (
+    <span
+      className={cn(
+        "transition-colors",
+        pending && "text-primary/70",
+      )}
+    >
+      {label}
+    </span>
+  );
 }
 
 export function SiteNavLinks({items}: SiteNavLinksProps) {
@@ -36,7 +51,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
                 isActive ? "text-primary" : "text-foreground",
               )}
             >
-              {item.label}
+              <NavLinkLabel label={item.label} />
             </Link>
           );
         }

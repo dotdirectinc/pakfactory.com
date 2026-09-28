@@ -6,6 +6,7 @@ import {
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
     type CatalogPropertyValueDetailDoc,
+    type PageSectionDoc,
 } from '@pakfactory/sanity/queries';
 import {
     resolveImageAlt,
@@ -25,7 +26,11 @@ import type {
     ProductLibraryItem,
     ProductLibraryLineMeta,
     ProductLine,
+    ProductLineCaseStudyRef,
+    ProductLineExpertiseRef,
+    ProductLineFrame,
     ProductLineRef,
+    ProductLineRelatedRef,
     ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
@@ -155,13 +160,6 @@ function mapAvailableCustomization(
             ? 'many'
             : 'one';
 
-    const worksOnIds = (option.worksOnIds ?? [])
-        .map((id) => id?.trim())
-        .filter((id): id is string => Boolean(id));
-    const incompatibleIds = (option.incompatibleIds ?? [])
-        .map((id) => id?.trim())
-        .filter((id): id is string => Boolean(id));
-
     return {
         id: option._id,
         label: option.title,
@@ -182,12 +180,10 @@ function mapAvailableCustomization(
         configuratorRole,
         role: configuratorRole,
         status: option.status ?? undefined,
-        ...(worksOnIds.length > 0 ? {worksOnIds} : {}),
-        ...(incompatibleIds.length > 0 ? {incompatibleIds} : {}),
     };
 }
 
-/** Map a raw option projection (universe / derived fetch) into a catalog option. */
+/** Map a raw option projection (e.g. from the rules catalog) into a catalog option. */
 export function mapSanityOptionDoc(
     option: CatalogOptionDoc | null | undefined,
     preselected = false,
@@ -240,6 +236,30 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
               ...(typeof dim.widthMax === 'number'
                   ? {widthMax: dim.widthMax}
                   : {}),
+              ...(typeof dim.heightMin === 'number'
+                  ? {heightMin: dim.heightMin}
+                  : {}),
+              ...(typeof dim.heightMax === 'number'
+                  ? {heightMax: dim.heightMax}
+                  : {}),
+              ...(typeof dim.diameterMin === 'number'
+                  ? {diameterMin: dim.diameterMin}
+                  : {}),
+              ...(typeof dim.diameterMax === 'number'
+                  ? {diameterMax: dim.diameterMax}
+                  : {}),
+              ...(typeof dim.gussetMin === 'number'
+                  ? {gussetMin: dim.gussetMin}
+                  : {}),
+              ...(typeof dim.gussetMax === 'number'
+                  ? {gussetMax: dim.gussetMax}
+                  : {}),
+              ...(typeof dim.dropMin === 'number'
+                  ? {dropMin: dim.dropMin}
+                  : {}),
+              ...(typeof dim.dropMax === 'number'
+                  ? {dropMax: dim.dropMax}
+                  : {}),
               ...(typeof dim.depthMin === 'number'
                   ? {depthMin: dim.depthMin}
                   : {}),
@@ -248,6 +268,11 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
                   : {}),
           }
         : undefined;
+
+    const dimensionInput =
+        typeof doc.dimensionInput === 'string' && doc.dimensionInput.trim()
+            ? doc.dimensionInput.trim()
+            : undefined;
 
     const properties: ProductProperty[] = [];
     for (const row of doc.properties ?? []) {
@@ -272,14 +297,27 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         .map(mapSanityProduct)
         .filter((item): item is Product => item != null);
 
+    const sections = (doc.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
+    const templateSections = (doc.template?.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
+
     return {
         title: doc.title,
         slug,
-        sku: doc.sku?.trim() || slug,
+        // Never substitute the URL slug for a missing SKU (catalog / PDP eyebrow).
+        sku: doc.sku?.trim() || '-',
         kind,
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
         media: mediaFromSanity(doc.media, doc.title),
+        ...(doc.featuredVideoUrl?.trim()
+            ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
+            : {}),
         productLine,
         productStyle,
         availableCustomizations,
@@ -287,22 +325,28 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
             ? {primarySolution: doc.primarySolution}
             : {}),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
-        ...(typeof doc.leadTimeDays === 'number'
-            ? {leadTimeDays: doc.leadTimeDays}
-            : {}),
+        ...(dimensionInput ? {dimensionInput} : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
             ? {dimensionRange}
             : {}),
         ...(properties.length > 0 ? {properties} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(relatedProducts.length > 0 ? {relatedProducts} : {}),
+        ...(sections.length > 0 ? {sections} : {}),
+        ...(templateSections.length > 0 ? {templateSections} : {}),
     };
 }
+
+export type MappedProductLibraryItem = {
+    item: ProductLibraryItem;
+    propertyTitles: Record<string, string>;
+    valueTitles: Record<string, string>;
+};
 
 /** Faceted `/products` library card (PROD-1845) — no availableCustomizations tree. */
 export function mapSanityProductLibraryItem(
     doc: CatalogProductLibraryDoc,
-): ProductLibraryItem | null {
+): MappedProductLibraryItem | null {
     const product = mapSanityProduct(doc);
     if (!product) return null;
 
@@ -343,18 +387,25 @@ export function mapSanityProductLibraryItem(
     }
 
     return {
-        _id: doc._id,
-        title: product.title,
-        slug: product.slug,
-        sku: product.sku,
-        productLine: product.productLine,
-        productStyle: product.productStyle,
-        imageUrl: first?.src ?? null,
-        imageAlt: first?.alt ?? product.title,
-        images: images.length > 0 ? images : undefined,
-        ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
-        industries,
-        attrs,
+        item: {
+            _id: doc._id,
+            title: product.title,
+            slug: product.slug,
+            sku: product.sku,
+            kind: product.kind,
+            productLine: product.productLine,
+            // Library payload: slug + title only (PROD-2599).
+            productStyle: {
+                slug: product.productStyle.slug,
+                title: product.productStyle.title,
+            },
+            imageUrl: first?.src ?? null,
+            imageAlt: first?.alt ?? product.title,
+            images: images.length > 0 ? images : undefined,
+            ...(typeof product.moq === 'number' ? {moq: product.moq} : {}),
+            industries,
+            attrs,
+        },
         propertyTitles,
         valueTitles,
     };
@@ -404,12 +455,132 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
     }
 
     const {imageUrl, imageAlt} = cardImageFromSanity(doc.cardImage, doc.title);
+    const featuredVideoUrl = doc.featuredVideoUrl?.trim() || null;
+    const heroLayoutRaw = doc.template?.heroLayout?.trim();
+    const heroLayout =
+        heroLayoutRaw === 'bottomBar' || heroLayoutRaw === 'stack'
+            ? heroLayoutRaw
+            : undefined;
+    const {imageUrl: featuredIconUrl, imageAlt: featuredIconAlt} =
+        cardImageFromSanity(doc.kitMark, `${doc.title} featured icon`);
+
+    const frames: ProductLineFrame[] = [];
+    for (const item of doc.media ?? []) {
+        const src = sanityImageBaseUrl(item);
+        if (!src) continue;
+        frames.push({
+            src,
+            alt: resolveImageAlt(item, doc.title),
+        });
+    }
+
+    const expertise: ProductLineExpertiseRef[] = [];
+    for (const row of doc.expertise ?? []) {
+        if (!row) continue;
+        const stageSlug = row.slug?.trim();
+        const title = row.title?.trim();
+        if (!stageSlug || !title) continue;
+        const {imageUrl: stageImageUrl, imageAlt: stageImageAlt} =
+            cardImageFromSanity(row.diagram, title);
+        expertise.push({
+            slug: stageSlug,
+            title,
+            ...(row.description?.trim()
+                ? {description: row.description.trim()}
+                : {}),
+            ...(stageImageUrl
+                ? {imageUrl: stageImageUrl, imageAlt: stageImageAlt}
+                : {}),
+        });
+    }
+
+    const featuredStudies: ProductLineCaseStudyRef[] = [];
+    for (const row of doc.featuredStudies ?? []) {
+        if (!row) continue;
+        const studySlug = row.slug?.trim();
+        const title = row.title?.trim();
+        if (!studySlug || !title) continue;
+        const studyImageUrl = row.cardImageUrl?.trim() || null;
+        featuredStudies.push({
+            slug: studySlug,
+            title,
+            ...(row.cardSummary?.trim()
+                ? {cardSummary: row.cardSummary.trim()}
+                : {}),
+            ...(studyImageUrl
+                ? {
+                      imageUrl: studyImageUrl,
+                      imageAlt: row.cardImageAlt?.trim() || title,
+                  }
+                : {}),
+        });
+    }
+
+    const relatedLines: ProductLineRelatedRef[] = [];
+    for (const row of doc.relatedLines ?? []) {
+        if (!row) continue;
+        const relatedSlug = row.slug?.trim();
+        const title = row.title?.trim();
+        if (!relatedSlug || !title) continue;
+        const {imageUrl: relatedImageUrl, imageAlt: relatedImageAlt} =
+            cardImageFromSanity(row.cardImage, title);
+        relatedLines.push({
+            slug: relatedSlug,
+            title,
+            ...(row.shortDescription?.trim()
+                ? {shortDescription: row.shortDescription.trim()}
+                : {}),
+            ...(relatedImageUrl
+                ? {imageUrl: relatedImageUrl, imageAlt: relatedImageAlt}
+                : {}),
+        });
+    }
+
+    const faqs: ProductFaq[] = [];
+    for (const row of doc.faqs ?? []) {
+        const question = row?.question?.trim();
+        const answerPlain = row?.answerPlain?.trim();
+        if (!question || !answerPlain) continue;
+        faqs.push({question, answerPlain});
+    }
+
+    const h1 = doc.h1?.trim();
+    const shortName = doc.shortName?.trim();
+    const shortDescription = doc.shortDescription?.trim();
+    const metaTitle = doc.metaTitle?.trim();
+    const metaDescription = doc.metaDescription?.trim();
+    const description =
+        doc.description?.trim() || shortDescription || '';
+
+    const sections = (doc.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
+    const templateSections = (doc.template?.sections ?? []).filter(
+        (section): section is PageSectionDoc =>
+            Boolean(section?._key && section?._type),
+    );
 
     return {
         slug,
         title: doc.title,
-        description: doc.description?.trim() || doc.cardSummary?.trim() || '',
+        description,
+        ...(h1 ? {h1} : {}),
+        ...(shortName ? {shortName} : {}),
+        ...(shortDescription ? {shortDescription} : {}),
+        ...(metaTitle ? {metaTitle} : {}),
+        ...(metaDescription ? {metaDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
+        ...(featuredVideoUrl ? {featuredVideoUrl} : {}),
+        ...(heroLayout ? {heroLayout} : {}),
+        ...(featuredIconUrl ? {featuredIconUrl, featuredIconAlt} : {}),
+        ...(frames.length > 0 ? {frames} : {}),
+        ...(expertise.length > 0 ? {expertise} : {}),
+        ...(featuredStudies.length > 0 ? {featuredStudies} : {}),
+        ...(relatedLines.length > 0 ? {relatedLines} : {}),
+        ...(faqs.length > 0 ? {faqs} : {}),
+        ...(sections.length > 0 ? {sections} : {}),
+        ...(templateSections.length > 0 ? {templateSections} : {}),
         styles: [...stylesBySlug.values()],
         products,
     };

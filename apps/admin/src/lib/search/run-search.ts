@@ -1,4 +1,4 @@
-import type { RequestSummary } from "@pakfactory/domain/request";
+import type { RequestSummary } from "@pakfactory/request/request";
 import { requestSummariesToHits } from "./filter-requests";
 import { filterAdminPages } from "./pages";
 import { searchContentCorpus } from "./search-content";

@@ -8,10 +8,10 @@
  * populate them.
  *
  * From repo root (DRY-RUN is the default — prints only, nothing is written):
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings
- *   NEXT_PUBLIC_SANITY_DATASET=development pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
+ *   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset development
+ *   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset development --confirm
+ *   pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset production --confirm --yes-production
  * Then, after verifying dev, promote to production:
- *   NEXT_PUBLIC_SANITY_DATASET=production  pnpm --filter @pakfactory/studio run seed:per-type-settings -- --apply
  *
  * Requires a WRITE token in repo-root `.env.local` or `apps/studio/.env.local`
  * (`SANITY_API_WRITE_TOKEN` / `SANITY_TOKEN`). A read token cannot --apply.
@@ -31,6 +31,7 @@ import { createClient } from '@sanity/client'
 import { config as loadEnv } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseScriptArgs } from './lib/script-args.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -38,16 +39,21 @@ loadEnv({ path: join(repoRoot, '.env.local') })
 loadEnv({ path: join(repoRoot, '.env') })
 loadEnv({ path: join(repoRoot, 'apps/studio/.env.local'), override: true })
 
-const apply = process.argv.includes('--apply')
+const USAGE = `Usage:
+  pnpm --filter @pakfactory/studio run seed:per-type-settings -- --dataset <development|production> [--confirm] [--yes-production]
+
+  --dataset         REQUIRED. Which dataset to read/write. No env fallback.
+  --confirm         Actually write. Without it the run is a dry run.
+  --yes-production  Second gate; required to write to production.`
+const args = parseScriptArgs({ usage: USAGE })
+
+const apply = args.confirm
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ||
   process.env.SANITY_STUDIO_PROJECT_ID ||
   '8293wrxp'
-const DATASET =
-  process.env.NEXT_PUBLIC_SANITY_DATASET ||
-  process.env.SANITY_STUDIO_DATASET ||
-  'development'
+const DATASET = args.dataset
 const TOKEN =
   process.env.SANITY_API_WRITE_TOKEN ||
   process.env.SANITY_API_READ_TOKEN ||
@@ -58,7 +64,7 @@ if (!TOKEN) {
   process.exit(1)
 }
 if (apply && !(process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_TOKEN)) {
-  console.error('❌  --apply needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
+  console.error('❌  --confirm needs a WRITE token (SANITY_API_WRITE_TOKEN / SANITY_TOKEN); a read token cannot write.')
   process.exit(1)
 }
 
@@ -121,7 +127,7 @@ async function main() {
   }
 
   if (!apply) {
-    console.log(`\nDRY-RUN only — re-run with \`-- --apply\` to write. Seed DEVELOPMENT first, verify, then PRODUCTION.\n`)
+    console.log(`\nDRY-RUN on dataset=${DATASET} — nothing written. Re-run with --confirm. Verify on development first, then production.\n`)
     return
   }
 

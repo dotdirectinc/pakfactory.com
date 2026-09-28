@@ -15,9 +15,11 @@ import {
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
+  WWW_EXPERTISE_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
+  wwwExpertiseTag,
   wwwProductTag,
   wwwSolutionTag,
 } from "@/lib/www-cache";
@@ -34,8 +36,9 @@ const INDEXNOW_HOST = "pakfactory.com";
  *
  *   _type in [
  *     "caseStudy", "listingPage", "client",
- *     "solution", "productLine", "expertiseStage", "customizationOption",
+ *     "solution", "solutionIndustryPage", "solutionStyle", "solutionStylePage", "productLine", "productLinePage", "expertiseStage", "expertiseStagePage", "expertiseService", "customizationOption",
  *     "product", "productStyle", "customizationCategory", "customizationType",
+ *     "productCatalogPage", "productStylePage", "productDetailPage", "customizationCatalogPage", "customizationDetailPage",
  *     "websiteNavigation", "settings"
  *   ]
  *
@@ -142,8 +145,15 @@ export async function POST(request: Request) {
     }
   }
 
+  // productLinePage / productDetailPage edits reorder every LP/PDP that references the template.
   const touchesProducts =
-    !type || CATALOG_PRODUCT_TYPES.has(type) || type === "customizationOption";
+    !type ||
+    CATALOG_PRODUCT_TYPES.has(type) ||
+    type === "customizationOption" ||
+    type === "productCatalogPage" ||
+    type === "productStylePage" ||
+    type === "productDetailPage" ||
+    type === "productLinePage";
   if (touchesProducts) {
     tags.add(WWW_CATALOG_PRODUCTS_CACHE_TAG);
     tags.add(WWW_CATALOG_LINES_CACHE_TAG);
@@ -161,7 +171,10 @@ export async function POST(request: Request) {
   }
 
   const touchesCustomizations =
-    !type || CATALOG_CUSTOMIZATION_TYPES.has(type);
+    !type ||
+    CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === "customizationCatalogPage" ||
+    type === "customizationDetailPage";
   if (touchesCustomizations) {
     tags.add(WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG);
     // Product PDP embeds available customizations.
@@ -177,10 +190,15 @@ export async function POST(request: Request) {
     );
   }
 
-  // Solution LPs + nested line catalogs (product/line edits change filtered grids).
+  // Solution LPs + nested style catalogues (product/line edits change filtered grids).
+  // solutionIndustryPage edits reorder every industry LP that references the template.
+  // solutionStylePage edits add shared bands under every solution style catalog.
   const touchesSolutions =
     !type ||
     type === "solution" ||
+    type === "solutionIndustryPage" ||
+    type === "solutionStyle" ||
+    type === "solutionStylePage" ||
     CATALOG_PRODUCT_TYPES.has(type);
   if (touchesSolutions) {
     tags.add(WWW_SOLUTIONS_CACHE_TAG);
@@ -189,12 +207,39 @@ export async function POST(request: Request) {
     if (type === "solution" && slug) {
       tags.add(wwwSolutionTag(slug));
       revalidatePath(`/solutions/${slug}`);
-      revalidatePath(`/solutions/${slug}/[lineSlug]`, "page");
-      revalidated.push(`/solutions/${slug}`, `/solutions/${slug}/[lineSlug]`);
+      revalidatePath(`/solutions/${slug}/[styleSlug]`, "page");
+      revalidated.push(`/solutions/${slug}`, `/solutions/${slug}/[styleSlug]`);
+    } else if (type === "solutionStyle" && slug) {
+      // Style slug alone is not enough for the nested path; bust all style pages.
+      revalidatePath("/solutions/[slug]", "page");
+      revalidatePath("/solutions/[slug]/[styleSlug]", "page");
+      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[styleSlug]");
     } else {
       revalidatePath("/solutions/[slug]", "page");
-      revalidatePath("/solutions/[slug]/[lineSlug]", "page");
-      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[lineSlug]");
+      revalidatePath("/solutions/[slug]/[styleSlug]", "page");
+      revalidated.push("/solutions/[slug]", "/solutions/[slug]/[styleSlug]");
+    }
+  }
+
+  // Expertise landing grid + stage pages. An Expertise Page template edit
+  // re-renders every stage that selects it, so it revalidates all stage paths.
+  const touchesExpertise =
+    !type ||
+    type === "expertiseStage" ||
+    type === "expertiseStagePage" ||
+    type === "expertiseService" ||
+    type === "listingPage";
+  if (touchesExpertise) {
+    tags.add(WWW_EXPERTISE_CACHE_TAG);
+    revalidatePath("/expertise");
+    revalidated.push("/expertise");
+    if (type === "expertiseStage" && slug) {
+      tags.add(wwwExpertiseTag(slug));
+      revalidatePath(`/expertise/${slug}`);
+      revalidated.push(`/expertise/${slug}`);
+    } else {
+      revalidatePath("/expertise/[slug]", "page");
+      revalidated.push("/expertise/[slug]");
     }
   }
 
@@ -256,6 +301,12 @@ export async function POST(request: Request) {
     CATALOG_PRODUCT_TYPES.has(type) ||
     CATALOG_CUSTOMIZATION_TYPES.has(type) ||
     type === "solution" ||
+    type === "solutionIndustryPage" ||
+    type === "productLinePage" ||
+    type === "solutionStyle" ||
+    type === "expertiseStage" ||
+    type === "expertiseStagePage" ||
+    type === "expertiseService" ||
     type === "websiteNavigation" ||
     type === "settings";
 

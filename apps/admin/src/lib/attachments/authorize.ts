@@ -1,4 +1,4 @@
-import type { Request } from "@pakfactory/domain/request";
+import type { Request } from "@pakfactory/request/request";
 import { getRequestReadAdapter } from "@/lib/adapters";
 import { requireInternalUser } from "@/lib/auth/require-internal-user";
 

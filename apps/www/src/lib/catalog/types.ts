@@ -1,3 +1,6 @@
+import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
+
 export type ProductKind = 'standard' | 'inspiration';
 
 /** Category slug from Sanity `customizationCategory.slug` (not a fixed union). */
@@ -9,8 +12,6 @@ export type CustomizationOption = {
     /** Sanity customizationCategory.slug */
     category: CustomizationCategory;
     categoryTitle?: string;
-    /** @deprecated Prefer policy sortIndex via customization-category-policy. */
-    categoryOrder?: number;
     categoryDescription?: string;
     typeId?: string;
     typeSlug?: string;
@@ -28,10 +29,6 @@ export type CustomizationOption = {
     role?: 'configurable' | 'reference';
     configuratorRole?: 'configurable' | 'reference';
     status?: string;
-    /** Option/type ids this finishing/printing works on (empty = unrestricted). */
-    worksOnIds?: string[];
-    /** Option/type ids this cannot combine with. */
-    incompatibleIds?: string[];
 };
 
 export type CatalogMedia = {
@@ -58,6 +55,15 @@ export type ProductDimensionRange = {
     lengthMax?: number;
     widthMin?: number;
     widthMax?: number;
+    heightMin?: number;
+    heightMax?: number;
+    diameterMin?: number;
+    diameterMax?: number;
+    gussetMin?: number;
+    gussetMax?: number;
+    dropMin?: number;
+    dropMax?: number;
+    /** Legacy Studio depth → treated as height. */
     depthMin?: number;
     depthMax?: number;
 };
@@ -78,14 +84,30 @@ export type ProductTestimonial = {
     quote: string;
     attributionName: string;
     rating: number;
-    positives: string[];
+    /** Optional — Google reviews have no “positives” tags. */
+    positives?: string[];
     source: TestimonialSource;
+    avatarUrl?: string;
+    /** Author profile URL (Google attribution). */
+    authorProfileUrl?: string;
+    /** Individual review URL on Google Maps (Read more target). */
+    reviewUrl?: string;
 };
 
 export type TestimonialsAggregate = {
     source: 'google';
     label: string;
     score: number;
+    /** Google place-level total review count (not filtered subset). */
+    reviewCount?: number;
+};
+
+/** Live Google Reviews band payload (Places interim; GBP later). */
+export type GoogleReviewsBand = {
+    items: ProductTestimonial[];
+    aggregate?: TestimonialsAggregate;
+    /** Place-level Google Maps reviews profile (View all reviews). */
+    reviewsProfileUrl?: string;
 };
 
 export type Product = {
@@ -94,13 +116,23 @@ export type Product = {
     sku: string;
     kind: ProductKind;
     media: CatalogMedia[];
+    /**
+     * Hover-play MP4 from Sanity `featuredVideo` (product-line hero marquee).
+     */
+    featuredVideoUrl?: string | null;
     description: string;
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;
     availableCustomizations: CustomizationOption[];
+    /**
+     * The rules this product's options were resolved with (PROD-2556), for the builder to
+     * narrow on as the customer chooses. Absent when the dataset has no rules yet.
+     */
+    customizationRules?: CustomizationRulesSnapshot;
     primarySolution?: string;
     moq?: number;
-    leadTimeDays?: number;
+    /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
+    dimensionInput?: string;
     dimensionRange?: ProductDimensionRange;
     /** Spec rows from Sanity properties (PDP). */
     properties?: ProductProperty[];
@@ -108,14 +140,83 @@ export type Product = {
     relatedProducts?: Product[];
     /** Props-ready; empty until testimonial docs land (PROD-2293). */
     testimonials?: ProductTestimonial[];
+    /**
+     * Page-builder sections on this product (content). Merged with
+     * `templateSections` for the PDP lower body.
+     */
+    sections?: PageSectionDoc[];
+    templateSections?: PageSectionDoc[];
+};
+
+export type ProductLineExpertiseRef = {
+    slug: string;
+    title: string;
+    description?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLineCaseStudyRef = {
+    slug: string;
+    title: string;
+    cardSummary?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLineRelatedRef = {
+    slug: string;
+    title: string;
+    shortDescription?: string;
+    imageUrl?: string | null;
+    imageAlt?: string;
+};
+
+export type ProductLineFrame = {
+    src: string;
+    alt: string;
 };
 
 export type ProductLine = {
     slug: string;
     title: string;
     description: string;
+    /** Page H1 override; empty falls back to title in the landing assembler. */
+    h1?: string;
+    /** Card/nav label; empty falls back to title for section tokens. */
+    shortName?: string;
+    shortDescription?: string;
+    metaTitle?: string;
+    metaDescription?: string;
     imageUrl?: string | null;
     imageAlt?: string;
+    /**
+     * Featured hero MP4 from Sanity `featuredVideo`. Used for bottomBar
+     * marquee hover-play; stack shows a static featured image.
+     */
+    featuredVideoUrl?: string | null;
+    /**
+     * Landing hero chrome from the selected Product Line Page layout.
+     * `stack` (default) = featured icon + copy above media;
+     * `bottomBar` = media-first with icon/copy/CTAs along the bottom.
+     */
+    heroLayout?: 'stack' | 'bottomBar';
+    /** Featured icon on the landing hero (Sanity field `kitMark`). */
+    featuredIconUrl?: string | null;
+    featuredIconAlt?: string;
+    /** Ordered hero frames from Sanity `media` (featured image is separate). */
+    frames?: ProductLineFrame[];
+    expertise?: ProductLineExpertiseRef[];
+    featuredStudies?: ProductLineCaseStudyRef[];
+    relatedLines?: ProductLineRelatedRef[];
+    faqs?: ProductFaq[];
+    /**
+     * Page-builder sections on this line (content). Merged with
+     * `templateSections` for the landing body.
+     */
+    sections?: PageSectionDoc[];
+    /** Sections from the selected Product Line Page template (order/chrome). */
+    templateSections?: PageSectionDoc[];
     styles: ProductStyleRef[];
     products: Product[];
 };
@@ -180,14 +281,34 @@ export const PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID =
 /** Industries facet — Sanity `solution` with `solutionType == "industry"`. */
 export const PRODUCT_CATALOG_INDUSTRY_FACET_ID = 'industry';
 
+/** Product type facet — Sanity `product.kind` (`standard` | `inspiration`). */
+export const PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID = 'product-type';
+
+/**
+ * Product Style facet — nested under a single selected Product Line on `/products`.
+ * Not a top-level rail accordion.
+ */
+export const PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID = 'product-style';
+
+/**
+ * Library card style — slug + title only (PROD-2599). Full style copy stays on
+ * landing / PDP projections.
+ */
+export type ProductLibraryStyleRef = {
+    slug: string;
+    title: string;
+};
+
 /** Enriched product card for the faceted `/products` library (PROD-1845). */
 export type ProductLibraryItem = {
     _id: string;
     title: string;
     slug: string;
     sku: string;
+    /** Sanity `product.kind` — drives the Product type facet. */
+    kind: ProductKind;
     productLine: ProductLineRef;
-    productStyle: ProductStyleRef;
+    productStyle: ProductLibraryStyleRef;
     imageUrl?: string | null;
     imageAlt?: string | null;
     images?: {src: string; alt?: string}[];
@@ -196,8 +317,6 @@ export type ProductLibraryItem = {
     industries: {slug: string; title: string}[];
     /** property.slug → propertyValue.slug[] */
     attrs: Record<string, string[]>;
-    propertyTitles: Record<string, string>;
-    valueTitles: Record<string, string>;
 };
 
 /** Line meta for the catalog entry card (first spot when one line is filtered). */
@@ -213,8 +332,12 @@ export type ProductLibraryResult = {
     items: ProductLibraryItem[];
     /** Unique product lines in the library, keyed by slug. */
     linesBySlug: Record<string, ProductLibraryLineMeta>;
+    /** Styles per line for the nested Product Style filter (keyed by line slug). */
+    stylesByLineSlug: Record<string, CustomizationFacetOption[]>;
+    /** property.slug → display title (hoisted off per-item copies). */
+    propertyTitles: Record<string, string>;
     facetCatalog: {
-        /** Always-on: Product Line + Industries + Sustainability (when present). */
+        /** Always-on: Product type + Product Line + Industries + Sustainability (when present). */
         shared: CustomizationFacetDef[];
     };
 };
@@ -266,7 +389,7 @@ export type CustomizationDetail = {
 
 export type CustomizationDetailResult = {
     detail: CustomizationDetail;
-    /** Same-category peers for comparison (Slice G); empty until wired. */
+    /** Same-category library peers for the detail compare band (PROD-1534). */
     peers: CustomizationDetail[];
 };
 

@@ -8,6 +8,7 @@ import {OptionDetail} from '@/components/customization-builder/option-detail';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
+    answerSelections,
     dimensionEntryNoteKey,
     getAnswer,
     type BuilderOption,
@@ -15,6 +16,7 @@ import {
     type BuilderStepKey,
     type CustomizationBuilderState,
     type DimensionFace,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
 
@@ -23,12 +25,15 @@ type BuilderThreeColumnProps = {
     activeKey: BuilderStepKey;
     activeTypeId: string | null;
     activeOptionId: string | null;
+    disabledOptionIds?: ReadonlySet<string>;
     state: CustomizationBuilderState;
     numberedRail?: boolean;
     maxReachableIndex?: number;
     header?: ReactNode;
     footer?: ReactNode;
     dimensionRange?: ProductDimensionRange;
+    dimensionInput?: string;
+    dimensionAxisIds?: readonly string[];
     onSelectCategory: (key: BuilderStepKey) => void;
     onSelectConsultation: () => void;
     onSelectType: (typeId: string) => void;
@@ -39,6 +44,7 @@ type BuilderThreeColumnProps = {
     onPropertySelectionsChange?: (
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) => void;
 };
 
@@ -47,12 +53,15 @@ export function BuilderThreeColumn({
     activeKey,
     activeTypeId,
     activeOptionId,
+    disabledOptionIds,
     state,
     numberedRail = false,
     maxReachableIndex,
     header,
     footer,
     dimensionRange,
+    dimensionInput,
+    dimensionAxisIds,
     onSelectCategory,
     onSelectConsultation,
     onSelectType,
@@ -75,8 +84,14 @@ export function BuilderThreeColumn({
                   ? 'external'
                   : null
             : null;
+    const selectedOptionIds = new Set(
+        answerSelections(answer).map((item) => item.optionId),
+    );
+    // The detail panel shows the open pick. Browsing without picking shows nothing, so a note
+    // or Property can never attach to an option that is not in the spec.
     const selectedOption = step.options.find(
-        (item) => item.id === activeOptionId,
+        (item) =>
+            item.id === activeOptionId && selectedOptionIds.has(item.id),
     );
     const entryNoteKey =
         step.kind === 'dimensions'
@@ -111,6 +126,7 @@ export function BuilderThreeColumn({
                         state={state}
                         numbered={numberedRail}
                         maxReachableIndex={maxReachableIndex}
+                        dimensionAxisIds={dimensionAxisIds}
                         onSelect={onSelectCategory}
                         onClearCategory={onClearCategory}
                     />
@@ -121,6 +137,8 @@ export function BuilderThreeColumn({
                     options={step.options}
                     activeTypeId={activeTypeId}
                     activeOptionId={activeOptionId}
+                    selectedOptionIds={selectedOptionIds}
+                    disabledOptionIds={disabledOptionIds}
                     consultationSelected={consultationSelected}
                     onSelectConsultation={onSelectConsultation}
                     onSelectType={onSelectType}
@@ -131,6 +149,7 @@ export function BuilderThreeColumn({
                         <CustomizationDimensionOption
                             answer={answer}
                             face={face}
+                            dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
                             onChange={(next) => onAnswerChange(step.key, next)}
                             {...noteProps}
@@ -140,11 +159,12 @@ export function BuilderThreeColumn({
                             option={selectedOption}
                             consultationSelected={consultationSelected}
                             propertySelections={optionPropertySelections}
-                            onPropertySelectionsChange={(selections) => {
+                            onPropertySelectionsChange={(selections, summaries) => {
                                 if (!selectedOption) return;
                                 onPropertySelectionsChange?.(
                                     selectedOption.id,
                                     selections,
+                                    summaries,
                                 );
                             }}
                             {...noteProps}

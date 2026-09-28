@@ -63,7 +63,7 @@ export const categorySettings = defineType({
         type: 'boolean',
         initialValue: true,
         description:
-          'When on, categories with no published posts are set to noindex and excluded from the sitemap — even if Allow indexing is enabled. Turn off to let empty categories be indexed.',
+          'When on, categories with no published posts are hidden from search engines and left out of the sitemap — even if Allow indexing is on. Turn it off to let empty categories be indexed.',
       }),
     ],
   }),
@@ -90,7 +90,7 @@ export const topicSettings = defineType({
         type: 'number',
         initialValue: 5,
         description:
-          'Live rule, not a new-document default: every topic page with fewer than this many published posts is forced noindex — continuously, and even when the topic has Allow indexing switched on. Changing this re-evaluates all existing topics.',
+          'A live rule, not a default for new documents: any topic page with fewer than this many published posts is hidden from search engines, even if its own Allow indexing is on. Changing this re-evaluates every topic.',
         validation: (Rule) => Rule.min(0).integer(),
       }),
     ],

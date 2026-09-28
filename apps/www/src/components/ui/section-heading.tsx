@@ -1,6 +1,9 @@
 import type {ReactNode} from 'react';
-
+import Link from 'next/link';
+import {ChevronRight} from 'lucide-react';
 import {cn} from '@pakfactory/ui/lib/utils';
+
+import {Icon} from '@/components/ui/icon';
 
 /** Bracketed V5 kicker, e.g. `[ Specifications ]`. */
 export function formatSectionEyebrow(text: string): string {
@@ -9,6 +12,32 @@ export function formatSectionEyebrow(text: string): string {
     if (value.startsWith('[') && value.endsWith(']')) return value;
     return `[ ${value} ]`;
 }
+
+/**
+ * Eyebrow with its V5 brackets as separate spans, so a host can drop them by
+ * slot (the expertise pages' POC style) — reads the same as
+ * {@link formatSectionEyebrow} everywhere else.
+ */
+function SectionEyebrowText({text}: {text: string}) {
+    const value = text.trim();
+    const bare =
+        value.startsWith('[') && value.endsWith(']')
+            ? value.slice(1, -1).trim()
+            : value;
+    if (!bare) return null;
+    return (
+        <>
+            <span data-slot="section-eyebrow-bracket">[ </span>
+            {bare}
+            <span data-slot="section-eyebrow-bracket"> ]</span>
+        </>
+    );
+}
+
+export type SectionHeadingCta = {
+    label: string;
+    href: string;
+};
 
 type SectionHeadingProps = {
     eyebrow?: string;
@@ -21,7 +50,34 @@ type SectionHeadingProps = {
     className?: string;
     /** Optional right-side slot (e.g. carousel controls). */
     actions?: ReactNode;
+    /** Built-in explore link — rendered when `showCta` is true. */
+    cta?: SectionHeadingCta;
+    /** When false, CTA is omitted even if `cta` is set. Default true. */
+    showCta?: boolean;
+    /**
+     * `bottom` = under description in the column (default).
+     * `end` = right-aligned beside the heading column.
+     */
+    ctaPlacement?: 'bottom' | 'end';
 };
+
+function SectionHeadingCtaLink({cta}: {cta: SectionHeadingCta}) {
+    return (
+        <Link
+            href={cta.href}
+            className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-foreground"
+        >
+            <span className="underline-offset-4 group-hover:underline">
+                {cta.label}
+            </span>
+            <Icon
+                icon={ChevronRight}
+                size="sm"
+                className="transition-transform duration-300 ease-out group-hover:translate-x-0.5"
+            />
+        </Link>
+    );
+}
 
 /**
  * Shared section header — V5 eyebrow / title / description rhythm.
@@ -37,16 +93,35 @@ export function SectionHeading({
     descriptionClassName,
     className,
     actions,
+    cta,
+    showCta = true,
+    ctaPlacement = 'bottom',
 }: SectionHeadingProps) {
+    const ctaNode =
+        showCta && cta && cta.label.trim() ? (
+            <SectionHeadingCtaLink cta={cta} />
+        ) : null;
+    const bottomCta = ctaNode && ctaPlacement === 'bottom' ? ctaNode : null;
+    const endCta = ctaNode && ctaPlacement === 'end' ? ctaNode : null;
+    const endCluster =
+        endCta || actions ? (
+            <div className="flex shrink-0 gap-2">
+                {endCta}
+                {actions}
+            </div>
+        ) : null;
+
     const heading = (
         <div
+            data-slot="section-heading"
             className={cn(
-                'flex flex-col gap-6',
-                align === 'center' && 'items-center text-center',
+                'flex min-w-0 w-full max-w-full flex-1 flex-col gap-6 md:max-w-[66.666%]',
+                align === 'center' && 'mx-auto items-center text-center',
             )}
         >
             {eyebrow ? (
                 <p
+                    data-slot="section-eyebrow"
                     className={cn(
                         'text-[11px] font-semibold uppercase tracking-[0.08em]',
                         eyebrowTone === 'muted'
@@ -54,10 +129,13 @@ export function SectionHeading({
                             : 'text-brand-blue',
                     )}
                 >
-                    {formatSectionEyebrow(eyebrow)}
+                    <SectionEyebrowText text={eyebrow} />
                 </p>
             ) : null}
             <h2
+                data-slot="section-title"
+                // Hosts restyling titles by slot leave a caller-sized one alone.
+                data-sized={titleClassName ? '' : undefined}
                 className={cn(
                     'text-[32px] font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-[42px] sm:leading-[1.12]',
                     titleClassName,
@@ -67,8 +145,9 @@ export function SectionHeading({
             </h2>
             {description ? (
                 <p
+                    data-slot="section-description"
                     className={cn(
-                        'max-w-140 text-sm leading-6 text-muted-foreground',
+                        'text-sm leading-6 text-muted-foreground',
                         align === 'center' && 'mx-auto',
                         descriptionClassName,
                     )}
@@ -76,22 +155,23 @@ export function SectionHeading({
                     {description}
                 </p>
             ) : null}
+            {bottomCta}
         </div>
     );
 
-    if (!actions) {
+    if (!endCluster) {
         return <div className={className}>{heading}</div>;
     }
 
     return (
         <div
             className={cn(
-                'flex flex-wrap items-end justify-between gap-4',
+                'flex w-full flex-col items-stretch gap-6 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4',
                 className,
             )}
         >
             {heading}
-            <div className="flex shrink-0 gap-2">{actions}</div>
+            {endCluster}
         </div>
     );
 }

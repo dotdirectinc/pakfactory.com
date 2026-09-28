@@ -45,7 +45,7 @@ export const videoPost = defineType({
       rows: 3,
       group: 'content',
       description:
-        'Short summary for cards and VideoObject JSON-LD. Required for Google Rich Results.',
+        'Short summary for cards and video structured data. Required for Google rich results.',
     }),
     defineField(
       taggedImageField({
@@ -64,7 +64,7 @@ export const videoPost = defineType({
       title: 'Duration',
       type: 'string',
       group: 'content',
-      description: 'Display hint, e.g. "4:32". Used in VideoObject when parseable.',
+      description: 'Display hint (e.g. "4:32"). Used in structured data when it can be parsed.',
     }),
 
     // ── Source ───────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ export const videoPost = defineType({
       title: 'External URL',
       type: 'url',
       group: 'source',
-      description: 'Canonical watch URL (e.g. https://www.youtube.com/watch?v=…).',
+      description: 'The canonical watch URL (e.g. https://www.youtube.com/watch?v=abc123).',
       hidden: ({ document }) => document?.sourceType !== 'external',
       validation: (Rule) =>
         Rule.custom((value, context) => {
@@ -129,7 +129,7 @@ export const videoPost = defineType({
       title: 'Published date',
       type: 'datetime',
       group: 'publishing',
-      description: 'Used as uploadDate in VideoObject structured data.',
+      description: 'The video’s publish date. Used in its structured data.',
     }),
     defineField({
       name: 'channels',
@@ -139,7 +139,7 @@ export const videoPost = defineType({
       group: 'publishing',
       options: { list: CHANNEL_OPTIONS, layout: 'grid' },
       description:
-        'Which surfaces this video can appear on. Preset to the current workspace when created in a lens; edit in Global to share a video across surfaces. Optional — untagged videos are only listed in Global.',
+        'Which surfaces this video can appear on. Preset to the workspace you create it in; edit it in Global to share a video across surfaces. Optional — untagged videos are listed only in Global.',
     }),
     defineField({
       name: 'viewCount',
@@ -147,7 +147,7 @@ export const videoPost = defineType({
       type: 'number',
       group: 'publishing',
       description:
-        'View count used to rank this video in the Popular row (higher = more prominent). Manually set or analytics-synced.',
+        'A manual view count. Nothing on the blog ranks videos by it yet.',
       initialValue: 0,
       validation: (Rule) => Rule.min(0).integer(),
     }),

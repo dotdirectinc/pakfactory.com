@@ -10,6 +10,7 @@ import {
     SectionCarousel,
 } from '@/components/ui/section-carousel';
 import {SectionHeading} from '@/components/ui/section-heading';
+import {displayProductSku} from '@/lib/catalog/display-sku';
 import {
     sectionThemeShell,
     type SectionTheme,
@@ -59,7 +60,10 @@ export function ProductsRow({
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32 overflow-x-clip', shell.bandClass, className)}
         >
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection
+                borderBottom
+                innerClassName="py-16 sm:py-20"
+            >
                 <SectionCarousel
                     prevLabel="Previous products"
                     nextLabel="Next products"
@@ -80,7 +84,13 @@ export function ProductsRow({
                             <CatalogCard
                                 href={product.href}
                                 title={product.title}
-                                eyebrow={product.sku}
+                                eyebrow={displayProductSku(
+                                    product.sku,
+                                    product.href
+                                        .split('/')
+                                        .filter(Boolean)
+                                        .pop() ?? '',
+                                )}
                                 align="left"
                                 ctaLabel={null}
                                 imageSrc={product.imageSrc}

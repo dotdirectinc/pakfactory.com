@@ -5,6 +5,7 @@ import {Button} from '@pakfactory/ui/components/button';
 import {HighlightItem} from '@pakfactory/ui/components/highlight-item';
 import {cn} from '@pakfactory/ui/lib/utils';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import {SelectionSummaryDisplay} from '@/components/customization-builder/ui/selection-summary-display';
 import {
     getAnswer,
     isAnswerReady,
@@ -21,6 +22,7 @@ type CustomizationCategoryRailProps = {
     numbered?: boolean;
     /** Indices greater than this are locked (guided). Omit for workspace. */
     maxReachableIndex?: number;
+    dimensionAxisIds?: readonly string[];
     onSelect: (key: BuilderStepKey) => void;
     onClearCategory?: (key: BuilderStepKey) => void;
 };
@@ -31,6 +33,7 @@ export function CustomizationCategoryRail({
     state,
     numbered = false,
     maxReachableIndex,
+    dimensionAxisIds,
     onSelect,
     onClearCategory,
 }: CustomizationCategoryRailProps) {
@@ -45,12 +48,17 @@ export function CustomizationCategoryRail({
                     maxReachableIndex !== undefined &&
                     index > maxReachableIndex;
                 const answer = getAnswer(state, item.key);
-                const ready = isAnswerReady(answer);
-                const summary = summarizeAnswer(
+                const ready =
+                    item.kind === 'dimensions'
+                        ? isAnswerReady(answer, dimensionAxisIds)
+                        : isAnswerReady(answer);
+                const propertySummaries = state.propertySelectionSummaries;
+                const summaryText = summarizeAnswer(
                     answer,
                     CUSTOMIZATION_BUILDER_COPY.specialistToAdvise,
+                    {propertySummaries},
                 );
-                const showChip = ready && summary !== 'Not set';
+                const showChip = ready && summaryText !== 'Not set';
                 const showClear = Boolean(showChip && onClearCategory);
 
                 return (
@@ -104,14 +112,22 @@ export function CustomizationCategoryRail({
                                     <span className="text-sm">{item.label}</span>
                                 </div>
                                 {showChip ? (
-                                    <p
+                                    <div
                                         className={cn(
-                                            'max-w-full truncate text-xs font-normal text-muted-foreground',
+                                            'max-w-full text-xs font-normal text-muted-foreground',
                                             numbered && 'pl-6',
                                         )}
                                     >
-                                        {summary}
-                                    </p>
+                                        <SelectionSummaryDisplay
+                                            answer={answer}
+                                            specialistLabel={
+                                                CUSTOMIZATION_BUILDER_COPY.specialistToAdvise
+                                            }
+                                            propertySummaries={
+                                                propertySummaries
+                                            }
+                                        />
+                                    </div>
                                 ) : !numbered ? (
                                     <p className="line-clamp-2 text-xs text-muted-foreground">
                                         {CUSTOMIZATION_BUILDER_COPY.notSet}

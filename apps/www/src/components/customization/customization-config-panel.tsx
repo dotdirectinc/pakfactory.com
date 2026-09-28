@@ -5,11 +5,13 @@ import Link from 'next/link';
 import {Bookmark, Download, Search} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
+import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {
     initialPropertySelection,
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
+import {TypePropertyController} from '@/components/customization/type-property-controller';
 import {Icon} from '@/components/ui/icon';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
 import {
@@ -18,6 +20,7 @@ import {
 } from '@/lib/catalog/map-detail-to-property-fields';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import type {UiDescriptor} from '@pakfactory/ui/components/customization/types';
 
 type CustomizationConfigPanelProps = {
     detail: CustomizationDetail;
@@ -38,6 +41,15 @@ function fieldMatchesQuery(
     if (!q) return true;
     if (field.label.toLowerCase().includes(q)) return true;
     return field.options.some((o) => o.title.toLowerCase().includes(q));
+}
+
+/** Phase 1 smoke: Type-panel listbox via shared PropertyController. */
+function typePanelListbox(detail: CustomizationDetail): UiDescriptor {
+    return {
+        kind: 'listbox',
+        choices: [detail.title],
+        value: detail.title,
+    };
 }
 
 /**
@@ -116,7 +128,13 @@ export function CustomizationConfigPanel({
                             </p>
                         ) : null}
                     </div>
-                ) : null}
+                ) : (
+                    <TypePropertyController
+                        label={detail.typeTitle ?? 'Option'}
+                        ui={typePanelListbox(detail)}
+                        controlId={`type-${detail.slug}`}
+                    />
+                )}
             </div>
 
             {fields.length > 0 ? (
@@ -172,6 +190,36 @@ export function CustomizationConfigPanel({
                         Download spec sheet
                     </Button>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Loading chrome for {@link CustomizationConfigPanel} — same dashed config
+ * band and CTA stack spacing as the live panel.
+ */
+export function CustomizationConfigPanelSkeleton() {
+    return (
+        <div
+            className="mt-8 flex flex-col gap-6"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="sr-only">Loading configuration</span>
+            <div
+                className="flex flex-col gap-4 border-t border-dashed border-border pt-4"
+                aria-hidden
+            >
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-10 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+            </div>
+            <div className="flex flex-col gap-2" aria-hidden>
+                <Skeleton className="h-12 w-full rounded-md" />
+                <Skeleton className="h-12 w-full rounded-md" />
+                <Skeleton className="ml-auto h-4 w-36" />
             </div>
         </div>
     );

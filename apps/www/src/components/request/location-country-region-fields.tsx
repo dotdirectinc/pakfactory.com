@@ -24,7 +24,7 @@ import {
     listRegions,
     regionFieldLabel,
     regionLabel,
-} from '@pakfactory/geo';
+} from '@pakfactory/request/geo';
 import type {ShippingAddress} from '@/lib/request/request.storage';
 
 const TRIGGER_CLASS =

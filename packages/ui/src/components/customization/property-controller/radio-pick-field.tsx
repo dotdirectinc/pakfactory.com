@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "../../../lib/utils";
-import { DimsInputs } from "./dims-field";
-import { chipClass, inputClass } from "./field-styles";
+import {useState} from "react";
+import {cn} from "../../../lib/utils";
+import {DimensionInputs} from "./dimension-field";
+import {chipClass, inputClass} from "./field-styles";
 
 export function RadioPickField({
   choices,
@@ -65,7 +65,7 @@ export function RadioPickField({
         </select>
       </div>
       <div className={cn("mt-2", value === "Custom" ? "block" : "hidden")}>
-        <DimsInputs unit={unit} />
+        <DimensionInputs unit={unit} />
       </div>
     </>
   );

@@ -19,7 +19,7 @@ export const author = defineType({
       title: 'Full name',
       type: 'string',
       group: 'profile',
-      description: 'Full name as it appears in bylines (→ Person.name).',
+      description: 'Full name as it appears in bylines.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -28,7 +28,7 @@ export const author = defineType({
       type: 'slug',
       group: 'profile',
       options: { source: 'name' },
-      description: 'The profile-page URL: /blog/author/{slug}.',
+      description: 'The profile-page URL: /blog/author/<slug>.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -45,7 +45,7 @@ export const author = defineType({
       },
       initialValue: 'staff',
       description:
-        'Staff → worksFor = PakFactory. Guest → bylined as "Guest contributor"; worksFor is omitted.',
+        'Staff authors are credited to PakFactory in structured data. Guest authors are not.',
       validation: (Rule) => Rule.required(),
     }),
     defineField(taggedImageField({
@@ -55,7 +55,7 @@ export const author = defineType({
       group: 'profile',
       mediaTags: [MEDIA_TAG.blog],
       options: { hotspot: true },
-      description: 'Headshot (→ Person.image). Square, at least 800×800px, face centered.',
+      description: 'Headshot. Square, at least 800×800px, face centered.',
       validation: (Rule) => Rule.required(),
     })),
     defineField({
@@ -63,7 +63,7 @@ export const author = defineType({
       title: 'Job title',
       type: 'string',
       group: 'profile',
-      description: 'Real role at PakFactory, 2–5 words (→ Person.jobTitle).',
+      description: 'Real role at PakFactory — a few words, up to 50 characters.',
       validation: (Rule) => Rule.required().max(50),
     }),
     defineField({
@@ -72,7 +72,9 @@ export const author = defineType({
       type: 'string',
       group: 'profile',
       description:
-        'One number-driven line, e.g. "12+ years in packaging engineering · 600+ custom projects shipped".',
+        
+          'One number-driven line (e.g. "12+ years in packaging engineering · 600+ custom ' +
+          'projects shipped").',
     }),
     defineField({
       name: 'shortBio',
@@ -89,7 +91,7 @@ export const author = defineType({
       type: 'array',
       group: 'profile',
       description:
-        'Author detail page bio (~120–250 words, third person). Credentials and notable work woven in (→ Person.description).',
+        'Author detail page bio, 120–250 words, third person. Weave in credentials and notable work.',
       of: [{ type: 'block' }],
       validation: (Rule) => Rule.required(),
     }),

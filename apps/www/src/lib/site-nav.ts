@@ -1,4 +1,3 @@
-import type {PrimaryNavItem} from '@pakfactory/components/layout/primary-nav-types';
 import type {SiteNavCta, SiteNavItem} from '@pakfactory/ui/components/site-nav';
 import type {WebsiteNavigationDoc} from '@pakfactory/sanity/queries';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
@@ -10,14 +9,6 @@ export type WwwSiteNavModel = {
   cta: SiteNavCta;
   signIn: SiteNavCta;
 };
-
-export function toMarketingNavItems(items: SiteNavItem[]): PrimaryNavItem[] {
-  return items.map((item) => ({
-    key: item.key,
-    label: item.label,
-    href: item.href ?? WWW_ROUTES.customizations,
-  }));
-}
 
 const LABEL_ROUTE_FALLBACK: Record<string, string> = {
   product: WWW_ROUTES.products,

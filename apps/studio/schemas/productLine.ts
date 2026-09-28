@@ -16,6 +16,10 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
  * Declaring is not inheriting: the Line declares WHICH properties its products
  * state (`properties`), never their values — each product still states its own.
  *
+ * Layout template: customer-facing lines select a `productLinePage` layout version
+ * via `template` (Main Website → Product Pages → Product Line Pages). Hero shell
+ * and body section order live on that layout doc — not on this line.
+ *
  * The styles grid is DERIVED, not listed. Every Style carries a required
  * `productLine` reference (97/97 in production), so membership is a query and the
  * Line never gates it.
@@ -38,7 +42,14 @@ export const productLine = defineType({
   title: 'Product Line',
   type: 'document',
   icon: PackageIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
+  groups: groupsFor([
+    'content',
+    'template',
+    'categorization',
+    'sections',
+    'seo',
+    'social',
+  ]),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -46,7 +57,7 @@ export const productLine = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'The canonical name — "Rigid Boxes". Required, always presentable; renders wherever H1 and Short name are empty.',
+      description: 'The canonical name (e.g. "Rigid Boxes"). Must be unique across product lines.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // One naming convention across Line / Style / Solution / Product: Title is
@@ -67,7 +78,7 @@ export const productLine = defineType({
       type: 'string',
       group: GROUPS.content,
       description:
-        'A shorter or more customer-facing version of the Title, for cards, listings and nav. Leave empty to use the Title.',
+        'A shorter label for cards, listings and nav. Leave empty to use the Title.',
     }),
     defineField({
       name: 'slug',
@@ -75,7 +86,7 @@ export const productLine = defineType({
       type: 'slug',
       group: GROUPS.content,
       options: { source: 'title' },
-      description: 'The /products/<slug> segment. Unique across Product Line AND Product — both sit one segment under /products/.',
+      description: 'The /products/<slug> segment. Must be unique across product lines and products — both sit one segment under /products/.',
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(PRODUCT_URL_TYPES)),
     }),
     // Renamed from `intro` (PROD-2454): one concept, one name across
@@ -87,7 +98,7 @@ export const productLine = defineType({
       type: 'array',
       group: GROUPS.content,
       description:
-        'The full description of this line — what it covers and who it is for. Renders on the line landing page. Keep it evergreen: no countable facts, those belong on the products.',
+        'What this line covers and who it is for. Keep it evergreen — no countable facts, those belong on the products.',
       of: [
         {
           type: 'block',
@@ -112,8 +123,34 @@ export const productLine = defineType({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'The one image that represents this line — the landing hero, catalog cards, nav and the social fallback.',
+      description:
+        'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback. Leave empty to use the hero placeholder.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
+    })),
+    // Desktop scroll-scrub hero (MP4). Role name mirrors Featured image — when set,
+    // the landing enables the scroll animation; mobile / reduced-motion keep the image.
+    defineField({
+      name: 'featuredVideo',
+      title: 'Featured video',
+      type: 'file',
+      group: GROUPS.content,
+      options: {accept: 'video/*'},
+      description: 'Optional desktop scroll-scrub MP4. Mobile and reduced-motion keep Featured image.',
+    }),
+    // Featured icon on the product-line landing. Stack: above the H1.
+    // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.
+    // Schema field name stays `kitMark` (no content migration). Hero shell
+    // (stack vs bottomBar) lives on the selected Product Line Page layout.
+    defineField(taggedImageField({
+      name: 'kitMark',
+      title: 'Featured icon',
+      type: 'image',
+      group: GROUPS.content,
+      mediaTags: [MEDIA_TAG.product],
+      options: { hotspot: true },
+      description:
+        'Icon on the landing hero. Stack layout: above the H1. Bottom bar layout: bottom-left brand signal. Leave empty to use the placeholder. Which shell applies comes from the Template tab.',
+      fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the icon for screen readers and SEO.' })],
     })),
     defineField({
       name: 'media',
@@ -141,7 +178,7 @@ export const productLine = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — so a retired line can say so.',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -158,8 +195,31 @@ export const productLine = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = this document exists only to be referenced — no page, no route, no nav, no listing. That is how the line/style scaffolding an inspiration product needs as a `basedOn` ancestor stays published and referenceable without ever being reachable by a visitor. Not the same question as Status: this one asks whether a route exists at all.',
+        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
+    }),
+
+    // ─── TEMPLATE (layout version) ────────────────────────────────────────────
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{type: 'productLinePage'}],
+      options: {disableNew: true},
+      description:
+        'Pick a Product Line Page layout version — hero shell plus section order and ' +
+        'default headings. Manage layouts under Main Website → Product Pages → ' +
+        'Product Line Pages. Band content stays on the Sections tab, matched by key.',
+      hidden: ({document}) => document?.customerFacing !== true,
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const doc = ctx.document as {customerFacing?: boolean} | undefined
+          if (doc?.customerFacing !== true) return true
+          return value
+            ? true
+            : 'Customer-facing product lines must select a Product Line Page layout'
+        }),
     }),
 
     // ─── CATEGORIZATION (declarations + references out) ───────────────────────
@@ -169,7 +229,7 @@ export const productLine = defineType({
       type: 'array',
       group: GROUPS.categorization,
       description:
-        'Declares which properties products in this line state — never their values. `required` flags the completeness check (a corrugated product with no flute is flagged). Mirrors how a Customization Type declares its own.',
+        'A list of property + Required pairs. Declares which properties products in this line can state — never their values; each product states its own. This list is exactly what a product\'s Properties picker offers, so a product cannot state anything left out of it. Required on means every product in the line must state that property; Required off means they may state it but don\'t have to.',
       of: [
         {
           type: 'object',
@@ -187,7 +247,8 @@ export const productLine = defineType({
               name: 'required',
               title: 'Required',
               type: 'boolean',
-              description: 'Products in this line must state a value for this property.',
+              description:
+                'On — every product in this line must state a value for this property, and any that doesn\'t shows a warning. Off — a product may state it or leave it out, and nothing is flagged. It\'s a warning rather than a block because these products arrive from the product data source, so an editor often can\'t fix what the sync sent.',
               initialValue: false,
             }),
           ],
@@ -205,7 +266,7 @@ export const productLine = defineType({
       title: 'Expertise',
       type: 'array',
       group: GROUPS.categorization,
-      description: '2–3, curated — the expertise stages commonly bought alongside this line.',
+      description: 'Up to 3 — the expertise stages commonly bought alongside this line.',
       of: [{ type: 'reference', to: [{ type: 'expertiseStage' }], options: { disableNew: true } }],
       validation: (Rule) => Rule.max(3).unique(),
     }),
@@ -214,7 +275,7 @@ export const productLine = defineType({
       title: 'Solutions',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'The verticals this line serves.',
+      description: 'Which solutions this line serves — industry, channel, focus or use case.',
       of: [{ type: 'reference', to: [{ type: 'solution' }], options: { disableNew: true } }],
     }),
     defineField({
@@ -222,7 +283,7 @@ export const productLine = defineType({
       title: 'Featured case studies',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'Curated override — empty derives the newest studies referencing this line.',
+      description: 'Curated override. Empty falls back to the newest studies referencing this line.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     defineField({
@@ -230,7 +291,7 @@ export const productLine = defineType({
       title: 'Related lines',
       type: 'array',
       group: GROUPS.categorization,
-      description: '"Customers also considered" — sibling lines.',
+      description: 'Sibling lines to suggest as alternatives.',
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
@@ -241,8 +302,8 @@ export const productLine = defineType({
       title: 'Meta title',
       type: 'string',
       group: GROUPS.seo,
-      description: 'Overrides the browser/search title. Aim for ≤60 characters.',
-      validation: (Rule) => Rule.max(60),
+      description: 'Overrides the browser and search title. Best kept under 60 characters.',
+      validation: (Rule) => Rule.max(60).warning('Best kept under 60 characters.'),
     }),
     defineField({
       name: 'metaDescription',
@@ -250,8 +311,8 @@ export const productLine = defineType({
       type: 'text',
       rows: 3,
       group: GROUPS.seo,
-      description: 'The search-result snippet. Aim for ≤160 characters.',
-      validation: (Rule) => Rule.max(160),
+      description: 'The snippet shown under the title in search results. Best kept under 160 characters.',
+      validation: (Rule) => Rule.max(160).warning('Best kept under 160 characters.'),
     }),
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),

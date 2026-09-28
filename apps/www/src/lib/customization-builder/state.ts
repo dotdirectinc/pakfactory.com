@@ -1,9 +1,5 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
-import {compareCategorySlugs} from '@/lib/catalog/customization-category-policy';
-import {
-    fromOfferOption,
-    type OfferOption,
-} from '@/lib/catalog/customization-availability';
+import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
@@ -12,6 +8,7 @@ import {
     dimensionEntryNoteKey,
     type BuilderOption,
     type BuilderStep,
+    type BuilderCardinality,
     type BuilderStepKey,
     type BuilderType,
     type CatalogOptionLike,
@@ -19,6 +16,8 @@ import {
     type DimensionFace,
     type DimensionsValue,
     type FaceMeasurements,
+    type PropertySelectionSummaryItem,
+    type SelectionValue,
     type StepAnswer,
 } from '@/lib/customization-builder/types';
 
@@ -39,7 +38,14 @@ export function createEmptyBuilderState(): CustomizationBuilderState {
         guidedComplete: false,
         entryNotes: {},
         propertySelections: {},
+        propertySelectionSummaries: {},
     };
+}
+
+/** The options picked in a selection step, in the order they were picked. */
+export function answerSelections(answer: StepAnswer | undefined): SelectionValue[] {
+    if (answer?.status === 'set' && 'selections' in answer) return answer.selections;
+    return [];
 }
 
 export function getAnswer(
@@ -49,25 +55,27 @@ export function getAnswer(
     return state.answers[key] ?? {status: 'unset'};
 }
 
-function faceIsFilled(face: FaceMeasurements): boolean {
-    return Boolean(
-        face.length.trim() && face.width.trim() && face.height.trim(),
-    );
+function faceIsFilled(
+    face: FaceMeasurements,
+    axisIds: readonly string[],
+): boolean {
+    if (axisIds.length === 0) return true;
+    return axisIds.every((id) => Boolean(face[id]?.trim()));
 }
 
-export function isAnswerReady(answer: StepAnswer | undefined): boolean {
+export function isAnswerReady(
+    answer: StepAnswer | undefined,
+    axisIds: readonly string[] = ['length', 'width', 'height'],
+): boolean {
     if (!answer || answer.status === 'unset') return false;
     if (answer.status === 'not-sure') return true;
     if ('dimensions' in answer) {
         return (
-            faceIsFilled(answer.dimensions.external) ||
-            faceIsFilled(answer.dimensions.internal)
+            faceIsFilled(answer.dimensions.external, axisIds) ||
+            faceIsFilled(answer.dimensions.internal, axisIds)
         );
     }
-    if ('selection' in answer) {
-        return Boolean(answer.selection.optionId);
-    }
-    return false;
+    return answerSelections(answer).length > 0;
 }
 
 /**
@@ -78,10 +86,15 @@ export function isAnswerReady(answer: StepAnswer | undefined): boolean {
 export function firstUnresolvedStepIndex(
     state: CustomizationBuilderState,
     steps: BuilderStep[],
+    dimensionAxisIds?: readonly string[],
 ): number {
-    const index = steps.findIndex(
-        (step) => !isAnswerReady(getAnswer(state, step.key)),
-    );
+    const index = steps.findIndex((step) => {
+        const answer = getAnswer(state, step.key);
+        if (step.kind === 'dimensions') {
+            return !isAnswerReady(answer, dimensionAxisIds);
+        }
+        return !isAnswerReady(answer);
+    });
     return index === -1 ? steps.length : index;
 }
 
@@ -100,41 +113,83 @@ export function shouldEnterGuided(state: CustomizationBuilderState): boolean {
 export function isBuilderReady(
     state: CustomizationBuilderState,
     steps: BuilderStep[],
+    dimensionAxisIds?: readonly string[],
 ): boolean {
     if (steps.length === 0) return true;
-    return steps.every((step) => isAnswerReady(getAnswer(state, step.key)));
+    return steps.every((step) => {
+        const answer = getAnswer(state, step.key);
+        if (step.kind === 'dimensions') {
+            return isAnswerReady(answer, dimensionAxisIds);
+        }
+        return isAnswerReady(answer);
+    });
 }
 
 export function formatFaceSummary(
     face: FaceMeasurements,
     unit: DimensionsValue['unit'],
+    axisIds?: readonly string[],
 ): string {
-    const l = face.length.trim();
-    const w = face.width.trim();
-    const h = face.height.trim();
-    if (!l && !w && !h) return '';
-    return `${l || '—'} × ${w || '—'} × ${h || '—'} ${unit}`;
+    const ids =
+        axisIds && axisIds.length > 0
+            ? axisIds
+            : Object.keys(face).filter((id) => face[id]?.trim());
+    if (ids.length === 0) return '';
+    const parts = ids.map((id) => face[id]?.trim() || '—');
+    if (parts.every((p) => p === '—')) return '';
+    return `${parts.join(' × ')} ${unit}`;
 }
 
-export function formatDimensionsSummary(value: DimensionsValue): string {
-    const ext = formatFaceSummary(value.external, value.unit);
-    const inn = formatFaceSummary(value.internal, value.unit);
+export function formatDimensionsSummary(
+    value: DimensionsValue,
+    axisIds?: readonly string[],
+): string {
+    const ext = formatFaceSummary(value.external, value.unit, axisIds);
+    const inn = formatFaceSummary(value.internal, value.unit, axisIds);
     if (ext && inn) return `Ext ${ext} · Int ${inn}`;
     if (ext) return `Ext ${ext}`;
     if (inn) return `Int ${inn}`;
     return '';
 }
 
+/** Option id → its Property summary items (`state.propertySelectionSummaries`). */
+export type PropertySummariesByOption = Partial<
+    Record<string, PropertySelectionSummaryItem[]>
+>;
+
+/** One picked option with its visible Property chips: `Soft Touch · Matte`. */
+export function summarizeSelection(
+    selection: SelectionValue,
+    propertySummaries?: PropertySummariesByOption,
+): string {
+    const chips = visiblePropertySummaries(
+        propertySummaries?.[selection.optionId],
+    ).filter((item) => item.kind === 'chip');
+    return [selection.label, ...chips.map((item) => item.label)].join(' · ');
+}
+
 export function summarizeAnswer(
     answer: StepAnswer,
     specialistLabel: string,
+    options?: {propertySummaries?: PropertySummariesByOption},
 ): string {
     if (answer.status === 'unset') return 'Not set';
     if (answer.status === 'not-sure') return specialistLabel;
     if ('dimensions' in answer) {
         return formatDimensionsSummary(answer.dimensions) || 'Not set';
     }
-    return answer.selection.label;
+    const picks = answerSelections(answer);
+    if (picks.length === 0) return 'Not set';
+    return picks
+        .map((pick) => summarizeSelection(pick, options?.propertySummaries))
+        .join(', ');
+}
+
+/** Visible (non-consultation) summary items for UI. */
+export function visiblePropertySummaries(
+    items: PropertySelectionSummaryItem[] | undefined,
+): PropertySelectionSummaryItem[] {
+    return (items ?? []).filter((item) => !item.omitFromSummary);
 }
 
 function dimensionsStep(): BuilderStep {
@@ -163,14 +218,6 @@ function dimensionsStep(): BuilderStep {
         ],
         options: [],
     };
-}
-
-/**
- * Build guided/workspace steps from a resolved + expanded offer.
- * Categories follow www category policy order (not Studio category.order).
- */
-export function buildStepsFromOffer(offer: OfferOption[]): BuilderStep[] {
-    return buildStepsFromCatalog(offer.map(fromOfferOption));
 }
 
 /**
@@ -305,13 +352,19 @@ export function clearStep(
     const previous = getAnswer(state, key);
     const entryNotes = {...(state.entryNotes ?? {})};
     const propertySelections = {...(state.propertySelections ?? {})};
+    const propertySelectionSummaries = {
+        ...(state.propertySelectionSummaries ?? {}),
+    };
 
     if (key === DIMENSIONS_STEP_KEY) {
         delete entryNotes[dimensionEntryNoteKey('external')];
         delete entryNotes[dimensionEntryNoteKey('internal')];
-    } else if (previous.status === 'set' && 'selection' in previous) {
-        delete entryNotes[previous.selection.optionId];
-        delete propertySelections[previous.selection.optionId];
+    } else {
+        for (const pick of answerSelections(previous)) {
+            delete entryNotes[pick.optionId];
+            delete propertySelections[pick.optionId];
+            delete propertySelectionSummaries[pick.optionId];
+        }
     }
 
     return {
@@ -322,19 +375,113 @@ export function clearStep(
         },
         entryNotes,
         propertySelections,
+        propertySelectionSummaries,
     };
+}
+
+/** Drop the notes and Property picks that belonged to options no longer selected. */
+function withoutOptionDetails(
+    state: CustomizationBuilderState,
+    optionIds: string[],
+): CustomizationBuilderState {
+    if (optionIds.length === 0) return state;
+    const entryNotes = {...(state.entryNotes ?? {})};
+    const propertySelections = {...(state.propertySelections ?? {})};
+    const propertySelectionSummaries = {
+        ...(state.propertySelectionSummaries ?? {}),
+    };
+    for (const id of optionIds) {
+        delete entryNotes[id];
+        delete propertySelections[id];
+        delete propertySelectionSummaries[id];
+    }
+    return {...state, entryNotes, propertySelections, propertySelectionSummaries};
+}
+
+function withSelections(
+    state: CustomizationBuilderState,
+    key: BuilderStepKey,
+    selections: SelectionValue[],
+): CustomizationBuilderState {
+    return patchAnswer(
+        state,
+        key,
+        selections.length > 0 ? {status: 'set', selections} : {status: 'unset'},
+    );
+}
+
+/**
+ * Pick or un-pick one option in a category step, honouring its Type's `customerSelects`:
+ * picking a second option of a `one` Type replaces the first (a box has one board); a `many`
+ * Type keeps both (Embossing AND Debossing). Other Types in the category are untouched.
+ */
+export function toggleSelection(
+    state: CustomizationBuilderState,
+    key: BuilderStepKey,
+    pick: SelectionValue,
+    cardinality: BuilderCardinality,
+): CustomizationBuilderState {
+    const current = answerSelections(getAnswer(state, key));
+    if (current.some((item) => item.optionId === pick.optionId)) {
+        return withoutOptionDetails(
+            withSelections(
+                state,
+                key,
+                current.filter((item) => item.optionId !== pick.optionId),
+            ),
+            [pick.optionId],
+        );
+    }
+    const replaced =
+        cardinality === 'one'
+            ? current.filter((item) => item.typeId === pick.typeId)
+            : [];
+    const kept = current.filter((item) => !replaced.includes(item));
+    return withoutOptionDetails(
+        withSelections(state, key, [...kept, pick]),
+        replaced.map((item) => item.optionId),
+    );
+}
+
+/**
+ * Remove picked options wherever they are (another answer made them impossible). A step left
+ * with no picks becomes unset. Returns `state` itself when nothing was picked.
+ */
+export function removeSelections(
+    state: CustomizationBuilderState,
+    optionIds: ReadonlySet<string>,
+): CustomizationBuilderState {
+    let next = state;
+    const removed: string[] = [];
+    for (const [key, answer] of Object.entries(state.answers)) {
+        const picks = answerSelections(answer);
+        const kept = picks.filter((item) => !optionIds.has(item.optionId));
+        if (kept.length === picks.length) continue;
+        removed.push(
+            ...picks
+                .filter((item) => optionIds.has(item.optionId))
+                .map((item) => item.optionId),
+        );
+        next = withSelections(next, key, kept);
+    }
+    return withoutOptionDetails(next, removed);
 }
 
 export function patchPropertySelections(
     state: CustomizationBuilderState,
     optionId: string,
     selections: Record<string, string[]>,
+    summaries: PropertySelectionSummaryItem[] = [],
 ): CustomizationBuilderState {
     return {
         ...state,
         propertySelections: {
             ...(state.propertySelections ?? {}),
             [optionId]: selections,
+        },
+        propertySelectionSummaries: {
+            ...(state.propertySelectionSummaries ?? {}),
+            [optionId]: summaries,
         },
     };
 }
@@ -410,12 +557,8 @@ export function toRequestCustomizations(
             continue;
         }
 
-        if ('selection' in answer) {
-            out.push({
-                id: answer.selection.optionId,
-                label: answer.selection.label,
-                category,
-            });
+        for (const pick of answerSelections(answer)) {
+            out.push({id: pick.optionId, label: pick.label, category});
         }
     }
 
@@ -462,22 +605,62 @@ export function parseBuilderState(value: unknown): CustomizationBuilderState {
         }
     }
 
+    const propertySelectionSummaries: NonNullable<
+        CustomizationBuilderState['propertySelectionSummaries']
+    > = {};
+    if (
+        raw.propertySelectionSummaries &&
+        typeof raw.propertySelectionSummaries === 'object'
+    ) {
+        for (const [optionId, items] of Object.entries(
+            raw.propertySelectionSummaries,
+        )) {
+            if (!Array.isArray(items)) continue;
+            propertySelectionSummaries[optionId] = items
+                .filter(
+                    (item): item is PropertySelectionSummaryItem =>
+                        Boolean(item) &&
+                        typeof item === 'object' &&
+                        (item.kind === 'swatch' || item.kind === 'chip') &&
+                        typeof item.label === 'string',
+                )
+                .map((item) => ({
+                    kind: item.kind,
+                    label: item.label,
+                    omitFromSummary: Boolean(item.omitFromSummary),
+                    ...(typeof item.color === 'string'
+                        ? {color: item.color}
+                        : {}),
+                    ...(typeof item.imageUrl === 'string'
+                        ? {imageUrl: item.imageUrl}
+                        : {}),
+                }));
+        }
+    }
+
     return {
         answers,
         guidedComplete: Boolean(raw.guidedComplete),
         entryNotes,
         propertySelections,
+        propertySelectionSummaries,
     };
 }
 
 function parseFace(value: unknown): FaceMeasurements {
     if (!value || typeof value !== 'object') return {...EMPTY_FACE};
-    const raw = value as FaceMeasurements;
-    return {
-        length: String(raw.length ?? ''),
-        width: String(raw.width ?? ''),
-        height: String(raw.height ?? ''),
-    };
+    const raw = value as Record<string, unknown>;
+    const out: FaceMeasurements = {};
+    for (const [key, rawValue] of Object.entries(raw)) {
+        if (typeof rawValue === 'string' || typeof rawValue === 'number') {
+            out[key] = String(rawValue);
+        }
+    }
+    // Legacy faces always had length/width/height.
+    if (!('length' in out) && !('width' in out) && !('height' in out)) {
+        return {...EMPTY_FACE, ...out};
+    }
+    return out;
 }
 
 function parseAnswer(value: unknown): StepAnswer | null {
@@ -513,19 +696,31 @@ function parseAnswer(value: unknown): StepAnswer | null {
             },
         };
     }
-    if ('selection' in raw && raw.selection) {
-        const optionId = String(raw.selection.optionId ?? '');
-        const typeId = String(raw.selection.typeId ?? '');
-        return {
-            status: 'set',
-            selection: {
-                typeId,
-                optionId,
-                label: String(raw.selection.label ?? ''),
-            },
-        };
-    }
+    // Lines saved before PROD-2556 hold one `selection` per category.
+    const legacy = (raw as {selection?: unknown}).selection;
+    const list =
+        'selections' in raw && Array.isArray(raw.selections)
+            ? raw.selections
+            : legacy
+              ? [legacy]
+              : [];
+    const selections = list
+        .map(parseSelection)
+        .filter((item): item is SelectionValue => item !== null);
+    if (selections.length > 0) return {status: 'set', selections};
     return null;
+}
+
+function parseSelection(value: unknown): SelectionValue | null {
+    if (!value || typeof value !== 'object') return null;
+    const raw = value as Record<string, unknown>;
+    const optionId = String(raw.optionId ?? '');
+    if (!optionId) return null;
+    return {
+        typeId: String(raw.typeId ?? ''),
+        optionId,
+        label: String(raw.label ?? ''),
+    };
 }
 
 export function seedFromCustomizations(
@@ -540,19 +735,31 @@ export function seedFromCustomizations(
         ? customizations.filter((item) => item.preselected === true)
         : customizations;
 
-    const answers: CustomizationBuilderState['answers'] = {};
+    let seeded = createEmptyBuilderState();
     for (const item of toSeed) {
         const key = item.category?.trim();
         if (!key) continue;
-        answers[key] = {
-            status: 'set',
-            selection: {
-                typeId: item.typeId?.trim() || '',
-                optionId: item.id,
-                label: item.label,
-            },
+        const pick = {
+            typeId: item.typeId?.trim() || '',
+            optionId: item.id,
+            label: item.label,
         };
+        const already = answerSelections(getAnswer(seeded, key));
+        if (already.some((existing) => existing.optionId === pick.optionId)) continue;
+        // A `one` Type keeps its first seeded option rather than the last one listed.
+        const cardinality =
+            item.customerSelects === 'many' || item.cardinality === 'many'
+                ? 'many'
+                : 'one';
+        if (
+            cardinality === 'one' &&
+            already.some((existing) => existing.typeId === pick.typeId)
+        ) {
+            continue;
+        }
+        seeded = toggleSelection(seeded, key, pick, cardinality);
     }
+    const answers = seeded.answers;
 
     const configured = Object.keys(answers).length > 0;
     return {
@@ -560,26 +767,34 @@ export function seedFromCustomizations(
         guidedComplete: configured,
         entryNotes: {},
         propertySelections: {},
+        propertySelectionSummaries: {},
     };
 }
 
-export function emptyDimensions(): DimensionsValue {
+export function emptyFace(axisIds?: readonly string[]): FaceMeasurements {
+    if (!axisIds?.length) return {...EMPTY_FACE};
+    return Object.fromEntries(axisIds.map((id) => [id, '']));
+}
+
+export function emptyDimensions(
+    axisIds?: readonly string[],
+): DimensionsValue {
+    const face = emptyFace(axisIds);
     return {
         unit: EMPTY_DIMENSIONS.unit,
-        external: {...EMPTY_FACE},
-        internal: {...EMPTY_FACE},
+        external: {...face},
+        internal: {...face},
     };
 }
 
-export function emptyFace(): FaceMeasurements {
-    return {...EMPTY_FACE};
-}
-
-export function getDimensionsValue(answer: StepAnswer): DimensionsValue {
+export function getDimensionsValue(
+    answer: StepAnswer,
+    axisIds?: readonly string[],
+): DimensionsValue {
     if (answer.status === 'set' && 'dimensions' in answer) {
         return answer.dimensions;
     }
-    return emptyDimensions();
+    return emptyDimensions(axisIds);
 }
 
 export function patchFace(

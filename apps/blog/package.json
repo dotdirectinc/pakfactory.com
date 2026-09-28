@@ -13,12 +13,12 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
     "@next/third-parties": "^16.2.10",
-    "@pakfactory/components": "workspace:*",
     "@pakfactory/redirects": "workspace:*",
     "@pakfactory/sanity": "workspace:*",
     "@pakfactory/seo": "workspace:*",
     "@pakfactory/sitemap": "workspace:*",
     "@pakfactory/ui": "workspace:*",
+    "@pakfactory/utilities": "workspace:*",
     "@portabletext/react": "^6.0.3",
     "@portabletext/types": "^4.0.2",
     "@sanity/image-url": "^2.1.1",

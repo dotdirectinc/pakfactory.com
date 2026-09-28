@@ -12,14 +12,12 @@ import {
 import {CustomizationGuidedView} from '@/components/customization-builder/customization-guided-view';
 import {CustomizationWorkspaceView} from '@/components/customization-builder/customization-workspace-view';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
-import {
-    filterOfferBySelections,
-    fromOfferOption,
-    resolveOffer,
-} from '@/lib/catalog/customization-availability';
-import type {CustomizationOption, ProductDimensionRange} from '@/lib/catalog/types';
+import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
+import type {ProductDimensionRange} from '@/lib/catalog/types';
 import type {CatalogOptionLike} from '@/lib/customization-builder';
+import {narrowByRules} from '@/lib/customization-builder/rules-narrowing';
 import {
+    answerSelections,
     buildStepsFromCatalog,
     clearStep,
     createEmptyBuilderState,
@@ -29,15 +27,19 @@ import {
     patchAnswer,
     patchEntryNote,
     patchPropertySelections,
+    removeSelections,
     shouldEnterGuided,
+    toggleSelection,
     type BuilderMode,
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
+import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
 
 export type CustomizationBuilderProps = {
     open: boolean;
@@ -49,50 +51,37 @@ export type CustomizationBuilderProps = {
     productTitle?: string;
     /** When opening, focus this step (e.g. from overview summary row). */
     initialStepKey?: BuilderStepKey;
-    /** Sanity product dimensionRange in mm (L/W/D). */
+    /** Sanity product.dimensionInput shape key. */
+    dimensionInput?: string;
+    /** Sanity product dimensionRange in mm. */
     dimensionRange?: ProductDimensionRange;
+    /**
+     * The product's customization rules (PROD-2556). Narrows each step to what the other
+     * answers still allow. Absent (production before its rebuild, or an older request
+     * line) — the options are listed as given, with no narrowing.
+     */
+    customizationRules?: CustomizationRulesSnapshot | null;
 };
+
+/** The pick the detail panel reopens on: the most recent one in the step. */
+function lastPick(step: BuilderStep | undefined, state: CustomizationBuilderState) {
+    if (!step || step.kind !== 'selection') return undefined;
+    return answerSelections(getAnswer(state, step.key)).at(-1);
+}
 
 function restoreTypeId(
     step: BuilderStep | undefined,
     state: CustomizationBuilderState,
 ): string | null {
-    if (!step) return null;
-    const answer = getAnswer(state, step.key);
-    if (step.kind === 'selection') {
-        if (answer.status === 'set' && 'selection' in answer) {
-            return answer.selection.typeId || null;
-        }
-        return null;
-    }
     // Dimensions: never preselect External/Internal from answer alone.
-    return null;
+    return lastPick(step, state)?.typeId || null;
 }
 
 function restoreOptionId(
     step: BuilderStep | undefined,
     state: CustomizationBuilderState,
 ): string | null {
-    if (!step || step.kind !== 'selection') return null;
-    const answer = getAnswer(state, step.key);
-    if (answer.status === 'set' && 'selection' in answer) {
-        return answer.selection.optionId || null;
-    }
-    return null;
-}
-
-function selectionAnswersFromState(state: CustomizationBuilderState) {
-    const out: Record<string, {optionId?: string; typeId?: string}> = {};
-    for (const [key, answer] of Object.entries(state.answers)) {
-        if (!answer || answer.status !== 'set' || !('selection' in answer)) {
-            continue;
-        }
-        out[key] = {
-            optionId: answer.selection.optionId,
-            typeId: answer.selection.typeId,
-        };
-    }
-    return out;
+    return lastPick(step, state)?.optionId || null;
 }
 
 export function CustomizationBuilder({
@@ -103,38 +92,45 @@ export function CustomizationBuilder({
     onChange,
     productTitle,
     initialStepKey,
+    dimensionInput,
     dimensionRange,
+    customizationRules,
 }: CustomizationBuilderProps) {
-    const filteredCustomizations = useMemo(() => {
-        const asOptions = availableCustomizations as CustomizationOption[];
-        const offer = resolveOffer(asOptions);
-        const {offer: filtered} = filterOfferBySelections(
-            offer,
-            selectionAnswersFromState(value),
-        );
-        return filtered.map(fromOfferOption);
-    }, [availableCustomizations, value.answers]);
-
-    const steps = useMemo(
-        () => buildStepsFromCatalog(filteredCustomizations),
-        [filteredCustomizations],
+    const dimensionAxisIds = useMemo(
+        () =>
+            resolveProductDims(dimensionInput ?? 'rectangular', dimensionRange)
+                .axes,
+        [dimensionInput, dimensionRange],
     );
 
-    // Clear derived answers that became invalid after a material change.
-    useEffect(() => {
-        const asOptions = availableCustomizations as CustomizationOption[];
-        const offer = resolveOffer(asOptions);
-        const {invalidAnswerKeys} = filterOfferBySelections(
-            offer,
-            selectionAnswersFromState(value),
+    // Every pick in every step goes to the shared rules, which decide what can still be picked.
+    // Everything the product offers stays listed; what the rules rule out is shown disabled,
+    // so the customer sees the option exists and that their other choices exclude it.
+    const narrowed = useMemo(
+        () => narrowByRules(availableCustomizations, customizationRules, value),
+        [availableCustomizations, customizationRules, value],
+    );
+    const disabledOptionIds = useMemo(() => {
+        const pickable = new Set(narrowed.available.map((option) => option.id));
+        return new Set(
+            availableCustomizations
+                .filter((option) => !pickable.has(option.id))
+                .map((option) => option.id),
         );
-        if (invalidAnswerKeys.length === 0) return;
-        let next = value;
-        for (const key of invalidAnswerKeys) {
-            next = clearStep(next, key);
-        }
+    }, [availableCustomizations, narrowed]);
+
+    const steps = useMemo(
+        () => buildStepsFromCatalog(availableCustomizations),
+        [availableCustomizations],
+    );
+
+    // Clear picks another pick has made impossible (e.g. a printing method the newly chosen
+    // board cannot take). Silent, as designed; only that pick goes — the rest of its step stays.
+    useEffect(() => {
+        if (narrowed.invalidOptionIds.size === 0) return;
+        const next = removeSelections(value, narrowed.invalidOptionIds);
         if (next !== value) onChange(next);
-    }, [availableCustomizations, value.answers]);
+    }, [narrowed, value, onChange]);
 
     const [mode, setMode] = useState<BuilderMode>('guided');
     const [activeKey, setActiveKey] = useState<BuilderStepKey>('dimensions');
@@ -165,19 +161,39 @@ export function CustomizationBuilder({
         }
     }
 
+    /**
+     * Clicking an option picks it and opens its detail. Clicking a pick that is not open just
+     * opens it (its Properties and note live there); clicking the open pick again un-picks it.
+     * A `one` Type swaps its pick; a `many` Type adds to it (`customerSelects`).
+     */
     function selectOption(option: BuilderOption) {
-        setActiveOptionId(option.id);
-        setActiveTypeId(option.typeId);
-        onChange(
-            patchAnswer(value, activeKey, {
-                status: 'set',
-                selection: {
-                    typeId: option.typeId,
-                    optionId: option.id,
-                    label: option.title,
-                },
-            }),
+        const step = steps.find((item) => item.key === activeKey);
+        const picked = answerSelections(getAnswer(value, activeKey)).some(
+            (item) => item.optionId === option.id,
         );
+        if (!picked && disabledOptionIds.has(option.id)) return;
+        if (picked && activeOptionId !== option.id) {
+            setActiveOptionId(option.id);
+            setActiveTypeId(option.typeId);
+            return;
+        }
+        const cardinality =
+            step?.types.find((type) => type.id === option.typeId)?.cardinality ??
+            'one';
+        const next = toggleSelection(
+            value,
+            activeKey,
+            {typeId: option.typeId, optionId: option.id, label: option.title},
+            cardinality,
+        );
+        onChange(next);
+        if (picked) {
+            setActiveOptionId(restoreOptionId(step, next));
+            setActiveTypeId(restoreTypeId(step, next));
+        } else {
+            setActiveOptionId(option.id);
+            setActiveTypeId(option.typeId);
+        }
     }
 
     useEffect(() => {
@@ -242,8 +258,11 @@ export function CustomizationBuilder({
     function handlePropertySelectionsChange(
         optionId: string,
         selections: PropertySelectionMap,
+        summaries: PropertySelectionSummaryItem[],
     ) {
-        onChange(patchPropertySelections(value, optionId, selections));
+        onChange(
+            patchPropertySelections(value, optionId, selections, summaries),
+        );
     }
 
     function goBack() {
@@ -335,9 +354,12 @@ export function CustomizationBuilder({
                             activeKey={activeKey}
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
+                            disabledOptionIds={disabledOptionIds}
                             state={value}
                             maxReachableIndex={guidedMaxIndex}
+                            dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
+                            dimensionAxisIds={dimensionAxisIds}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}
@@ -359,8 +381,11 @@ export function CustomizationBuilder({
                             activeKey={activeKey}
                             activeTypeId={activeTypeId}
                             activeOptionId={activeOptionId}
+                            disabledOptionIds={disabledOptionIds}
                             state={value}
+                            dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
+                            dimensionAxisIds={dimensionAxisIds}
                             onSelectStep={selectCategory}
                             onSelectConsultation={selectConsultation}
                             onSelectType={selectType}

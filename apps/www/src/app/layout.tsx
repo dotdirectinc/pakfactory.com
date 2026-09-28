@@ -7,9 +7,9 @@ import '@fontsource-variable/geist';
 import {GoogleTagManager} from '@next/third-parties/google';
 import {TooltipProvider} from '@pakfactory/ui/components/tooltip';
 import {SanityVisualEditing} from '@/components/layout/sanity-visual-editing';
-import {VirtualPageviewTracker} from '@/components/modules/analytics/virtual-pageview-tracker';
+import {VirtualPageviewTracker} from '@/components/layout/virtual-pageview-tracker';
 import {buildFaviconIcons} from '@pakfactory/sanity/favicon';
-import {WatermarkProvider} from '@pakfactory/components/ui/watermark-context';
+import {WatermarkProvider} from '@pakfactory/ui/components/watermark-context';
 import {fetchWwwGlobalSettings} from '@/lib/www-global-settings';
 import {toWatermarkConfig} from '@/lib/watermark';
 import './globals.css';
@@ -53,7 +53,7 @@ export default async function RootLayout({
     const gtmId = resolveGtmId(globalSettings?.gtmId);
     const watermark = toWatermarkConfig(globalSettings?.watermark, '/api/wm');
     return (
-        <html lang="en" className="scroll-smooth">
+        <html lang="en">
             {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
             <body className="antialiased">
                 <WatermarkProvider value={watermark}>

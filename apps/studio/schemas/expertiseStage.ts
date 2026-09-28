@@ -1,7 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { StarIcon } from '@sanity/icons'
 import { groupsFor, GROUPS } from '../lib/field-groups'
-import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { faqsField } from '../lib/faq-field'
@@ -12,19 +11,23 @@ import { uniqueSlugAcross } from '../lib/slug-rules'
  * Expertise Stage — one of the six stages of PakFactory's service model
  * (Entities/Expertise Stage.md). Now a page at /expertise/<slug>, not just a tag
  * on case studies, with an Expertise landing page above and service pages beneath.
+ * The stage owns hero, SEO and the lists sections inherit (services, FAQs, case
+ * studies); the page body is the Expertise Stage Page selected in `template`.
  *
  * 🔴 The display sequence is Eric's end-to-end order (Design → Prototyping →
  * Managed Manufacturing → Strategy → Logistics → Fulfillment) and it lives on the
- * Expertise landing page as an ordered array (PROD-2292), NOT here. The deployed
- * `order` field carries a DIFFERENT, wrong sequence — it is deprecated, never
- * migrated. Do not copy its numbers into the landing-page array.
+ * Expertise landing page as an ordered array (PROD-2292), NOT here. A deployed
+ * `order` field once carried a DIFFERENT, wrong sequence; it was removed from
+ * the schema and swept from the data, and its numbers were never migrated
+ * anywhere. Do not reintroduce them into the landing-page array from an old
+ * export.
  */
 export const expertiseStage = defineType({
   name: 'expertiseStage',
   title: 'Expertise Stage',
   type: 'document',
   icon: StarIcon,
-  groups: groupsFor(['content', 'categorization', 'sections', 'seo', 'social']),
+  groups: groupsFor(['content', 'categorization', 'template', 'seo', 'social']),
   fields: [
     // ─── CONTENT ──────────────────────────────────────────────────────────────
     defineField({
@@ -32,7 +35,7 @@ export const expertiseStage = defineType({
       title: 'Title',
       type: 'string',
       group: GROUPS.content,
-      description: 'Canonical name — e.g. "Packaging Design".',
+      description: 'The canonical name (e.g. "Packaging Design"). Must be unique across stages.',
       validation: (Rule) => Rule.required().custom(uniqueTaxonomyTitle('title')),
     }),
     // Title / H1, the same convention as Line / Style / Solution / Product. No
@@ -49,7 +52,7 @@ export const expertiseStage = defineType({
       title: 'Slug',
       type: 'slug',
       group: GROUPS.content,
-      description: 'The /expertise/<slug> segment. All six already match — nothing to rename or redirect.',
+      description: 'The /expertise/<slug> segment. Must be unique across stages.',
       options: { source: 'title' },
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['expertiseStage'])),
     }),
@@ -67,14 +70,71 @@ export const expertiseStage = defineType({
       rows: 2,
       group: GROUPS.content,
       description:
-        'Short card summary — for the landing page and anywhere a stage is listed. (Currently empty on all six; this is the field to fill.)',
+        'Short card summary — for the landing page and anywhere a stage is listed.',
+    }),
+    defineField({
+      name: 'heroCtaLabel',
+      title: 'Hero button label',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'The primary button in the hero, e.g. "Book a strategy consultation". It opens the quote request. Leave empty for "Get a quote".',
+    }),
+    defineField({
+      name: 'heroSecondaryLabel',
+      title: 'Hero link label',
+      type: 'string',
+      group: GROUPS.content,
+      description:
+        'Optional text link beside the hero button that jumps down the page, e.g. "See our work". Needs a target below.',
+    }),
+    defineField({
+      name: 'heroSecondaryTarget',
+      title: 'Hero link target',
+      type: 'string',
+      group: GROUPS.content,
+      description: 'Which section of the template the hero link jumps to (the first one of that kind).',
+      options: {
+        list: [
+          { title: 'Our work (Inspiration gallery)', value: 'inspirationsGrid' },
+          { title: 'Engagement (Media feature)', value: 'mediaFeature' },
+          { title: 'Services / framework (Signature system)', value: 'signatureSystem' },
+          { title: 'Process (Steps)', value: 'steps' },
+          { title: 'Case studies', value: 'caseStudiesRow' },
+          { title: 'FAQ', value: 'faqSection' },
+        ],
+      },
+      hidden: ({ parent }) => !parent?.heroSecondaryLabel,
+      validation: (Rule) =>
+        Rule.custom((value, { parent }) =>
+          (parent as { heroSecondaryLabel?: string } | undefined)?.heroSecondaryLabel && !value
+            ? 'Pick where the hero link goes.'
+            : true,
+        ),
+    }),
+    defineField({
+      name: 'heroImage',
+      title: 'Hero image',
+      type: 'image',
+      group: GROUPS.content,
+      description:
+        'Optional full-width picture under the hero. Leave empty when the page opens on its work gallery (Design).',
+      options: { hotspot: true },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
     }),
     defineField({
       name: 'intro',
       title: 'Intro',
       type: 'array',
       group: GROUPS.content,
-      description: 'The page opener.',
+      description: 'The opening copy on the stage page.',
       of: [
         {
           type: 'block',
@@ -93,7 +153,7 @@ export const expertiseStage = defineType({
       title: 'Diagram',
       type: 'image',
       group: GROUPS.content,
-      description: 'Optional supporting visual for the stage page.',
+      description: 'Card image for the Expertise landing page and anywhere the stage is listed.',
       options: { hotspot: true },
       fields: [
         defineField({
@@ -109,7 +169,7 @@ export const expertiseStage = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'All six stages are active. Packaging Fulfillment is active, not coming soon — 0 case studies is a content gap, not a retired service.',
+      description: 'Lifecycle — Active, Coming soon or Discontinued.',
       options: {
         list: [
           { title: 'Active', value: 'active' },
@@ -134,7 +194,7 @@ export const expertiseStage = defineType({
       title: 'Services',
       type: 'array',
       group: GROUPS.categorization,
-      description: 'The named services inside this stage, in display order. Count varies and is not fixed.',
+      description: 'The named services inside this stage, in display order.',
       of: [{ type: 'reference', to: [{ type: 'expertiseService' }] }],
     }),
     defineField({
@@ -147,8 +207,30 @@ export const expertiseStage = defineType({
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
+    // ─── TEMPLATE ─────────────────────────────────────────────────────────────
+    // The page body lives on an Expertise Stage Page template (Main Website →
+    // Expertise Pages → Expertise Stage Pages), not on the stage (PROD-2577 follow-up). Lists the
+    // template leaves empty fill from this stage (ADR-020 §8).
+    defineField({
+      name: 'template',
+      title: 'Template',
+      type: 'reference',
+      group: GROUPS.template,
+      to: [{ type: 'expertiseStagePage' }],
+      options: { disableNew: true },
+      description:
+        'The page body — sections, headings and band content. Edit it on the template ' +
+        '(Main Website → Expertise Pages → Expertise Stage Pages), not here. Empty lists on the template ' +
+        '(Services, FAQs, case studies, stages) fill from this stage.',
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const status = (ctx.document as { status?: string } | undefined)?.status
+          if (status !== 'active' || value) return true
+          return 'Active stages need a template — without one the page shows the hero only.'
+        }).warning(),
+    }),
+
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
-    pageSectionsField(SECTION_ALLOW.marketPage),
     ...seoFields({ group: GROUPS.seo, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.website }),
   ],
