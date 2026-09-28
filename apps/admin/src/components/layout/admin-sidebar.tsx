@@ -49,11 +49,23 @@ const NAV: readonly NavEntry[] = [
   // Shown to everyone; /spec itself 404s anyone without a registry grant, so a
   // sales member who clicks it learns nothing about what lives there.
   {
-    type: "link",
-    href: "/spec",
+    type: "group",
+    id: "spec",
     label: "Spec registry",
     icon: FileText,
-    match: (path) => path === "/spec" || path.startsWith("/spec/"),
+    children: [
+      {
+        href: "/spec/rules",
+        label: "Current rules",
+        match: (path) => path === "/spec/rules" || path.startsWith("/spec/rules/"),
+      },
+      {
+        href: "/spec",
+        label: "Frames to approve",
+        match: (path) =>
+          path === "/spec" || (path.startsWith("/spec/") && !path.startsWith("/spec/rules")),
+      },
+    ],
   },
   {
     type: "group",

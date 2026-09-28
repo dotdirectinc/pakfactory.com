@@ -186,6 +186,22 @@ the reason was only visible in the box's own journal:
 sudo journalctl -u pakfactory-api -n 200 | grep -A5 "failed to resolve an attachment url"
 ```
 
+## Spec registry — current rules
+
+`/spec/rules` shows the customization rules **as they are now** (PROD-2560): read from Sanity with the storefront's own query (`CATALOG_CUSTOMIZATION_RULES_QUERY`) and computed by the shared package (`@pakfactory/sanity/customization-rules/summary` → `summarizeRules`). Sanity is the source of truth for V1 (option A, 2026-09-18), so admin never computes rules itself and never stores the summary — it is recomputed on each load (60 s CDN revalidate).
+
+| Tab | Shows |
+|---|---|
+| By type | who decides each type, and its requirements as written — "(Materials) and (Ink)" |
+| By option | each option's partners grouped by type — "all", "all except …", or the short list — and which way the dependency runs |
+| Product exceptions | every `customizationExceptions` entry and what it actually did |
+| Needs attention | options paired with nothing, requirements an option can never meet, references to deleted options, pick-one sibling pairs, reference-only pairs |
+
+- **Dataset is pinned to `development`** (`ADMIN_SPEC_RULES_DATASET` overrides) until the production fill runs (PROD-2596). It does not follow `NEXT_PUBLIC_SANITY_DATASET`, which would show an empty rule set on the deployed app.
+- Gated like the rest of `/spec`: 404 without a registry grant.
+- `/spec` (Frames to approve) is unchanged: registry changesets from the board, approved in admin.
+- Not built yet: per-product view, "from board / changed in Studio" provenance, history (needs PROD-2559).
+
 ## Customization Library
 
 Staff gallery for shared configurator UI and draft build-spec logic (PROD-1299 / related).
