@@ -57,6 +57,7 @@ import { redirect } from './redirect'
 import { redirectGroup } from './redirectGroup'
 import { settings } from './settings'
 import { migrationRun } from './migrationRun'
+import { featuredVideo } from './featuredVideo'
 import {
   pageBuilderBlocks,
   pageBuilderHome,
@@ -67,6 +68,7 @@ import {
 export const schemaTypes = [
   // Shared objects
   socialLink,
+  featuredVideo,
 
   // Customization layer
   customizationCategory,

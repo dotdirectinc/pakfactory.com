@@ -1,6 +1,6 @@
 "use client";
 
-import {useLayoutEffect, useRef, useState} from "react";
+import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import {createPortal} from "react-dom";
 import Link from "next/link";
 import {useLinkStatus} from "next/link";
@@ -66,6 +66,24 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    sheetHoverRef.current = false;
+    setOpenValue("");
+  }, [pathname]);
+
+  function closeMega() {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    sheetHoverRef.current = false;
+    setOpenValue("");
+  }
 
   if (items.length === 0) return null;
 
@@ -178,6 +196,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
               >
                 <SiteNavMegaPanel
                   panel={openPanel}
+                  onNavigate={closeMega}
                   className="w-full max-w-none"
                 />
               </PageDielineSection>

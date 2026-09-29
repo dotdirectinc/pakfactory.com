@@ -385,6 +385,18 @@ export const MIGRATIONS = [
     // falls back to legacy sections until this has run.
     probe: `count(*[_type == "expertiseStage" && defined(sections)]) == 0`,
   },
+  {
+    id: '20260929-featured-video-object',
+    ticket: null,
+    title:
+      'Wrap product/productLine featuredVideo bare file into shared featuredVideo object (source: upload)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:featured-video-object',
+    script: 'apps/studio/scripts/migrate-featured-video-object.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no product/line still has a bare file (asset without source).
+    probe: `count(*[_type in ["product","productLine"] && defined(featuredVideo.asset) && !defined(featuredVideo.source)]) == 0`,
+  },
 ]
 
 /**

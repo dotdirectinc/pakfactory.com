@@ -41,20 +41,28 @@ export function ExpertiseRow({
 
     const shell = sectionThemeShell('default');
 
-    const boardStages: StagesBoardStage[] = stages.map((stage) => ({
-        id: stage.id,
-        title: stage.title,
-        headline: stage.headline,
-        body: stage.body,
-        points: stage.points,
-        link: stage.cta
-            ? {label: stage.cta.label, href: stage.cta.href}
-            : undefined,
-        media: stage.media?.src
-            ? {src: stage.media.src, alt: stage.media.alt}
-            : null,
-        mediaPlaceholder: stage.mediaPlaceholder,
-    }));
+    const boardStages: StagesBoardStage[] = stages.map((stage) => {
+        const media = stage.media;
+        const hasMedia = Boolean(media?.src || media?.videoSrc);
+        return {
+            id: stage.id,
+            title: stage.title,
+            headline: stage.headline,
+            body: stage.body,
+            points: stage.points,
+            link: stage.cta
+                ? {label: stage.cta.label, href: stage.cta.href}
+                : undefined,
+            media: hasMedia && media
+                ? {
+                      src: media.src ?? '',
+                      alt: media.alt,
+                      ...(media.videoSrc ? {videoSrc: media.videoSrc} : {}),
+                  }
+                : null,
+            mediaPlaceholder: stage.mediaPlaceholder,
+        };
+    });
 
     const initialStageId = boardStages[0]?.id;
 
@@ -78,7 +86,7 @@ export function ExpertiseRow({
                     }
                     titleClassName="max-w-[745px]"
                     description={description}
-                    descriptionClassName="max-w-[726px] text-base leading-6"
+                    descriptionClassName="max-w-[726px]"
                     align={align}
                     cta={cta}
                     ctaPlacement="end"

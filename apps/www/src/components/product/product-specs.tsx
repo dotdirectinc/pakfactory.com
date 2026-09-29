@@ -84,7 +84,6 @@ export function ProductSpecs({
                     eyebrow="Specifications"
                     title={heading}
                     description={description}
-                    descriptionClassName="text-base leading-6"
                 />
 
                 <div className="-mx-layout-gutter-inner mt-16">

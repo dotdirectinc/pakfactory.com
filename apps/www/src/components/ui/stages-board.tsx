@@ -29,6 +29,8 @@ import {
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
+import {CoverVideo} from '@/components/ui/cover-video';
+import {usePrefersReducedMotion} from '@/lib/ui/use-prefers-reduced-motion';
 
 /**
  * Apple product-viewer morph rules (ported from poc-aslan SampleStageBoard):
@@ -52,7 +54,7 @@ export type StagesBoardStage = {
     points?: string[];
     /** Optional detail CTA shown when the stage is open. */
     link?: {label: string; href: string};
-    media?: {src: string; alt: string} | null;
+    media?: {src: string; alt: string; videoSrc?: string} | null;
     mediaPlaceholder?: string;
 };
 
@@ -66,10 +68,9 @@ export type StagesBoardProps = {
 
 type MeasureBox = {w: number; h: number};
 
-function useMeasure(deps: DependencyList = []): [
-    RefObject<HTMLElement | null>,
-    MeasureBox | null,
-] {
+function useMeasure(
+    deps: DependencyList = [],
+): [RefObject<HTMLElement | null>, MeasureBox | null] {
     const ref = useRef<HTMLElement | null>(null);
     const [box, setBox] = useState<MeasureBox | null>(null);
 
@@ -100,9 +101,7 @@ function navButtonClass(enabled: boolean) {
 }
 
 function stageLink(stage: StagesBoardStage) {
-    return stage.link &&
-        stage.link.href.trim() &&
-        stage.link.label.trim()
+    return stage.link && stage.link.href.trim() && stage.link.label.trim()
         ? stage.link
         : null;
 }
@@ -126,7 +125,7 @@ function StageCaptionContent({stage}: {stage: StagesBoardStage}) {
                 <Button
                     asChild
                     variant="link"
-                    className="mt-3 h-auto p-0 has-[>svg]:px-0"
+                    className="mt-4 h-auto p-0 has-[>svg]:px-0"
                 >
                     <Link href={link.href}>
                         {link.label}
@@ -135,7 +134,7 @@ function StageCaptionContent({stage}: {stage: StagesBoardStage}) {
                 </Button>
             ) : null}
             {stage.points && stage.points.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                     {stage.points.map((point) => (
                         <Badge key={point} variant="secondary">
                             {point}
@@ -147,19 +146,25 @@ function StageCaptionContent({stage}: {stage: StagesBoardStage}) {
     );
 }
 
-/** Mobile open caption: title. above headline, then Learn more. */
+/** Mobile open caption: title., optional headline + body, then Learn more. */
 function MobileOneLineCaption({stage}: {stage: StagesBoardStage}) {
     const link = stageLink(stage);
-    const detail = stage.headline?.trim() || '';
+    const headline = stage.headline?.trim() || '';
+    const body = stage.body?.trim() || '';
 
     return (
         <div className="min-w-0">
             <p className="text-sm font-semibold leading-6 text-foreground">
                 {stage.title}.
             </p>
-            {detail ? (
+            {headline ? (
+                <p className="mt-1 text-sm font-semibold leading-6 text-foreground">
+                    {headline}
+                </p>
+            ) : null}
+            {body ? (
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    {detail}
+                    {body}
                 </p>
             ) : null}
             {link ? (
@@ -185,9 +190,18 @@ function MediaLayer({
     stage: StagesBoardStage;
     active: boolean;
 }) {
+    const [videoFailed, setVideoFailed] = useState(false);
+    const reduceMotion = usePrefersReducedMotion();
+
     const placeholder =
         stage.mediaPlaceholder?.trim() || stage.title.toUpperCase();
-    const src = stage.media?.src?.trim();
+    const imageSrc = stage.media?.src?.trim() || '';
+    const videoSrc = stage.media?.videoSrc?.trim() || '';
+    const showVideo = Boolean(videoSrc) && !reduceMotion && !videoFailed;
+
+    useEffect(() => {
+        setVideoFailed(false);
+    }, [videoSrc]);
 
     return (
         <div
@@ -197,9 +211,16 @@ function MediaLayer({
             )}
             aria-hidden={!active}
         >
-            {src ? (
+            {showVideo ? (
+                <CoverVideo
+                    src={videoSrc}
+                    poster={imageSrc || undefined}
+                    active={active}
+                    onError={() => setVideoFailed(true)}
+                />
+            ) : imageSrc ? (
                 <Image
-                    src={src}
+                    src={imageSrc}
                     alt={stage.media?.alt || stage.title}
                     fill
                     className="object-cover"
@@ -243,7 +264,8 @@ export function StagesBoard({
     const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
     const [mobileApi, setMobileApi] = useState<CarouselApi>();
     const open = stages[openIndex] ?? stages[0];
-    const mediaIndex = mobileDetailOpen ? openIndex : initialIndex;
+    /** Background follows the selected stage (desktop pills + mobile open detail). */
+    const mediaIndex = openIndex;
 
     const [listRef, listBox] = useMeasure();
     const cardW = listBox?.w ?? null;
@@ -271,8 +293,7 @@ export function StagesBoard({
     const artId = `${id}-art`;
     const mediaStage = stages[mediaIndex] ?? open;
     const placeholder =
-        mediaStage.mediaPlaceholder?.trim() ||
-        mediaStage.title.toUpperCase();
+        mediaStage.mediaPlaceholder?.trim() || mediaStage.title.toUpperCase();
     const canPrev = openIndex > 0;
     const canNext = openIndex < stages.length - 1;
 
@@ -322,7 +343,7 @@ export function StagesBoard({
                                 onClick={() => setOpenIndex((i) => i - 1)}
                                 disabled={!canPrev}
                                 className={cn(
-                                    'pointer-events-auto absolute bottom-8 left-2 z-20',
+                                    'pointer-events-auto absolute bottom-8 left-4 z-20',
                                     navButtonClass(canPrev),
                                 )}
                                 aria-label="Previous stage"
@@ -336,7 +357,7 @@ export function StagesBoard({
                                 onClick={() => setOpenIndex((i) => i + 1)}
                                 disabled={!canNext}
                                 className={cn(
-                                    'pointer-events-auto absolute bottom-8 right-2 z-20',
+                                    'pointer-events-auto absolute bottom-8 right-4 z-20',
                                     navButtonClass(canNext),
                                 )}
                                 aria-label="Next stage"
@@ -358,7 +379,7 @@ export function StagesBoard({
                                 containScroll: 'trimSnaps',
                                 watchDrag: !mobileDetailOpen,
                             }}
-                            className="pointer-events-auto w-full"
+                            className="pointer-events-auto w-full px-4"
                             aria-label="Expertise stages"
                         >
                             <CarouselContent
@@ -374,7 +395,7 @@ export function StagesBoard({
                                         <CarouselItem
                                             key={stage.id}
                                             className={cn(
-                                                'basis-auto pl-2 first:pl-0',
+                                                'basis-auto pl-2',
                                                 mobileDetailOpen &&
                                                     !isOpen &&
                                                     'pointer-events-none !w-0 !max-w-0 !basis-0 overflow-hidden opacity-0 !pl-0',
@@ -533,7 +554,7 @@ function StageCard({
                                         'pointer-events-none absolute opacity-0',
                                 )}
                             >
-                                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border">
+                                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border bg-background">
                                     <Icon
                                         icon={Plus}
                                         size="sm"
@@ -549,15 +570,16 @@ function StageCard({
                         <>
                             <button
                                 type="button"
-                                ref={
-                                    labelRef as RefObject<HTMLButtonElement>
-                                }
+                                ref={labelRef as RefObject<HTMLButtonElement>}
                                 onClick={onSelect}
                                 aria-expanded={isOpen}
                                 aria-controls={controls}
-                                className="inline-flex min-h-14 cursor-pointer items-center gap-3 px-6 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground lg:whitespace-nowrap"
+                                className={cn(
+                                    'inline-flex min-h-14 cursor-pointer items-center gap-2 px-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground lg:whitespace-nowrap',
+                                    isOpen ? 'pt-4 pb-4' : 'py-4',
+                                )}
                             >
-                                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border">
+                                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border bg-background">
                                     <Icon
                                         icon={Plus}
                                         size="sm"
@@ -579,17 +601,14 @@ function StageCard({
                             <div
                                 ref={bodyRef as RefObject<HTMLDivElement>}
                                 className={cn(
-                                    'flex gap-3 px-6 pb-6 transition-opacity motion-reduce:transition-none',
+                                    'flex gap-2 px-4 pb-4 transition-opacity motion-reduce:transition-none',
                                     isOpen
-                                        ? 'opacity-100 delay-[300ms] duration-300'
+                                        ? 'opacity-100 delay-300 duration-300 pb-8'
                                         : 'pointer-events-none opacity-0 duration-150',
                                 )}
                                 aria-hidden={!isOpen}
                             >
-                                <span
-                                    className="size-6 shrink-0"
-                                    aria-hidden
-                                />
+                                <span className="size-6 shrink-0" aria-hidden />
                                 <div className="min-w-0 flex-1">
                                     <StageCaptionContent stage={stage} />
                                 </div>

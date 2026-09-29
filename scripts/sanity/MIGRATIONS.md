@@ -126,6 +126,19 @@ Three rules keep probes trustworthy:
    be true in a year. If you cannot write one honestly, set `probe: null` and say why.
 4. Run `status` on `development`, then `up --only <id>` there, then production.
 
+### Featured video object (`20260929-featured-video-object`)
+
+Product / Product Line previously stored `featuredVideo` as a bare Sanity **file**. The shared
+`featuredVideo` object nests that under `source: "upload"` + `file`. After deploying the schema,
+humans run:
+
+```bash
+pnpm sanity:migrate up --dataset development --only 20260929-featured-video-object --confirm
+pnpm sanity:migrate up --dataset production --only 20260929-featured-video-object --confirm --yes-production
+```
+
+GROQ coalesces the legacy bare-file shape until this has run. Agents do not execute the write.
+
 Seeds, imports and parity checks are **repeatable tasks**, not migrations. They stay
 one-per-command and are listed under `TASKS` in the manifest so their absence from the
 register is visibly a decision rather than an oversight.

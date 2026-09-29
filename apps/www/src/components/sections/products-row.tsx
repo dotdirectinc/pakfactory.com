@@ -72,7 +72,6 @@ export function ProductsRow({
                             eyebrow="Related Products"
                             title={heading}
                             description={description}
-                            descriptionClassName="text-base leading-6"
                         />
                     }
                 >

@@ -7,6 +7,7 @@ import { PRODUCT_URL_TYPES, uniqueSlugAcross } from '../lib/slug-rules'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { featuredVideoField } from '../lib/featured-video-field'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
 
 /**
@@ -198,16 +199,12 @@ export const product = defineType({
       description: 'The one image that represents this product — cards, listings, nav and the social fallback. Not part of the gallery.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
-    // Hover-play MP4 for catalog / product-line hero tiles. Role name mirrors
-    // Featured image and the same field on Product Line (line uses scroll-scrub).
-    defineField({
-      name: 'featuredVideo',
-      title: 'Featured video',
-      type: 'file',
+    // Hover-play video for catalog / product-line hero tiles. Shared featuredVideo
+    // object (upload | URL | YouTube) — same field on Product Line / Expertise Stage.
+    featuredVideoField({
       group: GROUPS.content,
-      options: { accept: 'video/*' },
       description:
-        'Optional hover-play MP4 for catalog / product-line hero tiles. Mobile and reduced-motion keep Featured image.',
+        'Optional hover-play video for catalog / product-line hero tiles. Upload or a direct S3/CDN MP4/MOV; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     defineField({
       name: 'media',

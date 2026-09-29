@@ -7,6 +7,7 @@
 
 import {
   PAGE_SECTIONS_PROJECTION,
+  FEATURED_VIDEO_URL_FIELD,
   type PageSectionDoc,
 } from './sections';
 
@@ -131,8 +132,8 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
   "slug": slug.current
 }`;
 
-/** Hover-play / hero MP4 URL from product `featuredVideo`; empty when unset. */
-const PRODUCT_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
+/** Hover-play / hero video URL from product `featuredVideo`; empty when unset / YouTube-only. */
+const PRODUCT_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 
 /** One FAQ as the catalog pages render it. */
 const FAQ_ITEM_PROJ = /* groq */ `{
@@ -329,8 +330,8 @@ const LINE_FEATURED_ICON = /* groq */ `kitMark{
   "alt": ${IMAGE_ALT}
 }`;
 
-/** Desktop scroll-scrub hero MP4; empty when unset. */
-const LINE_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
+/** Desktop scroll-scrub hero video; empty when unset / YouTube-only. */
+const LINE_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 
 /** Shared projection for list + single-line fetches (PROD-1914 landing). */
 export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
@@ -842,7 +843,7 @@ export type CatalogProductDoc = {
     depthMax?: number | null;
   } | null;
   primarySolution?: string | null;
-  /** Hover-play MP4 URL from `featuredVideo`. */
+  /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
@@ -899,7 +900,7 @@ export type CatalogProductLineDoc = {
   description?: string | null;
   /** Featured image cascade: featuredImage → cardImage → heroMedia. */
   cardImage?: unknown | null;
-  /** Desktop scroll-scrub hero MP4 URL from `featuredVideo`. */
+  /** Desktop scroll-scrub hero video URL from `featuredVideo` (upload/URL). */
   featuredVideoUrl?: string | null;
   /** Featured icon (CMS field name `kitMark`). */
   kitMark?: unknown | null;

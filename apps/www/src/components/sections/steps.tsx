@@ -122,7 +122,6 @@ export function Steps({content, id = 'steps', className}: StepsProps) {
                             eyebrow={eyebrow}
                             title={<span id={headingId}>{heading}</span>}
                             description={intro}
-                            descriptionClassName="text-base leading-7"
                             align={align}
                             cta={cta}
                         />

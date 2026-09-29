@@ -130,7 +130,7 @@ export function CustomizationDetailView({
                         eyebrow={reference.eyebrow}
                         title={reference.title}
                         description={reference.description}
-                        descriptionClassName="text-base leading-6 mb-20 sm:mb-10"
+                        descriptionClassName="mb-20 sm:mb-10"
                     />
 
                     <AnchorNav embedded items={navItems} />

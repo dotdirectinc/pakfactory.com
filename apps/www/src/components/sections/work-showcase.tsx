@@ -358,7 +358,6 @@ export function WorkShowcase({
                     eyebrow={eyebrow}
                     title={<span id={headingId}>{heading}</span>}
                     description={intro}
-                    descriptionClassName="text-base leading-7"
                     align={align}
                 />
             </PageDielineSection>

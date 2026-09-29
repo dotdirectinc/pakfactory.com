@@ -39,6 +39,7 @@
     "migrate:depends-on-requirements": "node scripts/migrate-depends-on-requirements.mjs",
     "remove:seeded-solution-styles": "node scripts/remove-seeded-solution-styles.mjs",
     "migrate:expertise-stage-template": "node scripts/migrate-expertise-stage-template.mjs",
+    "migrate:featured-video-object": "node scripts/migrate-featured-video-object.mjs",
     "purge:catalog": "node scripts/purge-catalog.mjs",
     "repoint:catalog-refs": "node scripts/repoint-catalog-refs.mjs",
     "populate:faqs": "node scripts/populate-faqs-from-notion.mjs",
