@@ -1,3 +1,4 @@
+import {Suspense} from 'react';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {SectionReveal} from '@/components/common/section-reveal';
@@ -9,6 +10,7 @@ import {
     ProductCard,
     type ProductCardData,
 } from '@/components/product/product-card';
+import {ProductCatalogPanelLoading} from '@/components/product/product-catalog-page-loading';
 import {ProductCatalogView} from '@/components/product/product-catalog-view';
 import {SolutionCatalogPageChrome} from '@/components/solution/solution-catalog-page-loading';
 import {SolutionHero} from '@/components/solution/solution-hero';
@@ -206,11 +208,13 @@ export function SolutionStyleCatalogView({
                         : null
                 }
             />
-            <ProductCatalogView
-                library={library}
-                urlSync
-                showPageChrome={false}
-            />
+            <Suspense fallback={<ProductCatalogPanelLoading />}>
+                <ProductCatalogView
+                    library={library}
+                    urlSync
+                    showPageChrome={false}
+                />
+            </Suspense>
             {pageSections && pageSections.length > 0 ? (
                 <SectionRenderer sections={pageSections} />
             ) : null}
