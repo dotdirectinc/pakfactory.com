@@ -13,6 +13,7 @@ import {
 } from '@/components/customization/option-property-controllers';
 import {TypePropertyController} from '@/components/customization/type-property-controller';
 import {Icon} from '@/components/ui/icon';
+import {StatusNotice} from '@/components/ui/status-badge';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
 import {
     mapDetailToPropertyFields,
@@ -92,6 +93,9 @@ export function CustomizationConfigPanel({
         event.preventDefault();
     };
 
+    const lifecycle = detail.status;
+    const showOrderCtas = !lifecycle || lifecycle === 'active';
+
     return (
         <div className="mt-8 flex flex-col gap-6">
             <div className="flex flex-col gap-4 border-t border-dashed border-border pt-4">
@@ -163,34 +167,42 @@ export function CustomizationConfigPanel({
                 </div>
             ) : null}
 
-            <div className="flex flex-col gap-2">
-                <Button asChild className="h-auto w-full px-6 py-3 text-base">
-                    <Link href={customizeHref}>
-                        Choose a packaging item to customize
-                    </Link>
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="h-auto w-full px-6 py-3 text-base shadow-none"
-                    onClick={onBookmark}
-                >
-                    <Icon icon={Bookmark} size="sm" />
-                    Bookmark
-                </Button>
-                <div className="flex justify-end">
+            {showOrderCtas ? (
+                <div className="flex flex-col gap-2">
+                    <Button asChild className="h-auto w-full px-6 py-3 text-base">
+                        <Link href={customizeHref}>
+                            Choose a packaging item to customize
+                        </Link>
+                    </Button>
                     <Button
                         type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-auto gap-1 px-0 text-muted-foreground"
-                        onClick={onDownloadSpec}
+                        variant="outline"
+                        className="h-auto w-full px-6 py-3 text-base shadow-none"
+                        onClick={onBookmark}
                     >
-                        <Icon icon={Download} size="sm" />
-                        Download spec sheet
+                        <Icon icon={Bookmark} size="sm" />
+                        Bookmark
                     </Button>
+                    <div className="flex justify-end">
+                        <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto gap-1 px-0 text-muted-foreground"
+                            onClick={onDownloadSpec}
+                        >
+                            <Icon icon={Download} size="sm" />
+                            Download spec sheet
+                        </Button>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <StatusNotice
+                    status={lifecycle}
+                    contactHref={WWW_ROUTES.contact}
+                    className="mt-0"
+                />
+            )}
         </div>
     );
 }

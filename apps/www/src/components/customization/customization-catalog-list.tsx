@@ -26,9 +26,9 @@ export function CustomizationCatalogList({
 
     return (
         <div className={CATALOG_GRID_CLASS}>
-            {items.map((item) => (
+            {items.map((item, index) => (
                 <div key={item._id} className="min-h-0 h-full">
-                    <CustomizationCard item={item} />
+                    <CustomizationCard item={item} priority={index < 4} />
                 </div>
             ))}
         </div>

@@ -291,7 +291,7 @@ export function ProductCatalogPanel({
             paddingBlock="none"
             innerClassName="pb-24 flex flex-col gap-8"
         >
-            <SectionReveal className="flex flex-col gap-8">
+            <SectionReveal enabled={false} className="flex flex-col gap-8">
                 {/* Mobile: sticky search + filters */}
                 <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                     <div className="flex items-center gap-2 py-3">

@@ -1,8 +1,5 @@
-import {Suspense} from 'react';
-
 import {
     CustomizationCatalogPageChrome,
-    CustomizationCatalogPanelLoading,
 } from '@/components/customization/customization-catalog-page-loading';
 import {CustomizationCatalogPanel} from '@/components/customization/customization-catalog-panel';
 import type {CustomizationLibraryResult} from '@/lib/catalog/types';
@@ -49,24 +46,12 @@ export function CustomizationCatalogView({
                     ) : null}
                 </div>
             ) : null}
-            <Suspense
-                fallback={
-                    <CustomizationCatalogPanelLoading
-                        categoryGroupCount={
-                            initialCategory && initialCategory !== 'all'
-                                ? 3
-                                : 0
-                        }
-                    />
-                }
-            >
-                <CustomizationCatalogPanel
-                    library={library}
-                    urlSync={urlSync}
-                    initialCategory={initialCategory}
-                    hideCatalogBorderTop={hideCatalogBorderTop}
-                />
-            </Suspense>
+            <CustomizationCatalogPanel
+                library={library}
+                urlSync={urlSync}
+                initialCategory={initialCategory}
+                hideCatalogBorderTop={hideCatalogBorderTop}
+            />
         </>
     );
 }

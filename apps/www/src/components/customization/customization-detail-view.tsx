@@ -1,4 +1,4 @@
-import {LifecycleBadge, LifecycleNotice} from '@/components/ui/lifecycle-badge';
+import {StatusBadge} from '@/components/ui/status-badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
@@ -103,22 +103,20 @@ export function CustomizationDetailView({
                         title={detail.title}
                     />
                     <div>
-                        <p className="text-[11px] font-semibold tracking-[0.08em] text-brand-blue uppercase">
-                            {formatSectionEyebrow(categoryLabel)}
-                        </p>
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-[0.08em] text-brand-blue uppercase">
+                                {formatSectionEyebrow(categoryLabel)}
+                            </p>
+                            <StatusBadge status={detail.status} className="shrink-0" />
+                        </div>
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {detail.title}
                         </h1>
-                        <LifecycleBadge status={detail.status} className="mt-2" />
                         {detail.description ? (
                             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                                 {detail.description}
                             </p>
                         ) : null}
-                        <LifecycleNotice
-                            status={detail.status}
-                            contactHref={WWW_ROUTES.contact}
-                        />
                         <CustomizationConfigPanel detail={detail} />
                     </div>
                 </article>
