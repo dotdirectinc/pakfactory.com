@@ -2,21 +2,24 @@
  * Maps the builder's local state onto the SUBMIT CONTRACT the backend actually
  * validates — `pakfactory.com-backend/src/contracts/request.ts`.
  *
- * ── Why this exists next to `to-submit-payload.ts` ──────────────────────────
- * Two payload shapes were designed independently for one endpoint: this repo's
- * `SubmitRequestPayload` (PROD-2346, "logged in dev so the backend can build
- * against a fixed shape") and the backend's `RequestSubmission` (PROD-2398,
- * reconstructed from shipped builder state). Neither was ratified by product or
- * a BA — they are two proposals from one author that drifted.
- *
- * The backend's shape wins because it is the one that is implemented, tested,
- * and verified end-to-end through a real Zoho lead. `SubmitRequestPayload`
- * becomes what it always was in practice: a description of the builder's own
- * state. This module is the boundary between the two.
+ * ── One shape ────────────────────────────────────────────────────────────────
+ * This repo once had its own `SubmitRequestPayload` (PROD-2346), logged to the dev
+ * console on every submit "until submit posts". Submit has posted this shape — the
+ * backend's `RequestSubmission`, verified end-to-end through a real Zoho lead — since
+ * PROD-2398, so the other shape and its logger were deleted (PROD-2605): a console
+ * showing a body that was never sent is worse than none.
  *
  * Pure and side-effect free. It does NOT validate — `submitRequest` gates, and
  * the server's typed 422s are the authority.
  */
+import {AXIS_LABEL, type DimensionAxis} from '@pakfactory/sanity/dimension-inputs';
+import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
+import {
+    DIMENSIONS_STEP_KEY,
+    dimensionEntryNoteKey,
+    visiblePropertySummaries,
+    type FaceMeasurements,
+} from '@/lib/customization-builder';
 import {
     defaultDraftTitle,
     type RequestCustomization,
@@ -69,7 +72,8 @@ export type WireSubmission = {
         contents: string;
         quantities: number[];
         moq?: number;
-        customizations: {id: string; label: string; category?: string}[];
+        customizations: WireCustomization[];
+        dimensions?: WireDimensions;
         notes?: string;
         attachments: WireAttachment[];
         addedAt: string;
@@ -112,8 +116,79 @@ function toWireAddress(address: ShippingAddress | null): WireAddress | null {
     return Object.keys(next).length ? next : null;
 }
 
-function toWireCustomization(c: RequestCustomization) {
-    return {id: c.id, label: c.label, ...(c.category ? {category: c.category} : {})};
+export type WireCustomization = {
+    id: string;
+    label: string;
+    category?: string;
+    /** The Customization Type, e.g. "Ink" — a category holds several since PROD-2556. */
+    type?: string;
+    /** The buyer's Property choices on this pick, as shown to them. */
+    properties?: string[];
+    note?: string;
+};
+
+export type WireDimensions = {
+    unit: 'in' | 'mm';
+    external?: {axis: string; value: string}[];
+    internal?: {axis: string; value: string}[];
+    externalNote?: string;
+    internalNote?: string;
+    consultation?: boolean;
+};
+
+/**
+ * One pick as sales needs it (PROD-2605): the flat `{id, label, category}` the line stores, plus
+ * the Type, Property choices and note the builder holds for that option. Picks from before the
+ * builder (no builder state) go out as they were.
+ */
+function toWireCustomization(c: RequestCustomization, line: RequestLine): WireCustomization {
+    const builder = line.customizationBuilder;
+    const type = line.availableCustomizations?.find((o) => o.id === c.id)?.typeTitle?.trim();
+    const properties = visiblePropertySummaries(builder?.propertySelectionSummaries?.[c.id])
+        .map((item) => item.label.trim())
+        .filter(Boolean);
+    const note = trimmed(builder?.entryNotes?.[c.id]);
+    return {
+        id: c.id,
+        label: c.label,
+        ...(c.category ? {category: c.category} : {}),
+        ...(type ? {type} : {}),
+        ...(properties.length ? {properties} : {}),
+        ...(note ? {note} : {}),
+    };
+}
+
+/**
+ * The size the buyer entered (PROD-2605). Until now it stayed in the browser: the builder kept it
+ * but nothing sent it. Axes come from the product's dimension input, in its order, labelled as the
+ * buyer saw them; a face with nothing typed is left out.
+ */
+export function toWireDimensions(line: RequestLine): WireDimensions | undefined {
+    const answer = line.customizationBuilder?.answers?.[DIMENSIONS_STEP_KEY];
+    if (!answer || answer.status === 'unset') return undefined;
+    if (answer.status === 'not-sure') return {unit: 'in', consultation: true};
+    if (!('dimensions' in answer)) return undefined;
+    const {unit, external, internal} = answer.dimensions;
+    const axes = resolveProductDims(line.dimensionInput ?? 'rectangular', line.dimensionRange).axes;
+    const face = (values: FaceMeasurements) => {
+        const keys = axes.length ? axes : (Object.keys(values) as DimensionAxis[]);
+        return keys
+            .map((axis) => ({axis: AXIS_LABEL[axis] ?? axis, value: (values[axis] ?? '').trim()}))
+            .filter((m) => m.value);
+    };
+    const notes = line.customizationBuilder?.entryNotes ?? {};
+    const ext = face(external);
+    const int = face(internal);
+    const externalNote = trimmed(notes[dimensionEntryNoteKey('external')]);
+    const internalNote = trimmed(notes[dimensionEntryNoteKey('internal')]);
+    if (!ext.length && !int.length && !externalNote && !internalNote) return undefined;
+    return {
+        unit,
+        ...(ext.length ? {external: ext} : {}),
+        ...(int.length ? {internal: int} : {}),
+        ...(externalNote ? {externalNote} : {}),
+        ...(internalNote ? {internalNote} : {}),
+    };
 }
 
 /**
@@ -208,7 +283,13 @@ export function toWireSubmission(
             ...(trimmed(line.productLineTitle)
                 ? {productType: line.productLineTitle!.trim()}
                 : {}),
-            customizations: line.customizations.map(toWireCustomization),
+            // The contract has carried `moq` since the start; www never sent it (PROD-2605).
+            ...(line.productMoq ? {moq: line.productMoq} : {}),
+            customizations: line.customizations.map((c) => toWireCustomization(c, line)),
+            ...(() => {
+                const dimensions = toWireDimensions(line);
+                return dimensions ? {dimensions} : {};
+            })(),
             ...(trimmed(line.notes) ? {notes: line.notes!.trim()} : {}),
             attachments: toWireAttachments(line.referenceImages),
             addedAt: line.addedAt,

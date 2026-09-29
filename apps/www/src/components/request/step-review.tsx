@@ -18,9 +18,9 @@ import {LogoMark} from '@/components/layout/logo-mark';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {getRequestReviewCopy} from '@/lib/request/request-review-copy';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
+import {RFQ_REF_PATTERN} from '@/lib/request/contract.rules';
 import {canSubmitRequest} from '@/lib/request/validation';
 import {MessageDialog} from '@/components/ui/message-dialog';
-import {logSubmitPayload} from '@/lib/rfq/log-submit-payload';
 import {submitRequest} from '@/lib/rfq/submit-request';
 
 type StepReviewProps = {
@@ -64,7 +64,9 @@ export function StepReview({
         day: 'numeric',
     });
     const displayRef =
-        draft.ref && /^RFQ-\d{5}$/.test(draft.ref)
+        // The backend's own format (RFQ-2026-00042). The old /^RFQ-\d{5}$/ matched no real
+        // reference, so the paper always showed the placeholder (PROD-2605).
+        draft.ref && RFQ_REF_PATTERN.test(draft.ref)
             ? draft.ref
             : REQUEST_COPY.refPlaceholder;
 
@@ -171,7 +173,6 @@ export function StepReview({
 
     function handleSubmit() {
         setError('');
-        logSubmitPayload(draft, lines);
         startTransition(async () => {
             try {
                 const result = await submitRequest({draft, lines});
