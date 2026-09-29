@@ -131,7 +131,6 @@ export function CaseStudiesRow({
                                 <span id={HEADING_ID}>{headline}</span>
                             }
                             description={description}
-                            descriptionClassName="text-base leading-6"
                             align={align}
                             cta={cta}
                             ctaPlacement="end"

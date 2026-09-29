@@ -6,6 +6,7 @@ import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
+import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 
 /**
@@ -127,15 +128,12 @@ export const productLine = defineType({
         'The one image that represents this line — large landing hero, catalog cards, nav, and the social fallback. Leave empty to use the hero placeholder.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
-    // Desktop scroll-scrub hero (MP4). Role name mirrors Featured image — when set,
-    // the landing enables the scroll animation; mobile / reduced-motion keep the image.
-    defineField({
-      name: 'featuredVideo',
-      title: 'Featured video',
-      type: 'file',
+    // Desktop scroll-scrub hero. Shared featuredVideo object (upload | URL | YouTube)
+    // — same field on Product / Expertise Stage. Mobile / reduced-motion keep the image.
+    featuredVideoField({
       group: GROUPS.content,
-      options: {accept: 'video/*'},
-      description: 'Optional desktop scroll-scrub MP4. Mobile and reduced-motion keep Featured image.',
+      description:
+        'Optional desktop scroll-scrub video. Upload or a direct S3/CDN MP4/MOV; YouTube is stored but the landing keeps Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     // Featured icon on the product-line landing. Stack: above the H1.
     // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.

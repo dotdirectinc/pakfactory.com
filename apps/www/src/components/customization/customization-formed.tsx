@@ -23,7 +23,6 @@ export function CustomizationFormed({className}: CustomizationFormedProps) {
                     eyebrow="Process"
                     title="How it’s formed"
                     description="A quick look at how this option is made and what that means for structure, print, and performance."
-                    descriptionClassName="text-base leading-6"
                 />
 
                 {/* Slot: future glossary visual + definition feature. */}

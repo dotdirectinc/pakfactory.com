@@ -36,10 +36,12 @@ function PanelLink({
   label,
   href,
   external,
+  onNavigate,
 }: {
   label: string;
   href: string;
   external?: boolean;
+  onNavigate?: () => void;
 }) {
   const className =
     "block py-1 text-base font-semibold text-foreground no-underline transition-colors hover:text-primary";
@@ -50,20 +52,27 @@ function PanelLink({
         className={className}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={onNavigate}
       >
         {label}
       </a>
     );
   }
   return (
-    <Link href={href} className={className}>
+    <Link href={href} className={className} onClick={onNavigate}>
       {label}
     </Link>
   );
 }
 
 /** Always two columns so cols 1–2 of the mega grid stay occupied. */
-function SplitLinkColumns({links}: {links: SiteNavPanelGroup["links"]}) {
+function SplitLinkColumns({
+  links,
+  onNavigate,
+}: {
+  links: SiteNavPanelGroup["links"];
+  onNavigate?: () => void;
+}) {
   if (links.length === 0) return null;
   if (links.length === 1) {
     const only = links[0]!;
@@ -71,7 +80,7 @@ function SplitLinkColumns({links}: {links: SiteNavPanelGroup["links"]}) {
       <div className="grid grid-cols-2 gap-x-6">
         <ul className="flex flex-col gap-0.5">
           <li key={`${only.href}-${only.label}`}>
-            <PanelLink {...only} />
+            <PanelLink {...only} onNavigate={onNavigate} />
           </li>
         </ul>
         <div aria-hidden />
@@ -86,14 +95,14 @@ function SplitLinkColumns({links}: {links: SiteNavPanelGroup["links"]}) {
       <ul className="flex flex-col gap-0.5">
         {left.map((link) => (
           <li key={`${link.href}-${link.label}`}>
-            <PanelLink {...link} />
+            <PanelLink {...link} onNavigate={onNavigate} />
           </li>
         ))}
       </ul>
       <ul className="flex flex-col gap-0.5">
         {right.map((link) => (
           <li key={`${link.href}-${link.label}`}>
-            <PanelLink {...link} />
+            <PanelLink {...link} onNavigate={onNavigate} />
           </li>
         ))}
       </ul>
@@ -101,7 +110,13 @@ function SplitLinkColumns({links}: {links: SiteNavPanelGroup["links"]}) {
   );
 }
 
-function FeaturedPromo({promo}: {promo: SiteNavPanelPromo}) {
+function FeaturedPromo({
+  promo,
+  onNavigate,
+}: {
+  promo: SiteNavPanelPromo;
+  onNavigate?: () => void;
+}) {
   const heading = promo.heading?.trim();
   const body = (
     <>
@@ -139,13 +154,14 @@ function FeaturedPromo({promo}: {promo: SiteNavPanelPromo}) {
           className={shellClass}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={onNavigate}
         >
           {body}
         </a>
       );
     }
     return (
-      <Link href={promo.href} className={shellClass}>
+      <Link href={promo.href} className={shellClass} onClick={onNavigate}>
         {body}
       </Link>
     );
@@ -154,7 +170,13 @@ function FeaturedPromo({promo}: {promo: SiteNavPanelPromo}) {
   return <div className={shellClass}>{body}</div>;
 }
 
-function FooterCtaLink({cta}: {cta: SiteNavPanelLink}) {
+function FooterCtaLink({
+  cta,
+  onNavigate,
+}: {
+  cta: SiteNavPanelLink;
+  onNavigate?: () => void;
+}) {
   const className =
     "text-sm font-medium text-primary no-underline transition-colors hover:text-primary/80";
   if (cta.external) {
@@ -164,13 +186,14 @@ function FooterCtaLink({cta}: {cta: SiteNavPanelLink}) {
         className={className}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={onNavigate}
       >
         {cta.label}
       </a>
     );
   }
   return (
-    <Link href={cta.href} className={className}>
+    <Link href={cta.href} className={className} onClick={onNavigate}>
       {cta.label}
     </Link>
   );
@@ -182,9 +205,11 @@ function FooterCtaLink({cta}: {cta: SiteNavPanelLink}) {
  */
 export function SiteNavMegaPanel({
   panel,
+  onNavigate,
   className,
 }: {
   panel: SiteNavPanel;
+  onNavigate?: () => void;
   className?: string;
 }) {
   const groups = panel.groups.filter((g) => g.links.length > 0);
@@ -206,7 +231,10 @@ export function SiteNavMegaPanel({
                 label={primary.label}
                 descriptor={primary.descriptor}
               />
-              <SplitLinkColumns links={primary.links} />
+              <SplitLinkColumns
+                links={primary.links}
+                onNavigate={onNavigate}
+              />
             </>
           ) : null}
         </div>
@@ -222,7 +250,7 @@ export function SiteNavMegaPanel({
                 <ul className="flex flex-col gap-0.5">
                   {group.links.map((link) => (
                     <li key={`${link.href}-${link.label}`}>
-                      <PanelLink {...link} />
+                      <PanelLink {...link} onNavigate={onNavigate} />
                     </li>
                   ))}
                 </ul>
@@ -232,14 +260,18 @@ export function SiteNavMegaPanel({
         </div>
 
         <div className="flex min-h-full min-w-0 flex-col self-stretch border-l border-dashed border-border bg-muted/40">
-          <div className="p-6">{promo ? <FeaturedPromo promo={promo} /> : null}</div>
+          <div className="p-6">
+            {promo ? (
+              <FeaturedPromo promo={promo} onNavigate={onNavigate} />
+            ) : null}
+          </div>
         </div>
       </div>
 
       {footerCta ? (
         <div className="w-full border-t border-dashed border-border">
           <div className="py-4 pl-layout-gutter-inner">
-            <FooterCtaLink cta={footerCta} />
+            <FooterCtaLink cta={footerCta} onNavigate={onNavigate} />
           </div>
         </div>
       ) : null}

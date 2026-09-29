@@ -48,7 +48,6 @@ export function CaseStudyRail({
                         eyebrow={eyebrow}
                         title={<span id={headingId}>{headline}</span>}
                         description={description}
-                        descriptionClassName="text-base leading-7"
                         align={align}
                         showCta={false}
                         actions={

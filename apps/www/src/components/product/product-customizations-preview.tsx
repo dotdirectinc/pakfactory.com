@@ -95,7 +95,6 @@ export function ProductCustomizationsPreview({
                     eyebrow="Customization"
                     title={title}
                     description={description}
-                    descriptionClassName="text-base leading-6"
                 />
 
                 <div

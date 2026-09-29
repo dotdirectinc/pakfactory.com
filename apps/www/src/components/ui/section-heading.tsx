@@ -44,7 +44,7 @@ function SectionHeadingCtaLink({cta}: {cta: SectionHeadingCta}) {
     return (
         <Link
             href={cta.href}
-            className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-foreground"
+            className="group inline-flex shrink-0 items-center gap-2 text-base font-medium text-foreground"
         >
             <span className="underline-offset-4 group-hover:underline">
                 {cta.label}
@@ -120,7 +120,7 @@ export function SectionHeading({
             {description ? (
                 <p
                     className={cn(
-                        'text-sm leading-6 text-muted-foreground',
+                        'text-lg leading-7 text-muted-foreground',
                         align === 'center' && 'mx-auto',
                         descriptionClassName,
                     )}
