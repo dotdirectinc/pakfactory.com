@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
+import {NotifyMeCapture} from '@/components/ui/notify-me-capture';
 import type {CatalogLifecycle} from '@/lib/catalog/types';
 
-export const LIFECYCLE_COPY = {
+export const STATUS_COPY = {
     'coming-soon': {
         badge: 'Coming soon',
         title: 'Coming soon',
-        body: 'This isn’t available to order yet. Talk to a specialist and we’ll let you know when it launches.',
+        body: 'Be the first to be notified when this launches.',
     },
     discontinued: {
         badge: 'No longer available',
@@ -16,25 +17,31 @@ export const LIFECYCLE_COPY = {
     },
 } as const;
 
-type LifecycleBadgeProps = {
+type StatusBadgeProps = {
     status?: CatalogLifecycle;
     className?: string;
 };
 
 /**
- * Props-only lifecycle badge for cards and page headers (PROD-2605). Renders nothing for an
+ * Props-only status badge for cards and page headers (PROD-2605). Renders nothing for an
  * active item — the baseline shows a status only when it is not the normal one.
  */
-export function LifecycleBadge({status, className}: LifecycleBadgeProps) {
+export function StatusBadge({status, className}: StatusBadgeProps) {
     if (!status || status === 'active') return null;
     return (
-        <Badge variant="secondary" className={cn('uppercase tracking-wide', className)}>
-            {LIFECYCLE_COPY[status].badge}
+        <Badge
+            variant="secondary"
+            className={cn(
+                'border-transparent bg-muted-foreground px-2 py-0 text-[10px] font-medium leading-4 text-background uppercase tracking-wide',
+                className,
+            )}
+        >
+            {STATUS_COPY[status].badge}
         </Badge>
     );
 }
 
-type LifecycleNoticeProps = {
+type StatusNoticeProps = {
     status?: CatalogLifecycle;
     /** Where "talk to a specialist" goes. */
     contactHref: string;
@@ -42,12 +49,25 @@ type LifecycleNoticeProps = {
 };
 
 /**
- * Takes the place of the add-to-request rail on a page whose product or customization cannot be
- * ordered — coming soon, or discontinued (PROD-2605).
+ * Takes the place of order CTAs when a product or customization cannot be ordered
+ * (PROD-2605). Coming soon uses {@link NotifyMeCapture}; discontinued is specialist-only.
  */
-export function LifecycleNotice({status, contactHref, className}: LifecycleNoticeProps) {
+export function StatusNotice({status, contactHref, className}: StatusNoticeProps) {
     if (!status || status === 'active') return null;
-    const copy = LIFECYCLE_COPY[status];
+
+    if (status === 'coming-soon') {
+        const copy = STATUS_COPY['coming-soon'];
+        return (
+            <NotifyMeCapture
+                title={copy.title}
+                description={copy.body}
+                specialistHref={contactHref}
+                className={cn('mt-6', className)}
+            />
+        );
+    }
+
+    const copy = STATUS_COPY.discontinued;
     return (
         <div
             role="status"

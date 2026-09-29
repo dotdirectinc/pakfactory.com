@@ -1,6 +1,6 @@
 'use client';
 
-import {LifecycleBadge} from '@/components/ui/lifecycle-badge';
+import {StatusBadge} from '@/components/ui/status-badge';
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
 import {Columns2, Package} from 'lucide-react';
@@ -30,6 +30,8 @@ export type CustomizationCardData = Pick<
 
 type CustomizationCardProps = {
     item: CustomizationCardData;
+    /** Above-fold catalog tiles — LCP candidates. */
+    priority?: boolean;
 };
 
 const compareAction = {
@@ -59,15 +61,20 @@ function resolveGallery(item: CustomizationCardData) {
  * **Transactional card** — customization catalog tile (category eyebrow, bookmark / compare).
  * Composes {@link MediaCardFrame}.
  */
-export function CustomizationCard({item}: CustomizationCardProps) {
+export function CustomizationCard({item, priority = false}: CustomizationCardProps) {
     const href = customizationCategoryHref(item.categoryValue, item.slug);
     const eyebrow = (item.categoryLabel ?? item.categoryValue).toUpperCase();
     const [saved, setSaved] = useState(false);
+    const [prefetch, setPrefetch] = useState(false);
     const gallery = resolveGallery(item);
 
     function handleBookmark(event: MouseEvent<HTMLButtonElement>) {
         stubBookmarkAction(event);
         setSaved((prev) => !prev);
+    }
+
+    function enablePrefetch() {
+        setPrefetch(true);
     }
 
     const placeholder = (
@@ -80,24 +87,21 @@ export function CustomizationCard({item}: CustomizationCardProps) {
     );
 
     const hero = gallery[0];
-    const badge = item.status && item.status !== 'active' ? (
-        <LifecycleBadge status={item.status} className="absolute left-3 top-3 z-10" />
-    ) : null;
     const media = hero ? (
         <div className="pointer-events-none absolute inset-0">
-            {badge}
             <SanityImage
                 src={hero.src}
                 alt={hero.alt ?? item.title}
                 applyWatermark={false}
                 fill
+                priority={priority}
+                square
                 sizes="(max-width: 640px) 96px, (max-width: 1280px) 33vw, 25vw"
                 className="object-cover"
             />
         </div>
     ) : (
         <div className="pointer-events-none absolute inset-0">
-            {badge}
             {placeholder}
         </div>
     );
@@ -105,6 +109,10 @@ export function CustomizationCard({item}: CustomizationCardProps) {
     const mediaOverlay = (
         <Link
             href={href}
+            prefetch={prefetch}
+            onPointerEnter={enablePrefetch}
+            onPointerDown={enablePrefetch}
+            onFocus={enablePrefetch}
             className="absolute inset-0 z-0 block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={item.title}
         />
@@ -116,6 +124,11 @@ export function CustomizationCard({item}: CustomizationCardProps) {
             bookmarkPressed={saved}
             media={media}
             mediaOverlay={mediaOverlay}
+            statusBadge={
+                item.status && item.status !== 'active' ? (
+                    <StatusBadge status={item.status} />
+                ) : undefined
+            }
             bookmark={
                 <BookmarkIconButton
                     pressed={saved}
@@ -154,6 +167,10 @@ export function CustomizationCard({item}: CustomizationCardProps) {
                     </div>
                     <Link
                         href={href}
+                        prefetch={prefetch}
+                        onPointerEnter={enablePrefetch}
+                        onPointerDown={enablePrefetch}
+                        onFocus={enablePrefetch}
                         className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">

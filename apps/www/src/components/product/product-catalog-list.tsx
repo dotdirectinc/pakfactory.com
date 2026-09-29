@@ -71,7 +71,7 @@ export function ProductCatalogList({
 
     return (
         <div className={CATALOG_GRID_CLASS}>
-            {cells.map((cell) =>
+            {cells.map((cell, index) =>
                 cell.kind === 'line' ? (
                     <div
                         key={`line-entry-${cell.line.slug}`}
@@ -88,6 +88,8 @@ export function ProductCatalogList({
                     <div key={cell.item._id} className="min-h-0 h-full">
                         <ProductCard
                             data={toProductLibraryCardData(cell.item)}
+                            priority={index < 4}
+                            applyWatermark={false}
                         />
                     </div>
                 ),

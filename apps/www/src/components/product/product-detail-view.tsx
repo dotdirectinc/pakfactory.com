@@ -8,7 +8,7 @@ import {mapCustomizationPreviewItems} from '@/components/product/map-customizati
 import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {ProductRequestRail} from '@/components/product/product-request-rail';
-import {LifecycleBadge, LifecycleNotice} from '@/components/ui/lifecycle-badge';
+import {StatusBadge, StatusNotice} from '@/components/ui/status-badge';
 import {
     AnchorNav,
     type AnchorNavItem,
@@ -184,10 +184,12 @@ return (
                         }
                     />
                     <div>
-                        <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                            {displaySku}
-                        </p>
-                        <LifecycleBadge status={product.status} className="mt-2" />
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="min-w-0 flex-1 truncate text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                                {displaySku}
+                            </p>
+                            <StatusBadge status={product.status} className="shrink-0" />
+                        </div>
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {product.title}
                         </h1>
@@ -198,7 +200,7 @@ return (
                         ) : null}
                         {/* Coming soon / discontinued: shown, never orderable (PROD-2605). */}
                         {product.status && product.status !== 'active' ? (
-                            <LifecycleNotice
+                            <StatusNotice
                                 status={product.status}
                                 contactHref={WWW_ROUTES.contact}
                             />

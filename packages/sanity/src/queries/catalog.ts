@@ -278,7 +278,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   kind,
   status,
   moq,
-  media[]{
+  media[0...1]{
     ...,
     "alt": ${IMAGE_ALT}
   },
@@ -494,7 +494,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   title,
   "slug": slug.current,
   status,
-  media[]{
+  media[0...1]{
     ...,
     "alt": ${IMAGE_ALT}
   },

@@ -19,6 +19,11 @@ type MediaCardFrameProps = {
     bookmark?: ReactNode;
     /** Desktop hover actions (e.g. compare) on the media — far left; bookmark sits far right. */
     mediaActions?: ReactNode;
+    /**
+     * Coming soon / discontinued label — top-right at rest; fades out on desktop
+     * hover so utilities and the brand mark can take that corner.
+     */
+    statusBadge?: ReactNode;
     /** When true, desktop utility cluster stays visible without hover. */
     bookmarkPressed?: boolean;
     /** Settle-zoom on the media chrome. Default true. */
@@ -46,6 +51,7 @@ export function MediaCardFrame({
     mediaOverlay,
     bookmark,
     mediaActions,
+    statusBadge,
     bookmarkPressed = false,
     settleZoom = true,
     meta,
@@ -60,6 +66,12 @@ export function MediaCardFrame({
         'sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
         'motion-reduce:sm:opacity-100',
         bookmarkPressed && 'sm:opacity-100',
+    );
+    // Inverse of hoverReveal: status is readable at rest, yields the corner on desktop hover.
+    const statusFade = cn(
+        'transition-opacity duration-[var(--motion-fast)] ease-out',
+        'sm:group-hover:opacity-0 sm:group-focus-within:opacity-0',
+        'motion-reduce:sm:opacity-100',
     );
     const markReveal = cn(
         'sm:translate-x-[-5px] sm:translate-y-[5px] sm:opacity-0 sm:delay-0',
@@ -112,6 +124,16 @@ export function MediaCardFrame({
                             </div>
                         ) : null}
                     </div>
+                    {statusBadge ? (
+                        <div
+                            className={cn(
+                                'pointer-events-none absolute right-2 top-2 z-20 sm:right-4 sm:top-4',
+                                statusFade,
+                            )}
+                        >
+                            {statusBadge}
+                        </div>
+                    ) : null}
                     {/* Detail affordance: brand mark eases in with overlay */}
                     <div
                         aria-hidden

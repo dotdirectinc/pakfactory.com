@@ -20,23 +20,24 @@ export const metadata: Metadata = {
     title: 'Customizations',
 };
 
-async function CustomizationsCatalogBody() {
-    const [library, page] = await Promise.all([
-        listCustomizations(),
-        getCustomizationCatalogPage(),
-    ]);
-    const sections = (page?.sections ?? null) as PageSection[] | null;
+async function CustomizationCatalogGrid() {
+    const library = await listCustomizations();
 
     return (
-        <>
-            <CustomizationCatalogView
-                library={library}
-                urlSync
-                showPageChrome={false}
-            />
-            <SectionRenderer sections={sections} />
-        </>
+        <CustomizationCatalogView
+            library={library}
+            urlSync
+            showPageChrome={false}
+        />
     );
+}
+
+async function CustomizationCatalogPageSections() {
+    const page = await getCustomizationCatalogPage();
+    const sections = (page?.sections ?? null) as PageSection[] | null;
+    if (!sections?.length) return null;
+
+    return <SectionRenderer sections={sections} />;
 }
 
 export default function CustomizationsIndexPage() {
@@ -44,7 +45,10 @@ export default function CustomizationsIndexPage() {
         <>
             <CustomizationCatalogPageChrome />
             <Suspense fallback={<CustomizationCatalogPanelLoading />}>
-                <CustomizationsCatalogBody />
+                <CustomizationCatalogGrid />
+            </Suspense>
+            <Suspense fallback={null}>
+                <CustomizationCatalogPageSections />
             </Suspense>
         </>
     );
