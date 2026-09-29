@@ -87,6 +87,16 @@ export const CUSTOMER_FACING = /* groq */ `customerFacing != false`;
 export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon"])`;
 export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
 
+/**
+ * Product LINES and STYLES are grouping pages, not products (Richard, 2026-09-29 — PROD-2620):
+ * a discontinued line or style is treated as HIDDEN — no page, no route, no listing — rather than
+ * keeping a "no longer available" page the way a discontinued product does. So one rule serves
+ * both the listings and the route probes. `coming-soon` stays visible; an unset status is active.
+ * A style's page exists only while its line lists it (`getStyle` in www), so the `styles` list
+ * below is also the style route gate.
+ */
+export const LINE_STYLE_VISIBLE = /* groq */ `${LISTED_STATUS} && ${CUSTOMER_FACING}`;
+
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
@@ -94,7 +104,11 @@ const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
   (status == "active" || !defined(status)) &&
   ${CUSTOMER_FACING} &&
-  ^._id in availableCustomizations[].customization._ref
+  ^._id in availableCustomizations[].customization._ref &&
+  // Never offer a line whose page is gone (PROD-2620). Tested on the product, not by filtering
+  // \`.line\` afterwards: \`{…}.line[cond]\` applies the filter to each line object, not the list.
+  !(coalesce(productLine, basedOn->productLine)->status in ["discontinued"]) &&
+  coalesce(productLine, basedOn->productLine)->customerFacing != false
 ]{
   "line": coalesce(productLine, basedOn->productLine)->{
     _id,
@@ -386,7 +400,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     heroLayout,
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
-  "styles": *[_type == "productStyle" && productLine._ref == ^._id && ${CUSTOMER_FACING}] | order(title asc) {
+  "styles": *[_type == "productStyle" && productLine._ref == ^._id && ${LINE_STYLE_VISIBLE}] | order(title asc) {
     _id,
     title,
     "slug": slug.current,
@@ -407,7 +421,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   _type == "productLine" &&
   defined(slug.current) &&
-  ${CUSTOMER_FACING}
+  ${LINE_STYLE_VISIBLE}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
@@ -415,7 +429,7 @@ export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
   slug.current == $slug &&
-  ${CUSTOMER_FACING}
+  ${LINE_STYLE_VISIBLE}
 ][0]{
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
@@ -427,7 +441,7 @@ export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
   slug.current == $slug &&
-  ${CUSTOMER_FACING}
+  ${LINE_STYLE_VISIBLE}
 ][0]._id`;
 
 const PROPERTY_VALUE_PROJ = /* groq */ `{
