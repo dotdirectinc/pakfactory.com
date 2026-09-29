@@ -48,6 +48,14 @@ When adding a new env var, update **both** `.env.example` and `turbo.json` `@pak
 - Include `_type == "faq"` so an FAQ answer edit refreshes every page that shows it — catalog (lines, styles, products, customizations), solutions and expertise. **The production webhook's filter needs `"faq"` added in the Sanity dashboard**; the route handles it but the webhook must send it.
 - Dev test webhook (`development` → `staging.pakfactory.com`) sends **no `_type`** (projection `{"sweep": true}`), so every publish clears everything and skips IndexNow / `publishedAt` stamping. Staging's firewall rule exempts only `/api/revalidate`.
 
+## Draft mode strings are stega-encoded
+
+In draft mode (entered from Studio Presentation; it sticks in the browser on staging), the drafts client has `stega.enabled`, so **every Studio string arrives with invisible zero-width characters appended**. You can see them in the page `<title>`. IDs are safe: stega skips `_id`, `_ref`, `…Id` and `slug.current`. **Enum-like strings are not.** A raw `listSource === 'page'` never matched, and every "This page" section rendered empty on staging while local (published) looked fine (#676, 2026-09-28).
+
+- Comparing a Studio string to a literal? `stegaClean` it first (`import {stegaClean} from 'next-sanity'`). Done centrally in `shouldInheritSectionList` and `map-section-chrome` (`align`, `paddingBlock`).
+- "Missing on staging, fine locally" → check the page title for zero-width characters before anything else.
+- Private window or `/case-studies/api/draft-mode/disable` = what visitors see.
+
 ## Website navigation singleton (chrome)
 
 Site header + footer read Sanity `websiteNavigation` (not page sections). Header **MegaMenu** (PROD-2611) consumes each primary item’s **Mega-menu groups** + optional **Promo** (Featured hidden when empty) + optional **Footer CTA** (second row under the grid, e.g. “See all products”). Flat items (no real mega groups) stay simple links. Desktop panel is a persistent **4-column** grid (cols 1–2 primary split, no divider; col 3 secondary; col 4 promo rail) with `rounded-b-md` sheet.

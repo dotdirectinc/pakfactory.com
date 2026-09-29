@@ -34,6 +34,18 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 
 Active products only (`status == "active"` or unset), ordered by title.
 
+### What is shown (PROD-2620)
+
+Two fields decide whether a catalog document gets a page and appears in listings. Both rules live as shared constants in [`catalog.ts`](../../../packages/sanity/src/queries/catalog.ts); use them instead of re-writing the conditions.
+
+| Rule | Condition | Meaning |
+| --- | --- | --- |
+| `CUSTOMER_FACING` | `customerFacing != false` | Notion "Hidden" sets `customerFacing: false`: no page (404), no route, no listing. **Unset counts as visible**, so never write `== true`. |
+| `LISTED_STATUS` | unset, `active`, `coming-soon` | Products: `discontinued` keeps its page ("no longer available") but is not listed. |
+| `LINE_STYLE_VISIBLE` | `LISTED_STATUS && CUSTOMER_FACING` | Product **lines and styles** (Richard, 2026-09-29): `discontinued` is treated as hidden, with no page, no route and no listing. A style's page exists only while its line lists it (`getStyle`), so the line's `styles` list is also the style route gate. |
+
+Also applied to: the option → product-lines facet, the three solution product lists, the Solution Style filter, the Algolia product index and the case-studies Products filter (#694). Behaviour tests: [`line-style-visibility.test.ts`](../../../packages/sanity/src/queries/line-style-visibility.test.ts).
+
 ### Sanity field map
 
 | App | Sanity |
