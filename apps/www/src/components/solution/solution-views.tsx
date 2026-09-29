@@ -1,5 +1,6 @@
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
+import {SectionReveal} from '@/components/common/section-reveal';
 import {
     PageHeadingSection,
     PageHeadingWithMedia,
@@ -51,6 +52,7 @@ function toProductCardData(product: Product): ProductCardData {
         imageAlt: images[0]?.alt ?? product.media[0]?.alt ?? product.title,
         images: images.length > 0 ? images : undefined,
         moq: product.moq,
+        ...(product.status ? {status: product.status} : {}),
     };
 }
 
@@ -66,18 +68,20 @@ export function SolutionCatalogView({
         <>
             {showPageChrome ? <SolutionCatalogPageChrome /> : null}
             <PageDielineSection innerClassName="pb-24 pt-8">
-                <div className={TILE_GRID_CLASS}>
-                    {solutions.map((solution) => (
-                        <CatalogCard
-                            key={solution.slug}
-                            href={solutionHref(solution.slug)}
-                            title={solution.title}
-                            description={solution.description}
-                            imageSrc={solution.imageUrl}
-                            imageAlt={solution.imageAlt ?? solution.title}
-                        />
-                    ))}
-                </div>
+                <SectionReveal>
+                    <div className={TILE_GRID_CLASS}>
+                        {solutions.map((solution) => (
+                            <CatalogCard
+                                key={solution.slug}
+                                href={solutionHref(solution.slug)}
+                                title={solution.title}
+                                description={solution.description}
+                                imageSrc={solution.imageUrl}
+                                imageAlt={solution.imageAlt ?? solution.title}
+                            />
+                        ))}
+                    </div>
+                </SectionReveal>
             </PageDielineSection>
         </>
     );
@@ -192,6 +196,7 @@ export function SolutionStyleCatalogView({
             <PageHeadingWithMedia
                 title={style.h1}
                 description={description}
+                settle
                 media={
                     style.featuredImageUrl
                         ? {

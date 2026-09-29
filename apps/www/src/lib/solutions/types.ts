@@ -116,6 +116,8 @@ export type SectionBandChrome = {
 export type SolutionMedia = {
     src: string;
     alt: string;
+    /** Optional playable MP4/MOV URL (featuredVideo upload/URL). */
+    videoSrc?: string;
 };
 
 export type SolutionHeroTile = {

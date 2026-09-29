@@ -107,7 +107,6 @@ export function TestimonialsRow({
                 align={align}
                 cta={headingCta}
                 ctaPlacement={align === 'center' ? 'bottom' : 'end'}
-                descriptionClassName="text-base leading-6"
             />
         </div>
     );

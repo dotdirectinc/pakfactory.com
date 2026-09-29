@@ -13,7 +13,9 @@ import {
     listLines,
     listProductStyleLibrary,
 } from '@/lib/catalog/catalog';
+import {resolveStyleFaqs} from '@/lib/catalog/faq-inheritance';
 import type {ProductLine, ProductStyleRef} from '@/lib/catalog/types';
+import {applyFaqInherit} from '@/lib/sections/merge-solution-sections';
 
 export const revalidate = 60;
 
@@ -54,7 +56,10 @@ async function ProductStyleCatalogBody({
         listProductStyleLibrary(line.slug, style.slug),
         getProductStylePage(line.slug, style.slug),
     ]);
-    const sections = (page?.sections ?? null) as PageSection[] | null;
+    // The template's FAQ section (listSource page) fills from the style, else its line.
+    const sections = page?.sections
+        ? (applyFaqInherit(page.sections, resolveStyleFaqs(style, line)) as PageSection[])
+        : null;
 
     return (
         <>

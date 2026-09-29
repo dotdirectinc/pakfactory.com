@@ -21,10 +21,13 @@ export function mapExpertiseSequence(
         const id = row._id?.trim() || slug || title;
         const body =
             row.description?.trim() || row.tagline?.trim() || undefined;
-        const diagramSrc = row.diagramSrc?.trim();
+        const diagramSrc = row.diagramSrc?.trim() || '';
+        const videoSrc = row.featuredVideoUrl?.trim() || '';
         const href = slug
             ? `${WWW_ROUTES.expertise}/${slug}`
             : undefined;
+
+        const hasMedia = Boolean(diagramSrc || videoSrc);
 
         stages.push({
             id,
@@ -33,11 +36,12 @@ export function mapExpertiseSequence(
             ...(href
                 ? {cta: {label: 'Learn more', href}}
                 : {}),
-            ...(diagramSrc
+            ...(hasMedia
                 ? {
                       media: {
                           src: diagramSrc,
                           alt: row.diagramAlt?.trim() || title,
+                          ...(videoSrc ? {videoSrc} : {}),
                       },
                   }
                 : {mediaPlaceholder: title}),

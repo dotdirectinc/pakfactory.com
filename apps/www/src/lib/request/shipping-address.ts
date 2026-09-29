@@ -43,7 +43,7 @@ export function formatAddressSummaryLine(address: ShippingAddress): string {
  *
  * Free-text fields are **not** trimmed here — this runs on every keystroke via
  * ship-to / company-office patches, and trimming would eat spaces mid-type.
- * Trim at wire/submit instead (`to-wire-payload` / `to-submit-payload`).
+ * Trim at wire/submit instead (`to-wire-payload`).
  */
 export function normalizeAddress(
     partial: Partial<ShippingAddress> = {},

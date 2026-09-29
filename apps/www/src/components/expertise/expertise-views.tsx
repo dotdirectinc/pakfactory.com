@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type {
     PageSectionCaseStudiesRowDoc,
     PageSectionFaqSectionDoc,
@@ -10,7 +11,6 @@ import type {
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
-import {ExpertiseHero} from '@/components/expertise/expertise-hero';
 import {ExpertiseLifecycle} from '@/components/expertise/expertise-lifecycle';
 import {CaseStudyRail} from '@/components/sections/case-study-rail';
 import {FaqSection} from '@/components/sections/faq-section';
@@ -99,16 +99,16 @@ export function ExpertiseCatalogView({
  * Expertise stage detail page — the one template every stage renders through
  * (PROD-1108 / PROD-2469, first used by PROD-2577 Strategy).
  *
- * Breadcrumb + hero are route-owned (ADR-020 §2): the POC `ExpertiseHero`
- * with H1, tagline, description, the quote button, an optional in-page link
- * (label + target section type from the stage) and an optional hero image. The
- * body is the template's `sections[]` in editor order, wrapped in
- * `.expertise-stage` so SectionHeading takes the POC style (no V5 brackets).
- * On this host some shared Sections take the expertise (POC) presentation:
- * `expertiseSequence` → the lifecycle path with this stage current (inheriting
- * every stage in hub order when its list is empty), `mediaFeature` →
- * MediaPanel, `caseStudiesRow` on the muted band, `logoWall` as the trust
- * strip, `inspirationsGrid` → WorkShowcase, `generalCta` as the dark closing band.
+ * Breadcrumb + hero are route-owned (ADR-020 §2): the shared
+ * `PageHeadingSection` with H1, tagline, description, the quote button, an
+ * optional in-page link (label + target section type from the stage) and an
+ * optional hero image band. The body is the template's `sections[]` in editor
+ * order, with the shared SectionHeading on every band. On this host some shared
+ * Sections take the expertise presentation: `expertiseSequence` → the
+ * lifecycle path with this stage current (inheriting every stage in hub order
+ * when its list is empty), `mediaFeature` → MediaPanel, `caseStudiesRow` on the
+ * muted band, `logoWall` as the trust strip, `inspirationsGrid` →
+ * WorkShowcase, `faqSection` as left-aligned divider rows.
  */
 export function ExpertiseStageView({
     stage,
@@ -240,10 +240,10 @@ export function ExpertiseStageView({
                     {label: stage.title},
                 ]}
             />
-            <ExpertiseHero
+            <PageHeadingSection
                 title={stage.h1}
                 {...(stage.tagline ? {eyebrow: stage.tagline} : {})}
-                {...(stage.description ? {subhead: stage.description} : {})}
+                {...(stage.description ? {description: stage.description} : {})}
                 primaryCta={{
                     label: stage.heroCtaLabel ?? GENERAL_CTA_REQUEST_LABEL,
                     href: WWW_ROUTES.request,
@@ -251,14 +251,25 @@ export function ExpertiseStageView({
                 {...(heroLinkHref && stage.heroSecondary
                     ? {secondaryCta: {label: stage.heroSecondary.label, href: heroLinkHref}}
                     : {})}
-                {...(stage.heroImageUrl
-                    ? {image: {src: stage.heroImageUrl, alt: stage.heroImageAlt ?? stage.title}}
-                    : {})}
+                settle
+                borderBottom={!stage.heroImageUrl}
             />
-            {/* Scopes the POC heading style (globals.css) to this page. */}
-            <div className="expertise-stage">
-                <SectionRenderer sections={sections} components={components} />
-            </div>
+            {stage.heroImageUrl ? (
+                // Optional hero picture as a full-width band under the copy.
+                <PageDielineSection borderBottom paddingBlock="none" flush>
+                    <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
+                        <Image
+                            src={stage.heroImageUrl}
+                            alt={stage.heroImageAlt ?? stage.title}
+                            fill
+                            priority
+                            className="object-cover"
+                            sizes="(max-width: 1280px) 100vw, 1280px"
+                        />
+                    </div>
+                </PageDielineSection>
+            ) : null}
+            <SectionRenderer sections={sections} components={components} />
         </>
     );
 }

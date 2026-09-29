@@ -6,7 +6,6 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from '@pakfactory/ui/components/accordion';
-import {cn} from '@pakfactory/ui/lib/utils';
 
 import type {ProductFaq} from '@/lib/catalog/types';
 
@@ -46,26 +45,13 @@ export function FaqAccordion({items, variant = 'cards'}: FaqAccordionProps) {
                                 : 'rounded-2xl border-0 bg-muted px-6 sm:px-8'
                         }
                     >
-                        <AccordionTrigger
-                            className={cn(
-                                'gap-4 py-6 hover:no-underline',
-                                rows
-                                    ? // Plain chevron, no filled chip (POC).
-                                      'items-center text-xl font-medium leading-8 text-foreground [&>span]:size-6 [&>span]:bg-transparent [&_svg]:text-muted-foreground'
-                                    : 'items-center text-base font-semibold text-foreground',
-                            )}
-                        >
+                        {/* Rows change structure only — trigger, chip and type stay the shared ones. */}
+                        <AccordionTrigger className="items-center gap-4 py-6 text-base font-semibold text-foreground hover:no-underline">
                             <span className="min-w-0 flex-1 text-left leading-snug">
                                 {item.question}
                             </span>
                         </AccordionTrigger>
-                        <AccordionContent
-                            className={
-                                rows
-                                    ? 'pb-8 pr-8 text-lg leading-8 text-muted-foreground'
-                                    : 'pb-6 text-sm leading-relaxed text-muted-foreground'
-                            }
-                        >
+                        <AccordionContent className="pb-6 text-sm leading-relaxed text-muted-foreground">
                             {item.answerPlain}
                         </AccordionContent>
                     </AccordionItem>

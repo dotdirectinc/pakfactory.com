@@ -45,19 +45,31 @@ When adding a new env var, update **both** `.env.example` and `turbo.json` `@pak
 - Webhook target: `/api/revalidate`
 - Secret: `SANITY_REVALIDATE_SECRET` (Bearer or `?secret=`)
 - Include `_type == "websiteNavigation"` so header/footer chrome cache busts (`www-website-navigation`)
+- Include `_type == "faq"` so an FAQ answer edit refreshes every page that shows it — catalog (lines, styles, products, customizations), solutions and expertise. **The production webhook's filter needs `"faq"` added in the Sanity dashboard**; the route handles it but the webhook must send it.
+- Dev test webhook (`development` → `staging.pakfactory.com`) sends **no `_type`** (projection `{"sweep": true}`), so every publish clears everything and skips IndexNow / `publishedAt` stamping. Staging's firewall rule exempts only `/api/revalidate`.
 
 ## Website navigation singleton (chrome)
 
-Site header + footer read Sanity `websiteNavigation` (not page sections). Seed mirrors the hardcoded V5 chrome for parity.
+Site header + footer read Sanity `websiteNavigation` (not page sections). Header **MegaMenu** (PROD-2611) consumes each primary item’s **Mega-menu groups** + optional **Promo** (Featured hidden when empty) + optional **Footer CTA** (second row under the grid, e.g. “See all products”). Flat items (no real mega groups) stay simple links. Desktop panel is a persistent **4-column** grid (cols 1–2 primary split, no divider; col 3 secondary; col 4 promo rail) with `rounded-b-md` sheet.
 
-**Humans only** (agents must not run seeds — `AGENTS.md`):
+After schema/seed updates (e.g. clearing Solutions group descriptors), humans re-run with an explicit dataset:
 
 ```bash
-pnpm seed:website-navigation              # write + attempt publish
-pnpm seed:website-navigation -- --dry-run # print payload only
+pnpm seed:website-navigation -- --dataset development
+pnpm seed:website-navigation -- --dataset development --confirm
 ```
 
-Then confirm in Studio → Main Website → Navigation. If the doc is draft-only, publish it. Refresh local www (`pnpm dev:www`) and check header labels/hrefs + footer columns/social/AI.
+Or set Footer CTA per item in Studio → Navigation. Agents must not run seeds.
+
+**Seed (humans only — agents must not run):** fetches live `productLine` + `hasPage` solutions and builds Products / Solutions mega groups. Prefer `path` links for product lines (`productLine` is not Studio-linkable) and `internal` refs for solutions. Solutions groups are seeded **without** `descriptor` (label only). Footer/social/AI preserved. `createOrReplace` overwrites the singleton. `--dataset` is **required** (no env fallback); without `--confirm` the run is a dry run.
+
+```bash
+pnpm seed:website-navigation -- --dataset development              # preview JSON + catalog counts
+pnpm seed:website-navigation -- --dataset development --confirm    # write + attempt publish
+pnpm seed:website-navigation -- --dataset production --confirm --yes-production
+```
+
+Then in Studio → Main Website → Navigation: confirm Products / Solutions groups; attach **Solutions promo image** if desired; publish. Refresh www (`pnpm dev:www`). Revalidate tag: `www-website-navigation`.
 
 ## Solution LP sections (CMS template path)
 
@@ -101,6 +113,13 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden. PDP still uses mocks until wired.
 
 Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
+
+**Catalog FAQs inherit down the tree — line → style → product** (Richard, 2026-09-28; #675). A page shows the **nearest level with any FAQ**, and that list replaces everything above it: one FAQ curated on a product = that one only, nothing merges. Nothing is copied into the dataset — it resolves at render:
+
+- **Product (PDP):** GROQ `PRODUCT_FAQS_INHERITED` in `packages/sanity/src/queries/catalog.ts` — own → first style (`productStyle[0]`, the one its card shows) → line. The line is the product's own `productLine` (presets: via `basedOn`), falling back to the style's line; 78 dev products have a line none of their styles belong to, so "via the style" would be wrong.
+- **Style page:** `resolveStyleFaqs` (`src/lib/catalog/faq-inheritance.ts`) → `applyFaqInherit` into the template's FAQ section. ⚠️ The `productStylePage` template has **no `faqSection`** in development — until a designer adds one (list source *page*), style pages show no FAQs even though they resolve.
+- Only expertise pages emit `FAQPage` JSON-LD, so inherited FAQs add no duplicate markup across ~1,250 PDPs.
+- The FAQs themselves come from Notion via `populate:faqs` — [`scripts/sanity/CATALOG-REBUILD.md`](../../scripts/sanity/CATALOG-REBUILD.md) § FAQs.
 
 **Insert menu:** Studio tabs are entity-named (Solutions · Case studies · Products · …). Editor titles may say “Case study row” / “Image with text” while `_type` / React names stay as above — three-layer drift is intentional ([ADR-020 §10](../../docs/adr/0020-component-to-section-playbook.md)).
 

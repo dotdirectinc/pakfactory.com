@@ -28,6 +28,7 @@ export function toProductLibraryCardData(
         imageAlt: item.imageAlt ?? item.title,
         images: item.images,
         moq: item.moq,
+        ...(item.status ? {status: item.status} : {}),
     };
 }
 

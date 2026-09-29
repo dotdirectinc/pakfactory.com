@@ -30,10 +30,10 @@ export type LogoMarqueeProps = {
     /** How many lap copies in the track. Default 4. */
     repeat?: number;
     /**
-     * Fixed mark height in px with each logo at its natural width (trust strip).
-     * Default: every mark in the same `width × height` box.
+     * Trust-strip marks: a taller fixed height (`h-18`) with each logo at its
+     * natural width. Default: every mark in the same `width × height` box.
      */
-    markHeight?: number;
+    naturalWidth?: boolean;
 };
 
 const DEFAULT_DURATION_S = 44;
@@ -58,26 +58,25 @@ function usePrefersReducedMotion(): boolean {
 
 function LogoMark({
     item,
-    markHeight,
+    naturalWidth = false,
 }: {
     item: LogoMarqueeItem;
-    markHeight?: number;
+    naturalWidth?: boolean;
 }) {
     const [failed, setFailed] = useState(false);
     const width = item.width ?? DEFAULT_MARK_WIDTH;
-    const height = markHeight ?? item.height ?? DEFAULT_MARK_HEIGHT;
+    const height = item.height ?? DEFAULT_MARK_HEIGHT;
     const showImage = Boolean(item.imageSrc) && !failed;
 
     const mark = showImage ? (
         <Image
             src={item.imageSrc}
             alt={item.name}
-            width={markHeight ? width * (markHeight / DEFAULT_MARK_HEIGHT) : width}
+            width={width}
             height={height}
-            style={markHeight ? {height: markHeight} : undefined}
             className={cn(
-                markHeight
-                    ? 'w-auto max-w-none object-contain opacity-60 grayscale'
+                naturalWidth
+                    ? 'h-18 w-auto max-w-none object-contain opacity-60 grayscale'
                     : 'h-full w-full object-contain opacity-55 grayscale',
                 'transition-[opacity,filter] duration-300',
                 'group-hover/mark:opacity-100 group-hover/mark:grayscale-0',
@@ -91,7 +90,7 @@ function LogoMark({
         </span>
     );
 
-    const boxStyle = showImage && !markHeight ? {width, height} : undefined;
+    const boxStyle = showImage && !naturalWidth ? {width, height} : undefined;
 
     if (item.href) {
         return (
@@ -133,7 +132,7 @@ export function LogoMarquee({
     gap = DEFAULT_GAP_REM,
     edgeFade = true,
     repeat = DEFAULT_REPEAT,
-    markHeight,
+    naturalWidth = false,
 }: LogoMarqueeProps) {
     const reducedMotion = usePrefersReducedMotion();
     const scroll = autoplay && !reducedMotion;
@@ -143,7 +142,7 @@ export function LogoMarquee({
     }
 
     const marks = items.map((item) => (
-        <LogoMark key={item.id} item={item} markHeight={markHeight} />
+        <LogoMark key={item.id} item={item} naturalWidth={naturalWidth} />
     ));
 
     return (
@@ -172,7 +171,7 @@ export function LogoMarquee({
                 <ul className="mx-auto flex max-w-[1200px] list-none flex-wrap items-center justify-center gap-x-16 gap-y-8">
                     {items.map((item) => (
                         <li key={item.id}>
-                            <LogoMark item={item} markHeight={markHeight} />
+                            <LogoMark item={item} naturalWidth={naturalWidth} />
                         </li>
                     ))}
                 </ul>

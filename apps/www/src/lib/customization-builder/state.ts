@@ -746,9 +746,12 @@ export function seedFromCustomizations(
         };
         const already = answerSelections(getAnswer(seeded, key));
         if (already.some((existing) => existing.optionId === pick.optionId)) continue;
-        // A `one` Type keeps its first seeded option rather than the last one listed.
+        // A `one` Type keeps its first seeded option rather than the last one listed. A pick
+        // with no Type (a request line saved before the builder) is kept as it is: treating every
+        // Type-less pick as one shared `one` Type kept only the first per category, and saving
+        // the line then wrote the rest away (PROD-2605).
         const cardinality =
-            item.customerSelects === 'many' || item.cardinality === 'many'
+            !pick.typeId || item.customerSelects === 'many' || item.cardinality === 'many'
                 ? 'many'
                 : 'one';
         if (

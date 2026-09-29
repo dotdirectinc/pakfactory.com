@@ -35,6 +35,8 @@ pnpm --filter <pkg> run <task> -- --dataset development --confirm
 pnpm --filter <pkg> run <task> -- --dataset production --confirm --yes-production
 ```
 
+**Agent handoff for local seeding (binding — also in `AGENTS.md`):** agents never run seeds. When telling a human which command to run **locally**, always give `--dataset development --confirm` for the write (or `--dataset development` alone for dry-run preview). Never omit `--dataset` or imply the env default.
+
 **Never resolve the dataset from `NEXT_PUBLIC_SANITY_DATASET` for a write.** It is ambient:
 loaded from three `.env` files, persistent between sessions, shared across worktrees, and
 precisely what nobody re-reads before typing `--confirm`. The target belongs on the command

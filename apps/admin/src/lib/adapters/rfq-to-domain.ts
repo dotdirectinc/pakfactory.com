@@ -7,6 +7,7 @@ import type {
   RequestEntryKind,
   ShippingAddress,
 } from "@pakfactory/request/request";
+import { formatDimensions, formatPick, type StoredDimensions } from "./request-line-format";
 
 /**
  * Maps a `public.rfq` row onto the domain shapes the admin views render.
@@ -46,7 +47,17 @@ type StoredSubmission = {
     productSlug: string;
     contents?: string;
     quantities?: number[];
-    customizations?: { id: string; label: string; category?: string }[];
+    customizations?: {
+      id: string;
+      label: string;
+      category?: string;
+      /** PROD-2605: the Type, Property choices and note on the pick. */
+      type?: string;
+      properties?: string[];
+      note?: string;
+    }[];
+    /** PROD-2605: the size the buyer entered. */
+    dimensions?: StoredDimensions;
     notes?: string;
     addedAt?: string;
   }[];
@@ -169,11 +180,12 @@ function toLines(row: RfqRow, s: StoredSubmission): RequestLine[] {
     contents: line.contents ?? "",
     customizations: (line.customizations ?? []).map((c) => ({
       id: c.id,
-      label: c.label,
+      label: formatPick(c),
       // ⚠️ Required by the domain type, optional in the submit contract. Empty
       // rather than invented: a made-up category would read as fact in the UI.
       category: c.category ?? "",
     })),
+    ...(formatDimensions(line.dimensions) ? { dimensionsSummary: formatDimensions(line.dimensions) } : {}),
     ...(line.notes ? { notes: line.notes } : {}),
     // Per-line reference images have no upload step yet, so there is nothing to
     // point at. Omitted rather than fabricated (ADR-0013).

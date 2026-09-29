@@ -13,27 +13,6 @@ export function formatSectionEyebrow(text: string): string {
     return `[ ${value} ]`;
 }
 
-/**
- * Eyebrow with its V5 brackets as separate spans, so a host can drop them by
- * slot (the expertise pages' POC style) — reads the same as
- * {@link formatSectionEyebrow} everywhere else.
- */
-function SectionEyebrowText({text}: {text: string}) {
-    const value = text.trim();
-    const bare =
-        value.startsWith('[') && value.endsWith(']')
-            ? value.slice(1, -1).trim()
-            : value;
-    if (!bare) return null;
-    return (
-        <>
-            <span data-slot="section-eyebrow-bracket">[ </span>
-            {bare}
-            <span data-slot="section-eyebrow-bracket"> ]</span>
-        </>
-    );
-}
-
 export type SectionHeadingCta = {
     label: string;
     href: string;
@@ -65,7 +44,7 @@ function SectionHeadingCtaLink({cta}: {cta: SectionHeadingCta}) {
     return (
         <Link
             href={cta.href}
-            className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-foreground"
+            className="group inline-flex shrink-0 items-center gap-2 text-base font-medium text-foreground"
         >
             <span className="underline-offset-4 group-hover:underline">
                 {cta.label}
@@ -113,7 +92,6 @@ export function SectionHeading({
 
     const heading = (
         <div
-            data-slot="section-heading"
             className={cn(
                 'flex min-w-0 w-full max-w-full flex-1 flex-col gap-6 md:max-w-[66.666%]',
                 align === 'center' && 'mx-auto items-center text-center',
@@ -121,7 +99,6 @@ export function SectionHeading({
         >
             {eyebrow ? (
                 <p
-                    data-slot="section-eyebrow"
                     className={cn(
                         'text-[11px] font-semibold uppercase tracking-[0.08em]',
                         eyebrowTone === 'muted'
@@ -129,13 +106,10 @@ export function SectionHeading({
                             : 'text-brand-blue',
                     )}
                 >
-                    <SectionEyebrowText text={eyebrow} />
+                    {formatSectionEyebrow(eyebrow)}
                 </p>
             ) : null}
             <h2
-                data-slot="section-title"
-                // Hosts restyling titles by slot leave a caller-sized one alone.
-                data-sized={titleClassName ? '' : undefined}
                 className={cn(
                     'text-[32px] font-semibold leading-tight tracking-[-0.02em] text-foreground sm:text-[42px] sm:leading-[1.12]',
                     titleClassName,
@@ -145,9 +119,8 @@ export function SectionHeading({
             </h2>
             {description ? (
                 <p
-                    data-slot="section-description"
                     className={cn(
-                        'text-sm leading-6 text-muted-foreground',
+                        'text-lg leading-7 text-muted-foreground',
                         align === 'center' && 'mx-auto',
                         descriptionClassName,
                     )}

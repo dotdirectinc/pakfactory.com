@@ -3,6 +3,7 @@ import {Skeleton} from '@pakfactory/ui/components/skeleton';
 
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
+import {SectionReveal} from '@/components/common/section-reveal';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 const SOLUTIONS_HEADING = 'Solutions';
@@ -53,16 +54,18 @@ function SolutionCatalogTileSkeleton() {
 export function SolutionCatalogPanelLoading({count = 6}: {count?: number} = {}) {
     return (
         <PageDielineSection innerClassName="pb-24 pt-8">
-            <div
-                className={TILE_GRID_CLASS}
-                aria-busy="true"
-                aria-live="polite"
-            >
-                <span className="sr-only">Loading solutions catalog</span>
-                {Array.from({length: count}, (_, index) => (
-                    <SolutionCatalogTileSkeleton key={index} />
-                ))}
-            </div>
+            <SectionReveal>
+                <div
+                    className={TILE_GRID_CLASS}
+                    aria-busy="true"
+                    aria-live="polite"
+                >
+                    <span className="sr-only">Loading solutions catalog</span>
+                    {Array.from({length: count}, (_, index) => (
+                        <SolutionCatalogTileSkeleton key={index} />
+                    ))}
+                </div>
+            </SectionReveal>
         </PageDielineSection>
     );
 }

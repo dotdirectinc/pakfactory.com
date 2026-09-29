@@ -74,7 +74,6 @@ export function ProductStylesSection({
                         <span id={STYLES_HEADING_ID}>{headline}</span>
                     }
                     description={description}
-                    descriptionClassName="text-base leading-6"
                     cta={cta}
                     ctaPlacement="end"
                 />

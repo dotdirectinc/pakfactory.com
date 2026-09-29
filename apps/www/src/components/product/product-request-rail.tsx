@@ -74,6 +74,7 @@ export function ProductRequestRail({product}: ProductRequestRailProps) {
             productTitle: product.title,
             productSku: product.sku,
             productLineTitle: product.productLine.title,
+            ...(product.moq ? {productMoq: product.moq} : {}),
             productMedia: product.media,
             availableCustomizations: product.availableCustomizations,
             ...(product.customizationRules

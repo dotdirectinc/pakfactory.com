@@ -4,6 +4,10 @@
  * (+ cheap scalars) for allowlisted inventory until later mappers land.
  */
 
+import {FEATURED_VIDEO_URL_FIELD} from './featured-video';
+
+export {FEATURED_VIDEO_URL_FIELD};
+
 /** FAQ ref card — matches product FAQ projection shape. */
 const FAQ_REF = /* groq */ `{
   question,
@@ -241,7 +245,8 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
       description,
       status,
       "diagramSrc": diagram.asset->url,
-      "diagramAlt": coalesce(diagram.alt, diagram.asset->altText)
+      "diagramAlt": coalesce(diagram.alt, diagram.asset->altText),
+      ${FEATURED_VIDEO_URL_FIELD}
     }
   },
   _type == "signatureSystem" => {
@@ -381,6 +386,8 @@ export type PageSectionExpertiseStageDoc = {
     status?: string | null;
     diagramSrc?: string | null;
     diagramAlt?: string | null;
+    /** Playable upload/URL from featuredVideo; null for YouTube-only or unset. */
+    featuredVideoUrl?: string | null;
 };
 
 export type PageSectionExpertiseSequenceDoc = PageSectionChromeFields & {

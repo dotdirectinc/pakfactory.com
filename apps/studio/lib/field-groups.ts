@@ -3,7 +3,7 @@
  *
  * The Studio already ships this vocabulary on Post, Case Study and Blog Page;
  * this file makes it a single importable definition so no type re-invents a tab
- * name, re-orders the set, or quietly adds a ninth. An area task calls
+ * name, re-orders the set, or quietly adds one of its own. An area task calls
  * `groupsFor([...])` with the tabs its type actually needs and gets them back in
  * the canonical order.
  *
@@ -29,6 +29,7 @@ export const GROUP_ORDER = [
   'content',
   'template',
   'categorization',
+  'filters',
   'publishing',
   'sections',
   'specs',
@@ -44,6 +45,7 @@ const GROUP_TITLES: Record<GroupName, string> = {
   content: 'Content',
   template: 'Template',
   categorization: 'Categorization',
+  filters: 'Filters',
   publishing: 'Publishing',
   sections: 'Sections',
   specs: 'Specs',

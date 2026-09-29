@@ -385,6 +385,18 @@ export const MIGRATIONS = [
     // falls back to legacy sections until this has run.
     probe: `count(*[_type == "expertiseStage" && defined(sections)]) == 0`,
   },
+  {
+    id: '20260929-featured-video-object',
+    ticket: null,
+    title:
+      'Wrap product/productLine featuredVideo bare file into shared featuredVideo object (source: upload)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:featured-video-object',
+    script: 'apps/studio/scripts/migrate-featured-video-object.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no product/line still has a bare file (asset without source).
+    probe: `count(*[_type in ["product","productLine"] && defined(featuredVideo.asset) && !defined(featuredVideo.source)]) == 0`,
+  },
 ]
 
 /**
@@ -441,6 +453,7 @@ export const TASKS = [
   // rebuilt successors, from the purge map. Idempotent — anything already in place is skipped.
   { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
+  { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
 ]

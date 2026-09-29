@@ -38,6 +38,13 @@ export function AdminRequestProductCard({ line }: AdminRequestProductCardProps) 
     .filter(Boolean) as string[];
 
   const notesItems: { key: string; label: string; value: string }[] = [];
+  if (line.dimensionsSummary?.trim()) {
+    notesItems.push({
+      key: "dimensions",
+      label: ADMIN_REQUESTS_COPY.sizeLabel,
+      value: line.dimensionsSummary.trim(),
+    });
+  }
   if (line.contents.trim()) {
     notesItems.push({
       key: "contents",

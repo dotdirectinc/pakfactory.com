@@ -41,7 +41,16 @@ export const WEBSITE_NAVIGATION_QUERY = /* groq */ `*[_id == "websiteNavigation"
       label,
       descriptor,
       items[]${NAV_LINK_FIELDS}
-    }
+    },
+    promo{
+      heading,
+      image{
+        ...,
+        "alt": coalesce(alt, asset->altText)
+      },
+      link${NAV_LINK_FIELDS}
+    },
+    footerCta${NAV_LINK_FIELDS}
   },
   columns[]{
     "sections": sections[]{
@@ -94,6 +103,16 @@ export type WebsiteNavigationDoc = {
               items?: (WebsiteNavLinkDoc | null)[] | null;
             } | null)[]
           | null;
+        promo?: {
+          heading?: string | null;
+          image?: {
+            alt?: string | null;
+            asset?: unknown;
+            [key: string]: unknown;
+          } | null;
+          link?: WebsiteNavLinkDoc | null;
+        } | null;
+        footerCta?: WebsiteNavLinkDoc | null;
       } | null)[]
     | null;
   columns?:

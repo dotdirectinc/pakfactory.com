@@ -42,6 +42,8 @@ export type RequestLine = {
     productSku?: string;
     /** Catalog product-line title (e.g. "Rigid Box") for request card meta. */
     productLineTitle?: string;
+    /** The product's MOQ at add time, sent with the request so sales sees it (PROD-2605). */
+    productMoq?: number;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
     /** The product's customization rules at add time (PROD-2556), so /request narrows the same way. */
@@ -65,6 +67,7 @@ export type AddLineInput = {
     productTitle?: string;
     productSku?: string;
     productLineTitle?: string;
+    productMoq?: number;
     productMedia?: CatalogMedia[];
     availableCustomizations?: CustomizationOption[];
     customizationRules?: CustomizationRulesSnapshot;
@@ -472,6 +475,9 @@ export function createRequestLine(input: AddLineInput): RequestLine {
             : {}),
         ...(input.productLineTitle?.trim()
             ? {productLineTitle: input.productLineTitle.trim()}
+            : {}),
+        ...(typeof input.productMoq === 'number' && input.productMoq > 0
+            ? {productMoq: Math.round(input.productMoq)}
             : {}),
         ...(input.productMedia?.length ? {productMedia: input.productMedia} : {}),
         ...(input.availableCustomizations?.length

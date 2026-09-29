@@ -1,6 +1,7 @@
 import {defineField, defineType} from 'sanity'
 import {ThLargeIcon} from '@sanity/icons'
 import {groupsFor, GROUPS} from '../lib/field-groups'
+import {filtersField} from '../lib/filters-field'
 import {pageSectionsField, SECTION_ALLOW} from './sections'
 
 /**
@@ -19,7 +20,7 @@ export const solutionStylePage = defineType({
   title: 'Solution Style Page',
   type: 'document',
   icon: ThLargeIcon,
-  groups: groupsFor(['content', 'sections']),
+  groups: groupsFor(['content', 'filters', 'sections']),
   fields: [
     defineField({
       name: 'title',
@@ -40,6 +41,7 @@ export const solutionStylePage = defineType({
         'Screenshot of this style-catalog layout. Shown in the Solution Style Pages list and when a ' +
         'solution style picks this template. Leave empty to use the default icon. Not shown on the site.',
     }),
+    filtersField({ group: GROUPS.filters, declaredBy: 'productLine' }),
     pageSectionsField(
       SECTION_ALLOW.catalogIndex,
       'sections',

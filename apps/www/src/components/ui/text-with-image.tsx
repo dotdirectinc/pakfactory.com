@@ -63,7 +63,7 @@ export function TextWithImage({
                     title={<span id={headingId}>{title}</span>}
                     titleClassName="max-w-[745px]"
                     description={body}
-                    descriptionClassName="max-w-[726px] text-base leading-6"
+                    descriptionClassName="max-w-[726px]"
                     align={align}
                     cta={cta}
                     ctaPlacement="end"

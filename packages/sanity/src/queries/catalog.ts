@@ -7,6 +7,7 @@
 
 import {
   PAGE_SECTIONS_PROJECTION,
+  FEATURED_VIDEO_URL_FIELD,
   type PageSectionDoc,
 } from './sections';
 
@@ -66,13 +67,48 @@ const OPTION_FIELDS = /* groq */ `
   "type": type->${TYPE_PROJ}
 `;
 
+/**
+ * `customerFacing: false` = "no page, no route, no listing; the document exists only to be
+ * referenced" (the field's own description on product / productLine / productStyle). Notion's
+ * "Hidden" sets it, and from 2026-09-28 every catalog document is PUBLISHED — so this, not the
+ * draft state, is what keeps a hidden product, line or style off the site. A missing value is
+ * customer-facing (`null != false`).
+ */
+export const CUSTOMER_FACING = /* groq */ `customerFacing != false`;
+
+/**
+ * Lifecycle (Richard's baseline, 2026-09-28 — PROD-2605). With customer facing on (for options:
+ * `hasPage`):
+ *   active        normal — page, listed, orderable
+ *   coming-soon   page that says "coming soon", LISTED with a badge, not orderable
+ *   discontinued  page still exists (indexable, "no longer available"), NOT listed, not orderable
+ * An unset status reads as active. The configurator only ever offers active options.
+ */
+export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon"])`;
+export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
+
+/**
+ * Product LINES and STYLES are grouping pages, not products (Richard, 2026-09-29 — PROD-2620):
+ * a discontinued line or style is treated as HIDDEN — no page, no route, no listing — rather than
+ * keeping a "no longer available" page the way a discontinued product does. So one rule serves
+ * both the listings and the route probes. `coming-soon` stays visible; an unset status is active.
+ * A style's page exists only while its line lists it (`getStyle` in www), so the `styles` list
+ * below is also the style route gate.
+ */
+export const LINE_STYLE_VISIBLE = /* groq */ `${LISTED_STATUS} && ${CUSTOMER_FACING}`;
+
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
 const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
   (status == "active" || !defined(status)) &&
-  ^._id in availableCustomizations[].customization._ref
+  ${CUSTOMER_FACING} &&
+  ^._id in availableCustomizations[].customization._ref &&
+  // Never offer a line whose page is gone (PROD-2620). Tested on the product, not by filtering
+  // \`.line\` afterwards: \`{…}.line[cond]\` applies the filter to each line object, not the list.
+  !(coalesce(productLine, basedOn->productLine)->status in ["discontinued"]) &&
+  coalesce(productLine, basedOn->productLine)->customerFacing != false
 ]{
   "line": coalesce(productLine, basedOn->productLine)->{
     _id,
@@ -110,8 +146,32 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
   "slug": slug.current
 }`;
 
-/** Hover-play / hero MP4 URL from product `featuredVideo`; empty when unset. */
-const PRODUCT_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
+/** Hover-play / hero video URL from product `featuredVideo`; empty when unset / YouTube-only. */
+const PRODUCT_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
+
+/** One FAQ as the catalog pages render it. */
+const FAQ_ITEM_PROJ = /* groq */ `{
+    question,
+    "answerPlain": pt::text(answer)
+  }`;
+
+/**
+ * A product's FAQs, inherited down the catalog: product → its style → its line (Richard,
+ * 2026-09-28). The nearest level with ANY FAQ wins outright — one curated FAQ on a product
+ * replaces everything above it, nothing merges. A preset reads its style and line through
+ * `basedOn`, as the card fields do. The style is the product's first (`productStyle[0]`), the
+ * one its card shows; the line is the product's own, falling back to that style's line.
+ */
+const PRODUCT_FAQS_INHERITED = /* groq */ `"faqs": select(
+    count(faqs) > 0 => faqs[]->${FAQ_ITEM_PROJ},
+    count(coalesce(productStyle[0], basedOn->productStyle[0])->faqs) > 0 =>
+      coalesce(productStyle[0], basedOn->productStyle[0])->faqs[]->${FAQ_ITEM_PROJ},
+    coalesce(
+      productLine,
+      basedOn->productLine,
+      coalesce(productStyle[0], basedOn->productStyle[0])->productLine
+    )->faqs[]->${FAQ_ITEM_PROJ}
+  )`;
 
 /** Shared product projection used by by-slug and list queries. */
 export const CATALOG_PRODUCT_FIELDS = /* groq */ `
@@ -184,10 +244,7 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
     "label": property->title,
     "values": values[]->title
   },
-  "faqs": faqs[]->{
-    question,
-    "answerPlain": pt::text(answer)
-  },
+  ${PRODUCT_FAQS_INHERITED},
   "relatedProducts": relatedProducts[]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
@@ -202,7 +259,8 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
 export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status))
+  ${LISTED_STATUS} &&
+  ${CUSTOMER_FACING}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
@@ -254,7 +312,8 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
 export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status))
+  ${LISTED_STATUS} &&
+  ${CUSTOMER_FACING}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LIBRARY_FIELDS}
 }`;
@@ -262,7 +321,8 @@ export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
   slug.current == $slug &&
-  (status == "active" || !defined(status) || status == "coming-soon")
+  ${HAS_PAGE_STATUS} &&
+  ${CUSTOMER_FACING}
 ][0]{
   ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
@@ -284,8 +344,8 @@ const LINE_FEATURED_ICON = /* groq */ `kitMark{
   "alt": ${IMAGE_ALT}
 }`;
 
-/** Desktop scroll-scrub hero MP4; empty when unset. */
-const LINE_FEATURED_VIDEO = /* groq */ `"featuredVideoUrl": featuredVideo.asset->url`;
+/** Desktop scroll-scrub hero video; empty when unset / YouTube-only. */
+const LINE_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 
 /** Shared projection for list + single-line fetches (PROD-1914 landing). */
 export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
@@ -340,32 +400,36 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     heroLayout,
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
-  "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
+  "styles": *[_type == "productStyle" && productLine._ref == ^._id && ${LINE_STYLE_VISIBLE}] | order(title asc) {
     _id,
     title,
     "slug": slug.current,
     shortDescription,
     "description": coalesce(pt::text(description), shortDescription),
-    ${STYLE_CARD_IMAGE}
+    ${STYLE_CARD_IMAGE},
+    // The style's own FAQs; the style page falls back to the line's when empty.
+    "faqs": faqs[]->${FAQ_ITEM_PROJ}
   },
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
     basedOn->productLine._ref == ^._id
-  ) && defined(slug.current) && (status == "active" || !defined(status))] | order(title asc) {
+  ) && defined(slug.current) && ${LISTED_STATUS} && ${CUSTOMER_FACING}] | order(title asc) {
     ${CATALOG_PRODUCT_CARD_FIELDS}
   }
 `;
 
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   _type == "productLine" &&
-  defined(slug.current)
+  defined(slug.current) &&
+  ${LINE_STYLE_VISIBLE}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
-  slug.current == $slug
+  slug.current == $slug &&
+  ${LINE_STYLE_VISIBLE}
 ][0]{
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
@@ -376,7 +440,8 @@ export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
  */
 export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
-  slug.current == $slug
+  slug.current == $slug &&
+  ${LINE_STYLE_VISIBLE}
 ][0]._id`;
 
 const PROPERTY_VALUE_PROJ = /* groq */ `{
@@ -422,12 +487,13 @@ const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   hasPage == true &&
-  status == "active" &&
+  ${LISTED_STATUS} &&
   defined(slug.current)
 ] | order(title asc) {
   _id,
   title,
   "slug": slug.current,
+  status,
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -451,7 +517,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   hasPage == true &&
-  status == "active" &&
+  ${HAS_PAGE_STATUS} &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
@@ -517,11 +583,12 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
 export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   hasPage == true &&
-  status == "active" &&
+  ${HAS_PAGE_STATUS} &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
   _id,
+  status,
   title,
   "slug": slug.current,
   metaDescription,
@@ -731,6 +798,8 @@ export type CatalogStyleRefDoc = {
   shortDescription?: string | null;
   description?: string | null;
   cardImage?: unknown | null;
+  /** The style's own FAQs (line query only). */
+  faqs?: CatalogProductFaqDoc[] | null;
 };
 
 export type CatalogProductPropertyDoc = {
@@ -788,7 +857,7 @@ export type CatalogProductDoc = {
     depthMax?: number | null;
   } | null;
   primarySolution?: string | null;
-  /** Hover-play MP4 URL from `featuredVideo`. */
+  /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
@@ -845,7 +914,7 @@ export type CatalogProductLineDoc = {
   description?: string | null;
   /** Featured image cascade: featuredImage → cardImage → heroMedia. */
   cardImage?: unknown | null;
-  /** Desktop scroll-scrub hero MP4 URL from `featuredVideo`. */
+  /** Desktop scroll-scrub hero video URL from `featuredVideo` (upload/URL). */
   featuredVideoUrl?: string | null;
   /** Featured icon (CMS field name `kitMark`). */
   kitMark?: unknown | null;
@@ -891,6 +960,7 @@ export type CatalogLibraryOptionDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  status?: string | null;
   media?: unknown[] | null;
   category: CatalogCategoryDoc | null;
   type?: CatalogLibraryTypeDoc | null;
@@ -947,6 +1017,7 @@ export type CatalogCustomizationDetailDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  status?: string | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;

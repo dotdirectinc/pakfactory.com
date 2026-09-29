@@ -17,15 +17,22 @@
  *   Product Line → about[] and that line's `faqs`
  *   Expertise    → that stage's `faqs`   (Type = Expertise only; Type decides, so a Generic
  *                                   row that names a stage is NOT attached — it is reported)
+ *   Help Category → category       (select; matched to a helpCategory by exact title)
  *
- * `category` is left EMPTY. Notion has no category column and the only Help Category in the
- * dataset was test data (Richard, 2026-09-25): every FAQ shows a required-field error until
- * real categories exist. Page lists follow Notion's creation order, and are written in full
- * even past the schema's 6-item limit (Corrugated Boxes has 7) — Studio flags it, Notion fixes it.
+ * The categories themselves come from `seed:help-categories`, not Notion. A Help Category value
+ * that matches no category in the dataset stops the run — a typo must not quietly blank the field.
+ * An empty cell, or no such column yet, leaves `category` EMPTY and Studio shows the
+ * required-field error (Richard, 2026-09-25). Page lists follow Notion's creation order, and are
+ * written in full even past the schema's 6-item limit (Corrugated Boxes has 7) — Studio flags
+ * it, Notion fixes it.
  *
  * ── WHAT IS DELETED ──────────────────────────────────────────────────────────────
  *
  *   every `faq` (published and draft) that is not a Notion row
+ *   every DRAFT of a Notion FAQ — a draft is left over from someone having the FAQ open in Studio
+ *   during an earlier run; it predates what this run writes, so Studio would show the stale copy
+ *   and a Publish would put it back (Richard, 2026-09-28). Notion is the source, so an unsaved
+ *   Studio edit to an FAQ is discarded too — edit the Notion row instead.
  *   every `helpCategory` whose title contains "test", once nothing else references it
  *
  * A reference from a document this script does not rewrite (a Help Category's `featured`, a
@@ -132,6 +139,8 @@ async function pullNotion() {
         expertise: p.Expertise?.select?.name ?? null,
         lines: lines.map((r) => hex32(r.id)),
         handle: p.Handle?.formula?.string ?? null,
+        // undefined = the column does not exist yet; null = the cell is empty.
+        helpCategory: p['Help Category'] === undefined ? undefined : (p['Help Category'].select?.name ?? null),
       })
     }
     cursor = body.has_more ? body.next_cursor : undefined
@@ -220,8 +229,8 @@ const rows = [...notion.rows].sort((a, b) => (a.createdTime ?? '').localeCompare
 const existing = await client.fetch(`{
   "faqs": *[_type == "faq"]{ _id, _rev, question },
   "helpCategories": *[_type == "helpCategory"]{ _id, _rev, title },
-  "lines": *[_type == "productLine"]{ _id, _rev, title, "n": count(faqs) },
-  "stages": *[_type == "expertiseStage"]{ _id, _rev, title, "n": count(faqs) }
+  "lines": *[_type == "productLine"]{ _id, _rev, title, "n": count(faqs), "wrongType": count(faqs[_type != "faqRef"]) },
+  "stages": *[_type == "expertiseStage"]{ _id, _rev, title, "n": count(faqs), "wrongType": count(faqs[_type != "faqRef"]) }
 }`)
 
 const problems = []
@@ -232,6 +241,13 @@ const byStage = new Map() // stage published id → [faq id]
 const lineIds = new Set(existing.lines.map((l) => publishedId(l._id)))
 const stageIds = new Set(existing.stages.map((s) => publishedId(s._id)))
 const slugs = new Map()
+// Published categories only — a reference to a draft-only category would have to be weak.
+const categoryByTitle = new Map(
+  existing.helpCategories
+    .filter((c) => !c._id.startsWith('drafts.') && !/test/i.test(c.title ?? ''))
+    .map((c) => [c.title?.trim().toLowerCase(), c._id]),
+)
+const hasCategoryColumn = rows.some((r) => r.helpCategory !== undefined)
 
 for (const row of rows) {
   const id = `faq-${row.id}`
@@ -263,6 +279,16 @@ for (const row of rows) {
     reports.push(`not attached to a stage — Type is ${row.type}, Expertise says ${row.expertise}: "${row.question}"`)
   }
 
+  let category
+  if (row.helpCategory) {
+    const categoryId = categoryByTitle.get(row.helpCategory.trim().toLowerCase())
+    if (!categoryId) {
+      problems.push(`${row.id} "${row.question}": Help Category "${row.helpCategory}" matches no published helpCategory in ${DATASET} — run seed:help-categories, or fix the Notion value`)
+    } else {
+      category = { _type: 'reference', _ref: categoryId }
+    }
+  }
+
   faqDocs.push({
     _id: id,
     _type: 'faq',
@@ -270,6 +296,7 @@ for (const row of rows) {
     slug: { _type: 'slug', current: slug },
     answer: toPortableText(row.answer, row.id),
     scope,
+    ...(category ? { category } : {}),
     ...(about.length ? { about } : {}),
   })
 }
@@ -281,15 +308,19 @@ if (problems.length) {
 
 const keep = new Set(faqDocs.map((d) => d._id))
 const deleteFaqs = existing.faqs.filter((f) => !keep.has(publishedId(f._id)))
+const staleDrafts = existing.faqs.filter((f) => f._id.startsWith('drafts.') && keep.has(publishedId(f._id)))
 const deleteCategories = existing.helpCategories.filter((c) => /test/i.test(c.title ?? ''))
 const deleting = new Set([...deleteFaqs, ...deleteCategories].map((d) => d._id))
 
 // The pages whose `faqs` this script owns outright — replaced wholesale, drafts included.
 const listPatches = []
-const refList = (ids) => ids.map((ref) => ({ _type: 'reference', _key: keyFor(ref.slice(4)), _ref: ref }))
+// `_type` must be the array member's NAME, not `reference`: faqsField declares the member as
+// `faqRef` (apps/studio/lib/faq-field.ts), and Studio rejects any other _type with "Item of type
+// reference not valid for this list". GROQ's `faqs[]->` follows _ref either way.
+const refList = (ids) => ids.map((ref) => ({ _type: 'faqRef', _key: keyFor(ref.slice(4)), _ref: ref }))
 for (const doc of [...existing.lines, ...existing.stages]) {
   const target = (byLine.get(publishedId(doc._id)) ?? byStage.get(publishedId(doc._id))) || null
-  if (target) listPatches.push({ id: doc._id, rev: doc._rev, title: doc.title, before: doc.n ?? 0, faqs: refList(target) })
+  if (target) listPatches.push({ id: doc._id, rev: doc._rev, title: doc.title, before: doc.n ?? 0, retype: doc.wrongType ?? 0, faqs: refList(target) })
   else if (doc.n) listPatches.push({ id: doc._id, rev: doc._rev, title: doc.title, before: doc.n, faqs: null })
 }
 const owned = new Set(listPatches.map((p) => p.id))
@@ -328,12 +359,29 @@ console.log(`\n${describeMode({ dataset: DATASET, confirm: apply })}`)
 console.log(`Notion: ${plural(rows.length, 'FAQ row')} (${notion.via}, ${notion.fetchedAt})\n`)
 console.log(`Delete  ${plural(deleteFaqs.length, 'FAQ document')} not in Notion` + (deleteFaqs.length ? ':' : ''))
 for (const f of deleteFaqs) console.log(`          ${f._id}  ${f.question ?? ''}`)
+console.log(`Discard ${plural(staleDrafts.length, 'Studio draft')} of a Notion FAQ (the published copy is rewritten below)` + (staleDrafts.length ? ':' : ''))
+for (const f of staleDrafts) console.log(`          ${f._id}  ${f.question ?? ''}`)
 console.log(`Delete  ${plural(deleteCategories.length, 'test Help Category', 'test Help Categories')}` + deleteCategories.map((c) => `  ${c._id} "${c.title}"`).join(''))
-console.log(`\nWrite   ${plural(faqDocs.length, 'FAQ')}: ${counts('general')} general, ${counts('contextual')} contextual · category left blank on all`)
+const categorised = faqDocs.filter((d) => d.category).length
+const categoryNote = hasCategoryColumn
+  ? `${categorised} with a Help Category, ${faqDocs.length - categorised} blank`
+  : 'no "Help Category" column in Notion yet — category left blank on all'
+console.log(`\nWrite   ${plural(faqDocs.length, 'FAQ')}: ${counts('general')} general, ${counts('contextual')} contextual · ${categoryNote}`)
+if (hasCategoryColumn) {
+  const perCategory = new Map()
+  for (const d of faqDocs) if (d.category) perCategory.set(d.category._ref, (perCategory.get(d.category._ref) ?? 0) + 1)
+  for (const c of existing.helpCategories.filter((c) => perCategory.has(c._id))) {
+    console.log(`          ${c.title.padEnd(28)} ${String(perCategory.get(c._id)).padStart(3)}`)
+  }
+  const blankGeneral = faqDocs.filter((d) => d.scope === 'general' && !d.category).length
+  if (blankGeneral) console.log(`          ⚠️ ${plural(blankGeneral, 'general FAQ')} with no category — the Help Center cannot list ${blankGeneral === 1 ? 'it' : 'them'}`)
+}
 console.log(`\nReplace faqs on ${plural(listPatches.length, 'page')}:`)
 for (const p of listPatches.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id))) {
   const n = p.faqs?.length ?? 0
-  const flag = n > 6 ? '  ⚠️ over the 6-item limit' : n && n < 3 ? '  ⚠️ under the 3-item minimum' : ''
+  const flag =
+    (n > 6 ? '  ⚠️ over the 6-item limit' : n && n < 3 ? '  ⚠️ under the 3-item minimum' : '') +
+    (p.retype ? `  (retypes ${p.retype} item${p.retype === 1 ? '' : 's'} to faqRef)` : '')
   console.log(`          ${p.title.padEnd(28)} ${String(p.before).padStart(2)} → ${String(n).padStart(2)}  ${p.id}${flag}`)
 }
 if (unsetPatches.length) {
@@ -343,7 +391,7 @@ if (unsetPatches.length) {
 if (reports.length) console.log(`\nReported, not acted on:\n   • ${reports.join('\n   • ')}`)
 
 if (emitPlan) {
-  writeFileSync(resolvePath(emitPlan), JSON.stringify({ dataset: DATASET, notion: { via: notion.via, fetchedAt: notion.fetchedAt }, deleteFaqs, deleteCategories, faqDocs, listPatches, unsetPatches, reports }, null, 2))
+  writeFileSync(resolvePath(emitPlan), JSON.stringify({ dataset: DATASET, notion: { via: notion.via, fetchedAt: notion.fetchedAt }, deleteFaqs, staleDrafts, deleteCategories, faqDocs, listPatches, unsetPatches, reports }, null, 2))
   console.log(`\nPlan written to ${resolvePath(emitPlan)}`)
 }
 
@@ -366,6 +414,7 @@ for (const p of listPatches) {
   })
 }
 for (const d of deleteFaqs) tx.delete(d._id)
+for (const d of staleDrafts) tx.delete(d._id)
 for (const c of deleteCategories) tx.delete(c._id)
 
 const result = await tx.commit({ visibility: 'sync' })

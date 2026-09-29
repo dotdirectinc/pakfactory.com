@@ -4,6 +4,7 @@ import { groupsFor, GROUPS } from '../lib/field-groups'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { MEDIA_TAG } from '../lib/media-tags'
 import { faqsField } from '../lib/faq-field'
+import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 
@@ -148,12 +149,18 @@ export const expertiseStage = defineType({
         },
       ],
     }),
+    featuredVideoField({
+      group: GROUPS.content,
+      description:
+        'Optional video for the Expertise landing stages board. Upload or a direct S3/CDN file URL play as a muted loop. YouTube is stored but the board uses Diagram (YouTube cannot ambient-loop).',
+    }),
     defineField({
       name: 'diagram',
       title: 'Diagram',
       type: 'image',
       group: GROUPS.content,
-      description: 'Card image for the Expertise landing page and anywhere the stage is listed.',
+      description:
+        'Still image for the Expertise landing stages board — poster / fallback when Featured video is unset, YouTube-only, reduced-motion, or playback fails. Also used anywhere the stage is listed as a card.',
       options: { hotspot: true },
       fields: [
         defineField({

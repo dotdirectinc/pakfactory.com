@@ -48,7 +48,7 @@ export function StagePath({
                         <>
                             <span
                                 className={cn(
-                                    'font-mono text-[11px]',
+                                    'font-mono text-xs',
                                     step.current
                                         ? 'text-background/60'
                                         : 'text-muted-foreground',
@@ -56,7 +56,7 @@ export function StagePath({
                             >
                                 {String(index + 1).padStart(2, '0')}
                             </span>
-                            <span className="text-base font-medium">
+                            <span className="text-sm font-semibold">
                                 {step.title}
                             </span>
                             {step.comingSoon ? (
@@ -101,7 +101,7 @@ export function StagePath({
                 })}
             </ol>
             {previous || next ? (
-                <div className="flex flex-wrap items-center justify-between gap-4 text-base">
+                <div className="flex flex-wrap items-center justify-between gap-4 text-sm font-medium">
                     {previous ? (
                         <Link
                             href={previous.href}

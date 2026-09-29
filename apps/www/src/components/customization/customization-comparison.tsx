@@ -224,7 +224,6 @@ export function CustomizationComparison({
                     eyebrow="Comparison"
                     title="How it stacks up"
                     description="Side-by-side specs for up to three options in the same category. Swap columns or add another to refine the shortlist."
-                    descriptionClassName="text-base leading-6"
                 />
 
                 <div className="mt-12 flex flex-col gap-0">
