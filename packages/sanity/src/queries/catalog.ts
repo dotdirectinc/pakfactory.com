@@ -67,12 +67,33 @@ const OPTION_FIELDS = /* groq */ `
   "type": type->${TYPE_PROJ}
 `;
 
+/**
+ * `customerFacing: false` = "no page, no route, no listing; the document exists only to be
+ * referenced" (the field's own description on product / productLine / productStyle). Notion's
+ * "Hidden" sets it, and from 2026-09-28 every catalog document is PUBLISHED — so this, not the
+ * draft state, is what keeps a hidden product, line or style off the site. A missing value is
+ * customer-facing (`null != false`).
+ */
+export const CUSTOMER_FACING = /* groq */ `customerFacing != false`;
+
+/**
+ * Lifecycle (Richard's baseline, 2026-09-28 — PROD-2605). With customer facing on (for options:
+ * `hasPage`):
+ *   active        normal — page, listed, orderable
+ *   coming-soon   page that says "coming soon", LISTED with a badge, not orderable
+ *   discontinued  page still exists (indexable, "no longer available"), NOT listed, not orderable
+ * An unset status reads as active. The configurator only ever offers active options.
+ */
+export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon"])`;
+export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
+
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
 /** Product lines that offer this option (PROD-2529 reverse of availableCustomizations). */
 const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   _type == "product" &&
   (status == "active" || !defined(status)) &&
+  ${CUSTOMER_FACING} &&
   ^._id in availableCustomizations[].customization._ref
 ]{
   "line": coalesce(productLine, basedOn->productLine)->{
@@ -224,7 +245,8 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
 export const CATALOG_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status))
+  ${LISTED_STATUS} &&
+  ${CUSTOMER_FACING}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_CARD_FIELDS}
 }`;
@@ -276,7 +298,8 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
 export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
-  (status == "active" || !defined(status))
+  ${LISTED_STATUS} &&
+  ${CUSTOMER_FACING}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LIBRARY_FIELDS}
 }`;
@@ -284,7 +307,8 @@ export const CATALOG_PRODUCT_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_PRODUCT_BY_SLUG_QUERY = /* groq */ `*[
   _type == "product" &&
   slug.current == $slug &&
-  (status == "active" || !defined(status) || status == "coming-soon")
+  ${HAS_PAGE_STATUS} &&
+  ${CUSTOMER_FACING}
 ][0]{
   ${CATALOG_PRODUCT_PDP_FIELDS}
 }`;
@@ -362,7 +386,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     heroLayout,
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
-  "styles": *[_type == "productStyle" && productLine._ref == ^._id] | order(title asc) {
+  "styles": *[_type == "productStyle" && productLine._ref == ^._id && ${CUSTOMER_FACING}] | order(title asc) {
     _id,
     title,
     "slug": slug.current,
@@ -375,21 +399,23 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
     basedOn->productLine._ref == ^._id
-  ) && defined(slug.current) && (status == "active" || !defined(status))] | order(title asc) {
+  ) && defined(slug.current) && ${LISTED_STATUS} && ${CUSTOMER_FACING}] | order(title asc) {
     ${CATALOG_PRODUCT_CARD_FIELDS}
   }
 `;
 
 export const CATALOG_PRODUCT_LINES_QUERY = /* groq */ `*[
   _type == "productLine" &&
-  defined(slug.current)
+  defined(slug.current) &&
+  ${CUSTOMER_FACING}
 ] | order(title asc) {
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
 
 export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
-  slug.current == $slug
+  slug.current == $slug &&
+  ${CUSTOMER_FACING}
 ][0]{
   ${CATALOG_PRODUCT_LINE_FIELDS}
 }`;
@@ -400,7 +426,8 @@ export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
  */
 export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
-  slug.current == $slug
+  slug.current == $slug &&
+  ${CUSTOMER_FACING}
 ][0]._id`;
 
 const PROPERTY_VALUE_PROJ = /* groq */ `{
@@ -446,12 +473,13 @@ const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   hasPage == true &&
-  status == "active" &&
+  ${LISTED_STATUS} &&
   defined(slug.current)
 ] | order(title asc) {
   _id,
   title,
   "slug": slug.current,
+  status,
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -475,7 +503,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   hasPage == true &&
-  status == "active" &&
+  ${HAS_PAGE_STATUS} &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
@@ -541,11 +569,12 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
 export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   hasPage == true &&
-  status == "active" &&
+  ${HAS_PAGE_STATUS} &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
   _id,
+  status,
   title,
   "slug": slug.current,
   metaDescription,
@@ -917,6 +946,7 @@ export type CatalogLibraryOptionDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  status?: string | null;
   media?: unknown[] | null;
   category: CatalogCategoryDoc | null;
   type?: CatalogLibraryTypeDoc | null;
@@ -973,6 +1003,7 @@ export type CatalogCustomizationDetailDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  status?: string | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;

@@ -8,6 +8,7 @@ import {mapCustomizationPreviewItems} from '@/components/product/map-customizati
 import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
 import {ProductGallery} from '@/components/product/product-gallery';
 import {ProductRequestRail} from '@/components/product/product-request-rail';
+import {LifecycleBadge, LifecycleNotice} from '@/components/ui/lifecycle-badge';
 import {
     AnchorNav,
     type AnchorNavItem,
@@ -186,6 +187,7 @@ return (
                         <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
                             {displaySku}
                         </p>
+                        <LifecycleBadge status={product.status} className="mt-2" />
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {product.title}
                         </h1>
@@ -194,7 +196,15 @@ return (
                                 {product.description}
                             </p>
                         ) : null}
-                        <ProductRequestRail product={product} />
+                        {/* Coming soon / discontinued: shown, never orderable (PROD-2605). */}
+                        {product.status && product.status !== 'active' ? (
+                            <LifecycleNotice
+                                status={product.status}
+                                contactHref={WWW_ROUTES.contact}
+                            />
+                        ) : (
+                            <ProductRequestRail product={product} />
+                        )}
                     </div>
                 </article>
             </PageDielineSection>

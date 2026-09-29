@@ -62,7 +62,7 @@ export const ALGOLIA_CONTENT_BACKFILL_PROJECTION = /* groq */ `{
 }`;
 
 export const CONTENT_PRODUCTS_FILTER =
-  '_type == "product" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false';
+  '_type == "product" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false && customerFacing != false';
 
 export const CONTENT_CUSTOMIZATIONS_FILTER =
   '_type == "customizationOption" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false && role != "configurable" && defined(type->category->slug.current)';

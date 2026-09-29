@@ -1,5 +1,6 @@
 'use client';
 
+import {LifecycleBadge} from '@/components/ui/lifecycle-badge';
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
 import {Columns2, Package} from 'lucide-react';
@@ -24,6 +25,7 @@ export type CustomizationCardData = Pick<
     | 'imageUrl'
     | 'imageAlt'
     | 'images'
+    | 'status'
 >;
 
 type CustomizationCardProps = {
@@ -78,8 +80,12 @@ export function CustomizationCard({item}: CustomizationCardProps) {
     );
 
     const hero = gallery[0];
+    const badge = item.status && item.status !== 'active' ? (
+        <LifecycleBadge status={item.status} className="absolute left-3 top-3 z-10" />
+    ) : null;
     const media = hero ? (
         <div className="pointer-events-none absolute inset-0">
+            {badge}
             <SanityImage
                 src={hero.src}
                 alt={hero.alt ?? item.title}
@@ -91,6 +97,7 @@ export function CustomizationCard({item}: CustomizationCardProps) {
         </div>
     ) : (
         <div className="pointer-events-none absolute inset-0">
+            {badge}
             {placeholder}
         </div>
     );

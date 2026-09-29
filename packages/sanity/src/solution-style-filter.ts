@@ -133,6 +133,10 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
     '_type == "product"',
     'kind == "inspiration"',
     '$solutionId in solutions[]._ref',
+    // Hidden in Notion → customerFacing false → no listing anywhere, collections included.
+    'customerFacing != false',
+    // Listed: active and coming soon (badged); a discontinued product keeps its page, off lists.
+    '(!defined(status) || status in ["active", "coming-soon"])',
     `(${any.join(' || ')})`,
     '!(_id in $excludedIds)',
   ].join(' && ')

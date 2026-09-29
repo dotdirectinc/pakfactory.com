@@ -1,3 +1,4 @@
+import {LifecycleBadge, LifecycleNotice} from '@/components/ui/lifecycle-badge';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
@@ -108,11 +109,16 @@ export function CustomizationDetailView({
                         <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
                             {detail.title}
                         </h1>
+                        <LifecycleBadge status={detail.status} className="mt-2" />
                         {detail.description ? (
                             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                                 {detail.description}
                             </p>
                         ) : null}
+                        <LifecycleNotice
+                            status={detail.status}
+                            contactHref={WWW_ROUTES.contact}
+                        />
                         <CustomizationConfigPanel detail={detail} />
                     </div>
                 </article>
