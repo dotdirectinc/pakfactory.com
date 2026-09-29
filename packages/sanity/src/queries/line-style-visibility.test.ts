@@ -63,3 +63,10 @@ test("option → product lines facet never offers a discontinued or hidden line"
   const slugs = (opt.productLines ?? []).filter(Boolean).map((l) => l!.slug);
   assert.deepEqual(slugs, ["active"]);
 });
+
+test("case-studies Products filter offers only lines that have a page", async () => {
+  const { CASE_STUDY_FILTER_OPTIONS_QUERY } = await import("./case-studies.ts");
+  const result = (await run(CASE_STUDY_FILTER_OPTIONS_QUERY)) as { products: { value?: string; slug?: string; title?: string }[] };
+  const titles = result.products.map((p) => p.title ?? p.value ?? p.slug).sort();
+  assert.deepEqual(titles, ["active", "coming", "unset"]);
+});
