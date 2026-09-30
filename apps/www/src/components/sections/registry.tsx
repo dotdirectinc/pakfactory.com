@@ -10,6 +10,11 @@ import type {
     PageSectionMediaFeatureDoc,
     PageSectionProductStylesRowDoc,
     PageSectionGeneralCtaDoc,
+    PageSectionProductLinesRowDoc,
+    PageSectionSolutionsRowDoc,
+    PageSectionStatsDoc,
+    PageSectionHeroFinderDoc,
+    PageSectionHeroSpotlightDoc,
     PageSectionSignatureSystemDoc,
     PageSectionStepsDoc,
     PageSectionTestimonialsRowDoc,
@@ -21,13 +26,18 @@ import {Benefits} from '@/components/sections/benefits';
 import {CaseStudiesRow} from '@/components/sections/case-studies-row';
 import {ExpertiseRow} from '@/components/sections/expertise-row';
 import {FaqSection} from '@/components/sections/faq-section';
+import {HeroFinder} from '@/components/sections/hero-finder';
+import {HeroSpotlight} from '@/components/sections/hero-spotlight';
+import {HeroSpotlightFullBleed} from '@/components/sections/hero-spotlight-full-bleed';
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
 import {GeneralCta} from '@/components/sections/general-cta';
 import {SignatureSystem} from '@/components/sections/signature-system';
+import {Stats} from '@/components/sections/stats';
 import {Steps} from '@/components/sections/steps';
 import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {VideoCaseStudiesRow} from '@/components/sections/video-case-studies-row';
+import {CatalogCardGrid} from '@/components/ui/catalog-card-grid';
 import {TextWithImage} from '@/components/ui/text-with-image';
 import {mapBenefits} from '@/lib/sections/map-benefits';
 import {getGooglePlaceReviews} from '@/lib/places/reviews';
@@ -35,12 +45,18 @@ import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
 import {mapExpertiseSequence} from '@/lib/sections/map-expertise-sequence';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapGeneralCta} from '@/lib/sections/map-general-cta';
+import {mapHeroFinder, mapHeroSpotlight} from '@/lib/sections/map-hero';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaFeature} from '@/lib/sections/map-media-feature';
 import {mapProductStylesRow} from '@/lib/sections/map-product-styles-row';
 import {mapSignatureSystem} from '@/lib/sections/map-signature-system';
 import {mapSteps} from '@/lib/sections/map-steps';
+import {mapStats} from '@/lib/sections/map-stats';
+import {
+    mapProductLinesRow,
+    mapSolutionsRow,
+} from '@/lib/sections/map-catalog-rows';
 import {mapTestimonialsRow} from '@/lib/sections/map-testimonials-row';
 import {mapVideoCaseStudiesRow} from '@/lib/sections/map-video-case-studies-row';
 
@@ -230,6 +246,44 @@ function GeneralCtaFromSanity(section: PageSectionGeneralCtaDoc) {
     );
 }
 
+function HeroSpotlightFromSanity(section: PageSectionHeroSpotlightDoc) {
+    const mapped = mapHeroSpotlight(section);
+    if (!mapped) return null;
+    return <HeroSpotlight content={mapped} id={`hero-${section._key}`} />;
+}
+
+function HeroSpotlightFullBleedFromSanity(section: PageSectionHeroSpotlightDoc) {
+    const mapped = mapHeroSpotlight(section);
+    if (!mapped) return null;
+    return (
+        <HeroSpotlightFullBleed content={mapped} id={`hero-${section._key}`} />
+    );
+}
+
+function HeroFinderFromSanity(section: PageSectionHeroFinderDoc) {
+    const mapped = mapHeroFinder(section);
+    if (!mapped) return null;
+    return <HeroFinder content={mapped} id={`hero-${section._key}`} />;
+}
+
+function ProductLinesRowFromSanity(section: PageSectionProductLinesRowDoc) {
+    const mapped = mapProductLinesRow(section);
+    if (mapped.cards.length === 0) return null;
+    return <CatalogCardGrid id={`product-lines-${section._key}`} {...mapped} />;
+}
+
+function SolutionsRowFromSanity(section: PageSectionSolutionsRowDoc) {
+    const mapped = mapSolutionsRow(section);
+    if (mapped.cards.length === 0) return null;
+    return <CatalogCardGrid id={`solutions-${section._key}`} {...mapped} />;
+}
+
+function StatsFromSanity(section: PageSectionStatsDoc) {
+    const mapped = mapStats(section);
+    if (mapped.items.length === 0) return null;
+    return <Stats content={mapped} id={`stats-${section._key}`} />;
+}
+
 /**
  * Components receive the GROQ section doc. Only wired types are registered;
  * unknown `_type`s are handled by SectionRenderer (no-op / dev alert).
@@ -238,6 +292,10 @@ export const SECTION_COMPONENTS: Record<
     string,
     ComponentType<PageSection> | undefined
 > = {
+    heroSpotlight: HeroSpotlightFromSanity as ComponentType<PageSection>,
+    heroSpotlightFullBleed:
+        HeroSpotlightFullBleedFromSanity as ComponentType<PageSection>,
+    heroFinder: HeroFinderFromSanity as ComponentType<PageSection>,
     faqSection: FaqSectionFromSanity as ComponentType<PageSection>,
     logoWall: LogoWallFromSanity as ComponentType<PageSection>,
     mediaFeature: MediaFeatureFromSanity as ComponentType<PageSection>,
@@ -254,4 +312,7 @@ export const SECTION_COMPONENTS: Record<
     benefits: BenefitsFromSanity as ComponentType<PageSection>,
     generalCta: GeneralCtaFromSanity as ComponentType<PageSection>,
     steps: StepsFromSanity as ComponentType<PageSection>,
+    stats: StatsFromSanity as ComponentType<PageSection>,
+    productLinesRow: ProductLinesRowFromSanity as ComponentType<PageSection>,
+    solutionsRow: SolutionsRowFromSanity as ComponentType<PageSection>,
 };

@@ -145,12 +145,147 @@ export const EXPERTISE_SERVICE_DIMENSION = /* groq */ `{
 }`;
 
 /**
+ * Catalogue row card (productLinesRow / solutionsRow, PROD-2666). Visibility
+ * fields ride along so www can drop hidden targets (`isCatalogTargetVisible`).
+ */
+const CATALOG_ROW_ITEM = /* groq */ `{
+  _id,
+  _type,
+  status,
+  customerFacing,
+  hasPage,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title)
+}`;
+
+/** Hero button: section link + one-line note (PROD-2666). */
+const HERO_CTA = /* groq */ `{
+  label,
+  note,
+  linkType,
+  externalUrl,
+  relativePath,
+  "internalLink": internalLink->${LINKABLE_DOC}
+}`;
+
+/** Home hero copy shared by all three hero sections (PROD-2666). */
+const HERO_COPY = /* groq */ `
+  eyebrow,
+  intro,
+  showReviews,
+  "primaryCta": primaryCta ${HERO_CTA},
+  "secondaryCta": secondaryCta ${HERO_CTA}
+`;
+
+/**
+ * Case study as a hero feature — media, client, first highlight stat and the
+ * product lines it covers (`lineIds` lets the Finder hero match line × industry).
+ */
+const HERO_CASE_STUDY = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "summary": cardSummary,
+  "clientName": client->name,
+  "logoSrc": client->logo.asset->url,
+  "imageSrc": coalesce(
+    heroMedia.image.asset->url,
+    cardImage.asset->url,
+    heroMedia.videoThumbnail.asset->url
+  ),
+  "imageAlt": coalesce(heroMedia.alt, cardImageAlt, cardImage.asset->altText, title),
+  "videoSrc": previewVideo.asset->url,
+  "statTitle": highlights[0].title,
+  "statBody": highlights[0].description,
+  "chips": products[0...3]->{"label": coalesce(shortName, title)}.label,
+  "lineIds": products[]._ref
+}`;
+
+/**
+ * Mixed spotlight slide — typed `heroSpotlightCampaign` or a catalogue ref
+ * (caseStudy / productLine / productStyle / solution). Visibility fields ride
+ * along so www can drop hidden catalogue targets (`isCatalogTargetVisible`).
+ */
+const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
+  _key,
+  _type,
+  _type == "heroSpotlightCampaign" => {
+    "kind": "campaign",
+    title,
+    description,
+    "imageSrc": image.asset->url,
+    "imageAlt": coalesce(image.alt, image.asset->altText, title),
+    link ${LINK_OBJECT}
+  },
+  defined(_ref) => @->{
+    "kind": _type,
+    "docType": _type,
+    status,
+    customerFacing,
+    hasPage,
+    "slug": slug.current,
+    _type == "caseStudy" => ${HERO_CASE_STUDY},
+    _type != "caseStudy" => {
+      _id,
+      "title": coalesce(shortName, title),
+      "description": shortDescription,
+      "lineSlug": productLine->slug.current,
+      "imageSrc": featuredImage.asset->url,
+      "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title)
+    }
+  }
+}`;
+
+/** Finder hero product-line option — plus recent studies that cover the line. */
+const HERO_FINDER_LINE = /* groq */ `{
+  _id,
+  _type,
+  status,
+  customerFacing,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+  "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY}
+}`;
+
+/** Finder hero industry option — its curated related case studies. */
+const HERO_FINDER_INDUSTRY = /* groq */ `{
+  _id,
+  _type,
+  hasPage,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": shortDescription,
+  "imageSrc": featuredImage.asset->url,
+  "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+  "studies": relatedCaseStudies[]->${HERO_CASE_STUDY}
+}`;
+
+/**
  * Projection body for `sections[]{ … }` — use as:
  * `"sections": sections[]${PAGE_SECTIONS_PROJECTION}`
  */
 export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   _key,
   _type,
+  _type in ["heroSpotlight", "heroSpotlightFullBleed"] => {
+    ${HERO_COPY},
+    heading,
+    "spotlight": spotlight[]${HERO_SPOTLIGHT_SLIDE}
+  },
+  _type == "heroFinder" => {
+    ${HERO_COPY},
+    headingLead,
+    headingJoin,
+    headingTrail,
+    "productLines": productLines[]->${HERO_FINDER_LINE},
+    "industries": industries[]->${HERO_FINDER_INDUSTRY}
+  },
   _type == "faqSection" => {
     ${SECTION_CHROME},
     "faqs": faqs[]->${FAQ_REF}
@@ -165,7 +300,12 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     "mediaAlt": coalesce(media.alt, media.asset->altText)
   },
   _type == "stats" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": items[]{
+      _key,
+      value,
+      label
+    }
   },
   _type == "steps" => {
     ${SECTION_CHROME},
@@ -214,7 +354,8 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     "cards": cards[]${VIDEO_CASE_STUDY_CARD}
   },
   _type == "productLinesRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": curatedItems[]->${CATALOG_ROW_ITEM}
   },
   _type == "productStylesRow" => {
     ${SECTION_CHROME},
@@ -233,7 +374,8 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME}
   },
   _type == "solutionsRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": curatedItems[]->${CATALOG_ROW_ITEM}
   },
   _type == "expertiseSequence" => {
     ${SECTION_CHROME},
@@ -558,6 +700,137 @@ export type PageSectionTestimonialsRowDoc = PageSectionChromeFields & {
     aggregatePlacement?: 'footer' | 'eyebrow' | null;
 };
 
+/** Catalogue row card — product line or solution (PROD-2666). */
+export type PageSectionCatalogRowItemDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    status?: string | null;
+    customerFacing?: boolean | null;
+    hasPage?: boolean | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+};
+
+export type PageSectionProductLinesRowDoc = PageSectionChromeFields & {
+    _type: 'productLinesRow';
+    _key: string;
+    items?: (PageSectionCatalogRowItemDoc | null)[] | null;
+};
+
+export type PageSectionSolutionsRowDoc = PageSectionChromeFields & {
+    _type: 'solutionsRow';
+    _key: string;
+    items?: (PageSectionCatalogRowItemDoc | null)[] | null;
+};
+
+export type PageSectionStatDoc = {
+    _key?: string | null;
+    value?: string | null;
+    label?: string | null;
+};
+
+export type PageSectionStatsDoc = PageSectionChromeFields & {
+    _type: 'stats';
+    _key: string;
+    items?: PageSectionStatDoc[] | null;
+};
+
+/** Hero button (label + note + link target). */
+export type PageSectionHeroCtaDoc = Omit<PageSectionLinkDoc, 'query'> & {
+    note?: string | null;
+};
+
+/** Copy fields shared by the three Home hero sections (PROD-2666). */
+export type PageSectionHeroCopyFields = {
+    eyebrow?: string | null;
+    intro?: string | null;
+    showReviews?: boolean | null;
+    primaryCta?: PageSectionHeroCtaDoc | null;
+    secondaryCta?: PageSectionHeroCtaDoc | null;
+};
+
+export type PageSectionHeroCaseStudyDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    summary?: string | null;
+    clientName?: string | null;
+    logoSrc?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    videoSrc?: string | null;
+    statTitle?: string | null;
+    statBody?: string | null;
+    chips?: (string | null)[] | null;
+    lineIds?: (string | null)[] | null;
+};
+
+/** Flattened spotlight slide — campaign (typed) or catalogue ref. */
+export type PageSectionHeroSpotlightSlideDoc = PageSectionHeroCaseStudyDoc & {
+    _key?: string | null;
+    _type?: string | null;
+    kind?:
+        | 'campaign'
+        | 'caseStudy'
+        | 'productLine'
+        | 'productStyle'
+        | 'solution'
+        | string
+        | null;
+    docType?: string | null;
+    status?: string | null;
+    customerFacing?: boolean | null;
+    hasPage?: boolean | null;
+    description?: string | null;
+    lineSlug?: string | null;
+    link?: PageSectionLinkDoc | null;
+};
+
+export type PageSectionHeroSpotlightDoc = PageSectionHeroCopyFields & {
+    _type: 'heroSpotlight' | 'heroSpotlightFullBleed';
+    _key: string;
+    heading?: string | null;
+    spotlight?: PageSectionHeroSpotlightSlideDoc[] | null;
+};
+
+export type PageSectionHeroFinderLineDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    status?: string | null;
+    customerFacing?: boolean | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    studies?: PageSectionHeroCaseStudyDoc[] | null;
+};
+
+export type PageSectionHeroFinderIndustryDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    hasPage?: boolean | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    studies?: PageSectionHeroCaseStudyDoc[] | null;
+};
+
+export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
+    _type: 'heroFinder';
+    _key: string;
+    headingLead?: string | null;
+    headingJoin?: string | null;
+    headingTrail?: string | null;
+    productLines?: PageSectionHeroFinderLineDoc[] | null;
+    industries?: PageSectionHeroFinderIndustryDoc[] | null;
+};
+
 /** Shallow / unwired section until a renderer maps it. */
 export type PageSectionStubDoc = PageSectionChromeFields & {
     _type: string;
@@ -565,6 +838,11 @@ export type PageSectionStubDoc = PageSectionChromeFields & {
 };
 
 export type PageSectionDoc =
+    | PageSectionProductLinesRowDoc
+    | PageSectionSolutionsRowDoc
+    | PageSectionStatsDoc
+    | PageSectionHeroSpotlightDoc
+    | PageSectionHeroFinderDoc
     | PageSectionFaqSectionDoc
     | PageSectionLogoWallDoc
     | PageSectionMediaFeatureDoc
