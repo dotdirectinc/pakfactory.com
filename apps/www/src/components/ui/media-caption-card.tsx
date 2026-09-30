@@ -67,9 +67,7 @@ export function MediaCaptionCard({
                 description={description}
                 link={link}
                 stat={stat}
-                // Dock to the card’s start edge (track already matches the heading
-                // column). Zero left padding so caption type lines up with the H1.
-                className="absolute bottom-4 left-0 max-w-md rounded-l-none py-6 pr-6 pl-0 sm:bottom-6 sm:w-96"
+                className="absolute inset-x-4 bottom-4 sm:inset-x-auto sm:bottom-6 sm:left-6 sm:w-80"
             />
         </div>
     );
