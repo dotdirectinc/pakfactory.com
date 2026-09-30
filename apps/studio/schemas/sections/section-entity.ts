@@ -5,6 +5,9 @@
  */
 
 export const SECTION_ENTITY = {
+  heroSpotlight: 'hero',
+  heroSpotlightFullBleed: 'hero',
+  heroFinder: 'hero',
   solutionsRow: 'solution',
   inspirationsGrid: 'solution',
   caseStudiesRow: 'caseStudy',
@@ -39,6 +42,7 @@ export type SectionEntityTab = (typeof SECTION_ENTITY)[keyof typeof SECTION_ENTI
 
 /** Human tab titles for insert menu + array badges. */
 export const SECTION_ENTITY_TITLE: Record<SectionEntityTab, string> = {
+  hero: 'Heroes',
   solution: 'Solutions',
   caseStudy: 'Case studies',
   product: 'Products',

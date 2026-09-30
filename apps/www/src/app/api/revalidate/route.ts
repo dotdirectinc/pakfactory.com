@@ -87,6 +87,16 @@ const CATALOG_CUSTOMIZATION_TYPES = new Set([
   "customizationType",
 ]);
 
+/** Documents that can change what `/` renders (homePage + hero spotlight targets). */
+const HOME_PAGE_SOURCE_TYPES = new Set([
+  "homePage",
+  "caseStudy",
+  "client",
+  "productLine",
+  "productStyle",
+  "solution",
+]);
+
 export async function POST(request: Request) {
   const secret = process.env.SANITY_REVALIDATE_SECRET?.trim();
   if (!secret) {
@@ -255,6 +265,13 @@ export async function POST(request: Request) {
     }
   }
 
+  // PROD-2666 — Home is the homePage sections plus whatever its heroes point at
+  // (case studies, product lines/styles, solutions, clients).
+  if (!type || HOME_PAGE_SOURCE_TYPES.has(type)) {
+    revalidatePath("/");
+    revalidated.push("/");
+  }
+
   if (!type || type === "websiteNavigation") {
     tags.add(WWW_WEBSITE_NAVIGATION_CACHE_TAG);
   }
@@ -325,7 +342,8 @@ export async function POST(request: Request) {
     type === "expertiseService" ||
     type === FAQ_TYPE ||
     type === "websiteNavigation" ||
-    type === "settings";
+    type === "settings" ||
+    type === "homePage";
 
   return NextResponse.json({
     revalidated: true,

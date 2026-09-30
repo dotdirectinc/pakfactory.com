@@ -16,6 +16,7 @@ const TONE: Record<
   SectionEntityTab,
   'primary' | 'positive' | 'caution' | 'default'
 > = {
+  hero: 'primary',
   solution: 'caution',
   caseStudy: 'positive',
   product: 'primary',

@@ -12,6 +12,7 @@ import { productStylesRow } from './product-styles-row'
 import { signatureSystem } from './signature-system'
 import { testimonialsRow } from './testimonials-row'
 import { videoCaseStudiesRow } from './video-case-studies-row'
+import { heroSections } from './hero-sections'
 
 export {
   SECTION_ENTITY,
@@ -37,9 +38,13 @@ export {
  *
  * PROD-1288 adds `customizationsCatalog` (filterable library) alongside
  * `customizationsRow` (catalogue strip) — do not conflate them.
+ *
+ * PROD-2666 adds the Home hero sections (`heroSpotlight`, `heroSpotlightFullBleed`,
+ * `heroFinder`) under their own Heroes tab, allowed on Home only.
  */
 
 export const websiteSections = [
+  ...heroSections,
   ...contentSections,
   ...rowSections,
   inspirationsGrid,
@@ -54,6 +59,8 @@ export const websiteSections = [
 
 /** Section names grouped by entity (also the insert-menu grouping). */
 const FAMILY = {
+  // Home-only page heroes (PROD-2666). One `_type` per layout — D35.
+  hero: ['heroSpotlight', 'heroSpotlightFullBleed', 'heroFinder'],
   solution: ['solutionsRow', 'inspirationsGrid'],
   caseStudy: ['caseStudiesRow', 'videoCaseStudiesRow'],
   product: [
@@ -79,6 +86,7 @@ const FAMILY = {
 } as const
 
 const INSERT_GROUPS: SectionInsertGroup[] = [
+  { name: 'hero', title: SECTION_ENTITY_TITLE.hero, of: [...FAMILY.hero] },
   { name: 'solution', title: SECTION_ENTITY_TITLE.solution, of: [...FAMILY.solution] },
   { name: 'caseStudy', title: SECTION_ENTITY_TITLE.caseStudy, of: [...FAMILY.caseStudy] },
   { name: 'product', title: SECTION_ENTITY_TITLE.product, of: [...FAMILY.product] },
@@ -96,8 +104,9 @@ const INSERT_GROUPS: SectionInsertGroup[] = [
 
 /** Which sections each page family may insert (Section inventory → "Which pages get which"). */
 export const SECTION_ALLOW = {
-  // Home argues across every area — all of them.
+  // Home argues across every area — all of them. Heroes are Home-only.
   home: [
+    ...FAMILY.hero,
     ...FAMILY.solution,
     ...FAMILY.caseStudy,
     ...FAMILY.product,

@@ -21,6 +21,13 @@ import {CarouselNavButtons} from '@/components/ui/carousel-nav-buttons';
 export const SECTION_CAROUSEL_ITEM_CLASS =
     'h-auto w-[min(var(--container-md),85vw)] shrink-0 grow-0 basis-[min(var(--container-md),85vw)] self-stretch pl-6';
 
+/**
+ * Finder hero rail — ~1 card on small screens, ~2 cards on `md+`
+ * (wider slides than {@link SECTION_CAROUSEL_ITEM_CLASS}).
+ */
+export const FINDER_CAROUSEL_ITEM_CLASS =
+    'h-auto shrink-0 grow-0 self-stretch pl-6 basis-[min(100%,calc(100vw-3rem))] md:basis-1/2';
+
 const AUTOPLAY_DELAY_MS = 4000;
 
 type SectionCarouselProps = {

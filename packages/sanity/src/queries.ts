@@ -1,3 +1,5 @@
+import {PAGE_SECTIONS_PROJECTION as HOME_PAGE_SECTIONS_PROJECTION} from './queries/sections';
+
 export const POSTS_QUERY = /* groq */ `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){
   _id,
   title,
@@ -193,7 +195,20 @@ export {
     type PageSectionExpertiseSequenceDoc,
     type PageSectionExpertiseStageDoc,
     type PageSectionFaqDoc,
+    type PageSectionCatalogRowItemDoc,
     type PageSectionFaqSectionDoc,
+    type PageSectionProductLinesRowDoc,
+    type PageSectionSolutionsRowDoc,
+    type PageSectionStatDoc,
+    type PageSectionStatsDoc,
+    type PageSectionHeroCaseStudyDoc,
+    type PageSectionHeroCopyFields,
+    type PageSectionHeroCtaDoc,
+    type PageSectionHeroFinderDoc,
+    type PageSectionHeroFinderIndustryDoc,
+    type PageSectionHeroFinderLineDoc,
+    type PageSectionHeroSpotlightDoc,
+    type PageSectionHeroSpotlightSlideDoc,
     type PageSectionInspirationsCardDoc,
     type PageSectionInspirationsGridDoc,
     type PageSectionProductStylesRowDoc,
@@ -242,9 +257,9 @@ export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
 export const HOME_PAGE_QUERY = /* groq */ `*[_type == "homePage"] | order(_updatedAt desc)[0]{
   _id,
   title,
-  heroHeadline,
-  body,
-  seo
+  metaTitle,
+  metaDescription,
+  "sections": sections[]${HOME_PAGE_SECTIONS_PROJECTION}
 }`;
 
 /**
