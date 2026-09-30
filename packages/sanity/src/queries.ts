@@ -228,6 +228,7 @@ export {
     WEBSITE_NAVIGATION_QUERY,
     type WebsiteNavigationDoc,
     type WebsiteNavLinkDoc,
+    type WebsiteNavLinkTarget,
 } from './queries/website-navigation';
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
