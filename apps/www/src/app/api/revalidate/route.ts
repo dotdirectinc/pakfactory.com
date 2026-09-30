@@ -263,8 +263,12 @@ export async function POST(request: Request) {
     tags.add(WWW_GLOBAL_SETTINGS_CACHE_TAG);
   }
 
-  // Next 16: revalidateTag takes (tag, profile). "max" requests a full revalidate.
-  for (const tag of tags) revalidateTag(tag, "max");
+  // Next 16: revalidateTag takes (tag, profile). `{ expire: 0 }` expires the entry now, so the
+  // next request after a publish fetches fresh content. "max" (what this was) is
+  // stale-while-revalidate: the next visitor still got the pre-publish version while the
+  // refresh ran in the background — an option set to coming-soon stayed selectable for one
+  // more page load, and one set back to active stayed missing.
+  for (const tag of tags) revalidateTag(tag, { expire: 0 });
 
   // PROD-2172 — ping IndexNow on case-study publish/update/unpublish. Covers
   // unpublish too: Sanity's delete webhook payload still carries the doc's last
