@@ -7,6 +7,7 @@ import {
   factLabelOptions,
   formatFactValue,
 } from '@pakfactory/sanity/fact-labels'
+import { entityIdField } from '../lib/entity-id-field'
 
 export const propertyValue = defineType({
   name: 'propertyValue',
@@ -281,6 +282,7 @@ export const propertyValue = defineType({
     // Transparent) had nowhere to go. They are recorded in ADR-017. 🔴 If a filter's
     // values must render in a meaningful order rather than alphabetically, that is an
     // open question for Eric, not a field to restore here.
+    entityIdField({ group: 'content' }),
   ],
   preview: {
     select: { title: 'title', group: 'property.title', media: 'image', kindOf: 'kindOf.title' },
