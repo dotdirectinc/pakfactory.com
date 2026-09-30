@@ -159,7 +159,7 @@ function HeroFinderPanelChrome({
         curatedIndustries,
     });
 
-    // Always two lines: "Custom [line] for" / "[industry] brands."
+    // Always two lines: "Custom [line]" / "for [industry] brands."
     // Extra top margin on line 2 so muted picker chips do not touch.
     const title = (
         <>
@@ -173,9 +173,9 @@ function HeroFinderPanelChrome({
                     title: item.title,
                 }))}
                 onChange={onLineChange}
-            />{' '}
-            {content.headingJoin}
+            />
             <span className="mt-2 block">
+                {content.headingJoin}{' '}
                 <FinderPicker
                     label="Industry"
                     value={industry.slug}

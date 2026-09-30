@@ -19,7 +19,7 @@ All three share the copy fields: **Label above heading**, **Headline** (H1), **I
 | --- | --- | --- | --- |
 | Spotlight hero | `heroSpotlight` | `sections/hero-spotlight.tsx` → `ui/hero-spotlight-carousel.tsx` (`layout="split"`) | Copy left, stage right, labelled pager under the stage |
 | Full-bleed hero | `heroSpotlightFullBleed` | `sections/hero-spotlight-full-bleed.tsx` → same carousel (`layout="fullBleed"`) | Active slide fills the band; copy over a scrim; caption bottom-right on desktop |
-| Finder hero | `heroFinder` | `sections/hero-finder.tsx` → `ui/hero-finder-panel.tsx` | Two-line H1: "Custom [line] for" / "[industry] brands." — defaults Packaging Solution × All; shareable `?line=` / `?industry=` |
+| Finder hero | `heroFinder` | `sections/hero-finder.tsx` → `ui/hero-finder-panel.tsx` | Two-line H1: "Custom [line]" / "for [industry] brands." — defaults Packaging Solution × All; shareable `?line=` / `?industry=` |
 
 ### Spotlight slides
 
@@ -58,7 +58,7 @@ Picks sync to `?line=<slug>&industry=<slug>` via `lib/ui/use-query-param-state.t
 
 - Autoplay every 7s (the `Steps` contract): pointer or focus inside the hero pauses it, choosing a slide stops it, `prefers-reduced-motion` never starts it. The active pager track fills via `.motion-tab-progress`.
 - Copy uses `PageHeadingContent` with `settle`, so the build-in matches other heroes. The H1, CTAs and rating stay server-rendered; the stage and the Finder pickers are client islands.
-- Finder pickers are `@pakfactory/ui` `Select`s styled as muted inline chips (`bg-muted`) so they read as part of the H1 sentence. The H1 always breaks after the join word (`for`) onto a second line for the industry picker + trail. Options render in a portal, so the H1 text is only the sentence with the current picks.
+- Finder pickers are `@pakfactory/ui` `Select`s styled as muted inline chips (`bg-muted`) so they read as part of the H1 sentence. The H1 always breaks after the product-line picker onto a second line starting with the join word (`for`) + industry picker + trail. Options render in a portal, so the H1 text is only the sentence with the current picks.
 - Finder cards: product line is narrower on `md+`; the feature card is dominant. Media uses `MediaSettleZoom`; card remounts play `animate-page-enter` (skipped under `motion-reduce`).
 - Finder media rail: full-bleed `SectionCarousel` of `MediaCaptionCard`s from `buildFinderSlides` (active pair first, then curated lines / studies / industries — up to 8) so the track is scrollable for review.
 
