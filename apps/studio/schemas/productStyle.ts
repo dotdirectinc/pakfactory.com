@@ -7,6 +7,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
+import { entityIdField } from '../lib/entity-id-field'
 
 /**
  * Product Style — a construction within a line (Magnetic Closure, Straight Tuck
@@ -229,6 +230,7 @@ export const productStyle = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
+    entityIdField({ group: GROUPS.content }),
   ],
   preview: {
     select: { title: 'title', display: 'shortName', line: 'productLine.title', image: 'featuredImage' },
