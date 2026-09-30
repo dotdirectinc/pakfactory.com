@@ -397,6 +397,21 @@ export const MIGRATIONS = [
     // Asserts the OLD shape is gone: no product/line still has a bare file (asset without source).
     probe: `count(*[_type in ["product","productLine"] && defined(featuredVideo.asset) && !defined(featuredVideo.source)]) == 0`,
   },
+  {
+    id: '20260930-appears-in',
+    ticket: 'PROD-2732',
+    title: 'Merge customizationOption.configuratorRole + hasPage into appearsIn',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:appears-in',
+    script: 'apps/studio/scripts/migrate-appears-in.mjs',
+    args: 'flags',
+    // Asserts the NEW shape is present on every option rather than that the old keys
+    // are gone: both fields leave the SCHEMA in this PR but their DATA is deliberately
+    // left in place as the rollback path, so an "old key is gone" probe would read
+    // false forever. It stays true once the sweep eventually runs, because the sweep
+    // does not touch appearsIn.
+    probe: `count(*[_type == "customizationOption" && !defined(appearsIn)]) == 0`,
+  },
 ]
 
 /**

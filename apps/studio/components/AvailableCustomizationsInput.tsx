@@ -88,9 +88,11 @@ type Entry = {
  * Customization Category. It is the obvious simplification and it cannot
  * express a mixed category, which is the case that exists today.
  *
- * SECOND FILTER, and it excludes nothing today: `configuratorRole` must be
- * `configurable`. A `reference` Option is a library page and never reaches the
- * configurator, so a product "offering" one is inert — nothing renders it.
+ * SECOND FILTER, and it excludes nothing today: `appearsIn` must be one of the
+ * two Configurable values (PROD-2732). A "Not Configurable + Detail Page" Option
+ * is a library page and never reaches the configurator, so a product "offering"
+ * one is inert — nothing renders it. 🔴 The filter names the values it WANTS; the
+ * negative form would offer an Option whose `appearsIn` is unset.
  *
  * All six reference Options happen to sit under Types that answer
  * `availabilityDecidedBy: customization`, so the filter above already hides
@@ -116,7 +118,7 @@ const UNIVERSE_QUERY = `{
     _type == "customizationOption"
     && !(_id in path("drafts.**"))
     && type->availabilityDecidedBy == "product"
-    && configuratorRole == "configurable"
+    && appearsIn in ["configurable-with-page", "configurable-no-page"]
   ]{${OPTION_PROJECTION}},
   "types": *[
     _type == "customizationType"
@@ -130,7 +132,7 @@ const UNIVERSE_QUERY = `{
       _type == "customizationOption"
       && !(_id in path("drafts.**"))
       && type._ref == ^._id
-      && configuratorRole == "configurable"
+      && appearsIn in ["configurable-with-page", "configurable-no-page"]
     ])
   }
 }`

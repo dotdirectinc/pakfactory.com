@@ -51,11 +51,16 @@ import {
  *
  * ─── What is offered, and what is greyed ────────────────────────────────────
  *
- * Only `configuratorRole: configurable` Options. A `reference` Option is a
- * library page, never a thing a customer picks, so it cannot combine with
- * anything. That drops the three Lamination and three Surface Coating entries —
- * correctly: a customer picks `Surface Finish › Matte`, while
- * `Lamination › Matte Lamination` is the article explaining the technique.
+ * Only Options a customer can pick — the two Configurable values of `appearsIn`
+ * (PROD-2732). A "Not Configurable + Detail Page" Option is a library page, never
+ * a thing a customer picks, so it cannot combine with anything. That drops the
+ * three Lamination and three Surface Coating entries — correctly: a customer picks
+ * `Surface Finish › Matte`, while `Lamination › Matte Lamination` is the article
+ * explaining the technique.
+ *
+ * 🔴 The filter names the values it WANTS, never `!= "not-configurable-with-page"`.
+ * An Option whose `appearsIn` is unset must not be offered here; the negative form
+ * would offer it.
  *
  * Greyed rather than hidden, so the list answers "why isn't SBS here?":
  *   - this Option itself, always
@@ -96,7 +101,7 @@ const UNIVERSE_QUERY = `{
   "options": *[
     _type == "customizationOption"
     && !(_id in path("drafts.**"))
-    && configuratorRole == "configurable"
+    && appearsIn in ["configurable-with-page", "configurable-no-page"]
   ]{${OPTION_PROJECTION}},
   "types": *[
     _type == "customizationType"

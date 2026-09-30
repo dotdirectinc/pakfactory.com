@@ -65,7 +65,7 @@ const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
   "slug": slug.current,
   "typeTitle": type->title,
   "categorySlug": type->category->slug.current,
-  hasPage,
+  appearsIn,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
@@ -80,9 +80,7 @@ const OPTION_FIELDS = /* groq */ `
   title,
   "slug": slug.current,
   status,
-  configuratorRole,
-  role,
-  hasPage,
+  appearsIn,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
@@ -104,8 +102,9 @@ const OPTION_FIELDS = /* groq */ `
 export const CUSTOMER_FACING = /* groq */ `customerFacing != false`;
 
 /**
- * Lifecycle (Richard's baseline, 2026-09-28 — PROD-2605). With customer facing on (for options:
- * `hasPage`):
+ * Lifecycle (Richard's baseline, 2026-09-28 — PROD-2605). Products, lines, styles and
+ * solutions only — customization options are Active / Not active (PROD-2733) and test
+ * `status == "active"` directly. With customer facing on:
  *   active        normal — page, listed, orderable
  *   coming-soon   page that says "coming soon", LISTED with a badge, not orderable
  *   discontinued  page still exists (indexable, "no longer available"), NOT listed, not orderable
@@ -113,6 +112,22 @@ export const CUSTOMER_FACING = /* groq */ `customerFacing != false`;
  */
 export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon"])`;
 export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
+
+/**
+ * A customization option with its own detail page in the library (PROD-2732).
+ * Replaces `hasPage == true`, which merged into `appearsIn`.
+ *
+ * 🔴 Names the two values that DO have a page rather than excluding the one that
+ * does not. An option whose `appearsIn` is unset — an import that has not run the
+ * backfill, an API write — must read as "no page", and `appearsIn != "…-no-page"`
+ * is the opposite expression for a missing value.
+ *
+ * ⚠️ Customization options no longer use LISTED_STATUS or HAS_PAGE_STATUS above.
+ * Their status is Active / Not active only (PROD-2733), so they test
+ * `status == "active"` directly. Those two constants belong to the product,
+ * line, style and solution family, which keeps all three lifecycle values.
+ */
+export const HAS_DETAIL_PAGE = /* groq */ `appearsIn in ["configurable-with-page", "not-configurable-with-page"]`;
 
 /**
  * Product LINES and STYLES are grouping pages, not products (PROD-2620; coming-soon
@@ -515,13 +530,15 @@ const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
 
 /**
  * Public customization library (PROD-1288 facets).
- * Gate is `hasPage` (D55 / PROD-2482) — not deprecated `role == "reference"`.
- * Configurator pickability is `configuratorRole` and is orthogonal to library membership.
+ * Gate is HAS_DETAIL_PAGE (PROD-2732) — the two `appearsIn` values that carry a page.
+ * Configurator pickability is the other axis of the same field and is orthogonal to
+ * library membership: an option can be picked without a page, and have a page without
+ * being pickable.
  */
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  hasPage == true &&
-  ${LISTED_STATUS} &&
+  ${HAS_DETAIL_PAGE} &&
+  status == "active" &&
   defined(slug.current)
 ] | order(title asc) {
   _id,
@@ -547,11 +564,11 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   ${PRODUCT_LINES_FROM_PRODUCTS}
 }`;
 
-/** Single library option by category + handle slugs (PROD-2456). Same `hasPage` gate as the library list. */
+/** Single library option by category + handle slugs (PROD-2456). Same detail-page gate as the library list. */
 export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  hasPage == true &&
-  ${HAS_PAGE_STATUS} &&
+  ${HAS_DETAIL_PAGE} &&
+  status == "active" &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
@@ -611,13 +628,13 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
 }`;
 
 /**
- * Customization detail page (PROD-1299). Same hasPage gate; richer property + copy fields.
+ * Customization detail page (PROD-1299). Same detail-page gate; richer property + copy fields.
  * Same-category peers seed the detail compare band (PROD-1534).
  */
 export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
-  hasPage == true &&
-  ${HAS_PAGE_STATUS} &&
+  ${HAS_DETAIL_PAGE} &&
+  status == "active" &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
@@ -661,7 +678,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   },
   "peers": *[
     _type == "customizationOption" &&
-    hasPage == true &&
+    ${HAS_DETAIL_PAGE} &&
     status == "active" &&
     defined(slug.current) &&
     slug.current != $handle &&
@@ -701,7 +718,7 @@ export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
 }`;
 
 /**
- * Option by id for builder Property controllers — no hasPage gate (configurable
+ * Option by id for builder Property controllers — no detail-page gate (configurable
  * Options may not have a library page).
  */
 export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
@@ -776,7 +793,12 @@ export type CatalogAchievedByDoc = {
   slug: string | null;
   typeTitle?: string | null;
   categorySlug?: string | null;
-  hasPage?: boolean | null;
+  /** PROD-2732 — the two page-bearing values are what make a "learn more" link. */
+  appearsIn?:
+    | 'configurable-with-page'
+    | 'not-configurable-with-page'
+    | 'configurable-no-page'
+    | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
@@ -788,10 +810,12 @@ export type CatalogOptionDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
-  configuratorRole?: 'configurable' | 'reference' | null;
-  /** Deprecated — prefer configuratorRole. */
-  role?: 'configurable' | 'reference' | null;
-  hasPage?: boolean | null;
+  /** PROD-2732 — replaces `configuratorRole` + `hasPage`. May be absent on an un-backfilled document. */
+  appearsIn?:
+    | 'configurable-with-page'
+    | 'not-configurable-with-page'
+    | 'configurable-no-page'
+    | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;

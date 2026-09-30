@@ -704,7 +704,10 @@ export const product = defineType({
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
             const rows = await client.fetch<{ _id: string; title: string | null }[]>(
-              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              // PROD-2732: names the one non-pickable value rather than "not
+              // configurable", so an option whose `appearsIn` is unset is not
+              // accused of something the backfill has simply not reached.
+              `*[_id in $ids && appearsIn == "not-configurable-with-page"]{ _id, title }`,
               { ids },
             )
             if (rows.length === 0) return true
