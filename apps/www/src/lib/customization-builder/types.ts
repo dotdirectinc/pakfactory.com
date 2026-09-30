@@ -98,6 +98,17 @@ export type BuilderOption = {
     imageUrl: string | null;
     status: 'active';
     preselected?: boolean;
+    /** Reverse of Sanity `achieves` — candidates that can deliver this option. */
+    achievedBy?: {
+        id: string;
+        title: string;
+        slug?: string;
+        typeTitle?: string;
+        categorySlug?: string;
+        description?: string;
+        imageUrl?: string | null;
+        hasPage?: boolean;
+    }[];
 };
 
 export type BuilderStep = {
@@ -165,4 +176,5 @@ export type CatalogOptionLike = Pick<
     | 'preselected'
     | 'configuratorRole'
     | 'role'
+    | 'achievedBy'
 >;

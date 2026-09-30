@@ -6,6 +6,18 @@ export type ProductKind = 'standard' | 'inspiration';
 /** Category slug from Sanity `customizationCategory.slug` (not a fixed union). */
 export type CustomizationCategory = string;
 
+/** Technical option that can deliver this customer-facing option (PROD-2629). */
+export type AchievedByOption = {
+    id: string;
+    title: string;
+    slug?: string;
+    typeTitle?: string;
+    categorySlug?: string;
+    description?: string;
+    imageUrl?: string | null;
+    hasPage?: boolean;
+};
+
 export type CustomizationOption = {
     id: string;
     label: string;
@@ -29,6 +41,8 @@ export type CustomizationOption = {
     role?: 'configurable' | 'reference';
     configuratorRole?: 'configurable' | 'reference';
     status?: string;
+    /** Reverse of Sanity `achieves` — candidates, not a recipe (ADR-017). */
+    achievedBy?: AchievedByOption[];
 };
 
 /**

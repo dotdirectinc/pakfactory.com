@@ -292,6 +292,9 @@ export function buildStepsFromCatalog(
             imageUrl: item.imageUrl ?? null,
             status: 'active',
             ...(item.preselected ? {preselected: true} : {}),
+            ...(item.achievedBy && item.achievedBy.length > 0
+                ? {achievedBy: item.achievedBy}
+                : {}),
         });
     }
 

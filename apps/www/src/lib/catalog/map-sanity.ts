@@ -178,6 +178,38 @@ function mapAvailableCustomization(
             ? 'many'
             : 'one';
 
+    const achievedBy = (option.achievedBy ?? [])
+        .filter(
+            (item): item is NonNullable<(typeof option.achievedBy)>[number] =>
+                Boolean(item?._id && item.title),
+        )
+        .map((item) => {
+            const techniqueImage = Array.isArray(item.media)
+                ? item.media[0]
+                : null;
+            const techniqueDescription = firstNonEmpty(
+                item.metaDescription,
+                item.glossaryPlain,
+                item.benefitsPlain,
+            );
+            return {
+                id: item._id,
+                title: item.title,
+                ...(item.slug ? {slug: item.slug} : {}),
+                ...(item.typeTitle ? {typeTitle: item.typeTitle} : {}),
+                ...(item.categorySlug
+                    ? {categorySlug: item.categorySlug}
+                    : {}),
+                ...(techniqueDescription
+                    ? {description: techniqueDescription}
+                    : {}),
+                imageUrl: techniqueImage
+                    ? (sanityImageBaseUrl(techniqueImage) ?? null)
+                    : null,
+                ...(item.hasPage ? {hasPage: true} : {}),
+            };
+        });
+
     return {
         id: option._id,
         label: option.title,
@@ -198,6 +230,7 @@ function mapAvailableCustomization(
         configuratorRole,
         role: configuratorRole,
         status: option.status ?? undefined,
+        ...(achievedBy.length > 0 ? {achievedBy} : {}),
     };
 }
 

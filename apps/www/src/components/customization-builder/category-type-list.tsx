@@ -163,10 +163,15 @@ export function CategoryTypeList({
                                                           ) : null}
                                                       </span>
                                                       {picked ? (
-                                                          <Check
-                                                              className="mt-0.5 size-4 shrink-0 text-brand-forest"
+                                                          <span
+                                                              className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-brand-forest text-white"
                                                               aria-hidden
-                                                          />
+                                                          >
+                                                              <Check
+                                                                  className="size-2.5"
+                                                                  strokeWidth={3}
+                                                              />
+                                                          </span>
                                                       ) : null}
                                                   </HighlightItem>
                                               </li>

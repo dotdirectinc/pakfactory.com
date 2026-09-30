@@ -37,4 +37,9 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     additionalNotePlaceholder:
         'Specific {category} details for your specialist…',
     skip: 'Skip, need consultation',
+    /** PROD-2629 / ADR-017 — reverse of Sanity `achieves` (candidates, not a recipe). */
+    achievedByHelper:
+        'This finish can be achieved by these techniques, learn more about them:',
+    achievedBySelected: 'Technique',
+    achievedByLearnMore: 'Learn more',
 } as const;
