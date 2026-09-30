@@ -179,3 +179,33 @@ describe('buildCompareMatrix', () => {
         assert.equal(COMPARE_EMPTY_CELL, '—');
     });
 });
+
+describe('hidden stated properties (showOnDetailPage false)', () => {
+    // The content team's "Stated (hidden)" columns — Material Source here — filter listings
+    // but are not printed: neither as a spec row nor as a compare row.
+    const board = (id: string, source: string) =>
+        detail({
+            id,
+            title: id,
+            slug: id,
+            categoryValue: 'materials',
+            declaredProperties: [
+                {usage: 'stated', propertySlug: 'material-source', propertyTitle: 'Material Source', showOnDetailPage: false},
+                {usage: 'stated', propertySlug: 'print-quality', propertyTitle: 'Print Quality'},
+            ],
+            properties: [
+                {id: `${id}-src`, title: source, slug: source.toLowerCase(), propertySlug: 'material-source', facts: []},
+                {id: `${id}-pq`, title: 'Excellent', slug: 'excellent', propertySlug: 'print-quality', facts: []},
+            ],
+        });
+
+    it('leaves them out of Specs & performance, and keeps the shown ones', () => {
+        const rows = buildReferenceSpecRows(board('sbs', 'Virgin Fiber'));
+        assert.deepEqual(rows.map((r) => r.label), ['Print Quality']);
+    });
+
+    it('leaves them out of the compare matrix', () => {
+        const matrix = buildCompareMatrix([board('sbs', 'Virgin Fiber'), board('cuk', 'Recycled Fiber')]);
+        assert.deepEqual(matrix.rows.map((r) => r.label), ['Print Quality']);
+    });
+});

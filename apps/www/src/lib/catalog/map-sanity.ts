@@ -784,6 +784,9 @@ export function mapSanityCustomizationDetail(
         const valuesPerItem = row.property?.valuesPerItem;
         declaredProperties.push({
             usage,
+            ...(usage === 'stated' && row.showOnDetailPage === false
+                ? {showOnDetailPage: false as const}
+                : {}),
             ...(row.property?._id ? {propertyId: row.property._id} : {}),
             ...(propSlug ? {propertySlug: propSlug} : {}),
             ...(propTitle ? {propertyTitle: propTitle} : {}),
