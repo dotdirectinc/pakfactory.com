@@ -51,7 +51,7 @@ function MetaBlock({
         {visible.map((item) => (
           <span
             key={item._id}
-            className="inline-flex min-h-[23px] max-w-full items-center justify-center break-words rounded-full border-[0.5px] border-[#cecece] bg-card px-4 py-[3px] text-center text-xs font-normal leading-4 text-muted-foreground"
+            className="inline-flex min-h-[23px] max-w-full items-center justify-center break-words rounded-full border-[0.5px] border-[#cecece] bg-card px-4 py-[3px] text-left text-xs font-normal leading-4 text-muted-foreground"
           >
             {item.title}
           </span>
