@@ -443,7 +443,7 @@ export function CustomizationCatalogPanel({
                 showCategoryHint={category === ALL_CATEGORY}
             />
 
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-4">
                 <CustomizationCatalogFilters
                     resultCount={filtered.length}
                     totalCount={library.items.length}

@@ -341,7 +341,7 @@ export function ProductCatalogPanel({
                     {...filterProps}
                 />
 
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-4">
                     <ProductCatalogFilters
                         resultCount={filtered.length}
                         totalCount={library.items.length}
