@@ -1,0 +1,110 @@
+---
+description: Confirm (with an acceptance-criteria ledger) before any Jira transition that moves a ticket forward — BA Acceptance, Request For Approval, Done
+alwaysApply: true
+---
+
+# Jira transitions — confirm before moving a ticket forward
+
+> Cursor mirror of the canonical rule `internalPortal-dataEngine/.claude/rules/jira-transition-gate.md`.
+> Edit the canonical file first, then update this mirror and the copy in
+> `pakfactory.com/.cursor/rules/jira-transition-gate.mdc`.
+
+Moving a ticket forward **summons a human**. BA Acceptance and Request For Approval
+put the work in someone's review queue; Done takes it off the board entirely. A
+ticket moved before the work is finished sends a reviewer to look at something that
+is not there, and it is the *reviewer* who discovers the mistake, not us.
+
+This has happened repeatedly (feedback 2026-09-03). Treat it as the default hazard,
+not an edge case.
+
+## Which transitions are gated
+
+| Direction | Examples | Gate |
+|---|---|---|
+| **Forward — into review or closure** | BA Acceptance (`4`), Request For Approval (`51`), Done, Deployed, Ready for Release | **CONFIRM FIRST — always** |
+| Backward / lateral | To Do, Backlog, reopening | Confirm — it undoes someone's review |
+| **Into work** | In Progress (`61`), In Development | **No gate.** A statement of intent, reversible, summons nobody |
+
+The point is not friction on every Jira call. It is that a forward move is a claim
+**to another person** that the work is ready, and only the user can make that claim.
+
+## Mandatory gate
+
+Before calling `transitionJiraIssue` in a gated direction:
+
+1. **Never in the same turn as the work.** Finishing a PR and moving the ticket are
+   two separate decisions; bundling them is what removes the user's chance to say
+   "not yet."
+2. **Show the block below.** A bare "shall I move it?" invites a reflexive yes — the
+   user cannot judge readiness without the ledger.
+3. **Require an explicit yes.** Silence, "thanks", and "good" are not approval.
+4. **Never batch.** One confirmation per ticket. Approval to move one ticket is not
+   approval to move the others.
+
+Skip the gate only when the user's **same message** names the ticket and the target
+state (e.g. "move PROD-2434 to BA Acceptance").
+
+## "Finished" means the acceptance criteria, not the pull request
+
+The bar for a forward move is the ticket's **own acceptance criteria**, each one
+marked met, not met, or unverified. Read them. Do not substitute your own summary of
+what you built — that is the substitution that produces a premature move.
+
+Three states that are **NOT** finished, and each has looked finished before:
+
+- **A PR that is open.** Not merged is not shipped.
+- **Merged but never exercised against the real system.** Passing tests over mocked
+  S3, mocked Zoho, or an unseeded database prove the code's shape, not that the
+  feature works. Say so explicitly rather than letting "339 tests pass" stand in.
+- **Partially delivered.** One criterion out of five is progress, not acceptance.
+  If the rest is genuinely out of scope, that is a scope change for the user to
+  make — say so and let them decide.
+
+## Confirmation block (copy and fill in)
+
+```
+⚠️ Jira transition — needs your confirmation
+
+Ticket:  PROD-#### — <summary>
+Move:    <current status> → <target status> (transition id <id>)
+
+Acceptance criteria:
+  ✅ <criterion> — <evidence>
+  ❌ <criterion> — <what is missing>
+  ⚠️ <criterion> — built, NOT verified against the real system
+
+Merged:      <PRs on the base branch>
+Still open:  <PRs not merged>
+Verified against reality: <what actually ran outside a test, or "none">
+Not done:    <anything left, and whether it is deferred or dropped>
+
+Move it? (yes/no)
+```
+
+## Comments are not gated
+
+`addCommentToJiraIssue` is safe and encouraged — a comment recording what shipped,
+with PR links and caveats, is how the ticket stays honest **without** claiming the
+work is ready for review. When in doubt: **comment, do not transition.** A ticket
+with an accurate comment and a stale status costs nothing; a ticket in the wrong
+status costs a reviewer's trip.
+
+## Enforcement
+
+In Claude Code, `transitionJiraIssue` is deliberately **NOT** in any
+`.claude/settings*.json` allowlist, so the harness prompts for it. Cursor has no such
+backstop for MCP calls unless you keep Cursor's tool approval on for the Atlassian MCP —
+so in Cursor **this rule is the gate**. Never add `transitionJiraIssue` to any
+allowlist or auto-run list, in either tool.
+
+## Skills that transition
+
+These carry the gate in their own steps; keep them in step with this rule:
+`finisher` (BA Acceptance), `blog-jira-delivery` (Request For Approval),
+`deploy-www-release` (Request For Approval), `wayfinder` (Done).
+
+## Mirrors
+
+Cursor: `internalPortal-dataEngine/.cursor/rules/jira-transition-gate.mdc` (symlinked into
+`pakFactory/.cursor/rules/`) and the committed copy `pakfactory.com/.cursor/rules/jira-transition-gate.mdc`.
+Keep all three in step when this rule changes.
