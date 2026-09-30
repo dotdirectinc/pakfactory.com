@@ -26,7 +26,8 @@ export type UiKind =
   | "specTable"
   | "cardGrid"
   | "linkOut"
-  | "chip";
+  | "chip"
+  | "achieves";
 
 export type ToggleItem = {
   label: string;
@@ -63,6 +64,15 @@ export type ChipItem = {
   label: string;
 };
 
+/** Technical option that can deliver a customer-facing finish (ADR-017). */
+export type AchievesTechnique = {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  learnMoreHref?: string;
+};
+
 export type ValuesPerItem = "one" | "many";
 
 /** Controlled value for `dimension` — `unsure` is a valid Ready selection. */
@@ -90,7 +100,8 @@ export type PropertyControllerValue =
   | {kind: "swatch"; value: string}
   | {kind: "specTable"; value: string}
   | {kind: "cardGrid"; value: string}
-  | {kind: "chip"; value: string[]};
+  | {kind: "chip"; value: string[]}
+  | {kind: "achieves"; value: string};
 
 export type UiDescriptor =
   | {kind: "readonly"; value: string}
@@ -138,4 +149,14 @@ export type UiDescriptor =
       chips: ChipItem[];
       valuesPerItem?: ValuesPerItem;
       values?: string[];
+    }
+  | {
+      kind: "achieves";
+      /** Technique cards that can deliver this option. */
+      techniques: AchievesTechnique[];
+      consultationId: string;
+      consultationLabel: string;
+      learnMoreLabel?: string;
+      /** Selected technique id or consultationId. */
+      value?: string;
     };

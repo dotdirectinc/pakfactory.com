@@ -4,6 +4,7 @@ import type {ReactNode} from 'react';
 import {CategoryTypeList} from '@/components/customization-builder/category-type-list';
 import {CustomizationCategoryRail} from '@/components/customization-builder/customization-category-rail';
 import {CustomizationDimensionOption} from '@/components/customization-builder/customization-dimension-option';
+import {CustomizationFinishOption} from '@/components/customization-builder/customization-finish-option';
 import {OptionDetail} from '@/components/customization-builder/option-detail';
 import type {PropertySelectionMap} from '@/components/customization/option-property-controllers';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
@@ -152,6 +153,21 @@ export function BuilderThreeColumn({
                             dimensionInput={dimensionInput}
                             dimensionRange={dimensionRange}
                             onChange={(next) => onAnswerChange(step.key, next)}
+                            {...noteProps}
+                        />
+                    ) : step.category === 'finishing' ? (
+                        <CustomizationFinishOption
+                            option={selectedOption}
+                            consultationSelected={consultationSelected}
+                            propertySelections={optionPropertySelections}
+                            onPropertySelectionsChange={(selections, summaries) => {
+                                if (!selectedOption) return;
+                                onPropertySelectionsChange?.(
+                                    selectedOption.id,
+                                    selections,
+                                    summaries,
+                                );
+                            }}
                             {...noteProps}
                         />
                     ) : (

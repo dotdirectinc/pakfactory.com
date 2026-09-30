@@ -133,6 +133,7 @@ export {
     type CatalogLibraryOptionDoc,
     type CatalogLineRefDoc,
     type CatalogOptionDoc,
+    type CatalogAchievedByDoc,
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,

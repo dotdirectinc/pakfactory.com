@@ -19,6 +19,7 @@ import {
 } from '@pakfactory/utilities/length-units';
 import {resolveProductDims} from '@pakfactory/sanity/resolve-product-dims';
 import {AdditionalNoteField} from '@/components/customization-builder/ui/additional-note-field';
+import {OptionDetailHeader} from '@/components/customization-builder/ui/option-detail-header';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
@@ -69,12 +70,10 @@ export function CustomizationDimensionOption({
                 className="flex flex-col gap-2"
                 aria-label={CUSTOMIZATION_BUILDER_COPY.detailLabel}
             >
-                <h3 className="text-base font-semibold tracking-tight">
-                    {CUSTOMIZATION_BUILDER_COPY.skipNotSure}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                    {CUSTOMIZATION_BUILDER_COPY.notSureHelper}
-                </p>
+                <OptionDetailHeader
+                    title={CUSTOMIZATION_BUILDER_COPY.skipNotSure}
+                    description={CUSTOMIZATION_BUILDER_COPY.notSureHelper}
+                />
             </div>
         );
     }
@@ -150,14 +149,10 @@ export function CustomizationDimensionOption({
 
     return (
         <div className="flex flex-col">
-            <div>
-                <h3 className="text-base font-semibold tracking-tight">
-                    {faceTitle}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    {CUSTOMIZATION_BUILDER_COPY.measurements} ({dimensions.unit})
-                </p>
-            </div>
+            <OptionDetailHeader
+                title={faceTitle}
+                description={`${CUSTOMIZATION_BUILDER_COPY.measurements} (${dimensions.unit})`}
+            />
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="min-w-0 flex-1">

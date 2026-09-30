@@ -49,6 +49,32 @@ const TYPE_PROJ = /* groq */ `{
   "category": category->${CATEGORY_PROJ}
 }`;
 
+/**
+ * Reverse of `customizationOption.achieves` (PROD-2629 / ADR-017).
+ * Technical options (Lamination, Surface Coating, …) that can deliver this
+ * customer-facing option — candidates, not a recipe.
+ */
+const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
+  _type == "customizationOption" &&
+  !(_id in path("drafts.**")) &&
+  status == "active" &&
+  ^._id in achieves[]._ref
+] | order(title asc) {
+  _id,
+  title,
+  "slug": slug.current,
+  "typeTitle": type->title,
+  "categorySlug": type->category->slug.current,
+  hasPage,
+  metaDescription,
+  "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsPlain": pt::text(benefits.body),
+  media[]{
+    ...,
+    "alt": ${IMAGE_ALT}
+  }
+}`;
+
 const OPTION_FIELDS = /* groq */ `
   _id,
   title,
@@ -64,7 +90,8 @@ const OPTION_FIELDS = /* groq */ `
     ...,
     "alt": ${IMAGE_ALT}
   },
-  "type": type->${TYPE_PROJ}
+  "type": type->${TYPE_PROJ},
+  ${ACHIEVED_BY_PROJ}
 `;
 
 /**
@@ -708,6 +735,7 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
     }
   },
   "properties": properties[]->${PROPERTY_VALUE_DETAIL_PROJ},
+  ${ACHIEVED_BY_PROJ},
   ${PRODUCT_LINES_FROM_PRODUCTS},
   "faqs": faqs[]{
     "question": select(
@@ -741,6 +769,20 @@ export type CatalogTypeDoc = {
   category: CatalogCategoryDoc | null;
 };
 
+/** Technical option that can deliver a customer-facing option (reverse of `achieves`). */
+export type CatalogAchievedByDoc = {
+  _id: string;
+  title: string;
+  slug: string | null;
+  typeTitle?: string | null;
+  categorySlug?: string | null;
+  hasPage?: boolean | null;
+  metaDescription?: string | null;
+  glossaryPlain?: string | null;
+  benefitsPlain?: string | null;
+  media?: unknown[] | null;
+};
+
 export type CatalogOptionDoc = {
   _id: string;
   title: string;
@@ -755,6 +797,8 @@ export type CatalogOptionDoc = {
   benefitsPlain?: string | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
+  /** Reverse of `achieves` — candidates that can deliver this option (PROD-2629). */
+  achievedBy?: CatalogAchievedByDoc[] | null;
 };
 
 /** {@link CATALOG_CUSTOMIZATION_RULES_QUERY} — the rules catalog (PROD-2556). */

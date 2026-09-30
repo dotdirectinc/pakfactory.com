@@ -13,6 +13,8 @@ export type TypePropertyControllerProps = {
     ui: UiDescriptor;
     /** Optional section title above the control. */
     label?: string;
+    /** Selected value shown after the title (PropertyFieldPanel titleValue). */
+    titleValue?: string;
     value?: PropertyControllerValue;
     onChange?: (next: PropertyControllerValue) => void;
     controlId?: string;
@@ -72,6 +74,11 @@ function initialValue(ui: UiDescriptor): PropertyControllerValue | undefined {
                 kind: 'specTable',
                 value: ui.segments[0]?.id ?? '',
             };
+        case 'achieves':
+            return {
+                kind: 'achieves',
+                value: ui.value ?? ui.consultationId,
+            };
         default:
             return undefined;
     }
@@ -84,6 +91,7 @@ function initialValue(ui: UiDescriptor): PropertyControllerValue | undefined {
 export function TypePropertyController({
     ui,
     label,
+    titleValue,
     value: controlled,
     onChange,
     controlId = 'type-panel',
@@ -100,7 +108,11 @@ export function TypePropertyController({
     };
 
     return (
-        <PropertyFieldPanel title={label} variant={variant}>
+        <PropertyFieldPanel
+            title={label}
+            {...(titleValue ? {titleValue} : {})}
+            variant={variant}
+        >
             <PropertyController
                 ui={ui}
                 controlId={controlId}

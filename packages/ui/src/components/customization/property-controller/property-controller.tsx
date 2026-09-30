@@ -4,6 +4,7 @@ import type {
   PropertyControllerValue,
   UiDescriptor,
 } from "../types";
+import {AchievesField} from "./achieves-field";
 import {CardGridField} from "./card-grid-field";
 import {ChecksField} from "./checks-field";
 import {ChipField} from "./chip-field";
@@ -270,6 +271,24 @@ export function PropertyController({
           onChange={
             onChange
               ? (next) => onChange({kind: "chip", value: next})
+              : undefined
+          }
+        />
+      );
+    }
+    case "achieves": {
+      const controlled = asKind(value, "achieves");
+      return (
+        <AchievesField
+          techniques={ui.techniques}
+          consultationId={ui.consultationId}
+          consultationLabel={ui.consultationLabel}
+          learnMoreLabel={ui.learnMoreLabel}
+          value={controlled?.value}
+          defaultValue={ui.value}
+          onChange={
+            onChange
+              ? (next) => onChange({kind: "achieves", value: next})
               : undefined
           }
         />

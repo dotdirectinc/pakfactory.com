@@ -1,5 +1,6 @@
 @import 'tailwindcss';
-@import 'tw-animate-css';
+/* Local animate utilities (vendored; package import broken under Turbopack + hoisted pnpm). */
+@import './tw-animate.css';
 
 @custom-variant dark (&:is(.dark *));
 

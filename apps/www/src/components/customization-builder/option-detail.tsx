@@ -7,8 +7,8 @@ import {
     OptionPropertyControllers,
     type PropertySelectionMap,
 } from '@/components/customization/option-property-controllers';
-import {TypePropertyController} from '@/components/customization/type-property-controller';
 import {AdditionalNoteField} from '@/components/customization-builder/ui/additional-note-field';
+import {OptionDetailHeader} from '@/components/customization-builder/ui/option-detail-header';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
 import type {PropertyFieldDescriptor} from '@/lib/catalog/map-detail-to-property-fields';
 import {loadOptionPropertyFields} from '@/lib/catalog/load-option-property-fields';
@@ -16,15 +16,6 @@ import type {
     BuilderOption,
     PropertySelectionSummaryItem,
 } from '@/lib/customization-builder';
-import type {UiDescriptor} from '@pakfactory/ui/components/customization/types';
-
-function typePanelListbox(option: BuilderOption): UiDescriptor {
-    return {
-        kind: 'listbox',
-        choices: [option.title],
-        value: option.title,
-    };
-}
 
 type OptionDetailProps = {
     option: BuilderOption | undefined;
@@ -36,6 +27,8 @@ type OptionDetailProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
+    /** Optional slot under title/description (e.g. Finishing “Achieved by”). */
+    afterDescription?: ReactNode;
 };
 
 function DetailFade({children}: {children: ReactNode}) {
@@ -71,6 +64,7 @@ export function OptionDetail({
     onEntryNoteChange,
     propertySelections,
     onPropertySelectionsChange,
+    afterDescription,
 }: OptionDetailProps) {
     const [fields, setFields] = useState<PropertyFieldDescriptor[]>([]);
     const [loadingFields, setLoadingFields] = useState(false);
@@ -117,12 +111,10 @@ export function OptionDetail({
                     className="flex flex-col gap-2"
                     aria-label={CUSTOMIZATION_BUILDER_COPY.detailLabel}
                 >
-                    <h3 className="text-base font-semibold tracking-tight">
-                        {CUSTOMIZATION_BUILDER_COPY.skipNotSure}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                        {CUSTOMIZATION_BUILDER_COPY.notSureHelper}
-                    </p>
+                    <OptionDetailHeader
+                        title={CUSTOMIZATION_BUILDER_COPY.skipNotSure}
+                        description={CUSTOMIZATION_BUILDER_COPY.notSureHelper}
+                    />
                 </div>
             </DetailFade>
         );
@@ -151,27 +143,21 @@ export function OptionDetail({
                 className="flex flex-col"
                 aria-label={CUSTOMIZATION_BUILDER_COPY.detailLabel}
             >
-                <div>
-                    <h3 className="text-base font-semibold tracking-tight">
-                        {option.title}
-                    </h3>
-                    {option.description ? (
-                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                            {option.description}
-                        </p>
-                    ) : option.shortDescription ? (
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            {option.shortDescription}
-                        </p>
-                    ) : null}
-                </div>
+                <OptionDetailHeader
+                    title={option.title}
+                    description={option.description}
+                    shortDescription={option.shortDescription}
+                    imageUrl={option.imageUrl}
+                >
+                    {afterDescription}
+                </OptionDetailHeader>
 
                 {loadingFields ? (
-                    <p className="mt-5 text-sm text-muted-foreground">
+                    <p className="mt-8 text-sm text-muted-foreground">
                         Loading…
                     </p>
                 ) : fields.length > 0 ? (
-                    <div className="mt-5">
+                    <div className="mt-8">
                         <OptionPropertyControllers
                             fields={fields}
                             value={selection}
@@ -192,16 +178,7 @@ export function OptionDetail({
                             }}
                         />
                     </div>
-                ) : (
-                    <div className="mt-5">
-                        <TypePropertyController
-                            label={option.title}
-                            ui={typePanelListbox(option)}
-                            controlId={`type-${option.id}`}
-                            variant="ghost"
-                        />
-                    </div>
-                )}
+                ) : null}
 
                 <div className="mt-5 border-t border-border pt-4">
                     <AdditionalNoteField
