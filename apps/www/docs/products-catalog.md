@@ -41,8 +41,19 @@ Two fields decide whether a catalog document gets a page and appears in listings
 | Rule | Condition | Meaning |
 | --- | --- | --- |
 | `CUSTOMER_FACING` | `customerFacing != false` | Notion "Hidden" sets `customerFacing: false`: no page (404), no route, no listing. **Unset counts as visible**, so never write `== true`. |
-| `LISTED_STATUS` | unset, `active`, `coming-soon` | Products: `discontinued` keeps its page ("no longer available") but is not listed. |
-| `LINE_STYLE_VISIBLE` | `LISTED_STATUS && CUSTOMER_FACING` | Product **lines and styles** (Richard, 2026-09-29): `discontinued` is treated as hidden, with no page, no route and no listing. A style's page exists only while its line lists it (`getStyle`), so the line's `styles` list is also the style route gate. |
+| `LISTED_STATUS` | unset, `active`, `coming-soon` | **Products** (and customization options): `coming-soon` still lists with a badge; `discontinued` keeps its page ("no longer available") but is not listed. |
+| `LINE_STYLE_ACTIVE` | unset or `active` | Product **lines and styles** only — `coming-soon` is hidden (no page / route / listing / nav), unlike products. |
+| `LINE_STYLE_VISIBLE` | `LINE_STYLE_ACTIVE && CUSTOMER_FACING` | Lines/styles: `coming-soon` and `discontinued` are both treated as hidden. A style's page exists only while its line lists it (`getStyle`), so the line's `styles` list is also the style route gate. Product library projections use the same gate so **facets cannot surface hidden lines/styles**. |
+
+TS mirrors for chrome / mapping: [`@pakfactory/sanity/catalog-visibility`](../../../packages/sanity/src/catalog-visibility.ts) (`isCatalogTargetVisible`).
+
+| `_type` | List / nav rule |
+| --- | --- |
+| `productLine`, `productStyle` | `LINE_STYLE_VISIBLE` (hide coming-soon) |
+| `product`, `bundle` | `LISTED_STATUS` + customerFacing |
+| `customizationOption`, `expertiseService` | `hasPage` + listed |
+| `expertiseStage` | listed (coming-soon stays; discontinued hidden) |
+| `solution` | `hasPage` only |
 
 Also applied to: the option → product-lines facet, the three solution product lists, the Solution Style filter, the Algolia product index and the case-studies Products filter (#694). Behaviour tests: [`line-style-visibility.test.ts`](../../../packages/sanity/src/queries/line-style-visibility.test.ts).
 

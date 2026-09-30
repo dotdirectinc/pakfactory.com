@@ -15,26 +15,64 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
   category,
   "handle": handle.current,
   "collectionSlug": primaryCollection->slug.current,
-  "pageSlug": primaryLandingPage->slug.current
+  "pageSlug": primaryLandingPage->slug.current,
+  status,
+  customerFacing,
+  hasPage
 }`;
+
+/** Lean projection for resolving path URLs → catalog docs (nav visibility). */
+const PATH_TARGET_PROJECTION = /* groq */ `{
+  _type,
+  status,
+  customerFacing,
+  hasPage
+}`;
+
+/**
+ * Resolve curated `linkType: path` catalog URLs to a document so chrome can
+ * apply the same status / customerFacing / hasPage gates as internal links.
+ * Bare listing paths (`/products`, `/customizations`, …) stay null.
+ */
+const PATH_TARGET_RESOLVE = /* groq */ `select(
+  linkType == "path" && defined(relativePath) => select(
+    string::split(relativePath, "/")[1] == "products" &&
+      count(string::split(relativePath, "/")) == 3 &&
+      string::split(relativePath, "/")[2] != "" => coalesce(
+        *[_type == "productLine" && slug.current == string::split(^.relativePath, "/")[2]][0]${PATH_TARGET_PROJECTION},
+        *[_type == "product" && slug.current == string::split(^.relativePath, "/")[2]][0]${PATH_TARGET_PROJECTION}
+      ),
+    string::split(relativePath, "/")[1] == "products" &&
+      count(string::split(relativePath, "/")) == 4 &&
+      string::split(relativePath, "/")[2] != "" &&
+      string::split(relativePath, "/")[3] != "" => *[
+        _type == "productStyle" &&
+        slug.current == string::split(^.relativePath, "/")[3] &&
+        productLine->slug.current == string::split(^.relativePath, "/")[2]
+      ][0]${PATH_TARGET_PROJECTION},
+    string::split(relativePath, "/")[1] == "customizations" &&
+      count(string::split(relativePath, "/")) == 3 &&
+      string::split(relativePath, "/")[2] != "" => *[
+        _type == "customizationOption" &&
+        slug.current == string::split(^.relativePath, "/")[2]
+      ][0]${PATH_TARGET_PROJECTION},
+    null
+  ),
+  null
+)`;
 
 const NAV_LINK_FIELDS = /* groq */ `{
   label,
   linkType,
   externalUrl,
   relativePath,
-  "internalLink": internalLink->${LINKABLE_DOC_PROJECTION}
+  "internalLink": internalLink->${LINKABLE_DOC_PROJECTION},
+  "pathTarget": ${PATH_TARGET_RESOLVE}
 }`;
 
 export const WEBSITE_NAVIGATION_QUERY = /* groq */ `*[_id == "websiteNavigation"][0]{
   _id,
-  cta{
-    label,
-    linkType,
-    externalUrl,
-    relativePath,
-    "internalLink": internalLink->${LINKABLE_DOC_PROJECTION}
-  },
+  cta${NAV_LINK_FIELDS},
   items[]{
     label,
     groups[]{
@@ -62,37 +100,44 @@ export const WEBSITE_NAVIGATION_QUERY = /* groq */ `*[_id == "websiteNavigation"
   "aiLinks": aiAnswerLinks[]{ "engine": platform, url }
 }`;
 
+export type WebsiteNavLinkTarget = {
+  _id?: string;
+  _type?: string;
+  title?: string | null;
+  slug?: string | null;
+  name?: string | null;
+  term?: string | null;
+  pageRole?: string | null;
+  pageType?: string | null;
+  category?: string | null;
+  handle?: string | null;
+  collectionSlug?: string | null;
+  pageSlug?: string | null;
+  /** Catalog lifecycle — used to hide nav links (PROD-2620). */
+  status?: string | null;
+  /** Notion "Hidden" — unset counts as visible. */
+  customerFacing?: boolean | null;
+  /** Customization option public page gate. */
+  hasPage?: boolean | null;
+};
+
 export type WebsiteNavLinkDoc = {
   label?: string | null;
   linkType?: string | null;
   externalUrl?: string | null;
   /** Root-relative site path when `linkType === 'path'` (e.g. `/products`). */
   relativePath?: string | null;
-  internalLink?: {
-    _id?: string;
-    _type?: string;
-    title?: string | null;
-    slug?: string | null;
-    name?: string | null;
-    term?: string | null;
-    pageRole?: string | null;
-    pageType?: string | null;
-    category?: string | null;
-    handle?: string | null;
-    collectionSlug?: string | null;
-    pageSlug?: string | null;
-  } | null;
+  internalLink?: WebsiteNavLinkTarget | null;
+  /**
+   * Catalog doc resolved from `relativePath` (products / customizations).
+   * Null for listing paths or non-catalog URLs.
+   */
+  pathTarget?: WebsiteNavLinkTarget | null;
 };
 
 export type WebsiteNavigationDoc = {
   _id?: string;
-  cta?: {
-    label?: string | null;
-    linkType?: string | null;
-    externalUrl?: string | null;
-    relativePath?: string | null;
-    internalLink?: WebsiteNavLinkDoc['internalLink'];
-  } | null;
+  cta?: WebsiteNavLinkDoc | null;
   items?:
     | ({
         label?: string | null;

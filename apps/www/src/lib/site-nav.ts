@@ -12,6 +12,7 @@ import type {
 } from '@pakfactory/sanity/queries';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
 import {sanityImageBaseUrl} from '@/lib/sanity/image';
+import {isWwwNavLinkVisible} from '@/lib/www-nav-link-visibility';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 export type WwwSiteNavModel = {
@@ -47,6 +48,7 @@ function mapNavLink(
   link: WebsiteNavLinkDoc | null | undefined,
 ): SiteNavPanelLink | null {
   if (!link?.label?.trim()) return null;
+  if (!isWwwNavLinkVisible(link)) return null;
   const resolved = resolveWwwNavHref(link);
   if (!resolved?.href) return null;
   return {
@@ -144,6 +146,7 @@ function mapChromeItems(chrome: WebsiteNavigationDoc): SiteNavItem[] | null {
       for (const group of item.groups ?? []) {
         if (href) break;
         for (const link of group?.items ?? []) {
+          if (!isWwwNavLinkVisible(link)) continue;
           const resolved = resolveWwwNavHref(link);
           if (resolved?.href) {
             href = resolved.href;
@@ -178,6 +181,7 @@ function resolveChromeCta(chrome: WebsiteNavigationDoc): SiteNavCta | null {
   if (!chrome?._id || !chrome.cta) return null;
   const label = chrome.cta.label?.trim();
   if (!label) return null;
+  if (!isWwwNavLinkVisible(chrome.cta)) return null;
   const resolved = resolveWwwNavHref(chrome.cta);
   if (!resolved?.href) return null;
   return {label, href: resolved.href};

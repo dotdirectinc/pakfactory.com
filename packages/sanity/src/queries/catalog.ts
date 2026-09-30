@@ -88,14 +88,15 @@ export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active
 export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
 
 /**
- * Product LINES and STYLES are grouping pages, not products (Richard, 2026-09-29 — PROD-2620):
- * a discontinued line or style is treated as HIDDEN — no page, no route, no listing — rather than
- * keeping a "no longer available" page the way a discontinued product does. So one rule serves
- * both the listings and the route probes. `coming-soon` stays visible; an unset status is active.
- * A style's page exists only while its line lists it (`getStyle` in www), so the `styles` list
- * below is also the style route gate.
+ * Product LINES and STYLES are grouping pages, not products (PROD-2620; coming-soon
+ * tightened 2026-09-29): `discontinued` and `coming-soon` are HIDDEN — no page, no route,
+ * no listing — same as `customerFacing: false`. Products still use {@link LISTED_STATUS}
+ * so a coming-soon *product* can list with a badge. Unset status reads as active.
+ * A style's page exists only while its line lists it (`getStyle` in www), so the `styles`
+ * list below is also the style route gate.
  */
-export const LINE_STYLE_VISIBLE = /* groq */ `${LISTED_STATUS} && ${CUSTOMER_FACING}`;
+export const LINE_STYLE_ACTIVE = /* groq */ `(!defined(status) || status == "active")`;
+export const LINE_STYLE_VISIBLE = /* groq */ `${LINE_STYLE_ACTIVE} && ${CUSTOMER_FACING}`;
 
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
@@ -107,7 +108,7 @@ const PRODUCT_LINES_FROM_PRODUCTS = /* groq */ `"productLines": *[
   ^._id in availableCustomizations[].customization._ref &&
   // Never offer a line whose page is gone (PROD-2620). Tested on the product, not by filtering
   // \`.line\` afterwards: \`{…}.line[cond]\` applies the filter to each line object, not the list.
-  !(coalesce(productLine, basedOn->productLine)->status in ["discontinued"]) &&
+  !(coalesce(productLine, basedOn->productLine)->status in ["discontinued", "coming-soon"]) &&
   coalesce(productLine, basedOn->productLine)->customerFacing != false
 ]{
   "line": coalesce(productLine, basedOn->productLine)->{
@@ -282,7 +283,10 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
     ...,
     "alt": ${IMAGE_ALT}
   },
-  "productLine": coalesce(productLine, basedOn->productLine)->{
+  "productLine": *[
+    _id == coalesce(^.productLine._ref, ^.basedOn->productLine._ref) &&
+    ${LINE_STYLE_VISIBLE}
+  ][0]{
     _id,
     title,
     "slug": slug.current,
@@ -290,7 +294,10 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
     "description": coalesce(cardSummary, pt::text(intro)),
     ${LINE_CARD_IMAGE}
   },
-  "productStyle": coalesce(productStyle[0], basedOn->productStyle[0])->${STYLE_LIBRARY_REF_PROJ},
+  "productStyle": *[
+    _id == coalesce(^.productStyle[0]._ref, ^.basedOn->productStyle[0]._ref) &&
+    ${LINE_STYLE_VISIBLE}
+  ][0]${STYLE_LIBRARY_REF_PROJ},
   "industries": solutions[@->solutionType == "industry"]->{
     title,
     "slug": slug.current

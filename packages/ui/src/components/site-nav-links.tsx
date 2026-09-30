@@ -104,7 +104,7 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "py-2 no-underline transition-colors hover:text-primary",
+                  "py-2 no-underline transition-colors hover:text-muted-foreground",
                   isActive ? "text-primary" : "text-foreground",
                 )}
               >
@@ -224,12 +224,12 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
                   <NavigationMenuTrigger
                     className={cn(
                       "h-auto bg-transparent px-3 py-2 text-sm font-semibold text-foreground shadow-none",
-                      "hover:bg-transparent hover:text-primary",
-                      "focus:bg-transparent focus:text-primary",
+                      "hover:bg-transparent hover:text-muted-foreground",
+                      "focus:bg-transparent focus:text-muted-foreground",
                       "focus-visible:bg-transparent",
-                      "data-[state=open]:bg-transparent data-[state=open]:text-primary",
+                      "data-[state=open]:bg-transparent data-[state=open]:text-muted-foreground",
                       "data-[state=open]:hover:bg-transparent data-[state=open]:focus:bg-transparent",
-                      "data-[state=open]:hover:text-primary",
+                      "data-[state=open]:hover:text-muted-foreground",
                     )}
                   >
                     {item.label}
@@ -251,7 +251,10 @@ export function SiteNavLinks({items}: SiteNavLinksProps) {
                       href={item.href}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
-                        "inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold no-underline transition-colors hover:text-primary",
+                        "inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold no-underline transition-colors",
+                        "hover:bg-transparent hover:text-muted-foreground",
+                        "focus:bg-transparent focus:text-muted-foreground",
+                        "data-[active=true]:bg-transparent",
                         isActive ? "text-primary" : "text-foreground",
                       )}
                     >
