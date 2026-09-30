@@ -4,7 +4,7 @@ import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
-import { entityIdField } from '../lib/entity-id-field'
+import { entityFields } from '../lib/entity-id-field'
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -681,7 +681,7 @@ export const customizationOption = defineType({
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
     })),
-    entityIdField({ group: 'content' }),
+    ...entityFields({ prefix: 'opt', codeKinds: ['OPT'], group: 'content' }),
   ],
 
   // PROD-2462. This block read three fields deleted in PROD-2250 — `category`,
