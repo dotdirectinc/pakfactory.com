@@ -716,12 +716,14 @@ function propertyGlobalItems(S: StructureBuilder): ListItemBuilder[] {
  * The pane heading is not set at all, so it falls back to the schema type's own title
  * — which is singular ("Product Line", "Customization Category").
  *
- * Before the plugin both were set explicitly and were allowed to differ: the
- * Customization tree read "Categories" in the sidebar and "Customization Categories"
- * on the pane. Collapsing them into one title changed both, which is a cosmetic
- * regression and nothing more — but it is the sidebar an editor navigates by.
+ * Before the plugin both were set explicitly, so a plain list could read "Product
+ * Lines" in both places. Collapsing them into one title left the panes reading
+ * "Product Line" and "Customization Category" — cosmetic, but the pane heading is
+ * the one an editor reads after clicking.
  *
- * This restores the pair. `paneTitle` defaults to `navTitle` where they matched.
+ * This sets both. `paneTitle` exists because the two ARE separable and that is what
+ * the plugin hides; no caller needs it today, since all three lists want the pair to
+ * match.
  */
 function orderableList(
     config: Omit<OrderableListConfig, 'title'> & { navTitle: string; paneTitle?: string },
@@ -818,15 +820,12 @@ export function customizationItems(
         // its own hard-coded order.
         orderableList({
             type: 'customizationCategory',
-            // Two different titles on purpose, as before the plugin: the sidebar sits
-            // under a "Customization" heading, so "Categories" is enough there.
-            navTitle: 'Categories',
-            paneTitle: 'Customization Categories',
+            navTitle: 'Customization Categories',
             S,
             context,
         }),
         S.listItem()
-            .title('Types')
+            .title('Customization Types')
             .schemaType('customizationType')
             // Title, not Last Edited (PROD-2545) — same reasoning as Options below.
             // Grouping by Category is the sort editors want, but a reference path cannot
@@ -837,7 +836,7 @@ export function customizationItems(
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
         S.listItem()
-            .title('Options')
+            .title('Customization Options')
             .schemaType('customizationOption')
             // Title, not Last Edited (PROD-2544). Last Edited is the Studio's own default
             // and it reshuffles underfoot: editing any option throws it to the top while
