@@ -7,19 +7,20 @@ How the homepage hero is built, for humans and AI agents. Section rules live in 
 | Part | Owner | Source |
 | --- | --- | --- |
 | Route | `app/(site)/page.tsx` | `HOME_PAGE_QUERY` → `homePage.sections[]` → `SectionRenderer`. Metadata from `metaTitle` / `metaDescription`, then `title` |
-| Hero | Editors | One of three Home-only sections (Studio → Home Page → Sections → **Heroes** tab). It renders the page H1 |
+| Hero | Editors | One of four Home-only sections (Studio → Home Page → Sections → **Heroes** tab). It renders the page H1 |
 | Fallback | Route | A plain `PageHeadingSection` shows only while no hero section exists, so the page always has one H1 |
 | Body | Editors | Every other allowed section, in editor order |
 
-## The three heroes
+## The four heroes
 
-All three share the copy fields: **Label above heading**, **Headline** (H1), **Intro**, **Primary button** and **Secondary button** (label, a one-line note under the button, and an Internal / Site path / External target), and **Show Google rating** (live score from Places, same source as the Reviews section).
+All four share the copy fields: **Label above heading**, **Headline** (H1), **Intro**, **Primary button** and **Secondary button** (label, a one-line note under the button, and an Internal / Site path / External target), and **Show Google rating** (live score from Places, same source as the Reviews section).
 
 | Studio | `_type` | React | What rotates / changes |
 | --- | --- | --- | --- |
 | Spotlight hero | `heroSpotlight` | `sections/hero-spotlight.tsx` → `ui/hero-spotlight-carousel.tsx` (`layout="split"`) | Copy left, stage right, labelled pager under the stage |
 | Full-bleed hero | `heroSpotlightFullBleed` | `sections/hero-spotlight-full-bleed.tsx` → same carousel (`layout="fullBleed"`) | Active slide fills the band; copy over a scrim; caption bottom-right on desktop |
 | Finder hero | `heroFinder` | `sections/hero-finder.tsx` → `ui/hero-finder-panel.tsx` | Two-line H1: "Custom [line]" / "for [industry] brands." — defaults Packaging Solution × All; shareable `?line=` / `?industry=` |
+| Finder fullscreen | `heroFinderFullscreen` | `sections/hero-finder-fullscreen.tsx` → `ui/hero-finder-fullscreen-panel.tsx` | Same pickers; active result as 100svh background; push-dock rail (up to 2 previous category labels · detail card −100px · next peeks). **General** deck from Studio `defaultRail` (Product → … → Promo, each Select / Auto newest / Auto popular). **Specific** deck from rules (style → industry → case study) |
 
 ### Spotlight slides
 
@@ -65,7 +66,7 @@ Picks sync to `?line=<slug>&industry=<slug>` via `lib/ui/use-query-param-state.t
 ## Human setup (agents do not write documents)
 
 1. Deploy the Studio schema (`pnpm sanity:deploy:staging`, then prod once approved).
-2. In Studio → Home Page → Sections, insert one hero from the **Heroes** tab and move it to the top. Fill Headline, both buttons and 1–5 Spotlight items (or, for Finder, 2–8 product lines and 2–8 industries).
+2. In Studio → Home Page → Sections, insert one hero from the **Heroes** tab and move it to the top. Fill Headline, both buttons and 1–5 Spotlight items (or, for Finder / Finder fullscreen, 2–8 product lines and 2–8 industries). For **Finder fullscreen**, also fill **Default rail** seats (Select / Auto) used when Packaging Solution × All is selected.
 3. For Finder pairs to show the right study, make sure each industry's **Related case studies** and each case study's **Products** are filled.
 
 ## Rest of the homepage (PROD-2666)

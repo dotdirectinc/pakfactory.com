@@ -239,7 +239,7 @@ const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
   }
 }`;
 
-/** Finder hero product-line option — plus recent studies that cover the line. */
+/** Finder hero product-line option — plus recent studies and styles for the line. */
 const HERO_FINDER_LINE = /* groq */ `{
   _id,
   _type,
@@ -250,7 +250,16 @@ const HERO_FINDER_LINE = /* groq */ `{
   "description": shortDescription,
   "imageSrc": featuredImage.asset->url,
   "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
-  "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY}
+  "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
+  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status == "active") && customerFacing != false] | order(title asc)[0...4]{
+    _id,
+    "title": coalesce(shortName, title),
+    "slug": slug.current,
+    "description": shortDescription,
+    "imageSrc": featuredImage.asset->url,
+    "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+    "lineSlug": ^.slug.current
+  }
 }`;
 
 /** Finder hero industry option — its curated related case studies. */
@@ -266,6 +275,56 @@ const HERO_FINDER_INDUSTRY = /* groq */ `{
   "studies": relatedCaseStudies[]->${HERO_CASE_STUDY}
 }`;
 
+/** Compact catalogue card for a default-rail seat (manual or auto-resolved). */
+const HERO_FINDER_RAIL_ITEM = /* groq */ `{
+  _id,
+  _type,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": coalesce(shortDescription, cardSummary, summary, excerpt),
+  "imageSrc": coalesce(
+    featuredImage.asset->url,
+    heroMedia.image.asset->url,
+    cardImage.asset->url,
+    mainImage.asset->url
+  ),
+  "imageAlt": coalesce(
+    featuredImage.alt,
+    featuredImage.asset->altText,
+    heroMedia.alt,
+    cardImageAlt,
+    mainImage.alt,
+    title
+  ),
+  "clientName": client->name,
+  "statTitle": highlights[0].title,
+  "statBody": highlights[0].description,
+  "lineIds": products[]._ref,
+  status,
+  customerFacing,
+  hasPage
+}`;
+
+const HERO_FINDER_RAIL_SLOT = /* groq */ `{
+  fillMode,
+  "item": select(
+    fillMode == "manual" && defined(item) => item->${HERO_FINDER_RAIL_ITEM},
+    fillMode == "newest" && defined(item._ref) => item->${HERO_FINDER_RAIL_ITEM},
+    fillMode == "newest" => null,
+    fillMode == "popular" && defined(item._ref) => item->${HERO_FINDER_RAIL_ITEM},
+    fillMode == "popular" => null,
+    defined(item) => item->${HERO_FINDER_RAIL_ITEM},
+    null
+  ),
+  "campaign": campaign{
+    title,
+    description,
+    "imageSrc": image.asset->url,
+    "imageAlt": coalesce(image.alt, image.asset->altText, title),
+    link ${LINK_OBJECT}
+  }
+}`;
+
 /**
  * Projection body for `sections[]{ … }` — use as:
  * `"sections": sections[]${PAGE_SECTIONS_PROJECTION}`
@@ -278,13 +337,40 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     heading,
     "spotlight": spotlight[]${HERO_SPOTLIGHT_SLIDE}
   },
-  _type == "heroFinder" => {
+  _type in ["heroFinder", "heroFinderFullscreen"] => {
     ${HERO_COPY},
     headingLead,
     headingJoin,
     headingTrail,
     "productLines": productLines[]->${HERO_FINDER_LINE},
-    "industries": industries[]->${HERO_FINDER_INDUSTRY}
+    "industries": industries[]->${HERO_FINDER_INDUSTRY},
+    _type == "heroFinderFullscreen" => {
+      "defaultRail": defaultRail{
+        product ${HERO_FINDER_RAIL_SLOT},
+        solution ${HERO_FINDER_RAIL_SLOT},
+        expertise ${HERO_FINDER_RAIL_SLOT},
+        customization ${HERO_FINDER_RAIL_SLOT},
+        caseStudy ${HERO_FINDER_RAIL_SLOT},
+        blog ${HERO_FINDER_RAIL_SLOT},
+        promo ${HERO_FINDER_RAIL_SLOT}
+      },
+      "autoNewest": {
+        "product": *[_type == "productLine" && (!defined(status) || status == "active") && customerFacing != false] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "solution": *[_type == "solution" && hasPage == true] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "expertise": *[_type == "expertiseStage"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "customization": *[_type == "customizationType"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "caseStudy": *[_type == "caseStudy"] | order(publishedAt desc)[0]${HERO_CASE_STUDY},
+        "blog": *[_type == "post" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0]${HERO_FINDER_RAIL_ITEM}
+      },
+      "autoPopular": {
+        "product": *[_type == "productLine" && (!defined(status) || status == "active") && customerFacing != false] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "solution": *[_type == "solution" && hasPage == true] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "expertise": *[_type == "expertiseStage"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "customization": *[_type == "customizationType"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
+        "caseStudy": *[_type == "caseStudy"] | order(publishedAt desc)[0]${HERO_CASE_STUDY},
+        "blog": *[_type == "post" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0]${HERO_FINDER_RAIL_ITEM}
+      }
+    }
   },
   _type == "faqSection" => {
     ${SECTION_CHROME},
@@ -807,6 +893,17 @@ export type PageSectionHeroFinderLineDoc = {
     imageSrc?: string | null;
     imageAlt?: string | null;
     studies?: PageSectionHeroCaseStudyDoc[] | null;
+    styles?: PageSectionHeroFinderStyleDoc[] | null;
+};
+
+export type PageSectionHeroFinderStyleDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    lineSlug?: string | null;
 };
 
 export type PageSectionHeroFinderIndustryDoc = {
@@ -821,14 +918,56 @@ export type PageSectionHeroFinderIndustryDoc = {
     studies?: PageSectionHeroCaseStudyDoc[] | null;
 };
 
+export type PageSectionHeroFinderRailItemDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    clientName?: string | null;
+    statTitle?: string | null;
+    statBody?: string | null;
+    lineIds?: string[] | null;
+    status?: string | null;
+    customerFacing?: boolean | null;
+    hasPage?: boolean | null;
+};
+
+export type PageSectionHeroFinderRailSlotDoc = {
+    fillMode?: 'manual' | 'newest' | 'popular' | string | null;
+    item?: PageSectionHeroFinderRailItemDoc | null;
+    campaign?: {
+        title?: string | null;
+        description?: string | null;
+        imageSrc?: string | null;
+        imageAlt?: string | null;
+        link?: PageSectionLinkDoc | null;
+    } | null;
+};
+
+export type PageSectionHeroFinderDefaultRailDoc = {
+    product?: PageSectionHeroFinderRailSlotDoc | null;
+    solution?: PageSectionHeroFinderRailSlotDoc | null;
+    expertise?: PageSectionHeroFinderRailSlotDoc | null;
+    customization?: PageSectionHeroFinderRailSlotDoc | null;
+    caseStudy?: PageSectionHeroFinderRailSlotDoc | null;
+    blog?: PageSectionHeroFinderRailSlotDoc | null;
+    promo?: PageSectionHeroFinderRailSlotDoc | null;
+};
+
 export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
-    _type: 'heroFinder';
+    _type: 'heroFinder' | 'heroFinderFullscreen';
     _key: string;
     headingLead?: string | null;
     headingJoin?: string | null;
     headingTrail?: string | null;
     productLines?: PageSectionHeroFinderLineDoc[] | null;
     industries?: PageSectionHeroFinderIndustryDoc[] | null;
+    defaultRail?: PageSectionHeroFinderDefaultRailDoc | null;
+    autoNewest?: Record<string, PageSectionHeroFinderRailItemDoc | PageSectionHeroCaseStudyDoc | null> | null;
+    autoPopular?: Record<string, PageSectionHeroFinderRailItemDoc | PageSectionHeroCaseStudyDoc | null> | null;
 };
 
 /** Shallow / unwired section until a renderer maps it. */

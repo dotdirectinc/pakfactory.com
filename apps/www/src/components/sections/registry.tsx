@@ -27,6 +27,7 @@ import {CaseStudiesRow} from '@/components/sections/case-studies-row';
 import {ExpertiseRow} from '@/components/sections/expertise-row';
 import {FaqSection} from '@/components/sections/faq-section';
 import {HeroFinder} from '@/components/sections/hero-finder';
+import {HeroFinderFullscreen} from '@/components/sections/hero-finder-fullscreen';
 import {HeroSpotlight} from '@/components/sections/hero-spotlight';
 import {HeroSpotlightFullBleed} from '@/components/sections/hero-spotlight-full-bleed';
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
@@ -45,7 +46,7 @@ import {mapCaseStudiesRow} from '@/lib/sections/map-case-studies-row';
 import {mapExpertiseSequence} from '@/lib/sections/map-expertise-sequence';
 import {mapFaqSection} from '@/lib/sections/map-faq-section';
 import {mapGeneralCta} from '@/lib/sections/map-general-cta';
-import {mapHeroFinder, mapHeroSpotlight} from '@/lib/sections/map-hero';
+import {mapHeroFinder, mapHeroFinderFullscreen, mapHeroSpotlight} from '@/lib/sections/map-hero';
 import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaFeature} from '@/lib/sections/map-media-feature';
@@ -266,6 +267,14 @@ function HeroFinderFromSanity(section: PageSectionHeroFinderDoc) {
     return <HeroFinder content={mapped} id={`hero-${section._key}`} />;
 }
 
+function HeroFinderFullscreenFromSanity(section: PageSectionHeroFinderDoc) {
+    const mapped = mapHeroFinderFullscreen(section);
+    if (!mapped) return null;
+    return (
+        <HeroFinderFullscreen content={mapped} id={`hero-${section._key}`} />
+    );
+}
+
 function ProductLinesRowFromSanity(section: PageSectionProductLinesRowDoc) {
     const mapped = mapProductLinesRow(section);
     if (mapped.cards.length === 0) return null;
@@ -296,6 +305,8 @@ export const SECTION_COMPONENTS: Record<
     heroSpotlightFullBleed:
         HeroSpotlightFullBleedFromSanity as ComponentType<PageSection>,
     heroFinder: HeroFinderFromSanity as ComponentType<PageSection>,
+    heroFinderFullscreen:
+        HeroFinderFullscreenFromSanity as ComponentType<PageSection>,
     faqSection: FaqSectionFromSanity as ComponentType<PageSection>,
     logoWall: LogoWallFromSanity as ComponentType<PageSection>,
     mediaFeature: MediaFeatureFromSanity as ComponentType<PageSection>,

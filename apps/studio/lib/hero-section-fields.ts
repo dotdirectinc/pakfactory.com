@@ -93,6 +93,170 @@ export function heroShowReviewsField() {
   })
 }
 
+const FILL_MODE_OPTIONS = [
+  {title: 'Select (manual)', value: 'manual'},
+  {title: 'Auto · newest', value: 'newest'},
+  {title: 'Auto · popular', value: 'popular'},
+] as const
+
+/**
+ * One General-deck seat for Finder fullscreen. Order is fixed in React;
+ * Studio only chooses how the seat is filled.
+ */
+function finderDefaultRailSlot(args: {
+  name: string
+  title: string
+  description: string
+  /** Catalogue reference target(s). Omit for promo (inline campaign only). */
+  to?: {type: string}[]
+}) {
+  const fields = [
+    defineField({
+      name: 'fillMode',
+      title: 'Fill',
+      type: 'string',
+      options: {list: [...FILL_MODE_OPTIONS], layout: 'radio'},
+      initialValue: 'manual',
+      validation: (Rule) => Rule.required(),
+    }),
+  ]
+
+  if (args.to?.length) {
+    fields.push(
+      defineField({
+        name: 'item',
+        title: 'Document',
+        type: 'reference',
+        to: args.to,
+        options: {disableNew: true},
+        hidden: ({parent}) => parent?.fillMode !== 'manual',
+        description: 'Required when Fill is Select.',
+      }),
+    )
+  } else {
+    // Promo — free-form campaign (same shape as spotlight campaign).
+    fields.push(
+      defineField({
+        name: 'campaign',
+        title: 'Promo',
+        type: 'object',
+        hidden: ({parent}) => parent?.fillMode !== 'manual',
+        fields: [
+          defineField({
+            name: 'title',
+            title: 'Title',
+            type: 'string',
+            validation: (Rule) => Rule.max(80),
+          }),
+          defineField({
+            name: 'description',
+            title: 'Description',
+            type: 'text',
+            rows: 2,
+            validation: (Rule) => Rule.max(160),
+          }),
+          defineField({
+            name: 'image',
+            title: 'Image',
+            type: 'image',
+            options: {hotspot: true},
+            fields: [
+              defineField({
+                name: 'alt',
+                title: 'Alt text',
+                type: 'string',
+              }),
+            ],
+          }),
+          defineField({
+            name: 'link',
+            title: 'Link',
+            type: 'object',
+            fields: [
+              defineField({
+                name: 'label',
+                title: 'Link label',
+                type: 'string',
+              }),
+              ...sectionLinkTargetFields(),
+            ],
+          }),
+        ],
+      }),
+    )
+  }
+
+  return defineField({
+    name: args.name,
+    title: args.title,
+    type: 'object',
+    group: SECTION_GROUPS.content,
+    description: args.description,
+    options: {collapsible: true, collapsed: false},
+    fields,
+  })
+}
+
+/**
+ * Default rail for Finder fullscreen when both pickers are sentinels
+ * (Packaging Solution × All). Slot order is code-locked on www.
+ */
+export function heroFinderDefaultRailField() {
+  return defineField({
+    name: 'defaultRail',
+    title: 'Default rail (Packaging Solution × All)',
+    type: 'object',
+    group: SECTION_GROUPS.content,
+    description:
+      'Used only when both pickers are defaults. Specific line/industry picks use automatic matching — not these seats. Order is fixed: Product → Solution → Expertise → Customization → Case study → Blog → Promo.',
+    options: {collapsible: true, collapsed: false},
+    fields: [
+      finderDefaultRailSlot({
+        name: 'product',
+        title: '1 · Product',
+        description: 'Product line for the Product seat.',
+        to: [{type: 'productLine'}],
+      }),
+      finderDefaultRailSlot({
+        name: 'solution',
+        title: '2 · Solution',
+        description: 'Industry / solution for the Solution seat.',
+        to: [{type: 'solution'}],
+      }),
+      finderDefaultRailSlot({
+        name: 'expertise',
+        title: '3 · Expertise',
+        description: 'Expertise stage for the Expertise seat.',
+        to: [{type: 'expertiseStage'}],
+      }),
+      finderDefaultRailSlot({
+        name: 'customization',
+        title: '4 · Customization',
+        description: 'Customization type for the Customization seat.',
+        to: [{type: 'customizationType'}],
+      }),
+      finderDefaultRailSlot({
+        name: 'caseStudy',
+        title: '5 · Case study',
+        description: 'Case study for the Case study seat.',
+        to: [{type: 'caseStudy'}],
+      }),
+      finderDefaultRailSlot({
+        name: 'blog',
+        title: '6 · Blog',
+        description: 'Blog post for the Blog seat.',
+        to: [{type: 'post'}],
+      }),
+      finderDefaultRailSlot({
+        name: 'promo',
+        title: '7 · Promo',
+        description:
+          'Manual campaign only (no document type). Auto modes omit this seat.',
+      }),
+    ],
+  })
+}
+
 /**
  * Spotlight items — what rotates beside (or behind) the fixed headline.
  * Mixed array (ADR-020 §7): pick a catalogue document, or add a free-form

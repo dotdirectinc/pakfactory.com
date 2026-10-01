@@ -40,7 +40,7 @@ export {
  * `customizationsRow` (catalogue strip) — do not conflate them.
  *
  * PROD-2666 adds the Home hero sections (`heroSpotlight`, `heroSpotlightFullBleed`,
- * `heroFinder`) under their own Heroes tab, allowed on Home only.
+ * `heroFinder`, `heroFinderFullscreen`) under their own Heroes tab, allowed on Home only.
  */
 
 export const websiteSections = [
@@ -60,7 +60,7 @@ export const websiteSections = [
 /** Section names grouped by entity (also the insert-menu grouping). */
 const FAMILY = {
   // Home-only page heroes (PROD-2666). One `_type` per layout — D35.
-  hero: ['heroSpotlight', 'heroSpotlightFullBleed', 'heroFinder'],
+  hero: ['heroSpotlight', 'heroSpotlightFullBleed', 'heroFinder', 'heroFinderFullscreen'],
   solution: ['solutionsRow', 'inspirationsGrid'],
   caseStudy: ['caseStudiesRow', 'videoCaseStudiesRow'],
   product: [

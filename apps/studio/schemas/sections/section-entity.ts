@@ -8,6 +8,7 @@ export const SECTION_ENTITY = {
   heroSpotlight: 'hero',
   heroSpotlightFullBleed: 'hero',
   heroFinder: 'hero',
+  heroFinderFullscreen: 'hero',
   solutionsRow: 'solution',
   inspirationsGrid: 'solution',
   caseStudiesRow: 'caseStudy',

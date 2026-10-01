@@ -11,6 +11,8 @@ import {isCatalogTargetVisible} from '@pakfactory/sanity/catalog-visibility';
 import {stegaClean} from 'next-sanity';
 
 import {resolveSectionLinkHref} from '@/lib/resolve-www-nav-href';
+import {buildFinderFullscreenGeneralSlides} from '@/lib/sections/hero-finder-fullscreen-match';
+import type {FinderFullscreenSlide} from '@/lib/sections/hero-finder-fullscreen-match';
 import {
     productHref,
     productStyleHref,
@@ -87,6 +89,14 @@ export type HeroFinderLine = {
     href: string;
     image?: HeroImage;
     studies: HeroFinderStudy[];
+    /** Popular / recent styles on the line (fullscreen Specific rail). */
+    styles?: {
+        id: string;
+        title: string;
+        slug: string;
+        description?: string;
+        image?: HeroImage;
+    }[];
 };
 
 export type HeroFinderIndustry = {
@@ -106,6 +116,11 @@ export type HeroFinderContent = HeroCopyContent & {
     headingTrail?: string;
     lines: HeroFinderLine[];
     industries: HeroFinderIndustry[];
+};
+
+/** Fullscreen Finder — same pickers plus pre-built General deck from Studio seats. */
+export type HeroFinderFullscreenContent = HeroFinderContent & {
+    generalSlides: FinderFullscreenSlide[];
 };
 
 const KIND_LABEL: Record<HeroSlideKind, string> = {
@@ -342,12 +357,37 @@ export function mapHeroFinder(
         }
         const imageSrc = trimmed(line.imageSrc);
         const description = trimmed(line.description);
+        const styles = (line.styles ?? [])
+            .map((style) => {
+                const styleId = trimmed(style?._id);
+                const styleTitle = trimmed(style?.title);
+                const styleSlug = trimmed(style?.slug);
+                if (!styleId || !styleTitle || !styleSlug) return null;
+                const styleImageSrc = trimmed(style.imageSrc);
+                const styleDescription = trimmed(style.description);
+                return {
+                    id: styleId,
+                    title: styleTitle,
+                    slug: styleSlug,
+                    ...(styleDescription ? {description: styleDescription} : {}),
+                    ...(styleImageSrc
+                        ? {
+                              image: {
+                                  src: styleImageSrc,
+                                  alt: trimmed(style.imageAlt) || styleTitle,
+                              },
+                          }
+                        : {}),
+                };
+            })
+            .filter((style): style is NonNullable<typeof style> => Boolean(style));
         lines.push({
             id,
             slug,
             title,
             href: productHref(slug),
             studies: mapStudies(line.studies),
+            ...(styles.length > 0 ? {styles} : {}),
             ...(imageSrc
                 ? {image: {src: imageSrc, alt: trimmed(line.imageAlt) || title}}
                 : {}),
@@ -392,5 +432,19 @@ export function mapHeroFinder(
         ...(headingTrail ? {headingTrail} : {}),
         lines,
         industries,
+    };
+}
+
+/** `heroFinderFullscreen` — Finder content + Studio default-rail General deck. */
+export function mapHeroFinderFullscreen(
+    section: PageSectionHeroFinderDoc,
+): HeroFinderFullscreenContent | null {
+    if (section._type !== 'heroFinderFullscreen') return null;
+    const base = mapHeroFinder(section);
+    if (!base) return null;
+
+    return {
+        ...base,
+        generalSlides: buildFinderFullscreenGeneralSlides(section),
     };
 }
