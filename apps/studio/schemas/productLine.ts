@@ -8,6 +8,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { entityIdField } from '../lib/entity-id-field'
 
 /**
  * Product Line — the top level of the product tree (Rigid, Folding Carton,
@@ -345,6 +346,7 @@ export const productLine = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
+    entityIdField({ group: GROUPS.content }),
   ],
   preview: {
     select: { title: 'title', display: 'shortName', media: 'featuredImage' },

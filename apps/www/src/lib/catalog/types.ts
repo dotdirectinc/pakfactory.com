@@ -18,6 +18,35 @@ export type AchievedByOption = {
     hasPage?: boolean;
 };
 
+/**
+ * Where a customization option meets a customer (PROD-2732). Replaces the
+ * `configuratorRole` + `hasPage` pair.
+ *
+ * 🔴 Both predicates test for the values they WANT. An option with no `appearsIn`
+ * — not yet backfilled, or written over the API — must read as neither pickable
+ * nor page-bearing, so a missing value hides it instead of leaking it.
+ */
+export type AppearsIn =
+    | 'configurable-with-page'
+    | 'not-configurable-with-page'
+    | 'configurable-no-page';
+
+/** Does a customer pick this option in the configurator? */
+export function isConfigurable(appearsIn: string | null | undefined): boolean {
+    return (
+        appearsIn === 'configurable-with-page' ||
+        appearsIn === 'configurable-no-page'
+    );
+}
+
+/** Does this option have its own detail page in the customization library? */
+export function hasDetailPage(appearsIn: string | null | undefined): boolean {
+    return (
+        appearsIn === 'configurable-with-page' ||
+        appearsIn === 'not-configurable-with-page'
+    );
+}
+
 export type CustomizationOption = {
     id: string;
     label: string;
@@ -37,9 +66,8 @@ export type CustomizationOption = {
     description?: string;
     imageUrl?: string | null;
     preselected?: boolean;
-    /** Prefer configuratorRole. */
-    role?: 'configurable' | 'reference';
-    configuratorRole?: 'configurable' | 'reference';
+    /** PROD-2732 — replaces `role` + `configuratorRole`. Absent on an un-backfilled document. */
+    appearsIn?: AppearsIn;
     status?: string;
     /** Reverse of Sanity `achieves` — candidates, not a recipe (ADR-017). */
     achievedBy?: AchievedByOption[];

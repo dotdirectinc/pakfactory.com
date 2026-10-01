@@ -43,7 +43,15 @@ const dataset = [
   style("s-coming", "active", { status: "coming-soon" }),
   style("s-gone", "active", { status: "discontinued" }),
   style("s-hidden", "active", { customerFacing: false }),
-  { _id: "opt", _type: "customizationOption", title: "Opt", hasPage: true, slug: { current: "opt" } },
+  { _id: "opt", _type: "customizationOption", title: "Opt", status: "active", appearsIn: "configurable-with-page", slug: { current: "opt" } },
+  // PROD-2732 fail-closed: `appearsIn` unset (an un-backfilled import, an API write)
+  // must keep the option OUT of the library. HAS_DETAIL_PAGE names the two values it
+  // wants; a `!= "configurable-no-page"` test would let this one through.
+  { _id: "opt-unset", _type: "customizationOption", title: "Unset", status: "active", slug: { current: "opt-unset" } },
+  // Not active hides an option everywhere a customer could meet it. `discontinued`
+  // is the deployed spelling today; PROD-2733 would rename it, and this stays true
+  // either way because the query tests `status == "active"`.
+  { _id: "opt-off", _type: "customizationOption", title: "Off", status: "discontinued", appearsIn: "configurable-with-page", slug: { current: "opt-off" } },
   product("p-active", "active", "s-active"),
   product("p-coming-line", "coming", "s-active"),
   product("p-bad-style", "active", "s-coming"),
@@ -79,6 +87,12 @@ test("option → product lines facet never offers a discontinued, coming-soon, o
   assert.ok(opt, "fixture option not returned by the library query");
   const slugs = [...new Set((opt.productLines ?? []).filter(Boolean).map((l) => l!.slug))];
   assert.deepEqual(slugs, ["active"]);
+});
+
+test("customization library: an option with no appearsIn, or one that is not active, is left out", async () => {
+  const rows = (await run(CATALOG_CUSTOMIZATION_LIBRARY_QUERY)) as { _id: string }[];
+  const ids = rows.map((r) => r._id).sort();
+  assert.deepEqual(ids, ["opt"], "only the active, page-bearing option is listed");
 });
 
 test("case-studies Products filter offers only lines that have a page", async () => {

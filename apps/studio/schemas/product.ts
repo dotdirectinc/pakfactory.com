@@ -9,6 +9,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
+import { entityIdField } from '../lib/entity-id-field'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -704,7 +705,10 @@ export const product = defineType({
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
             const rows = await client.fetch<{ _id: string; title: string | null }[]>(
-              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              // PROD-2732: names the one non-pickable value rather than "not
+              // configurable", so an option whose `appearsIn` is unset is not
+              // accused of something the backfill has simply not reached.
+              `*[_id in $ids && appearsIn == "not-configurable-with-page"]{ _id, title }`,
               { ids },
             )
             if (rows.length === 0) return true
@@ -950,6 +954,7 @@ export const product = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
+    entityIdField({ group: GROUPS.content }),
   ],
 
   preview: {

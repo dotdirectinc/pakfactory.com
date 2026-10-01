@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { entityIdField } from '../lib/entity-id-field'
 
 /** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
  *  reference reads as a requirement of one, which is what it meant. */
@@ -308,7 +309,7 @@ export const customizationType = defineType({
             }>(
               `{
                 "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{ _id, "categoryId": category._ref },
-                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && configuratorRole == "configurable"]{
+                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && appearsIn in ["configurable-with-page", "configurable-no-page"]]{
                   title,
                   "partnerTypes": array::unique(
                     *[_type == "customizationOption" && !(_id in path("drafts.**")) && (_id in ^.compatibleCustomizations[]._ref || ^._id in compatibleCustomizations[]._ref)].type._ref
@@ -458,6 +459,7 @@ export const customizationType = defineType({
     // never had. Only Options get pages, and only when `role` is `reference`; the
     // Type has no URL by design, not by omission. All three were unpopulated on all
     // 36 published Types, and nothing read them.
+    entityIdField({ group: 'content' }),
   ],
   preview: {
     select: { title: 'title', category: 'category.title' },
