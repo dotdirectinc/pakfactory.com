@@ -42,7 +42,12 @@ const CATEGORY_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  description
+  description,
+  // The curated order of this category's TYPES (PROD-2740), as plain ids. Partial
+  // and often absent — feed it to orderTypesInCategory rather than reading it
+  // directly, which drops refs to deleted types and sorts the unlisted tail.
+  // Not the category's own position among the four; that is still unsolved.
+  "typeOrder": coalesce(typeOrder[]._ref, [])
 }`;
 
 const TYPE_PROJ = /* groq */ `{
@@ -839,6 +844,13 @@ export type CatalogCategoryDoc = {
   /** Retired on www (policy sortIndex); kept optional for older projections. */
   order?: number | null;
   description?: string | null;
+  /**
+   * Curated order of this category's TYPES, as ids (PROD-2740). Partial by design
+   * and usually empty. Pass to `orderTypesInCategory` from
+   * `@pakfactory/sanity/customization-type-order` — it drops ids whose type was
+   * deleted (the refs are weak) and sorts whatever is unlisted alphabetically.
+   */
+  typeOrder?: string[];
 };
 
 export type CatalogTypeDoc = {
