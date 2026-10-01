@@ -187,7 +187,6 @@ export function SolutionStyleCatalogView({
             <PageBreadcrumbSection
                 items={[
                     {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Solutions', href: WWW_ROUTES.solutions},
                     {
                         label: solution.shortName,
                         href: solutionHref(solution.slug),
@@ -213,6 +212,7 @@ export function SolutionStyleCatalogView({
                     library={library}
                     urlSync
                     showPageChrome={false}
+                    hideCatalogBorderTop
                 />
             </Suspense>
             {pageSections && pageSections.length > 0 ? (
