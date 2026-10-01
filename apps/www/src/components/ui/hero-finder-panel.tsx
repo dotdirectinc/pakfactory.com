@@ -165,6 +165,7 @@ function useFinderCaptionSlot(slideCount: number, loop: boolean) {
 
     const syncFeatured = useCallback(
         (carouselApi: CarouselApi) => {
+            if (!carouselApi) return;
             const selected = carouselApi.selectedScrollSnap();
             if (!twoUp || slideCount <= 1) {
                 setFeaturedIndex(selected);
