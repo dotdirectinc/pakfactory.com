@@ -45,6 +45,56 @@ export const customizationCategory = defineType({
     // Categories list now sorts alphabetically, so *Additional Customization*
     // heads the list instead of *Materials*. The four values are recorded in
     // ADR-017 before deletion.
+    //
+    // ⚠️ `order` was this category's OWN position among the four. `typeOrder`
+    // below is a different question — the order of the TYPES inside it — and
+    // restores nothing that was removed here. Category position is still
+    // unsolved, and is currently hard-coded in the front end
+    // (`apps/www/src/lib/catalog/customization-category-order.ts`).
+    defineField({
+      name: 'typeOrder',
+      title: 'Type order',
+      type: 'array',
+      group: 'content',
+      description:
+        'Drag to set the order types appear in within this category. Listing a few is fine — ' +
+        'anything not listed follows alphabetically. Never a gate: every type still appears.',
+      of: [
+        {
+          type: 'reference',
+          // 🔴 WEAK ON PURPOSE — see the twin on `productLine.styleOrder`.
+          //
+          // A strong reference held purely for presentation makes every listed
+          // document undeletable, with nothing in the Studio connecting the two.
+          // That is what removed `productLine.styles` (PROD-2509). Weak lets the
+          // delete succeed and leaves a dangling entry, which the ordering helper
+          // drops before it reaches a consumer. Do not "tidy" this to a strong one.
+          weak: true,
+          to: [{ type: 'customizationType' }],
+          options: {
+            disableNew: true,
+            // Scoped to this category, and excluding types already listed. The
+            // second half is not cosmetic: without it the picker keeps offering
+            // what you just added, and the duplicate only announces itself as a
+            // validation error that blocks publish — found in PROD-2739 review.
+            filter: ({
+              document,
+            }: {
+              document: { _id: string; typeOrder?: { _ref?: string }[] }
+            }) => {
+              const chosen = (document.typeOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'category._ref == $category && !(_id in $chosen)',
+                params: { category: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
+    }),
     ...entityFields({ prefix: 'cat', codeKinds: ['CAT'], group: 'content' }),
   ],
   preview: {
