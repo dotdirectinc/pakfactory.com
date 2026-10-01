@@ -146,7 +146,7 @@ export const product = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
+        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
       // WARNING, never an error. A customer-facing product under a hidden line or
       // style is the one rule a human can break silently: nothing in the Studio shows
