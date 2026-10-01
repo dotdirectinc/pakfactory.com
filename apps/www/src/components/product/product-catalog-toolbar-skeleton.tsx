@@ -15,7 +15,11 @@ function SearchFieldSkeleton({className}: {className?: string}) {
  * Sticky toolbar placeholder while the product library Suspense boundary
  * resolves. Layout mirrors product-catalog-panel.tsx sticky search blocks.
  */
-export function ProductCatalogToolbarSkeleton() {
+export function ProductCatalogToolbarSkeleton({
+    hideCatalogBorderTop = false,
+}: {
+    hideCatalogBorderTop?: boolean;
+} = {}) {
     return (
         <>
             {/* Mobile: sticky search + filters */}
@@ -31,7 +35,10 @@ export function ProductCatalogToolbarSkeleton() {
 
             {/* Desktop: sticky search bar (no category tabs) */}
             <div
-                className="-mx-layout-gutter-inner hidden border-y border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block"
+                className={cn(
+                    '-mx-layout-gutter-inner hidden border-dashed border-border bg-background lg:sticky lg:top-0 lg:z-30 lg:block',
+                    hideCatalogBorderTop ? 'border-b' : 'border-y',
+                )}
                 aria-hidden
             >
                 <div className="flex flex-wrap items-stretch gap-x-6 gap-y-3 px-layout-gutter-inner">

@@ -207,7 +207,7 @@ export function SolutionStyleCatalogView({
                         : null
                 }
             />
-            <Suspense fallback={<ProductCatalogPanelLoading />}>
+            <Suspense fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}>
                 <ProductCatalogView
                     library={library}
                     urlSync
