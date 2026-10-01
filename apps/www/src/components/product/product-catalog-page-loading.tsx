@@ -44,13 +44,19 @@ export function ProductCatalogPageChrome({
 }
 
 /** Facet rail + card grid — used by in-view Suspense under live chrome. */
-export function ProductCatalogPanelLoading() {
+export function ProductCatalogPanelLoading({
+    hideCatalogBorderTop = false,
+}: {
+    hideCatalogBorderTop?: boolean;
+} = {}) {
     return (
         <PageDielineSection
             paddingBlock="none"
             innerClassName="flex flex-col gap-8 pb-24"
         >
-            <ProductCatalogToolbarSkeleton />
+            <ProductCatalogToolbarSkeleton
+                hideCatalogBorderTop={hideCatalogBorderTop}
+            />
             <div
                 className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8"
                 aria-busy="true"

@@ -25,7 +25,12 @@ async function ProductCatalogGrid() {
     const library = await listProductLibrary();
 
     return (
-        <ProductCatalogView library={library} urlSync showPageChrome={false} />
+        <ProductCatalogView
+            library={library}
+            urlSync
+            showPageChrome={false}
+            hideCatalogBorderTop
+        />
     );
 }
 
@@ -41,7 +46,7 @@ export default function ProductsIndexPage() {
     return (
         <>
             <ProductCatalogPageChrome />
-            <Suspense fallback={<ProductCatalogPanelLoading />}>
+            <Suspense fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}>
                 <ProductCatalogGrid />
             </Suspense>
             <Suspense fallback={null}>
