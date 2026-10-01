@@ -68,13 +68,27 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations"].some((p) => path.startsWith(p))),
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties"].some((p) =>
+              path.startsWith(p),
+            )),
       },
       // Products & Customizations (PROD-2614) — read-only until V1; edits happen in Studio.
       {
         href: "/spec/products",
         label: "Products",
-        match: (path) => path.startsWith("/spec/products") || path.startsWith("/spec/customizations"),
+        match: (path) => path.startsWith("/spec/products"),
+      },
+      // Everything in the catalog, browsed (registry ids included). An option's rules page sits
+      // under /spec/customizations/<id>, so it lights this entry.
+      {
+        href: "/spec/customizations",
+        label: "Customizations",
+        match: (path) => path.startsWith("/spec/customizations"),
+      },
+      {
+        href: "/spec/properties",
+        label: "Properties",
+        match: (path) => path.startsWith("/spec/properties"),
       },
     ],
   },
