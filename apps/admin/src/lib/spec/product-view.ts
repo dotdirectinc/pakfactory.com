@@ -3,7 +3,7 @@ import { resolveProductDims } from "@pakfactory/sanity/resolve-product-dims";
 import { dimensionAxesFor } from "@pakfactory/utilities/dimension-axes";
 import { convertDimensionRangeToUnit } from "@pakfactory/utilities/length-units";
 import type { UiDescriptor } from "@pakfactory/ui/components/customization/types";
-import type { RulesSource, SourceProduct } from "./rules-source";
+import type { RegistryIdentity, RulesSource, SourceProduct } from "./rules-source";
 import { studioEditUrl } from "./studio-link";
 
 /**
@@ -99,6 +99,7 @@ export type ProductView = {
   lineTitle?: string;
   styleTitles: string[];
   studioUrl: string | null;
+  registry?: RegistryIdentity;
   counts: { listed: number; derived: number; added: number; exceptions: number };
   categories: ProductCategoryBlock[];
   exceptions: ProductExceptionRow[];
@@ -198,6 +199,7 @@ export function buildProductView(source: RulesSource, product: SourceProduct): P
     ...(product.lineTitle ? { lineTitle: product.lineTitle } : {}),
     styleTitles: product.styleTitles,
     studioUrl: studioEditUrl("product", product._id),
+    ...(source.identity(product._id) ? { registry: source.identity(product._id) } : {}),
     counts,
     categories,
     exceptions,

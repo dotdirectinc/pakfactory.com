@@ -1,7 +1,7 @@
 import { resolveForProduct } from "@pakfactory/sanity/customization-rules/resolve";
 import type { PartnerGroup, OptionSummary } from "@pakfactory/sanity/customization-rules/summary";
 import { cachedSpec } from "./cache";
-import { loadRulesSource, loadRulesSummary, type Loaded } from "./rules-source";
+import { loadRulesSource, loadRulesSummary, type Loaded, type RegistryIdentity } from "./rules-source";
 import { buildProductView, catalogSnapshot, findProduct, type CatalogSnapshot, type ProductView } from "./product-view";
 import { studioEditUrl } from "./studio-link";
 
@@ -18,6 +18,8 @@ export const getCatalogSnapshot = cachedSpec("catalog-snapshot", async (): Promi
 export type ProductListRow = {
   id: string;
   title: string;
+  /** The registry code (PRD-LBL-0214-4), when registered. */
+  code?: string;
   line: string;
   listed: number;
   derived: number;
@@ -38,9 +40,11 @@ export const getProductRows = cachedSpec(
         rows: source.products.map((p) => {
           const c = counts.get(p._id);
           const derived = c?.derivedCount ?? 0;
+          const code = source.identity(p._id)?.entityCode;
           return {
             id: p._id,
             title: p.title ?? p._id,
+            ...(code ? { code } : {}),
             line: [p.lineTitle, ...p.styleTitles].filter(Boolean).join(" · "),
             listed: (c?.optionCount ?? 0) - derived,
             derived,
@@ -72,6 +76,7 @@ export type CustomizationView = {
   addedByException: number;
   removedByException: number;
   studioUrl: string | null;
+  registry?: RegistryIdentity;
   partners: {
     typeId: string;
     typeTitle: string;
@@ -111,6 +116,7 @@ export const getCustomizationView = cachedSpec(
         addedByException: option.addedByException,
         removedByException: option.removedByException,
         studioUrl: studioEditUrl("customizationOption", id),
+        ...(source.identity(id) ? { registry: source.identity(id) } : {}),
         partners: option.partners.map((p) => ({
           typeId: p.typeId,
           typeTitle: name(p.typeId),
