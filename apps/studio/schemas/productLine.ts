@@ -26,14 +26,19 @@ import { entityFields } from '../lib/entity-id-field'
  * `productLine` reference (97/97 in production), so membership is a query and the
  * Line never gates it.
  *
- * ⚠️ Ordering that grid is an OPEN REQUIREMENT with no mechanism (PROD-2509).
- * `styles` — an ordered reference array that set the display order — was removed
- * unpopulated (0/15) because a strong reference held purely for presentation made
- * every listed Style undeletable, and the "unlisted styles append alphabetically"
- * fallback it promised was never built. Until a replacement lands, the grid sorts
- * alphabetically, which is NOT the intent: a landing-page grid is a merchandising
- * surface and should lead with the styles that convert. Do not read the current
- * sort as a decision.
+ * Ordering that grid is `styleOrder` (PROD-2739) — the replacement for `styles`,
+ * which was removed unpopulated (0/15) in PROD-2509. Two things changed, and both
+ * are the reasons that one failed:
+ *
+ *   - the references are WEAK, so pinning a style no longer makes it undeletable;
+ *   - the "unlisted styles append alphabetically" fallback is actually BUILT, in
+ *     `LINE_STYLES` in `packages/sanity/src/queries/catalog.ts`, with the empty
+ *     and dangling-reference cases covered in `line-style-order.test.ts`.
+ *
+ * It stays ORDER ONLY and never a gate: membership remains the query above, so an
+ * unlisted style still renders — it lands in the alphabetical tail. A partial list
+ * is the normal state, which is what lets the field be useful while empty on most
+ * lines.
  *
  * Deferred: `sections` (page-builder) until the shared section inventory exists
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
@@ -322,6 +327,55 @@ export const productLine = defineType({
       group: GROUPS.categorization,
       description: 'Sibling lines to suggest as alternatives.',
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
+    }),
+    defineField({
+      name: 'styleOrder',
+      title: 'Style order',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Drag to set the order styles appear in on this line. Listing a few is fine — anything ' +
+        'not listed follows alphabetically. Never a gate: every style still appears.',
+      of: [
+        {
+          type: 'reference',
+          // 🔴 WEAK ON PURPOSE, and the only weak reference in this Studio.
+          //
+          // This field is PROD-2739, the replacement for `styles` — removed in
+          // PROD-2509 precisely because it was strong. Sanity blocks deletion of a
+          // referenced document, so listing a style here for presentation made that
+          // style undeletable, with nothing in the Studio connecting the two. Weak
+          // inverts that: the delete succeeds and leaves a dangling entry, which the
+          // grid query drops via `defined(_id)` so it never reaches the site.
+          //
+          // Do not "tidy" this to a strong reference. The whole field goes back to
+          // being a content-operations trap if you do.
+          weak: true,
+          to: [{ type: 'productStyle' }],
+          options: {
+            disableNew: true,
+            // Two narrowings, and both are UX rather than safety — `Rule.unique()`
+            // below and the grid query are what actually hold the line.
+            //
+            // 1. Styles belong to exactly one line, so offering another line's
+            //    styles would let an editor pin something the grid never renders.
+            // 2. Styles already in this list are dropped. Without this the picker
+            //    keeps offering what you just added, and the duplicate only
+            //    announces itself as a validation error that blocks publish —
+            //    found in review, after exactly that happened.
+            filter: ({ document }: { document: { _id: string; styleOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.styleOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'productLine._ref == $line && !(_id in $chosen)',
+                params: { line: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
 
