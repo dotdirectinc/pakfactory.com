@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getCustomizationView } from "@/lib/spec/cached-views";
+import { SpecRegistryId } from "@/components/spec/spec-registry-id";
 import {
   ADMIN_SPEC_PRODUCTS_COPY as COPY,
   ADMIN_SPEC_RULES_COPY as RULES_COPY,
@@ -37,6 +38,7 @@ export default async function SpecCustomizationPage({ params }: { params: Promis
             {view.typeTitle}
             {view.decidedBy ? ` · ${RULES_COPY.decidedBy[view.decidedBy]}` : ""}
           </p>
+          <SpecRegistryId registry={view.registry} />
         </div>
         {view.studioUrl && (
           <a href={view.studioUrl} target="_blank" rel="noreferrer" className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-muted">

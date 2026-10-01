@@ -70,7 +70,7 @@ export const ADMIN_SPEC_RULES_COPY = {
     dependent: "Decides",
     other: "Ordered with",
   },
-  filterOptions: "Filter by option or type name…",
+  filterOptions: "Filter by option, type or registry code…",
   openOption: "open",
   loadingPartners: "Loading pairs…",
   partnersFailed: "Could not load this option's pairs — reload and try again.",
@@ -99,10 +99,11 @@ export const ADMIN_SPEC_PRODUCTS_COPY = {
   listTitle: "Products",
   listLead:
     "Every standard product and what the rules make of it, read from Sanity. Read-only until V1 — edit in Studio.",
-  filter: "Filter — a product, a line, a style…",
+  filter: "Filter — a product, a line, a style, a registry code…",
   noMatch: (q: string) => `No product matches “${q}”.`,
   columns: {
     product: "Product",
+    code: "Registry ID",
     line: "Line · style",
     listed: "Listed",
     derived: "Derived",
@@ -111,6 +112,10 @@ export const ADMIN_SPEC_PRODUCTS_COPY = {
   backToList: "All products",
   loadMore: (n: number, left: number) => `Load ${n} more (${left} left)`,
   editInStudio: "Edit in Studio",
+  registryId: "Registry ID",
+  notRegistered: "Not registered",
+  copy: "Copy",
+  copied: "Copied",
   tabs: { offers: "What it offers", configure: "Configure as a customer", exceptions: "Exceptions" },
   offersLead:
     "Listed options are the product's own choice. Derived options come from the rules: each says which of the product's options allows it.",

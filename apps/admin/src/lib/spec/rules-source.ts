@@ -45,7 +45,12 @@ const QUERY = /* groq */ `{
       customizationExceptions[]{ "optionId": customization._ref, mode, reason },
       []
     )
-  }
+  },
+  "identity": *[
+    _type in ["product", "customizationOption", "customizationType", "customizationCategory"] &&
+    !(_id in path("drafts.**")) &&
+    defined(entityCode)
+  ]{ _id, entityId, entityCode }
 }`;
 
 export type SourceProduct = SummaryProduct & {
@@ -57,6 +62,9 @@ export type SourceProduct = SummaryProduct & {
   dimensionRange?: ProductDimensionRangeMm;
 };
 
+/** The registry's identity of a document, as the catalog fill copies it into Sanity (PROD-2628). */
+export type RegistryIdentity = { entityId: string; entityCode: string };
+
 export type RulesSource = {
   dataset: string;
   catalog: SummaryCatalog;
@@ -67,6 +75,8 @@ export type RulesSource = {
   index: ReturnType<typeof buildCompatibilityIndex>;
   /** id → display name, for types, options and categories. */
   name: (id: string) => string;
+  /** id → registry id and code; undefined for a document the registry has not registered. */
+  identity: (id: string) => RegistryIdentity | undefined;
 };
 
 export type Loaded<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -75,6 +85,7 @@ type QueryResult = {
   rules: SummaryCatalog;
   categories: { _id: string; title?: string }[];
   products: SourceProduct[];
+  identity: ({ _id: string } & RegistryIdentity)[];
 };
 
 export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
@@ -104,6 +115,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
   for (const c of result.categories) names.set(c._id, c.title ?? c._id);
   for (const t of catalog.types) names.set(t._id, t.title ?? t._id);
   for (const o of catalog.options) names.set(o._id, o.title ?? o._id);
+  const identities = new Map((result.identity ?? []).map(({ _id, entityId, entityCode }) => [_id, { entityId, entityCode }]));
 
   return {
     ok: true,
@@ -115,6 +127,7 @@ export const loadRulesSource = cache(async (): Promise<Loaded<RulesSource>> => {
       graph: buildDependencyGraph(catalog),
       index: buildCompatibilityIndex(catalog.options),
       name: (id) => names.get(id) ?? id,
+      identity: (id) => identities.get(id),
     },
   };
 });

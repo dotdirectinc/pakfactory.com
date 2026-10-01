@@ -43,6 +43,8 @@ export type RuleTypeRow = {
 export type RuleOptionRow = {
   id: string;
   title: string;
+  /** The registry code (OPT-FIN-0348-5), when registered. */
+  code?: string;
   typeId: string;
   typeTitle: string;
   status: "offered" | "offered-nowhere" | "compatible-with-nothing" | "unknown-type";
@@ -144,6 +146,7 @@ async function buildCurrentRules(): Promise<Loaded<CurrentRules & { partners: Re
     return {
       id: o.optionId,
       title: label(o.optionId),
+      ...(source.identity(o.optionId) ? { code: source.identity(o.optionId)!.entityCode } : {}),
       typeId: o.typeId,
       typeTitle: label(o.typeId),
       status: o.status,

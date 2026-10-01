@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireRegistryGrant } from "@/lib/spec/require-grant";
 import { getProductView } from "@/lib/spec/cached-views";
 import { SpecProductDetail } from "@/components/spec/spec-product-detail";
+import { SpecRegistryId } from "@/components/spec/spec-registry-id";
 import { ADMIN_SPEC_PRODUCTS_COPY as COPY, ADMIN_SPEC_RULES_COPY } from "@/lib/copy/spec";
 
 export const metadata = { title: "Product rules" };
@@ -32,6 +33,7 @@ export default async function SpecProductPage({ params }: { params: Promise<{ id
           <p className="text-sm text-muted-foreground">
             {[view.lineTitle, ...view.styleTitles].filter(Boolean).join(" · ") || "—"}
           </p>
+          <SpecRegistryId registry={view.registry} />
         </div>
         {view.studioUrl && (
           <a

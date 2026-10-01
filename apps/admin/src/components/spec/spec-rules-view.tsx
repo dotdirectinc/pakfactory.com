@@ -196,7 +196,12 @@ function OptionList({ options }: { options: RuleOptionRow[] }) {
   const filtered = useMemo(
     () =>
       q
-        ? options.filter((o) => o.title.toLowerCase().includes(q) || o.typeTitle.toLowerCase().includes(q))
+        ? options.filter(
+            (o) =>
+              o.title.toLowerCase().includes(q) ||
+              o.typeTitle.toLowerCase().includes(q) ||
+              (o.code ?? "").toLowerCase().includes(q),
+          )
         : options,
     [options, q],
   );
@@ -275,6 +280,7 @@ function OptionRow({ option: o }: { option: RuleOptionRow }) {
         <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-2">
           <span className="flex items-baseline gap-2">
             <span className="font-medium text-foreground">{o.title}</span>
+            {o.code && <code className="font-mono text-xs text-muted-foreground">{o.code}</code>}
             <Link
               href={`/spec/customizations/${encodeURIComponent(o.id)}`}
               className="text-xs text-muted-foreground hover:underline"
