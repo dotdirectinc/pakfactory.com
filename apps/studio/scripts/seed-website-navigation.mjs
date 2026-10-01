@@ -354,7 +354,7 @@ async function fetchCatalog(client) {
     client.fetch(`*[
       _type == "productLine" &&
       defined(slug.current)
-    ] | order(title asc) {
+    ] | order(orderRank asc) {
       _id,
       title,
       shortName,

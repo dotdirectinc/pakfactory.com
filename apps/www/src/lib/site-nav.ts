@@ -58,6 +58,63 @@ function mapNavLink(
   };
 }
 
+/** LexoRank from path/internal productLine target, if present. */
+function linkOrderRank(link: WebsiteNavLinkDoc): string | null {
+  const rank =
+    link.pathTarget?.orderRank?.trim() ||
+    link.internalLink?.orderRank?.trim() ||
+    '';
+  return rank || null;
+}
+
+/**
+ * Stable-sort mapped nav links by Studio `orderRank` (productLine drag order).
+ * Ranked links come first (lexicographic); unranked keep document order.
+ */
+export function sortNavLinksByOrderRank(
+  entries: {
+    mapped: SiteNavPanelLink;
+    orderRank: string | null;
+    index: number;
+  }[],
+): SiteNavPanelLink[] {
+  return [...entries]
+    .sort((a, b) => {
+      if (a.orderRank && b.orderRank) {
+        if (a.orderRank < b.orderRank) return -1;
+        if (a.orderRank > b.orderRank) return 1;
+        return a.index - b.index;
+      }
+      if (a.orderRank) return -1;
+      if (b.orderRank) return 1;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.mapped);
+}
+
+function mapGroupLinks(
+  groupItems: (WebsiteNavLinkDoc | null | undefined)[] | null | undefined,
+): SiteNavPanelLink[] {
+  const entries: {
+    mapped: SiteNavPanelLink;
+    orderRank: string | null;
+    index: number;
+  }[] = [];
+
+  for (const [index, link] of (groupItems ?? []).entries()) {
+    if (!link) continue;
+    const mapped = mapNavLink(link);
+    if (!mapped) continue;
+    entries.push({
+      mapped,
+      orderRank: linkOrderRank(link),
+      index,
+    });
+  }
+
+  return sortNavLinksByOrderRank(entries);
+}
+
 function mapPromo(
   promo:
     | {
@@ -101,11 +158,7 @@ function mapChromeItems(chrome: WebsiteNavigationDoc): SiteNavItem[] | null {
     const groups: SiteNavPanelGroup[] = [];
     for (const [groupIndex, group] of (item.groups ?? []).entries()) {
       if (!group) continue;
-      const links: SiteNavPanelLink[] = [];
-      for (const link of group.items ?? []) {
-        const mapped = mapNavLink(link);
-        if (mapped) links.push(mapped);
-      }
+      const links = mapGroupLinks(group.items);
       if (links.length === 0) continue;
       const groupLabel = group.label?.trim() || label;
       groups.push({

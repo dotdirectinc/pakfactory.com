@@ -5,8 +5,10 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type ReactNode,
+    type MutableRefObject,
 } from 'react';
 import {
     CarouselItem,
@@ -49,6 +51,11 @@ type HeroFinderPanelProps = {
     actions?: ReactNode;
 };
 
+type FinderUrlSetters = {
+    setLine?: (slug: string) => void;
+    setIndustry?: (slug: string) => void;
+};
+
 /**
  * Finder hero (PROD-2666) — the H1 is a sentence with two pickers:
  * "Custom [line] for" / "[industry] brands." Defaults are always
@@ -59,12 +66,50 @@ type HeroFinderPanelProps = {
  * relatedness (styles, industries, expertise defaults, relative case studies).
  * The second viewport slot keeps the detail caption always on; peers reveal it
  * on hover. Card click (not drag) navigates to that slide’s CTA.
+ *
+ * Chrome (and Embla) mount once. URL sync lives in a Suspense child so
+ * `useSearchParams` hydrate does not remount the rail / reset autoplay.
  */
 export function HeroFinderPanel(props: HeroFinderPanelProps) {
+    const {lines, industries} = useFinderOptions(props.content);
+    const [lineSlug, setLineSlug] = useState(FINDER_LINE_SENTINEL_SLUG);
+    const [industrySlug, setIndustrySlug] = useState(
+        FINDER_INDUSTRY_SENTINEL_SLUG,
+    );
+    const urlSettersRef = useRef<FinderUrlSetters>({});
+
+    const onLineChange = useCallback((slug: string) => {
+        setLineSlug(slug);
+        urlSettersRef.current.setLine?.(slug);
+    }, []);
+
+    const onIndustryChange = useCallback((slug: string) => {
+        setIndustrySlug(slug);
+        urlSettersRef.current.setIndustry?.(slug);
+    }, []);
+
+    const line = resolveBySlug(lines, lineSlug) ?? lines[0];
+    const industry = resolveBySlug(industries, industrySlug) ?? industries[0];
+
     return (
-        <Suspense fallback={<HeroFinderPanelLocal {...props} />}>
-            <HeroFinderPanelSynced {...props} />
-        </Suspense>
+        <>
+            <Suspense fallback={null}>
+                <FinderUrlBridge
+                    urlSettersRef={urlSettersRef}
+                    onHydrateLine={setLineSlug}
+                    onHydrateIndustry={setIndustrySlug}
+                />
+            </Suspense>
+            <HeroFinderPanelChrome
+                {...props}
+                lines={lines}
+                industries={industries}
+                line={line}
+                industry={industry}
+                onLineChange={onLineChange}
+                onIndustryChange={onIndustryChange}
+            />
+        </>
     );
 }
 
@@ -75,58 +120,45 @@ function useFinderOptions(content: HeroFinderContent) {
     );
 }
 
-function HeroFinderPanelSynced(props: HeroFinderPanelProps) {
-    const {lines, industries} = useFinderOptions(props.content);
+const FINDER_URL_PARAMS = {
+    line: {param: 'line', defaultValue: FINDER_LINE_SENTINEL_SLUG},
+    industry: {
+        param: 'industry',
+        defaultValue: FINDER_INDUSTRY_SENTINEL_SLUG,
+    },
+};
 
-    const paramDefs = useMemo(
-        () => ({
-            line: {param: 'line', defaultValue: FINDER_LINE_SENTINEL_SLUG},
-            industry: {
-                param: 'industry',
-                defaultValue: FINDER_INDUSTRY_SENTINEL_SLUG,
-            },
-        }),
-        [],
-    );
+/**
+ * Suspends on `useSearchParams` only. Registers URL writers for pickers and
+ * re-seeds parent state from the query (initial hydrate + back/forward).
+ */
+function FinderUrlBridge({
+    urlSettersRef,
+    onHydrateLine,
+    onHydrateIndustry,
+}: {
+    urlSettersRef: MutableRefObject<FinderUrlSetters>;
+    onHydrateLine: (slug: string) => void;
+    onHydrateIndustry: (slug: string) => void;
+}) {
+    const {values, setValue} = useQueryParamState({params: FINDER_URL_PARAMS});
 
-    const {values, setValue} = useQueryParamState({params: paramDefs});
+    useEffect(() => {
+        urlSettersRef.current.setLine = (slug) => setValue('line', slug);
+        urlSettersRef.current.setIndustry = (slug) =>
+            setValue('industry', slug);
+        return () => {
+            urlSettersRef.current.setLine = undefined;
+            urlSettersRef.current.setIndustry = undefined;
+        };
+    }, [setValue, urlSettersRef]);
 
-    const line = resolveBySlug(lines, values.line) ?? lines[0];
-    const industry = resolveBySlug(industries, values.industry) ?? industries[0];
+    useEffect(() => {
+        onHydrateLine(values.line);
+        onHydrateIndustry(values.industry);
+    }, [values.line, values.industry, onHydrateLine, onHydrateIndustry]);
 
-    return (
-        <HeroFinderPanelChrome
-            {...props}
-            lines={lines}
-            industries={industries}
-            line={line}
-            industry={industry}
-            onLineChange={(slug) => setValue('line', slug)}
-            onIndustryChange={(slug) => setValue('industry', slug)}
-        />
-    );
-}
-
-/** Suspense fallback — local state only, no `useSearchParams`. */
-function HeroFinderPanelLocal(props: HeroFinderPanelProps) {
-    const {lines, industries} = useFinderOptions(props.content);
-    const [lineSlug, setLineSlug] = useState(FINDER_LINE_SENTINEL_SLUG);
-    const [industrySlug, setIndustrySlug] = useState(FINDER_INDUSTRY_SENTINEL_SLUG);
-
-    const line = resolveBySlug(lines, lineSlug) ?? lines[0];
-    const industry = resolveBySlug(industries, industrySlug) ?? industries[0];
-
-    return (
-        <HeroFinderPanelChrome
-            {...props}
-            lines={lines}
-            industries={industries}
-            line={line}
-            industry={industry}
-            onLineChange={setLineSlug}
-            onIndustryChange={setIndustrySlug}
-        />
-    );
+    return null;
 }
 
 function resolveBySlug<T extends {id: string; slug: string}>(

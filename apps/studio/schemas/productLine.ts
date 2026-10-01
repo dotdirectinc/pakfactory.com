@@ -45,11 +45,10 @@ import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-li
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
  * (PROD-2293).
  *
- * `orderRank` (PROD-2744) is the Studio LIST order only — it decides the sequence
- * editors see in the Product Lines pane and nothing else. The site is unaffected:
- * `CATALOG_PRODUCT_LINES_QUERY` and the case-study filter chips are still
- * `order(title asc)`. The main site's menu is hand-authored on the Website
- * Navigation singleton and never reads this type, so it is unaffected too.
+ * `orderRank` (PROD-2744) is the Studio LIST order from drag-to-reorder. The
+ * www Products mega-menu sorts Product Line path links by this field. Catalog
+ * listing queries (`CATALOG_PRODUCT_LINES_QUERY`, case-study filter chips) are
+ * still `order(title asc)` until a follow-on change.
  */
 export const productLine = defineType({
   name: 'productLine',
@@ -420,8 +419,8 @@ export const productLine = defineType({
      * last rank and places a newly created line after it, so "Reset Order" is a
      * one-time action, not a chore on every create.
      *
-     * ⚠️ ORDER ONLY, and Studio only. Nothing on the website reads this field —
-     * see the type docblock above. Pointing a query at it is a separate decision.
+     * ⚠️ ORDER field. www Products mega-menu sorts path links by `orderRank`.
+     * Catalog listing queries still use `order(title asc)` — see the type docblock.
      */
     orderRankField({ type: 'productLine' }),
   ],

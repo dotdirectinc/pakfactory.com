@@ -715,7 +715,8 @@ export function productsItems(
         // Drag-to-order, not a plain document list (PROD-2744). The plugin owns the
         // pane, so `defaultOrdering` does not apply here — the drag order IS the
         // order, and the sort menu's "Ordered" entry comes from `orderRankOrdering`
-        // on `productLine`. Studio only; no site query reads `orderRank`.
+        // on `productLine`. www Products mega-menu sorts by `orderRank`; catalog
+        // listing queries still use `order(title asc)`.
         orderableDocumentListDeskItem({
             type: 'productLine',
             title: 'Product Lines',

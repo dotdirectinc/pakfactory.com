@@ -61,7 +61,7 @@ export type HeroSlide = {
     image: HeroImage;
     /** Muted loop for case-study slides (`previewVideo`). */
     videoSrc?: string;
-    /** Product cut-outs sit on a muted well; photos fill the stage. */
+    /** `cover` fills edge-to-edge; `contain` keeps a padded muted well. */
     imageFit: 'cover' | 'contain';
     stat?: {value: string; label?: string};
     chips: string[];
@@ -284,7 +284,7 @@ function mapSlide(
             return {
                 ...base,
                 label: title,
-                imageFit: 'contain',
+                imageFit: 'cover',
                 chips: [],
                 link: {label: `Explore ${title.toLowerCase()}`, href},
                 ...(description ? {description} : {}),
@@ -519,14 +519,6 @@ function defaultLinkLabelForItem(
     return 'Learn more';
 }
 
-function imageFitForGeneralItem(
-    item: PageSectionHeroFinderRailItemDoc,
-): 'contain' | 'cover' {
-    const type = clean(item._type);
-    if (type === 'productLine' || type === 'customizationType') return 'contain';
-    return 'cover';
-}
-
 function mapGeneralEntry(
     entry: PageSectionHeroFinderGeneralEntryDoc | null | undefined,
     kindLabel: string,
@@ -564,7 +556,7 @@ function mapGeneralEntry(
         kindLabel,
         title,
         ...(description ? {description} : {}),
-        imageFit: imageFitForGeneralItem(item),
+        imageFit: 'cover',
         link: {label: defaultLinkLabelForItem(item, title), href},
         ...(imageSrc
             ? {

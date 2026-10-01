@@ -82,14 +82,6 @@ function defaultLinkLabel(
     return 'Learn more';
 }
 
-function imageFitForItem(
-    item: PageSectionHeroFinderRailItemDoc | null | undefined,
-): 'contain' | 'cover' {
-    const type = trimmed(item?._type);
-    if (type === 'productLine' || type === 'customizationType') return 'contain';
-    return 'cover';
-}
-
 /**
  * Map one flexible default-rail entry → slide. Skips incomplete rows.
  */
@@ -157,7 +149,7 @@ function slideFromRailEntry(
         title,
         description,
         image,
-        imageFit: imageFitForItem(item),
+        imageFit: 'cover',
         ...(videoSrc ? {videoSrc} : {}),
         ...(href ? {link: {label: linkLabel, href}} : {}),
         ...(stat ? {stat} : {}),
@@ -219,7 +211,7 @@ export function buildFinderFullscreenSpecificSlides({
                 title: style.title,
                 description: style.description,
                 image: style.image,
-                imageFit: 'contain',
+                imageFit: 'cover',
                 link: {
                     label: 'View style',
                     href: productStyleHref(line.slug, style.slug),
@@ -232,7 +224,7 @@ export function buildFinderFullscreenSpecificSlides({
                 title: line.title,
                 description: line.description,
                 image: line.image,
-                imageFit: 'contain',
+                imageFit: 'cover',
                 link: {
                     label: `Explore ${line.title.toLowerCase()}`,
                     href: line.href,

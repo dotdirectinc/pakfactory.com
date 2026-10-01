@@ -1,5 +1,6 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
 import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
+import {orderTypesInCategory} from '@pakfactory/sanity/customization-type-order';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
@@ -233,6 +234,8 @@ export function buildStepsFromCatalog(
         slug: string;
         title: string;
         description: string;
+        /** From any option in the category — same `typeOrder` on every row. */
+        typeOrder?: string[];
         types: Map<
             string,
             {
@@ -257,6 +260,14 @@ export function buildStepsFromCatalog(
                 types: new Map(),
             };
             categories.set(categorySlug, bucket);
+        }
+
+        if (
+            !bucket.typeOrder &&
+            item.categoryTypeOrder &&
+            item.categoryTypeOrder.length > 0
+        ) {
+            bucket.typeOrder = item.categoryTypeOrder;
         }
 
         const typeId = item.typeId?.trim() || `fallback-${categorySlug}`;
@@ -303,14 +314,29 @@ export function buildStepsFromCatalog(
     );
 
     for (const category of orderedCategories) {
+        const withOptions = [...category.types.values()].filter(
+            (typeBucket) => typeBucket.options.length > 0,
+        );
+        if (withOptions.length === 0) continue;
+
+        // PROD-2746 — merchandised type sequence from category.typeOrder.
+        // Empty/absent collapses to alphabetical (same contract as the helper).
+        const orderedBuckets = orderTypesInCategory(
+            withOptions.map((typeBucket) => ({
+                _id: typeBucket.type.id,
+                title: typeBucket.type.title,
+                type: typeBucket.type,
+                options: typeBucket.options,
+            })),
+            category.typeOrder,
+        );
+
         const types: BuilderType[] = [];
         const options: BuilderOption[] = [];
-        for (const typeBucket of category.types.values()) {
-            if (typeBucket.options.length === 0) continue;
+        for (const typeBucket of orderedBuckets) {
             types.push(typeBucket.type);
             options.push(...typeBucket.options);
         }
-        if (types.length === 0) continue;
 
         steps.push({
             key: category.slug,

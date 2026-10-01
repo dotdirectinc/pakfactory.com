@@ -122,9 +122,11 @@ export function SectionCarousel({
         return [
             Autoplay({
                 delay: AUTOPLAY_DELAY_MS,
-                // playPause: clicks must not kill the cycle; pause button owns stop.
+                // playPause: Pause button owns WCAG stop. Native mouseenter /
+                // focus-in pause without syncing React `paused` (stuck rail).
                 stopOnInteraction: !playPause,
-                stopOnMouseEnter: true,
+                stopOnMouseEnter: !playPause,
+                stopOnFocusIn: !playPause,
             }),
         ];
     }, [enableAutoplay, playPause]);

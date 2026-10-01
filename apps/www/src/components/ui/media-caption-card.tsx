@@ -37,7 +37,7 @@ export type MediaCaptionCardProps = {
     image?: MediaCaptionCardImage;
     /** Playable MP4 — plays + fades in when featured or hovered. */
     videoSrc?: string;
-    /** Product cut-outs sit contained; photos cover. Default `cover`. */
+    /** `cover` fills edge-to-edge; `contain` keeps a padded muted well. Default `cover`. */
     imageFit?: 'contain' | 'cover';
     link?: HeroMediaCaptionProps['link'];
     stat?: HeroMediaCaptionProps['stat'];
@@ -231,7 +231,7 @@ export function MediaCaptionCard({
             <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
                 {image || trimmedVideo ? (
                     contain ? (
-                        // Product cut-outs: muted well + settle inset is intentional.
+                        // Contain: muted well + settle inset.
                         <MediaSettleZoom className="absolute inset-0">
                             {media}
                         </MediaSettleZoom>

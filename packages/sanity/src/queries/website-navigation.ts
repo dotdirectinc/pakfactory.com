@@ -19,16 +19,18 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
   status,
   customerFacing,
   hasPage,
-  appearsIn
+  appearsIn,
+  orderRank
 }`;
 
-/** Lean projection for resolving path URLs → catalog docs (nav visibility). */
+/** Lean projection for resolving path URLs → catalog docs (nav visibility + order). */
 const PATH_TARGET_PROJECTION = /* groq */ `{
   _type,
   status,
   customerFacing,
   hasPage,
-  appearsIn
+  appearsIn,
+  orderRank
 }`;
 
 /**
@@ -123,6 +125,11 @@ export type WebsiteNavLinkTarget = {
   hasPage?: boolean | null;
   /** Customization option page gate (PROD-2732) — page-bearing `appearsIn` values. */
   appearsIn?: string | null;
+  /**
+   * LexoRank from `@sanity/orderable-document-list` (productLine). Used to sort
+   * Products mega-menu links to match Studio drag order.
+   */
+  orderRank?: string | null;
 };
 
 export type WebsiteNavLinkDoc = {
