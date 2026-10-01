@@ -1,7 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
-import { entityIdField } from '../lib/entity-id-field'
+import { entityFields } from '../lib/entity-id-field'
 
 export const property = defineType({
   name: 'property',
@@ -65,7 +65,7 @@ export const property = defineType({
     // break. What is missing is the listing-page DOCUMENTS — 1 of 19 exists today
     // (`caseStudiesPage`) — so the 9 values are recorded in ADR-017 for whoever
     // populates `catalogPage.filters` and the rest.
-    entityIdField({ group: 'content' }),
+    ...entityFields({ prefix: 'pty', codeKinds: ['PTY'], group: 'content' }),
   ],
   preview: {
     select: { title: 'title' },

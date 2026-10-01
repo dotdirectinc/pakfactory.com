@@ -616,6 +616,7 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
     "slug": slug.current,
     "declaredProperties": properties[]{
       usage,
+      showOnDetailPage,
       "property": property->{
         _id,
         title,
@@ -656,6 +657,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     "slug": slug.current,
     "declaredProperties": properties[]{
       usage,
+      showOnDetailPage,
       "property": property->{
         _id,
         title,
@@ -743,6 +745,7 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
     "slug": slug.current,
     "declaredProperties": properties[]{
       usage,
+      showOnDetailPage,
       "property": property->{
         _id,
         title,
@@ -1067,6 +1070,8 @@ export type CatalogDeclaredPropertyDoc = {
   property: (CatalogPropertyRefDoc & {
     valuesPerItem?: 'one' | 'many' | null;
   }) | null;
+  /** Stated rows only (PROD-2610): false = a filter the detail page does not print. Unset = shown. */
+  showOnDetailPage?: boolean | null;
 };
 
 /** Peer option for detail compare (no FAQs / product lines). */

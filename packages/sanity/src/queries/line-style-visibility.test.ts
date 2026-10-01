@@ -48,10 +48,9 @@ const dataset = [
   // must keep the option OUT of the library. HAS_DETAIL_PAGE names the two values it
   // wants; a `!= "configurable-no-page"` test would let this one through.
   { _id: "opt-unset", _type: "customizationOption", title: "Unset", status: "active", slug: { current: "opt-unset" } },
-  // Not active hides an option everywhere a customer could meet it. `discontinued`
-  // is the deployed spelling today; PROD-2733 would rename it, and this stays true
-  // either way because the query tests `status == "active"`.
-  { _id: "opt-off", _type: "customizationOption", title: "Off", status: "discontinued", appearsIn: "configurable-with-page", slug: { current: "opt-off" } },
+  // PROD-2733: Not active hides an option everywhere a customer could meet it. The
+  // query tests `status == "active"`, so this held under the old three-value list too.
+  { _id: "opt-off", _type: "customizationOption", title: "Off", status: "not-active", appearsIn: "configurable-with-page", slug: { current: "opt-off" } },
   product("p-active", "active", "s-active"),
   product("p-coming-line", "coming", "s-active"),
   product("p-bad-style", "active", "s-coming"),

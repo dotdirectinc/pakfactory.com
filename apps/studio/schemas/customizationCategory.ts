@@ -1,6 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { entityIdField } from '../lib/entity-id-field'
+import { entityFields } from '../lib/entity-id-field'
 
 export const customizationCategory = defineType({
   name: 'customizationCategory',
@@ -45,7 +45,7 @@ export const customizationCategory = defineType({
     // Categories list now sorts alphabetically, so *Additional Customization*
     // heads the list instead of *Materials*. The four values are recorded in
     // ADR-017 before deletion.
-    entityIdField({ group: 'content' }),
+    ...entityFields({ prefix: 'cat', codeKinds: ['CAT'], group: 'content' }),
   ],
   preview: {
     select: { title: 'title', subtitle: 'slug.current' },

@@ -7,6 +7,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
+import { entityFields } from '../lib/entity-id-field'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
@@ -122,11 +123,11 @@ export const solution = defineType({
     }),
     defineField({
       name: 'hasPage',
-      title: 'Has a landing page',
+      title: 'Has a page',
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'An editorial judgement — business focus, profitability, demand, search value. A solution can exist for tagging without earning a page.',
+        'Off = no page, no route, no listing — and its Solution Styles go too. Off by default: a solution can exist for tagging without earning a page. An editorial judgement — business focus, profitability, demand, search value.',
       initialValue: false,
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
@@ -264,6 +265,7 @@ export const solution = defineType({
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
     ...socialFields({group: GROUPS.social, channel: MEDIA_TAG.solution}),
+    ...entityFields({ prefix: 'sol', codeKinds: ['SOL'], group: GROUPS.content }),
   ],
 
   preview: {

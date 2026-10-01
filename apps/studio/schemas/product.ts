@@ -9,7 +9,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
-import { entityIdField } from '../lib/entity-id-field'
+import { entityFields } from '../lib/entity-id-field'
 
 /**
  * Product — one orderable thing: a fully-configurable `standard` product or a
@@ -146,7 +146,7 @@ export const product = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
+        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
       // WARNING, never an error. A customer-facing product under a hidden line or
       // style is the one rule a human can break silently: nothing in the Studio shows
@@ -954,7 +954,7 @@ export const product = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
-    entityIdField({ group: GROUPS.content }),
+    ...entityFields({ prefix: 'prd', codeKinds: ['PRD', 'INS'], group: GROUPS.content }),
   ],
 
   preview: {

@@ -8,7 +8,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { entityIdField } from '../lib/entity-id-field'
+import { entityFields } from '../lib/entity-id-field'
 
 /**
  * Product Line — the top level of the product tree (Rigid, Folding Carton,
@@ -194,7 +194,7 @@ export const productLine = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
+        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
     }),
 
@@ -346,7 +346,7 @@ export const productLine = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
-    entityIdField({ group: GROUPS.content }),
+    ...entityFields({ prefix: 'lin', codeKinds: ['LIN'], group: GROUPS.content }),
   ],
   preview: {
     select: { title: 'title', display: 'shortName', media: 'featuredImage' },

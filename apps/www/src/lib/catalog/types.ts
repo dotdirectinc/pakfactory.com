@@ -422,6 +422,12 @@ export type CustomizationPropertyValue = {
 
 export type CustomizationDeclaredProperty = {
     usage: 'stated' | 'selectable';
+    /**
+     * Stated rows only (Studio showOnDetailPage, PROD-2610). `false` = a hidden fact: it still
+     * filters listings, but Specs & performance and the compare matrix do not print it. Absent =
+     * shown, as Studio defaults it.
+     */
+    showOnDetailPage?: false;
     propertyId?: string;
     propertySlug?: string;
     propertyTitle?: string;

@@ -423,6 +423,23 @@ export const MIGRATIONS = [
     probe: `count(*[_type == "customizationOption" && !(_id in path("drafts.**")) &&
       status == "active" && !defined(appearsIn)]) == 0`,
   },
+  {
+    id: '20260930-customization-status',
+    ticket: 'PROD-2733',
+    title: 'customizationOption.status to Active / Not active (coming-soon → active, discontinued → not-active)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:customization-status',
+    script: 'apps/studio/scripts/migrate-customization-status.mjs',
+    args: 'flags',
+    after: ['20260930-appears-in'],
+    // Asserts the OLD values are gone, which is the shape that stays true forever.
+    // ⚠️ It can go false again without a migration being un-run: the catalog fill
+    // writes over the API, where `options.list` does not apply, so a generator still
+    // emitting the removed values re-introduces them. That is the point of probing
+    // rather than trusting the ledger — see the script header.
+    probe: `count(*[_type == "customizationOption" &&
+      status in ["coming-soon", "discontinued"]]) == 0`,
+  },
 ]
 
 /**
