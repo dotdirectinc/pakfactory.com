@@ -1,4 +1,7 @@
-import { orderableDocumentListDeskItem } from '@sanity/orderable-document-list'
+import {
+    orderableDocumentListDeskItem,
+    type OrderableListConfig,
+} from '@sanity/orderable-document-list'
 import {
     ArrowRightIcon,
     CogIcon,
@@ -707,6 +710,33 @@ function propertyGlobalItems(S: StructureBuilder): ListItemBuilder[] {
     ];
 }
 
+
+/**
+ * `orderableDocumentListDeskItem` takes ONE `title` and uses it for the SIDEBAR item.
+ * The pane heading is not set at all, so it falls back to the schema type's own title
+ * — which is singular ("Product Line", "Customization Category").
+ *
+ * Before the plugin both were set explicitly and were allowed to differ: the
+ * Customization tree read "Categories" in the sidebar and "Customization Categories"
+ * on the pane. Collapsing them into one title changed both, which is a cosmetic
+ * regression and nothing more — but it is the sidebar an editor navigates by.
+ *
+ * This restores the pair. `paneTitle` defaults to `navTitle` where they matched.
+ */
+function orderableList(
+    config: Omit<OrderableListConfig, 'title'> & { navTitle: string; paneTitle?: string },
+): ReturnType<typeof orderableDocumentListDeskItem> {
+    const { navTitle, paneTitle, ...rest } = config
+    const item = orderableDocumentListDeskItem({ ...rest, title: navTitle })
+    return {
+        ...item,
+        title: navTitle,
+        // `child` is the serialised pane object here, but its declared type is a union
+        // that also allows a function or observable — hence the trip through `unknown`.
+        child: { ...(item.child as unknown as Record<string, unknown>), title: paneTitle ?? navTitle },
+    } as ReturnType<typeof orderableDocumentListDeskItem>
+}
+
 export function productsItems(
     S: StructureBuilder,
     context: StructureResolverContext,
@@ -717,9 +747,9 @@ export function productsItems(
         // order, and the sort menu's "Ordered" entry comes from `orderRankOrdering`
         // on `productLine`. www Products mega-menu sorts by `orderRank`; catalog
         // listing queries still use `order(title asc)`.
-        orderableDocumentListDeskItem({
+        orderableList({
             type: 'productLine',
-            title: 'Product Lines',
+            navTitle: 'Product Lines',
             S,
             context,
         }),
@@ -786,9 +816,12 @@ export function customizationItems(
         // `order` in September; the list had gone alphabetical, putting Additional
         // Customization ahead of Materials. Studio only — the front end still runs
         // its own hard-coded order.
-        orderableDocumentListDeskItem({
+        orderableList({
             type: 'customizationCategory',
-            title: 'Customization Categories',
+            // Two different titles on purpose, as before the plugin: the sidebar sits
+            // under a "Customization" heading, so "Categories" is enough there.
+            navTitle: 'Categories',
+            paneTitle: 'Customization Categories',
             S,
             context,
         }),
@@ -952,9 +985,9 @@ export const solutionsWorkspaceStructure = (
             // used to carry is gone on purpose — the drag order IS the order. The
             // sort menu still offers Title, from `orderings` on `solution`.
             // Studio only; no site query reads `orderRank`.
-            orderableDocumentListDeskItem({
+            orderableList({
                 type: 'solution',
-                title: 'Solutions',
+                navTitle: 'Solutions',
                 icon: BulbOutlineIcon,
                 S,
                 context,
