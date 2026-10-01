@@ -113,7 +113,9 @@ const client = createClient({
 
 /** Dependencies first: a strong reference to a document not yet written is rejected. */
 // solutionStyle after solution / productLine / productStyle: it references all three (PROD-2605).
-const TYPE_ORDER = ['property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'customizationOption', 'product']
+// customizationCategory first: the fill patches it only for its registry identity (entityId /
+// entityCode, PROD-2628) and it references nothing in the set.
+const TYPE_ORDER = ['customizationCategory', 'property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'customizationOption', 'product']
 const BATCH = 50
 
 function fail(msg) {
