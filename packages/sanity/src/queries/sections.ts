@@ -11,9 +11,10 @@ import {
 
 export {FEATURED_VIDEO_URL_FIELD};
 
-/** FAQ ref card — matches product FAQ projection shape. */
+/** FAQ ref card — matches product FAQ projection shape. Blocks for UI; plain for JSON-LD. */
 const FAQ_REF = /* groq */ `{
   question,
+  answer,
   "answerPlain": pt::text(answer)
 }`;
 
@@ -582,6 +583,8 @@ export type PageSectionChromeFields = {
 
 export type PageSectionFaqDoc = {
     question?: string | null;
+    /** Portable Text blocks for rich FAQ answers (bold, links). */
+    answer?: unknown[] | null;
     answerPlain?: string | null;
 };
 

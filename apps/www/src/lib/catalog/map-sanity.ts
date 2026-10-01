@@ -8,6 +8,7 @@ import {
     type CatalogPropertyValueDetailDoc,
     type PageSectionDoc,
 } from '@pakfactory/sanity/queries';
+import type {PortableTextBlock} from '@portabletext/types';
 import {
     resolveImageAlt,
     sanityImageBaseUrl,
@@ -115,14 +116,28 @@ function cardImageFromSanity(
 
 /** FAQ rows → `ProductFaq[]`, dropping any without both a question and an answer. */
 function mapFaqs(
-    rows: ({question?: string | null; answerPlain?: string | null} | null)[] | null | undefined,
+    rows:
+        | ({
+              question?: string | null;
+              answerPlain?: string | null;
+              answer?: unknown[] | null;
+          } | null)[]
+        | null
+        | undefined,
 ): ProductFaq[] {
     const faqs: ProductFaq[] = [];
     for (const row of rows ?? []) {
         const question = row?.question?.trim();
         const answerPlain = row?.answerPlain?.trim();
         if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
+        const answerBlocks = Array.isArray(row?.answer)
+            ? (row.answer as PortableTextBlock[])
+            : undefined;
+        faqs.push({
+            question,
+            answerPlain,
+            ...(answerBlocks?.length ? {answer: answerBlocks} : {}),
+        });
     }
     return faqs;
 }
@@ -134,7 +149,11 @@ function mapStyleRef(
         description?: string | null;
         shortDescription?: string | null;
         cardImage?: unknown | null;
-        faqs?: ({question?: string | null; answerPlain?: string | null} | null)[] | null;
+        faqs?: ({
+            question?: string | null;
+            answerPlain?: string | null;
+            answer?: unknown[] | null;
+        } | null)[] | null;
     },
 ): ProductStyleRef | null {
     const styleSlug = style.slug?.trim();
@@ -379,13 +398,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         properties.push({label, value: value || 'N/A'});
     }
 
-    const faqs: ProductFaq[] = [];
-    for (const row of doc.faqs ?? []) {
-        const question = row?.question?.trim();
-        const answerPlain = row?.answerPlain?.trim();
-        if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
-    }
+    const faqs = mapFaqs(doc.faqs);
 
     const relatedProducts = (doc.relatedProducts ?? [])
         .map(mapSanityProduct)
@@ -418,6 +431,15 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         availableCustomizations,
         ...(doc.primarySolution
             ? {primarySolution: doc.primarySolution}
+            : {}),
+        ...(doc.breadcrumbParent?.title?.trim() &&
+        doc.breadcrumbParent?.slug?.trim()
+            ? {
+                  breadcrumbParent: {
+                      title: doc.breadcrumbParent.title.trim(),
+                      slug: doc.breadcrumbParent.slug.trim(),
+                  },
+              }
             : {}),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
         ...(dimensionInput ? {dimensionInput} : {}),
@@ -632,13 +654,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         });
     }
 
-    const faqs: ProductFaq[] = [];
-    for (const row of doc.faqs ?? []) {
-        const question = row?.question?.trim();
-        const answerPlain = row?.answerPlain?.trim();
-        if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
-    }
+    const faqs = mapFaqs(doc.faqs);
 
     const h1 = doc.h1?.trim();
     const shortName = doc.shortName?.trim();
@@ -866,13 +882,7 @@ export function mapSanityCustomizationDetail(
     const typeTitle = doc.type?.title?.trim();
     const typeSlug = doc.type?.slug?.trim();
 
-    const faqs: ProductFaq[] = [];
-    for (const row of doc.faqs ?? []) {
-        const question = row?.question?.trim();
-        const answerPlain = row?.answerPlain?.trim();
-        if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
-    }
+    const faqs = mapFaqs(doc.faqs);
 
     return {
         status: toLifecycle(doc.status),

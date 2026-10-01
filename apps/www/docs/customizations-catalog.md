@@ -35,7 +35,14 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 | Detail | `getCustomizationCategory(category, handle)` |
 | Cache tag | `WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG` |
 
-Library options: `customizationOption` with `hasPage == true` and `status == "active"` (D55 / PROD-2482). Configurator pickability is `configuratorRole` and is orthogonal — do not gate the library on deprecated `role == "reference"` (ADR-017 §3 before the split).
+Library options: `customizationOption` with a page-bearing `appearsIn` (`configurable-with-page` or `not-configurable-with-page`) and `status == "active"` (PROD-2732 / PROD-2733). Configurator pickability is the configurable `appearsIn` values (`configurable-with-page`, `configurable-no-page`) — orthogonal to having a library page.
+
+| Status | Display (`appearsIn`) | Configurator | Library list | Own page |
+| --- | --- | --- | --- | --- |
+| Active | Configurable + page | show | show | show |
+| Active | Not configurable + page | never | show | show |
+| Active | Configurable + no page | show | — | — |
+| Not active | any | — | — | — |
 
 ### Product availability — shared rules (PROD-2556)
 
@@ -71,7 +78,7 @@ Builder rail + catalog tabs share `compareCategorySlugs()`: Dimensions → mater
 | Product Line facet | Reverse: products with this option in `availableCustomizations` → `productLine` (PROD-2529; retired `availableOnProducts`) |
 | Sustainability + other facets | `properties[]` → `propertyValue` + parent `property` |
 | Category-specific facet groups | Non-sustainability properties present on items in that category |
-| Configurator pickability | `configuratorRole` (fallback deprecated `role`) |
+| Configurator / library / own page | `appearsIn` (PROD-2732; replaces `hasPage` + `configuratorRole`) |
 | Type pick count | `customerSelects` (fallback deprecated `cardinality`) |
 
 Facet URL keys use `property.slug` (and `product-line` for Product Line). Shared rail: Product Line + Sustainability (when values exist). Other properties appear when a category tab ≠ All is selected.

@@ -1,15 +1,32 @@
 /**
  * TS mirrors of catalog GROQ visibility (`LISTED_STATUS`, `LINE_STYLE_*`,
- * `CUSTOMER_FACING`) plus type-specific chrome/list gates. Keep in sync with
- * `packages/sanity/src/queries/catalog.ts` — do not invent a third matrix in apps.
+ * `CUSTOMER_FACING`, `HAS_DETAIL_PAGE`) plus type-specific chrome/list gates.
+ * Keep in sync with `packages/sanity/src/queries/catalog.ts` — do not invent a
+ * third matrix in apps.
  */
+
+/** Page-bearing `appearsIn` values — mirror GROQ `HAS_DETAIL_PAGE` (PROD-2732). */
+const PAGE_BEARING_APPEARS_IN = new Set([
+  'configurable-with-page',
+  'not-configurable-with-page',
+]);
 
 export type CatalogVisibilityTarget = {
   _type?: string | null;
   status?: string | null;
   customerFacing?: boolean | null;
+  /** Solutions / expertise services still use a boolean page gate. */
   hasPage?: boolean | null;
+  /** Customization options — PROD-2732; replaces option `hasPage`. */
+  appearsIn?: string | null;
 };
+
+/** Mirror GROQ `HAS_DETAIL_PAGE` for customization options. */
+export function hasCustomizationDetailPage(
+  appearsIn: string | null | undefined,
+): boolean {
+  return appearsIn != null && PAGE_BEARING_APPEARS_IN.has(appearsIn);
+}
 
 /** Mirror GROQ `CUSTOMER_FACING` — unset counts as visible. */
 export function isCustomerFacingVisible(
@@ -65,6 +82,11 @@ export function isCatalogTargetVisible(
         isCustomerFacingVisible(doc.customerFacing)
       );
     case 'customizationOption':
+      return (
+        hasCustomizationDetailPage(doc.appearsIn) &&
+        isListedCatalogStatus(doc.status) &&
+        isCustomerFacingVisible(doc.customerFacing)
+      );
     case 'expertiseService':
       return (
         doc.hasPage === true &&

@@ -10,6 +10,7 @@ import {
   isBlogSearchSingleton,
   isBlogTopicsSingleton,
 } from '../lib/blog-page-singletons'
+import { hasDetailPage } from '../schemas/customizationOption'
 
 /**
  * Document → front-end location resolvers for the Presentation tool.
@@ -375,7 +376,7 @@ export const siteLocations: DocumentLocationResolvers = {
         : notOnSite('Add a slug to give this category a URL.'),
   }),
   // The site query is gated, not just slugged:
-  //   _type == "customizationOption" && hasPage == true && status == "active"
+  //   _type == "customizationOption" && HAS_DETAIL_PAGE && status == "active"
   //   && slug.current == $handle && type->category->slug.current == $category
   // so the resolver reproduces every condition. An option failing any of them
   // has no page, and saying which condition failed is the whole point.
@@ -383,14 +384,14 @@ export const siteLocations: DocumentLocationResolvers = {
     select: {
       title: 'title',
       slug: 'slug.current',
-      hasPage: 'hasPage',
+      appearsIn: 'appearsIn',
       status: 'status',
       categorySlug: 'type->category->slug.current',
     },
     resolve: (doc) => {
-      if (!doc?.hasPage) {
+      if (!hasDetailPage(doc?.appearsIn)) {
         return notOnSite(
-          'This option has no page of its own — "Has page" is off, so it appears only inside its type.',
+          'This option has no page of its own — Display is "Configurable + no page", or unset, so it appears only in the configurator.',
         )
       }
       if (doc.status !== 'active') {

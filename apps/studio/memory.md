@@ -133,7 +133,7 @@ For PDPs: select a **Product Detail Page** layout on the product’s Template ta
 
 ## Product Style / Solution Style / Customization Detail layouts
 
-Shared below-grid (or below-chrome) bands live on listable layout docs. Each `productStyle` / `solutionStyle` / `customizationOption` (when `hasPage`) may select one on the **Template** tab. Seeded Default ids: `productStylePage`, `solutionStylePage`, `customizationDetailPage`. www coalesce: entity `template->sections` else Default.
+Shared below-grid (or below-chrome) bands live on listable layout docs. Each `productStyle` / `solutionStyle` / `customizationOption` (when `appearsIn` is page-bearing) may select one on the **Template** tab. Seeded Default ids: `productStylePage`, `solutionStylePage`, `customizationDetailPage`. www coalesce: entity `template->sections` else Default.
 
 Optional **Preview image** on each layout (Studio list + Template picker only).
 

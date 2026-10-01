@@ -443,6 +443,7 @@ export function assembleProductLineLanding(
     const documentFaqs = faqs?.map((faq) => ({
         question: faq.question,
         answerPlain: faq.answerPlain,
+        ...(faq.answer?.length ? {answer: faq.answer} : {}),
     }));
     const documentVideoStudies = featuredStudies
         ?.filter((study) => study.imageUrl?.trim())
