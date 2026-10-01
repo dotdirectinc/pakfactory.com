@@ -1,3 +1,4 @@
+import { orderableDocumentListDeskItem } from '@sanity/orderable-document-list'
 import {
     ArrowRightIcon,
     CogIcon,
@@ -706,12 +707,21 @@ function propertyGlobalItems(S: StructureBuilder): ListItemBuilder[] {
     ];
 }
 
-export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+export function productsItems(
+    S: StructureBuilder,
+    context: StructureResolverContext,
+): (ListItemBuilder | DividerBuilder)[] {
     return [
-        S.listItem()
-            .title('Product Lines')
-            .schemaType('productLine')
-            .child(S.documentTypeList('productLine').title('Product Lines')),
+        // Drag-to-order, not a plain document list (PROD-2744). The plugin owns the
+        // pane, so `defaultOrdering` does not apply here — the drag order IS the
+        // order, and the sort menu's "Ordered" entry comes from `orderRankOrdering`
+        // on `productLine`. Studio only; no site query reads `orderRank`.
+        orderableDocumentListDeskItem({
+            type: 'productLine',
+            title: 'Product Lines',
+            S,
+            context,
+        }),
         S.listItem()
             .title('Product Styles')
             .schemaType('productStyle')
@@ -825,11 +835,11 @@ const sitePreviewHint = (S: StructureBuilder) =>
 
 export const productsStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Products')
-        .items([...sitePreviewHint(S), ...productsItems(S)]);
+        .items([...sitePreviewHint(S), ...productsItems(S, context)]);
 
 /** Customization — Category · Type · Option · Option Group (+ Global Property picks) */
 export const customizationStructure = (

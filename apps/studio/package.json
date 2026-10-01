@@ -68,6 +68,7 @@
     "@pakfactory/sanity": "workspace:*",
     "@sanity/color-input": "^6.0.12",
     "@sanity/document-internationalization": "^6.2.7",
+    "@sanity/orderable-document-list": "^2.0.25",
     "@sanity/vision": "^5.24.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
