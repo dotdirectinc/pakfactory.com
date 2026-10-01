@@ -1,6 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
-import { entityIdField } from '../lib/entity-id-field'
+import { entityFields } from '../lib/entity-id-field'
 
 /** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
  *  reference reads as a requirement of one, which is what it meant. */
@@ -459,7 +459,7 @@ export const customizationType = defineType({
     // never had. Only Options get pages, and only when `role` is `reference`; the
     // Type has no URL by design, not by omission. All three were unpopulated on all
     // 36 published Types, and nothing read them.
-    entityIdField({ group: 'content' }),
+    ...entityFields({ prefix: 'typ', codeKinds: ['TYP'], group: 'content' }),
   ],
   preview: {
     select: { title: 'title', category: 'category.title' },

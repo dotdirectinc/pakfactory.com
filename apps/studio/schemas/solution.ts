@@ -7,6 +7,7 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
+import { entityFields } from '../lib/entity-id-field'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
@@ -264,6 +265,7 @@ export const solution = defineType({
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
     ...socialFields({group: GROUPS.social, channel: MEDIA_TAG.solution}),
+    ...entityFields({ prefix: 'sol', codeKinds: ['SOL'], group: GROUPS.content }),
   ],
 
   preview: {

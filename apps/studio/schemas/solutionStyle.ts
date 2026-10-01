@@ -4,6 +4,7 @@ import { MEDIA_TAG, taggedImageField } from '../lib/media-tags'
 import { seoFields, socialFields } from '../lib/seo-fields'
 import { groupsFor, GROUPS } from '../lib/field-groups'
 import { uniqueSlugWithinParent } from '../lib/slug-rules'
+import { entityFields } from '../lib/entity-id-field'
 
 /**
  * Solution Style — the second level under a Solution (Entities/Solution Style.md).
@@ -258,6 +259,7 @@ export const solutionStyle = defineType({
 
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.solution }),
+    ...entityFields({ prefix: 'sst', codeKinds: ['SST'], group: GROUPS.content }),
   ],
 
   preview: {
