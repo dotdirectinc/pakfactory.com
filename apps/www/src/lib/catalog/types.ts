@@ -55,6 +55,11 @@ export type CustomizationOption = {
     category: CustomizationCategory;
     categoryTitle?: string;
     categoryDescription?: string;
+    /**
+     * Curated type ids for this option's category (PROD-2740 / PROD-2746).
+     * Pass to `orderTypesInCategory` — order only, never a gate.
+     */
+    categoryTypeOrder?: string[];
     typeId?: string;
     typeSlug?: string;
     typeTitle?: string;

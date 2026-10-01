@@ -273,6 +273,10 @@ function mapAvailableCustomization(
             };
         });
 
+    const typeOrder = (category?.typeOrder ?? []).filter(
+        (id): id is string => typeof id === 'string' && id.length > 0,
+    );
+
     return {
         id: option._id,
         label: option.title,
@@ -280,6 +284,7 @@ function mapAvailableCustomization(
         category: categorySlug,
         categoryTitle: category?.title ?? undefined,
         categoryDescription: category?.description ?? undefined,
+        ...(typeOrder.length > 0 ? {categoryTypeOrder: typeOrder} : {}),
         typeId: type?._id ?? undefined,
         typeSlug: type?.slug ?? undefined,
         typeTitle: type?.title ?? undefined,
