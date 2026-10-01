@@ -176,21 +176,45 @@ export const customizationOption = defineType({
       title: 'Status',
       type: 'string',
       group: 'content',
-      description: 'Lifecycle — Active (offered now), Coming soon or Discontinued.',
+      description:
+        'Is this option offered? Not active removes it from the configurator, the library and its ' +
+        'own page — everywhere a customer could meet it. Use it instead of deleting the document, ' +
+        'so the compatibility rules that name this option keep working. There is no coming-soon or ' +
+        'discontinued state on purpose: we do not tell customers that something is on its way or ' +
+        'no longer available.',
       options: {
         layout: 'radio',
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
+          { title: 'Not active', value: 'not-active' },
         ],
       },
-      // ⚠️ PROD-2733 would cut this to Active / Not active, and is NOT in this PR.
-      // It is blocked on a content decision, not on code: 123 options on development
-      // are coming-soon or discontinued, so removing those values decides what each
-      // of them becomes. `appearsIn` above does not depend on the answer — it is
-      // required only while an option is `active`, which reads the same under either
-      // list.
+      // ─── PROD-2733: two of three lifecycle values removed ────────────────────
+      // A discontinued PRODUCT is one box we stopped making, and saying so is fine
+      // — product/productLine/productStyle keep all three values, their badges and
+      // their notices, and so do solutions. A discontinued CUSTOMIZATION reads as a
+      // capability we no longer have, which is the opposite of what we sell. Same
+      // for coming-soon. So on customizations there is no public "not available"
+      // state at all: an option is either offered, or it is internal.
+      //
+      // `not-active` is the off switch the model had no way to express.
+      // `compatibleCustomizations` and `achieves` are STRONG references, so Sanity
+      // refuses to unpublish or delete an option another option points at, and
+      // `discontinued` deliberately kept the page LIVE rather than hiding it. There
+      // was no way to take an option off the site at all.
+      //
+      // ⚠️ NO www CHANGE IS NEEDED, and that is checked rather than assumed. Every
+      // query returning an option already gates on status, and every gate is a
+      // WHITELIST that cannot contain `not-active` — LISTED_STATUS, HAS_PAGE_STATUS,
+      // and three spellings of `status == "active"`. ❌ Do not "fix" this by adding
+      // `not-active` to those two constants: they belong to the product and solution
+      // family, which keeps all three values.
+      //
+      // 🔴 THE CATALOG FILL MUST STOP EMITTING THE REMOVED VALUES. Its review sets
+      // come from pakfactory.com-backend, and the fill writes over the API where
+      // `options.list` does not apply — so a generator still emitting `coming-soon`
+      // would SUCCEED, and those options would vanish from the site while showing an
+      // error in Studio. Nothing fails loudly. See PROD-2733.
       initialValue: 'active',
       validation: (Rule) => Rule.required(),
     }),
@@ -205,7 +229,8 @@ export const customizationOption = defineType({
     //
     // Three occupied cells, three values. The fourth — a technical option with no
     // page — has no occupants among ACTIVE options; where it does occur it is on
-    // retired materials, which is why `appearsIn` is required only while active.
+    // retired materials, which is why `appearsIn` is required only while active and
+    // why those documents are `status: not-active` (PROD-2733).
     //
     // ⚠️ THIS IS NOT A RETURN TO `role` (PROD-2482 / D55). That field could not
     // express "pickable AND has a page", which is 102 of 126 — the majority of the
@@ -275,7 +300,7 @@ export const customizationOption = defineType({
           return value
             ? true
             : 'An active option needs to say where it appears. If this one is retired or ' +
-                'internal-only, set its Status accordingly and leave this empty.'
+                'internal-only, set Status to Not active instead and leave this empty.'
         }),
     }),
     defineField({
