@@ -330,7 +330,7 @@ export const productLine = defineType({
     }),
     defineField({
       name: 'styleOrder',
-      title: 'Style order',
+      title: 'Product style order',
       type: 'array',
       group: GROUPS.categorization,
       description:

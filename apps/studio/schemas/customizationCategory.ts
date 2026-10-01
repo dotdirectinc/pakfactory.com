@@ -53,7 +53,7 @@ export const customizationCategory = defineType({
     // (`apps/www/src/lib/catalog/customization-category-order.ts`).
     defineField({
       name: 'typeOrder',
-      title: 'Type order',
+      title: 'Customization type order',
       type: 'array',
       group: 'content',
       description:
