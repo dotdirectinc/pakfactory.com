@@ -11,6 +11,32 @@ import {LINE_STYLE_VISIBLE} from './catalog';
 
 const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 
+/** Detail meta chips — slug + excerpt + image for SneakPeek (PROD-2737). */
+const PRODUCT_LINE_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "excerpt": shortDescription,
+  "imageUrl": featuredImage.asset->url
+}`;
+
+const EXPERTISE_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "excerpt": description,
+  "imageUrl": heroImage.asset->url
+}`;
+
+const CUSTOMIZATION_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "categorySlug": type->category->slug.current,
+  "excerpt": shortDescription,
+  "imageUrl": featuredImage.asset->url
+}`;
+
 /**
  * ⚠️ This resolves the label from the solution's H1, which is marketing copy —
  * an *Apparel & Fashion* client reads as "Custom Apparel & Fashion Packaging" on
@@ -26,7 +52,9 @@ const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
   "title": coalesce(h1, title),
   "slug": slug.current,
-  solutionType
+  solutionType,
+  "excerpt": shortDescription,
+  "imageUrl": featuredImage.asset->url
 }`;
 
 const CLIENT_INDUSTRY_ITEM = /* groq */ `industry->${SOLUTION_TAXONOMY_ITEM}`;
@@ -95,9 +123,9 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
     "videoThumbnailUrl": videoThumbnail.asset->url,
     "videoThumbnailHotspot": videoThumbnail.hotspot
   },
-  "products": products[]->${TAXONOMY_ITEM},
-  "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
-  "customizations": capabilities[]->${TAXONOMY_ITEM},
+  "products": products[]->${PRODUCT_LINE_TAXONOMY_ITEM},
+  "expertiseAreas": expertiseAreas[]->${EXPERTISE_TAXONOMY_ITEM},
+  "customizations": capabilities[]->${CUSTOMIZATION_TAXONOMY_ITEM},
   "highlights": highlights[]{ _key, title, description },
   "challenge": challenge${CASE_STUDY_STORY_BODY},
   "solution": solution${CASE_STUDY_STORY_BODY},
@@ -196,6 +224,10 @@ export type CaseStudyTaxonomyItem = {
   title: string;
   slug: string;
   solutionType?: string;
+  /** Present on detail meta chips for SneakPeek / links (PROD-2737). */
+  categorySlug?: string | null;
+  excerpt?: string | null;
+  imageUrl?: string | null;
 };
 
 export type CaseStudyHighlight = {

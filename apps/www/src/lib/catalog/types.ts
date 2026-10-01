@@ -303,9 +303,23 @@ export type CustomizationLibraryItem = {
     /** Sanity customizationCategory.slug */
     categoryValue: string;
     categoryLabel?: string;
+    /**
+     * Rest thumb = Featured image else first Media (ADR-023 card rules).
+     * Prefer `featuredImageUrl` / `mediaImages` for hover logic.
+     */
     imageUrl?: string | null;
     imageAlt?: string | null;
-    /** Full media list for card gallery (hero = images[0] / imageUrl). */
+    /** Featured image URL when set (role-named still). */
+    featuredImageUrl?: string | null;
+    featuredImageAlt?: string | null;
+    /** Sanity `media` frames only — not Featured (hover may use [1]). */
+    mediaImages?: {src: string; alt?: string}[];
+    /** Playable Featured video URL; YouTube yields null. */
+    featuredVideoUrl?: string | null;
+    /**
+     * @deprecated Prefer featuredImageUrl + mediaImages for card hover.
+     * Kept as rest-thumb alias for quick view / older callers.
+     */
     images?: {src: string; alt?: string}[];
     // One-way from products that list this option in availableCustomizations.
     productLines: ProductLineRef[];
@@ -447,7 +461,13 @@ export type CustomizationDetail = {
     typeSlug?: string;
     /** Short copy for the identity column / meta. */
     description?: string;
+    /**
+     * Gallery slides: Featured image first (when set), then Media extras (ADR-023).
+     * Index 0 is the poster for Featured video hover.
+     */
     media: CatalogMedia[];
+    /** Playable MP4/MOV from Studio Featured video; YouTube yields null. */
+    featuredVideoUrl?: string | null;
     properties: CustomizationPropertyValue[];
     declaredProperties: CustomizationDeclaredProperty[];
     productLines: ProductLineRef[];

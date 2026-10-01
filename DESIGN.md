@@ -187,8 +187,10 @@ Primitives may use CSS `border` via shadcn patterns — **do not** mandate Verce
 | --- | --- |
 | `--motion-fast` (200ms) | Chips / small controls |
 | `--motion-base` (300ms) | Hovers |
-| `--motion-slow` (500ms) | Text entrances |
+| `--motion-slow` (500ms) | Text entrances; **media dissolve** / crossfade (rest↔hover, poster↔video) |
 | `--motion-reveal` (700ms) | Section reveals / hero |
+
+**Media dissolve:** Opacity crossfade over `--motion-slow` + `ease-in-out`, skipped under `motion-reduce`. Single source: [`apps/www/src/lib/ui/media-dissolve.ts`](apps/www/src/lib/ui/media-dissolve.ts) (`mediaDissolveTransitionClass`, hover in/out helpers, `MEDIA_DISSOLVE_MS` for JS timers). Use for catalog card rest↔hover, gallery/video hover overlays — do not invent competing fade durations for the same pattern.
 
 **Soft page transitions (`(site)`):** Every client-side route change scrolls the window to the top and plays page-enter (`animate-page-enter`: opacity + 8px settle over `--motion-slow`, skipped under `motion-reduce`). Owned by [`SoftPageTransition`](apps/www/src/components/layout/soft-page-transition.tsx), mounted from [`apps/www/src/app/(site)/template.tsx`](apps/www/src/app/(site)/template.tsx). Do not reimplement scroll-to-top or enter wrappers in feature views, cards, or nav. Catalog indexes stream the grid via in-page `Suspense` under live chrome — do **not** put a segment `loading.tsx` on a route that also owns detail children (Next inherits it and flashes the catalog skeleton on catalog → detail soft-nav).
 

@@ -32,6 +32,12 @@ const LINE_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, cardIma
   "alt": ${IMAGE_ALT}
 }`;
 
+/** Option library / card thumb — Featured image first; media[0] until content backfill (ADR-023). */
+const OPTION_CARD_IMAGE = /* groq */ `"cardImage": coalesce(featuredImage, media[0]){
+  ...,
+  "alt": ${IMAGE_ALT}
+}`;
+
 const CATEGORY_PROJ = /* groq */ `{
   _id,
   title,
@@ -581,10 +587,16 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   title,
   "slug": slug.current,
   status,
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  ${OPTION_CARD_IMAGE},
   media[0...1]{
     ...,
     "alt": ${IMAGE_ALT}
   },
+  ${FEATURED_VIDEO_URL_FIELD},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -611,10 +623,16 @@ export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
+  ${OPTION_CARD_IMAGE},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
+  ${FEATURED_VIDEO_URL_FIELD},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -641,6 +659,10 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -682,10 +704,15 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
   },
+  ${FEATURED_VIDEO_URL_FIELD},
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -1075,7 +1102,14 @@ export type CatalogLibraryOptionDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
+  /** Role-named Featured image (ADR-023). */
+  featuredImage?: unknown | null;
+  /** Featured image coalesce for rest thumb fallback. */
+  cardImage?: unknown | null;
+  /** Sanity `media` only (not Featured) — card hover uses [1] when present. */
   media?: unknown[] | null;
+  /** Playable MP4/MOV from Featured video; YouTube → null. */
+  featuredVideoUrl?: string | null;
   category: CatalogCategoryDoc | null;
   type?: CatalogLibraryTypeDoc | null;
   properties?: (CatalogPropertyValueDoc | null)[] | null;
@@ -1118,6 +1152,7 @@ export type CatalogCustomizationComparePeerDoc = {
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
+  featuredImage?: unknown | null;
   media?: unknown[] | null;
   category: CatalogCategoryDoc | null;
   type?: {
@@ -1137,7 +1172,10 @@ export type CatalogCustomizationDetailDoc = {
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
+  featuredImage?: unknown | null;
   media?: unknown[] | null;
+  /** Playable MP4/MOV URL from `featuredVideo` (upload/url); YouTube → null. */
+  featuredVideoUrl?: string | null;
   category: CatalogCategoryDoc | null;
   type?: {
     _id: string;

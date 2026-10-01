@@ -8,8 +8,8 @@ type FeaturedVideoFieldOptions = {
 }
 
 /**
- * The shared `featuredVideo` object field — Product, Product Line, Expertise Stage.
- * Editors learn one multi-source control (upload | S3/CDN URL | YouTube).
+ * The shared `featuredVideo` object field — Product, Product Line, Expertise Stage,
+ * Customization Option. Editors learn one multi-source control (upload | S3/CDN URL | YouTube).
  */
 export function featuredVideoField({
   group,

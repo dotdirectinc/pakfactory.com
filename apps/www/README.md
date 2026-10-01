@@ -56,7 +56,7 @@ Catalog pages **do not re-query Sanity on every filter click**.
 | **Fetch** | Server helpers in [`src/lib/catalog/catalog.ts`](./src/lib/catalog/catalog.ts): `listCustomizations()`, `listProducts()`, `listLines()`, etc. |
 | **Cache** | Wrapped in Next `unstable_cache` with tags/TTLs from [`src/lib/www-cache.ts`](./src/lib/www-cache.ts) (`WWW_CATALOG_*`, ~**60s** catalog ISR floor, **300s** content safety-net). |
 | **Bust** | Sanity webhook → `/api/revalidate` must call `revalidateTag(tag, "max")`. **Path-only** revalidation does **not** invalidate `unstable_cache`. |
-| **Products + customizations filters** | One library payload on the server; **client-side** filter/search/facets over that list (no per-filter GROQ). Facet option counts are **disjunctive (except-self)** — selecting one Product Line does not zero sibling lines. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md), [`docs/customizations-catalog.md`](./docs/customizations-catalog.md). |
+| **Products + customizations filters** | One library payload on the server; **client-side** filter/search/facets over that list (no per-filter GROQ). Facet option counts are **disjunctive (except-self)** — selecting one Product Line does not zero sibling lines. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md), [`docs/customizations-catalog.md`](./docs/customizations-catalog.md). **Customization cards:** Featured image (else first Media) at rest; hover plays Featured video when both exist, else second Media image; single Media = static — [`docs/customizations-catalog.md`](./docs/customizations-catalog.md#business-rules--customization-card-media). |
 
 Same cache tags cover products, product lines, solutions, and chrome (e.g. `websiteNavigation`) — see the constants in `www-cache.ts`.
 
@@ -90,7 +90,7 @@ Detail for products wiring: [`docs/products-catalog.md`](./docs/products-catalog
 | [`CLAUDE.md`](./CLAUDE.md) | Routes, auth, SEO, composition rules (agents + humans) |
 | [`memory.md`](./memory.md) | Vercel, staging, env troubleshooting |
 | [`docs/products-catalog.md`](./docs/products-catalog.md) | Products library how-built (fetch → map → client filter; disjunctive facet counts) |
-| [`docs/customizations-catalog.md`](./docs/customizations-catalog.md) | Customizations library how-built (fetch → map → client filter; disjunctive facet counts) |
+| [`docs/customizations-catalog.md`](./docs/customizations-catalog.md) | Customizations library how-built (fetch → map → client filter; disjunctive facet counts) + **card media business rules** (Featured image / video / Media hover) |
 | [`docs/customization-filter-taxonomy.md`](./docs/customization-filter-taxonomy.md) | Filter facet operators, product-line vocabulary, and except-self count rule |
 | [`docs/auth-emails/README.md`](./docs/auth-emails/README.md) | Supabase auth email templates |
 | [`DESIGN.md`](../../DESIGN.md) | Design system / tokens |
