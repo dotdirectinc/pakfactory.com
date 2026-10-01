@@ -354,13 +354,24 @@ export const productLine = defineType({
           to: [{ type: 'productStyle' }],
           options: {
             disableNew: true,
-            // Styles belong to exactly one line; offering another line's styles would
-            // let an editor pin something the grid will never render. Same shape as
-            // the style picker on `product.ts`.
-            filter: ({ document }: { document: { _id: string } }) => ({
-              filter: 'productLine._ref == $line',
-              params: { line: document._id.replace(/^drafts\./, '') },
-            }),
+            // Two narrowings, and both are UX rather than safety — `Rule.unique()`
+            // below and the grid query are what actually hold the line.
+            //
+            // 1. Styles belong to exactly one line, so offering another line's
+            //    styles would let an editor pin something the grid never renders.
+            // 2. Styles already in this list are dropped. Without this the picker
+            //    keeps offering what you just added, and the duplicate only
+            //    announces itself as a validation error that blocks publish —
+            //    found in review, after exactly that happened.
+            filter: ({ document }: { document: { _id: string; styleOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.styleOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'productLine._ref == $line && !(_id in $chosen)',
+                params: { line: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
           },
         },
       ],
