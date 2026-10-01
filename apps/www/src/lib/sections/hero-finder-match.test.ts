@@ -283,7 +283,7 @@ describe('finderFeatureKind (PROD-2666)', () => {
 describe('buildFinderSlides (PROD-2666)', () => {
     it('uses Studio General buckets for Packaging Solution × All', () => {
         const rail = generalRail({
-            products: [generalEntry('mailer', 'Product', {imageFit: 'contain'})],
+            products: [generalEntry('mailer', 'Product', {imageFit: 'cover'})],
             industries: [generalEntry('beauty', 'Industry')],
             expertise: [generalEntry('design', 'Expertise')],
             caseStudies: [generalEntry('cs1', 'Case study')],

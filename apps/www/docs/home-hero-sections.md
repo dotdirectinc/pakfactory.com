@@ -29,7 +29,7 @@ All four share the copy fields: **Label above heading**, **Headline** (H1), **In
 | Item | Image | Caption | Link |
 | --- | --- | --- | --- |
 | Case study | `heroMedia.image` → `cardImage` → `heroMedia.videoThumbnail`; `previewVideo` loops muted over it | Client, title, `cardSummary`, first `highlights` stat, product-line chips | Read case study |
-| Product line / style | `featuredImage` (contained on a muted well) | `shortName`, `shortDescription` | Explore … |
+| Product line / style | `featuredImage` (full-bleed cover) | `shortName`, `shortDescription` | Explore … |
 | Industry (`solution`) | `featuredImage` | `shortName`, `shortDescription` | See … packaging |
 | Campaign | Its own image | Title, description | Its own link label + target |
 
@@ -66,7 +66,7 @@ Picks sync to `?line=<slug>&industry=<slug>` via `lib/ui/use-query-param-state.t
 - Copy uses `PageHeadingContent` with `settle`, so the build-in matches other heroes. The H1, CTAs and rating stay server-rendered; the stage and the Finder pickers are client islands.
 - Finder pickers are non-modal dropdown chips styled as muted inline chips (`bg-muted`) so they read as part of the H1 sentence. The H1 always breaks after the product-line picker onto a second line starting with the join word (`for`) + industry picker + trail.
 - Finder media rail: full-bleed `SectionCarousel` of `MediaCaptionCard`s from `buildFinderSlides` — **General** Studio buckets when Packaging Solution × All; **Specific** relatedness otherwise. Featured slot caption always on; peers reveal caption/video on hover. Card click (not drag) goes to the slide CTA.
-- Cover media fills the card edge-to-edge; product cut-outs keep settle + contain padding.
+- Cover media fills the card edge-to-edge (product, customization, case study, and campaign stills all use cover).
 
 ## Human setup (agents do not write documents)
 

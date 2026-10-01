@@ -296,7 +296,7 @@ function lineToSlide(line: HeroFinderLine): FinderSlide {
         title: line.title,
         description: line.description,
         image: line.image,
-        imageFit: 'contain',
+        imageFit: 'cover',
         ...(line.videoSrc ? {videoSrc: line.videoSrc} : {}),
         link: {
             label: isFinderLineSentinel(line)
@@ -334,7 +334,7 @@ function styleToSlide(
         title: style.title,
         description: style.description,
         image: style.image,
-        imageFit: 'contain',
+        imageFit: 'cover',
         ...(style.videoSrc ? {videoSrc: style.videoSrc} : {}),
         link: {
             label: 'View style',
