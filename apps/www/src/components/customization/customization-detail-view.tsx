@@ -101,6 +101,7 @@ export function CustomizationDetailView({
                     <CustomizationOptionGallery
                         media={detail.media}
                         title={detail.title}
+                        featuredVideoUrl={detail.featuredVideoUrl}
                     />
                     <div>
                         <div className="flex items-center justify-between gap-4">

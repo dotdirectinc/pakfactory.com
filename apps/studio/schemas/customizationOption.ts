@@ -5,6 +5,7 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
 import { entityFields } from '../lib/entity-id-field'
+import { featuredVideoField } from '../lib/featured-video-field'
 
 /**
  * `appearsIn` values (PROD-2732). Exported so nothing has to re-spell them.
@@ -324,12 +325,39 @@ export const customizationOption = defineType({
             : 'Options with a page should select a Customization Detail Page layout'
         }).warning(),
     }),
+    // One representative image, one gallery — same pair as Product / Product Line
+    // (ADR-023). `featuredImage` replaces the positional rule where media[0]
+    // silently doubled as the card.
+    defineField(taggedImageField({
+      name: 'featuredImage',
+      title: 'Featured image',
+      type: 'image',
+      group: 'content',
+      mediaTags: [MEDIA_TAG.customization],
+      options: { hotspot: true },
+      description:
+        'The one image that represents this option — library cards, detail poster, and the social fallback.',
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
+    })),
+    featuredVideoField({
+      group: 'content',
+      description:
+        'Optional ambient video for the option detail gallery. Upload or direct S3/CDN MP4/MOV; YouTube is stored but the gallery keeps Featured image. Mobile and reduced-motion keep Featured image.',
+    }),
     defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
       group: 'content',
-      description: 'Add images in render order — first image = hero.',
+      description:
+        'Additional images for the option detail gallery. Order is presentation only — the card and social images come from Featured image.',
       of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
     }),
 
@@ -753,7 +781,7 @@ export const customizationOption = defineType({
       group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
-      description: 'Shown when this option is shared. 1200×630. Falls back to the first media image.',
+      description: 'Shown when this option is shared. 1200×630. Falls back to Featured image.',
       fields: [
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
@@ -778,7 +806,7 @@ export const customizationOption = defineType({
       shortName: 'shortName',
       status: 'status',
       type: 'type.title',
-      media: 'media.0',
+      media: 'featuredImage',
       appearsIn: 'appearsIn',
     },
     prepare({ title, shortName, status, type, media, appearsIn }) {

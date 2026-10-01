@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { Breadcrumb } from "@pakfactory/ui/components/breadcrumb-trail";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
+import { PageBreadcrumbSection } from "@/components/common/page-breadcrumb-section";
 import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
+import { WWW_ROUTES } from "@/lib/www-routes";
 import {
   CASE_STUDIES_PAGE_QUERY,
   CASE_STUDY_BY_SLUG_QUERY,
@@ -137,16 +138,13 @@ export default async function CaseStudyPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
 
-      {/* Breadcrumb */}
-      <PageDielineSection innerClassName="border-b border-dashed border-border py-4">
-        <Breadcrumb
-          items={[
-            { label: "Home", href: wwwHomeHref },
-            { label: "Case Studies", href: "/case-studies" },
-            { label: study.title },
-          ]}
-        />
-      </PageDielineSection>
+      <PageBreadcrumbSection
+        items={[
+          { label: "Home", href: WWW_ROUTES.home },
+          { label: "Case Studies", href: WWW_ROUTES.caseStudies },
+          { label: study.title },
+        ]}
+      />
 
       {/* Hero — title + intro left, meta card right */}
       <PageDielineSection

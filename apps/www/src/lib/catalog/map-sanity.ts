@@ -50,6 +50,47 @@ function mediaFromSanity(
     });
 }
 
+/** Single Sanity image → CatalogMedia when it has a URL. */
+function catalogMediaFromImage(
+    image: unknown | null | undefined,
+    titleFallback: string,
+): CatalogMedia | null {
+    if (!image) return null;
+    const src = sanityImageBaseUrl(image);
+    if (!src) return null;
+    return {src, alt: resolveImageAlt(image, titleFallback)};
+}
+
+/**
+ * Detail / compare gallery: Featured image first, then Media extras (ADR-023).
+ * Dedupe by src when Featured was also left in Media. Empty → placeholder alt.
+ */
+function customizationGallerySlides(
+    featuredImage: unknown | null | undefined,
+    media: unknown[] | null | undefined,
+    titleFallback: string,
+): CatalogMedia[] {
+    const slides: CatalogMedia[] = [];
+    const seen = new Set<string>();
+
+    const featured = catalogMediaFromImage(featuredImage, titleFallback);
+    if (featured?.src) {
+        slides.push(featured);
+        seen.add(featured.src);
+    }
+
+    if (Array.isArray(media)) {
+        for (const item of media) {
+            const slide = catalogMediaFromImage(item, titleFallback);
+            if (!slide?.src || seen.has(slide.src)) continue;
+            seen.add(slide.src);
+            slides.push(slide);
+        }
+    }
+
+    return slides.length > 0 ? slides : [{alt: titleFallback}];
+}
+
 /** First non-empty trimmed string — used for option detail copy fallbacks. */
 function firstNonEmpty(
     ...candidates: Array<string | null | undefined>
@@ -648,18 +689,26 @@ export function mapSanityLibraryOption(
     const categorySlug = doc.category?.slug?.trim();
     if (!slug || !doc.title || !categorySlug) return null;
 
-    const mediaItems = Array.isArray(doc.media) ? doc.media : [];
-    const images = mediaItems
-        .map((item) => {
-            const src = sanityImageBaseUrl(item);
-            if (!src) return null;
-            return {
-                src,
-                alt: resolveImageAlt(item, doc.title),
-            };
-        })
-        .filter((item): item is {src: string; alt: string} => item !== null);
-    const first = images[0];
+    const featured = catalogMediaFromImage(doc.featuredImage, doc.title);
+    const mediaImages: {src: string; alt: string}[] = [];
+    for (const item of Array.isArray(doc.media) ? doc.media : []) {
+        const slide = catalogMediaFromImage(item, doc.title);
+        if (!slide?.src) continue;
+        mediaImages.push({src: slide.src, alt: slide.alt});
+    }
+
+    const thumbSrc = featured?.src ?? mediaImages[0]?.src ?? null;
+    const thumbAlt =
+        featured?.alt ?? mediaImages[0]?.alt ?? doc.title;
+    const featuredVideoUrl = doc.featuredVideoUrl?.trim() || null;
+
+    // Legacy `images` / cardImage coalesce — rest thumb only for older callers.
+    const {imageUrl: cardUrl, imageAlt: cardAlt} = cardImageFromSanity(
+        doc.cardImage,
+        doc.title,
+    );
+    const imageUrl = thumbSrc ?? cardUrl;
+    const imageAlt = thumbSrc ? thumbAlt : cardAlt;
 
     const productLines: ProductLineRef[] = [];
     const seenLines = new Set<string>();
@@ -694,9 +743,19 @@ export function mapSanityLibraryOption(
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,
         ...(toLifecycle(doc.status) !== 'active' ? {status: toLifecycle(doc.status)} : {}),
-        imageUrl: first?.src ?? null,
-        imageAlt: first?.alt ?? doc.title,
-        images: images.length > 0 ? images : undefined,
+        imageUrl,
+        imageAlt,
+        ...(featured?.src
+            ? {
+                  featuredImageUrl: featured.src,
+                  featuredImageAlt: featured.alt,
+              }
+            : {}),
+        ...(mediaImages.length > 0 ? {mediaImages} : {}),
+        ...(featuredVideoUrl ? {featuredVideoUrl} : {}),
+        ...(imageUrl
+            ? {images: [{src: imageUrl, alt: imageAlt}]}
+            : {}),
         productLines,
         attrs,
         propertyTitles,
@@ -825,7 +884,10 @@ export function mapSanityCustomizationDetail(
         ...(typeTitle ? {typeTitle} : {}),
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
-        media: mediaFromSanity(doc.media, title),
+        media: customizationGallerySlides(doc.featuredImage, doc.media, title),
+        ...(doc.featuredVideoUrl?.trim()
+            ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
+            : {}),
         properties,
         declaredProperties,
         productLines,
