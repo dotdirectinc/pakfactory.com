@@ -23,6 +23,7 @@
     "./catalog-visibility": "./src/catalog-visibility.ts",
     "./solution-style-filter": "./src/solution-style-filter.ts",
   "./customization-type-order": "./src/customization-type-order.ts",
+  "./product-order": "./src/product-order.ts",
     "./customization-rules": "./src/customization-rules/index.ts",
     "./customization-rules/dependencies": "./src/customization-rules/dependencies.ts",
     "./customization-rules/resolve": "./src/customization-rules/resolve.ts",

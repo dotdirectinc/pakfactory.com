@@ -33,9 +33,17 @@ import { entityFields } from '../lib/entity-id-field'
  * placeholder, and promoting it into `description` would make those styles read as
  * authored when they are not. Safe for a future unset sweep.
  *
- * Deferred: `sections` → PROD-2292. `productOrder` is NOT built — a style's
- * product count is unbounded, so product display order derives from a query, not a
- * maintained array (D31).
+ * Deferred: `sections` → PROD-2292.
+ *
+ * `productOrder` (PROD-2747) IS built, and D31 is why it takes the shape it does.
+ * D31 named this field by name and rejected it — but as "every product in a style
+ * in drag order", an array that is order AND gate, unusable at 200. It then
+ * prescribed the alternative it is built as here: DERIVE THE SET, CURATE THE
+ * HIGHLIGHTS. Membership stays a query (products referencing this style); the array
+ * carries a short sequence for the top and `Rule.max(12)` keeps it that way, so the
+ * ceiling D31 worried about is enforced rather than requested.
+ *
+ * 🔴 Do not "complete" this list. Adding every product is the design D31 rejected.
  *
  * Ordering the styles GRID is set on the LINE, not here — `productLine.styleOrder`
  * (PROD-2739), which replaced the `styles` array removed in PROD-2509. Nothing on
@@ -195,6 +203,49 @@ export const productStyle = defineType({
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    defineField({
+      name: 'productOrder',
+      title: 'Product order',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Drag to pin a few products to the top of this style. Anything not listed follows ' +
+        'alphabetically. Never a gate: every product still appears.',
+      of: [
+        {
+          type: 'reference',
+          // WEAK, for the same reason as `productLine.styleOrder` (PROD-2739):
+          // pinning a product for presentation must never make it undeletable.
+          // A deleted product leaves a dangling entry, which the helper drops.
+          weak: true,
+          to: [{ type: 'product' }],
+          options: {
+            disableNew: true,
+            // Primary style only. `product.productStyle` is an array where `[0]` is
+            // the primary (settled 2026-08-27), and the style page renders only
+            // products whose primary style is this one. Offering the others would
+            // let an editor drag something that cannot move — a silent no-op, which
+            // is how `productLine.styles` rotted (PROD-2509).
+            //
+            // 🔴 192 products reference a style in position 1 or 2 and so never
+            // appear on that style's page at all. Whether that is a bug is Richard's
+            // call (PROD-2747); if the page widens, widen this filter with it.
+            filter: ({ document }: { document: { _id: string; productOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.productOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'productStyle[0]._ref == $style && !(_id in $chosen)',
+                params: { style: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      // max is load-bearing, not taste — see the docblock. This is a highlights
+      // list; the tail is the query's job.
+      validation: (Rule) => Rule.unique().max(12),
+    }),
 
     // ─── TEMPLATE (layout version) ────────────────────────────────────────────
     defineField({
