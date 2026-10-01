@@ -37,9 +37,10 @@ import { entityFields } from '../lib/entity-id-field'
  * product count is unbounded, so product display order derives from a query, not a
  * maintained array (D31).
  *
- * Ordering the styles GRID is a separate open question with no mechanism: the
- * Line's `styles` array was removed in PROD-2509 and nothing replaced it, so the
- * grid sorts alphabetically today. That is the behaviour, not the intent.
+ * Ordering the styles GRID is set on the LINE, not here — `productLine.styleOrder`
+ * (PROD-2739), which replaced the `styles` array removed in PROD-2509. Nothing on
+ * this type records its own position: a style the Line does not list simply follows
+ * the listed ones alphabetically. There is no per-style sort key, deliberately.
  */
 export const productStyle = defineType({
   name: 'productStyle',

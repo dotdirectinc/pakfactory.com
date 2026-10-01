@@ -396,6 +396,51 @@ const LINE_FEATURED_ICON = /* groq */ `kitMark{
 /** Desktop scroll-scrub hero video; empty when unset / YouTube-only. */
 const LINE_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 
+/** One style card on a line's styles grid. Shared by both halves of LINE_STYLES below. */
+const LINE_STYLE_CARD_PROJ = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  shortDescription,
+  "description": coalesce(pt::text(description), shortDescription),
+  ${STYLE_CARD_IMAGE},
+  // The style's own FAQs; the style page falls back to the line's when empty.
+  "faqs": faqs[]->${FAQ_ITEM_PROJ}
+}`;
+
+/**
+ * The styles grid for a line, in MERCHANDISED order (PROD-2739).
+ *
+ * Two tiers: the styles listed in the line's `styleOrder` in the order they were
+ * dragged, then every other visible style alphabetically. `styleOrder` is order
+ * only and NEVER a gate — an unlisted style still renders, it just lands in the
+ * alphabetical tail. That is what makes a partial list the normal, correct state.
+ *
+ * 🔴 BOTH `coalesce(..., [])` calls are load-bearing, and neither is cosmetic.
+ * `styleOrder` is unset on every line until someone drags something, and in GROQ
+ * `null + array` is null while `_id in null[]._ref` matches nothing. Drop the
+ * first and the grid returns undefined; drop the second and it returns []. Either
+ * way every styles grid on the site goes empty, with no error. Both failures are
+ * pinned by the "no styleOrder" case in line-style-order.test.ts — do not remove it.
+ *
+ * References in `styleOrder` are WEAK, so a deleted style dereferences to null
+ * rather than blocking the delete; `defined(_id)` drops it before projection.
+ * A style that is listed but no longer visible (discontinued, not customer-facing)
+ * is filtered by the same LINE_STYLE_VISIBLE the tail uses, so the two tiers agree.
+ */
+const LINE_STYLES = /* groq */ `(
+    coalesce(
+      (styleOrder[]->)[defined(_id) && ${LINE_STYLE_VISIBLE}]${LINE_STYLE_CARD_PROJ},
+      []
+    )
+    + *[
+        _type == "productStyle" &&
+        productLine._ref == ^._id &&
+        ${LINE_STYLE_VISIBLE} &&
+        !(_id in coalesce(^.styleOrder, [])[]._ref)
+      ] | order(title asc) ${LINE_STYLE_CARD_PROJ}
+  )`;
+
 /** Shared projection for list + single-line fetches (PROD-1914 landing). */
 export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
   _id,
@@ -449,16 +494,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     heroLayout,
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
-  "styles": *[_type == "productStyle" && productLine._ref == ^._id && ${LINE_STYLE_VISIBLE}] | order(title asc) {
-    _id,
-    title,
-    "slug": slug.current,
-    shortDescription,
-    "description": coalesce(pt::text(description), shortDescription),
-    ${STYLE_CARD_IMAGE},
-    // The style's own FAQs; the style page falls back to the line's when empty.
-    "faqs": faqs[]->${FAQ_ITEM_PROJ}
-  },
+  "styles": ${LINE_STYLES},
   "products": *[_type == "product" && (
     productLine._ref == ^._id ||
     basedOn->productLine._ref == ^._id
