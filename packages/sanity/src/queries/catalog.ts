@@ -203,9 +203,10 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
 /** Hover-play / hero video URL from product `featuredVideo`; empty when unset / YouTube-only. */
 const PRODUCT_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
 
-/** One FAQ as the catalog pages render it. */
+/** One FAQ as the catalog pages render it. Blocks for UI; plain for JSON-LD. */
 const FAQ_ITEM_PROJ = /* groq */ `{
     question,
+    answer,
     "answerPlain": pt::text(answer)
   }`;
 
@@ -240,6 +241,16 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   dimensionInput,
   dimensionRange,
   "primarySolution": primarySolution->slug.current,
+  "breadcrumbParent": coalesce(
+    solutions[@->solutionType == "industry"][0]->{
+      title,
+      "slug": slug.current
+    },
+    solutions[0]->{
+      title,
+      "slug": slug.current
+    }
+  ),
   ${PRODUCT_FEATURED_VIDEO},
   media[]{
     ...,
@@ -495,10 +506,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     shortDescription,
     ${LINE_FEATURED_IMAGE}
   },
-  "faqs": faqs[]->{
-    question,
-    "answerPlain": pt::text(answer)
-  },
+  "faqs": faqs[]->${FAQ_ITEM_PROJ},
   "sections": sections[]${PAGE_SECTIONS_PROJECTION},
   "template": template->{
     _id,
@@ -741,6 +749,10 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
       _type == "faqItem" => question,
       defined(@->question) => @->question
     ),
+    "answer": select(
+      _type == "faqItem" => answer,
+      defined(@->answer) => @->answer
+    ),
     "answerPlain": select(
       _type == "faqItem" => pt::text(answer),
       defined(@->answer) => pt::text(@->answer)
@@ -829,6 +841,10 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
     "question": select(
       _type == "faqItem" => question,
       defined(@->question) => @->question
+    ),
+    "answer": select(
+      _type == "faqItem" => answer,
+      defined(@->answer) => @->answer
     ),
     "answerPlain": select(
       _type == "faqItem" => pt::text(answer),
@@ -979,6 +995,8 @@ export type CatalogProductLibraryDoc = CatalogProductDoc & {
 
 export type CatalogProductFaqDoc = {
   question?: string | null;
+  /** Portable Text blocks for rich FAQ answers (bold, links). */
+  answer?: unknown[] | null;
   answerPlain?: string | null;
 };
 
@@ -1010,6 +1028,13 @@ export type CatalogProductDoc = {
     depthMax?: number | null;
   } | null;
   primarySolution?: string | null;
+  /**
+   * First industry solution (fallback: solutions[0]) for inspiration PDP crumbs.
+   */
+  breadcrumbParent?: {
+    title?: string | null;
+    slug?: string | null;
+  } | null;
   /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
   media?: unknown[] | null;

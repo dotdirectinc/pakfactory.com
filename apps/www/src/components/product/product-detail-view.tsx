@@ -33,6 +33,7 @@ import {
 import {
     productHref,
     productStyleHref,
+    solutionHref,
     WWW_ROUTES,
 } from '@/lib/www-routes';
 
@@ -116,6 +117,7 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
     const documentFaqs = faqs.map((faq) => ({
         question: faq.question,
         answerPlain: faq.answerPlain,
+        ...(faq.answer?.length ? {answer: faq.answer} : {}),
     }));
     const mergedSections =
         templateSections.length > 0
@@ -155,20 +157,36 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ...(faqs.length > 0 ? [{id: 'pdp-faqs', label: 'FAQs'}] : []),
     ];
 
+    const standardCrumbs = [
+        {label: 'Home', href: WWW_ROUTES.home},
+        {label: 'Products', href: WWW_ROUTES.products},
+        {label: line.title, href: productHref(line.slug)},
+        {
+            label: style.title,
+            href: productStyleHref(line.slug, style.slug),
+        },
+        {label: product.title},
+    ];
+    const inspirationParent = product.breadcrumbParent;
+    const breadcrumbItems =
+        product.kind === 'inspiration' && inspirationParent
+            ? [
+                  {label: 'Home', href: WWW_ROUTES.home},
+                  {
+                      label: inspirationParent.title,
+                      href: solutionHref(inspirationParent.slug),
+                  },
+                  {
+                      label: style.title,
+                      href: productStyleHref(line.slug, style.slug),
+                  },
+                  {label: product.title},
+              ]
+            : standardCrumbs;
+
 return (
         <>
-            <PageBreadcrumbSection
-                items={[
-                    {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Products', href: WWW_ROUTES.products},
-                    {label: line.title, href: productHref(line.slug)},
-                    {
-                        label: style.title,
-                        href: productStyleHref(line.slug, style.slug),
-                    },
-                    {label: product.title},
-                ]}
-            />
+            <PageBreadcrumbSection items={breadcrumbItems} />
             <PageDielineSection paddingBlock="sm">
                 <article
                     id="pdp-overview"

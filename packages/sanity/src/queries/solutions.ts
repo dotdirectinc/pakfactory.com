@@ -129,6 +129,7 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   "relatedSolutions": relatedSolutions[]->${RELATED_REF},
   "faqs": faqs[]->{
     question,
+    answer,
     "answerPlain": pt::text(answer)
   },
   "relatedSolutionStyles": *[

@@ -113,6 +113,7 @@ export const EXPERTISE_STAGE_BY_SLUG_QUERY = /* groq */ `*[
   "services": services[@->status != "discontinued"]->${EXPERTISE_SERVICE_DIMENSION},
   "faqs": faqs[]->{
     question,
+    answer,
     "answerPlain": pt::text(answer)
   },
   "featuredStudies": featuredStudies[]{

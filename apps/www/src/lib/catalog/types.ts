@@ -1,4 +1,5 @@
 import type {PageSectionDoc} from '@pakfactory/sanity/queries';
+import type {PortableTextBlock} from '@portabletext/types';
 import type {CustomizationRulesSnapshot} from '@/lib/catalog/customization-rules';
 
 export type ProductKind = 'standard' | 'inspiration';
@@ -131,6 +132,8 @@ export type ProductProperty = {
 export type ProductFaq = {
     question: string;
     answerPlain: string;
+    /** Portable Text blocks when available; render these for bold/links. */
+    answer?: PortableTextBlock[];
 };
 
 export type TestimonialSource = 'google' | 'trustpilot';
@@ -187,6 +190,10 @@ export type Product = {
      */
     customizationRules?: CustomizationRulesSnapshot;
     primarySolution?: string;
+    /**
+     * Inspiration PDP breadcrumb parent — first industry solution, else solutions[0].
+     */
+    breadcrumbParent?: {title: string; slug: string};
     moq?: number;
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;
