@@ -122,11 +122,11 @@ export const solution = defineType({
     }),
     defineField({
       name: 'hasPage',
-      title: 'Has a landing page',
+      title: 'Has a page',
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'An editorial judgement — business focus, profitability, demand, search value. A solution can exist for tagging without earning a page.',
+        'Off = no page, no route, no listing — and its Solution Styles go too. Off by default: a solution can exist for tagging without earning a page. An editorial judgement — business focus, profitability, demand, search value.',
       initialValue: false,
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product

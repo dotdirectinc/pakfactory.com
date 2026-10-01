@@ -171,7 +171,7 @@ export const productStyle = defineType({
       type: 'boolean',
       group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
+        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
       initialValue: true,
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
