@@ -9,6 +9,7 @@ import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 /**
  * Product Line — the top level of the product tree (Rigid, Folding Carton,
@@ -42,7 +43,13 @@ import { entityFields } from '../lib/entity-id-field'
  *
  * Deferred: `sections` (page-builder) until the shared section inventory exists
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
- * (PROD-2293). `order` lives on the navigation singleton (PROD-2292), not here.
+ * (PROD-2293).
+ *
+ * `orderRank` (PROD-2744) is the Studio LIST order only — it decides the sequence
+ * editors see in the Product Lines pane and nothing else. The site is unaffected:
+ * `CATALOG_PRODUCT_LINES_QUERY` and the case-study filter chips are still
+ * `order(title asc)`. The main site's menu is hand-authored on the Website
+ * Navigation singleton and never reads this type, so it is unaffected too.
  */
 export const productLine = defineType({
   name: 'productLine',
@@ -401,7 +408,25 @@ export const productLine = defineType({
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
     ...entityFields({ prefix: 'lin', codeKinds: ['LIN'], group: GROUPS.content }),
+    // ─── STUDIO LIST ORDER ────────────────────────────────────────────────────
+    /**
+     * Drag-to-order position for the Product Lines list (PROD-2744).
+     *
+     * Written by `@sanity/orderable-document-list` when an editor drags a row.
+     * `hidden` and `readOnly` come from the plugin — it never appears on the Edit
+     * form, and the drag handle in the list pane is the only way to set it.
+     *
+     * New lines rank themselves: the plugin's `initialValue` reads the current
+     * last rank and places a newly created line after it, so "Reset Order" is a
+     * one-time action, not a chore on every create.
+     *
+     * ⚠️ ORDER ONLY, and Studio only. Nothing on the website reads this field —
+     * see the type docblock above. Pointing a query at it is a separate decision.
+     */
+    orderRankField({ type: 'productLine' }),
   ],
+  // Adds an "Ordered" entry to the list's sort menu, matching the drag order.
+  orderings: [orderRankOrdering],
   preview: {
     select: { title: 'title', display: 'shortName', media: 'featuredImage' },
     prepare({ title, display, media }) {
