@@ -931,21 +931,24 @@ export const globalStructure = (
  *  Resources and Main Website stay unbuilt (unbuilt types / Questions for Dev #1). */
 export const solutionsWorkspaceStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Solutions')
         .items([
             ...sitePreviewHint(S),
-            S.listItem()
-                .title('Solutions')
-                .icon(BulbOutlineIcon)
-                .schemaType('solution')
-                .child(
-                    S.documentTypeList('solution')
-                        .title('Solutions')
-                        .defaultOrdering([{field: 'title', direction: 'asc'}]),
-                ),
+            // Drag-to-order, not a plain document list (PROD-2745), same as Product
+            // Lines. The plugin owns the pane, so the `defaultOrdering` this item
+            // used to carry is gone on purpose — the drag order IS the order. The
+            // sort menu still offers Title, from `orderings` on `solution`.
+            // Studio only; no site query reads `orderRank`.
+            orderableDocumentListDeskItem({
+                type: 'solution',
+                title: 'Solutions',
+                icon: BulbOutlineIcon,
+                S,
+                context,
+            }),
             // Second level. Flat rather than nested under each solution: a
             // collection is edited far more often than the solution above it,
             // and one list is fewer clicks than 36 folders.

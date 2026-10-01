@@ -426,7 +426,12 @@ export const productLine = defineType({
     orderRankField({ type: 'productLine' }),
   ],
   // Adds an "Ordered" entry to the list's sort menu, matching the drag order.
-  orderings: [orderRankOrdering],
+  // Title is restated because declaring `orderings` REPLACES the one Sanity
+  // generates — PROD-2744 shipped with only `ordered` and silently dropped it.
+  orderings: [
+    orderRankOrdering,
+    { title: 'Title', name: 'title', by: [{ field: 'title', direction: 'asc' }] },
+  ],
   preview: {
     select: { title: 'title', display: 'shortName', media: 'featuredImage' },
     prepare({ title, display, media }) {
