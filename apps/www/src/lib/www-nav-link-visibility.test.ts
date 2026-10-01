@@ -75,11 +75,11 @@ describe('isWwwNavInternalLinkVisible', () => {
         );
     });
 
-    it('requires hasPage for customization options', () => {
+    it('requires page-bearing appearsIn for customization options', () => {
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'customizationOption',
-                hasPage: true,
+                appearsIn: 'configurable-with-page',
                 status: 'active',
             }),
             true,
@@ -87,7 +87,15 @@ describe('isWwwNavInternalLinkVisible', () => {
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'customizationOption',
-                hasPage: false,
+                appearsIn: 'not-configurable-with-page',
+                status: 'active',
+            }),
+            true,
+        );
+        assert.equal(
+            isWwwNavInternalLinkVisible({
+                _type: 'customizationOption',
+                appearsIn: 'configurable-no-page',
                 status: 'active',
             }),
             false,
@@ -96,6 +104,14 @@ describe('isWwwNavInternalLinkVisible', () => {
             isWwwNavInternalLinkVisible({
                 _type: 'customizationOption',
                 hasPage: true,
+                status: 'active',
+            }),
+            false,
+        );
+        assert.equal(
+            isWwwNavInternalLinkVisible({
+                _type: 'customizationOption',
+                appearsIn: 'configurable-with-page',
                 status: 'discontinued',
             }),
             false,

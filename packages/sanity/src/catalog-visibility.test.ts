@@ -51,14 +51,38 @@ describe('isCatalogTargetVisible', () => {
     );
   });
 
-  it('requires hasPage for customization options and expertise services', () => {
+  it('requires page-bearing appearsIn for customization options; hasPage for expertise services', () => {
+    assert.equal(
+      isCatalogTargetVisible({
+        _type: 'customizationOption',
+        appearsIn: 'configurable-with-page',
+        status: 'coming-soon',
+      }),
+      true,
+    );
+    assert.equal(
+      isCatalogTargetVisible({
+        _type: 'customizationOption',
+        appearsIn: 'not-configurable-with-page',
+        status: 'active',
+      }),
+      true,
+    );
+    assert.equal(
+      isCatalogTargetVisible({
+        _type: 'customizationOption',
+        appearsIn: 'configurable-no-page',
+        status: 'active',
+      }),
+      false,
+    );
     assert.equal(
       isCatalogTargetVisible({
         _type: 'customizationOption',
         hasPage: true,
-        status: 'coming-soon',
+        status: 'active',
       }),
-      true,
+      false,
     );
     assert.equal(
       isCatalogTargetVisible({
@@ -67,6 +91,14 @@ describe('isCatalogTargetVisible', () => {
         status: 'active',
       }),
       false,
+    );
+    assert.equal(
+      isCatalogTargetVisible({
+        _type: 'expertiseService',
+        hasPage: true,
+        status: 'active',
+      }),
+      true,
     );
   });
 
