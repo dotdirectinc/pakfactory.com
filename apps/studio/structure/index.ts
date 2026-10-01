@@ -777,12 +777,21 @@ export function productsItems(
     ];
 }
 
-export function customizationItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+export function customizationItems(
+    S: StructureBuilder,
+    context: StructureResolverContext,
+): (ListItemBuilder | DividerBuilder)[] {
     return [
-        S.listItem()
-            .title('Categories')
-            .schemaType('customizationCategory')
-            .child(S.documentTypeList('customizationCategory').title('Customization Categories')),
+        // Drag-to-order (PROD-2749). Restores the category position removed with
+        // `order` in September; the list had gone alphabetical, putting Additional
+        // Customization ahead of Materials. Studio only — the front end still runs
+        // its own hard-coded order.
+        orderableDocumentListDeskItem({
+            type: 'customizationCategory',
+            title: 'Customization Categories',
+            S,
+            context,
+        }),
         S.listItem()
             .title('Types')
             .schemaType('customizationType')
@@ -845,11 +854,11 @@ export const productsStructure = (
 /** Customization — Category · Type · Option · Option Group (+ Global Property picks) */
 export const customizationStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Customization')
-        .items([...sitePreviewHint(S), ...customizationItems(S)]);
+        .items([...sitePreviewHint(S), ...customizationItems(S, context)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D1 workspaces (PROD-2329 / D39) — Case Studies · Global (+ Solutions ·

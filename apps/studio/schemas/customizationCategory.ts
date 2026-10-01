@@ -1,6 +1,7 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 export const customizationCategory = defineType({
   name: 'customizationCategory',
@@ -48,9 +49,15 @@ export const customizationCategory = defineType({
     //
     // ⚠️ `order` was this category's OWN position among the four. `typeOrder`
     // below is a different question — the order of the TYPES inside it — and
-    // restores nothing that was removed here. Category position is still
-    // unsolved, and is currently hard-coded in the front end
-    // (`apps/www/src/lib/catalog/customization-category-order.ts`).
+    // restores nothing that was removed here.
+    //
+    // Category position is answered again by `orderRank` at the bottom of this
+    // file (PROD-2749), set by dragging the Categories list rather than by an
+    // integer nobody maintained. ⚠️ The FRONT END still runs its own hard-coded
+    // list (`apps/www/src/lib/catalog/customization-category-order.ts`) and is
+    // not wired to `orderRank` yet — and that list opens with `dimensions`,
+    // which is not a Category at all but the builder's own first step, so it
+    // cannot simply be swapped for a query.
     defineField({
       name: 'typeOrder',
       title: 'Customization type order',
@@ -96,6 +103,28 @@ export const customizationCategory = defineType({
       validation: (Rule) => Rule.unique(),
     }),
     ...entityFields({ prefix: 'cat', codeKinds: ['CAT'], group: 'content' }),
+    // ─── STUDIO LIST ORDER ────────────────────────────────────────────────────
+    /**
+     * Drag-to-order position for the Categories list (PROD-2749).
+     *
+     * Restores the intent of the `order` field removed on 2026-09-11 — see the
+     * comment above — without the integer. Written by
+     * `@sanity/orderable-document-list` when an editor drags a row; `hidden` and
+     * `readOnly` come from the plugin, so the drag handle is the only way to set it.
+     *
+     * 🔴 It is a LEXORANK STRING, not a position number. `order(orderRank asc)`
+     * sorts it correctly; nothing can read it as "third".
+     *
+     * ⚠️ Studio only for now. The front end still runs its own hard-coded order.
+     */
+    orderRankField({ type: 'customizationCategory' }),
+  ],
+  // Title is restated deliberately: declaring `orderings` REPLACES the sort Sanity
+  // generates rather than adding to it, which shipped wrong on productLine
+  // (PROD-2744) and had to be fixed in PROD-2745.
+  orderings: [
+    orderRankOrdering,
+    { title: 'Title', name: 'title', by: [{ field: 'title', direction: 'asc' }] },
   ],
   preview: {
     select: { title: 'title', subtitle: 'slug.current' },
