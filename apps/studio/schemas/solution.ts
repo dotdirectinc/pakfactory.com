@@ -228,7 +228,7 @@ export const solution = defineType({
     }),
     defineField({
       name: 'styleOrder',
-      title: 'Style order',
+      title: 'Solution style order',
       type: 'array',
       group: GROUPS.categorization,
       description:
