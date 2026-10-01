@@ -1,4 +1,5 @@
 import type {
+    CustomizationDeclaredProperty,
     CustomizationDetail,
     CustomizationPropertyValue,
 } from '@/lib/catalog/types';
@@ -35,6 +36,15 @@ export type CompareMatrix = {
     rows: CompareMatrixRow[];
 };
 
+/**
+ * A stated property the detail page prints. A hidden one (showOnDetailPage false — the content
+ * team's "Stated (hidden)" columns: Material Source, Coverage…) is a filter only: it still
+ * narrows a listing, but a spec row or compare row would show a customer an internal facet.
+ */
+function printsOnDetailPage(d: CustomizationDeclaredProperty): boolean {
+    return d.usage === 'stated' && d.showOnDetailPage !== false;
+}
+
 function groupKey(value: CustomizationPropertyValue): string | null {
     return value.propertySlug?.trim() || value.propertyId?.trim() || null;
 }
@@ -48,7 +58,7 @@ export function buildReferenceSpecRows(
 ): ReferenceSpecRow[] {
     const statedKeys = new Set(
         detail.declaredProperties
-            .filter((d) => d.usage === 'stated')
+            .filter(printsOnDetailPage)
             .map((d) => d.propertySlug?.trim() || d.propertyId?.trim())
             .filter((k): k is string => Boolean(k)),
     );
@@ -92,7 +102,7 @@ function statedRowsByKey(
     detail: CustomizationDetail,
 ): Map<string, {label: string; value: string}> {
     const statedOrder = detail.declaredProperties
-        .filter((d) => d.usage === 'stated')
+        .filter(printsOnDetailPage)
         .map((d) => d.propertySlug?.trim() || d.propertyId?.trim())
         .filter((k): k is string => Boolean(k));
 
