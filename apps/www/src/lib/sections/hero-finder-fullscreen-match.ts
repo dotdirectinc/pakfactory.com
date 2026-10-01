@@ -1,9 +1,7 @@
 import type {
-    PageSectionHeroCaseStudyDoc,
-    PageSectionHeroFinderDefaultRailDoc,
     PageSectionHeroFinderDoc,
+    PageSectionHeroFinderRailEntryDoc,
     PageSectionHeroFinderRailItemDoc,
-    PageSectionHeroFinderRailSlotDoc,
 } from '@pakfactory/sanity/queries';
 
 import {BLOG_URL} from '@/lib/www-nav';
@@ -28,32 +26,11 @@ import {
     WWW_ROUTES,
 } from '@/lib/www-routes';
 
-/** Fixed General offering order (code-locked). */
-export const FINDER_FS_GENERAL_ORDER = [
-    'product',
-    'solution',
-    'expertise',
-    'customization',
-    'caseStudy',
-    'blog',
-    'promo',
-] as const;
-
-export type FinderFsGeneralSlot = (typeof FINDER_FS_GENERAL_ORDER)[number];
-
-const KIND_LABEL: Record<FinderFsGeneralSlot, string> = {
-    product: 'Product',
-    solution: 'Solution',
-    expertise: 'Expertise',
-    customization: 'Customization',
-    caseStudy: 'Case study',
-    blog: 'Blog',
-    promo: 'Promo',
-};
-
 export type FinderFullscreenSlide = FinderSlide & {
     /** Category label for inactive rail text. */
     kindLabel: string;
+    /** Playable muted-loop BG URL (upload/CDN). Prefer over still when set. */
+    videoSrc?: string;
 };
 
 function trimmed(value: string | null | undefined): string | undefined {
@@ -93,126 +70,115 @@ function hrefForRailItem(item: PageSectionHeroFinderRailItemDoc): string | undef
     }
 }
 
-function slideFromRailItem(
-    slot: FinderFsGeneralSlot,
-    item: PageSectionHeroFinderRailItemDoc,
-): FinderFullscreenSlide | null {
-    const title = trimmed(item.title);
-    const id = trimmed(item._id);
-    if (!title || !id) return null;
-    const href = hrefForRailItem(item);
-    const image = imageFrom(item.imageSrc, item.imageAlt, title);
-    const description =
-        trimmed(item.description) || trimmed(item.clientName) || undefined;
-    const linkLabel =
-        slot === 'caseStudy'
-            ? 'Read case study'
-            : slot === 'blog'
-              ? 'Read article'
-              : slot === 'product'
-                ? `Explore ${title.toLowerCase()}`
-                : slot === 'solution'
-                  ? `See ${title} packaging`
-                  : 'Learn more';
-
-    return {
-        id: `rail-${slot}-${id}`,
-        kindLabel: KIND_LABEL[slot],
-        title,
-        description,
-        image,
-        imageFit: slot === 'product' || slot === 'customization' ? 'contain' : 'cover',
-        ...(href ? {link: {label: linkLabel, href}} : {}),
-        ...(trimmed(item.statTitle)
-            ? {
-                  stat: {
-                      value: item.statTitle!,
-                      ...(trimmed(item.statBody)
-                          ? {label: item.statBody!}
-                          : {}),
-                  },
-              }
-            : {}),
-    };
+function defaultLinkLabel(
+    item: PageSectionHeroFinderRailItemDoc | null | undefined,
+    title: string,
+): string {
+    const type = trimmed(item?._type);
+    if (type === 'caseStudy') return 'Read case study';
+    if (type === 'post') return 'Read article';
+    if (type === 'productLine') return `Explore ${title.toLowerCase()}`;
+    if (type === 'solution') return `See ${title} packaging`;
+    return 'Learn more';
 }
 
-function slideFromCampaign(
-    campaign: NonNullable<PageSectionHeroFinderRailSlotDoc['campaign']>,
-): FinderFullscreenSlide | null {
-    const title = trimmed(campaign.title);
-    if (!title) return null;
-    const resolved = resolveSectionLinkHref(campaign.link ?? undefined);
-    const image = imageFrom(campaign.imageSrc, campaign.imageAlt, title);
-    const description = trimmed(campaign.description);
-    const linkLabel = trimmed(campaign.link?.label) || 'Learn more';
-    return {
-        id: `rail-promo-${title}`,
-        kindLabel: KIND_LABEL.promo,
-        title,
-        description,
-        image,
-        imageFit: 'cover',
-        ...(resolved
-            ? {link: {label: linkLabel, href: resolved.href}}
-            : {}),
-    };
-}
-
-function resolveSlotItem(
-    slot: FinderFsGeneralSlot,
-    railSlot: PageSectionHeroFinderRailSlotDoc | null | undefined,
-    autoNewest: PageSectionHeroFinderDoc['autoNewest'],
-    autoPopular: PageSectionHeroFinderDoc['autoPopular'],
-): PageSectionHeroFinderRailItemDoc | PageSectionHeroCaseStudyDoc | null {
-    const mode = trimmed(railSlot?.fillMode) || 'manual';
-    if (mode === 'manual') {
-        return railSlot?.item ?? null;
-    }
-    const pool = mode === 'popular' ? autoPopular : autoNewest;
-    const fromAuto = pool?.[slot] ?? null;
-    if (fromAuto) return fromAuto;
-    // Manual ref still set while mode is auto — prefer expanded item.
-    return railSlot?.item ?? null;
+function imageFitForItem(
+    item: PageSectionHeroFinderRailItemDoc | null | undefined,
+): 'contain' | 'cover' {
+    const type = trimmed(item?._type);
+    if (type === 'productLine' || type === 'customizationType') return 'contain';
+    return 'cover';
 }
 
 /**
- * General deck for Packaging Solution × All — Studio seats in locked order.
- * Empty / unresolved seats are omitted.
+ * Map one flexible default-rail entry → slide. Skips incomplete rows.
  */
-export function buildFinderFullscreenGeneralSlides(
-    section: Pick<
-        PageSectionHeroFinderDoc,
-        'defaultRail' | 'autoNewest' | 'autoPopular'
-    >,
-): FinderFullscreenSlide[] {
-    const rail: PageSectionHeroFinderDefaultRailDoc = section.defaultRail ?? {};
-    const slides: FinderFullscreenSlide[] = [];
+function slideFromRailEntry(
+    entry: PageSectionHeroFinderRailEntryDoc,
+    index: number,
+): FinderFullscreenSlide | null {
+    const kindLabel = trimmed(entry.kindLabel);
+    if (!kindLabel) return null;
 
-    for (const slot of FINDER_FS_GENERAL_ORDER) {
-        const railSlot = rail[slot];
-        if (slot === 'promo') {
-            const mode = trimmed(railSlot?.fillMode) || 'manual';
-            if (mode === 'manual' && railSlot?.campaign) {
-                const slide = slideFromCampaign(railSlot.campaign);
-                if (slide) slides.push(slide);
-            }
-            continue;
+    const source = trimmed(entry.source) || 'catalogue';
+    const item = entry.item ?? null;
+    const overrideTitle = trimmed(entry.title);
+    const overrideDescription = trimmed(entry.description);
+
+    let title: string | undefined;
+    let description: string | undefined;
+    let id: string;
+    let derivedHref: string | undefined;
+    let fallbackImage: HeroImage | undefined;
+    let stat: FinderFullscreenSlide['stat'];
+
+    if (source === 'campaign') {
+        title = overrideTitle;
+        description = overrideDescription;
+        if (!title) return null;
+        id = `rail-${trimmed(entry._key) || index}-${title}`;
+    } else {
+        const itemTitle = trimmed(item?.title);
+        const itemId = trimmed(item?._id);
+        if (!itemTitle || !itemId) return null;
+        title = overrideTitle || itemTitle;
+        description =
+            overrideDescription ||
+            trimmed(item?.description) ||
+            trimmed(item?.clientName) ||
+            undefined;
+        id = `rail-${trimmed(entry._key) || index}-${itemId}`;
+        derivedHref = hrefForRailItem(item!);
+        fallbackImage = imageFrom(item?.imageSrc, item?.imageAlt, title);
+        if (trimmed(item?.statTitle)) {
+            stat = {
+                value: item!.statTitle!,
+                ...(trimmed(item?.statBody) ? {label: item!.statBody!} : {}),
+            };
         }
-
-        const item = resolveSlotItem(
-            slot,
-            railSlot,
-            section.autoNewest,
-            section.autoPopular,
-        );
-        if (!item) continue;
-        const slide = slideFromRailItem(
-            slot,
-            item as PageSectionHeroFinderRailItemDoc,
-        );
-        if (slide) slides.push(slide);
     }
 
+    const bannerImage = imageFrom(
+        entry.bannerImageSrc,
+        entry.bannerImageAlt,
+        title,
+    );
+    const image = bannerImage ?? fallbackImage;
+    const videoSrc = trimmed(entry.bannerVideoUrl);
+
+    const customLink = resolveSectionLinkHref(entry.link ?? undefined);
+    const linkLabel =
+        trimmed(entry.link?.label) || defaultLinkLabel(item, title);
+    const href = customLink?.href || derivedHref;
+
+    return {
+        id,
+        kindLabel,
+        title,
+        description,
+        image,
+        imageFit: imageFitForItem(item),
+        ...(videoSrc ? {videoSrc} : {}),
+        ...(href ? {link: {label: linkLabel, href}} : {}),
+        ...(stat ? {stat} : {}),
+    };
+}
+
+/**
+ * General deck for Packaging Solution × All — Studio `defaultRail` array order.
+ * Incomplete entries are omitted.
+ */
+export function buildFinderFullscreenGeneralSlides(
+    section: Pick<PageSectionHeroFinderDoc, 'defaultRail'>,
+): FinderFullscreenSlide[] {
+    const rail = section.defaultRail ?? [];
+    const slides: FinderFullscreenSlide[] = [];
+    for (let i = 0; i < rail.length; i++) {
+        const entry = rail[i];
+        if (!entry) continue;
+        const slide = slideFromRailEntry(entry, i);
+        if (slide) slides.push(slide);
+    }
     return slides;
 }
 
@@ -231,7 +197,7 @@ function studyToFsSlide(study: HeroFinderStudy): FinderFullscreenSlide {
 
 /**
  * Specific deck when a real line and/or industry is selected.
- * Order: popular style → industry → case study → (blog/promo omitted until wired).
+ * Order: popular style → industry → case study.
  */
 export function buildFinderFullscreenSpecificSlides({
     line,

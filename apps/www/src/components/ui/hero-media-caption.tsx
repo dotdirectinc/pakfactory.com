@@ -6,7 +6,8 @@ import {cn} from '@pakfactory/ui/lib/utils';
 import {Icon} from '@/components/ui/icon';
 
 export type HeroMediaCaptionProps = {
-    kindLabel: string;
+    /** Optional kind eyebrow (Spotlight). Finder omits this. */
+    kindLabel?: string;
     title: string;
     description?: string;
     chips?: string[];
@@ -18,9 +19,10 @@ export type HeroMediaCaptionProps = {
 };
 
 /**
- * White caption card pinned over hero media (PROD-2666) — slide type, title,
- * one line, optional product chips / headline stat, and the slide's own link.
- * Props-only; a content container, so it is a card (DESIGN.md § Cards).
+ * White caption card pinned over hero media (PROD-2666) — optional kind
+ * eyebrow, title, one line, optional product chips / headline stat, and the
+ * slide's own link. Props-only; a content container, so it is a card
+ * (DESIGN.md § Cards).
  */
 export function HeroMediaCaption({
     kindLabel,
@@ -39,9 +41,11 @@ export function HeroMediaCaption({
                 className,
             )}
         >
-            <Badge variant="secondary" className="w-fit uppercase tracking-wider">
-                {kindLabel}
-            </Badge>
+            {kindLabel ? (
+                <Badge variant="secondary" className="w-fit uppercase tracking-wider">
+                    {kindLabel}
+                </Badge>
+            ) : null}
             <div className="flex flex-col gap-1">
                 <p className="text-lg font-medium leading-snug">{title}</p>
                 {description ? (

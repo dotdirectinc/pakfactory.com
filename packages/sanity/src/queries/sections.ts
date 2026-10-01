@@ -4,7 +4,10 @@
  * (+ cheap scalars) for allowlisted inventory until later mappers land.
  */
 
-import {FEATURED_VIDEO_URL_FIELD} from './featured-video';
+import {
+    FEATURED_VIDEO_URL_FIELD,
+    FEATURED_VIDEO_URL_GROQ,
+} from './featured-video';
 
 export {FEATURED_VIDEO_URL_FIELD};
 
@@ -250,15 +253,17 @@ const HERO_FINDER_LINE = /* groq */ `{
   "description": shortDescription,
   "imageSrc": featuredImage.asset->url,
   "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+  "videoSrc": ${FEATURED_VIDEO_URL_GROQ},
   "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
-  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status == "active") && customerFacing != false] | order(title asc)[0...4]{
+  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status == "active") && customerFacing != false] | order(title asc)[0...3]{
     _id,
     "title": coalesce(shortName, title),
     "slug": slug.current,
     "description": shortDescription,
     "imageSrc": featuredImage.asset->url,
     "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
-    "lineSlug": ^.slug.current
+    "lineSlug": ^.slug.current,
+    "videoSrc": ${FEATURED_VIDEO_URL_GROQ}
   }
 }`;
 
@@ -275,7 +280,7 @@ const HERO_FINDER_INDUSTRY = /* groq */ `{
   "studies": relatedCaseStudies[]->${HERO_CASE_STUDY}
 }`;
 
-/** Compact catalogue card for a default-rail seat (manual or auto-resolved). */
+/** Compact catalogue card for a default-rail / general-bucket reference. */
 const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   _id,
   _type,
@@ -296,6 +301,10 @@ const HERO_FINDER_RAIL_ITEM = /* groq */ `{
     mainImage.alt,
     title
   ),
+  "videoSrc": coalesce(
+    previewVideo.asset->url,
+    ${FEATURED_VIDEO_URL_GROQ}
+  ),
   "clientName": client->name,
   "statTitle": highlights[0].title,
   "statBody": highlights[0].description,
@@ -305,24 +314,38 @@ const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   hasPage
 }`;
 
-const HERO_FINDER_RAIL_SLOT = /* groq */ `{
-  fillMode,
-  "item": select(
-    fillMode == "manual" && defined(item) => item->${HERO_FINDER_RAIL_ITEM},
-    fillMode == "newest" && defined(item._ref) => item->${HERO_FINDER_RAIL_ITEM},
-    fillMode == "newest" => null,
-    fillMode == "popular" && defined(item._ref) => item->${HERO_FINDER_RAIL_ITEM},
-    fillMode == "popular" => null,
-    defined(item) => item->${HERO_FINDER_RAIL_ITEM},
+/** One simple-Finder General bucket entry (ref + optional feature media). */
+const HERO_FINDER_GENERAL_ENTRY = /* groq */ `{
+  _key,
+  "item": item->${HERO_FINDER_RAIL_ITEM},
+  "featureImageSrc": featureImage.asset->url,
+  "featureImageAlt": coalesce(featureImage.alt, featureImage.asset->altText),
+  "featureVideoUrl": select(
+    featureVideo.source == "upload" => featureVideo.file.asset->url,
+    featureVideo.source == "url" => featureVideo.url,
+    defined(featureVideo.asset) => featureVideo.asset->url,
     null
-  ),
-  "campaign": campaign{
-    title,
-    description,
-    "imageSrc": image.asset->url,
-    "imageAlt": coalesce(image.alt, image.asset->altText, title),
-    link ${LINK_OBJECT}
-  }
+  )
+}`;
+
+/** Flexible General-deck rail item (editor-ordered array). */
+const HERO_FINDER_RAIL_ENTRY = /* groq */ `{
+  _key,
+  kindLabel,
+  source,
+  title,
+  description,
+  "item": item->${HERO_FINDER_RAIL_ITEM},
+  link ${LINK_OBJECT},
+  bannerType,
+  "bannerImageSrc": bannerImage.asset->url,
+  "bannerImageAlt": coalesce(bannerImage.alt, bannerImage.asset->altText),
+  "bannerVideoUrl": select(
+    bannerVideo.source == "upload" => bannerVideo.file.asset->url,
+    bannerVideo.source == "url" => bannerVideo.url,
+    defined(bannerVideo.asset) => bannerVideo.asset->url,
+    null
+  )
 }`;
 
 /**
@@ -344,32 +367,16 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     headingTrail,
     "productLines": productLines[]->${HERO_FINDER_LINE},
     "industries": industries[]->${HERO_FINDER_INDUSTRY},
+    _type == "heroFinder" => {
+      railOrder,
+      "generalProducts": generalProducts[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalIndustries": generalIndustries[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalCustomizations": generalCustomizations[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalExpertise": generalExpertise[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalCaseStudies": generalCaseStudies[]${HERO_FINDER_GENERAL_ENTRY}
+    },
     _type == "heroFinderFullscreen" => {
-      "defaultRail": defaultRail{
-        product ${HERO_FINDER_RAIL_SLOT},
-        solution ${HERO_FINDER_RAIL_SLOT},
-        expertise ${HERO_FINDER_RAIL_SLOT},
-        customization ${HERO_FINDER_RAIL_SLOT},
-        caseStudy ${HERO_FINDER_RAIL_SLOT},
-        blog ${HERO_FINDER_RAIL_SLOT},
-        promo ${HERO_FINDER_RAIL_SLOT}
-      },
-      "autoNewest": {
-        "product": *[_type == "productLine" && (!defined(status) || status == "active") && customerFacing != false] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "solution": *[_type == "solution" && hasPage == true] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "expertise": *[_type == "expertiseStage"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "customization": *[_type == "customizationType"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "caseStudy": *[_type == "caseStudy"] | order(publishedAt desc)[0]${HERO_CASE_STUDY},
-        "blog": *[_type == "post" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0]${HERO_FINDER_RAIL_ITEM}
-      },
-      "autoPopular": {
-        "product": *[_type == "productLine" && (!defined(status) || status == "active") && customerFacing != false] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "solution": *[_type == "solution" && hasPage == true] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "expertise": *[_type == "expertiseStage"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "customization": *[_type == "customizationType"] | order(_updatedAt desc)[0]${HERO_FINDER_RAIL_ITEM},
-        "caseStudy": *[_type == "caseStudy"] | order(publishedAt desc)[0]${HERO_CASE_STUDY},
-        "blog": *[_type == "post" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0]${HERO_FINDER_RAIL_ITEM}
-      }
+      "defaultRail": defaultRail[]${HERO_FINDER_RAIL_ENTRY}
     }
   },
   _type == "faqSection" => {
@@ -892,6 +899,8 @@ export type PageSectionHeroFinderLineDoc = {
     description?: string | null;
     imageSrc?: string | null;
     imageAlt?: string | null;
+    /** Playable MP4 from `featuredVideo` (upload/url); YouTube yields null. */
+    videoSrc?: string | null;
     studies?: PageSectionHeroCaseStudyDoc[] | null;
     styles?: PageSectionHeroFinderStyleDoc[] | null;
 };
@@ -904,6 +913,7 @@ export type PageSectionHeroFinderStyleDoc = {
     imageSrc?: string | null;
     imageAlt?: string | null;
     lineSlug?: string | null;
+    videoSrc?: string | null;
 };
 
 export type PageSectionHeroFinderIndustryDoc = {
@@ -926,6 +936,7 @@ export type PageSectionHeroFinderRailItemDoc = {
     description?: string | null;
     imageSrc?: string | null;
     imageAlt?: string | null;
+    videoSrc?: string | null;
     clientName?: string | null;
     statTitle?: string | null;
     statBody?: string | null;
@@ -935,26 +946,28 @@ export type PageSectionHeroFinderRailItemDoc = {
     hasPage?: boolean | null;
 };
 
-export type PageSectionHeroFinderRailSlotDoc = {
-    fillMode?: 'manual' | 'newest' | 'popular' | string | null;
+/** One simple-Finder General bucket entry. */
+export type PageSectionHeroFinderGeneralEntryDoc = {
+    _key?: string | null;
     item?: PageSectionHeroFinderRailItemDoc | null;
-    campaign?: {
-        title?: string | null;
-        description?: string | null;
-        imageSrc?: string | null;
-        imageAlt?: string | null;
-        link?: PageSectionLinkDoc | null;
-    } | null;
+    featureImageSrc?: string | null;
+    featureImageAlt?: string | null;
+    featureVideoUrl?: string | null;
 };
 
-export type PageSectionHeroFinderDefaultRailDoc = {
-    product?: PageSectionHeroFinderRailSlotDoc | null;
-    solution?: PageSectionHeroFinderRailSlotDoc | null;
-    expertise?: PageSectionHeroFinderRailSlotDoc | null;
-    customization?: PageSectionHeroFinderRailSlotDoc | null;
-    caseStudy?: PageSectionHeroFinderRailSlotDoc | null;
-    blog?: PageSectionHeroFinderRailSlotDoc | null;
-    promo?: PageSectionHeroFinderRailSlotDoc | null;
+/** One flexible General-deck rail entry (editor-ordered). */
+export type PageSectionHeroFinderRailEntryDoc = {
+    _key?: string | null;
+    kindLabel?: string | null;
+    source?: 'catalogue' | 'campaign' | string | null;
+    title?: string | null;
+    description?: string | null;
+    item?: PageSectionHeroFinderRailItemDoc | null;
+    link?: PageSectionLinkDoc | null;
+    bannerType?: 'image' | 'video' | string | null;
+    bannerImageSrc?: string | null;
+    bannerImageAlt?: string | null;
+    bannerVideoUrl?: string | null;
 };
 
 export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
@@ -965,9 +978,13 @@ export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
     headingTrail?: string | null;
     productLines?: PageSectionHeroFinderLineDoc[] | null;
     industries?: PageSectionHeroFinderIndustryDoc[] | null;
-    defaultRail?: PageSectionHeroFinderDefaultRailDoc | null;
-    autoNewest?: Record<string, PageSectionHeroFinderRailItemDoc | PageSectionHeroCaseStudyDoc | null> | null;
-    autoPopular?: Record<string, PageSectionHeroFinderRailItemDoc | PageSectionHeroCaseStudyDoc | null> | null;
+    railOrder?: 'business' | 'random' | string | null;
+    generalProducts?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalIndustries?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalCustomizations?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalExpertise?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalCaseStudies?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    defaultRail?: PageSectionHeroFinderRailEntryDoc[] | null;
 };
 
 /** Shallow / unwired section until a renderer maps it. */

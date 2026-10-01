@@ -1,6 +1,4 @@
 import {Suspense} from 'react';
-import {pageDielineBorderYClass} from '@pakfactory/ui/components/page-dieline-section';
-import {cn} from '@pakfactory/ui/lib/utils';
 
 import {HeroGoogleRating} from '@/components/sections/hero-google-rating';
 import {HeroCtaGroup} from '@/components/ui/hero-cta-group';
@@ -14,9 +12,11 @@ type HeroFinderFullscreenProps = {
 };
 
 /**
- * Finder fullscreen hero (Studio `heroFinderFullscreen`) — 100svh active-slide
- * background, sunburst glass under copy, push-dock category rail. D35 twin of
+ * Finder fullscreen hero (Studio `heroFinderFullscreen`) — below-nav frame
+ * (`100dvh - var(--site-nav-offset)`), sunburst glass under copy, push-dock category rail. D35 twin of
  * the simple Finder; membership is General (Studio seats) vs Specific (rules).
+ * Dieline chrome (dashed rails + bottom rule) lives on the panel via
+ * PageDielineSection.
  */
 export function HeroFinderFullscreen({
     content,
@@ -40,14 +40,7 @@ export function HeroFinderFullscreen({
         ) : null;
 
     return (
-        <section
-            id={id}
-            aria-labelledby={titleId}
-            className={cn(
-                'scroll-mt-32',
-                pageDielineBorderYClass({borderBottom: true}),
-            )}
-        >
+        <section id={id} aria-labelledby={titleId} className="scroll-mt-32">
             <HeroFinderFullscreenPanel
                 content={content}
                 titleId={titleId}

@@ -20,7 +20,7 @@ All four share the copy fields: **Label above heading**, **Headline** (H1), **In
 | Spotlight hero | `heroSpotlight` | `sections/hero-spotlight.tsx` → `ui/hero-spotlight-carousel.tsx` (`layout="split"`) | Copy left, stage right, labelled pager under the stage |
 | Full-bleed hero | `heroSpotlightFullBleed` | `sections/hero-spotlight-full-bleed.tsx` → same carousel (`layout="fullBleed"`) | Active slide fills the band; copy over a scrim; caption bottom-right on desktop |
 | Finder hero | `heroFinder` | `sections/hero-finder.tsx` → `ui/hero-finder-panel.tsx` | Two-line H1: "Custom [line]" / "for [industry] brands." — defaults Packaging Solution × All; shareable `?line=` / `?industry=` |
-| Finder fullscreen | `heroFinderFullscreen` | `sections/hero-finder-fullscreen.tsx` → `ui/hero-finder-fullscreen-panel.tsx` | Same pickers; active result as 100svh background; push-dock rail (up to 2 previous category labels · detail card −100px · next peeks). **General** deck from Studio `defaultRail` (Product → … → Promo, each Select / Auto newest / Auto popular). **Specific** deck from rules (style → industry → case study) |
+| Finder fullscreen | `heroFinderFullscreen` | `sections/hero-finder-fullscreen.tsx` → `ui/hero-finder-fullscreen-panel.tsx` | Same pickers; active result as fullscreen background (image or muted video) under a 30% black wash; dock rail slides kinds under a fixed DetailCard. **General** deck from Studio `defaultRail` — ordered flexible items (rail label + catalogue doc or campaign + banner image/video). **Specific** deck from rules (style → industry → case study) |
 
 ### Spotlight slides
 
@@ -42,14 +42,19 @@ Editors pick the curated lines and industries. They never author pairs. Two **sy
 - **Packaging Solution** (`packaging-solution`) — first in the line picker; links to `/products`
 - **All** (`all`) — first in the industry picker; links to `/solutions`
 
-Those are the page defaults. For the current pair, `lib/sections/hero-finder-match.ts` shows:
+Those are the page defaults.
 
-1. **Packaging Solution × All** — first study among curated lines (editor order), else the All industries card
-2. **Specific line × All** — that line’s newest study, else All
-3. **Packaging Solution × industry** — the industry’s first related study, else the industry card
-4. **Specific × specific** — an industry **Related case study** whose **Products** include the line, else the industry’s first related study, else the line’s most recent study, else the industry card
+**General deck** (Packaging Solution × All only): Studio fills five buckets on the Finder hero — Products, Industries, Customizations, Expertise, Case studies — each max 3 refs with optional feature image/video (else document featured media). `railOrder` is business (array order) or random within each bucket. Concatenate buckets in that category order.
 
-The feature card’s kind label reflects that quality: **Case study** (true line match), **Related** (fallback or sentinel-derived), or **Industry** (no study). The industry picker keeps **All** first, then ranks curated options with a true line match ahead of the rest — all options stay selectable; the selection does not auto-jump when the line changes.
+**Specific deck** (any other pick), in order:
+
+1. **Products** — up to 3 `productStyle`s on the selected line (omit when line is Packaging Solution)
+2. **Industry** — selected industry and/or General industries with a true line match
+3. **Customization** — General customization list as-is (no catalogue join yet)
+4. **Expertise** — always the General expertise list
+5. **Case studies** — up to 3 relative to the pair (`pickFinderStudies`), preferring General case-study membership when present
+
+Case-study match quality for labels: **Case study** (true line match), **Related** (fallback / sentinel-derived), or **Industry** (no study). The industry picker keeps **All** first, then ranks curated options with a true line match ahead of the rest — all options stay selectable; the selection does not auto-jump when the line changes.
 
 ### Finder URL state
 
@@ -59,14 +64,14 @@ Picks sync to `?line=<slug>&industry=<slug>` via `lib/ui/use-query-param-state.t
 
 - Autoplay every 7s (the `Steps` contract): pointer or focus inside the hero pauses it, choosing a slide stops it, `prefers-reduced-motion` never starts it. The active pager track fills via `.motion-tab-progress`.
 - Copy uses `PageHeadingContent` with `settle`, so the build-in matches other heroes. The H1, CTAs and rating stay server-rendered; the stage and the Finder pickers are client islands.
-- Finder pickers are `@pakfactory/ui` `Select`s styled as muted inline chips (`bg-muted`) so they read as part of the H1 sentence. The H1 always breaks after the product-line picker onto a second line starting with the join word (`for`) + industry picker + trail. Options render in a portal, so the H1 text is only the sentence with the current picks.
-- Finder cards: product line is narrower on `md+`; the feature card is dominant. Media uses `MediaSettleZoom`; card remounts play `animate-page-enter` (skipped under `motion-reduce`).
-- Finder media rail: full-bleed `SectionCarousel` of `MediaCaptionCard`s from `buildFinderSlides` (active pair first, then curated lines / studies / industries — up to 8) so the track is scrollable for review.
+- Finder pickers are non-modal dropdown chips styled as muted inline chips (`bg-muted`) so they read as part of the H1 sentence. The H1 always breaks after the product-line picker onto a second line starting with the join word (`for`) + industry picker + trail.
+- Finder media rail: full-bleed `SectionCarousel` of `MediaCaptionCard`s from `buildFinderSlides` — **General** Studio buckets when Packaging Solution × All; **Specific** relatedness otherwise. Featured slot caption always on; peers reveal caption/video on hover. Card click (not drag) goes to the slide CTA.
+- Cover media fills the card edge-to-edge; product cut-outs keep settle + contain padding.
 
 ## Human setup (agents do not write documents)
 
 1. Deploy the Studio schema (`pnpm sanity:deploy:staging`, then prod once approved).
-2. In Studio → Home Page → Sections, insert one hero from the **Heroes** tab and move it to the top. Fill Headline, both buttons and 1–5 Spotlight items (or, for Finder / Finder fullscreen, 2–8 product lines and 2–8 industries). For **Finder fullscreen**, also fill **Default rail** seats (Select / Auto) used when Packaging Solution × All is selected.
+2. In Studio → Home Page → Sections, insert one hero from the **Heroes** tab and move it to the top. Fill Headline, both buttons and 1–5 Spotlight items (or, for Finder / Finder fullscreen, 2–8 product lines and 2–8 industries). For **Finder**, fill the **General** buckets (or run `seed:finder-general` — see below). For **Finder fullscreen**, fill **Default rail** flexible items for the same default pair.
 3. For Finder pairs to show the right study, make sure each industry's **Related case studies** and each case study's **Products** are filled.
 
 ## Rest of the homepage (PROD-2666)
@@ -85,13 +90,32 @@ Newly rendered on www (they existed in Studio but drew nothing). This applies on
 
 ### Seed (`seed:home-page`)
 
-Lays out the whole page above in order. Lists come from **real** dataset documents: clients with a logo, visible lines (images first), solutions with a page, recent case studies with a card image, listed expertise stages in end-to-end order, and up to 5 FAQs with scope "general". Benefits, Steps and Stats use copy approved on 2026-09-30; it lives in the `BENEFITS` / `STEPS` / `STATS` constants at the top of the script, so edit it there and re-run. The seed is idempotent (`seed-hero-*` / `seed-home-*` keys) and keeps any other sections after the seeded ones. Dry-run by default:
+Lays out the whole page above in order. Lists come from **real** dataset documents: clients with a logo, visible lines (images first), solutions with a page, recent case studies with a card image, listed expertise stages in end-to-end order, and up to 5 FAQs with scope "general". Heroes use stable keys `seed-hero-spotlight`, `seed-hero-full-bleed`, `seed-hero-finder`, and `seed-hero-finder-fullscreen` (same Finder pickers/copy; fullscreen also fills `defaultRail` as an ordered list of flexible items — catalogue refs for Product through Blog, plus a Promo campaign with banner image).
+
+**Migrating an existing Home** (keep current sections, only reshape `defaultRail` seats → flexible array):
+
+```bash
+pnpm --filter @pakfactory/studio run migrate:finder-fs-default-rail -- --dataset development
+pnpm --filter @pakfactory/studio run migrate:finder-fs-default-rail -- --dataset development --confirm
+```
+
+Benefits, Steps and Stats use copy approved on 2026-09-30; it lives in the `BENEFITS` / `STEPS` / `STATS` constants at the top of the script, so edit it there and re-run. The seed is idempotent (`seed-hero-*` / `seed-home-*` keys) and keeps any other sections after the seeded ones. Dry-run by default:
 
 ```bash
 pnpm --filter @pakfactory/studio run seed:home-page -- --dataset development
 pnpm --filter @pakfactory/studio run seed:home-page -- --dataset development --confirm
 ```
 
+### Seed General buckets only (`seed:finder-general`)
+
+Fills the five **General** arrays on the **first** `heroFinder` section already on `homePage` (published + draft if present). Does **not** reorder sections or rewrite other blocks — prefer this when the live Home layout must stay put. A full `seed:home-page` run still prepends seeded heroes and will reshuffle.
+
+```bash
+pnpm --filter @pakfactory/studio run seed:finder-general -- --dataset development
+pnpm --filter @pakfactory/studio run seed:finder-general -- --dataset development --confirm
+```
+
 Stats ships with two figures (3,000+ brands served, 4.6 Google rating). Add more in Studio or in `STATS`.
 
-Three heroes means three H1s. That is fine for a design review, not for launch. Keep one before publishing to production.
+Four review heroes mean four H1s. That is fine for a design review, not for launch. Keep one before publishing to production (e.g. move **Finder fullscreen** to the top and remove the extras).
+

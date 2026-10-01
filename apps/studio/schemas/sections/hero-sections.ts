@@ -11,6 +11,7 @@ import {
   heroCtaFields,
   heroEyebrowField,
   heroFinderDefaultRailField,
+  heroFinderGeneralRailFields,
   heroIntroField,
   heroShowReviewsField,
   heroSpotlightField,
@@ -194,9 +195,9 @@ export const heroFinder = defineType({
   type: 'object',
   icon: FilterIcon,
   description:
-    'Headline sentence with a product-line and an industry picker. Shows the picked line and a matching case study.',
+    'Headline sentence with a product-line and an industry picker. General rail buckets for Packaging Solution × All; specific picks use relatedness rules.',
   groups: sectionFieldGroups(),
-  fields: finderSharedFields(),
+  fields: [...finderSharedFields(), ...heroFinderGeneralRailFields()],
   preview: finderPreview('Finder hero'),
   components: { preview: SectionItemPreview },
 })

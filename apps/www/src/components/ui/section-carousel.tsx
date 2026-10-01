@@ -1,6 +1,7 @@
 'use client';
 
 import {
+    Children,
     useCallback,
     useEffect,
     useMemo,
@@ -8,6 +9,8 @@ import {
     type ReactNode,
 } from 'react';
 import Autoplay from 'embla-carousel-autoplay';
+import {Pause, Play} from 'lucide-react';
+import {Button} from '@pakfactory/ui/components/button';
 import {
     Carousel,
     CarouselContent,
@@ -22,13 +25,18 @@ export const SECTION_CAROUSEL_ITEM_CLASS =
     'h-auto w-[min(var(--container-md),85vw)] shrink-0 grow-0 basis-[min(var(--container-md),85vw)] self-stretch pl-6';
 
 /**
- * Finder hero rail — ~1 card on small screens, ~2 cards on `md+`
+ * Finder hero rail — one full card on small screens, ~2 cards on `md+`
  * (wider slides than {@link SECTION_CAROUSEL_ITEM_CLASS}).
+ * Tighter `pl-4` gutter than section rails (`pl-6`).
  */
 export const FINDER_CAROUSEL_ITEM_CLASS =
-    'h-auto shrink-0 grow-0 self-stretch pl-6 basis-[min(100%,calc(100vw-3rem))] md:basis-1/2';
-
+    'h-auto shrink-0 grow-0 self-stretch pl-4 basis-full md:basis-1/2';
 const AUTOPLAY_DELAY_MS = 4000;
+
+type SectionCarouselControls = 'arrows' | 'playPause';
+
+/** Slide gutter + matching content cancel margin. */
+type SectionCarouselSlideGap = 'section' | 'finder';
 
 type SectionCarouselProps = {
     header?: ReactNode;
@@ -44,8 +52,21 @@ type SectionCarouselProps = {
     setApi?: (api: CarouselApi) => void;
     /** Infinite wrap (Embla loop). Default false. */
     loop?: boolean;
-    /** Auto-advance every 4s; skipped when prefers-reduced-motion. Default false. */
+    /**
+     * Auto-advance every 4s; skipped when prefers-reduced-motion.
+     * Forced on when `controls="playPause"`. Default false.
+     */
     autoplay?: boolean;
+    /**
+     * Footer chrome: prev/next arrows (default) or Google-reviews-style
+     * pause/play for Finder.
+     */
+    controls?: SectionCarouselControls;
+    /**
+     * Gutter between slides. `section` = pl-6/-ml-6 (default);
+     * `finder` = pl-4/-ml-4 to match {@link FINDER_CAROUSEL_ITEM_CLASS}.
+     */
+    slideGap?: SectionCarouselSlideGap;
 };
 
 function prefersReducedMotion(): boolean {
@@ -68,11 +89,22 @@ export function SectionCarousel({
     setApi: setApiProp,
     loop = false,
     autoplay = false,
+    controls = 'arrows',
+    slideGap = 'section',
 }: SectionCarouselProps) {
     const [api, setApiState] = useState<CarouselApi>();
     const [canPrev, setCanPrev] = useState(false);
     const [canNext, setCanNext] = useState(false);
     const [reduceMotion, setReduceMotion] = useState(false);
+    const [paused, setPaused] = useState(false);
+
+    const slideCount = Children.count(children);
+    const playPause = controls === 'playPause';
+    const showPlayPause = playPause && !reduceMotion && slideCount > 1;
+    // playPause Finder rail: always loop when more than one slide so the
+    // two-up track never leaves an empty viewport beside first/last.
+    const effectiveLoop = playPause && slideCount > 1 ? true : loop;
+    const contentCancelClass = slideGap === 'finder' ? '-ml-4' : '-ml-6';
 
     useEffect(() => {
         setReduceMotion(prefersReducedMotion());
@@ -82,18 +114,20 @@ export function SectionCarousel({
         return () => mq.removeEventListener('change', onChange);
     }, []);
 
-    const enableAutoplay = autoplay && !reduceMotion;
+    const enableAutoplay =
+        (autoplay || playPause) && !reduceMotion && slideCount > 1;
 
     const plugins = useMemo(() => {
         if (!enableAutoplay) return undefined;
         return [
             Autoplay({
                 delay: AUTOPLAY_DELAY_MS,
-                stopOnInteraction: true,
+                // playPause: clicks must not kill the cycle; pause button owns stop.
+                stopOnInteraction: !playPause,
                 stopOnMouseEnter: true,
             }),
         ];
-    }, [enableAutoplay]);
+    }, [enableAutoplay, playPause]);
 
     const setApi = useCallback(
         (carouselApi: CarouselApi) => {
@@ -120,10 +154,34 @@ export function SectionCarousel({
         };
     }, [api, onSelect]);
 
+    // Keep Embla autoplay plugin in sync with the pause toggle.
+    useEffect(() => {
+        if (!api || !playPause || !enableAutoplay) return;
+        const autoplayPlugin = api.plugins()?.autoplay;
+        if (!autoplayPlugin) return;
+        if (paused) autoplayPlugin.stop();
+        else autoplayPlugin.play();
+    }, [api, paused, playPause, enableAutoplay]);
+
+    const togglePaused = useCallback(() => {
+        setPaused((value) => !value);
+    }, []);
+
+    const hasFooterChrome =
+        Boolean(footerStart || footerEnd) ||
+        controls === 'arrows' ||
+        showPlayPause;
+
     return (
         <Carousel
             setApi={setApi}
-            opts={{align: 'start', slidesToScroll: 1, loop}}
+            opts={{
+                align: 'start',
+                slidesToScroll: 1,
+                loop: effectiveLoop,
+                // Higher duration = slower ease (Embla default ~25).
+                ...(playPause ? {duration: 40} : {}),
+            }}
             plugins={plugins}
             className={cn(
                 'flex flex-col',
@@ -137,38 +195,77 @@ export function SectionCarousel({
                 <div className="relative right-1/2 left-1/2 -mr-[50vw] -ml-[50vw] w-screen max-w-[100vw]">
                     <CarouselContent
                         className={cn(
-                            '-ml-6',
-                            'pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))]',
-                            'pr-[var(--layout-gutter-outer)]',
+                            contentCancelClass,
+                            slideGap === 'finder'
+                                ? // Mobile: equal gutters so one `basis-full` card centers.
+                                  // `md+`: same full-bleed start padding as section rails.
+                                  'max-md:px-(--layout-gutter-outer) md:pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))] md:pr-(--layout-gutter-outer)'
+                                : [
+                                      'pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))]',
+                                      'pr-(--layout-gutter-outer)',
+                                  ],
                         )}
                     >
                         {children}
                     </CarouselContent>
                 </div>
 
-                <div
-                    className={cn(
-                        'flex flex-wrap items-center gap-4',
-                        footerStart || footerEnd
-                            ? 'justify-between'
-                            : 'justify-end',
-                    )}
-                >
-                    {footerStart ? (
-                        <div className="min-w-0">{footerStart}</div>
-                    ) : null}
-                    <div className="ml-auto flex flex-wrap items-center gap-4">
-                        {footerEnd}
-                        <CarouselNavButtons
-                            onPrev={() => api?.scrollPrev()}
-                            onNext={() => api?.scrollNext()}
-                            canPrev={loop || canPrev}
-                            canNext={loop || canNext}
-                            prevLabel={prevLabel}
-                            nextLabel={nextLabel}
-                        />
+                {hasFooterChrome ? (
+                    <div
+                        className={cn(
+                            'flex flex-wrap items-center gap-4',
+                            footerStart || footerEnd
+                                ? 'justify-between'
+                                : 'justify-end',
+                        )}
+                    >
+                        {footerStart ? (
+                            <div className="min-w-0">{footerStart}</div>
+                        ) : null}
+                        <div className="ml-auto flex flex-wrap items-center gap-4">
+                            {footerEnd}
+                            {controls === 'arrows' ? (
+                                <CarouselNavButtons
+                                    onPrev={() => api?.scrollPrev()}
+                                    onNext={() => api?.scrollNext()}
+                                    canPrev={effectiveLoop || canPrev}
+                                    canNext={effectiveLoop || canNext}
+                                    prevLabel={prevLabel}
+                                    nextLabel={nextLabel}
+                                />
+                            ) : null}
+                            {showPlayPause ? (
+                                <Button
+                                    type="button"
+                                    variant="default"
+                                    size="icon"
+                                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                                    aria-pressed={paused}
+                                    aria-label={
+                                        paused
+                                            ? 'Play results'
+                                            : 'Pause results'
+                                    }
+                                    onClick={togglePaused}
+                                >
+                                    {paused ? (
+                                        <Play
+                                            className="size-4"
+                                            fill="currentColor"
+                                            aria-hidden
+                                        />
+                                    ) : (
+                                        <Pause
+                                            className="size-4"
+                                            fill="currentColor"
+                                            aria-hidden
+                                        />
+                                    )}
+                                </Button>
+                            ) : null}
+                        </div>
                     </div>
-                </div>
+                ) : null}
             </div>
         </Carousel>
     );

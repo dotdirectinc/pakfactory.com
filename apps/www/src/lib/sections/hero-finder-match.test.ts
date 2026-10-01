@@ -15,25 +15,37 @@ import {
     withFinderSentinels,
 } from './hero-finder-match';
 import type {
+    HeroFinderGeneralEntry,
+    HeroFinderGeneralRail,
     HeroFinderIndustry,
     HeroFinderLine,
     HeroFinderStudy,
 } from './map-hero';
 
-const study = (id: string, lineIds: string[] = []): HeroFinderStudy => ({
+const study = (
+    id: string,
+    lineIds: string[] = [],
+    extras: Partial<HeroFinderStudy> = {},
+): HeroFinderStudy => ({
     id,
     title: id,
     href: `/case-studies/${id}`,
     image: {src: 'https://cdn.sanity.io/x.jpg', alt: id},
     lineIds,
+    ...extras,
 });
 
-const line = (id: string, studies: HeroFinderStudy[] = []): HeroFinderLine => ({
+const line = (
+    id: string,
+    studies: HeroFinderStudy[] = [],
+    extras: Partial<HeroFinderLine> = {},
+): HeroFinderLine => ({
     id,
     slug: id,
     title: id,
     href: `/products/${id}`,
     studies,
+    ...extras,
 });
 
 const industry = (
@@ -45,6 +57,31 @@ const industry = (
     title: id,
     href: `/solutions/${id}`,
     studies,
+});
+
+const generalEntry = (
+    id: string,
+    kindLabel: string,
+    extras: Partial<HeroFinderGeneralEntry> = {},
+): HeroFinderGeneralEntry => ({
+    id,
+    kindLabel,
+    title: id,
+    imageFit: 'cover',
+    link: {label: 'Learn more', href: `/${id}`},
+    ...extras,
+});
+
+const generalRail = (
+    extras: Partial<HeroFinderGeneralRail> = {},
+): HeroFinderGeneralRail => ({
+    railOrder: 'business',
+    products: [],
+    industries: [],
+    customizations: [],
+    expertise: [],
+    caseStudies: [],
+    ...extras,
 });
 
 describe('pickFinderStudy (PROD-2666)', () => {
@@ -244,36 +281,71 @@ describe('finderFeatureKind (PROD-2666)', () => {
 });
 
 describe('buildFinderSlides (PROD-2666)', () => {
-    it('builds a scrollable rail for Packaging Solution × All', () => {
-        const curatedLines = [
-            line('mailer', [study('m1')]),
-            line('rigid', [study('r1')]),
-            line('tube', [study('t1')]),
-        ];
-        const curatedIndustries = [industry('beauty'), industry('apparel')];
+    it('uses Studio General buckets for Packaging Solution × All', () => {
+        const rail = generalRail({
+            products: [generalEntry('mailer', 'Product', {imageFit: 'contain'})],
+            industries: [generalEntry('beauty', 'Industry')],
+            expertise: [generalEntry('design', 'Expertise')],
+            caseStudies: [generalEntry('cs1', 'Case study')],
+        });
         const slides = buildFinderSlides({
             line: packagingSolutionLine(),
             industry: allIndustriesOption(),
-            curatedLines,
-            curatedIndustries,
+            curatedLines: [line('mailer', [study('m1')])],
+            curatedIndustries: [industry('beauty')],
+            generalRail: rail,
         });
-        assert.ok(slides.length >= 4);
-        assert.equal(slides[0]?.id, `line-${packagingSolutionLine().id}`);
-        assert.ok(slides.some((slide) => slide.id === 'study-m1'));
-        assert.ok(slides.some((slide) => slide.id.startsWith('industry-')));
+        assert.equal(slides[0]?.id, 'general-product-mailer');
+        assert.ok(slides.some((slide) => slide.id === 'general-industry-beauty'));
+        assert.ok(slides.some((slide) => slide.id === 'general-expertise-design'));
+        assert.ok(slides.some((slide) => slide.id === 'general-case-study-cs1'));
+        assert.ok(!slides.some((slide) => slide.id === 'study-m1'));
     });
 
-    it('dedupes and caps the rail', () => {
-        const manyLines = Array.from({length: 12}, (_, i) =>
-            line(`line-${i}`, [study(`s-${i}`)]),
-        );
+    it('Specific line shows up to 3 styles then relative case studies', () => {
+        const styles = [
+            {id: 's1', title: 'S1', slug: 's1'},
+            {id: 's2', title: 'S2', slug: 's2'},
+            {id: 's3', title: 'S3', slug: 's3'},
+            {id: 's4', title: 'S4', slug: 's4'},
+        ];
         const slides = buildFinderSlides({
-            line: packagingSolutionLine(),
+            line: line('mailer', [study('m1'), study('m2')], {styles}),
             industry: allIndustriesOption(),
-            curatedLines: manyLines,
+            curatedLines: [line('mailer', [study('m1'), study('m2')], {styles})],
+            curatedIndustries: [industry('beauty', [study('b1', ['mailer'])])],
+            generalRail: generalRail({
+                expertise: [generalEntry('design', 'Expertise')],
+                industries: [generalEntry('beauty', 'Industry')],
+            }),
+        });
+        const styleSlides = slides.filter((slide) => slide.id.startsWith('style-'));
+        assert.equal(styleSlides.length, 3);
+        assert.ok(slides.some((slide) => slide.id === 'general-expertise-design'));
+        assert.ok(slides.some((slide) => slide.id === 'study-m1'));
+        assert.ok(slides.some((slide) => slide.id === 'industry-beauty'));
+    });
+
+    it('uses case study summary as excerpt and omits stat', () => {
+        const featured = study('hello-adorn', ['mailer'], {
+            title: 'From Mailer to Reveal',
+            summary: 'Two-format unboxing for Hello Adorn.',
+            clientName: 'Hello Adorn',
+            stat: {value: '40%', label: 'Fewer damage claims'},
+        });
+        const slides = buildFinderSlides({
+            line: line('mailer', [featured]),
+            industry: allIndustriesOption(),
+            curatedLines: [line('mailer', [featured])],
             curatedIndustries: [],
         });
-        assert.ok(slides.length <= 8);
-        assert.equal(new Set(slides.map((s) => s.id)).size, slides.length);
+        const studySlide = slides.find((slide) => slide.id === 'study-hello-adorn');
+        assert.ok(studySlide);
+        assert.equal(studySlide.title, 'From Mailer to Reveal');
+        assert.equal(
+            studySlide.description,
+            'Two-format unboxing for Hello Adorn.',
+        );
+        assert.equal(studySlide.stat, undefined);
     });
 });

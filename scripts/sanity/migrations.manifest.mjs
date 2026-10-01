@@ -440,6 +440,22 @@ export const MIGRATIONS = [
     probe: `count(*[_type == "customizationOption" &&
       status in ["coming-soon", "discontinued"]]) == 0`,
   },
+  {
+    id: '20260930-finder-fs-default-rail',
+    ticket: 'PROD-2666',
+    title:
+      'Finder fullscreen defaultRail: fixed seats object → flexible item array',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:finder-fs-default-rail',
+    script: 'apps/studio/scripts/migrate-finder-fullscreen-default-rail.mjs',
+    args: 'flags',
+    // Asserts the OLD seat object is gone (product.fillMode only existed on the
+    // legacy shape). homePage (not page) hosts the Home sections; already-array
+    // rails do not define defaultRail.product.fillMode.
+    probe: `count(*[defined(sections) && count(sections[
+      _type == "heroFinderFullscreen" && defined(defaultRail.product.fillMode)
+    ]) > 0]) == 0`,
+  },
 ]
 
 /**
@@ -497,6 +513,7 @@ export const TASKS = [
   { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
   { task: 'seed:home-page', pkg: '@pakfactory/studio', why: 'idempotent Home layout seed (PROD-2666); stable seed-hero-*/seed-home-* keys, picks real docs' },
+  { task: 'seed:finder-general', pkg: '@pakfactory/studio', why: 'surgical General-rail buckets on existing heroFinder; preserves section order' },
   { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },
