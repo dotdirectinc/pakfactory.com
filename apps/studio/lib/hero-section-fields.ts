@@ -93,6 +93,326 @@ export function heroShowReviewsField() {
   })
 }
 
+const RAIL_CATALOGUE_TYPES = [
+  {type: 'productLine'},
+  {type: 'solution'},
+  {type: 'expertiseStage'},
+  {type: 'customizationType'},
+  {type: 'caseStudy'},
+  {type: 'post'},
+] as const
+
+/**
+ * One General-deck bucket item for simple Finder — catalogue ref plus optional
+ * feature image/video (falls back to the document’s featured media on www).
+ */
+function heroFinderGeneralBucketItemFields(to: {type: string}[], filter?: string) {
+  return [
+    defineField({
+      name: 'item',
+      title: 'Document',
+      type: 'reference',
+      to,
+      options: {
+        disableNew: true,
+        ...(filter ? {filter} : {}),
+      },
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'featureImage',
+      title: 'Feature image',
+      type: 'image',
+      options: {hotspot: true},
+      description:
+        'Optional card image. Leave empty to use the document’s featured / card image.',
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+        }),
+      ],
+    }),
+    defineField({
+      name: 'featureVideo',
+      title: 'Feature video',
+      type: 'featuredVideo',
+      description:
+        'Optional ambient MP4 (upload or URL). YouTube is stored but the still is used for hover playback.',
+    }),
+  ]
+}
+
+function heroFinderGeneralBucketField({
+  name,
+  title,
+  description,
+  to,
+  filter,
+  kindLabel,
+}: {
+  name: string
+  title: string
+  description: string
+  to: {type: string}[]
+  filter?: string
+  kindLabel: string
+}) {
+  return defineField({
+    name,
+    title,
+    type: 'array',
+    group: SECTION_GROUPS.content,
+    description,
+    of: [
+      defineArrayMember({
+        type: 'object',
+        name: 'finderGeneralItem',
+        title: kindLabel,
+        fields: heroFinderGeneralBucketItemFields(to, filter),
+        preview: {
+          select: {
+            title: 'item.title',
+            shortName: 'item.shortName',
+            media: 'featureImage',
+            fallback: 'item.featuredImage',
+            card: 'item.cardImage',
+          },
+          prepare({title, shortName, media, fallback, card}) {
+            return {
+              title: shortName || title || kindLabel,
+              subtitle: kindLabel,
+              media: media || fallback || card,
+            }
+          },
+        },
+      }),
+    ],
+    validation: (Rule) => Rule.max(3),
+  })
+}
+
+/**
+ * Simple Finder General deck (Packaging Solution × All) — five typed buckets,
+ * max 3 each, plus rail order. Specific picks use relatedness rules on www.
+ */
+export function heroFinderGeneralRailFields() {
+  return [
+    defineField({
+      name: 'railOrder',
+      title: 'General rail order',
+      type: 'string',
+      group: SECTION_GROUPS.content,
+      options: {
+        list: [
+          {title: 'Business priorities (array order)', value: 'business'},
+          {title: 'Random within each category', value: 'random'},
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'business',
+      description:
+        'How items are ordered inside each General category when both pickers are defaults. Specific picks keep stable relatedness order.',
+    }),
+    heroFinderGeneralBucketField({
+      name: 'generalProducts',
+      title: 'General — Products',
+      kindLabel: 'Product',
+      description:
+        'Up to 3 product lines for Packaging Solution × All. Shown first in the media rail.',
+      to: [{type: 'productLine'}],
+      filter: '(!defined(status) || status == "active") && customerFacing != false',
+    }),
+    heroFinderGeneralBucketField({
+      name: 'generalIndustries',
+      title: 'General — Industries',
+      kindLabel: 'Industry',
+      description: 'Up to 3 industries (solutions with a page) for the default rail.',
+      to: [{type: 'solution'}],
+      filter: 'hasPage == true',
+    }),
+    heroFinderGeneralBucketField({
+      name: 'generalCustomizations',
+      title: 'General — Customizations',
+      kindLabel: 'Customization',
+      description: 'Up to 3 customization types for the default rail.',
+      to: [{type: 'customizationType'}],
+    }),
+    heroFinderGeneralBucketField({
+      name: 'generalExpertise',
+      title: 'General — Expertise',
+      kindLabel: 'Expertise',
+      description:
+        'Up to 3 expertise stages. Also used when the visitor picks a specific line or industry.',
+      to: [{type: 'expertiseStage'}],
+    }),
+    heroFinderGeneralBucketField({
+      name: 'generalCaseStudies',
+      title: 'General — Case studies',
+      kindLabel: 'Case study',
+      description: 'Up to 3 case studies for Packaging Solution × All.',
+      to: [{type: 'caseStudy'}],
+    }),
+  ]
+}
+
+/**
+ * Default rail for Finder fullscreen when both pickers are sentinels
+ * (Packaging Solution × All). Editor-ordered flexible items — not fixed seats.
+ */
+export function heroFinderDefaultRailField() {
+  return defineField({
+    name: 'defaultRail',
+    title: 'Default rail (Packaging Solution × All)',
+    type: 'array',
+    group: SECTION_GROUPS.content,
+    description:
+      'Used only when both pickers are defaults. Add items in display order: each has a rail label, a catalogue document or manual campaign, and banner media (image or video) for the fullscreen background. Specific line/industry picks use automatic matching — not this list.',
+    of: [
+      defineArrayMember({
+        type: 'object',
+        name: 'finderRailItem',
+        title: 'Rail item',
+        fields: [
+          defineField({
+            name: 'kindLabel',
+            title: 'Rail label',
+            type: 'string',
+            description: 'Short category text on the rail (e.g. Product, Blog, Launch).',
+            validation: (Rule) => Rule.required().max(40),
+          }),
+          defineField({
+            name: 'source',
+            title: 'Content source',
+            type: 'string',
+            options: {
+              list: [
+                {title: 'Catalogue document', value: 'catalogue'},
+                {title: 'Manual campaign', value: 'campaign'},
+              ],
+              layout: 'radio',
+            },
+            initialValue: 'catalogue',
+            validation: (Rule) => Rule.required(),
+          }),
+          defineField({
+            name: 'item',
+            title: 'Document',
+            type: 'reference',
+            to: [...RAIL_CATALOGUE_TYPES],
+            options: {disableNew: true},
+            hidden: ({parent}) => parent?.source !== 'catalogue',
+            description: 'Product, solution, expertise, customization, case study, or blog post.',
+            validation: (Rule) =>
+              Rule.custom((value, context) => {
+                const parent = context.parent as {source?: string} | undefined
+                if (parent?.source === 'catalogue' && !value) {
+                  return 'Pick a catalogue document, or switch to Manual campaign.'
+                }
+                return true
+              }),
+          }),
+          defineField({
+            name: 'title',
+            title: 'Title',
+            type: 'string',
+            description:
+              'Card title. Required for manual campaigns; optional override when using a catalogue document.',
+            validation: (Rule) =>
+              Rule.max(80).custom((value, context) => {
+                const parent = context.parent as {source?: string} | undefined
+                if (parent?.source === 'campaign' && !value?.trim()) {
+                  return 'Title is required for a manual campaign.'
+                }
+                return true
+              }),
+          }),
+          defineField({
+            name: 'description',
+            title: 'Description',
+            type: 'text',
+            rows: 2,
+            description: 'Optional card body. Overrides catalogue summary when set.',
+            validation: (Rule) => Rule.max(160),
+          }),
+          defineField({
+            name: 'link',
+            title: 'Link',
+            type: 'object',
+            description:
+              'Optional CTA. For catalogue items, leave empty to use the document’s default page.',
+            fields: [
+              defineField({
+                name: 'label',
+                title: 'Link label',
+                type: 'string',
+              }),
+              ...sectionLinkTargetFields(),
+            ],
+          }),
+          defineField({
+            name: 'bannerType',
+            title: 'Banner media',
+            type: 'string',
+            options: {
+              list: [
+                {title: 'Image', value: 'image'},
+                {title: 'Video', value: 'video'},
+              ],
+              layout: 'radio',
+            },
+            initialValue: 'image',
+            description:
+              'Fullscreen background when this item is active. Catalogue items fall back to the document image if banner media is empty.',
+            validation: (Rule) => Rule.required(),
+          }),
+          defineField({
+            name: 'bannerImage',
+            title: 'Banner image',
+            type: 'image',
+            options: {hotspot: true},
+            hidden: ({parent}) => parent?.bannerType !== 'image',
+            fields: [
+              defineField({
+                name: 'alt',
+                title: 'Alt text',
+                type: 'string',
+              }),
+            ],
+          }),
+          defineField({
+            name: 'bannerVideo',
+            title: 'Banner video',
+            type: 'featuredVideo',
+            hidden: ({parent}) => parent?.bannerType !== 'video',
+            description:
+              'Upload or CDN URL play as a muted looping background. YouTube is stored but the still image is used for ambient playback.',
+          }),
+        ],
+        preview: {
+          select: {
+            kindLabel: 'kindLabel',
+            title: 'title',
+            source: 'source',
+            media: 'bannerImage',
+          },
+          prepare({kindLabel, title, source, media}) {
+            return {
+              title: kindLabel || 'Rail item',
+              subtitle:
+                title ||
+                (source === 'campaign' ? 'Manual campaign' : 'Catalogue document'),
+              media,
+            }
+          },
+        },
+      }),
+    ],
+    validation: (Rule) => Rule.min(1).max(12),
+  })
+}
+
 /**
  * Spotlight items — what rotates beside (or behind) the fixed headline.
  * Mixed array (ADR-020 §7): pick a catalogue document, or add a free-form

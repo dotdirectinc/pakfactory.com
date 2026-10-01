@@ -37,7 +37,7 @@ export function HeroFinder({content, id = 'hero'}: HeroFinderProps) {
 
     return (
         <section id={id} aria-labelledby={titleId} className="scroll-mt-32">
-            <PageDielineSection as="div" borderBottom paddingBlock="sm">
+            <PageDielineSection as="div" borderBottom paddingBlock="md">
                 <HeroFinderPanel content={content} titleId={titleId} actions={actions} />
             </PageDielineSection>
         </section>

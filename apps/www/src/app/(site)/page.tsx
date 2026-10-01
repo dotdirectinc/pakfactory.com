@@ -25,6 +25,7 @@ const HERO_SECTION_TYPES = new Set([
     'heroSpotlight',
     'heroSpotlightFullBleed',
     'heroFinder',
+    'heroFinderFullscreen',
 ]);
 
 /** One fetch per request for metadata + page (Studio singleton `homePage`). */

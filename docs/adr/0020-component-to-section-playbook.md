@@ -127,7 +127,7 @@ Editors find sections by **core CMS entity**, not inventory jargon (Proof / Cata
 
 | Tab `name` | Tab title | Section `_type`s |
 | ---------- | --------- | ---------------- |
-| `hero` | Heroes | `heroSpotlight`, `heroSpotlightFullBleed`, `heroFinder` — **Home only** (PROD-2666) |
+| `hero` | Heroes | `heroSpotlight`, `heroSpotlightFullBleed`, `heroFinder`, `heroFinderFullscreen` — **Home only** (PROD-2666) |
 | `solution` | Solutions | `solutionsRow`, `inspirationsGrid` |
 | `caseStudy` | Case studies | `caseStudiesRow`, `videoCaseStudiesRow` |
 | `product` | Products | `productLinesRow`, `productStylesRow`, `productsRow`, `bundlesRow` |
@@ -266,13 +266,14 @@ Second proof of the playbook: `/expertise/[slug]`, starting with Strategy (Consu
 
 ## Home hero sections (PROD-2666)
 
-The homepage is the one page whose hero is a Section: `homePage` has no route-owned hero fields — the page *is* its `sections[]` (content model `Entities/Home Page.md`). Three hero `_type`s, allowed on Home only (`SECTION_ALLOW.home` → Heroes tab). The layout is the editor's choice of `_type`, never a field (D35); all three share one copy shape (eyebrow · headline · intro · primary/secondary CTA with a note · Google rating toggle).
+The homepage is the one page whose hero is a Section: `homePage` has no route-owned hero fields — the page *is* its `sections[]` (content model `Entities/Home Page.md`). Four hero `_type`s, allowed on Home only (`SECTION_ALLOW.home` → Heroes tab). The layout is the editor's choice of `_type`, never a field (D35); all four share one copy shape (eyebrow · headline · intro · primary/secondary CTA with a note · Google rating toggle). Finder and Finder fullscreen also share product-line / industry pickers; fullscreen adds a Studio **default rail** for Packaging Solution × All.
 
 | `_type` | Studio title | React | Content |
 | ------- | ------------ | ----- | ------- |
 | `heroSpotlight` | Spotlight hero | `HeroSpotlight` | Copy left; `spotlight[]` (1–5) rotates right — mixed `caseStudy` / `productLine` / `productStyle` / `solution` ref \| typed `heroSpotlightCampaign` |
 | `heroSpotlightFullBleed` | Full-bleed hero | `HeroSpotlightFullBleed` | Same fields as Spotlight; active slide fills the band, copy over a scrim |
 | `heroFinder` | Finder hero | `HeroFinder` | Headline sentence with two pickers (`productLines[]` × `industries[]`); case study per pair is derived (`pickFinderStudy`); industry options with a line match rank first; picks share via `?line=` / `?industry=` |
+| `heroFinderFullscreen` | Finder fullscreen hero | `HeroFinderFullscreen` | Same pickers as Finder; active slide is fullscreen background (image or muted video) under black/30; kinds slide under a fixed DetailCard dock. General deck from Studio `defaultRail` array (flexible items: label + catalogue/campaign + banner media); Specific deck from rules (style → industry → study) |
 
 Rules: the H1, CTAs and rating never rotate; slides that point at hidden catalogue targets are dropped with `isCatalogTargetVisible`; autoplay follows the `Steps` contract (pause on pointer/focus, stop on select, off under reduced motion). `/` renders a plain fallback heading only while no hero section exists. How-built: [`apps/www/docs/home-hero-sections.md`](../../apps/www/docs/home-hero-sections.md).
 

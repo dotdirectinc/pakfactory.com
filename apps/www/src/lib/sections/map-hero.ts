@@ -3,6 +3,8 @@ import type {
     PageSectionHeroCopyFields,
     PageSectionHeroCtaDoc,
     PageSectionHeroFinderDoc,
+    PageSectionHeroFinderGeneralEntryDoc,
+    PageSectionHeroFinderRailItemDoc,
     PageSectionHeroSpotlightDoc,
     PageSectionHeroSpotlightSlideDoc,
     PageSectionLinkDoc,
@@ -11,7 +13,10 @@ import {isCatalogTargetVisible} from '@pakfactory/sanity/catalog-visibility';
 import {stegaClean} from 'next-sanity';
 
 import {resolveSectionLinkHref} from '@/lib/resolve-www-nav-href';
+import {buildFinderFullscreenGeneralSlides} from '@/lib/sections/hero-finder-fullscreen-match';
+import type {FinderFullscreenSlide} from '@/lib/sections/hero-finder-fullscreen-match';
 import {
+    expertiseHref,
     productHref,
     productStyleHref,
     solutionHref,
@@ -73,7 +78,11 @@ export type HeroFinderStudy = {
     title: string;
     href: string;
     clientName?: string;
+    /** Case study card summary / excerpt for Finder captions. */
+    summary?: string;
     image: HeroImage;
+    /** Muted loop from case-study `previewVideo`. */
+    videoSrc?: string;
     stat?: {value: string; label?: string};
     lineIds: string[];
 };
@@ -86,7 +95,18 @@ export type HeroFinderLine = {
     description?: string;
     href: string;
     image?: HeroImage;
+    /** Muted loop from product-line `featuredVideo` (upload/url). */
+    videoSrc?: string;
     studies: HeroFinderStudy[];
+    /** Popular / recent styles on the line (Specific Products bucket). */
+    styles?: {
+        id: string;
+        title: string;
+        slug: string;
+        description?: string;
+        image?: HeroImage;
+        videoSrc?: string;
+    }[];
 };
 
 export type HeroFinderIndustry = {
@@ -100,12 +120,42 @@ export type HeroFinderIndustry = {
     studies: HeroFinderStudy[];
 };
 
+/** One Studio General-bucket card (Packaging Solution × All). */
+export type HeroFinderGeneralEntry = {
+    id: string;
+    kindLabel: string;
+    title: string;
+    description?: string;
+    image?: HeroImage;
+    videoSrc?: string;
+    imageFit: 'contain' | 'cover';
+    link: {label: string; href: string};
+    /** Case-study product line refs — used when preferring General studies in Specific. */
+    lineIds?: string[];
+};
+
+export type HeroFinderGeneralRail = {
+    railOrder: 'business' | 'random';
+    products: HeroFinderGeneralEntry[];
+    industries: HeroFinderGeneralEntry[];
+    customizations: HeroFinderGeneralEntry[];
+    expertise: HeroFinderGeneralEntry[];
+    caseStudies: HeroFinderGeneralEntry[];
+};
+
 export type HeroFinderContent = HeroCopyContent & {
     headingLead: string;
     headingJoin: string;
     headingTrail?: string;
     lines: HeroFinderLine[];
     industries: HeroFinderIndustry[];
+    /** Studio General buckets — only used when both pickers are sentinels. */
+    generalRail?: HeroFinderGeneralRail;
+};
+
+/** Fullscreen Finder — same pickers plus pre-built General deck from Studio seats. */
+export type HeroFinderFullscreenContent = HeroFinderContent & {
+    generalSlides: FinderFullscreenSlide[];
 };
 
 const KIND_LABEL: Record<HeroSlideKind, string> = {
@@ -295,6 +345,8 @@ function mapStudy(
     const imageSrc = trimmed(study.imageSrc);
     if (!id || !title || !href || !imageSrc) return null;
     const clientName = trimmed(study.clientName);
+    const summary = trimmed(study.summary);
+    const videoSrc = trimmed(study.videoSrc);
     const stat = mapStat(study);
     return {
         id,
@@ -305,6 +357,8 @@ function mapStudy(
             .map((lineId) => trimmed(lineId))
             .filter((lineId): lineId is string => Boolean(lineId)),
         ...(clientName ? {clientName} : {}),
+        ...(summary ? {summary} : {}),
+        ...(videoSrc ? {videoSrc} : {}),
         ...(stat ? {stat} : {}),
     };
 }
@@ -342,16 +396,45 @@ export function mapHeroFinder(
         }
         const imageSrc = trimmed(line.imageSrc);
         const description = trimmed(line.description);
+        const videoSrc = trimmed(line.videoSrc);
+        const styles = (line.styles ?? [])
+            .map((style) => {
+                const styleId = trimmed(style?._id);
+                const styleTitle = trimmed(style?.title);
+                const styleSlug = trimmed(style?.slug);
+                if (!styleId || !styleTitle || !styleSlug) return null;
+                const styleImageSrc = trimmed(style.imageSrc);
+                const styleDescription = trimmed(style.description);
+                const styleVideoSrc = trimmed(style.videoSrc);
+                return {
+                    id: styleId,
+                    title: styleTitle,
+                    slug: styleSlug,
+                    ...(styleDescription ? {description: styleDescription} : {}),
+                    ...(styleImageSrc
+                        ? {
+                              image: {
+                                  src: styleImageSrc,
+                                  alt: trimmed(style.imageAlt) || styleTitle,
+                              },
+                          }
+                        : {}),
+                    ...(styleVideoSrc ? {videoSrc: styleVideoSrc} : {}),
+                };
+            })
+            .filter((style): style is NonNullable<typeof style> => Boolean(style));
         lines.push({
             id,
             slug,
             title,
             href: productHref(slug),
             studies: mapStudies(line.studies),
+            ...(styles.length > 0 ? {styles} : {}),
             ...(imageSrc
                 ? {image: {src: imageSrc, alt: trimmed(line.imageAlt) || title}}
                 : {}),
             ...(description ? {description} : {}),
+            ...(videoSrc ? {videoSrc} : {}),
         });
     }
 
@@ -385,6 +468,11 @@ export function mapHeroFinder(
     if (lines.length === 0 || industries.length === 0) return null;
 
     const headingTrail = trimmed(section.headingTrail);
+    const generalRail =
+        section._type === 'heroFinder'
+            ? mapGeneralRail(section)
+            : undefined;
+
     return {
         ...mapCopy(section),
         headingLead,
@@ -392,5 +480,169 @@ export function mapHeroFinder(
         ...(headingTrail ? {headingTrail} : {}),
         lines,
         industries,
+        ...(generalRail ? {generalRail} : {}),
+    };
+}
+
+function hrefForGeneralItem(
+    item: PageSectionHeroFinderRailItemDoc,
+): string | undefined {
+    const slug = trimmed(item.slug);
+    const type = clean(item._type);
+    if (!slug || !type) return undefined;
+    switch (type) {
+        case 'productLine':
+            return productHref(slug);
+        case 'solution':
+            return solutionHref(slug);
+        case 'expertiseStage':
+            return expertiseHref(slug);
+        case 'customizationType':
+            return WWW_ROUTES.customizations;
+        case 'caseStudy':
+            return `${WWW_ROUTES.caseStudies}/${slug}`;
+        default:
+            return undefined;
+    }
+}
+
+function defaultLinkLabelForItem(
+    item: PageSectionHeroFinderRailItemDoc,
+    title: string,
+): string {
+    const type = clean(item._type);
+    if (type === 'caseStudy') return 'Read case study';
+    if (type === 'productLine') return `Explore ${title.toLowerCase()}`;
+    if (type === 'solution') return `See ${title} packaging`;
+    if (type === 'customizationType') return 'Explore customizations';
+    if (type === 'expertiseStage') return 'See how we work';
+    return 'Learn more';
+}
+
+function imageFitForGeneralItem(
+    item: PageSectionHeroFinderRailItemDoc,
+): 'contain' | 'cover' {
+    const type = clean(item._type);
+    if (type === 'productLine' || type === 'customizationType') return 'contain';
+    return 'cover';
+}
+
+function mapGeneralEntry(
+    entry: PageSectionHeroFinderGeneralEntryDoc | null | undefined,
+    kindLabel: string,
+): HeroFinderGeneralEntry | null {
+    const item = entry?.item;
+    if (!item) return null;
+    const id = trimmed(item._id);
+    const title = trimmed(item.title);
+    if (!id || !title) return null;
+    if (
+        !isCatalogTargetVisible({
+            _type: clean(item._type),
+            status: clean(item.status) ?? null,
+            customerFacing: item.customerFacing,
+            hasPage: item.hasPage,
+        })
+    ) {
+        return null;
+    }
+    const href = hrefForGeneralItem(item);
+    if (!href) return null;
+
+    const featureSrc = trimmed(entry?.featureImageSrc);
+    const itemSrc = trimmed(item.imageSrc);
+    const imageSrc = featureSrc || itemSrc;
+    const videoSrc =
+        trimmed(entry?.featureVideoUrl) || trimmed(item.videoSrc);
+    const description = trimmed(item.description);
+    const lineIds = (item.lineIds ?? [])
+        .map((lineId) => trimmed(lineId))
+        .filter((lineId): lineId is string => Boolean(lineId));
+
+    return {
+        id,
+        kindLabel,
+        title,
+        ...(description ? {description} : {}),
+        imageFit: imageFitForGeneralItem(item),
+        link: {label: defaultLinkLabelForItem(item, title), href},
+        ...(imageSrc
+            ? {
+                  image: {
+                      src: imageSrc,
+                      alt:
+                          trimmed(entry?.featureImageAlt) ||
+                          trimmed(item.imageAlt) ||
+                          title,
+                  },
+              }
+            : {}),
+        ...(videoSrc ? {videoSrc} : {}),
+        ...(lineIds.length > 0 ? {lineIds} : {}),
+    };
+}
+
+function mapGeneralBucket(
+    entries: PageSectionHeroFinderGeneralEntryDoc[] | null | undefined,
+    kindLabel: string,
+): HeroFinderGeneralEntry[] {
+    const out: HeroFinderGeneralEntry[] = [];
+    const seen = new Set<string>();
+    for (const entry of entries ?? []) {
+        if (out.length >= 3) break;
+        const mapped = mapGeneralEntry(entry, kindLabel);
+        if (!mapped || seen.has(mapped.id)) continue;
+        seen.add(mapped.id);
+        out.push(mapped);
+    }
+    return out;
+}
+
+function mapGeneralRail(
+    section: PageSectionHeroFinderDoc,
+): HeroFinderGeneralRail | undefined {
+    const products = mapGeneralBucket(section.generalProducts, 'Product');
+    const industries = mapGeneralBucket(section.generalIndustries, 'Industry');
+    const customizations = mapGeneralBucket(
+        section.generalCustomizations,
+        'Customization',
+    );
+    const expertise = mapGeneralBucket(section.generalExpertise, 'Expertise');
+    const caseStudies = mapGeneralBucket(
+        section.generalCaseStudies,
+        'Case study',
+    );
+    if (
+        products.length === 0 &&
+        industries.length === 0 &&
+        customizations.length === 0 &&
+        expertise.length === 0 &&
+        caseStudies.length === 0
+    ) {
+        return undefined;
+    }
+    const railOrder =
+        clean(section.railOrder) === 'random' ? 'random' : 'business';
+    return {
+        railOrder,
+        products,
+        industries,
+        customizations,
+        expertise,
+        caseStudies,
+    };
+}
+
+/** `heroFinderFullscreen` — Finder content + Studio default-rail General deck. */
+export function mapHeroFinderFullscreen(
+    section: PageSectionHeroFinderDoc,
+): HeroFinderFullscreenContent | null {
+    if (section._type !== 'heroFinderFullscreen') return null;
+    const base = mapHeroFinder(section);
+    if (!base) return null;
+
+    return {
+        ...base,
+        generalSlides: buildFinderFullscreenGeneralSlides(section),
     };
 }

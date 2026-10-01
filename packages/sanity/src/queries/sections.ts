@@ -4,7 +4,10 @@
  * (+ cheap scalars) for allowlisted inventory until later mappers land.
  */
 
-import {FEATURED_VIDEO_URL_FIELD} from './featured-video';
+import {
+    FEATURED_VIDEO_URL_FIELD,
+    FEATURED_VIDEO_URL_GROQ,
+} from './featured-video';
 
 export {FEATURED_VIDEO_URL_FIELD};
 
@@ -239,7 +242,7 @@ const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
   }
 }`;
 
-/** Finder hero product-line option — plus recent studies that cover the line. */
+/** Finder hero product-line option — plus recent studies and styles for the line. */
 const HERO_FINDER_LINE = /* groq */ `{
   _id,
   _type,
@@ -250,7 +253,18 @@ const HERO_FINDER_LINE = /* groq */ `{
   "description": shortDescription,
   "imageSrc": featuredImage.asset->url,
   "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
-  "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY}
+  "videoSrc": ${FEATURED_VIDEO_URL_GROQ},
+  "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
+  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status == "active") && customerFacing != false] | order(title asc)[0...3]{
+    _id,
+    "title": coalesce(shortName, title),
+    "slug": slug.current,
+    "description": shortDescription,
+    "imageSrc": featuredImage.asset->url,
+    "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
+    "lineSlug": ^.slug.current,
+    "videoSrc": ${FEATURED_VIDEO_URL_GROQ}
+  }
 }`;
 
 /** Finder hero industry option — its curated related case studies. */
@@ -266,6 +280,74 @@ const HERO_FINDER_INDUSTRY = /* groq */ `{
   "studies": relatedCaseStudies[]->${HERO_CASE_STUDY}
 }`;
 
+/** Compact catalogue card for a default-rail / general-bucket reference. */
+const HERO_FINDER_RAIL_ITEM = /* groq */ `{
+  _id,
+  _type,
+  "title": coalesce(shortName, title),
+  "slug": slug.current,
+  "description": coalesce(shortDescription, cardSummary, summary, excerpt),
+  "imageSrc": coalesce(
+    featuredImage.asset->url,
+    heroMedia.image.asset->url,
+    cardImage.asset->url,
+    mainImage.asset->url
+  ),
+  "imageAlt": coalesce(
+    featuredImage.alt,
+    featuredImage.asset->altText,
+    heroMedia.alt,
+    cardImageAlt,
+    mainImage.alt,
+    title
+  ),
+  "videoSrc": coalesce(
+    previewVideo.asset->url,
+    ${FEATURED_VIDEO_URL_GROQ}
+  ),
+  "clientName": client->name,
+  "statTitle": highlights[0].title,
+  "statBody": highlights[0].description,
+  "lineIds": products[]._ref,
+  status,
+  customerFacing,
+  hasPage
+}`;
+
+/** One simple-Finder General bucket entry (ref + optional feature media). */
+const HERO_FINDER_GENERAL_ENTRY = /* groq */ `{
+  _key,
+  "item": item->${HERO_FINDER_RAIL_ITEM},
+  "featureImageSrc": featureImage.asset->url,
+  "featureImageAlt": coalesce(featureImage.alt, featureImage.asset->altText),
+  "featureVideoUrl": select(
+    featureVideo.source == "upload" => featureVideo.file.asset->url,
+    featureVideo.source == "url" => featureVideo.url,
+    defined(featureVideo.asset) => featureVideo.asset->url,
+    null
+  )
+}`;
+
+/** Flexible General-deck rail item (editor-ordered array). */
+const HERO_FINDER_RAIL_ENTRY = /* groq */ `{
+  _key,
+  kindLabel,
+  source,
+  title,
+  description,
+  "item": item->${HERO_FINDER_RAIL_ITEM},
+  link ${LINK_OBJECT},
+  bannerType,
+  "bannerImageSrc": bannerImage.asset->url,
+  "bannerImageAlt": coalesce(bannerImage.alt, bannerImage.asset->altText),
+  "bannerVideoUrl": select(
+    bannerVideo.source == "upload" => bannerVideo.file.asset->url,
+    bannerVideo.source == "url" => bannerVideo.url,
+    defined(bannerVideo.asset) => bannerVideo.asset->url,
+    null
+  )
+}`;
+
 /**
  * Projection body for `sections[]{ … }` — use as:
  * `"sections": sections[]${PAGE_SECTIONS_PROJECTION}`
@@ -278,13 +360,24 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     heading,
     "spotlight": spotlight[]${HERO_SPOTLIGHT_SLIDE}
   },
-  _type == "heroFinder" => {
+  _type in ["heroFinder", "heroFinderFullscreen"] => {
     ${HERO_COPY},
     headingLead,
     headingJoin,
     headingTrail,
     "productLines": productLines[]->${HERO_FINDER_LINE},
-    "industries": industries[]->${HERO_FINDER_INDUSTRY}
+    "industries": industries[]->${HERO_FINDER_INDUSTRY},
+    _type == "heroFinder" => {
+      railOrder,
+      "generalProducts": generalProducts[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalIndustries": generalIndustries[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalCustomizations": generalCustomizations[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalExpertise": generalExpertise[]${HERO_FINDER_GENERAL_ENTRY},
+      "generalCaseStudies": generalCaseStudies[]${HERO_FINDER_GENERAL_ENTRY}
+    },
+    _type == "heroFinderFullscreen" => {
+      "defaultRail": defaultRail[]${HERO_FINDER_RAIL_ENTRY}
+    }
   },
   _type == "faqSection" => {
     ${SECTION_CHROME},
@@ -806,7 +899,21 @@ export type PageSectionHeroFinderLineDoc = {
     description?: string | null;
     imageSrc?: string | null;
     imageAlt?: string | null;
+    /** Playable MP4 from `featuredVideo` (upload/url); YouTube yields null. */
+    videoSrc?: string | null;
     studies?: PageSectionHeroCaseStudyDoc[] | null;
+    styles?: PageSectionHeroFinderStyleDoc[] | null;
+};
+
+export type PageSectionHeroFinderStyleDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    lineSlug?: string | null;
+    videoSrc?: string | null;
 };
 
 export type PageSectionHeroFinderIndustryDoc = {
@@ -821,14 +928,63 @@ export type PageSectionHeroFinderIndustryDoc = {
     studies?: PageSectionHeroCaseStudyDoc[] | null;
 };
 
+export type PageSectionHeroFinderRailItemDoc = {
+    _id?: string | null;
+    _type?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    description?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+    videoSrc?: string | null;
+    clientName?: string | null;
+    statTitle?: string | null;
+    statBody?: string | null;
+    lineIds?: string[] | null;
+    status?: string | null;
+    customerFacing?: boolean | null;
+    hasPage?: boolean | null;
+};
+
+/** One simple-Finder General bucket entry. */
+export type PageSectionHeroFinderGeneralEntryDoc = {
+    _key?: string | null;
+    item?: PageSectionHeroFinderRailItemDoc | null;
+    featureImageSrc?: string | null;
+    featureImageAlt?: string | null;
+    featureVideoUrl?: string | null;
+};
+
+/** One flexible General-deck rail entry (editor-ordered). */
+export type PageSectionHeroFinderRailEntryDoc = {
+    _key?: string | null;
+    kindLabel?: string | null;
+    source?: 'catalogue' | 'campaign' | string | null;
+    title?: string | null;
+    description?: string | null;
+    item?: PageSectionHeroFinderRailItemDoc | null;
+    link?: PageSectionLinkDoc | null;
+    bannerType?: 'image' | 'video' | string | null;
+    bannerImageSrc?: string | null;
+    bannerImageAlt?: string | null;
+    bannerVideoUrl?: string | null;
+};
+
 export type PageSectionHeroFinderDoc = PageSectionHeroCopyFields & {
-    _type: 'heroFinder';
+    _type: 'heroFinder' | 'heroFinderFullscreen';
     _key: string;
     headingLead?: string | null;
     headingJoin?: string | null;
     headingTrail?: string | null;
     productLines?: PageSectionHeroFinderLineDoc[] | null;
     industries?: PageSectionHeroFinderIndustryDoc[] | null;
+    railOrder?: 'business' | 'random' | string | null;
+    generalProducts?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalIndustries?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalCustomizations?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalExpertise?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    generalCaseStudies?: PageSectionHeroFinderGeneralEntryDoc[] | null;
+    defaultRail?: PageSectionHeroFinderRailEntryDoc[] | null;
 };
 
 /** Shallow / unwired section until a renderer maps it. */

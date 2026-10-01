@@ -3,18 +3,19 @@
  * Seed the Home page layout (PROD-2666) onto the `homePage` singleton, in the
  * agreed order, from REAL documents in the target dataset — no invented records:
  *
- *   1–3  Spotlight · Full-bleed · Finder heroes (review: three H1s — keep one before launch)
- *   4    Clients         logoWall          clients with a logo
- *   5    Products        productLinesRow   visible product lines
- *   6    Industries      solutionsRow      solutions with a page
- *   7    Why PakFactory  benefits          copy approved by Richard 2026-09-30
- *   8    How it works    steps             copy approved by Richard 2026-09-30
- *   9    Case studies    caseStudiesRow    recent case studies with an image
- *   10   By the numbers  stats             figures approved by Richard 2026-09-30
- *   11   Expertise       expertiseSequence listed stages, end-to-end order
- *   12   Reviews         testimonialsRow   live Google reviews (chrome only)
- *   13   FAQ             faqSection        up to 5 existing FAQs with scope "general"
- *   14   Get a quote     generalCta        site default copy → /contact
+ *   1–4  Spotlight · Full-bleed · Finder · Finder fullscreen
+ *        (review: four H1s — keep one before launch)
+ *   5    Clients         logoWall          clients with a logo
+ *   6    Products        productLinesRow   visible product lines
+ *   7    Industries      solutionsRow      solutions with a page
+ *   8    Why PakFactory  benefits          copy approved by Richard 2026-09-30
+ *   9    How it works    steps             copy approved by Richard 2026-09-30
+ *   10   Case studies    caseStudiesRow    recent case studies with an image
+ *   11   By the numbers  stats             figures approved by Richard 2026-09-30
+ *   12   Expertise       expertiseSequence listed stages, end-to-end order
+ *   13   Reviews         testimonialsRow   live Google reviews (chrome only)
+ *   14   FAQ             faqSection        up to 5 existing FAQs with scope "general"
+ *   15   Get a quote     generalCta        site default copy → /contact
  *
  * Idempotent: seeded sections use stable `_key`s (`seed-hero-*`, `seed-home-*`);
  * re-running replaces them in order and appends every other section after them.
@@ -32,6 +33,10 @@ import {config as loadEnv} from 'dotenv'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {describeMode, parseScriptArgs} from './lib/script-args.mjs'
+import {
+  buildFinderGeneralBuckets,
+  stageRank,
+} from './lib/finder-general-buckets.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(__dirname, '../../..')
@@ -82,6 +87,7 @@ const KEYS = {
   spotlight: 'seed-hero-spotlight',
   fullBleed: 'seed-hero-full-bleed',
   finder: 'seed-hero-finder',
+  finderFullscreen: 'seed-hero-finder-fullscreen',
   clients: 'seed-home-clients',
   products: 'seed-home-products',
   industries: 'seed-home-industries',
@@ -133,6 +139,10 @@ const CANDIDATES_QUERY = /* groq */ `{
     | order(name asc)[0...10]{_id, name},
   "stages": *[_type == "expertiseStage" && ${PUBLISHED} && defined(slug.current)
     && (!defined(status) || status in ["active", "coming-soon"])]{_id, title},
+  "customizations": *[_type == "customizationType" && ${PUBLISHED} && defined(title)]
+    | order(title asc)[0...4]{_id, title},
+  "posts": *[_type == "post" && ${PUBLISHED} && defined(slug.current)]
+    | order(publishedAt desc)[0...4]{_id, title},
   "faqs": *[_type == "faq" && ${PUBLISHED} && scope == "general" && defined(question)]
     | order(_createdAt asc)[0...5]{_id, question}
 }`
@@ -166,18 +176,91 @@ function buildSpotlight({caseStudies, lines, industries}) {
   const industry = industries.find((row) => row.hasImage)
   if (industry) items.push(ref(industry._id, 'slide-industry-1', 'spotlightRef'))
   if (secondStudy) items.push(ref(secondStudy._id, 'slide-case-2', 'spotlightRef'))
-  const campaignImage = caseStudies[2]?.imageRef || firstStudy?.imageRef
-  if (campaignImage) {
-    items.push({
-      _key: 'slide-campaign-1',
-      _type: 'heroSpotlightCampaign',
-      title: 'Talk to a packaging expert',
-      description: 'Not sure where to start? Tell us about your product and we will recommend a format.',
-      image: {_type: 'image', asset: {_type: 'reference', _ref: campaignImage}},
-      link: {label: 'Contact us', linkType: 'path', relativePath: '/contact'},
-    })
+  const campaign = buildPromoCampaign(caseStudies)
+  if (campaign) {
+    items.push({_key: 'slide-campaign-1', _type: 'heroSpotlightCampaign', ...campaign})
   }
   return items.slice(0, 5)
+}
+
+/** Shared Finder / Finder-fullscreen copy + pickers (same payload). */
+function buildFinderFields(candidates) {
+  return {
+    eyebrow: copy.eyebrow,
+    headingLead: 'Custom',
+    headingJoin: 'for',
+    headingTrail: 'brands.',
+    intro: 'Pick a product line and an industry to see what we have made.',
+    primaryCta: copy.primaryCta,
+    secondaryCta: copy.secondaryCta,
+    showReviews: true,
+    productLines: candidates.lines.map((line, i) => ref(line._id, `line-${i + 1}`)),
+    industries: candidates.industries.map((row, i) => ref(row._id, `industry-${i + 1}`)),
+  }
+}
+
+function buildPromoCampaign(caseStudies) {
+  const firstStudy = caseStudies[0]
+  const campaignImage = caseStudies[2]?.imageRef || firstStudy?.imageRef
+  if (!campaignImage) return null
+  return {
+    title: 'Talk to a packaging expert',
+    description:
+      'Not sure where to start? Tell us about your product and we will recommend a format.',
+    image: {_type: 'image', asset: {_type: 'reference', _ref: campaignImage}},
+    link: {label: 'Contact us', linkType: 'path', relativePath: '/contact'},
+  }
+}
+
+/**
+ * General default rail for Finder fullscreen — ordered flexible items
+ * (catalogue refs + optional promo campaign).
+ */
+function buildDefaultRail(candidates, notes) {
+  const items = []
+  const pushCatalogue = (kindLabel, doc) => {
+    if (!doc?._id) {
+      notes.push(`Finder fullscreen · ${kindLabel} omitted — no candidate`)
+      return
+    }
+    items.push({
+      _key: `rail-${kindLabel.toLowerCase().replace(/\s+/g, '-')}`,
+      _type: 'finderRailItem',
+      kindLabel,
+      source: 'catalogue',
+      item: {_type: 'reference', _ref: doc._id},
+      bannerType: 'image',
+    })
+  }
+
+  pushCatalogue('Product', candidates.lines[0])
+  pushCatalogue('Solution', candidates.industries[0])
+  const stages = [...(candidates.stages ?? [])].sort(
+    (a, b) => stageRank(a.title) - stageRank(b.title),
+  )
+  pushCatalogue('Expertise', stages[0])
+  pushCatalogue('Customization', candidates.customizations?.[0])
+  pushCatalogue('Case study', candidates.caseStudies[0])
+  pushCatalogue('Blog', candidates.posts?.[0])
+
+  const campaign = buildPromoCampaign(candidates.caseStudies)
+  if (campaign) {
+    items.push({
+      _key: 'rail-promo',
+      _type: 'finderRailItem',
+      kindLabel: 'Promo',
+      source: 'campaign',
+      title: campaign.title,
+      description: campaign.description,
+      link: campaign.link,
+      bannerType: 'image',
+      bannerImage: campaign.image,
+    })
+  } else {
+    notes.push('Finder fullscreen · Promo omitted — no campaign image')
+  }
+
+  return items
 }
 
 function buildSections(candidates) {
@@ -205,23 +288,22 @@ function buildSections(candidates) {
   }
 
   if (candidates.lines.length >= 2 && candidates.industries.length >= 2) {
+    const finderFields = buildFinderFields(candidates)
     sections.push({
       _key: KEYS.finder,
       _type: 'heroFinder',
-      eyebrow: copy.eyebrow,
-      headingLead: 'Custom',
-      headingJoin: 'for',
-      headingTrail: 'brands.',
-      intro: 'Pick a product line and an industry to see what we have made.',
-      primaryCta: copy.primaryCta,
-      secondaryCta: copy.secondaryCta,
-      showReviews: true,
-      productLines: candidates.lines.map((line, i) => ref(line._id, `line-${i + 1}`)),
-      industries: candidates.industries.map((row, i) => ref(row._id, `industry-${i + 1}`)),
+      ...finderFields,
+      ...buildFinderGeneralBuckets(candidates),
+    })
+    sections.push({
+      _key: KEYS.finderFullscreen,
+      _type: 'heroFinderFullscreen',
+      ...finderFields,
+      defaultRail: buildDefaultRail(candidates, notes),
     })
   } else {
     notes.push(
-      `Finder skipped — needs 2+ visible product lines (found ${candidates.lines.length}) and 2+ industries with a page (found ${candidates.industries.length})`,
+      `Finder + Finder fullscreen skipped — needs 2+ visible product lines (found ${candidates.lines.length}) and 2+ industries with a page (found ${candidates.industries.length})`,
     )
   }
   return {sections, notes}
@@ -244,14 +326,6 @@ const STATS = [
   ['3,000+', 'Brands served'],
   ['4.6', 'Google rating'],
 ]
-
-/** Eric's end-to-end stage order (see expertiseStage.ts header), matched on title. */
-const STAGE_ORDER = ['design', 'prototyp', 'manufactur', 'strategy', 'logistic', 'fulfil']
-function stageRank(title = '') {
-  const t = title.toLowerCase()
-  const i = STAGE_ORDER.findIndex((word) => t.includes(word))
-  return i === -1 ? STAGE_ORDER.length : i
-}
 
 const pathLink = (label, relativePath) => ({label, linkType: 'path', relativePath})
 
@@ -370,6 +444,10 @@ async function seed() {
     )
   }
   console.log(`    industries: ${candidates.industries.map((d) => `${d.title} (${d.studies ?? 0} studies)`).join(' · ') || '—'}`)
+  console.log(
+    `    customizations: ${(candidates.customizations ?? []).map((d) => d.title).join(' · ') || '—'}`,
+  )
+  console.log(`    posts: ${(candidates.posts ?? []).map((d) => d.title).join(' · ') || '—'}`)
 
   const {sections: heroSections, notes: heroNotes} = buildSections(candidates)
   const {body, notes: bodyNotes} = buildBody(candidates)

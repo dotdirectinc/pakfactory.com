@@ -1,5 +1,6 @@
 'use client';
 
+import {useLayoutEffect} from 'react';
 import {SiteNav, type SiteNavItem} from '@pakfactory/ui/components/site-nav';
 import {
     AccountMenu,
@@ -18,6 +19,43 @@ export type SiteNavRequestSlotProps = {
     account?: AccountMenuProps;
 };
 
+const NAV_OFFSET_FALLBACK = '4.5rem';
+
+/**
+ * Copy SiteNav's measured `--site-nav-offset` onto `:root` so below-nav
+ * frames (e.g. Finder fullscreen) can use `calc(100dvh - var(--site-nav-offset))`.
+ */
+function useHoistSiteNavOffset() {
+    useLayoutEffect(() => {
+        const header = document.querySelector<HTMLElement>(
+            '[data-site-nav-header]',
+        );
+        if (!header) {
+            document.documentElement.style.setProperty(
+                '--site-nav-offset',
+                NAV_OFFSET_FALLBACK,
+            );
+            return;
+        }
+
+        const sync = () => {
+            const height = header.offsetHeight;
+            document.documentElement.style.setProperty(
+                '--site-nav-offset',
+                height > 0 ? `${height}px` : NAV_OFFSET_FALLBACK,
+            );
+        };
+
+        sync();
+        const observer = new ResizeObserver(sync);
+        observer.observe(header);
+        return () => {
+            observer.disconnect();
+            document.documentElement.style.removeProperty('--site-nav-offset');
+        };
+    }, []);
+}
+
 /** Client bridge: injects live request count into marketing SiteNav. */
 export function SiteNavRequestSlot({
     homeHref,
@@ -27,6 +65,7 @@ export function SiteNavRequestSlot({
     account,
 }: SiteNavRequestSlotProps) {
     const {lines} = useRequest();
+    useHoistSiteNavOffset();
 
     return (
         <SiteNav
