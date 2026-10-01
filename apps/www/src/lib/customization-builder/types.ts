@@ -174,7 +174,6 @@ export type CatalogOptionLike = Pick<
     | 'description'
     | 'imageUrl'
     | 'preselected'
-    | 'configuratorRole'
-    | 'role'
+    | 'appearsIn'
     | 'achievedBy'
 >;

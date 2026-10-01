@@ -34,7 +34,7 @@ import type {
     ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
-import {toLifecycle} from '@/lib/catalog/types';
+import {hasDetailPage, isConfigurable, toLifecycle} from '@/lib/catalog/types';
 
 function mediaFromSanity(
     media: unknown[] | null | undefined,
@@ -147,15 +147,18 @@ function mapAvailableCustomization(
     if (!option?._id || !option.title) return null;
     if (option.status && option.status !== 'active') return null;
 
-    const configuratorRole =
-        option.configuratorRole === 'reference' ||
-        option.configuratorRole === 'configurable'
-            ? option.configuratorRole
-            : option.role === 'reference' || option.role === 'configurable'
-              ? option.role
-              : 'configurable';
-    // Configurator only surfaces configurable options (D55 / PROD-2529).
-    if (configuratorRole === 'reference') return null;
+    // 🔴 KEEP-WHEN-CONFIGURABLE, never drop-when-not (PROD-2732).
+    //
+    // These read the same for every value that exists, and the OPPOSITE way for a
+    // MISSING one. `appearsIn` is undefined on any option the backfill has not
+    // reached, and a `!== 'not-configurable-with-page'` test would let those
+    // through — putting Matte Lamination, Gloss Lamination, Soft Touch Lamination,
+    // Varnish, Aqueous and UV Coating into the configurator as things a customer
+    // can order. An unset value must mean "not offered", so the test is `===`.
+    //
+    // Same trap as `showOnDetailPage` (PROD-2610) and `customerFacing` (PROD-2620),
+    // inverted: there the safe test is `!= false`, here it is `==`.
+    if (!isConfigurable(option.appearsIn)) return null;
 
     const type = option.type;
     const category = type?.category;
@@ -206,7 +209,7 @@ function mapAvailableCustomization(
                 imageUrl: techniqueImage
                     ? (sanityImageBaseUrl(techniqueImage) ?? null)
                     : null,
-                ...(item.hasPage ? {hasPage: true} : {}),
+                ...(hasDetailPage(item.appearsIn) ? {hasPage: true} : {}),
             };
         });
 
@@ -227,8 +230,7 @@ function mapAvailableCustomization(
         shortDescription: '',
         description,
         preselected: Boolean(row.preselected),
-        configuratorRole,
-        role: configuratorRole,
+        ...(option.appearsIn ? {appearsIn: option.appearsIn} : {}),
         status: option.status ?? undefined,
         ...(achievedBy.length > 0 ? {achievedBy} : {}),
     };

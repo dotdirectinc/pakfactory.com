@@ -397,6 +397,32 @@ export const MIGRATIONS = [
     // Asserts the OLD shape is gone: no product/line still has a bare file (asset without source).
     probe: `count(*[_type in ["product","productLine"] && defined(featuredVideo.asset) && !defined(featuredVideo.source)]) == 0`,
   },
+  {
+    id: '20260930-appears-in',
+    ticket: 'PROD-2732',
+    title: 'Merge customizationOption.configuratorRole + hasPage into appearsIn',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:appears-in',
+    script: 'apps/studio/scripts/migrate-appears-in.mjs',
+    args: 'flags',
+    // Asserts the NEW shape is present on every option that MUST carry it, rather
+    // than that the old keys are gone: both fields leave the SCHEMA in this PR but
+    // their DATA is deliberately left in place as the rollback path, so an "old key
+    // is gone" probe would read false forever.
+    //
+    // ⚠️ Scoped to ACTIVE, PUBLISHED options, and both halves are load-bearing.
+    // `appearsIn` is required only while an option is active, because the three
+    // values describe where a CUSTOMER meets it and a retired technical material
+    // has no honest answer. 39 options on development are deliberately empty — all
+    // of them coming-soon or discontinued. A bare `!defined(appearsIn)` probe counts
+    // those as failures and can never go true. Drafts are excluded so an editor
+    // mid-edit cannot flip a recorded migration back to pending.
+    //
+    // Survives the eventual sweep of configuratorRole/hasPage, which touches neither
+    // appearsIn nor status.
+    probe: `count(*[_type == "customizationOption" && !(_id in path("drafts.**")) &&
+      status == "active" && !defined(appearsIn)]) == 0`,
+  },
 ]
 
 /**

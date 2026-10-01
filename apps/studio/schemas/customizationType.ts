@@ -309,7 +309,7 @@ export const customizationType = defineType({
             }>(
               `{
                 "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{ _id, "categoryId": category._ref },
-                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && configuratorRole == "configurable"]{
+                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && appearsIn in ["configurable-with-page", "configurable-no-page"]]{
                   title,
                   "partnerTypes": array::unique(
                     *[_type == "customizationOption" && !(_id in path("drafts.**")) && (_id in ^.compatibleCustomizations[]._ref || ^._id in compatibleCustomizations[]._ref)].type._ref
