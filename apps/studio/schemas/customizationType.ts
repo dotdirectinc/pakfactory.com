@@ -460,6 +460,59 @@ export const customizationType = defineType({
     // Type has no URL by design, not by omission. All three were unpopulated on all
     // 36 published Types, and nothing read them.
     ...entityFields({ prefix: 'typ', codeKinds: ['TYP'], group: 'content' }),
+    // ─── OPTION ORDER ─────────────────────────────────────────────────────────
+    /**
+     * Pins a few options to the top of this type (PROD-2748); the rest follow
+     * alphabetically. ORDER ONLY and never a gate: membership stays the query on
+     * `customizationOption.type`, which is required, so an unpinned option always
+     * appears. A partial list is the normal state.
+     *
+     * The twin of `customizationCategory.typeOrder` (PROD-2740) one level up, and
+     * the same two-tier shape as `productLine.styleOrder` and
+     * `productStyle.productOrder`.
+     *
+     * 🔴 NO `Rule.max()` here, and that is deliberate rather than an oversight.
+     * `productStyle.productOrder` caps at 12 because a style can hold 75 products
+     * and D31's ceiling genuinely bites. A type holds 22 at most (Pouch Layer), so
+     * it is already "bounded and small by nature" — the case D31 says an ordered
+     * array is FOR. Capping here would stop an editor legitimately ordering all of
+     * a 16-option type.
+     *
+     * ⚠️ References are WEAK: pinning an option must never make it undeletable.
+     * `orderOptionsInType` drops entries whose option has gone.
+     */
+    defineField({
+      name: 'optionOrder',
+      title: 'Customization option order',
+      type: 'array',
+      group: 'content',
+      description:
+        'Drag to set the order options appear in on this type. Listing a few is fine — anything ' +
+        'not listed follows alphabetically. Never a gate: every option still appears.',
+      of: [
+        {
+          type: 'reference',
+          weak: true,
+          to: [{ type: 'customizationOption' }],
+          options: {
+            disableNew: true,
+            // Only this type's own options, and never one already chosen — without
+            // the second clause the picker keeps offering what you just added and
+            // the duplicate only surfaces as a publish-blocking validation error.
+            filter: ({ document }: { document: { _id: string; optionOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.optionOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'type._ref == $type && !(_id in $chosen)',
+                params: { type: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
+    }),
   ],
   preview: {
     select: { title: 'title', category: 'category.title' },
