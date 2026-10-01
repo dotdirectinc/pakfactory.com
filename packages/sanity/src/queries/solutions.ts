@@ -131,11 +131,19 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
     question,
     "answerPlain": pt::text(answer)
   },
-  "relatedSolutionStyles": *[
-    _type == "solutionStyle" &&
-    solution._ref == ^._id &&
-    !(_id in path("drafts.**"))
-  ] | order(title asc) ${SOLUTION_STYLE_INSPIRATION_CARD},
+  // Curated order first, then the rest alphabetically — see SOLUTION_STYLES note.
+  "relatedSolutionStyles": (
+    coalesce(
+      (styleOrder[]->)[defined(_id) && !(_id in path("drafts.**"))]${SOLUTION_STYLE_INSPIRATION_CARD},
+      []
+    )
+    + *[
+      _type == "solutionStyle" &&
+      solution._ref == ^._id &&
+      !(_id in path("drafts.**")) &&
+      !(_id in coalesce(^.styleOrder, [])[]._ref)
+    ] | order(title asc) ${SOLUTION_STYLE_INSPIRATION_CARD}
+  ),
   "sections": sections[]${PAGE_SECTIONS_PROJECTION},
   "template": template->{
     _id,
@@ -363,13 +371,8 @@ export const SOLUTION_STYLE_BY_SLUGS_QUERY = /* groq */ `*[
   canonicalUrl
 }`;
 
-/** Style cards under a hasPage parent (collection band on the solution LP). */
-export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
-  _type == "solutionStyle" &&
-  defined(slug.current) &&
-  solution->slug.current == $solutionSlug &&
-  solution->hasPage == true
-] | order(title asc) {
+/** One style card in the collection band under a solution. */
+const SOLUTION_STYLE_CARD = /* groq */ `{
   _id,
   title,
   h1,
@@ -381,6 +384,46 @@ export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
     "alt": ${IMAGE_ALT}
   }
 }`;
+
+/**
+ * Style cards under a hasPage parent (collection band on the solution LP), in
+ * MERCHANDISED order (PROD-2742).
+ *
+ * Two tiers: the styles named in the solution's `styleOrder`, in the order they
+ * were dragged, then every other style alphabetically. `styleOrder` is order only
+ * and NEVER a gate — an unlisted style still renders, it just lands in the tail.
+ *
+ * 🔴 BOTH `coalesce(..., [])` calls are load-bearing. `styleOrder` is unset on
+ * every solution until someone drags something, and in GROQ `null + array` is null
+ * while `_id in null[]._ref` matches nothing — so dropping the first returns
+ * undefined and dropping the second returns [], either of which empties the band
+ * site-wide with no error. Pinned by solution-style-order.test.ts.
+ *
+ * The parent is not in scope as `^` here (this query takes a slug, not a document),
+ * so `styleOrder` is read through a sub-query on the solution. The twin inside
+ * SOLUTION_LANDING uses `^.styleOrder` directly.
+ *
+ * References in `styleOrder` are WEAK, so a deleted style dereferences to null;
+ * `defined(_id)` drops it before projection.
+ */
+export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
+  _type == "solution" &&
+  slug.current == $solutionSlug &&
+  hasPage == true
+][0]{
+  "styles": (
+    coalesce(
+      (styleOrder[]->)[defined(_id) && defined(slug.current)]${SOLUTION_STYLE_CARD},
+      []
+    )
+    + *[
+      _type == "solutionStyle" &&
+      defined(slug.current) &&
+      solution._ref == ^._id &&
+      !(_id in coalesce(^.styleOrder, [])[]._ref)
+    ] | order(title asc) ${SOLUTION_STYLE_CARD}
+  )
+}.styles`;
 
 /** Static params for `/solutions/[slug]/[styleSlug]`. */
 export const SOLUTION_STYLE_PAGE_PARAMS_QUERY = /* groq */ `*[

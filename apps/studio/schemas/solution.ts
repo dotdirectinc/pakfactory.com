@@ -226,6 +226,51 @@ export const solution = defineType({
       of: [{type: 'reference', to: [{type: 'caseStudy'}], options: {disableNew: true}}],
       validation: (Rule) => Rule.max(6),
     }),
+    defineField({
+      name: 'styleOrder',
+      title: 'Style order',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Drag to set the order styles appear in on this solution. Listing a few is fine — ' +
+        'anything not listed follows alphabetically. Never a gate: every style still appears.',
+      of: [
+        {
+          type: 'reference',
+          // 🔴 WEAK ON PURPOSE — the third of these, after productLine.styleOrder
+          // (PROD-2739) and customizationCategory.typeOrder (PROD-2740).
+          //
+          // A strong reference held purely for presentation makes every listed
+          // Style undeletable, with nothing in the Studio connecting the two.
+          // That is what removed `productLine.styles` (PROD-2509). Weak lets the
+          // delete succeed and leaves a dangling entry, which the query drops via
+          // `defined(_id)` so it never reaches the site.
+          weak: true,
+          to: [{type: 'solutionStyle'}],
+          options: {
+            disableNew: true,
+            // Scoped to this solution, and excluding styles already listed. The
+            // second half is not cosmetic: without it the picker keeps offering
+            // what you just added, and the duplicate only announces itself as a
+            // validation error that blocks publish — found in PROD-2739 review.
+            filter: ({
+              document,
+            }: {
+              document: {_id: string; styleOrder?: {_ref?: string}[]}
+            }) => {
+              const chosen = (document.styleOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string');
+              return {
+                filter: 'solution._ref == $solution && !(_id in $chosen)',
+                params: {solution: document._id.replace(/^drafts\./, ''), chosen},
+              };
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
+    }),
     faqsField({
       group: GROUPS.categorization,
       mode: 'reference',
