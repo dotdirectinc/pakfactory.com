@@ -8,6 +8,7 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 /**
  * Solution — one document type behind every "Solutions" page: industries,
@@ -311,6 +312,31 @@ export const solution = defineType({
     // ─── SOCIAL ───────────────────────────────────────────────────────────────
     ...socialFields({group: GROUPS.social, channel: MEDIA_TAG.solution}),
     ...entityFields({ prefix: 'sol', codeKinds: ['SOL'], group: GROUPS.content }),
+    // ─── STUDIO LIST ORDER ────────────────────────────────────────────────────
+    /**
+     * Drag-to-order position for the Solutions list (PROD-2745).
+     *
+     * Written by `@sanity/orderable-document-list` when an editor drags a row.
+     * `hidden` and `readOnly` come from the plugin — it never appears on the Edit
+     * form, and the drag handle in the list pane is the only way to set it.
+     *
+     * New solutions rank themselves: the plugin's `initialValue` reads the current
+     * last rank and places a newly created solution after it, so "Reset Order" is
+     * a one-time action, not a chore on every create.
+     *
+     * ⚠️ ORDER ONLY, and Studio only. Nothing on the website reads this field.
+     * `SOLUTIONS_WITH_PAGES_QUERY` and the case-study filter chips are still
+     * `order(title asc)`. Not to be confused with `styleOrder` above, which
+     * orders this solution's STYLES and does feed the site.
+     */
+    orderRankField({ type: 'solution' }),
+  ],
+
+  // Declaring `orderings` REPLACES the Title sort Sanity generates, so Title is
+  // restated here rather than lost (the mistake PROD-2744 made on productLine).
+  orderings: [
+    orderRankOrdering,
+    { title: 'Title', name: 'title', by: [{ field: 'title', direction: 'asc' }] },
   ],
 
   preview: {
