@@ -405,12 +405,23 @@ export const MIGRATIONS = [
     task: 'migrate:appears-in',
     script: 'apps/studio/scripts/migrate-appears-in.mjs',
     args: 'flags',
-    // Asserts the NEW shape is present on every option rather than that the old keys
-    // are gone: both fields leave the SCHEMA in this PR but their DATA is deliberately
-    // left in place as the rollback path, so an "old key is gone" probe would read
-    // false forever. It stays true once the sweep eventually runs, because the sweep
-    // does not touch appearsIn.
-    probe: `count(*[_type == "customizationOption" && !defined(appearsIn)]) == 0`,
+    // Asserts the NEW shape is present on every option that MUST carry it, rather
+    // than that the old keys are gone: both fields leave the SCHEMA in this PR but
+    // their DATA is deliberately left in place as the rollback path, so an "old key
+    // is gone" probe would read false forever.
+    //
+    // ⚠️ Scoped to ACTIVE, PUBLISHED options, and both halves are load-bearing.
+    // `appearsIn` is required only while an option is active, because the three
+    // values describe where a CUSTOMER meets it and a retired technical material
+    // has no honest answer. 39 options on development are deliberately empty — all
+    // of them coming-soon or discontinued. A bare `!defined(appearsIn)` probe counts
+    // those as failures and can never go true. Drafts are excluded so an editor
+    // mid-edit cannot flip a recorded migration back to pending.
+    //
+    // Survives the eventual sweep of configuratorRole/hasPage, which touches neither
+    // appearsIn nor status.
+    probe: `count(*[_type == "customizationOption" && !(_id in path("drafts.**")) &&
+      status == "active" && !defined(appearsIn)]) == 0`,
   },
 ]
 
