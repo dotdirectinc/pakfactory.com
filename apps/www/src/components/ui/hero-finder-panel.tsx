@@ -154,8 +154,8 @@ function FinderUrlBridge({
     }, [setValue, urlSettersRef]);
 
     useEffect(() => {
-        onHydrateLine(values.line);
-        onHydrateIndustry(values.industry);
+        onHydrateLine(values.line ?? FINDER_LINE_SENTINEL_SLUG);
+        onHydrateIndustry(values.industry ?? FINDER_INDUSTRY_SENTINEL_SLUG);
     }, [values.line, values.industry, onHydrateLine, onHydrateIndustry]);
 
     return null;
