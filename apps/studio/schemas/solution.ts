@@ -228,6 +228,41 @@ export const solution = defineType({
       validation: (Rule) => Rule.max(6),
     }),
     defineField({
+      name: 'featuredProducts',
+      title: 'Featured Products',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Pinned products for the industry landing hero. Shown first (this order); ' +
+        'the rest of the hero fills from products tagged to this solution. Empty = ' +
+        'auto-only (unchanged). Cap 16 on the page.',
+      of: [
+        {
+          type: 'reference',
+          to: [{type: 'product'}],
+          options: {
+            disableNew: true,
+            filter: ({
+              document,
+            }: {
+              document: {_id: string; featuredProducts?: {_ref?: string}[]}
+            }) => {
+              const chosen = (document.featuredProducts ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              const solutionId = document._id.replace(/^drafts\./, '')
+              return {
+                filter:
+                  '!(_id in $chosen) && (primarySolution._ref == $solution || $solution in solutions[]._ref)',
+                params: {chosen, solution: solutionId},
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.max(16).unique(),
+    }),
+    defineField({
       name: 'styleOrder',
       title: 'Solution style order',
       type: 'array',

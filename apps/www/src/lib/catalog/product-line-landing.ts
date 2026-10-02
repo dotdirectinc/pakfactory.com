@@ -120,8 +120,9 @@ function duplicateHeroCards(
 
 /**
  * Build bottomBar marquee cards.
- * Prefer `standard` products on the line (with media); fall back to featured
- * image + frames. Duplicates the unique list for scroll density.
+ * Featured Products first (Studio order), then `standard` products on the line
+ * (with media) fill remaining slots — duplicates skipped. Fall back to featured
+ * image + frames when neither yields cards. Duplicates the unique list for scroll density.
  */
 export function assembleHeroMediaCards(input: {
     featuredImageUrl: string | null;
@@ -129,21 +130,18 @@ export function assembleHeroMediaCards(input: {
     featuredVideoUrl: string | null;
     frames: ProductLineFrame[];
     products?: Product[];
+    /** Pinned hero products (Categorization Featured Products). */
+    featuredProducts?: Product[];
 }): ProductLineHeroMediaCard[] {
     const videoUrl = input.featuredVideoUrl?.trim() || '';
     const unique: ProductLineHeroMediaCard[] = [];
+    const seenSlugs = new Set<string>();
 
-    const fromProducts = (input.products ?? []).filter(
-        (product) =>
-            product.kind === 'standard' &&
-            Boolean(
-                product.media?.some((m) => Boolean(m.src?.trim())),
-            ),
-    );
-
-    for (const product of fromProducts) {
-        const media = product.media.find((m) => Boolean(m.src?.trim()));
-        if (!media?.src?.trim()) continue;
+    const pushProduct = (product: Product) => {
+        if (seenSlugs.has(product.slug)) return;
+        const media = product.media?.find((m) => Boolean(m.src?.trim()));
+        if (!media?.src?.trim()) return;
+        seenSlugs.add(product.slug);
         const productVideo = product.featuredVideoUrl?.trim() || '';
         unique.push({
             id: product.slug,
@@ -155,6 +153,19 @@ export function assembleHeroMediaCards(input: {
             customizations: mapHeroCustomizations(product),
             ...(productVideo ? {videoUrl: productVideo} : {}),
         });
+    };
+
+    for (const product of input.featuredProducts ?? []) {
+        pushProduct(product);
+    }
+
+    const fromProducts = (input.products ?? []).filter(
+        (product) =>
+            product.kind === 'standard' &&
+            Boolean(product.media?.some((m) => Boolean(m.src?.trim()))),
+    );
+    for (const product of fromProducts) {
+        pushProduct(product);
     }
 
     if (unique.length === 0) {

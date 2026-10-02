@@ -19,6 +19,7 @@ import {
     PRODUCT_CATALOG_PAGE_QUERY,
     PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
     SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
+    SOLUTION_STYLES_FOR_BREADCRUMB_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogIndexPageDoc,
@@ -27,6 +28,7 @@ import {
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
+    type SolutionStylesForBreadcrumbDoc,
 } from '@pakfactory/sanity/queries';
 import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
 import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
@@ -44,6 +46,7 @@ import {
     mapSanityProductLibraryLineMeta,
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
+import {breadcrumbStyleFromBundle} from '@/lib/catalog/resolve-breadcrumb-style';
 import type {
     CustomizationDetail,
     CustomizationDetailResult,
@@ -220,16 +223,43 @@ async function resolveProductOffer(
 async function fetchSanityProduct(slug: string): Promise<Product | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const doc = await (await draftAwareClient()).fetch<CatalogProductDoc | null>(
+        const client = await draftAwareClient();
+        const doc = await client.fetch<CatalogProductDoc | null>(
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
         if (!doc) return null;
         const mapped = mapSanityProduct(doc);
         if (!mapped) return null;
+
+        let product = mapped;
+        if (
+            mapped.kind === 'inspiration' &&
+            mapped.breadcrumbParent?.slug
+        ) {
+            try {
+                const bundle = await client.fetch<
+                    SolutionStylesForBreadcrumbDoc | null
+                >(SOLUTION_STYLES_FOR_BREADCRUMB_QUERY, {
+                    solutionSlug: mapped.breadcrumbParent.slug,
+                });
+                const breadcrumbStyle = breadcrumbStyleFromBundle(doc, bundle);
+                if (breadcrumbStyle) {
+                    product = {...mapped, breadcrumbStyle};
+                }
+            } catch (err) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.error(
+                        '[catalog] Solution style breadcrumb resolve failed:',
+                        err,
+                    );
+                }
+            }
+        }
+
         // Curated relatedProducts stay on the blocking path; sibling fallback
-        // loads under Suspense in ProductDetailView (see listRelatedProductSiblings).
-        return resolveProductOffer(mapped, doc);
+        // is resolved in ProductDetailView for productsRow inherit (PROD-2763).
+        return resolveProductOffer(product, doc);
     } catch (err) {
         if (process.env.NODE_ENV === 'development') {
             console.error('[catalog] Sanity product by slug failed:', err);
@@ -242,7 +272,7 @@ const RELATED_PRODUCTS_CAP = 6;
 
 /**
  * Same-line siblings when the product has no curated relatedProducts (PROD-1913).
- * Loaded under Suspense so the PDP hero is not blocked by listProducts().
+ * Used as productsRow inherit fallback on the PDP (PROD-2763).
  */
 export async function listRelatedProductSiblings(
     product: Product,

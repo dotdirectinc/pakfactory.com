@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import {ChevronDown} from 'lucide-react';
 
 import {Button} from '@pakfactory/ui/components/button';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
@@ -10,6 +11,7 @@ import type {CustomizationPreviewItem} from '@/components/product/map-customizat
 import {CustomizationQuickView} from '@/components/customization/customization-quick-view';
 import {CustomizationCatalogCard} from '@/components/ui/customization-catalog-card';
 import {SectionHeading} from '@/components/ui/section-heading';
+import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
 
 type ProductCustomizationsPreviewProps = {
     styleTitle: string;
@@ -18,6 +20,9 @@ type ProductCustomizationsPreviewProps = {
     description?: string;
     className?: string;
 };
+
+/** Initial / batch size — 2 rows × 4 cols at lg (PROD-2763). */
+const PAGE_SIZE = 8;
 
 const CATEGORY_LABELS: Record<string, string> = {
     materials: 'Materials',
@@ -49,6 +54,9 @@ function categorySortKey(slug: string): number {
 /**
  * Materials & finishes browse grid (PROD-1913 / POC V2).
  * CDP-linked cards; configure in the product overview above.
+ *
+ * Page-flow panel with progressive reveal (PROD-2763) — no nested scrollport;
+ * Show more loads the next batch so the document stays the only scroller.
  */
 export function ProductCustomizationsPreview({
     styleTitle,
@@ -78,10 +86,19 @@ export function ProductCustomizationsPreview({
         useState<CustomizationPreviewItem | null>(null);
     const selectedCategory = activeCategory ?? categories[0]?.slug ?? null;
 
-    const visibleItems = useMemo(() => {
+    const categoryItems = useMemo(() => {
         if (!selectedCategory) return items;
         return items.filter((item) => item.category === selectedCategory);
     }, [items, selectedCategory]);
+
+    const {visible, showLoadMore, revealNextBatch} = useProgressiveReveal({
+        total: categoryItems.length,
+        pageSize: PAGE_SIZE,
+        autoRevealLimit: 0,
+        resetKey: selectedCategory ?? '',
+    });
+
+    const revealedItems = categoryItems.slice(0, visible);
 
     if (items.length === 0) return null;
 
@@ -97,13 +114,8 @@ export function ProductCustomizationsPreview({
                     description={description}
                 />
 
-                <div
-                    className={cn(
-                        'mt-8 rounded-3xl bg-muted p-6 sm:mt-10 sm:p-8 md:p-0',
-                        'md:h-[min(40rem,70vh)] md:overflow-hidden',
-                    )}
-                >
-                    <div className="grid h-full items-start gap-6 md:min-h-0 md:grid-cols-[15rem_minmax(0,1fr)] md:items-stretch md:gap-0 lg:grid-cols-[17rem_minmax(0,1fr)]">
+                <div className="mt-8 rounded-3xl bg-muted p-6 sm:mt-10 sm:p-8 md:p-0">
+                    <div className="grid items-start gap-6 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-0 lg:grid-cols-[17rem_minmax(0,1fr)]">
                         <nav
                             aria-label="Customization categories"
                             className="flex flex-wrap gap-2 md:hidden"
@@ -120,7 +132,7 @@ export function ProductCustomizationsPreview({
                         </nav>
                         <nav
                             aria-label="Customization categories"
-                            className="hidden flex-col gap-1 md:flex md:py-8 md:pl-8 md:pr-6 lg:py-10 lg:pl-10"
+                            className="hidden flex-col gap-1 md:sticky md:top-24 md:flex md:self-start md:py-8 md:pl-8 md:pr-6 lg:py-10 lg:pl-10"
                         >
                             {categories.map((cat) => (
                                 <CategoryPill
@@ -132,32 +144,50 @@ export function ProductCustomizationsPreview({
                             ))}
                         </nav>
 
-                        <div className="min-w-0 md:flex md:h-full md:min-h-0">
-                            <div className="min-w-0 md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:py-8 md:pl-10 md:pr-4 lg:py-10 lg:pr-5">
-                                {visibleItems.length ? (
-                                    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                        {visibleItems.map((item) => (
-                                            <li key={item.href}>
-                                                <CustomizationCatalogCard
-                                                    href={item.href}
-                                                    title={item.label}
-                                                    eyebrow={
-                                                        item.typeTitle ??
-                                                        item.categoryTitle
-                                                    }
-                                                    imageSrc={item.imageUrl}
-                                                    imageAlt={
-                                                        item.imageAlt ??
-                                                        item.label
-                                                    }
-                                                    surface="elevated"
-                                                    onCloserLook={() =>
-                                                        setActiveItem(item)
-                                                    }
-                                                />
-                                            </li>
-                                        ))}
-                                    </ul>
+                        <div className="min-w-0 md:flex">
+                            <div className="min-w-0 flex-1 md:py-8 md:pl-10 md:pr-4 lg:py-10 lg:pr-5">
+                                {revealedItems.length ? (
+                                    <>
+                                        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                            {revealedItems.map((item) => (
+                                                <li key={item.href}>
+                                                    <CustomizationCatalogCard
+                                                        href={item.href}
+                                                        title={item.label}
+                                                        eyebrow={
+                                                            item.typeTitle ??
+                                                            item.categoryTitle
+                                                        }
+                                                        imageSrc={item.imageUrl}
+                                                        imageAlt={
+                                                            item.imageAlt ??
+                                                            item.label
+                                                        }
+                                                        surface="elevated"
+                                                        onCloserLook={() =>
+                                                            setActiveItem(item)
+                                                        }
+                                                    />
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {showLoadMore ? (
+                                            <div className="mt-8 flex justify-center md:mt-10">
+                                                <Button
+                                                    type="button"
+                                                    variant="link"
+                                                    onClick={revealNextBatch}
+                                                    className="gap-1 text-primary"
+                                                >
+                                                    Show more
+                                                    <ChevronDown
+                                                        className="size-4"
+                                                        aria-hidden
+                                                    />
+                                                </Button>
+                                            </div>
+                                        ) : null}
+                                    </>
                                 ) : (
                                     <p className="py-8 text-sm text-muted-foreground">
                                         No customizations in this category yet.

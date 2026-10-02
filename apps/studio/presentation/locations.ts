@@ -289,6 +289,14 @@ export const siteLocations: DocumentLocationResolvers = {
       ),
   }),
 
+  solutionProductDetailPage: defineLocations({
+    select: { title: 'title' },
+    resolve: () =>
+      notOnSite(
+        'Applies to every inspiration product detail page that selects this template.',
+      ),
+  }),
+
   customizationDetailPage: defineLocations({
     select: { title: 'title' },
     resolve: (doc) => ({

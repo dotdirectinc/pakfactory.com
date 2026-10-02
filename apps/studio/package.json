@@ -21,6 +21,7 @@
     "seed:test-rigid-line-lp": "node scripts/seed-test-rigid-line-lp.mjs",
     "seed:product-line-page-styles": "node scripts/seed-product-line-page-styles.mjs",
     "seed:general-cta-pages": "node scripts/seed-general-cta-pages.mjs",
+    "seed:pdp-detail-pages": "node scripts/seed-pdp-detail-pages.mjs",
     "seed:home-page": "node scripts/seed-home-page.mjs",
     "seed:finder-general": "node scripts/seed-finder-general-rail.mjs",
     "seed:test-kids-solution-lp": "node scripts/seed-test-kids-solution-lp.mjs",

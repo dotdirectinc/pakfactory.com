@@ -46,6 +46,8 @@ type ProductLineHeroProps = {
     featuredIconAlt: string;
     /** Standard products on this line — preferred bottomBar marquee source. */
     products: Product[];
+    /** Pinned hero products (Categorization Featured Products). */
+    featuredProducts?: Product[];
     hasStyles: boolean;
 };
 
@@ -199,6 +201,7 @@ export function ProductLineHero({
     featuredIconUrl,
     featuredIconAlt,
     products,
+    featuredProducts,
     hasStyles,
 }: ProductLineHeroProps) {
     const featuredSrc = featuredImageUrl?.trim() || '';
@@ -236,6 +239,7 @@ export function ProductLineHero({
             featuredVideoUrl: featuredVideo || null,
             frames,
             products,
+            featuredProducts,
         });
 
         return (

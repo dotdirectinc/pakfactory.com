@@ -38,6 +38,7 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
             featuredIconUrl={model.featuredIconUrl}
             featuredIconAlt={model.featuredIconAlt}
             products={line.products}
+            featuredProducts={line.featuredProducts}
             hasStyles={Boolean(model.styles)}
         />
     );

@@ -158,3 +158,75 @@ export function solutionStyleQueryParams(
   })
   return params
 }
+
+/**
+ * Product fields needed to evaluate membership against a Solution Style filter
+ * without running GROQ (e.g. inspiration PDP breadcrumb — PROD-2763).
+ */
+export type SolutionStyleMatchProduct = {
+  id: string
+  kind: string
+  title: string
+  solutionIds: string[]
+  lineId: string | null
+  styleIds: string[]
+  customerFacing?: boolean | null
+  status?: string | null
+}
+
+/**
+ * Whether a title matches a `keywordPattern()` string (e.g. `Bakery Bag*`).
+ * Mirrors GROQ `match` as a token set: every pattern token must appear in the
+ * title; the last token may be a prefix when it ends with `*`.
+ */
+export function titleMatchesKeywordPattern(
+  title: string,
+  pattern: string,
+): boolean {
+  const titleTokens = title.toLowerCase().split(/\s+/).filter(Boolean)
+  const patternTokens = pattern.trim().split(/\s+/).filter(Boolean)
+  if (titleTokens.length === 0 || patternTokens.length === 0) return false
+
+  return patternTokens.every((raw, index) => {
+    const isLast = index === patternTokens.length - 1
+    const prefix = isLast && raw.endsWith('*')
+    const token = (prefix ? raw.slice(0, -1) : raw).toLowerCase()
+    if (!token) return false
+    return titleTokens.some((t) => (prefix ? t.startsWith(token) : t === token))
+  })
+}
+
+/**
+ * Same membership rules as {@link solutionStyleProductFilter}, for one product.
+ * Returns false when the filter has no conditions (empty filter must not match).
+ */
+export function productMatchesSolutionStyleFilter(
+  product: SolutionStyleMatchProduct,
+  params: SolutionStyleFilterParams,
+): boolean {
+  if (!hasAnyCondition(params)) return false
+  if (product.kind !== 'inspiration') return false
+  if (!product.solutionIds.includes(params.solutionId)) return false
+  if (product.customerFacing === false) return false
+  if (
+    product.status != null &&
+    product.status !== 'active' &&
+    product.status !== 'coming-soon'
+  ) {
+    return false
+  }
+  if (params.excludedIds.includes(product.id)) return false
+
+  const lineMatch =
+    params.lineIds.length > 0 &&
+    product.lineId != null &&
+    params.lineIds.includes(product.lineId)
+  const styleMatch =
+    params.styleIds.length > 0 &&
+    product.styleIds.some((id) => params.styleIds.includes(id))
+  const keywordMatch =
+    params.keywords.length > 0 &&
+    params.keywords.some((kw) => titleMatchesKeywordPattern(product.title, kw))
+
+  return lineMatch || styleMatch || keywordMatch
+}

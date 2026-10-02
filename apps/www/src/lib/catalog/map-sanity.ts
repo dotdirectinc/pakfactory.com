@@ -92,6 +92,36 @@ function customizationGallerySlides(
     return slides.length > 0 ? slides : [{alt: titleFallback}];
 }
 
+/**
+ * Product PDP gallery: Media extras first, Featured image last.
+ * Dedupe by src when Featured was also left in Media. Empty → placeholder alt.
+ * (Customization detail stays featured-first per ADR-023.)
+ */
+export function productGallerySlides(
+    featuredImage: unknown | null | undefined,
+    media: unknown[] | null | undefined,
+    titleFallback: string,
+): CatalogMedia[] {
+    const slides: CatalogMedia[] = [];
+    const seen = new Set<string>();
+
+    if (Array.isArray(media)) {
+        for (const item of media) {
+            const slide = catalogMediaFromImage(item, titleFallback);
+            if (!slide?.src || seen.has(slide.src)) continue;
+            seen.add(slide.src);
+            slides.push(slide);
+        }
+    }
+
+    const featured = catalogMediaFromImage(featuredImage, titleFallback);
+    if (featured?.src && !seen.has(featured.src)) {
+        slides.push(featured);
+    }
+
+    return slides.length > 0 ? slides : [{alt: titleFallback}];
+}
+
 /** First non-empty trimmed string — used for option detail copy fallbacks. */
 function firstNonEmpty(
     ...candidates: Array<string | null | undefined>
@@ -427,7 +457,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         status: toLifecycle(doc.status),
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
-        media: mediaFromSanity(doc.media, doc.title),
+        media: productGallerySlides(doc.featuredImage, doc.media, doc.title),
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
             : {}),
@@ -639,6 +669,10 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         });
     }
 
+    const featuredProducts = (doc.featuredProducts ?? [])
+        .map(mapSanityProduct)
+        .filter((item): item is Product => item != null);
+
     const relatedLines: ProductLineRelatedRef[] = [];
     for (const row of doc.relatedLines ?? []) {
         if (!row) continue;
@@ -694,6 +728,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         ...(frames.length > 0 ? {frames} : {}),
         ...(expertise.length > 0 ? {expertise} : {}),
         ...(featuredStudies.length > 0 ? {featuredStudies} : {}),
+        ...(featuredProducts.length > 0 ? {featuredProducts} : {}),
         ...(relatedLines.length > 0 ? {relatedLines} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(sections.length > 0 ? {sections} : {}),

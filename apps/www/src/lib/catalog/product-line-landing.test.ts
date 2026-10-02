@@ -718,6 +718,60 @@ describe('assembleProductLineLanding', () => {
         assert.equal(cards[1]?.videoUrl, undefined);
     });
 
+    it('prepends featured products then fills with standard auto candidates', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            featuredProducts: [
+                product({
+                    title: 'Pinned Inspiration',
+                    slug: 'pinned',
+                    kind: 'inspiration',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {src: 'https://cdn.example/pinned.jpg', alt: 'Pinned'},
+                    ],
+                }),
+            ],
+            products: [
+                product({
+                    title: 'Pinned Inspiration',
+                    slug: 'pinned',
+                    kind: 'inspiration',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {src: 'https://cdn.example/pinned.jpg', alt: 'Pinned'},
+                    ],
+                }),
+                product({
+                    title: 'Auto A',
+                    slug: 'auto-a',
+                    productStyle: {slug: 'drawer', title: 'Drawer'},
+                    media: [
+                        {src: 'https://cdn.example/auto-a.jpg', alt: 'Auto A'},
+                    ],
+                }),
+                product({
+                    title: 'Auto B',
+                    slug: 'auto-b',
+                    productStyle: {slug: 'drawer', title: 'Drawer'},
+                    media: [
+                        {src: 'https://cdn.example/auto-b.jpg', alt: 'Auto B'},
+                    ],
+                }),
+            ],
+        });
+
+        // pinned + 2 standard × 6 copies
+        assert.equal(cards.length, 18);
+        assert.equal(cards[0]?.id, 'pinned-0');
+        assert.equal(cards[0]?.title, 'Pinned Inspiration');
+        assert.equal(cards[1]?.id, 'auto-a-0');
+        assert.equal(cards[2]?.id, 'auto-b-0');
+    });
+
     it('returns empty hero media cards when there is no media', () => {
         const cards = assembleHeroMediaCards({
             featuredImageUrl: null,

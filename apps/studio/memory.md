@@ -71,6 +71,8 @@ Full switching runbook: [`scripts/sanity/RUNBOOK.md`](../../scripts/sanity/RUNBO
 
 Industry LP **order + chrome** live on listable `solutionIndustryPage` documents (Main Website → Solution Pages → Solution Industry Pages). Each industry `solution` with `hasPage` **must** select one on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). Logo wall may also carry a **shared default** client list on the layout (Beauty seed); per-solution curatedItems override when set. Seeded Default id: `solutionIndustryPage`.
 
+**Featured Products** (Categorization on the `solution` host, not the layout — ADR-020 / PROD-2763): pinned products appear first in the industry hero; auto tagged products fill remaining slots (cap 16, dedupe). Empty = auto-only.
+
 Optional **Preview image** on each layout (Studio list + Template picker only).
 
 **Human seed:** run Beauty seed below with `--confirm` (creates/updates Default layout + Beauty wiring + solutionStyles). Agents author the script only — never `--confirm`.
@@ -78,6 +80,8 @@ Optional **Preview image** on each layout (Studio list + Template picker only).
 ## Product Line Page layouts
 
 Product Line LP **hero shell + section order/chrome** live on listable `productLinePage` documents (Main Website → Product Pages → Product Line Pages) — not a pinned singleton. Each customer-facing `productLine` **must** select one on the **Template** tab; band **content** stays on **Sections** (matched by `_key`). www merges template × line sections; `productStylesRow` with `listSource` = Line styles inherits each line’s styles. Shell (`heroLayout`: `stack` \| `bottomBar`) is a field on the layout doc.
+
+**Featured Products** (Categorization on the `productLine` host — PROD-2763): pinned products appear first in the bottom-bar hero marquee; standard line products with media fill the rest (dedupe). Empty = auto-only.
 
 Seeded layout ids:
 
@@ -106,9 +110,25 @@ Humans may also create layouts in Studio, set **Hero layout**, optionally upload
 
 ## Product Detail Page layouts
 
-PDP **order + chrome** live on listable `productDetailPage` documents (Main Website → Product Pages → Product Detail Pages). Each `product` may select one on the **Template** tab; band **content** stays on the product **Sections** tab (matched by `_key`). Seeded Default id: `productDetailPage`. Empty template → current hardcoded PDP bands only.
+PDP **order + chrome** live on listable layout documents. Band **content** stays on the product **Sections** tab (matched by `_key`).
+
+| Doc | Studio path | Role |
+| --- | --- | --- |
+| `productDetailPage` | Product Pages → Product Detail Pages | standard product PDPs (`product.template` → Default id `productDetailPage`) |
+| `solutionProductDetailPage` | Solution Pages → Solution Product Detail Pages | inspiration PDPs (`kind == "inspiration"` → Default id `solutionProductDetailPage`) |
+
+Empty template → www coalesces by kind (PROD-2763). Specs + Customization stay route-owned on www; CMS bands render **after** Customization via `SectionRenderer` (Related `productsRow` → Reviews `testimonialsRow` → FAQs `faqSection` → `generalCta`).
 
 Optional **Preview image** on each layout (Studio chrome only).
+
+Seed Defaults (human only):
+
+```bash
+pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development
+pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development --confirm
+```
+
+Appends missing bands with stable keys (`pdp-related-products`, `pdp-reviews`, `pdp-faqs`, `general-cta-closing`). Agents do not run `--confirm`.
 
 ## Product / Customization / Style catalog pages (PROD-2589 / PROD-2607 / Wave 2)
 
@@ -119,7 +139,8 @@ Listable layout types; entity-picked slots use `template` with Default-id fallba
 | `productCatalogPage` | Product Pages → Product Catalog Pages | hub `/products` — **Default id live** |
 | `productLinePage` / `…bottomBar` | Product Pages → Product Line Pages | listable line LP layouts (`productLine.template`) |
 | `productStylePage` | Product Pages → Product Style Pages | listable style catalog bands (`productStyle.template` → Default fallback) |
-| `productDetailPage` | Product Pages → Product Detail Pages | listable PDP layouts (`product.template`) |
+| `productDetailPage` | Product Pages → Product Detail Pages | listable standard PDP layouts (`product.template` → Default fallback) |
+| `solutionProductDetailPage` | Solution Pages → Solution Product Detail Pages | listable inspiration PDP layouts (`product.template` → Default fallback) |
 | `customizationCatalogPage` | Customization Pages → Catalog Pages | hub `/customizations` — **Default id live** |
 | `customizationDetailPage` | Customization Pages → Detail Pages | listable detail bands (`customizationOption.template` → Default fallback) |
 | `solutionIndustryPage` | Solution Pages → Solution Industry Pages | listable industry LP layouts |
@@ -129,7 +150,7 @@ The faceted grids / detail chrome stay route-owned. CMS `sections[]` render **be
 
 For style / customization detail: select a layout on the entity’s **Template** tab; empty → seeded Default bands. For catalog hubs: only edit/publish the Default id until an active-layout settings pointer ships — extra docs are prep only.
 
-For PDPs: select a **Product Detail Page** layout on the product’s Template tab; band content stays on the product Sections tab (matched by `_key`). Empty template → current hardcoded PDP bands only.
+For PDPs: select a layout on the product’s Template tab (standard → Product Detail Page; inspiration → Solution Product Detail Page); band content stays on the product Sections tab (matched by `_key`). Empty template → seeded Default bands by kind (www coalesce).
 
 ## Product Style / Solution Style / Customization Detail layouts
 

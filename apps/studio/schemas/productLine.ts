@@ -327,6 +327,41 @@ export const productLine = defineType({
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     defineField({
+      name: 'featuredProducts',
+      title: 'Featured Products',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Pinned products for the line landing hero (bottom-bar marquee). Shown first ' +
+        '(this order); remaining slots fill from standard products on this line. ' +
+        'Empty = auto-only (unchanged).',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'product' }],
+          options: {
+            disableNew: true,
+            filter: ({
+              document,
+            }: {
+              document: { _id: string; featuredProducts?: { _ref?: string }[] }
+            }) => {
+              const chosen = (document.featuredProducts ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              const lineId = document._id.replace(/^drafts\./, '')
+              return {
+                filter:
+                  '!(_id in $chosen) && (productLine._ref == $line || basedOn->productLine._ref == $line)',
+                params: { chosen, line: lineId },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.max(16).unique(),
+    }),
+    defineField({
       name: 'relatedLines',
       title: 'Related lines',
       type: 'array',

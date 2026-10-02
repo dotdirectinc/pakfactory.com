@@ -7,6 +7,8 @@ import type {
     PageSectionInspirationsCardDoc,
     PageSectionInspirationsGridDoc,
     PageSectionProductStylesRowDoc,
+    PageSectionProductsRowDoc,
+    PageSectionProductsRowItemDoc,
     PageSectionVideoCaseStudiesRowDoc,
     PageSectionVideoCaseStudyCardDoc,
 } from '@pakfactory/sanity/queries';
@@ -52,9 +54,9 @@ export function shouldInheritSectionList(
  * Template wins on chrome; solution wins on content fields when non-empty.
  * Match by `_key`, else first unused section of the same `_type`.
  *
- * After merge: empty case studies / video case studies / FAQs / inspirations
- * inherit from document defaults when listSource allows (section override wins).
- * ADR-020 §8.
+ * After merge: empty case studies / video case studies / FAQs / inspirations /
+ * products rows inherit from document defaults when listSource allows
+ * (section override wins). ADR-020 §8.
  */
 export function mergeSolutionSections(
     templateSections: PageSectionDoc[] | null | undefined,
@@ -63,6 +65,7 @@ export function mergeSolutionSections(
     documentFaqs?: PageSectionFaqDoc[] | null,
     relatedSolutionStyles?: PageSectionInspirationsCardDoc[] | null,
     relatedVideoCaseStudies?: PageSectionVideoCaseStudyCardDoc[] | null,
+    relatedProducts?: PageSectionProductsRowItemDoc[] | null,
 ): PageSectionDoc[] {
     const template = (templateSections ?? []).filter(
         (section): section is PageSectionDoc =>
@@ -93,15 +96,18 @@ export function mergeSolutionSections(
         return mergeOneSection(slot, byType ?? null);
     });
 
-    return applyVideoCaseStudiesInherit(
-        applyInspirationsInherit(
-            applyFaqInherit(
-                applyCaseStudyInherit(merged, relatedCaseStudies),
-                documentFaqs,
+    return applyProductsRowInherit(
+        applyVideoCaseStudiesInherit(
+            applyInspirationsInherit(
+                applyFaqInherit(
+                    applyCaseStudyInherit(merged, relatedCaseStudies),
+                    documentFaqs,
+                ),
+                relatedSolutionStyles,
             ),
-            relatedSolutionStyles,
+            relatedVideoCaseStudies,
         ),
-        relatedVideoCaseStudies,
+        relatedProducts,
     );
 }
 
@@ -246,5 +252,28 @@ export function applyVideoCaseStudiesInherit(
         const cards = row.cards ?? [];
         if (!shouldInheritSectionList(row.listSource, cards)) return section;
         return {...row, cards: fallback};
+    });
+}
+
+/**
+ * Fill empty `productsRow.items` from host related products when listSource allows
+ * (PROD-2763 PDP Related strip).
+ */
+export function applyProductsRowInherit(
+    sections: PageSectionDoc[],
+    relatedProducts?: PageSectionProductsRowItemDoc[] | null,
+): PageSectionDoc[] {
+    const fallback = (relatedProducts ?? []).filter(
+        (item): item is PageSectionProductsRowItemDoc =>
+            Boolean(item?.title?.trim() && item?.slug?.trim()),
+    );
+    if (fallback.length === 0) return sections;
+
+    return sections.map((section) => {
+        if (section._type !== 'productsRow') return section;
+        const row = section as PageSectionProductsRowDoc;
+        const items = row.items ?? [];
+        if (!shouldInheritSectionList(row.listSource, items)) return section;
+        return {...row, items: fallback};
     });
 }
