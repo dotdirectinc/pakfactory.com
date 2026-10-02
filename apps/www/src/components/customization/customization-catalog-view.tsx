@@ -2,6 +2,7 @@ import {
     CustomizationCatalogPageChrome,
 } from '@/components/customization/customization-catalog-page-loading';
 import {CustomizationCatalogPanel} from '@/components/customization/customization-catalog-panel';
+import {packCustomizationLibrary} from '@/lib/catalog/library-wire';
 import type {CustomizationLibraryResult} from '@/lib/catalog/types';
 
 export type {CustomizationCatalogTab} from '@/components/customization/customization-catalog-panel';
@@ -47,7 +48,7 @@ export function CustomizationCatalogView({
                 </div>
             ) : null}
             <CustomizationCatalogPanel
-                library={library}
+                packedLibrary={packCustomizationLibrary(library)}
                 urlSync={urlSync}
                 initialCategory={initialCategory}
                 hideCatalogBorderTop={hideCatalogBorderTop}

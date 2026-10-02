@@ -2,6 +2,7 @@ import {
     ProductCatalogPageChrome,
 } from '@/components/product/product-catalog-page-loading';
 import {ProductCatalogPanel} from '@/components/product/product-catalog-panel';
+import {packProductLibrary} from '@/lib/catalog/library-wire';
 import type {ProductLibraryResult} from '@/lib/catalog/types';
 
 export {
@@ -49,7 +50,7 @@ export function ProductCatalogView({
                 </div>
             ) : null}
             <ProductCatalogPanel
-                library={library}
+                packedLibrary={packProductLibrary(library)}
                 urlSync={urlSync}
                 hideCatalogBorderTop={hideCatalogBorderTop}
             />

@@ -123,6 +123,11 @@ Buyer copy: **customization**, never “capability”.
 - **Client:** local state is the source of truth; `history.replaceState` mirrors `category`, `q`, and facet params (no `router.replace`, no RSC round trip on filter clicks — PROD-2599). Back/forward re-seeds from `useSearchParams`.
 - **Filter:** in memory via the shared facet engine; facet option counts are **disjunctive (except-self)**; header **“N of M”** stays based on the fully filtered result set; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; no artificial append delay)
 - **Route:** `urlSync` (default true) — `category`, `q`, plus facet ids as comma-separated query params (load-more depth is session-only, not in the URL)
+- **Wire format (PROD-2757):** `CustomizationCatalogView` passes `packCustomizationLibrary(library)`, and the panel unpacks it once.
+  - Per-item `propertyTitles` maps are merged into one shared map.
+  - `productLines` become indexes into a line table.
+  - `valueTitles` are **not sent**: unpacked items get `{}`. They only feed facet labels, which the server already resolved into `facetCatalog`.
+  - Staging: RSC payload 442 → 276 KB, HTML 689 → 500 KB. See `lib/catalog/library-wire.ts`.
 
 - **Section:** `urlSync={false}` — local React state only; optional `initialCategory` from Studio
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line and other properties = **OR** (see [`customization-filter-taxonomy.md`](./customization-filter-taxonomy.md))

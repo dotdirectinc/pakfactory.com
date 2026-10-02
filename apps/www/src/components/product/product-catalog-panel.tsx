@@ -19,12 +19,13 @@ import {
     buildProductFacetCounts,
     matchesProductItem,
 } from '@/lib/catalog/product-catalog-filter';
+import {
+    unpackProductLibrary,
+    type PackedProductLibrary,
+} from '@/lib/catalog/library-wire';
 import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
-import type {
-    CustomizationFacetDef,
-    ProductLibraryResult,
-} from '@/lib/catalog/types';
+import type {CustomizationFacetDef} from '@/lib/catalog/types';
 import {
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
@@ -33,7 +34,8 @@ import {
 const PAGE_SIZE = 12;
 
 type ProductCatalogPanelProps = {
-    library: ProductLibraryResult;
+    /** Compact wire form from `ProductCatalogView` (PROD-2757); unpacked once here. */
+    packedLibrary: PackedProductLibrary;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
     /** Drop the desktop search strip top border (style landing under a headed section). */
@@ -47,10 +49,14 @@ function toggleValue(list: string[], value: string): string[] {
 }
 
 export function ProductCatalogPanel({
-    library,
+    packedLibrary,
     urlSync = true,
     hideCatalogBorderTop = false,
 }: ProductCatalogPanelProps) {
+    const library = useMemo(
+        () => unpackProductLibrary(packedLibrary),
+        [packedLibrary],
+    );
     const facetIds = useMemo(() => {
         const ids = library.facetCatalog.shared.map((facet) => facet.id);
         ids.push(PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID);

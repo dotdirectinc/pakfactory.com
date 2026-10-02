@@ -108,6 +108,12 @@ When zero or multiple Product Lines are selected, the entry card is omitted.
 - **Route:** `urlSync` (default true) — `q` plus facet ids as comma-separated query params (no `category`; load-more depth is session-only)
 - **Section deep links:** Prefer Site path `/products` + freeform `link.query` (e.g. `industry=%slug%` on a Solution LP) — see [ADR-020](../../../docs/adr/0020-component-to-section-playbook.md) § Section link → catalog query
 - **Payload:** library `productStyle` is `{slug, title}` only; `propertyTitles` are hoisted onto `ProductLibraryResult`
+- **Wire format (PROD-2757):** `ProductCatalogView` (server) passes `packProductLibrary(library)` to the panel, and `ProductCatalogPanel` calls `unpackProductLibrary` once. Code past that point sees normal `ProductLibraryItem`s. The packed form:
+  - Products are positional tuples.
+  - Lines, styles and industries are index tables.
+  - `imageAlt` is dropped when it equals the title.
+  - Staging (1,236 products): RSC payload 679 → 342 KB, HTML 971 → 571 KB.
+  - See `lib/catalog/library-wire.ts`, plus its round-trip test. **Add new item fields to the pack/unpack pair**, or they will not reach the client.
 
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line, Product Style, Product type, Industries, and other properties = **OR** (same taxonomy as customizations)
 - **Zero-count options:** disabled in the rail (still uncheckable if already selected)
