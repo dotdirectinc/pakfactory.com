@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getPublishedId, useClient, useDocumentStore } from 'sanity'
 import { IntentLink } from 'sanity/router'
-import { buildDependencyGraph } from '@pakfactory/sanity/customization-rules/dependencies'
-import { resolveForProduct, type ExceptionOutcome } from '@pakfactory/sanity/customization-rules/resolve'
+import type { ExceptionOutcome } from '@pakfactory/sanity/customization-rules/resolve'
+import {
+  AVAILABILITY_CATALOG_QUERY,
+  resolveProductAvailability,
+  type AvailabilityCatalog,
+} from '../lib/product-availability'
 
 /**
  * The derived half of a product's availability (PROD-2595, ADR-022 decision 6).
@@ -21,19 +25,6 @@ import { resolveForProduct, type ExceptionOutcome } from '@pakfactory/sanity/cus
  * shows its base product's answer: it offers what its base offers.
  */
 
-type CatalogResult = {
-  categories: { _id: string; title: string | null }[]
-  types: {
-    _id: string
-    title: string | null
-    availabilityDecidedBy: 'product' | 'customization' | null
-    categoryId: string | null
-    /** One entry per requirement: its refs (old flat entries read as a requirement of one). */
-    requirements: string[][] | null
-  }[]
-  options: { _id: string; title: string | null; typeId: string | null; compatibleCustomizations: string[] | null }[]
-}
-
 type ProductResult = {
   _id: string
   kind: string | null
@@ -41,17 +32,6 @@ type ProductResult = {
   availableCustomizations: string[] | null
   customizationExceptions: { optionId: string | null; mode: 'add' | 'remove' | null; reason: string | null }[] | null
 }
-
-const CATALOG = `{
-  "categories": *[_type == "customizationCategory" && !(_id in path("drafts.**"))]{ _id, title },
-  "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{
-    _id, title, availabilityDecidedBy, "categoryId": category._ref,
-    "requirements": dependsOn[]{ "refs": coalesce(anyOf[]._ref, [_ref]) }.refs
-  },
-  "options": *[_type == "customizationOption" && !(_id in path("drafts.**"))]{
-    _id, title, "typeId": type._ref, "compatibleCustomizations": compatibleCustomizations[]._ref
-  }
-}`
 
 const BASE = `coalesce(*[_id == "drafts." + ^.basedOn._ref][0], *[_id == ^.basedOn._ref][0])`
 
@@ -88,22 +68,20 @@ const BADGE_STYLE: CSSProperties = {
   flexShrink: 0,
 }
 
-const clean = (id: string) => getPublishedId(id)
-
 export function ProductDerivedCustomizations({ documentId }: { documentId: string }) {
   const client = useClient({ apiVersion: '2024-01-01' })
   const documentStore = useDocumentStore()
   const publishedId = useMemo(() => getPublishedId(documentId), [documentId])
   const draftId = useMemo(() => `drafts.${publishedId}`, [publishedId])
 
-  const [catalog, setCatalog] = useState<CatalogResult | null>(null)
+  const [catalog, setCatalog] = useState<AvailabilityCatalog | null>(null)
   const [docs, setDocs] = useState<ProductResult[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let live = true
     client
-      .fetch<CatalogResult>(CATALOG, {}, { tag: 'product-derived-catalog' })
+      .fetch<AvailabilityCatalog>(AVAILABILITY_CATALOG_QUERY, {}, { tag: 'product-derived-catalog' })
       .then((res) => live && setCatalog(res))
       .catch((err: unknown) => live && setError(err instanceof Error ? err.message : String(err)))
     return () => {
@@ -130,37 +108,7 @@ export function ProductDerivedCustomizations({ documentId }: { documentId: strin
     const doc = docs.find((d) => d._id.startsWith('drafts.')) ?? docs[0] ?? null
     if (!doc) return null
 
-    const types = catalog.types
-      .filter((t) => t.availabilityDecidedBy === 'product' || t.availabilityDecidedBy === 'customization')
-      .map((t) => ({
-        _id: t._id,
-        title: t.title ?? undefined,
-        availabilityDecidedBy: t.availabilityDecidedBy as 'product' | 'customization',
-        categoryId: t.categoryId ?? undefined,
-        requirements: (t.requirements ?? []).filter((g): g is string[] => Array.isArray(g) && g.length > 0),
-      }))
-    const options = catalog.options
-      .filter((o) => o.typeId)
-      .map((o) => ({
-        _id: o._id,
-        title: o.title ?? undefined,
-        typeId: o.typeId as string,
-        compatibleCustomizations: (o.compatibleCustomizations ?? []).map(clean),
-      }))
-    const rulesCatalog = { types, options }
-    // `groups` is what makes a category dependency ("decided by Materials") mean ANY material.
-    const { dependsOn, groups } = buildDependencyGraph(rulesCatalog)
-    const resolution = resolveForProduct(
-      rulesCatalog,
-      {
-        _id: clean(doc._id),
-        availableCustomizations: (doc.availableCustomizations ?? []).map((id) => ({ optionId: clean(id) })),
-        customizationExceptions: (doc.customizationExceptions ?? [])
-          .filter((e) => e.optionId && (e.mode === 'add' || e.mode === 'remove'))
-          .map((e) => ({ optionId: clean(e.optionId as string), mode: e.mode as 'add' | 'remove', reason: e.reason ?? undefined })),
-      },
-      { dependsOn, groups },
-    )
+    const resolution = resolveProductAvailability(catalog, doc)
     return { doc, resolution }
   }, [catalog, docs])
 
