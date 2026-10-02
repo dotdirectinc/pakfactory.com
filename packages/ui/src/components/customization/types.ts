@@ -39,8 +39,8 @@ export type SwatchItem = {
   label: string;
   color?: string;
   imageUrl?: string;
-  /** Empty dotted circle (e.g. Need consultation); no fill/image. */
-  appearance?: "swatch" | "consultation";
+  /** Empty dotted circle (e.g. Need consultation); no fill/image. Color wheel for custom. */
+  appearance?: "swatch" | "consultation" | "customColor";
 };
 
 export type SpecSegment = {
@@ -62,6 +62,8 @@ export type LinkItem = {
 export type ChipItem = {
   id: string;
   label: string;
+  /** Empty dotted treatment (e.g. Need consultation); matches swatch consultation. */
+  appearance?: "chip" | "consultation";
 };
 
 /** Technical option that can deliver a customer-facing finish (ADR-017). */

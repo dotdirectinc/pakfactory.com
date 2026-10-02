@@ -6,7 +6,7 @@ import type {AchievesTechnique} from "../types";
 
 const rowClass = (on: boolean) =>
   cn(
-    "flex cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-border bg-background p-3 text-left text-foreground transition-colors",
+    "flex w-full cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-border bg-background p-3 text-left text-foreground transition-colors",
     "hover:bg-muted/60",
     "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
     on && "border-foreground bg-muted hover:bg-muted",
@@ -56,13 +56,12 @@ export function AchievesField({
       role="radiogroup"
       aria-label={consultationLabel}
     >
-      <div
+      <button
+        type="button"
         role="radio"
-        tabIndex={0}
         aria-checked={consultationOn}
         className={rowClass(consultationOn)}
         onClick={() => setSelected(consultationId)}
-        onKeyDown={(event) => onCardKeyDown(event, consultationId)}
       >
         <span
           className="size-10 shrink-0 rounded-[var(--radius-control)] border-[3px] border-dotted border-muted-foreground bg-transparent"
@@ -71,10 +70,11 @@ export function AchievesField({
         <span className="text-sm font-medium tracking-tight text-foreground">
           {consultationLabel}
         </span>
-      </div>
+      </button>
 
       {techniques.map((technique) => {
         const on = selected === technique.id;
+        // Div (not button): may contain a learn-more link — nested interactives are invalid.
         return (
           <div
             key={technique.id}
