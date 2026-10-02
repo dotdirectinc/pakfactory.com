@@ -145,7 +145,7 @@ export const productLine = defineType({
     featuredVideoField({
       group: GROUPS.content,
       description:
-        'Optional desktop scroll-scrub video. Upload or a direct S3/CDN MP4/MOV; YouTube is stored but the landing keeps Featured image. Mobile and reduced-motion keep Featured image.',
+        'Optional desktop scroll-scrub video. Prefer H.264 MP4 or VP9 WebM; YouTube is stored but the landing keeps Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     // Featured icon on the product-line landing. Stack: above the H1.
     // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.

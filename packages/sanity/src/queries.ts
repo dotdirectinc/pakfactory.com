@@ -127,6 +127,7 @@ export {
     type CatalogAvailableCustomizationDoc,
     type CatalogCategoryDoc,
     type CatalogCustomizationDetailDoc,
+    type CatalogShowcaseImageDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogRulesOptionDoc,
     type CatalogRulesProductDoc,

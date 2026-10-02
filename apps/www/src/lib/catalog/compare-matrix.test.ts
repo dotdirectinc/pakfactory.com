@@ -14,6 +14,8 @@ function detail(
     return {
         categoryLabel: partial.categoryLabel ?? partial.categoryValue,
         media: [],
+        showcaseSolutions: [],
+        showcaseCaseStudies: [],
         properties: [],
         declaredProperties: [],
         productLines: [],

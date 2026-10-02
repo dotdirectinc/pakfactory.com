@@ -765,7 +765,9 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   shortDescription,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
+  "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
+  "benefitsBody": benefits.body,
   featuredImage{
     ...,
     "alt": ${IMAGE_ALT}
@@ -775,6 +777,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     "alt": ${IMAGE_ALT}
   },
   ${FEATURED_VIDEO_URL_FIELD},
+  "specSheetUrl": specSheet.asset->url,
   "category": type->category->${CATEGORY_PROJ},
   "type": type->{
     _id,
@@ -806,6 +809,30 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
       _type == "faqItem" => pt::text(answer),
       defined(@->answer) => pt::text(@->answer)
     )
+  },
+  "showcaseFromCaseStudies": *[
+    _type == "caseStudy" &&
+    defined(publishedAt) &&
+    publishedAt <= now() &&
+    ^._id in capabilities[]._ref
+  ] | order(publishedAt desc) [0...6] {
+    title,
+    "slug": slug.current,
+    cardSummary,
+    "src": coalesce(cardImage.asset->url, heroMedia.image.asset->url),
+    "alt": coalesce(cardImageAlt, heroMedia.alt, title)
+  },
+  "showcaseFromSolutions": *[
+    _type == "product" &&
+    (status == "active" || !defined(status)) &&
+    ^._id in availableCustomizations[].customization._ref
+  ].solutions[]->{
+    _id,
+    title,
+    "slug": slug.current,
+    shortDescription,
+    "src": featuredImage.asset->url,
+    "alt": title
   },
   "peers": *[
     _type == "customizationOption" &&
@@ -1274,6 +1301,18 @@ export type CatalogCustomizationComparePeerDoc = {
   properties?: (CatalogPropertyValueDetailDoc | null)[] | null;
 };
 
+/** Showcase tile from case study / solution reverse joins (PROD-1299). */
+export type CatalogShowcaseImageDoc = {
+  _id?: string | null;
+  title?: string | null;
+  slug?: string | null;
+  /** Case study card summary / solution short description. */
+  cardSummary?: string | null;
+  shortDescription?: string | null;
+  src?: string | null;
+  alt?: string | null;
+};
+
 export type CatalogCustomizationDetailDoc = {
   _id: string;
   title: string;
@@ -1283,11 +1322,15 @@ export type CatalogCustomizationDetailDoc = {
   /** SEO only — never map into customer-facing body copy. */
   metaDescription?: string | null;
   glossaryPlain?: string | null;
+  benefitsTitle?: string | null;
   benefitsPlain?: string | null;
+  benefitsBody?: unknown[] | null;
   featuredImage?: unknown | null;
   media?: unknown[] | null;
-  /** Playable MP4/MOV URL from `featuredVideo` (upload/url); YouTube → null. */
+  /** Playable MP4/WebM/MOV URL from `featuredVideo` (upload/url); YouTube → null. */
   featuredVideoUrl?: string | null;
+  /** Optional PDF upload on Specs — CDN URL when set. */
+  specSheetUrl?: string | null;
   category: CatalogCategoryDoc | null;
   type?: {
     _id: string;
@@ -1298,6 +1341,10 @@ export type CatalogCustomizationDetailDoc = {
   properties?: (CatalogPropertyValueDetailDoc | null)[] | null;
   productLines?: (CatalogLineRefDoc | null)[] | null;
   faqs?: (CatalogProductFaqDoc | null)[] | null;
+  /** Case studies that tag this option (`capabilities`). */
+  showcaseFromCaseStudies?: (CatalogShowcaseImageDoc | null)[] | null;
+  /** Solutions via products that offer this option. */
+  showcaseFromSolutions?: (CatalogShowcaseImageDoc | null)[] | null;
   /** Same-category library options for the compare band (PROD-1534). */
   peers?: (CatalogCustomizationComparePeerDoc | null)[] | null;
 };

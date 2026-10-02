@@ -14,7 +14,7 @@ const POSTER_QUALITY = 75;
 const IN_VIEW_ROOT_MARGIN = '200px';
 
 export type CoverVideoProps = {
-    /** Playable MP4/MOV URL. */
+    /** Playable MP4/WebM (or web-safe MOV) URL. */
     src: string;
     /**
      * Still shown until the first frame. Sanity CDN URLs are resized to

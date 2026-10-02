@@ -174,7 +174,7 @@ export function MediaCaptionCard({
     );
 
     const shellClass = cn(
-        'group relative block w-full aspect-4/5 overflow-hidden rounded-xl bg-muted sm:aspect-5/4',
+        '@container/mcc group relative block w-full aspect-4/5 overflow-hidden rounded-xl bg-muted sm:aspect-5/4',
         navigable && 'cursor-pointer text-left',
         className,
     );
@@ -278,8 +278,14 @@ export function MediaCaptionCard({
                     link={link}
                     {...(stat ? {stat} : {})}
                     className={cn(
-                        'absolute inset-x-4 bottom-4 z-20 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-80',
-                        'origin-bottom-right transition-[transform,opacity] duration-(--motion-slow) ease-out',
+                        // Small parent: centered detail card.
+                        'absolute left-1/2 top-1/2 z-20 w-[min(100%-2rem,20rem)] -translate-x-1/2 -translate-y-1/2',
+                        'origin-center',
+                        // Large parent: bottom-right (container query, not viewport).
+                        '@min-[28rem]/mcc:bottom-6 @min-[28rem]/mcc:left-auto @min-[28rem]/mcc:right-6 @min-[28rem]/mcc:top-auto',
+                        '@min-[28rem]/mcc:w-80 @min-[28rem]/mcc:translate-x-0 @min-[28rem]/mcc:translate-y-0',
+                        '@min-[28rem]/mcc:origin-bottom-right',
+                        'transition-[transform,opacity] duration-(--motion-slow) ease-out',
                         'motion-reduce:transition-none',
                         captionOpen
                             ? 'scale-x-100 opacity-100'

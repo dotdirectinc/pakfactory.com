@@ -14,6 +14,10 @@ import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineHeroMediaCard} from '@/lib/catalog/product-line-landing';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
 import {headingSettleProps} from '@/lib/ui/heading-settle';
+import {
+    MEDIA_DISSOLVE_MS,
+    mediaDissolveTransitionClass,
+} from '@/lib/ui/media-dissolve';
 
 /** Seconds for one card-width of travel — keeps scroll slow as density grows. */
 const MARQUEE_SECONDS_PER_CARD = 48;
@@ -72,14 +76,31 @@ function HeroMediaCard({
     onSelect?: (card: ProductLineHeroMediaCard) => void;
 }) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const fadeOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [playing, setPlaying] = useState(false);
     const videoUrl = card.videoUrl?.trim() || '';
     const hasVideo = Boolean(videoUrl) && allowVideoPlay;
     const isInteractive = Boolean(card.detailHref && card.title && onSelect);
     const settle = headingSettleProps(card.settleIndex);
 
+    const clearFadeOutTimer = () => {
+        if (fadeOutTimerRef.current != null) {
+            clearTimeout(fadeOutTimerRef.current);
+            fadeOutTimerRef.current = null;
+        }
+    };
+
+    const resetVideoEl = () => {
+        const el = videoRef.current;
+        if (el) {
+            el.pause();
+            el.currentTime = 0;
+        }
+    };
+
     const startVideo = () => {
         if (!hasVideo) return;
+        clearFadeOutTimer();
         const el = videoRef.current;
         if (!el) return;
         void el.play().then(
@@ -89,12 +110,27 @@ function HeroMediaCard({
     };
 
     const stopVideo = () => {
-        const el = videoRef.current;
-        if (!el) return;
-        el.pause();
-        el.currentTime = 0;
         setPlaying(false);
+        clearFadeOutTimer();
+        fadeOutTimerRef.current = setTimeout(() => {
+            resetVideoEl();
+            fadeOutTimerRef.current = null;
+        }, MEDIA_DISSOLVE_MS);
     };
+
+    useEffect(
+        () => () => {
+            clearFadeOutTimer();
+            resetVideoEl();
+        },
+        [],
+    );
+
+    const stillClassName = cn(
+        'object-contain',
+        mediaDissolveTransitionClass,
+        hasVideo && playing && 'opacity-0',
+    );
 
     const still = isSanityCdnUrl(card.src) ? (
         <SanityImage
@@ -102,7 +138,7 @@ function HeroMediaCard({
             alt={card.alt}
             fill
             sizes="(max-width: 639px) 40vw, 28rem"
-            className="object-contain"
+            className={stillClassName}
             priority={priority}
         />
     ) : (
@@ -111,7 +147,7 @@ function HeroMediaCard({
             alt={card.alt}
             fill
             sizes="(max-width: 639px) 40vw, 28rem"
-            className="object-contain"
+            className={stillClassName}
             priority={priority}
             unoptimized
         />
@@ -156,8 +192,8 @@ function HeroMediaCard({
                     preload="none"
                     aria-hidden
                     className={cn(
-                        'absolute inset-0 size-full object-contain transition-opacity duration-(--motion-slow) ease-in-out',
-                        'motion-reduce:transition-none',
+                        'absolute inset-0 size-full object-contain',
+                        mediaDissolveTransitionClass,
                         playing ? 'opacity-100' : 'opacity-0',
                     )}
                 />

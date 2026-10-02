@@ -349,7 +349,7 @@ export const customizationOption = defineType({
     featuredVideoField({
       group: 'content',
       description:
-        'Optional ambient video for the option detail gallery. Upload or direct S3/CDN MP4/MOV; YouTube is stored but the gallery keeps Featured image. Mobile and reduced-motion keep Featured image.',
+        'Optional ambient video for the option detail gallery. Prefer VP9 WebM with alpha or H.264 MP4; YouTube is stored but the gallery keeps Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     defineField({
       name: 'media',
@@ -662,6 +662,15 @@ export const customizationOption = defineType({
           return problems.length ? problems.join(' ') : true
         }).warning(),
       ],
+    }),
+    defineField({
+      name: 'specSheet',
+      title: 'Spec sheet',
+      type: 'file',
+      group: 'specs',
+      options: {accept: '.pdf,application/pdf'},
+      description:
+        'Optional PDF. When set, the customization detail page shows Download spec sheet.',
     }),
 
     // The five per-topic property fields — `materialSource`, `physicalProperties`,

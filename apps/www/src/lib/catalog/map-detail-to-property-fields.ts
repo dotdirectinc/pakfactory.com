@@ -36,10 +36,12 @@ function groupKey(value: CustomizationPropertyValue): string | null {
 /**
  * Map a customization Option detail → selectable Property fields.
  * Stated declared Properties are excluded. Shared ui property controllers only.
+ * Skips a field when its only value title matches the option title (echo).
  */
 export function mapDetailToPropertyFields(
     detail: CustomizationDetail,
 ): PropertyFieldDescriptor[] {
+    const optionTitle = detail.title.trim().toLowerCase();
     const declared = detail.declaredProperties;
     const hasDeclared = declared.length > 0;
     const selectableKeys = new Set(
@@ -91,6 +93,13 @@ export function mapDetailToPropertyFields(
                 ...(isCustom ? {appearance: 'customColor' as const} : {}),
             };
         });
+        // Sole value that only restates the option name — hide from Configuration.
+        if (
+            options.length === 1 &&
+            options[0]!.title.trim().toLowerCase() === optionTitle
+        ) {
+            continue;
+        }
         const kind = options.some(
             (o) =>
                 Boolean(o.imageUrl) ||
