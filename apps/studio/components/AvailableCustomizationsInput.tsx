@@ -22,6 +22,13 @@ import {
   type OptionRow,
   type TickState,
 } from './customizationTree'
+import {
+  AVAILABILITY_CATALOG_QUERY,
+  offeredOptionIds,
+  resolveProductAvailability,
+  type AvailabilityCatalog,
+  type ProductRulesInput,
+} from '../lib/product-availability'
 
 /**
  * The picker for `product.availableCustomizations`.
@@ -38,6 +45,12 @@ import {
  * Inspiration preset availability is not this document's to state — it is
  * whatever the product in `basedOn` offers — so the toggle is pre-selection,
  * and the preset stores only the options it comes already configured with.
+ *
+ * "Offers" on a preset means the base's FULL answer: what the base lists
+ * directly plus what the rules derive from it (most of Finishing, all of
+ * Printing) — the same list its Customization tab shows. A derived option is
+ * never stored on the base, so reading only the base's stored array left a
+ * preset unable to come pre-configured with a finish or a print. PROD-2776.
  *
  * That asymmetry is deliberate and it is the reason there is no tri-state. The
  * alternative was to have an editor mark forty options "available" before
@@ -69,7 +82,11 @@ type TypeRow = {
   optionCount: number
 }
 
-type Universe = { options: OptionRow[]; types: TypeRow[] }
+/** `decidedBy` splits the two pickers: a Standard product only ever states the
+ *  product-decided half; a preset can pre-select from both. */
+type PickerRow = OptionRow & { decidedBy: string | null }
+
+type Universe = { options: PickerRow[]; types: TypeRow[] }
 
 type Entry = {
   _key: string
@@ -107,6 +124,10 @@ type Entry = {
  * count a Type whose options all fail it and print "2 of 8 types" above one
  * rendered row.
  *
+ * Customization-decided options are fetched too, for presets only (PROD-2776):
+ * a preset can pre-select a derived finish or print. A Standard product still
+ * draws only the product-decided rows — it never states a derived option.
+ *
  * `types` is fetched alongside because two things have to be said on screen and
  * neither is derivable from the options alone: which categories are only
  * PARTLY in scope, and which Types nobody has classified. A Type with no answer
@@ -118,9 +139,9 @@ const UNIVERSE_QUERY = `{
   "options": *[
     _type == "customizationOption"
     && !(_id in path("drafts.**"))
-    && type->availabilityDecidedBy == "product"
+    && type->availabilityDecidedBy in ["product", "customization"]
     && appearsIn in ["configurable-with-page", "configurable-no-page"]
-  ]{${OPTION_PROJECTION}},
+  ]{${OPTION_PROJECTION}, "decidedBy": type->availabilityDecidedBy},
   "types": *[
     _type == "customizationType"
     && !(_id in path("drafts.**"))
@@ -148,6 +169,10 @@ const UNIVERSE_QUERY = `{
  * a material the underlying box cannot be made from, and nothing downstream
  * would catch it.
  *
+ * That is the base's direct list AND what the rules derive from it, so its
+ * exceptions come too — `resolveProductAvailability` turns the three into the
+ * one list the base's Customization tab shows.
+ *
  * Draft preferred, as everywhere else here: a base whose list is being edited
  * should be read as it is about to be, not as it was.
  */
@@ -155,9 +180,13 @@ const BASE_QUERY = `coalesce(
   *[_id == "drafts." + $baseId][0],
   *[_id == $baseId][0]
 ){
+  _id,
   title,
-  "optionIds": coalesce(availableCustomizations[].customization._ref, [])
+  "availableCustomizations": coalesce(availableCustomizations[].customization._ref, []),
+  "customizationExceptions": customizationExceptions[]{ "optionId": customization._ref, mode, reason }
 }`
+
+type BaseRow = ProductRulesInput & { title: string | null }
 
 const newKey = makeKeyGenerator('ac')
 
@@ -220,7 +249,8 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   const [error, setError] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
-  const [base, setBase] = useState<{ title: string | null; optionIds: string[] } | null>(null)
+  const [base, setBase] = useState<BaseRow | null>(null)
+  const [catalog, setCatalog] = useState<AvailabilityCatalog | null>(null)
 
   // One-shot, not a live subscription: the option list is taxonomy and changes
   // rarely, where this form opens constantly. A `listenQuery` per open document
@@ -246,6 +276,25 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     }
   }, [client])
 
+  // The rules catalog, for presets only: a Standard product never derives
+  // anything here, so it does not pay for the fetch.
+  useEffect(() => {
+    if (!isInspiration) return
+    let cancelled = false
+    client
+      .fetch<AvailabilityCatalog>(AVAILABILITY_CATALOG_QUERY)
+      .then((res) => {
+        if (!cancelled) setCatalog(res)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : String(err))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [client, isInspiration])
+
   // Refetched when `basedOn` changes, so repointing a preset at a different box
   // narrows the picker immediately rather than at the next reload.
   useEffect(() => {
@@ -255,10 +304,15 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     }
     let cancelled = false
     client
-      .fetch<{ title: string | null; optionIds: string[] } | null>(BASE_QUERY, { baseId })
+      .fetch<BaseRow | null>(BASE_QUERY, { baseId })
       .then((row) => {
         if (cancelled) return
-        setBase({ title: row?.title ?? null, optionIds: row?.optionIds ?? [] })
+        setBase({
+          _id: row?._id ?? baseId,
+          title: row?.title ?? null,
+          availableCustomizations: row?.availableCustomizations ?? [],
+          customizationExceptions: row?.customizationExceptions ?? [],
+        })
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -335,7 +389,11 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   if (fetched === null) {
     return <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>Loading options…</div>
   }
-  const universe = fetched.options
+  // A Standard product states only what it decides; a preset can pre-select
+  // anything its base ends up offering, derived options included.
+  const universe = isInspiration
+    ? fetched.options
+    : fetched.options.filter((o) => o.decidedBy === 'product')
 
   // A preset offers what the box it is based on offers — no more. Until that
   // box says what it offers, there is nothing legitimate to choose from here,
@@ -350,10 +408,10 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
         </Notice>
       )
     }
-    if (base === null) {
+    if (base === null || catalog === null) {
       return <div style={{ padding: '0.75rem 0', opacity: 0.6, fontSize: 13 }}>Loading options…</div>
     }
-    if (base.optionIds.length === 0) {
+    if ((base.availableCustomizations ?? []).length === 0) {
       return (
         <Notice>
           {base.title || 'The product this is based on'} does not offer any customizations yet, so
@@ -365,11 +423,13 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     }
   }
 
-  // On a preset the choosable set is the base's list, intersected with what the
-  // product decides. Anything already stored that falls outside it drops into
-  // "not editable here" below, which is how a preset offering something its
-  // base does not becomes visible rather than silent.
-  const baseIds = base ? new Set(base.optionIds) : null
+  // On a preset the choosable set is everything the base offers once the rules
+  // have run — its direct list plus what they derive, the same answer as the
+  // base's Customization tab. Anything already stored that falls outside it
+  // drops into "not editable here" below, which is how a preset offering
+  // something its base does not becomes visible rather than silent.
+  const baseIds =
+    isInspiration && base && catalog ? offeredOptionIds(resolveProductAvailability(catalog, base)) : null
   const scoped = baseIds ? universe.filter((o) => baseIds.has(o._id)) : universe
 
   // Only Types that actually hold a published Option are counted on either side
@@ -441,7 +501,8 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
         // familiar heading otherwise reads as the whole category — and the
         // reader has no way to tell the difference. A complete category says
         // nothing: attention belongs only where it is warranted.
-        const counts = partial.get(category.id)
+        // A preset draws derived Types too, so it is never partial in this sense.
+        const counts = isInspiration ? undefined : partial.get(category.id)
         const isPartial = counts ? counts.shown < counts.total : false
         return (
         <div key={category.id} style={{ marginBottom: '1.25rem' }}>
@@ -570,10 +631,11 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
           <strong>
             {outOfScope.length} {outOfScope.length === 1 ? 'entry is' : 'entries are'} not editable here.
           </strong>{' '}
-          They belong to a Customization Type whose availability is decided by another customization
-          rather than by the product, so this picker does not offer them. They are kept, not lost —
-          nothing above will remove them. An entry pointing at a deleted option lands here too — and on
-          a preset, so does anything the product it is based on does not itself offer.
+          {isInspiration
+            ? 'The product this preset is based on does not offer them — not directly, and not through the customization rules — so they cannot be pre-selected here. '
+            : 'They belong to a Customization Type whose availability is decided by another customization rather than by the product, so this picker does not offer them. '}
+          They are kept, not lost — nothing above will remove them. An entry pointing at a deleted
+          option lands here too.
         </Notice>
       ) : null}
     </div>

@@ -9,6 +9,13 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
+import {
+  AVAILABILITY_CATALOG_QUERY,
+  offeredOptionIds,
+  resolveProductAvailability,
+  type AvailabilityCatalog,
+  type ProductRulesInput,
+} from '../lib/product-availability'
 import { entityFields } from '../lib/entity-id-field'
 
 /**
@@ -643,7 +650,7 @@ export const product = defineType({
       // whole. Anything it cannot edit it still lists, at the bottom, rather
       // than leaving it somewhere an editor cannot see it. PROD-2529.
       components: { input: AvailableCustomizationsInput },
-      description: `Reads differently by Product type. On a standard product: what it offers. On an inspiration product: which options are already chosen — it offers whatever the product in "Based on" offers, so only the pre-selections are stored here. Which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" does not appear, and nor does an option that only has a library page. ${SOURCE_OWNED_NOTE}`,
+      description: `Reads differently by Product type. On a standard product: what it offers. On an inspiration product: which options are already chosen — it offers whatever the product in "Based on" offers, including the options its Customization tab derives (Finishing, Printing), so only the pre-selections are stored here. On a standard product, which options appear at all is set on each Customization Type, under "Who decides whether a product offers these options?" — a Type answering "Another Customization" does not appear there, since the rules derive it. An option that only has a library page never appears. ${SOURCE_OWNED_NOTE}`,
       // Two rules, two levels. A repeated option is always a mistake, so it is an
       // error. A pre-selected flag on a Standard product is inert rather than
       // wrong — warn, and do not clear it: a field switch that silently edits
@@ -672,7 +679,9 @@ export const product = defineType({
         }).warning(),
         // A preset offers what the box it is built from offers, and no more —
         // both kinds carry the same available set, the preset just arrives with
-        // some choices already made. The picker enforces this by only drawing
+        // some choices already made. "Offers" is the base's FULL answer: its
+        // direct list plus what the rules derive from it, so a pre-selected
+        // finish or print is not stray (PROD-2776). The picker enforces this by only drawing
         // the base's options, but a script or a push from the product data
         // source does not go through the picker, so the rule has to exist here
         // as well as in the UI.
@@ -689,16 +698,27 @@ export const product = defineType({
           if (!baseRef) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
-            const offered = await client.fetch<string[] | null>(
-              `coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]).availableCustomizations[].customization._ref`,
+            const { catalog, base } = await client.fetch<{
+              catalog: AvailabilityCatalog
+              base: ProductRulesInput | null
+            }>(
+              `{
+                "catalog": ${AVAILABILITY_CATALOG_QUERY},
+                "base": coalesce(*[_id == "drafts." + $baseRef][0], *[_id == $baseRef][0]){
+                  _id,
+                  "availableCustomizations": availableCustomizations[].customization._ref,
+                  "customizationExceptions": customizationExceptions[]{ "optionId": customization._ref, mode, reason }
+                }
+              }`,
               { baseRef },
             )
-            const allowed = new Set(offered ?? [])
+            if (!base) return true // base not landed yet — see above
+            const allowed = offeredOptionIds(resolveProductAvailability(catalog, base))
             const stray = (list as { customization?: { _ref?: string } }[]).filter(
               (e) => e?.customization?._ref && !allowed.has(e.customization._ref),
             ).length
             if (stray > 0) {
-              return `${stray} option(s) here are not offered by the product this preset is based on. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
+              return `${stray} option(s) here are not offered by the product this preset is based on, directly or through the customization rules. A preset cannot offer what the box it is built from cannot be made with — add them to the base product first, or remove them here.`
             }
           } catch {
             return true // never block on a lookup failure
