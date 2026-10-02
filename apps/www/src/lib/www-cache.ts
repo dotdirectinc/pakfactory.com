@@ -19,6 +19,10 @@ export const WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG =
     'www-catalog-customizations';
 export const WWW_SOLUTIONS_CACHE_TAG = 'www-solutions';
 export const WWW_EXPERTISE_CACHE_TAG = 'www-expertise';
+/** `homePage` singleton plus everything its heroes and sections dereference. */
+export const WWW_HOME_PAGE_CACHE_TAG = 'www-home-page';
+/** Case-study listing, listing page doc and every detail (related studies cross-reference). */
+export const WWW_CASE_STUDIES_CACHE_TAG = 'www-case-studies';
 
 export const wwwProductTag = (slug: string) => `www-product:${slug}`;
 export const wwwSolutionTag = (slug: string) => `www-solution:${slug}`;

@@ -12,11 +12,13 @@ import {
 } from "@/lib/sanity/env";
 import { absoluteUrl } from "@/lib/site";
 import {
+  WWW_CASE_STUDIES_CACHE_TAG,
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
   WWW_EXPERTISE_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
+  WWW_HOME_PAGE_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
   wwwExpertiseTag,
@@ -150,6 +152,8 @@ export async function POST(request: Request) {
 
   const touchesCaseStudies = !type || CASE_STUDY_TYPES.has(type);
   if (touchesCaseStudies) {
+    // One tag for listing + every detail: details show related studies (PROD-2755).
+    tags.add(WWW_CASE_STUDIES_CACHE_TAG);
     // The listing always reflects any of these changes (cards, filters, page SEO).
     revalidatePath("/case-studies");
     revalidated.push("/case-studies");
@@ -271,6 +275,10 @@ export async function POST(request: Request) {
     revalidatePath("/");
     revalidated.push("/");
   }
+  // PROD-2755 — the cached Home read dereferences far more than the types above
+  // (Finder buckets: customizations, expertise, industries…). It is one small
+  // query, so bust it on every webhook rather than risk a stale Home.
+  tags.add(WWW_HOME_PAGE_CACHE_TAG);
 
   if (!type || type === "websiteNavigation") {
     tags.add(WWW_WEBSITE_NAVIGATION_CACHE_TAG);

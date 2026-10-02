@@ -1,24 +1,13 @@
 import type {Metadata} from 'next';
-import {cache} from 'react';
 import Link from 'next/link';
 import {PageHeadingSection} from '@/components/common/page-heading-section';
 import {SectionRenderer} from '@/components/sections/section-renderer';
-import type {PageSection} from '@/components/sections/registry';
 import {WWW_ROUTES} from '@/lib/www-routes';
-import {getSanityClient} from '@/lib/sanity/client';
-import {isSanityConfigured} from '@/lib/sanity/env';
-import {HOME_PAGE_QUERY} from '@pakfactory/sanity/queries';
+import {getHomePage} from '@/lib/home-page';
 import {Button} from '@pakfactory/ui/components/button';
 
 /** ISR floor — keep literal for Next.js (PROD-2456). */
 export const revalidate = 60;
-
-type HomeDoc = {
-    title?: string | null;
-    metaTitle?: string | null;
-    metaDescription?: string | null;
-    sections?: PageSection[] | null;
-};
 
 /** Home hero `_type`s (PROD-2666) — each renders the page H1. */
 const HERO_SECTION_TYPES = new Set([
@@ -27,14 +16,6 @@ const HERO_SECTION_TYPES = new Set([
     'heroFinder',
     'heroFinderFullscreen',
 ]);
-
-/** One fetch per request for metadata + page (Studio singleton `homePage`). */
-const getHomePage = cache(async (): Promise<HomeDoc | null> => {
-    if (!isSanityConfigured()) return null;
-    return (await getSanityClient())
-        .fetch<HomeDoc | null>(HOME_PAGE_QUERY)
-        .catch(() => null);
-});
 
 export async function generateMetadata(): Promise<Metadata> {
     const home = await getHomePage();

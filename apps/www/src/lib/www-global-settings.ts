@@ -11,6 +11,8 @@ import {
 export type WwwGlobalSettings = {
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
   gtmId?: string | null;
+  /** Global OG image fallback for case studies and other www pages. */
+  defaultOgImageUrl?: string | null;
   /** Editor-managed favicon (PROD-2200) — falls back to `public/favicon.ico`. */
   favicon?: FaviconAsset;
   /** Render-time image watermark (PROD-2206). */
