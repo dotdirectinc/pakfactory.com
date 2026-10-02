@@ -112,6 +112,25 @@ When zero or multiple Product Lines are selected, the entry card is omitted.
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line, Product Style, Product type, Industries, and other properties = **OR** (same taxonomy as customizations)
 - **Zero-count options:** disabled in the rail (still uncheckable if already selected)
 
+## Product detail and landing heroes
+
+These are route-owned, not the `/products` filter grid. Specs and the Customization band stay in code. Bands after Customization come from the PDP template × `product.sections` (empty template → Default by kind). Ops seed and desk paths: [`memory.md`](../memory.md) § Product / Customization catalog sections.
+
+| Surface | Order rule | Code |
+| --- | --- | --- |
+| Product PDP gallery | `media[]` first, Featured image **last**. Same URL in both is kept once (the Media copy). Empty → placeholder alt only. | `productGallerySlides` |
+| Customization detail gallery | Featured image **first**, then Media. | [customizations catalog](./customizations-catalog.md) § Detail page |
+| PDP intro | `coalesce(pt::text(description), shortDescription)` — rich text wins, then the short description | `CATALOG_PRODUCT_FIELDS` |
+| Inspiration crumbs | Solution → first matching Solution Style → product. Standard products stay Products → line → style → product. | `buildProductDetailBreadcrumbs` |
+| Industry solution hero | Pinned `solution.featuredProducts` (Studio order), then title-sorted tagged products, cap **16**, deduped by slug | `mergeFeaturedThenFill` |
+| Product line bottom-bar marquee | Pinned `productLine.featuredProducts` first (any kind that has media), then **standard** products on the line that have media. Pins are schema-capped at 16; the auto fill has no numeric cap. | `assembleHeroMediaCards` |
+
+**Inspiration breadcrumb (PROD-2763).** Used when `kind === "inspiration"` and a parent resolved. Parent is the first `solutions[]` entry whose `solutionType == "industry"`, else `solutions[0]` — that crumb does not require `hasPage`. The style crumb is loaded only for a `hasPage` parent: the first style in that solution's merchandised `styleOrder` (unlisted styles follow, title asc) whose stored filter matches the product (`pickBreadcrumbSolutionStyle`). Label is `shortName`, else `title`. No matching style, or a parent without `hasPage` → Solution → product, with no style crumb. Chrome and `BreadcrumbList` JSON-LD share `buildProductDetailBreadcrumbs` (no Home item). A failed style fetch leaves the parent crumb and logs in development only.
+
+**Featured then fill.** Empty featured list means auto-only. A pin that is also in the auto list is not repeated. Solution auto-fill is `SOLUTION_HERO_PRODUCTS_QUERY`: listed, customer-facing products tagged via `primarySolution` or `solutions[]`, `order(title asc)`, already sliced to 16 **before** the merge — a tagged product past that alphabetical slice never fills a slot unless it is pinned. Line auto-fill skips inspirations and skips any product with no media URL; a pin with no media is skipped too. If nothing qualifies, the marquee falls back to the line featured image and frames.
+
+**Customization band on the PDP** (`ProductCustomizationsPreview`). Page flow, not a nested scroller: categories Materials → Print → Finish, then anything else by label. The first eight cards show immediately; further batches are a manual Show more (`pageSize` 8, `autoRevealLimit` 0 — no scroll auto-reveal). Anchor `pdp-customizations`.
+
 ## Out of scope (this ticket)
 
 - Category tabs / Categories left panel

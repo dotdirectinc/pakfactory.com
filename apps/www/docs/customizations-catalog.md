@@ -58,6 +58,17 @@ What a product offers is resolved by **`@pakfactory/sanity/customization-rules`*
 
 **Builder picks follow `customerSelects` (ADR-017 §4b):** a category step holds picks from several Types, each Type as many options as its `customerSelects` allows — a `one` Type swaps its pick (a box has one board), a `many` Type keeps several (Embossing + Debossing). Materials are *single selection within each Type*, so a rigid box takes one Chipboard **and** one Exterior Wrap. Each Type heading says *Choose one* / *Choose any*. Clicking a pick that is not open opens its detail (Properties, note); clicking the open pick un-picks it.
 
+**Order inside a builder step** (`buildStepsFromCatalog` in [`state.ts`](../src/lib/customization-builder/state.ts)). Category order stays the hard-coded slug list below. Within a category, two curated arrays apply, and only here — the public `/customizations` grid and the compare peer query stay `order(title asc)`.
+
+| Level | Field | Helper | Effect |
+| --- | --- | --- | --- |
+| Types in the category | `customizationCategory.typeOrder` (weak refs, projected as `categoryTypeOrder`) | `orderTypesInCategory` | Pinned types in drag order, then the rest by title |
+| Options in a type | `customizationType.optionOrder` (weak refs, projected as `typeOptionOrder`) | `orderOptionsInType` ([`option-order.ts`](../../../packages/sanity/src/option-order.ts)) | Pinned options in drag order, then the rest by title |
+
+Both lists are **order only, never a gate**. An option the array does not name still renders. Empty, absent, or all-dangling `optionOrder` collapses to alphabetical (`localeCompare` on title, else `_id`). The helper sorts the unpinned tail itself, so the order those options arrived in (rules query or `availableCustomizations`) does not survive. Weak refs to deleted options are dropped. `optionOrder` validation is `Rule.unique()` with no max; `productStyle.productOrder` is capped at 12.
+
+**Inspiration preset seed** ([`product-request-rail.tsx`](../src/components/product/product-request-rail.tsx)). The rail calls `seedFromCustomizations` only when `kind === "inspiration"` and at least one option is `preselected`. A standard product starts empty even if Studio flags are set. An inspiration's own `availableCustomizations` list **is** the preset: GROQ `preselectedIds` and the no-rules mapper mark every listed option, because editors often leave the per-row boolean unset. Options the rules add from `basedOn` are offered, and they stay off the preset seed. On a `one` Type, the first seeded option in that array wins; later options of the same Type are skipped. The seed walks `availableCustomizations` in array order, which is separate from the builder display order above.
+
 **Narrowing:** every pick goes to `resolveWithSelections` with `lookahead`. A pick hides every option it is **not paired with** in `compatibleCustomizations` — the lists are complete for options a product offers together, Crystal's excludes included (ADR-022 decision 5, amended 2026-09-25): Soy-Based Ink hides the other By Composition inks, Soft Touch hides the Debossing options (and vice versa), Textured Embossing & Debossing goes alone, and a finish picked first hides the boards it does not work on. A `one` Type keeps listing its alternatives. Ruled-out options stay **listed but disabled** — faded to 50% with no hover or click (the design system's disabled treatment, as on the locked rail steps), titled *Not available with your current selections*. An option is selectable only if picking it clears nothing, so anything selectable stays picked; a pick that becomes impossible (preset or saved line) is cleared silently. A Type not answered yet still counts as possible.
 
 **Production guard:** until a dataset holds `compatibleCustomizations` and `dependsOn` data, `prepareRules()` returns null and each product shows only what it lists directly (the rules fail closed — applying them to an empty rules dataset would remove every printing/finishing option).
@@ -100,6 +111,16 @@ Binding product rules for the library tile (`CustomizationCard`). Field roles: [
 - Featured video hover requires **both** a Featured image and a playable `featuredVideoUrl` (upload/CDN; YouTube → null).
 - Mobile and reduced-motion: keep the rest still (no video, no image swap).
 - Rest↔hover dissolve uses the shared media dissolve utility ([`media-dissolve.ts`](../src/lib/ui/media-dissolve.ts) — `--motion-slow` opacity crossfade).
+
+## Detail page — copy, gallery, compare
+
+Route: `/customizations/[category]/[handle]`. Fetch: `getCustomizationDetail` → `CATALOG_CUSTOMIZATION_DETAIL_QUERY`. Mapper: `mapSanityCustomizationDetail`.
+
+**Body copy** is the first non-empty of `shortDescription`, glossary plain text, then benefits plain text. `metaDescription` stays on the SEO field: the page, the compare blurb, and the builder boxes read the customer-facing fallbacks only. Builder cards add one more fallback after benefits: the Type's `description`.
+
+**Gallery** (`customizationGallerySlides`): Featured image first, then `media[]`, deduped by image URL. Product PDPs do the opposite (Media first, Featured last) — see [products catalog](./products-catalog.md) § Product detail. Card thumbs still prefer Featured image, then `media[0]`, until Featured is backfilled (ADR-023).
+
+**Compare** (`CustomizationComparison`, id `CUSTOMIZATION_COMPARISON_ID`). Same-category peers are other active options with a detail page, `order(title asc)`, excluding the current handle. Three slots: the first is the current option and is locked; the next two seed the first two peers. The third column is hidden below `md`. Swapping a column uses a title dropdown at `md+` and a bottom drawer below that. The sticky dock (`top-2`, `z-40`, under the header) appears only after the compare hero is more than half past the top of the viewport **and** the compare section still intersects the viewport. Column choices stay in local React state for that page view. Specs come from `buildCompareMatrix`; an empty matrix shows the authored-specs empty line.
 
 ## Component naming
 
