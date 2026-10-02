@@ -12,6 +12,7 @@ import {
 } from '@/components/solution/solution-product-preview';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineHeroMediaCard} from '@/lib/catalog/product-line-landing';
+import {productModelSrc} from '@/lib/catalog/product-3d-models';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
 import {headingSettleProps} from '@/lib/ui/heading-settle';
 import {
@@ -254,11 +255,13 @@ export function ProductLineHeroMediaMarquee({
 
     const handleSelect = (card: ProductLineHeroMediaCard) => {
         if (!card.title || !card.detailHref) return;
+        const slug = card.id.replace(/-\d+$/, '');
         setSelected({
-            id: card.id.replace(/-\d+$/, ''),
+            id: slug,
             title: card.title,
             detailHref: card.detailHref,
             image: {src: card.src, alt: card.alt},
+            modelSrc: productModelSrc(slug),
             customizations: card.customizations ?? [],
         });
         setOpen(true);

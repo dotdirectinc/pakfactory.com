@@ -1,7 +1,8 @@
 'use client';
 
+import {useState} from 'react';
 import Link from 'next/link';
-import {Package, X} from 'lucide-react';
+import {ImageIcon, Package, Rotate3d, X} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 import {
     Dialog,
@@ -12,6 +13,7 @@ import {
 
 import {BookmarkIconButton} from '@/components/ui/bookmark-icon-button';
 import {Icon} from '@/components/ui/icon';
+import {ModelViewer} from '@/components/ui/model-viewer';
 import {stubBookmarkAction} from '@/lib/catalog-card-actions';
 import type {
     SolutionHeroCustomization,
@@ -23,8 +25,13 @@ export type SolutionHeroPreviewProduct = {
     title: string;
     detailHref: string;
     image?: SolutionMedia | null;
+    /** Optional GLB — adds a "View in 3D" toggle over the photo (PoC, PROD-2777). */
+    modelSrc?: string;
     customizations: SolutionHeroCustomization[];
 };
+
+/** Clip name inside the PoC GLB; drives the open/close control. */
+const MODEL_ANIMATION_NAME = 'Box animation';
 
 type SolutionProductPreviewProps = {
     product: SolutionHeroPreviewProduct | null;
@@ -41,6 +48,20 @@ export function SolutionProductPreview({
     open,
     onOpenChange,
 }: SolutionProductPreviewProps) {
+    const [view, setView] = useState<'photo' | '3d'>('photo');
+    const [modelFailed, setModelFailed] = useState(false);
+    const [shownProductId, setShownProductId] = useState(product?.id);
+
+    // Each product opens on its photo; a failed model stays failed only for it.
+    if (product?.id !== shownProductId) {
+        setShownProductId(product?.id);
+        setView('photo');
+        setModelFailed(false);
+    }
+
+    const canShow3d = Boolean(product?.modelSrc) && !modelFailed;
+    const show3d = canShow3d && view === '3d';
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -67,7 +88,15 @@ export function SolutionProductPreview({
                         <div className="grid min-h-0 flex-1 gap-6 overflow-hidden p-6 lg:grid-cols-2 lg:gap-8">
                             <div className="flex min-w-0 shrink-0 flex-col gap-4">
                                 <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
-                                    {product.image?.src ? (
+                                    {show3d && product.modelSrc ? (
+                                        <ModelViewer
+                                            src={product.modelSrc}
+                                            alt={`3D model of ${product.title}`}
+                                            poster={product.image?.src}
+                                            animationName={MODEL_ANIMATION_NAME}
+                                            onError={() => setModelFailed(true)}
+                                        />
+                                    ) : product.image?.src ? (
                                         // eslint-disable-next-line @next/next/no-img-element -- CMS CDN URLs
                                         <img
                                             src={product.image.src}
@@ -82,6 +111,22 @@ export function SolutionProductPreview({
                                             />
                                         </span>
                                     )}
+                                    {canShow3d ? (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setView(show3d ? 'photo' : '3d')
+                                            }
+                                            aria-pressed={show3d}
+                                            className="absolute top-3 right-3 z-10 flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background/90 px-4 py-2 text-sm font-medium text-foreground shadow-sm backdrop-blur transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+                                        >
+                                            {show3d ? 'View photo' : 'View in 3D'}
+                                            <Icon
+                                                icon={show3d ? ImageIcon : Rotate3d}
+                                                size="md"
+                                            />
+                                        </button>
+                                    ) : null}
                                 </div>
                                 <Button
                                     asChild
