@@ -60,6 +60,7 @@
     "migrate:customization-status": "node scripts/migrate-customization-status.mjs",
     "migrate:finder-fs-default-rail": "node scripts/migrate-finder-fullscreen-default-rail.mjs",
     "migrate:preset-unset-inherited-customizations": "node scripts/migrate-preset-unset-inherited-customizations.mjs",
+    "migrate:spot-coating-pairs": "node scripts/migrate-spot-coating-pairs.mjs",
     "migrate:product-tree-featured-image": "node scripts/migrate-product-tree-featured-image.mjs",
     "migrate:unset-values-per-item": "node scripts/migrate-unset-values-per-item.mjs",
     "check:redirects-parity": "node scripts/check-redirects-parity.mjs",

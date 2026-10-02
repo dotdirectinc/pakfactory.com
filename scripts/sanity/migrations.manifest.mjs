@@ -469,6 +469,23 @@ export const MIGRATIONS = [
     // script header.
     probe: `count(*[_type == "product" && kind == "inspiration" &&
       count(availableCustomizations[preselected != true]) > 0]) == 0`,
+  },  {
+    id: '20261002-spot-coating-pairs',
+    ticket: 'PROD-2783',
+    title: 'Spot Coating ↔ Surface Finish / Surface Finish (non-paper) / Lamination pairs follow the board frame',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:spot-coating-pairs',
+    script: 'apps/studio/scripts/migrate-spot-coating-pairs.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: the fill paired every spot coating with every finish, so
+    // Glitter / Pearlescent / Textured — which the frame sends to "No Spot Coating" — carried
+    // spot coatings. Read from both ends, since the fill wrote both. ⚠️ It goes false again if
+    // the relationship fill re-runs before its PROD-2783 fix lands — see the script header.
+    probe: `count(*[_type == "customizationOption" && !(_id in path("drafts.**")) &&
+      type->title == "Surface Finish" && title in ["Glitter", "Pearlescent", "Textured"] &&
+      (count(compatibleCustomizations[@->type->title == "Spot Coating"]) > 0 ||
+       count(*[_type == "customizationOption" && type->title == "Spot Coating" &&
+         ^._id in compatibleCustomizations[]._ref]) > 0)]) == 0`,
   },
 ]
 
