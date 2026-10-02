@@ -29,12 +29,13 @@ import {
     CUSTOMIZATION_CATALOG_ALL_CATEGORY,
     matchesCustomizationItem,
 } from '@/lib/catalog/customization-catalog-filter';
+import {
+    unpackCustomizationLibrary,
+    type PackedCustomizationLibrary,
+} from '@/lib/catalog/library-wire';
 import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
-import type {
-    CustomizationFacetDef,
-    CustomizationLibraryResult,
-} from '@/lib/catalog/types';
+import type {CustomizationFacetDef} from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
 const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
@@ -46,7 +47,8 @@ export type CustomizationCatalogTab = {
 };
 
 type CustomizationCatalogPanelProps = {
-    library: CustomizationLibraryResult;
+    /** Compact wire form from `CustomizationCatalogView` (PROD-2757); unpacked once here. */
+    packedLibrary: PackedCustomizationLibrary;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
     /** Optional initial category slug from Studio section embeds. */
@@ -56,11 +58,15 @@ type CustomizationCatalogPanelProps = {
 };
 
 export function CustomizationCatalogPanel({
-    library,
+    packedLibrary,
     urlSync = true,
     initialCategory = null,
     hideCatalogBorderTop = false,
 }: CustomizationCatalogPanelProps) {
+    const library = useMemo(
+        () => unpackCustomizationLibrary(packedLibrary),
+        [packedLibrary],
+    );
     const tabs: CustomizationCatalogTab[] = useMemo(
         () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
         [library.tabs],
