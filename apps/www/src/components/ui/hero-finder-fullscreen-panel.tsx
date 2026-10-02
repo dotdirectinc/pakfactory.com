@@ -511,7 +511,6 @@ function HeroFinderFullscreenChrome({
                             {hasVideo ? (
                                 <CoverVideo
                                     src={slide.videoSrc!}
-                                    poster={slide.image?.src}
                                     active={current}
                                 />
                             ) : null}

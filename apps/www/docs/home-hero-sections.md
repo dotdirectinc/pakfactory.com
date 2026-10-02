@@ -68,6 +68,15 @@ Picks sync to `?line=<slug>&industry=<slug>` via `lib/ui/use-query-param-state.t
 - Finder media rail: full-bleed `SectionCarousel` of `MediaCaptionCard`s from `buildFinderSlides` — **General** Studio buckets when Packaging Solution × All; **Specific** relatedness otherwise. Featured slot caption always on; peers reveal caption/video on hover. Card click (not drag) goes to the slide CTA.
 - Cover media fills the card edge-to-edge (product, customization, case study, and campaign stills all use cover).
 
+### Media loading (PROD-2753)
+
+Every ambient video goes through `ui/cover-video.tsx`:
+
+- **`preload="none"`.** No bytes are fetched until the video is within 200px of the viewport (IntersectionObserver).
+- **Playback.** It plays only while it is both `active` and in view, and pauses when it scrolls out.
+- **Posters.** When an optimized `SanityImage` already renders underneath (spotlight, finder fullscreen, `MediaCaptionCard`), the caller passes no `poster`; the image shows until the first frame. When nothing is underneath (`StagesBoard`), the poster is a Sanity CDN URL resized through `sanityImageLoader` (`posterWidth`, `q=75`, `auto=format`). Never pass a raw `cdn.sanity.io/images/...` URL: originals are 1–2.5 MB PNGs.
+- **Video files.** Sanity serves video files as uploaded, with no transcoding. Keep each upload ≤ 3 MB, 720p, H.264. The 2026-10-01 baseline found 5–32 MB files on the homepage ([PROD-2752](https://dotdirect.atlassian.net/browse/PROD-2752)).
+
 ## Human setup (agents do not write documents)
 
 1. Deploy the Studio schema (`pnpm sanity:deploy:staging`, then prod once approved).

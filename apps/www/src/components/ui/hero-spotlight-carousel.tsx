@@ -211,7 +211,6 @@ export function HeroSpotlightCarousel({
                     {slide.videoSrc ? (
                         <CoverVideo
                             src={slide.videoSrc}
-                            poster={slide.image.src}
                             active={current}
                             className="absolute inset-0 size-full object-cover"
                         />

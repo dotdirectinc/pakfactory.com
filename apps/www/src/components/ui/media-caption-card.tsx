@@ -197,7 +197,6 @@ export function MediaCaptionCard({
             {trimmedVideo ? (
                 <CoverVideo
                     src={trimmedVideo}
-                    poster={image?.src}
                     active={mediaActive}
                     className={cn(
                         'transition-opacity duration-(--motion-slow) ease-out motion-reduce:transition-none',
