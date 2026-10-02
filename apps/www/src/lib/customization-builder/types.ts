@@ -164,6 +164,7 @@ export type CatalogOptionLike = Pick<
     | 'categoryTitle'
     | 'categoryDescription'
     | 'categoryTypeOrder'
+    | 'typeOptionOrder'
     | 'typeId'
     | 'typeSlug'
     | 'typeTitle'

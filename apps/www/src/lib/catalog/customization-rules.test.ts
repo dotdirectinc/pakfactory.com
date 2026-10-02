@@ -135,6 +135,17 @@ describe('customization rules — the product offer', () => {
         assert.equal(availableCustomizations.find((o) => o.id === 'o.metallic')?.preselected, undefined);
     });
 
+    // PROD-2773 — inspiration GROQ now passes every listed option as preselectedIds
+    // (the array is the preset set; the Studio boolean is often unset).
+    it('marks every preselectedId when several are passed (inspiration preset list)', () => {
+        const {availableCustomizations} = resolve(['o.tinplate'], {
+            preselectedIds: ['o.offset', 'o.metallic'],
+        });
+        assert.equal(availableCustomizations.find((o) => o.id === 'o.offset')?.preselected, true);
+        assert.equal(availableCustomizations.find((o) => o.id === 'o.metallic')?.preselected, true);
+        assert.equal(availableCustomizations.find((o) => o.id === 'o.tinplate')?.preselected, undefined);
+    });
+
     it('applies exceptions: a remove takes an option out, an add puts one in', () => {
         const removed = resolve(['o.tinplate'], {exceptions: [{optionId: 'o.offset', mode: 'remove', reason: 'x'}]});
         assert.ok(!idsOf(removed.availableCustomizations).includes('o.offset'));
