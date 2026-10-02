@@ -9,7 +9,7 @@ How the filterable products library is wired for humans and AI agents. Binding p
 | Route | `/products` → [`src/app/(site)/products/page.tsx`](../src/app/(site)/products/page.tsx) | Full page chrome; **URL sync** for filters |
 | Studio singleton | `_type` / id **`productCatalogPage`** (Main Website → Product Pages) | Owns `sections[]` **below** the fixed grid (PROD-2589). H1 / intro / SEO stay route fallbacks. |
 | Line landing | `/products/[slug]` | `ProductLineLanding` |
-| Style landing | `/products/[slug]/[styleSlug]` → [`product-style-view.tsx`](../src/components/product/product-style-view.tsx) | Heading + media + scoped `ProductCatalogView` (same shape as solution style). Studio singleton **`productStylePage`** owns `sections[]` below the grid. |
+| Style landing | `/products/[slug]/[styleSlug]` → [`product-style-view.tsx`](../src/components/product/product-style-view.tsx) | Heading + media + scoped `ProductCatalogView` (same shape as solution style). Studio singleton **`productStylePage`** owns `sections[]` below the grid. Product sequence on this grid is still the library’s title sort — `productStyle.productOrder` is stored and not applied here. |
 
 **No Categories panel** — unlike `/customizations`, there are no category tabs, no `category` URL param, and no category-dependent facets.
 
@@ -32,7 +32,9 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 | API | [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) — **`listProductLibrary()`**, **`getProductCatalogPage()`** |
 | Cache tag | `WWW_CATALOG_PRODUCTS_CACHE_TAG` |
 
-Active products only (`status == "active"` or unset), ordered by title.
+Active products only (`status == "active"` or unset). The `/products` library query is `order(title asc)`.
+
+The styles grid on a line landing is merchandised: `productLine.styleOrder` pins styles, and unlisted styles follow alphabetically. Drag order for Product Lines in Studio (`orderRank`) sorts Products mega-menu links. Full contract, including fields that save but do not change the site yet: [`catalog-merchandising-order.md`](./catalog-merchandising-order.md).
 
 ### What is shown (PROD-2620)
 

@@ -54,7 +54,9 @@ What a product offers is resolved by **`@pakfactory/sanity/customization-rules`*
 | Resolve per product + client snapshot | [`src/lib/catalog/customization-rules.ts`](../src/lib/catalog/customization-rules.ts) |
 | Fetch / cache (`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}:rules`) | `getPreparedRules()` / `resolveProductOffer()` in [`src/lib/catalog/catalog.ts`](../src/lib/catalog/catalog.ts) |
 | Builder narrowing as the customer chooses | [`src/lib/customization-builder/rules-narrowing.ts`](../src/lib/customization-builder/rules-narrowing.ts) |
-| Display order only | [`src/lib/catalog/customization-category-order.ts`](../src/lib/catalog/customization-category-order.ts) |
+| Category tab / rail order | [`src/lib/catalog/customization-category-order.ts`](../src/lib/catalog/customization-category-order.ts) — hard-coded slugs; Studio `customizationCategory.orderRank` does not feed this |
+| Type sequence in the configurator | [`orderTypesInCategory`](../../../packages/sanity/src/customization-type-order.ts) via `buildStepsFromCatalog`, from `customizationCategory.typeOrder` |
+| Option sequence inside a type | Library arrival order (`title asc`). `customizationType.optionOrder` is stored; [`orderOptionsInType`](../../../packages/sanity/src/option-order.ts) is not called yet. Contract: [`catalog-merchandising-order.md`](./catalog-merchandising-order.md) |
 
 **Builder picks follow `customerSelects` (ADR-017 §4b):** a category step holds picks from several Types, each Type as many options as its `customerSelects` allows — a `one` Type swaps its pick (a box has one board), a `many` Type keeps several (Embossing + Debossing). Materials are *single selection within each Type*, so a rigid box takes one Chipboard **and** one Exterior Wrap. Each Type heading says *Choose one* / *Choose any*. Clicking a pick that is not open opens its detail (Properties, note); clicking the open pick un-picks it.
 
@@ -64,7 +66,7 @@ What a product offers is resolved by **`@pakfactory/sanity/customization-rules`*
 
 **Snapshot:** each product ships a pruned rules snapshot (its resolvable options only, compact ids, symmetric pairs stored once — ~20–35 KB on dev) with the PDP and every saved request line; narrowing on it is identical to narrowing on the full catalog.
 
-Builder rail + catalog tabs share `compareCategorySlugs()`: Dimensions → materials → printing → finishing → additional-customization. Empty categories stay hidden.
+Builder rail + catalog tabs share `compareCategorySlugs()`: Dimensions → materials → printing → finishing → additional-customization. Empty categories stay hidden. Types inside a category step follow `customizationCategory.typeOrder`; options inside a type stay alphabetical until `optionOrder` is wired. See [`catalog-merchandising-order.md`](./catalog-merchandising-order.md).
 
 ### Sanity field map
 

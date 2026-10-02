@@ -19,6 +19,10 @@ Inherits root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 | `lib/` | Shared helpers (`seo-fields.ts`, field groups, channels) |
 | `components/` | Custom Studio views (not Next.js components) |
 
+## Catalog merchandising order
+
+Drag order for product lines, styles, solutions, and customization categories/types/options — which fields the site reads, and the GROQ `coalesce` pitfall: [`apps/www/docs/catalog-merchandising-order.md`](../www/docs/catalog-merchandising-order.md).
+
 ## SEO and Social fields (binding)
 
 Every content type that needs SEO/Social must use [`lib/seo-fields.ts`](./lib/seo-fields.ts):

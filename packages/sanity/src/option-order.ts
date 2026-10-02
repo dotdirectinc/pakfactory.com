@@ -90,7 +90,7 @@ export function orderOptionsInType<T extends OrderableOption>(
  * Wiring this up means calling this function on each type's bucket once the buckets
  * are built, with that type's `optionOrder`.
  *
- * 🔴 The same function has a twin waiting in the same place: `orderTypesInCategory`
- * orders the TYPES in that rail and is equally unwired (PROD-2740). Whoever wires one
- * should wire both — they are two levels of the same list.
+ * Types in that same rail are already ordered: `buildStepsFromCatalog` calls
+ * `orderTypesInCategory` (PROD-2746). This function is the level below that and
+ * is still not called.
  */

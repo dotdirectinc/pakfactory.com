@@ -8,8 +8,8 @@
  *
  * This is the TS twin of the two-tier GROQ in `LINE_STYLES` (queries/catalog.ts),
  * which does the same job for `productLine.styleOrder`. It lives in TS rather
- * than GROQ because its only consumer assembles its list in JavaScript — see the
- * hand-off note at the bottom of this file.
+ * than GROQ because its consumer assembles the list in JavaScript — see the
+ * note at the bottom of this file.
  *
  * ⚠️ The references in `typeOrder` are WEAK, so a deleted type leaves a dangling
  * entry behind rather than blocking the delete. Refs that match no type are
@@ -40,8 +40,7 @@ function byTitle(a: OrderableType, b: OrderableType): number {
  * Listed types in drag order, then every other type alphabetically.
  *
  * `typeOrder` absent, empty, or naming only deleted types all collapse to plain
- * alphabetical — which is the behaviour a category has before anyone drags
- * anything, and the reason this is safe to ship before any consumer reads it.
+ * alphabetical — the behaviour a category has before anyone drags anything.
  *
  * Input order is never trusted: the tail is sorted here rather than assumed,
  * because the one real consumer receives its types in arbitrary order (see below).
@@ -75,18 +74,13 @@ export function orderTypesInCategory<T extends OrderableType>(
 }
 
 /**
- * ⚠️ HAND-OFF — the configurator does not use this yet.
+ * Applied by `buildStepsFromCatalog`
+ * (apps/www/src/lib/customization-builder/state.ts, PROD-2746). The builder
+ * buckets options by category, then calls this function with that category's
+ * `typeOrder`.
  *
- * The only surface that renders types in sequence is the customization builder.
- * `/customizations` lists OPTIONS faceted by property, `/customizations/[category]`
- * is a placeholder page, and nothing else orders types at all.
- *
- * `buildStepsFromCatalog` (apps/www/src/lib/customization-builder/state.ts) derives
- * type order from the order OPTIONS arrive in — a type first appears when its first
- * option does — so the sequence is arbitrary today, and ordering any query will not
- * change it. Wiring it up means calling this function on each category's types once
- * the buckets are built, with that category's `typeOrder`.
- *
- * That rendering change is front-end work and deliberately out of scope here
- * (PROD-2740). This function is the half that can be written and tested now.
+ * `/customizations` does not. It lists options, and category tabs use the
+ * hard-coded slug order in apps/www/src/lib/catalog/customization-category-order.ts.
+ * Options inside a type stay in library-query order (`title asc`) until
+ * `orderOptionsInType` is called on each bucket.
  */

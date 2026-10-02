@@ -63,6 +63,8 @@ Do **not** collapse these layers:
 
 **Products catalog (PROD-1845):** route `/products` uses `listProductLibrary()` and `ProductCatalog*` components — same filter/search/load-more pattern as customizations **without** category tabs. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md). Line/style drill-down routes unchanged.
 
+**Catalog merchandising order (PROD-2739–2749):** partial curated lists (`styleOrder`, `typeOrder`, `productOrder`, `optionOrder`) versus Studio `orderRank`, and which surfaces read them: [`docs/catalog-merchandising-order.md`](./docs/catalog-merchandising-order.md).
+
 **Route gate (challenge before adding Sections):**
 
 - Chrome (nav/footer/breadcrumbs)? → **not** a section.
