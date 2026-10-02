@@ -42,26 +42,22 @@ export function ChipField({
     <div
       className="flex flex-wrap gap-2"
       role={valuesPerItem === "one" ? "radiogroup" : "group"}
+      aria-label="Choices"
     >
       {chips.map((c) => {
         const on = selected.includes(c.id);
+        const isConsultation = c.appearance === "consultation";
         return (
-          <span
+          <button
             key={c.id}
+            type="button"
             role={valuesPerItem === "one" ? "radio" : "checkbox"}
             aria-checked={on}
-            tabIndex={0}
-            className={chipClass(on)}
+            className={chipClass(on, isConsultation)}
             onClick={() => toggle(c.id)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                toggle(c.id);
-              }
-            }}
           >
             {c.label}
-          </span>
+          </button>
         );
       })}
     </div>

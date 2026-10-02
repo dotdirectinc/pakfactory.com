@@ -147,7 +147,7 @@ export function DimensionField({
       <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm">
         <input
           type="checkbox"
-          className="size-4 rounded border-border"
+          className="size-4 rounded border-border focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           checked={state.unsure}
           onChange={(e) => {
             const unsure = e.target.checked;
