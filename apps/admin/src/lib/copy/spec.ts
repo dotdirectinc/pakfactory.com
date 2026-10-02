@@ -224,3 +224,45 @@ export const ADMIN_SPEC_BROWSE_COPY = {
   editTypeInStudio: "Edit type in Studio",
   columns: { value: "Value", code: "Registry ID", facts: "Facts", options: "Options", products: "Products" },
 };
+
+const PUBLISH_LABEL: Record<string, string> = { published: "Published", changed: "Published, edited", draft: "Draft" };
+const SOLUTION_TYPE_LABEL: Record<string, string> = { industry: "Industry", channel: "Channel", focus: "Focus", "use-case": "Use case" };
+
+/** Solutions browser and the inspiration view of Products (PROD-2782). */
+export const ADMIN_SPEC_SOLUTIONS_COPY = {
+  solutionsTitle: "Solutions",
+  solutionsLead:
+    "Every solution in Sanity with its solution styles and its inspiration products (those whose primary solution it is), each with its registry ID. Read-only — edit in Studio.",
+  solutionTotals: (t: { solutions: number; styles: number; inspirations: number; registered: number; drafts: number }) =>
+    `${plural(t.solutions, "solution")} · ${plural(t.styles, "style")} · ${plural(t.inspirations, "inspiration product")} · ${t.registered} registered${t.drafts ? ` · ${t.drafts} drafts` : ""}`,
+  publishedOnly:
+    "Published documents only — most solution styles are drafts and are not shown. Set ADMIN_SANITY_READ_TOKEN to include drafts.",
+  filterSolutions: "Filter — a solution, a style, an inspiration product or a registry code…",
+  noMatch: (q: string) => `Nothing matches “${q}”.`,
+  solutionsCount: (n: number) => plural(n, "solution"),
+  stylesCount: (n: number) => plural(n, "style"),
+  inspirationsCount: (n: number) => plural(n, "inspiration product"),
+  stylesHeading: "Solution styles",
+  inspirationsHeading: "Inspiration products",
+  noStyles: "No solution styles.",
+  noInspirations: "No inspiration products.",
+  noPage: "no landing page",
+  notRegistered: "not registered",
+  solutionType: (t: string) => SOLUTION_TYPE_LABEL[t] ?? t,
+  publish: (s: string) => PUBLISH_LABEL[s] ?? s,
+  status: (s: string) => STATUS_LABEL[s] ?? s,
+  // Products page switch
+  kindTabs: { standard: "Standard", inspiration: "Inspiration" },
+  inspirationLead:
+    "Every inspiration product: the standard product it is based on and its primary solution, with registry IDs. Read-only — edit in Studio.",
+  filterInspirations: "Filter — a product, its base product, a solution or a registry code…",
+  columns: {
+    product: "Product",
+    code: "Registry ID",
+    base: "Based on",
+    solution: "Primary solution",
+    status: "Status",
+    sanity: "Sanity",
+  },
+  editInStudio: "Edit in Studio",
+};
