@@ -1,6 +1,7 @@
 import type {CustomizationCategory} from '@/lib/catalog/types';
 import {compareCategorySlugs} from '@/lib/catalog/customization-category-order';
 import {orderTypesInCategory} from '@pakfactory/sanity/customization-type-order';
+import {orderOptionsInType} from '@pakfactory/sanity/option-order';
 import {
     DIMENSIONS_STEP_KEY,
     EMPTY_BUILDER_STATE,
@@ -241,6 +242,8 @@ export function buildStepsFromCatalog(
             {
                 type: BuilderType;
                 options: BuilderOption[];
+                /** From any option in the type — same `optionOrder` on every row. */
+                optionOrder?: string[];
             }
         >;
     };
@@ -291,6 +294,14 @@ export function buildStepsFromCatalog(
             bucket.types.set(typeId, typeBucket);
         }
 
+        if (
+            !typeBucket.optionOrder &&
+            item.typeOptionOrder &&
+            item.typeOptionOrder.length > 0
+        ) {
+            typeBucket.optionOrder = item.typeOptionOrder;
+        }
+
         if (typeBucket.options.some((opt) => opt.id === item.id)) continue;
 
         typeBucket.options.push({
@@ -327,6 +338,7 @@ export function buildStepsFromCatalog(
                 title: typeBucket.type.title,
                 type: typeBucket.type,
                 options: typeBucket.options,
+                optionOrder: typeBucket.optionOrder,
             })),
             category.typeOrder,
         );
@@ -335,7 +347,16 @@ export function buildStepsFromCatalog(
         const options: BuilderOption[] = [];
         for (const typeBucket of orderedBuckets) {
             types.push(typeBucket.type);
-            options.push(...typeBucket.options);
+            // PROD-2775 — merchandised option sequence from type.optionOrder.
+            const orderedOptions = orderOptionsInType(
+                typeBucket.options.map((opt) => ({
+                    _id: opt.id,
+                    title: opt.title,
+                    option: opt,
+                })),
+                typeBucket.optionOrder,
+            );
+            options.push(...orderedOptions.map((row) => row.option));
         }
 
         steps.push({

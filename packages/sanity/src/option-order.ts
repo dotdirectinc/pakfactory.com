@@ -79,18 +79,13 @@ export function orderOptionsInType<T extends OrderableOption>(
 }
 
 /**
- * ⚠️ HAND-OFF — the configurator does not use this yet.
+ * Wired in `buildStepsFromCatalog` (apps/www/src/lib/customization-builder/state.ts)
+ * for PROD-2775 — each type bucket's options are reordered with this helper using
+ * that type's `optionOrder` (projected as `typeOptionOrder` on catalog options).
  *
- * Options are never fetched per type. CATALOG_CUSTOMIZATION_LIBRARY_QUERY returns one
- * flat list ordered `title asc`, and `buildStepsFromCatalog`
- * (apps/www/src/lib/customization-builder/state.ts) buckets them by type in
- * JavaScript, pushing each option in arrival order. So options within a type are
- * alphabetical today purely by inheritance from that one query's sort.
+ * Options are never fetched per type. CATALOG_CUSTOMIZATION_LIBRARY_QUERY and the
+ * product offer return flat lists; the builder buckets by type in JavaScript, then
+ * calls this so pinned options lead and the rest sort alphabetically.
  *
- * Wiring this up means calling this function on each type's bucket once the buckets
- * are built, with that type's `optionOrder`.
- *
- * 🔴 The same function has a twin waiting in the same place: `orderTypesInCategory`
- * orders the TYPES in that rail and is equally unwired (PROD-2740). Whoever wires one
- * should wire both — they are two levels of the same list.
+ * The twin `orderTypesInCategory` orders TYPES in the same rail (PROD-2740 / PROD-2746).
  */

@@ -60,6 +60,11 @@ export type CustomizationOption = {
      * Pass to `orderTypesInCategory` — order only, never a gate.
      */
     categoryTypeOrder?: string[];
+    /**
+     * Curated option ids for this option's type (PROD-2748 / PROD-2775).
+     * Pass to `orderOptionsInType` — order only, never a gate.
+     */
+    typeOptionOrder?: string[];
     typeId?: string;
     typeSlug?: string;
     typeTitle?: string;
@@ -482,8 +487,10 @@ export type CustomizationDetail = {
     categoryLabel: string;
     typeTitle?: string;
     typeSlug?: string;
-    /** Short copy for the identity column / meta. */
+    /** Short copy for the identity column (customer-facing — not meta). */
     description?: string;
+    /** SEO meta description only — use in generateMetadata, never on-page body. */
+    metaDescription?: string;
     /**
      * Gallery slides: Featured image first (when set), then Media extras (ADR-023).
      * Index 0 is the poster for Featured video hover.

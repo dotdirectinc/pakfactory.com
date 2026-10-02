@@ -255,16 +255,24 @@ function mapAvailableCustomization(
     const categorySlug = category?.slug?.trim();
     if (!categorySlug) return null;
 
-    const firstImage = Array.isArray(option.media) ? option.media[0] : null;
-
-    // No shortDescription on customizationOption yet — fall back through
-    // meta / glossary / benefits / type description for the detail panel.
+    // PROD-2762 — prefer authored short description for cards / builder; fall
+    // back through glossary / benefits / type. Meta description is SEO-only and
+    // must not drive the customization boxes.
+    const shortDescription = option.shortDescription?.trim() || '';
     const description = firstNonEmpty(
-        option.metaDescription,
+        shortDescription,
         option.glossaryPlain,
         option.benefitsPlain,
         type?.description,
     );
+
+    // PROD-2774 / ADR-023 — featured image first; media[0] until backfill.
+    const featuredUrl = option.featuredImage
+        ? sanityImageBaseUrl(option.featuredImage)
+        : null;
+    const firstMedia = Array.isArray(option.media) ? option.media[0] : null;
+    const mediaUrl = firstMedia ? sanityImageBaseUrl(firstMedia) : null;
+    const imageUrl = featuredUrl || mediaUrl || null;
 
     const customerSelects =
         type?.customerSelects === 'many' || type?.cardinality === 'many'
@@ -277,11 +285,18 @@ function mapAvailableCustomization(
                 Boolean(item?._id && item.title),
         )
         .map((item) => {
-            const techniqueImage = Array.isArray(item.media)
+            const techniqueFeatured = item.featuredImage
+                ? sanityImageBaseUrl(item.featuredImage)
+                : null;
+            const techniqueMedia = Array.isArray(item.media)
                 ? item.media[0]
                 : null;
+            const techniqueMediaUrl = techniqueMedia
+                ? sanityImageBaseUrl(techniqueMedia)
+                : null;
+            // Customer-facing — never metaDescription.
             const techniqueDescription = firstNonEmpty(
-                item.metaDescription,
+                item.shortDescription,
                 item.glossaryPlain,
                 item.benefitsPlain,
             );
@@ -296,14 +311,15 @@ function mapAvailableCustomization(
                 ...(techniqueDescription
                     ? {description: techniqueDescription}
                     : {}),
-                imageUrl: techniqueImage
-                    ? (sanityImageBaseUrl(techniqueImage) ?? null)
-                    : null,
+                imageUrl: techniqueFeatured || techniqueMediaUrl || null,
                 ...(hasDetailPage(item.appearsIn) ? {hasPage: true} : {}),
             };
         });
 
     const typeOrder = (category?.typeOrder ?? []).filter(
+        (id): id is string => typeof id === 'string' && id.length > 0,
+    );
+    const optionOrder = (type?.optionOrder ?? []).filter(
         (id): id is string => typeof id === 'string' && id.length > 0,
     );
 
@@ -315,14 +331,15 @@ function mapAvailableCustomization(
         categoryTitle: category?.title ?? undefined,
         categoryDescription: category?.description ?? undefined,
         ...(typeOrder.length > 0 ? {categoryTypeOrder: typeOrder} : {}),
+        ...(optionOrder.length > 0 ? {typeOptionOrder: optionOrder} : {}),
         typeId: type?._id ?? undefined,
         typeSlug: type?.slug ?? undefined,
         typeTitle: type?.title ?? undefined,
         typeDescription: type?.description ?? undefined,
         customerSelects,
         cardinality: customerSelects,
-        imageUrl: firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null,
-        shortDescription: '',
+        imageUrl,
+        shortDescription,
         description,
         preselected: Boolean(row.preselected),
         ...(option.appearsIn ? {appearsIn: option.appearsIn} : {}),
@@ -365,8 +382,16 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     });
     if (!productStyle) return null;
 
+    // PROD-2530 / PROD-2773 — when rules are absent, an inspiration's own
+    // availableCustomizations list is its preset set (full offer comes from
+    // basedOn once rules resolve). Treat every listed option as preselected so
+    // the request rail can seed even if the Studio boolean was left unset.
     const availableCustomizations = (doc.availableCustomizations ?? [])
-        .map(mapAvailableCustomization)
+        .map((row) =>
+            mapAvailableCustomization(
+                kind === 'inspiration' ? {...row, preselected: true} : row,
+            ),
+        )
         .filter((item): item is CustomizationOption => item != null);
 
     const dim = doc.dimensionRange;
@@ -913,11 +938,13 @@ export function mapSanityCustomizationDetail(
         });
     }
 
+    // Customer-facing body — short description first; never metaDescription (SEO-only).
     const description = firstNonEmpty(
-        doc.metaDescription,
+        doc.shortDescription,
         doc.glossaryPlain,
         doc.benefitsPlain,
     );
+    const metaDescription = doc.metaDescription?.trim() || undefined;
 
     const typeTitle = doc.type?.title?.trim();
     const typeSlug = doc.type?.slug?.trim();
@@ -934,6 +961,7 @@ export function mapSanityCustomizationDetail(
         ...(typeTitle ? {typeTitle} : {}),
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
+        ...(metaDescription ? {metaDescription} : {}),
         media: customizationGallerySlides(doc.featuredImage, doc.media, title),
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}

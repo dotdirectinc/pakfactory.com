@@ -31,7 +31,8 @@ export function mapCustomizationPreviewItems(
             category: option.category,
             categoryTitle: option.categoryTitle,
             typeTitle: option.typeTitle ?? option.categoryTitle,
-            description: option.description || option.shortDescription || undefined,
+            description:
+                option.shortDescription || option.description || undefined,
             imageUrl: option.imageUrl,
             imageAlt: option.label,
         });

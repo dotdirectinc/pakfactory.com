@@ -11,7 +11,7 @@ type OptionDetailHeaderProps = {
 
 /**
  * Shared identity header for the builder detail column.
- * Title + copy beside a wider preview frame (image or muted placeholder).
+ * Title + copy beside a square preview frame (image or muted placeholder).
  */
 export function OptionDetailHeader({
     title,
@@ -27,7 +27,7 @@ export function OptionDetailHeader({
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[3fr_2fr]">
                 <div
-                    className="aspect-[4/3] w-full overflow-hidden rounded-[var(--radius-control)] border border-border bg-muted"
+                    className="aspect-square w-full overflow-hidden rounded-[var(--radius-control)] bg-muted"
                     role="img"
                     aria-label={title}
                 >
@@ -35,7 +35,7 @@ export function OptionDetailHeader({
                         <img
                             src={src}
                             alt=""
-                            className="size-full object-contain"
+                            className="size-full object-cover"
                         />
                     ) : null}
                 </div>

@@ -57,6 +57,10 @@ const TYPE_PROJ = /* groq */ `{
   customerSelects,
   cardinality,
   description,
+  // Curated order of this type's OPTIONS (PROD-2748 / PROD-2775), as plain ids.
+  // Partial by design — feed it to orderOptionsInType; unlisted options sort
+  // alphabetically after the pinned ones.
+  "optionOrder": coalesce(optionOrder[]._ref, []),
   "category": category->${CATEGORY_PROJ}
 }`;
 
@@ -77,9 +81,13 @@ const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
   "typeTitle": type->title,
   "categorySlug": type->category->slug.current,
   appearsIn,
-  metaDescription,
+  shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -92,9 +100,14 @@ const OPTION_FIELDS = /* groq */ `
   "slug": slug.current,
   status,
   appearsIn,
+  shortDescription,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -309,7 +322,15 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
     kind == "inspiration" && defined(basedOn) => basedOn->${RULES_PRODUCT_PROJ},
     ${RULES_PRODUCT_PROJ}
   ),
-  "preselectedIds": coalesce(availableCustomizations[preselected == true].customization._ref, []),
+  // PROD-2530 / PROD-2773 — an inspiration availableCustomizations list ARE its
+  // pre-selections (the full offer comes from basedOn via rulesProduct). Editors
+  // often leave the per-row preselected boolean unset/null, so for inspiration
+  // we take every listed option id. Standard products only seed from explicit flags
+  // (and the rail ignores preselect unless kind == inspiration anyway).
+  "preselectedIds": select(
+    kind == "inspiration" => coalesce(availableCustomizations[].customization._ref, []),
+    coalesce(availableCustomizations[preselected == true].customization._ref, [])
+  ),
   "properties": properties[defined(property)]{
     "label": property->title,
     "values": values[]->title
@@ -696,7 +717,7 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
   _id,
   title,
   "slug": slug.current,
-  metaDescription,
+  shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
   featuredImage{
@@ -741,6 +762,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   status,
   title,
   "slug": slug.current,
+  shortDescription,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
@@ -838,9 +860,13 @@ export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
   _id,
   title,
   "slug": slug.current,
-  metaDescription,
+  shortDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
   "benefitsPlain": pt::text(benefits.body),
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -904,6 +930,12 @@ export type CatalogTypeDoc = {
   /** Deprecated — prefer customerSelects. */
   cardinality?: 'one' | 'many' | null;
   description?: string | null;
+  /**
+   * Curated order of this type's OPTIONS, as ids (PROD-2748 / PROD-2775).
+   * Partial by design. Pass to `orderOptionsInType` from
+   * `@pakfactory/sanity/option-order`.
+   */
+  optionOrder?: string[];
   category: CatalogCategoryDoc | null;
 };
 
@@ -920,9 +952,11 @@ export type CatalogAchievedByDoc = {
     | 'not-configurable-with-page'
     | 'configurable-no-page'
     | null;
-  metaDescription?: string | null;
+  /** Customer-facing blurb — never metaDescription. */
+  shortDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
+  featuredImage?: unknown | null;
   media?: unknown[] | null;
 };
 
@@ -937,9 +971,13 @@ export type CatalogOptionDoc = {
     | 'not-configurable-with-page'
     | 'configurable-no-page'
     | null;
+  /** House short description for cards / builder (PROD-2762). */
+  shortDescription?: string | null;
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
+  /** Featured image first for PDP cards (PROD-2774 / ADR-023). */
+  featuredImage?: unknown | null;
   media?: unknown[] | null;
   type: CatalogTypeDoc | null;
   /** Reverse of `achieves` — candidates that can deliver this option (PROD-2629). */
@@ -1221,7 +1259,7 @@ export type CatalogCustomizationComparePeerDoc = {
   _id: string;
   title: string;
   slug: string | null;
-  metaDescription?: string | null;
+  shortDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
   featuredImage?: unknown | null;
@@ -1241,6 +1279,8 @@ export type CatalogCustomizationDetailDoc = {
   title: string;
   slug: string | null;
   status?: string | null;
+  shortDescription?: string | null;
+  /** SEO only — never map into customer-facing body copy. */
   metaDescription?: string | null;
   glossaryPlain?: string | null;
   benefitsPlain?: string | null;
