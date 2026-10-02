@@ -455,6 +455,20 @@ export const MIGRATIONS = [
     probe: `count(*[defined(sections) && count(sections[
       _type == "heroFinderFullscreen" && defined(defaultRail.product.fillMode)
     ]) > 0]) == 0`,
+  },  {
+    id: '20261002-preset-unset-inherited-customizations',
+    ticket: 'PROD-2778',
+    title: 'Inspiration presets: remove availableCustomizations entries that are not pre-selected (copies of the base list)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:preset-unset-inherited-customizations',
+    script: 'apps/studio/scripts/migrate-preset-unset-inherited-customizations.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no preset stores an entry that is not pre-selected.
+    // ⚠️ It can go false again without a migration being un-run: the catalog fill wrote
+    // these entries and re-introduces them if it still copies the base list — see the
+    // script header.
+    probe: `count(*[_type == "product" && kind == "inspiration" &&
+      count(availableCustomizations[preselected != true]) > 0]) == 0`,
   },
 ]
 
