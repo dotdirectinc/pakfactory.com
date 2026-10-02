@@ -140,6 +140,18 @@ export function CustomizationOptionGallery({
                         )}
                     />
                 ) : null}
+                {showVideo ? (
+                    <p
+                        aria-hidden
+                        className={cn(
+                            'pointer-events-none absolute bottom-4 right-4 z-10 hidden max-w-[11rem] rounded-sm bg-black/30 px-2 py-1 text-right text-xs font-medium leading-snug tracking-wide text-white sm:block',
+                            mediaDissolveTransitionClass,
+                            playing ? 'opacity-0' : 'opacity-100',
+                        )}
+                    >
+                        Hover to see the effects
+                    </p>
+                ) : null}
             </div>
 
             {showThumbs ? (
@@ -161,8 +173,8 @@ export function CustomizationOptionGallery({
                                 className={cn(
                                     'relative aspect-square w-full overflow-hidden rounded-xl bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
                                     selected
-                                        ? 'ring-2 ring-foreground/20'
-                                        : 'opacity-70 hover:opacity-100',
+                                        ? 'shadow-md'
+                                        : 'opacity-60 hover:opacity-100',
                                 )}
                             >
                                 {item.src ? (

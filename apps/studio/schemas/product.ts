@@ -207,7 +207,7 @@ export const product = defineType({
     featuredVideoField({
       group: GROUPS.content,
       description:
-        'Optional hover-play video for catalog / product-line hero tiles. Upload or a direct S3/CDN MP4/MOV; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
+        'Optional hover-play video for catalog / product-line hero tiles. Prefer VP9 WebM with alpha (transparent) or H.264 MP4; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     defineField({
       name: 'media',

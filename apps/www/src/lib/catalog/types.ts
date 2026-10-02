@@ -191,7 +191,7 @@ export type Product = {
      */
     media: CatalogMedia[];
     /**
-     * Hover-play MP4 from Sanity `featuredVideo` (product-line hero marquee).
+     * Hover-play video URL from Sanity `featuredVideo` (product-line hero marquee).
      */
     featuredVideoUrl?: string | null;
     description: string;
@@ -274,7 +274,7 @@ export type ProductLine = {
     imageUrl?: string | null;
     imageAlt?: string;
     /**
-     * Featured hero MP4 from Sanity `featuredVideo`. Used for bottomBar
+     * Featured hero video URL from Sanity `featuredVideo`. Used for bottomBar
      * marquee hover-play; stack shows a static featured image.
      */
     featuredVideoUrl?: string | null;
@@ -476,6 +476,17 @@ export type CustomizationDeclaredProperty = {
     valuesPerItem?: 'one' | 'many';
 };
 
+/** “See it in use” tile — solution (large), case study (small), or option media fallback. */
+export type CustomizationShowcaseTile = {
+    kind: 'solution' | 'caseStudy' | 'media';
+    src: string;
+    alt: string;
+    title: string;
+    description?: string;
+    href?: string;
+    linkLabel?: string;
+};
+
 /** Full customization option detail (PROD-1299). */
 export type CustomizationDetail = {
     id: string;
@@ -491,6 +502,10 @@ export type CustomizationDetail = {
     description?: string;
     /** SEO meta description only — use in generateMetadata, never on-page body. */
     metaDescription?: string;
+    /** Studio `benefits.title` — Overview heading. */
+    benefitsTitle?: string;
+    /** Studio `benefits.body` portable text — Overview body. */
+    benefitsBody?: PortableTextBlock[];
     /**
      * Gallery slides: Featured image first (when set), then Media extras (ADR-023).
      * Index 0 is the poster for Featured video hover.
@@ -498,6 +513,18 @@ export type CustomizationDetail = {
     media: CatalogMedia[];
     /** Playable MP4/MOV from Studio Featured video; YouTube yields null. */
     featuredVideoUrl?: string | null;
+    /** Optional Specs PDF — when set, config rail shows Download spec sheet. */
+    specSheetUrl?: string | null;
+    /**
+     * Large “See it in use” tiles — solutions via products (else option media fallback).
+     * Cap 3. Empty + empty case studies → hide showcase section.
+     */
+    showcaseSolutions: CustomizationShowcaseTile[];
+    /**
+     * Small “See it in use” tiles — case studies that tag this option.
+     * Cap 5 so promotions can fill large slots; bento uses at most 2 as small.
+     */
+    showcaseCaseStudies: CustomizationShowcaseTile[];
     properties: CustomizationPropertyValue[];
     declaredProperties: CustomizationDeclaredProperty[];
     productLines: ProductLineRef[];

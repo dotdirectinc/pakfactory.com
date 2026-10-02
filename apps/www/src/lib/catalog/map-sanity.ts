@@ -21,6 +21,7 @@ import type {
     CustomizationOption,
     CustomizationPropertyFact,
     CustomizationPropertyValue,
+    CustomizationShowcaseTile,
     Product,
     ProductFaq,
     ProductKind,
@@ -36,6 +37,7 @@ import type {
     ProductStyleRef,
 } from '@/lib/catalog/types';
 import {hasDetailPage, isConfigurable, toLifecycle} from '@/lib/catalog/types';
+import {solutionHref, WWW_ROUTES} from '@/lib/www-routes';
 
 function mediaFromSanity(
     media: unknown[] | null | undefined,
@@ -90,6 +92,97 @@ function customizationGallerySlides(
     }
 
     return slides.length > 0 ? slides : [{alt: titleFallback}];
+}
+
+const SHOWCASE_SOLUTION_CAP = 3;
+const SHOWCASE_CASE_STUDY_CAP = 5;
+
+type ShowcaseLists = {
+    showcaseSolutions: CustomizationShowcaseTile[];
+    showcaseCaseStudies: CustomizationShowcaseTile[];
+};
+
+/**
+ * “See it in use”: solutions (large) + case studies (small) kept separate.
+ * Option media fills large slots only when both reverse joins are empty.
+ */
+function customizationShowcaseLists(
+    doc: CatalogCustomizationDetailDoc,
+    optionMedia: CatalogMedia[],
+    titleFallback: string,
+): ShowcaseLists {
+    const showcaseSolutions: CustomizationShowcaseTile[] = [];
+    const showcaseCaseStudies: CustomizationShowcaseTile[] = [];
+    const seenSolutionIds = new Set<string>();
+    const seenSrc = new Set<string>();
+
+    for (const row of doc.showcaseFromSolutions ?? []) {
+        if (!row || showcaseSolutions.length >= SHOWCASE_SOLUTION_CAP) continue;
+        const src = row.src?.trim();
+        if (!src || seenSrc.has(src)) continue;
+        const id = row._id?.trim();
+        if (id) {
+            if (seenSolutionIds.has(id)) continue;
+            seenSolutionIds.add(id);
+        }
+        const title = row.title?.trim() || titleFallback;
+        const slug = row.slug?.trim();
+        const description = row.shortDescription?.trim() || undefined;
+        seenSrc.add(src);
+        showcaseSolutions.push({
+            kind: 'solution',
+            src,
+            alt: row.alt?.trim() || title,
+            title,
+            ...(description ? {description} : {}),
+            ...(slug
+                ? {
+                      href: solutionHref(slug),
+                      linkLabel: `See ${title} packaging`,
+                  }
+                : {}),
+        });
+    }
+
+    for (const row of doc.showcaseFromCaseStudies ?? []) {
+        if (!row || showcaseCaseStudies.length >= SHOWCASE_CASE_STUDY_CAP) continue;
+        const src = row.src?.trim();
+        if (!src || seenSrc.has(src)) continue;
+        const title = row.title?.trim() || titleFallback;
+        const slug = row.slug?.trim();
+        const description = row.cardSummary?.trim() || undefined;
+        seenSrc.add(src);
+        showcaseCaseStudies.push({
+            kind: 'caseStudy',
+            src,
+            alt: row.alt?.trim() || title,
+            title,
+            ...(description ? {description} : {}),
+            ...(slug
+                ? {
+                      href: `${WWW_ROUTES.caseStudies}/${slug}`,
+                      linkLabel: 'Read case study',
+                  }
+                : {}),
+        });
+    }
+
+    if (showcaseSolutions.length === 0 && showcaseCaseStudies.length === 0) {
+        for (const item of optionMedia) {
+            if (showcaseSolutions.length >= SHOWCASE_SOLUTION_CAP) break;
+            const src = item.src?.trim();
+            if (!src || seenSrc.has(src)) continue;
+            seenSrc.add(src);
+            showcaseSolutions.push({
+                kind: 'media',
+                src,
+                alt: item.alt?.trim() || titleFallback,
+                title: titleFallback,
+            });
+        }
+    }
+
+    return {showcaseSolutions, showcaseCaseStudies};
 }
 
 /**
@@ -945,11 +1038,23 @@ export function mapSanityCustomizationDetail(
         doc.benefitsPlain,
     );
     const metaDescription = doc.metaDescription?.trim() || undefined;
+    const benefitsTitle = doc.benefitsTitle?.trim() || undefined;
+    const benefitsBody = Array.isArray(doc.benefitsBody)
+        ? (doc.benefitsBody as PortableTextBlock[])
+        : undefined;
 
     const typeTitle = doc.type?.title?.trim();
     const typeSlug = doc.type?.slug?.trim();
 
     const faqs = mapFaqs(doc.faqs);
+
+    const media = customizationGallerySlides(doc.featuredImage, doc.media, title);
+    const {showcaseSolutions, showcaseCaseStudies} = customizationShowcaseLists(
+        doc,
+        media,
+        title,
+    );
+    const specSheetUrl = doc.specSheetUrl?.trim() || null;
 
     return {
         status: toLifecycle(doc.status),
@@ -962,10 +1067,15 @@ export function mapSanityCustomizationDetail(
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
         ...(metaDescription ? {metaDescription} : {}),
-        media: customizationGallerySlides(doc.featuredImage, doc.media, title),
+        ...(benefitsTitle ? {benefitsTitle} : {}),
+        ...(benefitsBody?.length ? {benefitsBody} : {}),
+        media,
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
             : {}),
+        ...(specSheetUrl ? {specSheetUrl} : {}),
+        showcaseSolutions,
+        showcaseCaseStudies,
         properties,
         declaredProperties,
         productLines,

@@ -1,9 +1,7 @@
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {cn} from '@pakfactory/ui/lib/utils';
-import {
-    CustomizationShowcaseGallery,
-    type ShowcaseGalleryImage,
-} from '@/components/customization/customization-showcase-gallery';
+import {CustomizationShowcaseGallery} from '@/components/customization/customization-showcase-gallery';
+import {fillShowcaseBentoSlots} from '@/lib/catalog/showcase-bento';
 import type {CustomizationDetail} from '@/lib/catalog/types';
 
 export const CUSTOMIZATION_SHOWCASE_ID = 'customization-showcase';
@@ -13,25 +11,21 @@ type CustomizationShowcaseProps = {
     className?: string;
 };
 
-function mediaToShowcaseImages(
-    detail: CustomizationDetail,
-): ShowcaseGalleryImage[] {
-    return detail.media
-        .filter((item) => Boolean(item.src?.trim() || item.alt?.trim()))
-        .map((item, index) => ({
-            ...(item.src?.trim() ? {src: item.src.trim()} : {}),
-            alt: item.alt?.trim() || `${detail.title} showcase ${index + 1}`,
-        }));
-}
-
 /**
- * Showcase — See it in use (PROD-1299 Slice H).
- * POC MaterialShowcaseGallery bento; pads to 6 muted tiles when media is sparse.
+ * Showcase — See it in use (PROD-1299).
+ * 3×3 bento with a large right feature tile; solutions then case studies.
+ * Hidden when there are no tiles to place.
  */
 export function CustomizationShowcase({
     detail,
     className,
 }: CustomizationShowcaseProps) {
+    const tiles = fillShowcaseBentoSlots(
+        detail.showcaseSolutions,
+        detail.showcaseCaseStudies,
+    );
+    if (tiles.length === 0) return null;
+
     return (
         <section
             id={CUSTOMIZATION_SHOWCASE_ID}
@@ -42,7 +36,8 @@ export function CustomizationShowcase({
                     kicker="Showcase"
                     title="See it in use"
                     subtitle="Examples and close-ups of this option on real packaging — so you can picture the finish before you configure."
-                    images={mediaToShowcaseImages(detail)}
+                    solutions={detail.showcaseSolutions}
+                    caseStudies={detail.showcaseCaseStudies}
                 />
             </PageDielineSection>
         </section>
