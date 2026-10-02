@@ -180,6 +180,10 @@ export type Product = {
     slug: string;
     sku: string;
     kind: ProductKind;
+    /**
+     * PDP gallery slides: Media extras first, Featured image last when set
+     * (deduped by URL). Index 0 is the default main well.
+     */
     media: CatalogMedia[];
     /**
      * Hover-play MP4 from Sanity `featuredVideo` (product-line hero marquee).
@@ -199,6 +203,11 @@ export type Product = {
      * Inspiration PDP breadcrumb parent — first industry solution, else solutions[0].
      */
     breadcrumbParent?: {title: string; slug: string};
+    /**
+     * First matching Solution Style under `breadcrumbParent` (PROD-2763).
+     * Absent when no style filter matches.
+     */
+    breadcrumbStyle?: {title: string; slug: string};
     moq?: number;
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;
@@ -277,6 +286,8 @@ export type ProductLine = {
     frames?: ProductLineFrame[];
     expertise?: ProductLineExpertiseRef[];
     featuredStudies?: ProductLineCaseStudyRef[];
+    /** Pinned hero products (Categorization); prepended before auto line products. */
+    featuredProducts?: Product[];
     relatedLines?: ProductLineRelatedRef[];
     faqs?: ProductFaq[];
     /**

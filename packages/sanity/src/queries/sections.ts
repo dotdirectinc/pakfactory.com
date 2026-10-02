@@ -456,7 +456,15 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     "cards": cards[]${INSPIRATIONS_CARD}
   },
   _type == "productsRow" => {
-    ${SECTION_CHROME}
+    ${SECTION_CHROME},
+    "items": curatedItems[]->{
+      _id,
+      title,
+      "slug": slug.current,
+      sku,
+      "imageSrc": media[0].asset->url,
+      "imageAlt": coalesce(media[0].alt, media[0].asset->altText, title)
+    }
   },
   _type == "bundlesRow" => {
     ${SECTION_CHROME}
@@ -822,6 +830,22 @@ export type PageSectionSolutionsRowDoc = PageSectionChromeFields & {
     items?: (PageSectionCatalogRowItemDoc | null)[] | null;
 };
 
+/** Product card in a `productsRow` (PDP related strip, PROD-2763). */
+export type PageSectionProductsRowItemDoc = {
+    _id?: string | null;
+    title?: string | null;
+    slug?: string | null;
+    sku?: string | null;
+    imageSrc?: string | null;
+    imageAlt?: string | null;
+};
+
+export type PageSectionProductsRowDoc = PageSectionChromeFields & {
+    _type: 'productsRow';
+    _key: string;
+    items?: (PageSectionProductsRowItemDoc | null)[] | null;
+};
+
 export type PageSectionStatDoc = {
     _key?: string | null;
     value?: string | null;
@@ -999,6 +1023,7 @@ export type PageSectionStubDoc = PageSectionChromeFields & {
 export type PageSectionDoc =
     | PageSectionProductLinesRowDoc
     | PageSectionSolutionsRowDoc
+    | PageSectionProductsRowDoc
     | PageSectionStatsDoc
     | PageSectionHeroSpotlightDoc
     | PageSectionHeroFinderDoc

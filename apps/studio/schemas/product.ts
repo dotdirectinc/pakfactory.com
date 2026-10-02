@@ -26,8 +26,9 @@ import { entityFields } from '../lib/entity-id-field'
  * kept EDITABLE — decision b, PROD-2295: they flip to readOnly when the
  * Registry/SPECs system ships.
  *
- * Layout template: products select a `productDetailPage` layout version via
- * `template` (Main Website → Product Pages → Product Detail Pages).
+ * Layout template: standard products select a `productDetailPage`; inspiration
+ * products select a `solutionProductDetailPage` (PROD-2763). Empty template →
+ * www coalesces to the matching Default id.
  */
 
 const SOURCE_OWNED_NOTE =
@@ -197,7 +198,8 @@ export const product = defineType({
       group: GROUPS.content,
       mediaTags: [MEDIA_TAG.product],
       options: { hotspot: true },
-      description: 'The one image that represents this product — cards, listings, nav and the social fallback. Not part of the gallery.',
+      description:
+        'The one image that represents this product — cards, listings, nav and the social fallback. On the product detail gallery it appears as the last slide when set.',
       fields: [defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' })],
     })),
     // Hover-play video for catalog / product-line hero tiles. Shared featuredVideo
@@ -212,7 +214,8 @@ export const product = defineType({
       title: 'Media',
       type: 'array',
       group: GROUPS.content,
-      description: 'Additional images for this page. Order is presentation only — the card and social images come from Featured image.',
+      description:
+        'Additional images for the product detail gallery. They appear first in the rail; Featured image is appended last when set. Cards and social still use Featured image.',
       of: [taggedImageType([MEDIA_TAG.product], { hotspot: true })],
     }),
     // Renamed from `description` (PROD-2454) — the field was already
@@ -255,12 +258,26 @@ export const product = defineType({
       title: 'Template',
       type: 'reference',
       group: GROUPS.template,
-      to: [{type: 'productDetailPage'}],
-      options: {disableNew: true},
+      to: [
+        {type: 'productDetailPage'},
+        {type: 'solutionProductDetailPage'},
+      ],
+      options: {
+        disableNew: true,
+        filter: ({document}) => ({
+          filter: '_type == $templateType',
+          params: {
+            templateType: isInspiration(document)
+              ? 'solutionProductDetailPage'
+              : 'productDetailPage',
+          },
+        }),
+      },
       description:
-        'Pick a Product Detail Page layout version — section order and default headings. ' +
-        'Manage layouts under Main Website → Product Pages → Product Detail Pages. ' +
-        'Band content stays on the Sections tab, matched by key.',
+        'Pick a PDP layout version — section order and default headings. ' +
+        'Standard products use Product Detail Pages; inspiration products use Solution Product ' +
+        'Detail Pages (Main Website → Product / Solution Pages). Band content stays on the ' +
+        'Sections tab, matched by key.',
     }),
 
     // ─── CATEGORIZATION (classification refs + curated lists) ─────────────────
@@ -958,13 +975,20 @@ export const product = defineType({
   ],
 
   preview: {
-    select: { title: 'title', sku: 'sku', status: 'status', kind: 'kind', media: 'media.0' },
-    prepare({ title, sku, status, kind, media }) {
+    select: {
+      title: 'title',
+      sku: 'sku',
+      status: 'status',
+      kind: 'kind',
+      featuredImage: 'featuredImage',
+      mediaFallback: 'media.0',
+    },
+    prepare({ title, sku, status, kind, featuredImage, mediaFallback }) {
       const badge = status && status !== 'active' ? `[${status.toUpperCase()}] ` : ''
       return {
         title: title || 'Untitled product',
         subtitle: `${badge}${sku ?? 'no SKU'} · ${kind ?? ''}`.trim(),
-        media,
+        media: featuredImage || mediaFallback,
       }
     },
   },

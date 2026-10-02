@@ -8,7 +8,6 @@ import {cn} from '@pakfactory/ui/lib/utils';
 import {MediaSettleZoom} from '@/components/ui/media-settle-zoom';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {CatalogMedia} from '@/lib/catalog/types';
-import {productMediaLayerClass} from '@/lib/ui/product-media-scale';
 
 type ProductGalleryProps = {
     media: CatalogMedia[];
@@ -56,7 +55,7 @@ export function ProductGallery({
                                                 square
                                                 fill
                                                 sizes="64px"
-                                                className="object-contain"
+                                                className="object-fill"
                                             />
                                         </MediaSettleZoom>
                                     ) : (
@@ -75,7 +74,7 @@ export function ProductGallery({
             ) : null}
             <div className="relative aspect-square min-w-0 flex-1 overflow-hidden rounded-2xl bg-muted">
                 {active?.src ? (
-                    <div className={productMediaLayerClass}>
+                    <div className="absolute inset-0">
                         <SanityImage
                             src={active.src}
                             alt={active.alt}
@@ -83,7 +82,7 @@ export function ProductGallery({
                             fill
                             priority={activeIndex === 0}
                             sizes="(max-width: 1024px) 100vw, 50vw"
-                            className="object-contain"
+                            className="object-fill"
                         />
                     </div>
                 ) : (

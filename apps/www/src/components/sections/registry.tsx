@@ -9,6 +9,7 @@ import type {
     PageSectionLogoWallDoc,
     PageSectionMediaFeatureDoc,
     PageSectionProductStylesRowDoc,
+    PageSectionProductsRowDoc,
     PageSectionGeneralCtaDoc,
     PageSectionProductLinesRowDoc,
     PageSectionSolutionsRowDoc,
@@ -33,6 +34,7 @@ import {HeroSpotlightFullBleed} from '@/components/sections/hero-spotlight-full-
 import {InspirationGallery} from '@/components/sections/inspiration-gallery';
 import {LogoWall} from '@/components/sections/logo-wall';
 import {GeneralCta} from '@/components/sections/general-cta';
+import {ProductsRow} from '@/components/sections/products-row';
 import {SignatureSystem} from '@/components/sections/signature-system';
 import {Stats} from '@/components/sections/stats';
 import {Steps} from '@/components/sections/steps';
@@ -51,6 +53,7 @@ import {mapInspirationsGrid} from '@/lib/sections/map-inspirations-grid';
 import {mapLogoWall} from '@/lib/sections/map-logo-wall';
 import {mapMediaFeature} from '@/lib/sections/map-media-feature';
 import {mapProductStylesRow} from '@/lib/sections/map-product-styles-row';
+import {mapProductsRow} from '@/lib/sections/map-products-row';
 import {mapSignatureSystem} from '@/lib/sections/map-signature-system';
 import {mapSteps} from '@/lib/sections/map-steps';
 import {mapStats} from '@/lib/sections/map-stats';
@@ -281,6 +284,23 @@ function ProductLinesRowFromSanity(section: PageSectionProductLinesRowDoc) {
     return <CatalogCardGrid id={`product-lines-${section._key}`} {...mapped} />;
 }
 
+function ProductsRowFromSanity(section: PageSectionProductsRowDoc) {
+    const mapped = mapProductsRow(section);
+    if (mapped.products.length === 0) return null;
+    return (
+        <ProductsRow
+            sectionId={`section-products-${section._key}`}
+            products={mapped.products}
+            heading={mapped.heading}
+            description={mapped.description}
+            eyebrow={mapped.eyebrow}
+            borderTop={mapped.borderTop}
+            borderBottom={mapped.borderBottom}
+            theme="muted"
+        />
+    );
+}
+
 function SolutionsRowFromSanity(section: PageSectionSolutionsRowDoc) {
     const mapped = mapSolutionsRow(section);
     if (mapped.cards.length === 0) return null;
@@ -325,5 +345,6 @@ export const SECTION_COMPONENTS: Record<
     steps: StepsFromSanity as ComponentType<PageSection>,
     stats: StatsFromSanity as ComponentType<PageSection>,
     productLinesRow: ProductLinesRowFromSanity as ComponentType<PageSection>,
+    productsRow: ProductsRowFromSanity as ComponentType<PageSection>,
     solutionsRow: SolutionsRowFromSanity as ComponentType<PageSection>,
 };

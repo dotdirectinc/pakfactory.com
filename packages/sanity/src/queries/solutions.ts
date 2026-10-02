@@ -95,6 +95,24 @@ const FORMAT_REF = /* groq */ `{
   }
 }`;
 
+/**
+ * Industry LP hero tiles — product projection (featuredImage preferred, then gallery).
+ * Used by auto query and curated `featuredProducts` on the solution doc (PROD-2763).
+ */
+const SOLUTION_HERO_PRODUCT_PROJ = /* groq */ `{
+  ${CATALOG_PRODUCT_FIELDS},
+  "media": [
+    ...select(defined(featuredImage.asset) => [featuredImage{
+      ...,
+      "alt": ${IMAGE_ALT}
+    }], []),
+    ...coalesce(media, [])[]{
+      ...,
+      "alt": ${IMAGE_ALT}
+    }
+  ]
+}`;
+
 /** Solution landing page by slug (caller gates on hasPage). */
 export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   _type == "solution" &&
@@ -118,6 +136,7 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   "relatedProducts": relatedProducts[]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
+  "featuredProducts": featuredProducts[]->${SOLUTION_HERO_PRODUCT_PROJ},
   "relatedCaseStudies": relatedCaseStudies[]{
     _key,
     ...@->${RELATED_CASE_STUDY_CARD}
@@ -208,19 +227,7 @@ export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
     primarySolution->slug.current == $solutionSlug ||
     $solutionSlug in solutions[]->slug.current
   )
-] | order(title asc) [0...16] {
-  ${CATALOG_PRODUCT_FIELDS},
-  "media": [
-    ...select(defined(featuredImage.asset) => [featuredImage{
-      ...,
-      "alt": ${IMAGE_ALT}
-    }], []),
-    ...coalesce(media, [])[]{
-      ...,
-      "alt": ${IMAGE_ALT}
-    }
-  ]
-}`;
+] | order(title asc) [0...16] ${SOLUTION_HERO_PRODUCT_PROJ}`;
 
 /** Slugs + formats for solutions that earn a landing page (static params). */
 export const SOLUTION_PAGE_SLUGS_QUERY = /* groq */ `*[
@@ -294,6 +301,7 @@ export type SolutionBySlugDoc = {
     featuredImage?: unknown | null;
     packagingFormats?: SolutionFormatRefDoc[] | null;
     relatedProducts?: CatalogProductDoc[] | null;
+    featuredProducts?: CatalogProductDoc[] | null;
     relatedCaseStudies?: PageSectionCaseStudyItemDoc[] | null;
     relatedVideoCaseStudies?: PageSectionVideoCaseStudyCardDoc[] | null;
     relatedSolutions?: SolutionRelatedRefDoc[] | null;
@@ -426,6 +434,39 @@ export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
   )
 }.styles`;
 
+/**
+ * Styles under a hasPage solution (merchandised order) **with** filter fields —
+ * used to resolve the inspiration PDP breadcrumb Solution Style (PROD-2763).
+ * Same order as {@link SOLUTION_STYLES_FOR_SOLUTION_QUERY}; cards alone lack filters.
+ */
+const SOLUTION_STYLE_BREADCRUMB_PROJ = /* groq */ `{
+  _id,
+  title,
+  shortName,
+  "slug": slug.current,
+  ${SOLUTION_STYLE_FILTER_FIELDS}
+}`;
+
+export const SOLUTION_STYLES_FOR_BREADCRUMB_QUERY = /* groq */ `*[
+  _type == "solution" &&
+  slug.current == $solutionSlug &&
+  hasPage == true
+][0]{
+  _id,
+  "styles": (
+    coalesce(
+      (styleOrder[]->)[defined(_id) && defined(slug.current)]${SOLUTION_STYLE_BREADCRUMB_PROJ},
+      []
+    )
+    + *[
+      _type == "solutionStyle" &&
+      defined(slug.current) &&
+      solution._ref == ^._id &&
+      !(_id in coalesce(^.styleOrder, [])[]._ref)
+    ] | order(title asc) ${SOLUTION_STYLE_BREADCRUMB_PROJ}
+  )
+}`;
+
 /** Static params for `/solutions/[slug]/[styleSlug]`. */
 export const SOLUTION_STYLE_PAGE_PARAMS_QUERY = /* groq */ `*[
   _type == "solutionStyle" &&
@@ -480,6 +521,21 @@ export type SolutionStyleCardDoc = {
     slug: string | null;
     shortDescription?: string | null;
     featuredImage?: unknown | null;
+};
+
+/** Styles + filters for inspiration PDP breadcrumb resolution (PROD-2763). */
+export type SolutionStyleBreadcrumbDoc = {
+    _id: string;
+    title: string;
+    shortName?: string | null;
+    slug: string | null;
+    filter?: SolutionStyleFilter | null;
+    excludedProducts?: SolutionStyleRefDoc[] | null;
+};
+
+export type SolutionStylesForBreadcrumbDoc = {
+    _id: string;
+    styles?: SolutionStyleBreadcrumbDoc[] | null;
 };
 
 export type SolutionStylePageParamDoc = {

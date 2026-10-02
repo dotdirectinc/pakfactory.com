@@ -31,6 +31,7 @@ import {
 } from '@pakfactory/sanity/solution-style-filter';
 import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
 import {getSolutionStylePage} from '@/lib/catalog/catalog';
+import {mergeFeaturedThenFill} from '@/lib/catalog/merge-featured-then-fill';
 import {
     mapSanityProduct,
     mapSanityProductLibraryItem,
@@ -189,7 +190,17 @@ async function fetchSolutionBySlug(
             curated.length > 0
                 ? curated
                 : await fetchTaggedProducts(slug);
-        const heroProducts = await fetchHeroTaggedProducts(slug);
+        const featuredHero = (doc.featuredProducts ?? [])
+            .map(mapSanityProduct)
+            .filter((item): item is Product => item != null)
+            .filter(isCompleteProduct);
+        const autoHero = await fetchHeroTaggedProducts(slug);
+        const heroProducts = mergeFeaturedThenFill(
+            featuredHero,
+            autoHero,
+            (product) => product.slug,
+            16,
+        );
 
         return {
             page: {...mapped, relatedProducts: tagged},

@@ -4,8 +4,11 @@ import { evaluate, parse } from "groq-js";
 import {
   filterParams,
   keywordPattern,
+  productMatchesSolutionStyleFilter,
   solutionStyleProductFilter,
   solutionStyleQueryParams,
+  titleMatchesKeywordPattern,
+  type SolutionStyleMatchProduct,
 } from "./solution-style-filter.ts";
 
 // The expression is a string until Sanity reads it, so a typo only shows up as a failed page.
@@ -76,4 +79,68 @@ test("no condition builds no query at all", () => {
 test("keywordPattern adds the prefix wildcard to the last word only", () => {
   assert.equal(keywordPattern("pizza box"), "pizza box*");
   assert.equal(keywordPattern("   "), null);
+});
+
+const matchProduct = (
+  overrides: Partial<SolutionStyleMatchProduct> = {},
+): SolutionStyleMatchProduct => ({
+  id: "p.box",
+  kind: "inspiration",
+  title: "Cookie Box",
+  solutionIds: ["sol"],
+  lineId: "line.box",
+  styleIds: ["style.tuck"],
+  ...overrides,
+});
+
+test("productMatchesSolutionStyleFilter mirrors line / style / keyword OR", () => {
+  const lineOnly = filterParams("sol", { productLines: [{ _ref: "line.box" }] }, []);
+  assert.equal(productMatchesSolutionStyleFilter(matchProduct(), lineOnly), true);
+  assert.equal(
+    productMatchesSolutionStyleFilter(matchProduct({ lineId: "line.other" }), lineOnly),
+    false,
+  );
+
+  const styleOnly = filterParams("sol", { productStyles: [{ _ref: "style.handle" }] }, []);
+  assert.equal(
+    productMatchesSolutionStyleFilter(
+      matchProduct({ styleIds: ["style.gusset", "style.handle"] }),
+      styleOnly,
+    ),
+    true,
+  );
+
+  const kw = filterParams("sol", { keywords: ["Bakery Bag"] }, []);
+  assert.equal(
+    productMatchesSolutionStyleFilter(
+      matchProduct({ title: "Paper Bakery Bag", lineId: null, styleIds: [] }),
+      kw,
+    ),
+    true,
+  );
+});
+
+test("productMatchesSolutionStyleFilter respects solution, kind, exclusion", () => {
+  const p = filterParams("sol", { productLines: [{ _ref: "line.box" }] }, [{ _ref: "p.box" }]);
+  assert.equal(productMatchesSolutionStyleFilter(matchProduct(), p), false);
+  assert.equal(
+    productMatchesSolutionStyleFilter(
+      matchProduct({ kind: "standard" }),
+      filterParams("sol", { productLines: [{ _ref: "line.box" }] }, []),
+    ),
+    false,
+  );
+  assert.equal(
+    productMatchesSolutionStyleFilter(
+      matchProduct({ solutionIds: ["other"] }),
+      filterParams("sol", { productLines: [{ _ref: "line.box" }] }, []),
+    ),
+    false,
+  );
+});
+
+test("titleMatchesKeywordPattern treats the last token as a prefix", () => {
+  assert.equal(titleMatchesKeywordPattern("Paper Bakery Bag", "Bakery Bag*"), true);
+  assert.equal(titleMatchesKeywordPattern("Cookie Box", "cookie*"), true);
+  assert.equal(titleMatchesKeywordPattern("Cookie Box", "Tin*"), false);
 });

@@ -27,6 +27,8 @@ export type ProductsRowItem = {
 type ProductsRowProps = {
     heading?: string;
     description?: string;
+    /** Section kicker above the heading. Defaults to Related Products. */
+    eyebrow?: string;
     products: ProductsRowItem[];
     className?: string;
     /**
@@ -34,6 +36,10 @@ type ProductsRowProps = {
      * `muted` = recessed `bg-muted` with elevated white cards.
      */
     theme?: SectionTheme;
+    /** Anchor id for in-page nav (PDP default). */
+    sectionId?: string;
+    borderTop?: boolean;
+    borderBottom?: boolean;
 };
 
 const DEFAULT_DESCRIPTION =
@@ -41,14 +47,18 @@ const DEFAULT_DESCRIPTION =
 
 /**
  * Related products strip — SectionHeading + carousel of general CatalogCards.
- * Maps to Studio `productsRow` later.
+ * Maps to Studio `productsRow`.
  */
 export function ProductsRow({
     heading = 'People also like',
     description = DEFAULT_DESCRIPTION,
+    eyebrow = 'Related Products',
     products,
     className,
     theme = 'default',
+    sectionId = 'pdp-related',
+    borderTop = false,
+    borderBottom = true,
 }: ProductsRowProps) {
     const shell = sectionThemeShell(theme);
 
@@ -56,12 +66,13 @@ export function ProductsRow({
 
     return (
         <section
-            id="pdp-related"
+            id={sectionId}
             data-section-theme={shell['data-section-theme']}
             className={cn('scroll-mt-32 overflow-x-clip', shell.bandClass, className)}
         >
             <PageDielineSection
-                borderBottom
+                borderTop={borderTop}
+                borderBottom={borderBottom}
                 innerClassName="py-16 sm:py-20"
             >
                 <SectionCarousel
@@ -69,7 +80,7 @@ export function ProductsRow({
                     nextLabel="Next products"
                     header={
                         <SectionHeading
-                            eyebrow="Related Products"
+                            eyebrow={eyebrow}
                             title={heading}
                             description={description}
                         />

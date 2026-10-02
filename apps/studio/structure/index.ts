@@ -1182,6 +1182,16 @@ export const mainWebsiteStructure = (
                                         'Solution Style Pages',
                                     ),
                                 ),
+                            // Inspiration PDP layouts — each inspiration product selects one.
+                            S.listItem()
+                                .title('Solution Product Detail Pages')
+                                .icon(PackageIcon)
+                                .schemaType('solutionProductDetailPage')
+                                .child(
+                                    S.documentTypeList('solutionProductDetailPage').title(
+                                        'Solution Product Detail Pages',
+                                    ),
+                                ),
                         ]),
                 ),
             // Expertise Page templates — one per stage archetype / stage

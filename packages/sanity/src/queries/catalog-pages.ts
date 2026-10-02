@@ -4,8 +4,9 @@
  * route-owned chrome/grid (or merge as a PDP template).
  *
  * Entity-picked types (`productStylePage`, `solutionStylePage`,
- * `customizationDetailPage`) resolve via the entity’s `template` with fallback
- * to the seeded Default fixed id. Catalog hubs keep fixed-id fetches only.
+ * `customizationDetailPage`, `productDetailPage`) resolve via the entity’s
+ * `template` with fallback to the seeded Default fixed id. Catalog hubs keep
+ * fixed-id fetches only.
  */
 
 import {
@@ -44,6 +45,7 @@ export const PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY = /* groq */ `coalesce(
   *[_id == "productStylePage"][0]${CATALOG_INDEX_PAGE_PROJECTION}
 )`
 
+/** Default Product Detail Page layout (fallback when a product has no template). */
 export const PRODUCT_DETAIL_PAGE_QUERY = /* groq */ `*[
   _id == "productDetailPage"
 ][0]${CATALOG_INDEX_PAGE_PROJECTION}`

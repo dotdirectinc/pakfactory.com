@@ -300,6 +300,11 @@ const RULES_PRODUCT_PROJ = /* groq */ `{
 /** PDP-only extras: specs properties, FAQs, curated related (PROD-1913), rules inputs (PROD-2556). */
 export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
   ${CATALOG_PRODUCT_FIELDS},
+  // Featured still — appended last on PDP gallery (media first). Cards use separate projections.
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   "rulesProduct": select(
     kind == "inspiration" && defined(basedOn) => basedOn->${RULES_PRODUCT_PROJ},
     ${RULES_PRODUCT_PROJ}
@@ -314,10 +319,29 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
   "sections": sections[]${PAGE_SECTIONS_PROJECTION},
-  "template": template->{
-    _id,
-    "sections": sections[]${PAGE_SECTIONS_PROJECTION}
-  }
+  // Prefer the product's PDP layout; fall back by kind (PROD-2763):
+  // inspiration → solutionProductDetailPage, else productDetailPage.
+  "template": coalesce(
+    template->{
+      _id,
+      "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+    },
+    select(
+      kind == "inspiration" => *[_id == "solutionProductDetailPage"][0]{
+        _id,
+        "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+      },
+      *[_id == "productDetailPage"][0]{
+        _id,
+        "sections": sections[]${PAGE_SECTIONS_PROJECTION}
+      }
+    )
+  ),
+  // Membership ids for Solution Style breadcrumb resolution (PROD-2763).
+  "productLineId": coalesce(productLine._ref, basedOn->productLine._ref),
+  "productStyleIds": coalesce(productStyle[]._ref, basedOn->productStyle[]._ref, []),
+  "solutionIds": coalesce(solutions[]._ref, []),
+  customerFacing
 `;
 
 /** Active (or unset status) products for catalog index / params. */
@@ -498,6 +522,9 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     cardSummary,
     "cardImageUrl": cardImage.asset->url,
     "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText)
+  },
+  "featuredProducts": featuredProducts[]->{
+    ${CATALOG_PRODUCT_CARD_FIELDS}
   },
   "relatedLines": relatedLines[]->{
     _id,
@@ -1035,8 +1062,15 @@ export type CatalogProductDoc = {
     title?: string | null;
     slug?: string | null;
   } | null;
+  /** PDP by-slug only — Solution Style breadcrumb membership (PROD-2763). */
+  productLineId?: string | null;
+  productStyleIds?: (string | null)[] | null;
+  solutionIds?: (string | null)[] | null;
+  customerFacing?: boolean | null;
   /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
+  /** PDP by-slug only — appended last on product gallery (media first). */
+  featuredImage?: unknown | null;
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
@@ -1101,6 +1135,7 @@ export type CatalogProductLineDoc = {
   metaDescription?: string | null;
   expertise?: (CatalogProductLineExpertiseDoc | null)[] | null;
   featuredStudies?: (CatalogProductLineStudyDoc | null)[] | null;
+  featuredProducts?: CatalogProductDoc[] | null;
   relatedLines?: (CatalogProductLineRelatedDoc | null)[] | null;
   faqs?: CatalogProductFaqDoc[] | null;
   sections?: PageSectionDoc[] | null;

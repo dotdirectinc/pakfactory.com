@@ -90,7 +90,8 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 | Singleton | Route |
 | --- | --- |
 | `productStylePage` | below grid on `/products/[line]/[style]` |
-| `productDetailPage` | PDP template × `product.sections` (select on product Template tab) |
+| `productDetailPage` | standard PDP template × `product.sections` (empty → Default coalesce) |
+| `solutionProductDetailPage` | inspiration PDP template × `product.sections` (empty → Default coalesce by kind) |
 | `customizationDetailPage` | below chrome on `/customizations/[category]/[handle]` |
 | `solutionStylePage` | below grid on `/solutions/[slug]/[style]` |
 
@@ -98,12 +99,16 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 
 **Studio**
 
-- Main Website → Solution Pages → **Solution Industry Page** / **Solution Style Page**
+- Main Website → Solution Pages → **Solution Industry Page** / **Solution Style Page** / **Solution Product Detail Page**
 - Main Website → Product Pages → **Product Detail Page** (plus Catalog / Line / Style)
 - Main Website → Customization Pages → **Customization Detail Page**
 - Solution → Template tab → Solution Industry Page (**required** for industry + `hasPage`)
-- Product → Template tab → Product Detail Page (optional; empty → hardcoded PDP bands only)
-- Solution / Product → Sections tab → page-specific content (keys aligned with the template)
+- Product → Template tab → Product Detail Page (standard) or Solution Product Detail Page (inspiration); empty → Default coalesce by kind (PROD-2763)
+- Product → Sections tab → page-specific content (keys aligned with the template)
+
+**PDP body (PROD-2763):** Specs + Customization stay hardcoded. After Customization, `SectionRenderer` runs merged template × product sections. Defaults seed: `productsRow` (Related, inherit `relatedProducts` / siblings) → `testimonialsRow` (Google Places) → `faqSection` (inherit product FAQs) → `generalCta`. Human seed: `pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development --confirm`.
+
+**Featured Products (PROD-2763):** Industry solution + product line Categorization lists. Featured pins first; auto fill remaining hero slots (solution cap 16; line bottom-bar marquee). Empty featured = previous auto-only behavior.
 
 **General CTA:** CTAs → **General** (`generalCta`) is the only conversion band (former footer strip + Expertise closing CTA). Studio: **theme** (colors only), **align**, **paddingBlock**, dieline borders, optional **body**, **Button** link. Empty link → `FOOTER_CTA`. Chrome footer no longer renders this strip. Human seeds: [`apps/studio/memory.md`](../studio/memory.md) § General CTA closing band + Expertise closing band reseed. Empty/missing section → no band.
 
@@ -118,9 +123,9 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 7. Logo wall: Industry Page may carry shared default clients; Beauty curatedItems override when set. After seed both show 6 mock clients.
 8. Confirm bands: `logoWall`, `inspirationsGrid`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `videoCaseStudiesRow`, `testimonialsRow`, `faqSection` (+ shared chrome on the template).
 9. Unwired type (e.g. `richText`) → page loads; dev shows amber placeholder; prod skips until wired.
-10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden. PDP still uses mocks until wired.
+10. **Reviews** (`testimonialsRow`) — chrome from CMS; quote items from live Google Places (PROD-2587). Places Place Details returns **max 5** review bodies (product wants ≥10 → [PROD-2591](https://dotdirect.atlassian.net/browse/PROD-2591) GBP registration). Long quotes truncate at 160 chars with **Read more** → review `googleMapsUri`. Studio **Content** tab: read-only Google reviews notice + **Layout** radio (defaults to **Carousel**, including unset; **Marquee** = dual-row auto-scroll + pause) + **Rating summary** radio (**Under reviews** footer default, or **Replace eyebrow** = Google aggregate instead of `[ Reviews ]`). Marquee cards ~`24rem`. **View all reviews** via Heading section link (`SectionHeading` CTA: `end` when left-aligned, under heading when center), or defaults to place `googleMapsLinks.reviewsUri` / `googleMapsUri` when the CMS link is empty. Shared 24h Place-ID cache (`GOOGLE_PLACES_PLACE_ID` + `GOOGLE_PLACES_API_KEY`); section is Suspense-wrapped so Places latency does not block above-fold. Missing env / API error / zero 4–5★ → section hidden.
 
-Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit`).
+Wired: `faqSection`, `logoWall`, `mediaFeature`, `expertiseSequence`, `caseStudiesRow`, `inspirationsGrid`, `videoCaseStudiesRow`, `testimonialsRow`, `productsRow`, `generalCta`. Merge: `apps/www/src/lib/sections/merge-solution-sections.ts` (`applyFaqInherit` / `applyCaseStudyInherit` / `applyInspirationsInherit` / `applyVideoCaseStudiesInherit` / `applyProductsRowInherit`).
 
 **Catalog FAQs inherit down the tree — line → style → product** (Richard, 2026-09-28; #675). A page shows the **nearest level with any FAQ**, and that list replaces everything above it: one FAQ curated on a product = that one only, nothing merges. Nothing is copied into the dataset — it resolves at render:
 
