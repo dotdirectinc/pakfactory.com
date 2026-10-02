@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   insert,
+  set,
   setIfMissing,
   unset,
   useClient,
@@ -190,8 +191,17 @@ function entryFor(optionId: string, preselected: boolean): Record<string, unknow
 type RowState = 'off' | 'available' | 'preselected'
 
 function stateOf(entry: Entry | undefined, isInspiration: boolean): RowState {
-  if (isInspiration) return entry ? 'preselected' : 'available'
+  // On a preset only the flag counts, because only the flag reaches the website:
+  // www seeds `preselected == true` and nothing else. An entry without it is a
+  // leftover copy of the base's list (PROD-2778) and asserts nothing, so it must
+  // not draw a star.
+  if (isInspiration) return entry?.preselected === true ? 'preselected' : 'available'
   return entry ? 'available' : 'off'
+}
+
+/** On a preset, "chosen" is pre-selected; on a Standard product, any entry is. */
+function isChosen(entry: Entry | undefined, isInspiration: boolean): boolean {
+  return isInspiration ? entry?.preselected === true : Boolean(entry)
 }
 
 export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
@@ -277,8 +287,14 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
     (optionId: string) => {
       if (readOnly) return
       const entry = byOption.get(optionId)
+      if (isChosen(entry, isInspiration)) {
+        onChange(unset([{ _key: entry!._key }]))
+        return
+      }
+      // A preset entry stored without the flag is a leftover (PROD-2778): pre-selecting
+      // that option sets the flag on it rather than adding a second entry.
       if (entry) {
-        onChange(unset([{ _key: entry._key }]))
+        onChange(set(true, [{ _key: entry._key }, 'preselected']))
         return
       }
       onChange([setIfMissing([]), insert([entryFor(optionId, isInspiration)], 'after', [-1])])
@@ -289,11 +305,15 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
   const selectAll = useCallback(
     (options: OptionRow[]) => {
       if (readOnly) return
-      const missing = options.filter((o) => !byOption.has(o._id))
+      const missing = options.filter((o) => !isChosen(byOption.get(o._id), isInspiration))
       if (missing.length === 0) return
+      // Flag the leftovers in place (preset only); add entries for the rest.
+      const leftovers = missing.map((o) => byOption.get(o._id)).filter(Boolean) as Entry[]
+      const absent = missing.filter((o) => !byOption.has(o._id))
       onChange([
         setIfMissing([]),
-        insert(missing.map((o) => entryFor(o._id, isInspiration)), 'after', [-1]),
+        ...leftovers.map((e) => set(true, [{ _key: e._key }, 'preselected'])),
+        ...(absent.length ? [insert(absent.map((o) => entryFor(o._id, isInspiration)), 'after', [-1])] : []),
       ])
     },
     [byOption, isInspiration, onChange, readOnly],
@@ -439,7 +459,7 @@ export function AvailableCustomizationsInput(props: ArrayOfObjectsInputProps) {
             const key = `${category.id}:${type.id}`
             // Searching implies you want to see what matched.
             const isCollapsed = term ? false : collapsed[key] !== false
-            const chosen = type.options.filter((o) => byOption.has(o._id)).length
+            const chosen = type.options.filter((o) => isChosen(byOption.get(o._id), isInspiration)).length
             return (
               <div key={key} style={{ marginBottom: '0.4rem' }}>
                 <TypeHeader
