@@ -68,7 +68,7 @@ const NAV: readonly NavEntry[] = [
         match: (path) =>
           path === "/spec" ||
           (path.startsWith("/spec/") &&
-            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties"].some((p) =>
+            !["/spec/rules", "/spec/products", "/spec/customizations", "/spec/properties", "/spec/solutions"].some((p) =>
               path.startsWith(p),
             )),
       },
@@ -89,6 +89,12 @@ const NAV: readonly NavEntry[] = [
         href: "/spec/properties",
         label: "Properties",
         match: (path) => path.startsWith("/spec/properties"),
+      },
+      // Solutions → their styles and inspiration products, registry codes included (PROD-2782).
+      {
+        href: "/spec/solutions",
+        label: "Solutions",
+        match: (path) => path.startsWith("/spec/solutions"),
       },
     ],
   },
