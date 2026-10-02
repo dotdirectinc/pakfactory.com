@@ -60,6 +60,12 @@ Catalog pages **do not re-query Sanity on every filter click**.
 
 Same cache tags cover products, product lines, solutions, and chrome (e.g. `websiteNavigation`) — see the constants in `www-cache.ts`.
 
+**Home and case studies (PROD-2755)** read through the same pattern:
+- **Home:** `getHomePage()` in [`src/lib/home-page.ts`](./src/lib/home-page.ts) is cached under `WWW_HOME_PAGE_CACHE_TAG`.
+- **Case studies:** `getCaseStudy()`, `getCaseStudiesPage()` and `listCaseStudyCards()` in [`src/lib/case-studies/case-studies.ts`](./src/lib/case-studies/case-studies.ts) are cached under `WWW_CASE_STUDIES_CACHE_TAG`. `generateMetadata` uses the `getPublished*` variants, so draft-mode stega never reaches `<title>`.
+- **Webhook:** `/api/revalidate` busts the case-study tag for every case-study-set type, and the home tag on **every** call (Home dereferences most content types). A body-less call (the staging `{"sweep": true}` webhook) still sweeps everything.
+- **Draft mode:** stays uncached, via `readThrough`.
+
 ## Components
 
 Import via `@/components/<folder>/…`. Prefer **kebab-case file ≈ export**. Shared card chrome lives in `ui/` (ADR-013): **do not** import one feature’s controller into another — extract a props-only core to `ui/` / `lib/` instead.

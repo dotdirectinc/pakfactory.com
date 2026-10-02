@@ -4,18 +4,18 @@ import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
 import { PageDielineSection } from "@pakfactory/ui/components/page-dieline-section";
 import { PageBreadcrumbSection } from "@/components/common/page-breadcrumb-section";
-import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
+import { getPublishedSanityClient } from "@/lib/sanity/client";
 import { isSanityConfigured } from "@/lib/sanity/env";
 import { WWW_ROUTES } from "@/lib/www-routes";
 import {
-  CASE_STUDIES_PAGE_QUERY,
-  CASE_STUDY_BY_SLUG_QUERY,
   CASE_STUDY_PATHS_QUERY,
-  type CaseStudiesPageData,
-  type CaseStudyCard,
-  type CaseStudyDetail,
   type CaseStudyPath,
 } from "@pakfactory/sanity/queries";
+import {
+  getCaseStudiesPage,
+  getCaseStudy,
+  getPublishedCaseStudy,
+} from "@/lib/case-studies/case-studies";
 import { absoluteUrl } from "@/lib/site";
 import { plainTextFromBlocks } from "@/lib/portable-text";
 import { buildCaseStudyJsonLd } from "@/lib/case-study-jsonld";
@@ -48,11 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
 
   const [study, defaultOgImageUrl] = await Promise.all([
-    isSanityConfigured()
-      ? getPublishedSanityClient()
-          .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-          .catch(() => null)
-      : Promise.resolve(null),
+    getPublishedCaseStudy(slug),
     fetchDefaultOgImageUrl(),
   ]);
   if (!study) return {};
@@ -105,19 +101,9 @@ function SectionDivider() {
 export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params;
 
-  const client = isSanityConfigured() ? await getSanityClient() : null;
-
   const [study, pageData, defaultOgImageUrl] = await Promise.all([
-    client
-      ? client
-          .fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, { slug })
-          .catch(() => null)
-      : Promise.resolve(null),
-    client
-      ? client
-          .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
-          .catch(() => null)
-      : Promise.resolve(null),
+    getCaseStudy(slug),
+    getCaseStudiesPage(),
     fetchDefaultOgImageUrl(),
   ]);
 
