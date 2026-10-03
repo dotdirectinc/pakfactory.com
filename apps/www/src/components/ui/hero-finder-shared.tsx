@@ -25,25 +25,28 @@ export function FinderPicker({
     valueLabel,
     options,
     onChange,
+    className,
 }: {
     label: string;
     value: string;
     valueLabel: string;
     options: FinderPickerOption[];
     onChange: (id: string) => void;
+    className?: string;
 }) {
     return (
         <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <button
                     type="button"
-                    aria-label={label}
+                    aria-label={`${label}: ${valueLabel}`}
                     className={cn(
-                        'inline-flex h-auto cursor-pointer items-baseline gap-2 rounded-[length:var(--radius-control)] border-0 bg-muted px-2 py-0 align-baseline font-[inherit] text-[length:inherit] leading-[inherit] tracking-[inherit] text-foreground shadow-none outline-none hover:bg-muted/80',
+                        'inline-flex h-auto max-w-full min-w-0 cursor-pointer items-baseline gap-1 rounded-[length:var(--radius-control)] border-0 bg-muted px-2 py-0 align-baseline font-[inherit] text-[length:inherit] leading-[inherit] tracking-[inherit] text-foreground shadow-none outline-none hover:bg-muted/80 sm:gap-2',
                         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        className,
                     )}
                 >
-                    <span>{valueLabel}</span>
+                    <span className="min-w-0 truncate">{valueLabel}</span>
                     <ChevronDownIcon
                         className="size-[0.5em] shrink-0 text-foreground opacity-100"
                         aria-hidden
@@ -76,7 +79,11 @@ export function FinderPicker({
     );
 }
 
-/** Two-line H1: "Custom [line]" / "for [industry] brands." */
+/**
+ * Finder H1: "Custom [line] for [industry] brands."
+ * Mobile: lead + line picker share one flex row (picker truncates); industry
+ * line always stacks below. `sm+`: inline lead+picker, then second line.
+ */
 export function buildFinderHeadingTitle({
     headingLead,
     headingJoin,
@@ -100,15 +107,18 @@ export function buildFinderHeadingTitle({
 }): ReactNode {
     return (
         <>
-            {headingLead}{' '}
-            <FinderPicker
-                label="Product line"
-                value={line.slug}
-                valueLabel={line.title}
-                options={lineOptions}
-                onChange={onLineChange}
-            />
-            <span className="mt-2 block">
+            <span className="flex max-w-full items-baseline gap-x-2 sm:inline">
+                <span className="shrink-0">{headingLead}</span>
+                <FinderPicker
+                    label="Product line"
+                    value={line.slug}
+                    valueLabel={line.title}
+                    options={lineOptions}
+                    onChange={onLineChange}
+                    className="min-w-0 flex-1 sm:inline-flex sm:flex-none"
+                />
+            </span>
+            <span className="mt-1 block sm:mt-2">
                 {headingJoin}{' '}
                 <FinderPicker
                     label="Industry"

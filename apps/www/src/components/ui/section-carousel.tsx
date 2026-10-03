@@ -25,13 +25,15 @@ export const SECTION_CAROUSEL_ITEM_CLASS =
     'h-auto w-[min(var(--container-md),85vw)] shrink-0 grow-0 basis-[min(var(--container-md),85vw)] self-stretch pl-6';
 
 /**
- * Finder hero rail — one full card on small screens, ~2 cards on `md+`
- * (wider slides than {@link SECTION_CAROUSEL_ITEM_CLASS}).
- * Same Airy `pl-6` gutter as section rails (DESIGN.md § Spacing).
+ * Finder hero rail — peek neighbors on small screens (center-aligned),
+ * ~2 cards on `md+`. Same Airy `pl-6` gutter as section rails.
+ * Mobile ~68vw so ~16vw peeks left/right. Unprefixed `basis-*` wins over
+ * CarouselItem’s default `basis-full` via tailwind-merge.
  */
 export const FINDER_CAROUSEL_ITEM_CLASS =
-    'h-auto shrink-0 grow-0 self-stretch pl-6 basis-full md:basis-1/2';
+    'h-auto w-[68vw] shrink-0 grow-0 basis-[68vw] self-stretch pl-6 md:w-auto md:basis-1/2';
 const AUTOPLAY_DELAY_MS = 4000;
+const FINDER_MD_MQ = '(min-width: 768px)';
 
 type SectionCarouselControls = 'arrows' | 'playPause';
 
@@ -64,7 +66,7 @@ type SectionCarouselProps = {
     controls?: SectionCarouselControls;
     /**
      * Gutter between slides. Both variants use Airy pl-6/-ml-6;
-     * `finder` still selects Finder full-bleed start padding on mobile.
+     * `finder` uses center align below `md` (peek) and start align on `md+`.
      */
     slideGap?: SectionCarouselSlideGap;
 };
@@ -97,6 +99,11 @@ export function SectionCarousel({
     const [canNext, setCanNext] = useState(false);
     const [reduceMotion, setReduceMotion] = useState(false);
     const [paused, setPaused] = useState(false);
+    const [finderMdUp, setFinderMdUp] = useState(() =>
+        typeof window !== 'undefined'
+            ? window.matchMedia(FINDER_MD_MQ).matches
+            : true,
+    );
 
     const slideCount = Children.count(children);
     const playPause = controls === 'playPause';
@@ -104,6 +111,9 @@ export function SectionCarousel({
     // playPause Finder rail: always loop when more than one slide so the
     // two-up track never leaves an empty viewport beside first/last.
     const effectiveLoop = playPause && slideCount > 1 ? true : loop;
+    const finderAlign =
+        slideGap === 'finder' && !finderMdUp ? 'center' : 'start';
+
     useEffect(() => {
         setReduceMotion(prefersReducedMotion());
         const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -111,6 +121,20 @@ export function SectionCarousel({
         mq.addEventListener('change', onChange);
         return () => mq.removeEventListener('change', onChange);
     }, []);
+
+    useEffect(() => {
+        if (slideGap !== 'finder') return;
+        const mq = window.matchMedia(FINDER_MD_MQ);
+        const sync = () => setFinderMdUp(mq.matches);
+        sync();
+        mq.addEventListener('change', sync);
+        return () => mq.removeEventListener('change', sync);
+    }, [slideGap]);
+
+    useEffect(() => {
+        if (!api || slideGap !== 'finder') return;
+        api.reInit();
+    }, [api, finderAlign, slideGap]);
 
     const enableAutoplay =
         (autoplay || playPause) && !reduceMotion && slideCount > 1;
@@ -176,7 +200,7 @@ export function SectionCarousel({
         <Carousel
             setApi={setApi}
             opts={{
-                align: 'start',
+                align: finderAlign,
                 slidesToScroll: 1,
                 loop: effectiveLoop,
                 // Higher duration = slower ease (Embla default ~25).
@@ -197,9 +221,9 @@ export function SectionCarousel({
                         className={cn(
                             '-ml-6',
                             slideGap === 'finder'
-                                ? // Mobile: equal gutters so one `basis-full` card centers.
+                                ? // Mobile: center-aligned peek (no side pad).
                                   // `md+`: same full-bleed start padding as section rails.
-                                  'max-md:px-(--layout-gutter-outer) md:pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))] md:pr-(--layout-gutter-outer)'
+                                  'md:pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))] md:pr-(--layout-gutter-outer)'
                                 : [
                                       'pl-[max(calc(var(--layout-gutter-outer)+var(--layout-gutter-inner)),calc((100vw-var(--layout-max))/2+var(--layout-gutter-inner)))]',
                                       'pr-(--layout-gutter-outer)',

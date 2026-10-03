@@ -4,7 +4,8 @@ import type {
     PageSectionHeroFinderRailItemDoc,
 } from '@pakfactory/sanity/queries';
 
-import {BLOG_URL} from '@/lib/www-nav';
+import {KIND, kindCta, kindLabel, resolveKind} from '@/lib/i18n/kind';
+import {resolveSectionLinkHref} from '@/lib/resolve-www-nav-href';
 import {
     type FinderSlide,
     isFinderIndustrySentinel,
@@ -17,7 +18,7 @@ import type {
     HeroFinderStudy,
     HeroImage,
 } from '@/lib/sections/map-hero';
-import {resolveSectionLinkHref} from '@/lib/resolve-www-nav-href';
+import {BLOG_URL} from '@/lib/www-nav';
 import {
     expertiseHref,
     productHref,
@@ -72,14 +73,16 @@ function hrefForRailItem(item: PageSectionHeroFinderRailItemDoc): string | undef
 
 function defaultLinkLabel(
     item: PageSectionHeroFinderRailItemDoc | null | undefined,
-    title: string,
 ): string {
     const type = trimmed(item?._type);
-    if (type === 'caseStudy') return 'Read case study';
     if (type === 'post') return 'Read article';
-    if (type === 'productLine') return `Explore ${title.toLowerCase()}`;
-    if (type === 'solution') return `See ${title} packaging`;
-    return 'Learn more';
+    if (!item) return 'Learn more';
+    return kindCta(
+        resolveKind({
+            docType: type,
+            productKind: trimmed(item.kind),
+        }),
+    );
 }
 
 /**
@@ -139,8 +142,7 @@ function slideFromRailEntry(
     const videoSrc = trimmed(entry.bannerVideoUrl);
 
     const customLink = resolveSectionLinkHref(entry.link ?? undefined);
-    const linkLabel =
-        trimmed(entry.link?.label) || defaultLinkLabel(item, title);
+    const linkLabel = trimmed(entry.link?.label) || defaultLinkLabel(item);
     const href = customLink?.href || derivedHref;
 
     return {
@@ -175,14 +177,15 @@ export function buildFinderFullscreenGeneralSlides(
 }
 
 function studyToFsSlide(study: HeroFinderStudy): FinderFullscreenSlide {
+    const kind = KIND.caseStudy;
     return {
         id: `study-${study.id}`,
-        kindLabel: 'Case study',
+        kindLabel: kindLabel(kind),
         title: study.title,
         description: study.clientName,
         image: study.image,
         imageFit: 'cover',
-        link: {label: 'Read case study', href: study.href},
+        link: {label: kindCta(kind), href: study.href},
         ...(study.stat ? {stat: study.stat} : {}),
     };
 }
@@ -205,28 +208,30 @@ export function buildFinderFullscreenSpecificSlides({
     if (!isFinderLineSentinel(line)) {
         const style = line.styles?.[0];
         if (style) {
+            const kind = KIND.productStyle;
             slides.push({
                 id: `style-${style.id}`,
-                kindLabel: 'Product style',
+                kindLabel: kindLabel(kind),
                 title: style.title,
                 description: style.description,
                 image: style.image,
                 imageFit: 'cover',
                 link: {
-                    label: 'View style',
+                    label: kindCta(kind),
                     href: productStyleHref(line.slug, style.slug),
                 },
             });
         } else {
+            const kind = KIND.productLine;
             slides.push({
                 id: `line-${line.id}`,
-                kindLabel: 'Product',
+                kindLabel: kindLabel(kind),
                 title: line.title,
                 description: line.description,
                 image: line.image,
                 imageFit: 'cover',
                 link: {
-                    label: `Explore ${line.title.toLowerCase()}`,
+                    label: kindCta(kind),
                     href: line.href,
                 },
             });
@@ -234,15 +239,16 @@ export function buildFinderFullscreenSpecificSlides({
     }
 
     if (!isFinderIndustrySentinel(industry)) {
+        const kind = KIND.industry;
         slides.push({
             id: `industry-${industry.id}`,
-            kindLabel: 'Industry',
+            kindLabel: kindLabel(kind),
             title: industry.title,
             description: industry.description,
             image: industry.image,
             imageFit: 'cover',
             link: {
-                label: `See ${industry.title} packaging`,
+                label: kindCta(kind),
                 href: industry.href,
             },
         });

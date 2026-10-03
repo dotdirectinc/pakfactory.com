@@ -1,0 +1,22 @@
+{
+  "kind": {
+    "productLine": "Product line",
+    "inspiration": "Inspiration",
+    "productStyle": "Product style",
+    "industry": "Industry",
+    "customization": "Customization",
+    "expertise": "Expertise",
+    "caseStudy": "Case study",
+    "related": "Related"
+  },
+  "cta": {
+    "productLine": "Explore products",
+    "inspiration": "View inspiration",
+    "productStyle": "View style",
+    "industry": "Explore industry",
+    "customization": "Explore options",
+    "expertise": "See how we work",
+    "caseStudy": "Read case study",
+    "related": "Read case study"
+  }
+}

@@ -285,6 +285,7 @@ const HERO_FINDER_INDUSTRY = /* groq */ `{
 const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   _id,
   _type,
+  kind,
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": coalesce(shortDescription, cardSummary, summary, excerpt),
@@ -958,6 +959,8 @@ export type PageSectionHeroFinderIndustryDoc = {
 export type PageSectionHeroFinderRailItemDoc = {
     _id?: string | null;
     _type?: string | null;
+    /** Product catalog kind (`standard` | `inspiration`); other types omit. */
+    kind?: string | null;
     title?: string | null;
     slug?: string | null;
     description?: string | null;

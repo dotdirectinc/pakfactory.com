@@ -545,7 +545,7 @@ function HeroFinderFullscreenChrome({
                     titleId={titleId}
                     description={content.intro}
                     settle
-                    titleClassName="max-w-5xl"
+                    titleClassName="max-w-5xl text-2xl leading-tight sm:text-[2.25rem] md:text-display-lg md:leading-[1.1]"
                 >
                     {actions}
                 </PageHeadingContent>
