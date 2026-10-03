@@ -3,6 +3,7 @@ import {describe, it} from 'node:test';
 import {
     assembleHeroMediaCards,
     assembleProductLineLanding,
+    PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
     resolveStyleCardImage,
     RIGID_BOXES_MOCK_FEATURE,
     RIGID_BOXES_MOCK_FEATURED_VIDEO,
@@ -851,7 +852,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(cards[2]?.id, 'auto-b');
     });
 
-    it('returns empty hero media cards when there is no media', () => {
+    it('returns empty hero media cards when there are no products or line media', () => {
         const cards = assembleHeroMediaCards({
             featuredImageUrl: null,
             featuredImageAlt: '',
@@ -859,5 +860,30 @@ describe('assembleProductLineLanding', () => {
             frames: [],
         });
         assert.deepEqual(cards, []);
+    });
+
+    it('uses the hero placeholder when a standard product has no media', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: 'https://cdn.example/line.jpg',
+            featuredImageAlt: 'Line',
+            featuredVideoUrl: null,
+            frames: [],
+            products: [
+                product({
+                    title: 'Blank Box',
+                    slug: 'blank-box',
+                    kind: 'standard',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [],
+                }),
+            ],
+        });
+
+        assert.equal(cards.length, 1);
+        assert.equal(cards[0]?.id, 'blank-box');
+        assert.equal(cards[0]?.src, PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER);
+        assert.equal(cards[0]?.alt, 'Blank Box');
+        assert.equal(cards[0]?.detailHref, '/products/blank-box');
+        assert.equal(cards[0]?.title, 'Blank Box');
     });
 });

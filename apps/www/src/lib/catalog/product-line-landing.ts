@@ -72,6 +72,13 @@ export type ProductLineLandingStyleCard = {
 
 export type ProductLineHeroLayout = 'stack' | 'bottomBar';
 
+/**
+ * Shared stack + bottom-bar hero placeholder when a product (or line featured
+ * image) has no authored media.
+ */
+export const PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER =
+    '/products/hero-feature-placeholder.svg';
+
 /** Card for the bottomBar hero media carousel. */
 export type ProductLineHeroMediaCard = {
     id: string;
@@ -122,9 +129,10 @@ function mapHeroCustomizations(
 
 /**
  * Build bottomBar hero carousel cards (unique, no density copies).
- * Featured Products first (Studio order), then `standard` products on the line
- * (with media) fill remaining slots — duplicates skipped. Fall back to featured
- * image + frames when neither yields cards.
+ * Featured Products first (Studio order), then line `standard` products fill
+ * remaining slots — duplicates skipped. Products without media use
+ * {@link PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER}. Fall back to line featured
+ * image + frames only when there are no standard products at all.
  */
 export function assembleHeroMediaCards(input: {
     featuredImageUrl: string | null;
@@ -141,14 +149,18 @@ export function assembleHeroMediaCards(input: {
 
     const pushProduct = (product: Product) => {
         if (seenSlugs.has(product.slug)) return;
-        const media = product.media?.find((m) => Boolean(m.src?.trim()));
-        if (!media?.src?.trim()) return;
         seenSlugs.add(product.slug);
+        const media = product.media?.find((m) => Boolean(m.src?.trim()));
+        const src =
+            media?.src?.trim() || PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER;
+        const alt = media?.src?.trim()
+            ? media.alt?.trim() || product.title
+            : product.title || 'Product image placeholder';
         const productVideo = product.featuredVideoUrl?.trim() || '';
         cards.push({
             id: product.slug,
-            src: media.src.trim(),
-            alt: media.alt?.trim() || product.title,
+            src,
+            alt,
             settleIndex: cards.length,
             title: product.title,
             detailHref: productHref(product.slug),
@@ -164,13 +176,10 @@ export function assembleHeroMediaCards(input: {
         pushProduct(product);
     }
 
-    const fromProducts = productsOfKind(
+    for (const product of productsOfKind(
         input.products ?? [],
         PRODUCT_LINE_PRODUCT_KIND,
-    ).filter((product) =>
-        Boolean(product.media?.some((m) => Boolean(m.src?.trim()))),
-    );
-    for (const product of fromProducts) {
+    )) {
         pushProduct(product);
     }
 

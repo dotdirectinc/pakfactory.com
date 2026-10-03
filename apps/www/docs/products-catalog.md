@@ -67,9 +67,9 @@ Also applied to: the option → product-lines facet, the three solution product 
 | Solution LP / line / style collections / hero product tiles | **inspiration** only |
 | Global `/products` hub | Both (product-type facet) |
 
-www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts). GROQ fragments: [`@pakfactory/sanity/product-kind`](../../../packages/sanity/src/product-kind.ts) (`KIND_STANDARD` / `KIND_INSPIRATION`).
+www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts). GROQ fragments: [`@pakfactory/sanity/product-kind`](../../../packages/sanity/src/product-kind.ts) (`KIND_STANDARD` treats unset as standard; `KIND_INSPIRATION`).
 
-**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx) (same dialog as solution hero).
+**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx) (same dialog as solution hero). Products without media use [`PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER`](../src/lib/catalog/product-line-landing.ts) (`/products/hero-feature-placeholder.svg`).
 
 ### Sanity field map
 
