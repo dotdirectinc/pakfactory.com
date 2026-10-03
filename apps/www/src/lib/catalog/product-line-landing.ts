@@ -15,7 +15,11 @@ import {
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
 import type {SolutionHeroCustomization} from '@/lib/solutions/types';
-import {productHref, WWW_ROUTES} from '@/lib/www-routes';
+import {
+    customizationCategoryHref,
+    productHref,
+    WWW_ROUTES,
+} from '@/lib/www-routes';
 
 /** Storyboard H1 for rigid-boxes when Sanity `h1` is empty (PROD-1914). */
 export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
@@ -87,19 +91,34 @@ const HERO_MEDIA_CARD_DUPLICATE = 6;
 function mapHeroCustomizations(
     product: Product,
 ): SolutionHeroCustomization[] {
-    return (product.availableCustomizations ?? []).slice(0, 4).map((opt) => ({
-        id: opt.id || opt.slug || opt.label,
-        category: (
-            opt.categoryTitle ||
-            opt.category ||
-            'CUSTOMIZATION'
-        ).toUpperCase(),
-        title: opt.label,
-        description:
-            opt.shortDescription?.trim() ||
-            'Available on this product.',
-        learnMoreHref: WWW_ROUTES.customizations,
-    }));
+    const all = product.availableCustomizations ?? [];
+    const preselected = all.filter((opt) => opt.preselected);
+    const options = (preselected.length > 0 ? preselected : all).slice(0, 4);
+    return options.map((opt) => {
+        const category = opt.category?.trim();
+        const slug = opt.slug?.trim();
+        const learnMoreHref =
+            category && slug
+                ? customizationCategoryHref(category, slug)
+                : WWW_ROUTES.customizations;
+        const imageSrc = opt.imageUrl?.trim() || null;
+        return {
+            id: opt.id || opt.slug || opt.label,
+            category: (
+                opt.categoryTitle ||
+                opt.category ||
+                'CUSTOMIZATION'
+            ).toUpperCase(),
+            title: opt.label,
+            description:
+                opt.shortDescription?.trim() ||
+                'Available on this product.',
+            learnMoreHref,
+            ...(imageSrc
+                ? {imageSrc, imageAlt: opt.label}
+                : {imageSrc: null}),
+        };
+    });
 }
 
 function duplicateHeroCards(
