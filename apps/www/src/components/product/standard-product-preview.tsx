@@ -10,45 +10,48 @@ import {ProductPreviewShell} from '@/components/ui/product-preview-shell';
 import {Icon} from '@/components/ui/icon';
 import {ModelViewer} from '@/components/ui/model-viewer';
 import {SanityImage} from '@/components/ui/sanity-image';
-import type {
-    SolutionHeroCustomization,
-    SolutionMedia,
-} from '@/lib/solutions/types';
+import type {SolutionHeroCustomization} from '@/lib/solutions/types';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
 
-export type SolutionHeroPreviewProduct = {
+export type StandardProductPreviewSpec = {
+    label: string;
+    value: string;
+};
+
+export type StandardProductPreviewProduct = {
     id: string;
     title: string;
     detailHref: string;
-    image?: SolutionMedia | null;
-    /** Optional GLB — adds a "View in 3D" toggle over the photo (PoC, PROD-2777). */
+    image?: {src: string; alt: string} | null;
+    /** Optional GLB — adds a "View in 3D" toggle over the photo (PoC). */
     modelSrc?: string;
+    description?: string;
+    specs?: StandardProductPreviewSpec[];
     customizations: SolutionHeroCustomization[];
 };
 
 /** Clip name inside the PoC GLB; drives the open/close control. */
 const MODEL_ANIMATION_NAME = 'Box animation';
 
-type SolutionProductPreviewProps = {
-    product: SolutionHeroPreviewProduct | null;
+type StandardProductPreviewProps = {
+    product: StandardProductPreviewProduct | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
 /**
- * Solution / inspiration product preview — image + customizations list.
- * Composes {@link ProductPreviewShell}; does not serve standard product-line previews.
+ * Standard product-line hero preview — Description, Specs, Customizations.
+ * Composes {@link ProductPreviewShell}; does not serve inspiration/solution kinds.
  */
-export function SolutionProductPreview({
+export function StandardProductPreview({
     product,
     open,
     onOpenChange,
-}: SolutionProductPreviewProps) {
+}: StandardProductPreviewProps) {
     const [view, setView] = useState<'photo' | '3d'>('photo');
     const [modelFailed, setModelFailed] = useState(false);
     const [shownProductId, setShownProductId] = useState(product?.id);
 
-    // Each product opens on its photo; a failed model stays failed only for it.
     if (product?.id !== shownProductId) {
         setShownProductId(product?.id);
         setView('photo');
@@ -57,6 +60,8 @@ export function SolutionProductPreview({
 
     const canShow3d = Boolean(product?.modelSrc) && !modelFailed;
     const show3d = canShow3d && view === '3d';
+    const description = product?.description?.trim() || '';
+    const specs = product?.specs ?? [];
     const imageSrc = product?.image?.src?.trim() || '';
     const imageAlt = product?.image?.alt || product?.title || '';
 
@@ -138,14 +143,50 @@ export function SolutionProductPreview({
             }
         >
             {product ? (
-                <section className="flex flex-col gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Customizations
-                    </p>
-                    <ProductPreviewCustomizationList
-                        items={product.customizations}
-                    />
-                </section>
+                <>
+                    {description ? (
+                        <section className="flex flex-col gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Description
+                            </p>
+                            <p className="text-sm leading-6 text-foreground">
+                                {description}
+                            </p>
+                        </section>
+                    ) : null}
+
+                    {specs.length > 0 ? (
+                        <section className="flex flex-col gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Specs
+                            </p>
+                            <dl className="flex flex-col gap-2">
+                                {specs.map((row) => (
+                                    <div
+                                        key={row.label}
+                                        className="flex flex-col gap-1 sm:flex-row sm:gap-4"
+                                    >
+                                        <dt className="shrink-0 text-sm font-medium text-foreground sm:w-36">
+                                            {row.label}
+                                        </dt>
+                                        <dd className="text-sm text-muted-foreground">
+                                            {row.value}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </section>
+                    ) : null}
+
+                    <section className="flex flex-col gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Customizations
+                        </p>
+                        <ProductPreviewCustomizationList
+                            items={product.customizations}
+                        />
+                    </section>
+                </>
             ) : null}
         </ProductPreviewShell>
     );

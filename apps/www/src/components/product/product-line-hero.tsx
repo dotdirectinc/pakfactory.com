@@ -187,7 +187,7 @@ function HeroCtaGroup({
 /**
  * Product-line landing hero (PROD-1914 Phase 3).
  * `stack` = featured icon + copy above media; `bottomBar` = media carousel above
- * type (featured icon hidden for now). Click opens SolutionProductPreview.
+ * type (featured icon hidden for now). Click opens StandardProductPreview.
  */
 export function ProductLineHero({
     h1,

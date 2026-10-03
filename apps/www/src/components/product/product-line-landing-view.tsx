@@ -1,5 +1,6 @@
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {ProductLineHero} from '@/components/product/product-line-hero';
+import {ProductLineInspirationSection} from '@/components/product/product-line-inspiration-section';
 import {SectionRenderer} from '@/components/sections/section-renderer';
 import {assembleProductLineLanding} from '@/lib/catalog/product-line-landing';
 import type {ProductLine} from '@/lib/catalog/types';
@@ -58,6 +59,13 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
                     {hero}
                 </>
             )}
+
+            {(line.inspirationProducts?.length ?? 0) > 0 ? (
+                <ProductLineInspirationSection
+                    lineTitle={line.title}
+                    products={line.inspirationProducts ?? []}
+                />
+            ) : null}
 
             {model.pageSections.length > 0 ? (
                 <SectionRenderer sections={model.pageSections} />

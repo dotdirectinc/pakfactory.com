@@ -20,9 +20,9 @@ import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {
-    SolutionProductPreview,
-    type SolutionHeroPreviewProduct,
-} from '@/components/solution/solution-product-preview';
+    StandardProductPreview,
+    type StandardProductPreviewProduct,
+} from '@/components/product/standard-product-preview';
 import {CarouselNavButtons} from '@/components/ui/carousel-nav-buttons';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineHeroMediaCard} from '@/lib/catalog/product-line-landing';
@@ -181,7 +181,7 @@ function HeroMediaCard({
             src={card.src}
             alt={card.alt}
             fill
-            sizes="(max-width: 639px) 40vw, 28rem"
+            sizes="(max-width: 639px) 80vw, 56rem"
             className={stillClassName}
             priority={priority}
         />
@@ -190,7 +190,7 @@ function HeroMediaCard({
             src={card.src}
             alt={card.alt}
             fill
-            sizes="(max-width: 639px) 40vw, 28rem"
+            sizes="(max-width: 639px) 80vw, 56rem"
             className={stillClassName}
             priority={priority}
             unoptimized
@@ -281,7 +281,7 @@ function HeroMediaCard({
 
 /**
  * Bottom-bar hero media strip — full-bleed Embla carousel with shared
- * CarouselNavButtons; click opens SolutionProductPreview (same as solution hero).
+ * CarouselNavButtons; click opens StandardProductPreview.
  */
 export function ProductLineHeroMediaMarquee({
     cards,
@@ -294,9 +294,8 @@ export function ProductLineHeroMediaMarquee({
     const [api, setApi] = useState<CarouselApi>();
     const [canPrev, setCanPrev] = useState(false);
     const [canNext, setCanNext] = useState(false);
-    const [selected, setSelected] = useState<SolutionHeroPreviewProduct | null>(
-        null,
-    );
+    const [selected, setSelected] =
+        useState<StandardProductPreviewProduct | null>(null);
     const [open, setOpen] = useState(false);
 
     const loop = cards.length > 1;
@@ -331,6 +330,12 @@ export function ProductLineHeroMediaMarquee({
             image: {src: card.src, alt: card.alt},
             modelSrc: productModelSrc(slug),
             customizations: card.customizations ?? [],
+            ...(card.description?.trim()
+                ? {description: card.description.trim()}
+                : {}),
+            ...(card.properties?.length
+                ? {specs: card.properties}
+                : {}),
         });
         setOpen(true);
     };
@@ -393,7 +398,7 @@ export function ProductLineHeroMediaMarquee({
                 </div>
             ) : null}
 
-            <SolutionProductPreview
+            <StandardProductPreview
                 product={selected}
                 open={open}
                 onOpenChange={setOpen}

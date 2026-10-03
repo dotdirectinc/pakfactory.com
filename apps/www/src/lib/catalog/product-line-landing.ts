@@ -91,8 +91,61 @@ export type ProductLineHeroMediaCard = {
     /** Preview dialog — set when card is backed by a catalog product. */
     title?: string;
     detailHref?: string;
+    description?: string;
+    /** Spec rows for StandardProductPreview (label + value text). */
+    properties?: {label: string; value: string}[];
     customizations?: SolutionHeroCustomization[];
 };
+
+/** Industry pill for the product-line Inspiration section. */
+export type ProductLineInspirationIndustry = {
+    slug: string;
+    title: string;
+};
+
+/**
+ * Unique industries present on inspiration products for a line (title sort).
+ * Industries with zero products are never returned.
+ */
+export function assembleInspirationIndustries(
+    products: readonly Product[],
+): ProductLineInspirationIndustry[] {
+    const bySlug = new Map<string, string>();
+    for (const product of products) {
+        for (const industry of product.industries ?? []) {
+            const slug = industry.slug?.trim();
+            const title = industry.title?.trim();
+            if (!slug || !title || bySlug.has(slug)) continue;
+            bySlug.set(slug, title);
+        }
+        // Fallback: breadcrumbParent when industries[] was not projected.
+        if ((product.industries?.length ?? 0) === 0) {
+            const slug = product.breadcrumbParent?.slug?.trim();
+            const title = product.breadcrumbParent?.title?.trim();
+            if (slug && title && !bySlug.has(slug)) bySlug.set(slug, title);
+        }
+    }
+    return [...bySlug.entries()]
+        .map(([slug, title]) => ({slug, title}))
+        .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+/**
+ * Inspiration products tagged with the given industry slug (multi-tag OK).
+ */
+export function filterInspirationProductsByIndustry(
+    products: readonly Product[],
+    industrySlug: string,
+): Product[] {
+    const slug = industrySlug.trim();
+    if (!slug) return [];
+    return products.filter((product) => {
+        if (product.industries?.some((industry) => industry.slug === slug)) {
+            return true;
+        }
+        return product.breadcrumbParent?.slug === slug;
+    });
+}
 
 function mapHeroCustomizations(
     product: Product,
@@ -157,6 +210,21 @@ export function assembleHeroMediaCards(input: {
             ? media.alt?.trim() || product.title
             : product.title || 'Product image placeholder';
         const productVideo = product.featuredVideoUrl?.trim() || '';
+        const description = product.description?.trim() || '';
+        const properties: {label: string; value: string}[] = [];
+        const styleTitle = product.productStyle?.title?.trim();
+        if (styleTitle) {
+            properties.push({label: 'Style', value: styleTitle});
+        }
+        for (const row of product.properties ?? []) {
+            const label = row.label.trim();
+            if (!label) continue;
+            if (styleTitle && label.toLowerCase() === 'style') continue;
+            properties.push({
+                label,
+                value: row.value.trim() || 'N/A',
+            });
+        }
         cards.push({
             id: product.slug,
             src,
@@ -165,6 +233,8 @@ export function assembleHeroMediaCards(input: {
             title: product.title,
             detailHref: productHref(product.slug),
             customizations: mapHeroCustomizations(product),
+            ...(description ? {description} : {}),
+            ...(properties.length > 0 ? {properties} : {}),
             ...(productVideo ? {videoUrl: productVideo} : {}),
         });
     };

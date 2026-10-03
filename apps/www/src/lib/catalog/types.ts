@@ -209,6 +209,11 @@ export type Product = {
      */
     breadcrumbParent?: {title: string; slug: string};
     /**
+     * All industry solutions tagged on the product (line Inspiration band).
+     * Absent on lean card projections that only return breadcrumbParent.
+     */
+    industries?: {title: string; slug: string}[];
+    /**
      * First matching Solution Style under `breadcrumbParent` (PROD-2763).
      * Absent when no style filter matches.
      */
@@ -293,6 +298,11 @@ export type ProductLine = {
     featuredStudies?: ProductLineCaseStudyRef[];
     /** Pinned hero products (Categorization); prepended before auto line products. */
     featuredProducts?: Product[];
+    /**
+     * Inspiration-kind products for this line (Inspiration section).
+     * Separate from `products` (standard-only hero / styles).
+     */
+    inspirationProducts?: Product[];
     relatedLines?: ProductLineRelatedRef[];
     faqs?: ProductFaq[];
     /**

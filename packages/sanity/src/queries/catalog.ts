@@ -5,7 +5,7 @@
  * these projections to retired productPage / handle shapes.
  */
 
-import {KIND_STANDARD} from '../product-kind';
+import {KIND_INSPIRATION, KIND_STANDARD} from '../product-kind';
 import {
   PAGE_SECTIONS_PROJECTION,
   FEATURED_VIDEO_URL_FIELD,
@@ -319,6 +319,38 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
 `;
 
 /**
+ * Product-line hero / standard preview dialog — card fields plus specs + a
+ * small customizations slice (not full PDP extras).
+ */
+export const CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS = /* groq */ `
+  ${CATALOG_PRODUCT_CARD_FIELDS},
+  "properties": properties[defined(property)]{
+    "label": property->title,
+    "values": values[]->title
+  },
+  "availableCustomizations": availableCustomizations[defined(customization)]{
+    preselected,
+    "customization": customization->${OPTION_PROJ}
+  }
+`;
+
+/**
+ * Product-line Inspiration section — card fields + all industry tags +
+ * customizations for SolutionProductPreview closer-look.
+ */
+export const CATALOG_PRODUCT_LINE_INSPIRATION_FIELDS = /* groq */ `
+  ${CATALOG_PRODUCT_CARD_FIELDS},
+  "industries": solutions[@->solutionType == "industry"]->{
+    title,
+    "slug": slug.current
+  },
+  "availableCustomizations": availableCustomizations[defined(customization)]{
+    preselected,
+    "customization": customization->${OPTION_PROJ}
+  }
+`;
+
+/**
  * What the customization rules resolve a product from (PROD-2556). A preset offers what the
  * product in `basedOn` offers and stores only its own pre-selections (PROD-2530), so for a
  * preset the list and the exceptions are read from its base. Refs only — the rules catalog
@@ -564,7 +596,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText)
   },
   "featuredProducts": featuredProducts[]->{
-    ${CATALOG_PRODUCT_CARD_FIELDS}
+    ${CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS}
   },
   "relatedLines": relatedLines[]->{
     _id,
@@ -581,7 +613,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
   "styles": ${LINE_STYLES},
-  // Product-line surfaces are standard-only (inspirations live on solutions).
+  // Product-line hero / styles: standard-only.
   "products": *[_type == "product" &&
     productLine._ref == ^._id &&
     ${KIND_STANDARD} &&
@@ -589,7 +621,17 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     ${LISTED_STATUS} &&
     ${CUSTOMER_FACING}
   ] | order(title asc) {
-    ${CATALOG_PRODUCT_CARD_FIELDS}
+    ${CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS}
+  },
+  // Inspiration band: kind=inspiration for this line (incl. basedOn line), all industries.
+  "inspirationProducts": *[_type == "product" &&
+    coalesce(productLine, basedOn->productLine)._ref == ^._id &&
+    ${KIND_INSPIRATION} &&
+    defined(slug.current) &&
+    ${LISTED_STATUS} &&
+    ${CUSTOMER_FACING}
+  ] | order(title asc) {
+    ${CATALOG_PRODUCT_LINE_INSPIRATION_FIELDS}
   }
 `;
 
@@ -1167,8 +1209,13 @@ export type CatalogProductDoc = {
   /** PDP by-slug only (PROD-2556): the rules inputs, and the product's own pre-selections. */
   rulesProduct?: CatalogRulesProductDoc | null;
   preselectedIds?: (string | null)[] | null;
-  /** PDP by-slug only (PROD-1913). */
+  /** PDP by-slug / standard preview projection. */
   properties?: CatalogProductPropertyDoc[] | null;
+  /**
+   * Industry solutions on the product (line inspiration band / library).
+   * Card fields only expose breadcrumbParent (first industry).
+   */
+  industries?: (CatalogProductLibraryIndustryDoc | null)[] | null;
   faqs?: CatalogProductFaqDoc[] | null;
   relatedProducts?: CatalogProductDoc[] | null;
   /** PDP sections (content). Merged with `template.sections` when set. */
@@ -1236,6 +1283,8 @@ export type CatalogProductLineDoc = {
   } | null;
   styles?: CatalogStyleRefDoc[] | null;
   products?: CatalogProductDoc[] | null;
+  /** Inspiration-kind products for this line (Inspiration section). */
+  inspirationProducts?: CatalogProductDoc[] | null;
 };
 
 export type CatalogPropertyRefDoc = {
