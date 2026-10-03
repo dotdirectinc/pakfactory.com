@@ -87,7 +87,7 @@ export function CatalogCardGrid({
                     align={align}
                     ctaPlacement="end"
                 />
-                <ul className="mt-12 grid list-none grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+                <ul className="mt-12 grid list-none grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {visibleCards.map((card) => (
                         <li key={card.id}>
                             <CatalogCard

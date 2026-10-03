@@ -27,10 +27,10 @@ export const SECTION_CAROUSEL_ITEM_CLASS =
 /**
  * Finder hero rail — one full card on small screens, ~2 cards on `md+`
  * (wider slides than {@link SECTION_CAROUSEL_ITEM_CLASS}).
- * Tighter `pl-4` gutter than section rails (`pl-6`).
+ * Same Airy `pl-6` gutter as section rails (DESIGN.md § Spacing).
  */
 export const FINDER_CAROUSEL_ITEM_CLASS =
-    'h-auto shrink-0 grow-0 self-stretch pl-4 basis-full md:basis-1/2';
+    'h-auto shrink-0 grow-0 self-stretch pl-6 basis-full md:basis-1/2';
 const AUTOPLAY_DELAY_MS = 4000;
 
 type SectionCarouselControls = 'arrows' | 'playPause';
@@ -63,8 +63,8 @@ type SectionCarouselProps = {
      */
     controls?: SectionCarouselControls;
     /**
-     * Gutter between slides. `section` = pl-6/-ml-6 (default);
-     * `finder` = pl-4/-ml-4 to match {@link FINDER_CAROUSEL_ITEM_CLASS}.
+     * Gutter between slides. Both variants use Airy pl-6/-ml-6;
+     * `finder` still selects Finder full-bleed start padding on mobile.
      */
     slideGap?: SectionCarouselSlideGap;
 };
@@ -104,8 +104,6 @@ export function SectionCarousel({
     // playPause Finder rail: always loop when more than one slide so the
     // two-up track never leaves an empty viewport beside first/last.
     const effectiveLoop = playPause && slideCount > 1 ? true : loop;
-    const contentCancelClass = slideGap === 'finder' ? '-ml-4' : '-ml-6';
-
     useEffect(() => {
         setReduceMotion(prefersReducedMotion());
         const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -197,7 +195,7 @@ export function SectionCarousel({
                 <div className="relative right-1/2 left-1/2 -mr-[50vw] -ml-[50vw] w-screen max-w-[100vw]">
                     <CarouselContent
                         className={cn(
-                            contentCancelClass,
+                            '-ml-6',
                             slideGap === 'finder'
                                 ? // Mobile: equal gutters so one `basis-full` card centers.
                                   // `md+`: same full-bleed start padding as section rails.
