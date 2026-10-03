@@ -40,11 +40,11 @@ type ProductLineHeroProps = {
     heroLayout: ProductLineHeroLayout;
     featuredImageUrl: string | null;
     featuredImageAlt: string;
-    /** Hover-play MP4 on bottomBar featured marquee card; unused on stack. */
+    /** Hover-play MP4 on bottomBar featured carousel card; unused on stack. */
     featuredVideoUrl: string | null;
     featuredIconUrl: string | null;
     featuredIconAlt: string;
-    /** Standard products on this line — preferred bottomBar marquee source. */
+    /** Standard products on this line — preferred bottomBar carousel source. */
     products: Product[];
     /** Pinned hero products (Categorization Featured Products). */
     featuredProducts?: Product[];
@@ -186,8 +186,8 @@ function HeroCtaGroup({
 
 /**
  * Product-line landing hero (PROD-1914 Phase 3).
- * `stack` = featured icon + copy above media; `bottomBar` = media marquee above
- * type (featured icon hidden for now).
+ * `stack` = featured icon + copy above media; `bottomBar` = media carousel above
+ * type (featured icon hidden for now). Click opens SolutionProductPreview.
  */
 export function ProductLineHero({
     h1,
@@ -386,7 +386,7 @@ function ProductLineHeroBottomBar({
                     'flex min-h-0 flex-1 flex-col pt-8 sm:pt-10 lg:pt-12',
                 )}
             >
-                {/* Grows under breadcrumb / above marquee (all breakpoints). */}
+                {/* Grows under breadcrumb / above carousel (all breakpoints). */}
                 <div className="flex-1" aria-hidden />
 
                 {/* Full-viewport track; vertical dielines stay on this column. */}
@@ -398,7 +398,7 @@ function ProductLineHeroBottomBar({
                     />
                 </div>
 
-                {/* Grows between marquee and heading (all breakpoints). */}
+                {/* Grows between carousel and heading (all breakpoints). */}
                 <div className="flex-1" aria-hidden />
 
                 {/* 40px (pt-10) clearance above the heading — muted→white reads here.

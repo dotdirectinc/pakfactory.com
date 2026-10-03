@@ -1,8 +1,21 @@
 'use client';
 
-import {useEffect, useRef, useState, type CSSProperties} from 'react';
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type CSSProperties,
+    type MouseEvent,
+    type PointerEvent,
+} from 'react';
 import Image from 'next/image';
-import {Marquee} from '@pakfactory/ui/components/marquee';
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    type CarouselApi,
+} from '@pakfactory/ui/components/carousel';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
@@ -10,6 +23,7 @@ import {
     SolutionProductPreview,
     type SolutionHeroPreviewProduct,
 } from '@/components/solution/solution-product-preview';
+import {CarouselNavButtons} from '@/components/ui/carousel-nav-buttons';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineHeroMediaCard} from '@/lib/catalog/product-line-landing';
 import {productModelSrc} from '@/lib/catalog/product-3d-models';
@@ -20,15 +34,12 @@ import {
     mediaDissolveTransitionClass,
 } from '@/lib/ui/media-dissolve';
 
-/** Seconds for one card-width of travel — keeps scroll slow as density grows. */
-const MARQUEE_SECONDS_PER_CARD = 48;
-/** Never faster than this full-loop time (~12 cards × 8s ≈ 95). */
-const MARQUEE_DURATION_FLOOR_S = 560;
-const MARQUEE_GAP_REM = 1;
+/** Movement before a gesture counts as a drag (not a click) — same as Finder cards. */
+const DRAG_CLICK_PX = 8;
 
-function marqueeDurationForCards(count: number): number {
-    return Math.max(MARQUEE_DURATION_FLOOR_S, count * MARQUEE_SECONDS_PER_CARD);
-}
+/** Embla slide: card sizes itself; gutter matches section rails. */
+const HERO_MEDIA_ITEM_CLASS =
+    'min-w-0 shrink-0 grow-0 basis-auto self-center pl-6';
 
 export type ProductLineHeroMediaMarqueeProps = {
     cards: ProductLineHeroMediaCard[];
@@ -78,6 +89,7 @@ function HeroMediaCard({
 }) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const fadeOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const dragRef = useRef({startX: 0, startY: 0, moved: false});
     const [playing, setPlaying] = useState(false);
     const videoUrl = card.videoUrl?.trim() || '';
     const hasVideo = Boolean(videoUrl) && allowVideoPlay;
@@ -125,6 +137,37 @@ function HeroMediaCard({
             resetVideoEl();
         },
         [],
+    );
+
+    const onPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
+        if (event.button !== 0) return;
+        dragRef.current = {
+            startX: event.clientX,
+            startY: event.clientY,
+            moved: false,
+        };
+    }, []);
+
+    const onPointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
+        const drag = dragRef.current;
+        if (drag.moved) return;
+        const dx = event.clientX - drag.startX;
+        const dy = event.clientY - drag.startY;
+        if (Math.abs(dx) > DRAG_CLICK_PX || Math.abs(dy) > DRAG_CLICK_PX) {
+            drag.moved = true;
+        }
+    }, []);
+
+    const onCardClick = useCallback(
+        (event: MouseEvent<HTMLElement>) => {
+            if (!onSelect) return;
+            if (dragRef.current.moved) {
+                event.preventDefault();
+                return;
+            }
+            onSelect(card);
+        },
+        [card, onSelect],
     );
 
     const stillClassName = cn(
@@ -211,7 +254,9 @@ function HeroMediaCard({
                 style={settle.style}
                 onPointerEnter={startVideo}
                 onPointerLeave={stopVideo}
-                onClick={() => onSelect(card)}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onClick={onCardClick}
                 aria-label={`View ${card.title}`}
             >
                 {media}
@@ -235,8 +280,8 @@ function HeroMediaCard({
 }
 
 /**
- * Bottom-bar hero media strip — full-bleed Marquee (duration scales with
- * card count for constant slow scroll); product preview on click.
+ * Bottom-bar hero media strip — full-bleed Embla carousel with shared
+ * CarouselNavButtons; click opens SolutionProductPreview (same as solution hero).
  */
 export function ProductLineHeroMediaMarquee({
     cards,
@@ -246,10 +291,33 @@ export function ProductLineHeroMediaMarquee({
     const reducedMotion = usePrefersReducedMotion();
     const isMobile = useIsMobileViewport();
     const allowVideoPlay = !reducedMotion && !isMobile;
+    const [api, setApi] = useState<CarouselApi>();
+    const [canPrev, setCanPrev] = useState(false);
+    const [canNext, setCanNext] = useState(false);
     const [selected, setSelected] = useState<SolutionHeroPreviewProduct | null>(
         null,
     );
     const [open, setOpen] = useState(false);
+
+    const loop = cards.length > 1;
+    const showNav = !reducedMotion && cards.length > 1;
+
+    const onSelect = useCallback((carouselApi: CarouselApi) => {
+        if (!carouselApi) return;
+        setCanPrev(carouselApi.canScrollPrev());
+        setCanNext(carouselApi.canScrollNext());
+    }, []);
+
+    useEffect(() => {
+        if (!api) return;
+        onSelect(api);
+        api.on('reInit', onSelect);
+        api.on('select', onSelect);
+        return () => {
+            api.off('reInit', onSelect);
+            api.off('select', onSelect);
+        };
+    }, [api, onSelect]);
 
     if (cards.length === 0) return null;
 
@@ -267,46 +335,63 @@ export function ProductLineHeroMediaMarquee({
         setOpen(true);
     };
 
-    const cardNodes = cards.map((card, index) => (
-        <HeroMediaCard
-            key={card.id}
-            card={card}
-            priority={index === 0}
-            allowVideoPlay={allowVideoPlay}
-            onSelect={handleSelect}
-        />
-    ));
-
     return (
-        <div className={cn('relative w-full', className)} style={style}>
+        <div
+            className={cn('relative flex w-full flex-col gap-8', className)}
+            style={style}
+        >
             {reducedMotion ? (
                 <ul className="mx-auto flex max-w-full list-none gap-4 overflow-x-auto px-1 pb-1">
-                    {cards
-                        .filter(
-                            (card, index, list) =>
-                                list.findIndex((c) => c.src === card.src) ===
-                                index,
-                        )
-                        .map((card) => (
-                            <li key={card.id}>
-                                <HeroMediaCard
-                                    card={card}
-                                    allowVideoPlay={false}
-                                    onSelect={handleSelect}
-                                />
-                            </li>
-                        ))}
+                    {cards.map((card) => (
+                        <li key={card.id}>
+                            <HeroMediaCard
+                                card={card}
+                                allowVideoPlay={false}
+                                onSelect={handleSelect}
+                            />
+                        </li>
+                    ))}
                 </ul>
             ) : (
-                <Marquee
-                    pauseOnHover
-                    gap={MARQUEE_GAP_REM}
-                    duration={marqueeDurationForCards(cards.length)}
-                    className="p-0 *:items-center"
+                <Carousel
+                    setApi={setApi}
+                    opts={{
+                        align: 'start',
+                        slidesToScroll: 1,
+                        loop,
+                    }}
+                    className="w-full"
                 >
-                    {cardNodes}
-                </Marquee>
+                    <CarouselContent className="-ml-6 items-center pl-(--layout-gutter-outer) pr-(--layout-gutter-outer)">
+                        {cards.map((card, index) => (
+                            <CarouselItem
+                                key={card.id}
+                                className={HERO_MEDIA_ITEM_CLASS}
+                            >
+                                <HeroMediaCard
+                                    card={card}
+                                    priority={index === 0}
+                                    allowVideoPlay={allowVideoPlay}
+                                    onSelect={handleSelect}
+                                />
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
             )}
+
+            {showNav ? (
+                <div className="mx-auto flex w-full max-w-[var(--layout-max)] justify-end px-layout-gutter-inner">
+                    <CarouselNavButtons
+                        onPrev={() => api?.scrollPrev()}
+                        onNext={() => api?.scrollNext()}
+                        canPrev={loop || canPrev}
+                        canNext={loop || canNext}
+                        prevLabel="Previous media"
+                        nextLabel="Next media"
+                    />
+                </div>
+            ) : null}
 
             <SolutionProductPreview
                 product={selected}

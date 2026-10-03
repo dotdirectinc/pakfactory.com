@@ -21,6 +21,7 @@
     "./dimension-inputs": "./src/dimension-inputs.ts",
     "./resolve-product-dims": "./src/resolve-product-dims.ts",
     "./catalog-visibility": "./src/catalog-visibility.ts",
+    "./product-kind": "./src/product-kind.ts",
     "./solution-style-filter": "./src/solution-style-filter.ts",
   "./customization-type-order": "./src/customization-type-order.ts",
   "./product-order": "./src/product-order.ts",

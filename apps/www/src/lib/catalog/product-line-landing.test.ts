@@ -139,6 +139,50 @@ describe('resolveStyleCardImage', () => {
         assert.equal(resolved.imageUrl, null);
         assert.equal(resolved.imageAlt, 'Hinged Lid');
     });
+
+    it('skips inspiration products when falling back to product media', () => {
+        const resolved = resolveStyleCardImage(
+            style({slug: 'hinged-lid', title: 'Hinged Lid'}),
+            line({
+                slug: 'rigid-boxes',
+                title: 'Rigid Boxes',
+                products: [
+                    product({
+                        title: 'Client Box',
+                        slug: 'client-box',
+                        kind: 'inspiration',
+                        productStyle: {
+                            slug: 'hinged-lid',
+                            title: 'Hinged Lid',
+                        },
+                        media: [
+                            {
+                                src: 'https://cdn.example/inspiration.jpg',
+                                alt: 'Inspiration',
+                            },
+                        ],
+                    }),
+                    product({
+                        title: 'Blank Box',
+                        slug: 'blank-box',
+                        kind: 'standard',
+                        productStyle: {
+                            slug: 'hinged-lid',
+                            title: 'Hinged Lid',
+                        },
+                        media: [
+                            {
+                                src: 'https://cdn.example/standard.jpg',
+                                alt: 'Standard',
+                            },
+                        ],
+                    }),
+                ],
+            }),
+        );
+        assert.equal(resolved.imageUrl, 'https://cdn.example/standard.jpg');
+        assert.equal(resolved.imageAlt, 'Standard');
+    });
 });
 
 describe('assembleProductLineLanding', () => {
@@ -635,7 +679,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.styles?.[2]?.imageUrl, null);
     });
 
-    it('assembles hero media cards with featured video and 6× density', () => {
+    it('assembles unique hero media cards with featured video on the first', () => {
         const cards = assembleHeroMediaCards({
             featuredImageUrl: 'https://cdn.example/hero.jpg',
             featuredImageAlt: 'Hero',
@@ -646,16 +690,15 @@ describe('assembleProductLineLanding', () => {
             ],
         });
 
-        assert.equal(cards.length, 12);
+        assert.equal(cards.length, 2);
+        assert.equal(cards[0]?.id, 'featured');
         assert.equal(cards[0]?.src, 'https://cdn.example/hero.jpg');
         assert.equal(cards[0]?.videoUrl, 'https://cdn.example/hero.mp4');
         assert.equal(cards[0]?.settleIndex, 0);
+        assert.equal(cards[1]?.id, 'frame-1');
         assert.equal(cards[1]?.src, 'https://cdn.example/frame-2.jpg');
         assert.equal(cards[1]?.videoUrl, undefined);
         assert.equal(cards[1]?.settleIndex, 1);
-        assert.equal(cards[2]?.id, 'featured-1');
-        assert.equal(cards[2]?.settleIndex, 0);
-        assert.equal(cards[2]?.videoUrl, 'https://cdn.example/hero.mp4');
     });
 
     it('prefers standard products over frames for hero media cards', () => {
@@ -716,14 +759,14 @@ describe('assembleProductLineLanding', () => {
             ],
         });
 
-        // 2 standard products × 6 copies
-        assert.equal(cards.length, 12);
-        assert.equal(cards[0]?.id, 'box-a-0');
+        // 2 standard products (inspiration skipped; no density copies)
+        assert.equal(cards.length, 2);
+        assert.equal(cards[0]?.id, 'box-a');
         assert.equal(cards[0]?.title, 'Box A');
         assert.equal(cards[0]?.detailHref, '/products/box-a');
         assert.equal(cards[0]?.settleIndex, 0);
         assert.equal(cards[0]?.videoUrl, 'https://cdn.example/box-a.mp4');
-        assert.equal(cards[1]?.id, 'box-c-0');
+        assert.equal(cards[1]?.id, 'box-c');
         assert.equal(cards[1]?.title, 'Box C');
         assert.equal(cards[1]?.settleIndex, 1);
         assert.equal(cards[1]?.customizations?.[0]?.title, 'Foil stamp');
@@ -742,7 +785,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(cards[1]?.videoUrl, undefined);
     });
 
-    it('prepends featured products then fills with standard auto candidates', () => {
+    it('skips inspiration featured pins; fills with standard auto candidates', () => {
         const cards = assembleHeroMediaCards({
             featuredImageUrl: null,
             featuredImageAlt: '',
@@ -756,6 +799,18 @@ describe('assembleProductLineLanding', () => {
                     productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
                     media: [
                         {src: 'https://cdn.example/pinned.jpg', alt: 'Pinned'},
+                    ],
+                }),
+                product({
+                    title: 'Pinned Standard',
+                    slug: 'pinned-std',
+                    kind: 'standard',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {
+                            src: 'https://cdn.example/pinned-std.jpg',
+                            alt: 'Pinned std',
+                        },
                     ],
                 }),
             ],
@@ -788,12 +843,12 @@ describe('assembleProductLineLanding', () => {
             ],
         });
 
-        // pinned + 2 standard × 6 copies
-        assert.equal(cards.length, 18);
-        assert.equal(cards[0]?.id, 'pinned-0');
-        assert.equal(cards[0]?.title, 'Pinned Inspiration');
-        assert.equal(cards[1]?.id, 'auto-a-0');
-        assert.equal(cards[2]?.id, 'auto-b-0');
+        // pinned standard + 2 auto standards (inspiration pin skipped)
+        assert.equal(cards.length, 3);
+        assert.equal(cards[0]?.id, 'pinned-std');
+        assert.equal(cards[0]?.title, 'Pinned Standard');
+        assert.equal(cards[1]?.id, 'auto-a');
+        assert.equal(cards[2]?.id, 'auto-b');
     });
 
     it('returns empty hero media cards when there is no media', () => {

@@ -19,7 +19,7 @@ Products without a model render exactly as before.
 | Viewer (props-only, `@google/model-viewer`, imported on mount) | [`components/ui/model-viewer.tsx`](../src/components/ui/model-viewer.tsx) |
 | Slug → model URL (hard-coded PoC map) | [`lib/catalog/product-3d-models.ts`](../src/lib/catalog/product-3d-models.ts) |
 | Toggle + wiring into the dialog | [`solution-product-preview.tsx`](../src/components/solution/solution-product-preview.tsx) (`modelSrc` on the preview product) |
-| Who sets `modelSrc` | [`product-line-hero-media-marquee.tsx`](../src/components/product/product-line-hero-media-marquee.tsx) — `/products/<line>` hero marquee |
+| Who sets `modelSrc` | [`product-line-hero-media-marquee.tsx`](../src/components/product/product-line-hero-media-marquee.tsx) — `/products/<line>` bottom-bar hero carousel (click → `SolutionProductPreview`) |
 
 The model URL is `${NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/<path>`, so it follows whichever Supabase project the deploy points at. Only **staging** (`gqyq…`) has the `site-assets` bucket and the file today.
 
