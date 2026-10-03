@@ -696,7 +696,20 @@ describe('assembleProductLineLanding', () => {
                             label: 'Foil stamp',
                             category: 'finishing',
                             categoryTitle: 'Finishing',
+                            slug: 'hot-foil-stamping',
                             shortDescription: 'Metallic foil.',
+                            imageUrl: 'https://cdn.example/foil-featured.jpg',
+                            preselected: true,
+                        },
+                        {
+                            id: 'emboss',
+                            label: 'Embossing',
+                            category: 'finishing',
+                            categoryTitle: 'Finishing',
+                            slug: 'embossing',
+                            shortDescription: 'Raised relief.',
+                            imageUrl: 'https://cdn.example/emboss.jpg',
+                            preselected: false,
                         },
                     ],
                 }),
@@ -714,6 +727,17 @@ describe('assembleProductLineLanding', () => {
         assert.equal(cards[1]?.title, 'Box C');
         assert.equal(cards[1]?.settleIndex, 1);
         assert.equal(cards[1]?.customizations?.[0]?.title, 'Foil stamp');
+        assert.equal(
+            cards[1]?.customizations?.[0]?.imageSrc,
+            'https://cdn.example/foil-featured.jpg',
+        );
+        assert.equal(cards[1]?.customizations?.[0]?.imageAlt, 'Foil stamp');
+        assert.equal(
+            cards[1]?.customizations?.[0]?.learnMoreHref,
+            '/customizations/finishing/hot-foil-stamping',
+        );
+        // Preselected-only: non-preselected Embossing is omitted
+        assert.equal(cards[1]?.customizations?.length, 1);
         // No product video — line video must not stamp onto product cards
         assert.equal(cards[1]?.videoUrl, undefined);
     });

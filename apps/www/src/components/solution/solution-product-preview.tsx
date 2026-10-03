@@ -154,7 +154,19 @@ export function SolutionProductPreview({
                                                 <span
                                                     className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted"
                                                     aria-hidden
-                                                />
+                                                >
+                                                    {item.imageSrc ? (
+                                                        // eslint-disable-next-line @next/next/no-img-element -- CMS CDN URLs
+                                                        <img
+                                                            src={item.imageSrc}
+                                                            alt={
+                                                                item.imageAlt ||
+                                                                item.title
+                                                            }
+                                                            className="size-full object-cover"
+                                                        />
+                                                    ) : null}
+                                                </span>
                                                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                                                     <div className="flex flex-col gap-1">
                                                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

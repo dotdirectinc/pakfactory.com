@@ -46,6 +46,10 @@ import {
     mapSanityProductLibraryLineMeta,
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
+import {
+    filterCuratedRelatedProducts,
+    pickRelatedProducts,
+} from '@/lib/catalog/related-products';
 import {breadcrumbStyleFromBundle} from '@/lib/catalog/resolve-breadcrumb-style';
 import type {
     CustomizationDetail,
@@ -268,26 +272,17 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
     }
 }
 
-const RELATED_PRODUCTS_CAP = 6;
-
 /**
- * Same-line siblings when the product has no curated relatedProducts (PROD-1913).
- * Used as productsRow inherit fallback on the PDP (PROD-2763).
+ * Curated relatedProducts when set; else style→industry sibling fallback
+ * (PROD-1913 / PROD-2780). Used as productsRow inherit on the PDP (PROD-2763).
  */
 export async function listRelatedProductSiblings(
     product: Product,
 ): Promise<Product[]> {
     if (product.relatedProducts && product.relatedProducts.length > 0) {
-        return product.relatedProducts;
+        return filterCuratedRelatedProducts(product, product.relatedProducts);
     }
-    const lineSlug = product.productLine.slug;
-    return (await listProducts())
-        .filter(
-            (item) =>
-                item.slug !== product.slug &&
-                item.productLine.slug === lineSlug,
-        )
-        .slice(0, RELATED_PRODUCTS_CAP);
+    return pickRelatedProducts(product, await listProducts());
 }
 
 async function fetchSanityCustomizationLibrary(): Promise<
@@ -356,7 +351,8 @@ async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
 
 const getCachedProducts = unstable_cache(
     fetchSanityProducts,
-    [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    // v2: card projection includes breadcrumbParent for Related Products (PROD-2780).
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}:v2-breadcrumb`],
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],

@@ -139,6 +139,9 @@ export type SolutionHeroCustomization = {
     title: string;
     description: string;
     learnMoreHref: string;
+    /** Featured image, else media[0] — from CustomizationOption.imageUrl. */
+    imageSrc?: string | null;
+    imageAlt?: string;
 };
 
 export type SolutionHeroContent = {

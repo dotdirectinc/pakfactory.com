@@ -498,8 +498,17 @@ export type CustomizationDetail = {
     categoryLabel: string;
     typeTitle?: string;
     typeSlug?: string;
-    /** Short copy for the identity column (customer-facing — not meta). */
+    /**
+     * Plain text from linked glossary definition (PROD-2779).
+     * On-page hero prefers `glossaryDefinition` PT; this is for SEO fallbacks.
+     * Empty when no glossary term is linked — do not fill from shortDescription.
+     */
     description?: string;
+    /**
+     * Linked glossaryTerm.definition portable text for the CDP hero (PROD-2779).
+     * When absent, hero description stays empty so missing content is obvious.
+     */
+    glossaryDefinition?: PortableTextBlock[];
     /** SEO meta description only — use in generateMetadata, never on-page body. */
     metaDescription?: string;
     /** Studio `benefits.title` — Overview heading. */

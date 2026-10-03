@@ -6,24 +6,52 @@ import type {
     SolutionPage,
     PageSection,
 } from '@/lib/solutions/types';
-import type {Product} from '@/lib/catalog/types';
-import {productHref, WWW_ROUTES} from '@/lib/www-routes';
+import type {CustomizationOption, Product} from '@/lib/catalog/types';
+import {
+    customizationCategoryHref,
+    productHref,
+    WWW_ROUTES,
+} from '@/lib/www-routes';
 
 /** Desktop hero tile width cycle (matches prior mock layout). */
 const TILE_WIDTHS = [401, 312, 349, 347, 334, 270, 270] as const;
 
+function heroCustomizationOptions(
+    product: Product,
+): CustomizationOption[] {
+    const all = product.availableCustomizations ?? [];
+    const preselected = all.filter((opt) => opt.preselected);
+    return (preselected.length > 0 ? preselected : all).slice(0, 4);
+}
+
 function mapCustomizations(
     product: Product,
 ): SolutionHeroCustomization[] {
-    return (product.availableCustomizations ?? []).slice(0, 4).map((opt) => ({
-        id: opt.id || opt.slug || opt.label,
-        category: (opt.categoryTitle || opt.category || 'CUSTOMIZATION').toUpperCase(),
-        title: opt.label,
-        description:
-            opt.shortDescription?.trim() ||
-            'Pre-selected on this inspiration product.',
-        learnMoreHref: WWW_ROUTES.customizations,
-    }));
+    return heroCustomizationOptions(product).map((opt) => {
+        const category = opt.category?.trim();
+        const slug = opt.slug?.trim();
+        const learnMoreHref =
+            category && slug
+                ? customizationCategoryHref(category, slug)
+                : WWW_ROUTES.customizations;
+        const imageSrc = opt.imageUrl?.trim() || null;
+        return {
+            id: opt.id || opt.slug || opt.label,
+            category: (
+                opt.categoryTitle ||
+                opt.category ||
+                'CUSTOMIZATION'
+            ).toUpperCase(),
+            title: opt.label,
+            description:
+                opt.shortDescription?.trim() ||
+                'Pre-selected on this inspiration product.',
+            learnMoreHref,
+            ...(imageSrc
+                ? {imageSrc, imageAlt: opt.label}
+                : {imageSrc: null}),
+        };
+    });
 }
 
 /**

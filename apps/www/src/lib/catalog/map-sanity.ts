@@ -1031,12 +1031,12 @@ export function mapSanityCustomizationDetail(
         });
     }
 
-    // Customer-facing body — short description first; never metaDescription (SEO-only).
-    const description = firstNonEmpty(
-        doc.shortDescription,
-        doc.glossaryPlain,
-        doc.benefitsPlain,
-    );
+    // CDP hero — glossary Definition only (PROD-2779). No shortDescription /
+    // benefitsPlain fallback so missing glossary links show as empty in QA.
+    const glossaryDefinition = Array.isArray(doc.glossaryDefinition)
+        ? (doc.glossaryDefinition as PortableTextBlock[])
+        : undefined;
+    const description = doc.glossaryPlain?.trim() || undefined;
     const metaDescription = doc.metaDescription?.trim() || undefined;
     const benefitsTitle = doc.benefitsTitle?.trim() || undefined;
     const benefitsBody = Array.isArray(doc.benefitsBody)
@@ -1066,6 +1066,7 @@ export function mapSanityCustomizationDetail(
         ...(typeTitle ? {typeTitle} : {}),
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
+        ...(glossaryDefinition?.length ? {glossaryDefinition} : {}),
         ...(metaDescription ? {metaDescription} : {}),
         ...(benefitsTitle ? {benefitsTitle} : {}),
         ...(benefitsBody?.length ? {benefitsBody} : {}),

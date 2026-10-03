@@ -290,6 +290,17 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   status,
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
+  // Industry for Related Products style→industry fill (PROD-2780).
+  "breadcrumbParent": coalesce(
+    solutions[@->solutionType == "industry"][0]->{
+      title,
+      "slug": slug.current
+    },
+    solutions[0]->{
+      title,
+      "slug": slug.current
+    }
+  ),
   ${PRODUCT_FEATURED_VIDEO},
   media[]{
     ...,
@@ -765,6 +776,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   shortDescription,
   metaDescription,
   "glossaryPlain": pt::text(glossaryTerm->definition),
+  "glossaryDefinition": glossaryTerm->definition,
   "benefitsTitle": benefits.title,
   "benefitsPlain": pt::text(benefits.body),
   "benefitsBody": benefits.body,
@@ -1322,6 +1334,8 @@ export type CatalogCustomizationDetailDoc = {
   /** SEO only — never map into customer-facing body copy. */
   metaDescription?: string | null;
   glossaryPlain?: string | null;
+  /** Portable Text from linked glossaryTerm.definition (PROD-2779). */
+  glossaryDefinition?: unknown[] | null;
   benefitsTitle?: string | null;
   benefitsPlain?: string | null;
   benefitsBody?: unknown[] | null;
