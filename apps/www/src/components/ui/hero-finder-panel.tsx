@@ -173,8 +173,9 @@ function resolveBySlug<T extends {id: string; slug: string}>(
 }
 
 /**
- * Caption target for the Finder rail: selected slide on 1-up; selected+1 on
- * 2-up (the second visible slot), wrapping when Embla loop is on.
+ * Caption target for the Finder rail: selected slide on 1-up (mobile peek);
+ * selected+1 on 2-up (desktop second visible slot), wrapping when Embla loop
+ * is on. `twoUp` also drives captionMode (`tap` vs `always`).
  */
 function useFinderCaptionSlot(slideCount: number, loop: boolean) {
     const [api, setApi] = useState<CarouselApi>();
@@ -231,7 +232,7 @@ function useFinderCaptionSlot(slideCount: number, loop: boolean) {
         setFeaturedIndex(twoUp ? 1 : 0);
     }, [slideCount, twoUp]);
 
-    return {setApi, featuredIndex};
+    return {setApi, featuredIndex, twoUp};
 }
 
 function HeroFinderPanelChrome({
@@ -313,7 +314,7 @@ function HeroFinderPanelRail({
     onLineChange: (slug: string) => void;
     onIndustryChange: (slug: string) => void;
 }) {
-    const {setApi, featuredIndex} = useFinderCaptionSlot(
+    const {setApi, featuredIndex, twoUp} = useFinderCaptionSlot(
         slides.length,
         loop,
     );
@@ -344,7 +345,7 @@ function HeroFinderPanelRail({
                 titleId={titleId}
                 description={content.intro}
                 settle
-                titleClassName="max-w-5xl"
+                titleClassName="max-w-5xl text-2xl leading-tight sm:text-[2.25rem] md:text-display-lg md:leading-[1.1]"
             >
                 {actions}
             </PageHeadingContent>
@@ -369,6 +370,7 @@ function HeroFinderPanelRail({
                                     style={settle.style}
                                 >
                                     <MediaCaptionCard
+                                        kindLabel={slide.kindLabel}
                                         title={slide.title}
                                         description={slide.description}
                                         image={slide.image}
@@ -376,7 +378,11 @@ function HeroFinderPanelRail({
                                         videoSrc={slide.videoSrc}
                                         link={slide.link}
                                         captionMode={
-                                            featured ? 'always' : 'hover'
+                                            featured
+                                                ? twoUp
+                                                    ? 'always'
+                                                    : 'tap'
+                                                : 'hover'
                                         }
                                         className="aspect-video sm:aspect-5/4"
                                     />

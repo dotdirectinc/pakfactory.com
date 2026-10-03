@@ -1,3 +1,4 @@
+import {KIND, kindCta, kindLabel, type Kind} from '@/lib/i18n/kind';
 import type {
     HeroFinderGeneralEntry,
     HeroFinderGeneralRail,
@@ -204,10 +205,11 @@ export function finderFeatureKind(
     return 'related';
 }
 
-export const FINDER_FEATURE_KIND_LABEL: Record<FinderFeatureKind, string> = {
-    caseStudy: 'Case study',
-    related: 'Related',
-    industry: 'Industry',
+/** Feature-match quality → shared Kind (eyebrow / CTA). */
+export const FINDER_FEATURE_KIND: Record<FinderFeatureKind, Kind> = {
+    caseStudy: KIND.caseStudy,
+    related: KIND.related,
+    industry: KIND.industry,
 };
 
 /** One slide in the Finder SectionCarousel rail. */
@@ -290,35 +292,33 @@ export function buildFinderGeneralSlides(
 }
 
 function lineToSlide(line: HeroFinderLine): FinderSlide {
+    const kind = KIND.productLine;
     return {
         id: `line-${line.id}`,
-        kindLabel: 'Product line',
+        kindLabel: kindLabel(kind),
         title: line.title,
         description: line.description,
         image: line.image,
         imageFit: 'cover',
         ...(line.videoSrc ? {videoSrc: line.videoSrc} : {}),
         link: {
-            label: isFinderLineSentinel(line)
-                ? 'Browse products'
-                : `Explore ${line.title.toLowerCase()}`,
+            label: kindCta(kind),
             href: line.href,
         },
     };
 }
 
 function industryToSlide(industry: HeroFinderIndustry): FinderSlide {
+    const kind = KIND.industry;
     return {
         id: `industry-${industry.id}`,
-        kindLabel: 'Industry',
+        kindLabel: kindLabel(kind),
         title: industry.title,
         description: industry.description,
         image: industry.image,
         imageFit: 'cover',
         link: {
-            label: isFinderIndustrySentinel(industry)
-                ? 'See industries'
-                : `See ${industry.title} packaging`,
+            label: kindCta(kind),
             href: industry.href,
         },
     };
@@ -328,34 +328,32 @@ function styleToSlide(
     line: HeroFinderLine,
     style: NonNullable<HeroFinderLine['styles']>[number],
 ): FinderSlide {
+    const kind = KIND.productStyle;
     return {
         id: `style-${style.id}`,
-        kindLabel: 'Product',
+        kindLabel: kindLabel(kind),
         title: style.title,
         description: style.description,
         image: style.image,
         imageFit: 'cover',
         ...(style.videoSrc ? {videoSrc: style.videoSrc} : {}),
         link: {
-            label: 'View style',
+            label: kindCta(kind),
             href: productStyleHref(line.slug, style.slug),
         },
     };
 }
 
-function studyToSlide(
-    study: HeroFinderStudy,
-    kindLabel: string,
-): FinderSlide {
+function studyToSlide(study: HeroFinderStudy, kind: Kind): FinderSlide {
     return {
         id: `study-${study.id}`,
-        kindLabel,
+        kindLabel: kindLabel(kind),
         title: study.title,
         description: study.summary,
         image: study.image,
         imageFit: 'cover',
         ...(study.videoSrc ? {videoSrc: study.videoSrc} : {}),
-        link: {label: 'Read case study', href: study.href},
+        link: {label: kindCta(kind), href: study.href},
     };
 }
 
@@ -442,7 +440,7 @@ export function buildFinderSpecificSlides({
     const studies = [...preferred, ...rest].slice(0, BUCKET_CAP);
     const studySlides: FinderSlide[] = studies.map((study) => {
         const kind = finderFeatureKind(line, industry, study);
-        return studyToSlide(study, FINDER_FEATURE_KIND_LABEL[kind]);
+        return studyToSlide(study, FINDER_FEATURE_KIND[kind]);
     });
     const studyIds = new Set(studies.map((study) => study.id));
     if (studySlides.length < BUCKET_CAP && generalRail) {

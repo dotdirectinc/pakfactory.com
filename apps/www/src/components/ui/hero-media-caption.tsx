@@ -4,9 +4,10 @@ import {Badge} from '@pakfactory/ui/components/badge';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {Icon} from '@/components/ui/icon';
+import {formatSectionEyebrow} from '@/components/ui/section-heading';
 
 export type HeroMediaCaptionProps = {
-    /** Optional kind eyebrow (Spotlight). Finder omits this. */
+    /** Optional kind eyebrow (Spotlight / Finder — from shared Kind labels). */
     kindLabel?: string;
     title: string;
     description?: string;
@@ -22,7 +23,7 @@ export type HeroMediaCaptionProps = {
  * White caption card pinned over hero media (PROD-2666) — optional kind
  * eyebrow, title, one line, optional product chips / headline stat, and the
  * slide's own link. Props-only; a content container, so it is a card
- * (DESIGN.md § Cards).
+ * (DESIGN.md § Cards). Dense padding on small `@container/mcc` parents.
  */
 export function HeroMediaCaption({
     kindLabel,
@@ -38,16 +39,20 @@ export function HeroMediaCaption({
         <div
             className={cn(
                 'flex flex-col gap-4 rounded-xl bg-background p-6 text-foreground shadow-md',
+                // Dense on small Finder/MediaCaptionCard wells (`@container/mcc`).
+                '@max-[27.9375rem]/mcc:gap-3 @max-[27.9375rem]/mcc:p-4',
                 className,
             )}
         >
-            {kindLabel ? (
-                <Badge variant="secondary" className="w-fit uppercase tracking-wider">
-                    {kindLabel}
-                </Badge>
-            ) : null}
             <div className="flex flex-col gap-1">
-                <p className="text-lg font-medium leading-snug">{title}</p>
+                {kindLabel ? (
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-blue">
+                        {formatSectionEyebrow(kindLabel)}
+                    </p>
+                ) : null}
+                <p className="text-lg font-semibold leading-snug @max-[27.9375rem]/mcc:text-base">
+                    {title}
+                </p>
                 {description ? (
                     <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
                         {description}

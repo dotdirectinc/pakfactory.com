@@ -42,10 +42,11 @@ export type MediaCaptionCardProps = {
     link?: HeroMediaCaptionProps['link'];
     stat?: HeroMediaCaptionProps['stat'];
     /**
-     * Caption visibility: `always` (featured slot) or `hover` (peers).
+     * Caption visibility: `always` (desktop featured), `hover` (peers),
+     * or `tap` (mobile center — reveal on first tap).
      * Default `always` for non-Finder callers.
      */
-    captionMode?: 'always' | 'hover';
+    captionMode?: 'always' | 'hover' | 'tap';
     className?: string;
 };
 
@@ -116,9 +117,19 @@ export function MediaCaptionCard({
     const contain = imageFit === 'contain';
     const href = link?.href?.trim() || '';
     const navigable = Boolean(href);
+    const tapMode = captionMode === 'tap';
 
     const [hovered, setHovered] = useState(false);
-    const mediaActive = captionMode === 'always' || hovered;
+    const [tapped, setTapped] = useState(false);
+
+    useEffect(() => {
+        if (!tapMode) setTapped(false);
+    }, [tapMode]);
+
+    const mediaActive =
+        captionMode === 'always' ||
+        (captionMode === 'hover' && hovered) ||
+        (tapMode && tapped);
     const {mounted: captionMounted, open: captionOpen} =
         useCaptionReveal(mediaActive);
 
@@ -151,31 +162,40 @@ export function MediaCaptionCard({
 
     const onCardClick = useCallback(
         (event: MouseEvent<HTMLElement>) => {
-            if (!navigable) return;
             // Caption <Link> handles its own navigation.
             if ((event.target as HTMLElement).closest('a')) return;
             if (dragRef.current.moved) {
                 event.preventDefault();
                 return;
             }
+            if (tapMode && !tapped) {
+                event.preventDefault();
+                setTapped(true);
+                return;
+            }
+            if (!navigable) return;
             navigate();
         },
-        [navigable, navigate],
+        [navigable, navigate, tapMode, tapped],
     );
 
     const onKeyDown = useCallback(
         (event: KeyboardEvent<HTMLElement>) => {
-            if (!navigable) return;
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
+            if (tapMode && !tapped) {
+                setTapped(true);
+                return;
+            }
+            if (!navigable) return;
             navigate();
         },
-        [navigable, navigate],
+        [navigable, navigate, tapMode, tapped],
     );
 
     const shellClass = cn(
         '@container/mcc group relative block w-full aspect-4/5 overflow-hidden rounded-xl bg-muted sm:aspect-5/4',
-        navigable && 'cursor-pointer text-left',
+        (navigable || tapMode) && 'cursor-pointer text-left',
         className,
     );
 
@@ -210,9 +230,16 @@ export function MediaCaptionCard({
     return (
         <div
             className={shellClass}
-            role={navigable ? 'link' : undefined}
-            tabIndex={navigable ? 0 : undefined}
-            aria-label={navigable ? `${title}. ${link?.label ?? 'Open'}` : undefined}
+            role={tapMode ? 'button' : navigable ? 'link' : undefined}
+            tabIndex={navigable || tapMode ? 0 : undefined}
+            aria-label={
+                tapMode && !tapped
+                    ? `${title}. Show details`
+                    : navigable
+                      ? `${title}. ${link?.label ?? 'Open'}`
+                      : title
+            }
+            aria-expanded={tapMode ? tapped : undefined}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             onFocus={() => setHovered(true)}

@@ -12,6 +12,13 @@ import type {
 import {isCatalogTargetVisible} from '@pakfactory/sanity/catalog-visibility';
 import {stegaClean} from 'next-sanity';
 
+import {
+    KIND,
+    kindCta,
+    kindLabel,
+    resolveKind,
+    type Kind,
+} from '@/lib/i18n/kind';
 import {resolveSectionLinkHref} from '@/lib/resolve-www-nav-href';
 import {buildFinderFullscreenGeneralSlides} from '@/lib/sections/hero-finder-fullscreen-match';
 import type {FinderFullscreenSlide} from '@/lib/sections/hero-finder-fullscreen-match';
@@ -506,22 +513,9 @@ function hrefForGeneralItem(
     }
 }
 
-function defaultLinkLabelForItem(
-    item: PageSectionHeroFinderRailItemDoc,
-    title: string,
-): string {
-    const type = clean(item._type);
-    if (type === 'caseStudy') return 'Read case study';
-    if (type === 'productLine') return `Explore ${title.toLowerCase()}`;
-    if (type === 'solution') return `See ${title} packaging`;
-    if (type === 'customizationType') return 'Explore customizations';
-    if (type === 'expertiseStage') return 'See how we work';
-    return 'Learn more';
-}
-
 function mapGeneralEntry(
     entry: PageSectionHeroFinderGeneralEntryDoc | null | undefined,
-    kindLabel: string,
+    bucket: Kind,
 ): HeroFinderGeneralEntry | null {
     const item = entry?.item;
     if (!item) return null;
@@ -541,6 +535,11 @@ function mapGeneralEntry(
     const href = hrefForGeneralItem(item);
     if (!href) return null;
 
+    const kind = resolveKind({
+        docType: clean(item._type),
+        productKind: clean(item.kind),
+        bucket,
+    });
     const featureSrc = trimmed(entry?.featureImageSrc);
     const itemSrc = trimmed(item.imageSrc);
     const imageSrc = featureSrc || itemSrc;
@@ -553,11 +552,11 @@ function mapGeneralEntry(
 
     return {
         id,
-        kindLabel,
+        kindLabel: kindLabel(kind),
         title,
         ...(description ? {description} : {}),
         imageFit: 'cover',
-        link: {label: defaultLinkLabelForItem(item, title), href},
+        link: {label: kindCta(kind), href},
         ...(imageSrc
             ? {
                   image: {
@@ -576,13 +575,13 @@ function mapGeneralEntry(
 
 function mapGeneralBucket(
     entries: PageSectionHeroFinderGeneralEntryDoc[] | null | undefined,
-    kindLabel: string,
+    bucket: Kind,
 ): HeroFinderGeneralEntry[] {
     const out: HeroFinderGeneralEntry[] = [];
     const seen = new Set<string>();
     for (const entry of entries ?? []) {
         if (out.length >= 3) break;
-        const mapped = mapGeneralEntry(entry, kindLabel);
+        const mapped = mapGeneralEntry(entry, bucket);
         if (!mapped || seen.has(mapped.id)) continue;
         seen.add(mapped.id);
         out.push(mapped);
@@ -593,16 +592,25 @@ function mapGeneralBucket(
 function mapGeneralRail(
     section: PageSectionHeroFinderDoc,
 ): HeroFinderGeneralRail | undefined {
-    const products = mapGeneralBucket(section.generalProducts, 'Product');
-    const industries = mapGeneralBucket(section.generalIndustries, 'Industry');
+    const products = mapGeneralBucket(
+        section.generalProducts,
+        KIND.productLine,
+    );
+    const industries = mapGeneralBucket(
+        section.generalIndustries,
+        KIND.industry,
+    );
     const customizations = mapGeneralBucket(
         section.generalCustomizations,
-        'Customization',
+        KIND.customization,
     );
-    const expertise = mapGeneralBucket(section.generalExpertise, 'Expertise');
+    const expertise = mapGeneralBucket(
+        section.generalExpertise,
+        KIND.expertise,
+    );
     const caseStudies = mapGeneralBucket(
         section.generalCaseStudies,
-        'Case study',
+        KIND.caseStudy,
     );
     if (
         products.length === 0 &&
