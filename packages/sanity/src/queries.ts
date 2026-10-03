@@ -236,6 +236,7 @@ export {
     type PageSectionTestimonialsRowDoc,
     type PageSectionVideoCaseStudiesRowDoc,
     type PageSectionVideoCaseStudyCardDoc,
+    type PageSectionVideoCaseStudyImageDoc,
     type PageSectionVideoCaseStudyMetricDoc,
 } from './queries/sections';
 

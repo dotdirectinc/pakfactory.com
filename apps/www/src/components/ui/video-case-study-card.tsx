@@ -6,6 +6,8 @@ import Link from 'next/link';
 import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
+import {SanityImage} from '@/components/ui/sanity-image';
+import {isSanityCdnUrl} from '@/lib/sanity/image';
 import {
     MEDIA_DISSOLVE_MS,
     mediaDissolveTransitionClass,
@@ -118,16 +120,30 @@ export function VideoCaseStudyCard({
                 className,
             )}
         >
-            <Image
-                src={card.image.src}
-                alt=""
-                fill
-                sizes="550px"
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
-                aria-hidden
-                className="object-cover"
-            />
+            {isSanityCdnUrl(card.image.src) ? (
+                <SanityImage
+                    src={card.image.src}
+                    alt=""
+                    fill
+                    portrait
+                    sizes="550px"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    aria-hidden
+                    className="object-cover"
+                />
+            ) : (
+                <Image
+                    src={card.image.src}
+                    alt=""
+                    fill
+                    sizes="550px"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    aria-hidden
+                    className="object-cover"
+                />
+            )}
 
             {mp4Src ? (
                 <video
