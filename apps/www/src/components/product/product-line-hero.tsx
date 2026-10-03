@@ -17,6 +17,7 @@ import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineFrame, Product} from '@/lib/catalog/types';
 import {
     assembleHeroMediaCards,
+    PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
     type ProductLineHeroLayout,
     type ProductLineHeroMediaCard,
 } from '@/lib/catalog/product-line-landing';
@@ -27,7 +28,6 @@ import {WWW_ROUTES} from '@/lib/www-routes';
 const PRODUCT_LINE_HERO_SECTION_ID = 'product-line-hero';
 const HERO_HEADING_ID = 'product-line-hero-heading';
 const FEATURED_ICON_PLACEHOLDER = '/solutions/hero-kit-placeholder.svg';
-const FEATURE_IMAGE_PLACEHOLDER = '/products/hero-feature-placeholder.svg';
 /** Final featured-icon size for stack hero (matches prior PageHeading eyebrow). */
 const FEATURED_ICON_SIZE_STACK_PX = 128;
 
@@ -220,7 +220,7 @@ export function ProductLineHero({
                 alt: frameWithSrc.alt.trim() || h1,
             }
           : {
-                src: FEATURE_IMAGE_PLACEHOLDER,
+                src: PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
                 alt: `${h1} featured image placeholder`,
             };
 

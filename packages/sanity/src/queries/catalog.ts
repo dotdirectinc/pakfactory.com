@@ -305,6 +305,11 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
     }
   ),
   ${PRODUCT_FEATURED_VIDEO},
+  // Featured image for www productGallerySlides when gallery media is empty.
+  featuredImage{
+    ...,
+    "alt": ${IMAGE_ALT}
+  },
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -1153,7 +1158,7 @@ export type CatalogProductDoc = {
   customerFacing?: boolean | null;
   /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
-  /** PDP by-slug only — appended last on product gallery (media first). */
+  /** Card + PDP — gallery slides use media first, then featuredImage. */
   featuredImage?: unknown | null;
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
