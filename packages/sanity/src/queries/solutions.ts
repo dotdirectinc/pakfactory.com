@@ -38,9 +38,15 @@ const RELATED_VIDEO_CASE_STUDY_CARD = /* groq */ `{
   title,
   "slug": slug.current,
   "brand": client->name,
-  "imageSrc": coalesce(
-    cardImage.asset->url,
-    heroMedia.videoThumbnail.asset->url
+  "image": select(
+    defined(cardImage.asset) => cardImage{
+      ...,
+      "alt": coalesce(^.cardImageAlt, alt, asset->altText, ^.title)
+    },
+    defined(heroMedia.videoThumbnail.asset) => heroMedia.videoThumbnail{
+      ...,
+      "alt": coalesce(alt, asset->altText, ^.title)
+    }
   ),
   "imageAlt": coalesce(cardImageAlt, cardImage.asset->altText, title),
   "logoSrc": client->logo.asset->url,

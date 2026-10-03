@@ -547,7 +547,8 @@ export function assembleProductLineLanding(
             title: study.title,
             brand: study.title,
             slug: study.slug,
-            imageSrc: study.imageUrl,
+            // Flat URL stub — no Studio hotspot on this inherit path.
+            image: {url: study.imageUrl},
             imageAlt: study.imageAlt ?? study.title,
         }));
     const mergedSections =

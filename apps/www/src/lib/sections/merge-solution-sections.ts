@@ -240,7 +240,7 @@ export function applyVideoCaseStudiesInherit(
             Boolean(
                 item?.title?.trim() &&
                     (item?.brand?.trim() || item?.title?.trim()) &&
-                    item?.imageSrc?.trim() &&
+                    (item?.image?.asset || item?.image?.url) &&
                     item?.slug?.trim(),
             ),
     );

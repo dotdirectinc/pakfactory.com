@@ -100,7 +100,10 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
     "kind": "typed",
     brand,
     title,
-    "imageSrc": image.asset->url,
+    "image": image{
+      ...,
+      "alt": coalesce(alt, asset->altText)
+    },
     "imageAlt": coalesce(image.alt, image.asset->altText),
     "logoSrc": logo.asset->url,
     "logoAlt": coalesce(logo.alt, brand),
@@ -118,9 +121,15 @@ const VIDEO_CASE_STUDY_CARD = /* groq */ `{
     title,
     "slug": slug.current,
     "brand": client->name,
-    "imageSrc": coalesce(
-      cardImage.asset->url,
-      heroMedia.videoThumbnail.asset->url
+    "image": select(
+      defined(cardImage.asset) => cardImage{
+        ...,
+        "alt": coalesce(^.cardImageAlt, alt, asset->altText, ^.title)
+      },
+      defined(heroMedia.videoThumbnail.asset) => heroMedia.videoThumbnail{
+        ...,
+        "alt": coalesce(alt, asset->altText, ^.title)
+      }
     ),
     "imageAlt": coalesce(cardImageAlt, cardImage.asset->altText, title),
     "logoSrc": client->logo.asset->url,
@@ -714,6 +723,19 @@ export type PageSectionVideoCaseStudyMetricDoc = {
     body?: string | null;
 };
 
+/**
+ * Sanity image field projection for video case-study posters — includes
+ * hotspot/crop so www can bake a focal crop into the CDN base URL.
+ */
+export type PageSectionVideoCaseStudyImageDoc = {
+    asset?: {_ref?: string | null; _type?: string | null; url?: string | null} | null;
+    hotspot?: unknown;
+    crop?: unknown;
+    alt?: string | null;
+    /** Pre-resolved asset URL when hotspot data is unavailable (inherit stubs). */
+    url?: string | null;
+};
+
 /** Flattened mixed card from `videoCaseStudiesRow.cards[]` (typed or ref). */
 export type PageSectionVideoCaseStudyCardDoc = {
     _key?: string | null;
@@ -723,7 +745,8 @@ export type PageSectionVideoCaseStudyCardDoc = {
     brand?: string | null;
     title?: string | null;
     slug?: string | null;
-    imageSrc?: string | null;
+    /** Full image field (hotspot/crop) for portrait crop base URLs. */
+    image?: PageSectionVideoCaseStudyImageDoc | null;
     imageAlt?: string | null;
     logoSrc?: string | null;
     logoAlt?: string | null;

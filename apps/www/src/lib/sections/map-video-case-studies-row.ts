@@ -8,6 +8,7 @@ import type {
     VideoCaseStudiesRowContent,
 } from '@/components/sections/video-case-studies-row';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
+import {sanityImageCropBaseUrl} from '@/lib/sanity/image';
 import {mapSectionChrome} from '@/lib/sections/map-section-chrome';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
@@ -30,7 +31,7 @@ function mapCard(
 ): VideoCaseStudiesRowCard | null {
     const title = card.title?.trim();
     const brand = card.brand?.trim() || title;
-    const imageSrc = card.imageSrc?.trim();
+    const imageSrc = sanityImageCropBaseUrl(card.image, 'portrait');
     if (!title || !brand || !imageSrc) return null;
 
     const href = resolveCardHref(card);
@@ -48,6 +49,11 @@ function mapCard(
     const metricBody =
         card.metric?.body?.trim() || card.metricBody?.trim();
 
+    const imageAlt =
+        card.imageAlt?.trim() ||
+        (typeof card.image?.alt === 'string' ? card.image.alt.trim() : '') ||
+        title;
+
     return {
         id,
         brand,
@@ -55,7 +61,7 @@ function mapCard(
         href,
         image: {
             src: imageSrc,
-            alt: card.imageAlt?.trim() || title,
+            alt: imageAlt,
         },
         ...(logoSrc
             ? {
