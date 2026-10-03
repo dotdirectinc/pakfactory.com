@@ -108,7 +108,7 @@ Industry LPs (`solutionType: industry` + `hasPage`) use **Solution Industry Page
 
 **PDP body (PROD-2763):** Specs + Customization stay hardcoded. After Customization, `SectionRenderer` runs merged template × product sections. Defaults seed: `productsRow` (Related, inherit `relatedProducts` / siblings) → `testimonialsRow` (Google Places) → `faqSection` (inherit product FAQs) → `generalCta`. Human seed: `pnpm --filter @pakfactory/studio run seed:pdp-detail-pages -- --dataset development --confirm`.
 
-**Featured Products (PROD-2763):** Industry solution + product line Categorization lists. Featured pins first; auto fill remaining hero slots (solution cap 16; line bottom-bar marquee). Empty featured = previous auto-only behavior.
+**Featured Products (PROD-2763):** Industry solution + product line Categorization lists. Featured pins first; auto fill remaining hero slots (solution cap 16; line bottom-bar Embla carousel + `CarouselNavButtons`; click opens `SolutionProductPreview`). Empty featured = previous auto-only behavior. Line hero uses **standard** products only.
 
 **General CTA:** CTAs → **General** (`generalCta`) is the only conversion band (former footer strip + Expertise closing CTA). Studio: **theme** (colors only), **align**, **paddingBlock**, dieline borders, optional **body**, **Button** link. Empty link → `FOOTER_CTA`. Chrome footer no longer renders this strip. Human seeds: [`apps/studio/memory.md`](../studio/memory.md) § General CTA closing band + Expertise closing band reseed. Empty/missing section → no band.
 

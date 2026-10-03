@@ -5,11 +5,14 @@
  * these projections to retired productPage / handle shapes.
  */
 
+import {KIND_STANDARD} from '../product-kind';
 import {
   PAGE_SECTIONS_PROJECTION,
   FEATURED_VIDEO_URL_FIELD,
   type PageSectionDoc,
 } from './sections';
+
+export {KIND_INSPIRATION, KIND_STANDARD} from '../product-kind';
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
@@ -573,10 +576,14 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     "sections": sections[]${PAGE_SECTIONS_PROJECTION}
   },
   "styles": ${LINE_STYLES},
-  "products": *[_type == "product" && (
-    productLine._ref == ^._id ||
-    basedOn->productLine._ref == ^._id
-  ) && defined(slug.current) && ${LISTED_STATUS} && ${CUSTOMER_FACING}] | order(title asc) {
+  // Product-line surfaces are standard-only (inspirations live on solutions).
+  "products": *[_type == "product" &&
+    productLine._ref == ^._id &&
+    ${KIND_STANDARD} &&
+    defined(slug.current) &&
+    ${LISTED_STATUS} &&
+    ${CUSTOMER_FACING}
+  ] | order(title asc) {
     ${CATALOG_PRODUCT_CARD_FIELDS}
   }
 `;

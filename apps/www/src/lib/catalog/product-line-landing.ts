@@ -1,5 +1,10 @@
 import type {PageSectionDoc, PageSectionInspirationsCardDoc} from '@pakfactory/sanity/queries';
 
+import {
+    isStandardProduct,
+    PRODUCT_LINE_PRODUCT_KIND,
+    productsOfKind,
+} from '@/lib/catalog/product-kind';
 import type {
     Product,
     ProductLine,
@@ -48,7 +53,7 @@ export const RIGID_BOXES_MOCK_FEATURED_ICON: ProductLineFrame = {
 
 /**
  * Local hero MP4 until Studio `featuredVideo` is authored on rigid-boxes.
- * Used by bottomBar marquee hover-play (not stack).
+ * Used by bottomBar hero carousel hover-play (not stack).
  */
 export const RIGID_BOXES_MOCK_FEATURED_VIDEO =
     '/products/rigid-boxes/hero-scrub.mp4';
@@ -67,7 +72,7 @@ export type ProductLineLandingStyleCard = {
 
 export type ProductLineHeroLayout = 'stack' | 'bottomBar';
 
-/** Card for the bottomBar hero media marquee. */
+/** Card for the bottomBar hero media carousel. */
 export type ProductLineHeroMediaCard = {
     id: string;
     src: string;
@@ -81,12 +86,6 @@ export type ProductLineHeroMediaCard = {
     detailHref?: string;
     customizations?: SolutionHeroCustomization[];
 };
-
-/**
- * Temporary marquee density so a short catalog still scrolls.
- * Remove or gate when authored product counts are enough.
- */
-const HERO_MEDIA_CARD_DUPLICATE = 6;
 
 function mapHeroCustomizations(
     product: Product,
@@ -121,27 +120,11 @@ function mapHeroCustomizations(
     });
 }
 
-function duplicateHeroCards(
-    unique: ProductLineHeroMediaCard[],
-): ProductLineHeroMediaCard[] {
-    if (unique.length === 0) return [];
-    const cards: ProductLineHeroMediaCard[] = [];
-    for (let copy = 0; copy < HERO_MEDIA_CARD_DUPLICATE; copy += 1) {
-        for (const card of unique) {
-            cards.push({
-                ...card,
-                id: `${card.id}-${copy}`,
-            });
-        }
-    }
-    return cards;
-}
-
 /**
- * Build bottomBar marquee cards.
+ * Build bottomBar hero carousel cards (unique, no density copies).
  * Featured Products first (Studio order), then `standard` products on the line
  * (with media) fill remaining slots — duplicates skipped. Fall back to featured
- * image + frames when neither yields cards. Duplicates the unique list for scroll density.
+ * image + frames when neither yields cards.
  */
 export function assembleHeroMediaCards(input: {
     featuredImageUrl: string | null;
@@ -153,7 +136,7 @@ export function assembleHeroMediaCards(input: {
     featuredProducts?: Product[];
 }): ProductLineHeroMediaCard[] {
     const videoUrl = input.featuredVideoUrl?.trim() || '';
-    const unique: ProductLineHeroMediaCard[] = [];
+    const cards: ProductLineHeroMediaCard[] = [];
     const seenSlugs = new Set<string>();
 
     const pushProduct = (product: Product) => {
@@ -162,11 +145,11 @@ export function assembleHeroMediaCards(input: {
         if (!media?.src?.trim()) return;
         seenSlugs.add(product.slug);
         const productVideo = product.featuredVideoUrl?.trim() || '';
-        unique.push({
+        cards.push({
             id: product.slug,
             src: media.src.trim(),
             alt: media.alt?.trim() || product.title,
-            settleIndex: unique.length,
+            settleIndex: cards.length,
             title: product.title,
             detailHref: productHref(product.slug),
             customizations: mapHeroCustomizations(product),
@@ -174,20 +157,24 @@ export function assembleHeroMediaCards(input: {
         });
     };
 
-    for (const product of input.featuredProducts ?? []) {
+    for (const product of productsOfKind(
+        input.featuredProducts ?? [],
+        PRODUCT_LINE_PRODUCT_KIND,
+    )) {
         pushProduct(product);
     }
 
-    const fromProducts = (input.products ?? []).filter(
-        (product) =>
-            product.kind === 'standard' &&
-            Boolean(product.media?.some((m) => Boolean(m.src?.trim()))),
+    const fromProducts = productsOfKind(
+        input.products ?? [],
+        PRODUCT_LINE_PRODUCT_KIND,
+    ).filter((product) =>
+        Boolean(product.media?.some((m) => Boolean(m.src?.trim()))),
     );
     for (const product of fromProducts) {
         pushProduct(product);
     }
 
-    if (unique.length === 0) {
+    if (cards.length === 0) {
         const seen = new Set<string>();
         const push = (
             src: string | null | undefined,
@@ -197,11 +184,11 @@ export function assembleHeroMediaCards(input: {
             const url = src?.trim();
             if (!url || seen.has(url)) return;
             seen.add(url);
-            unique.push({
+            cards.push({
                 id,
                 src: url,
                 alt: alt.trim() || 'Product media',
-                settleIndex: unique.length,
+                settleIndex: cards.length,
             });
         };
 
@@ -214,14 +201,12 @@ export function assembleHeroMediaCards(input: {
         });
 
         // Frames path: line-level featured video on the first card only.
-        if (videoUrl && unique[0]) {
-            unique[0] = {...unique[0], videoUrl};
+        if (videoUrl && cards[0]) {
+            cards[0] = {...cards[0], videoUrl};
         }
     }
 
-    if (unique.length === 0) return [];
-
-    return duplicateHeroCards(unique);
+    return cards;
 }
 
 export type ProductLineLandingModel = {
@@ -243,7 +228,7 @@ export type ProductLineLandingModel = {
     featuredImageUrl: string | null;
     featuredImageAlt: string;
     /**
-     * Hero MP4 for bottomBar marquee hover-play on the featured card.
+     * Hero MP4 for bottomBar carousel hover-play on the featured card.
      * Stack ignores this (static featured still). Sanity wins; rigid-boxes
      * mock fills when empty.
      */
@@ -278,6 +263,7 @@ function firstProductImageInStyle(
     styleSlug: string,
 ): {src: string; alt: string} | null {
     for (const product of products) {
+        if (!isStandardProduct(product)) continue;
         if (product.productStyle.slug !== styleSlug) continue;
         for (const media of product.media) {
             if (media.src) {
@@ -289,7 +275,7 @@ function firstProductImageInStyle(
 }
 
 /**
- * Style card image: style image → first product image in that style.
+ * Style card image: style image → first standard product image in that style.
  * Does not fall back to the line featured / hero image.
  */
 export function resolveStyleCardImage(
@@ -414,7 +400,7 @@ function resolveHeroLayout(line: ProductLine): ProductLineHeroLayout {
     if (line.heroLayout === 'bottomBar' || line.heroLayout === 'stack') {
         return line.heroLayout;
     }
-    // Local preview: rigid-boxes demos the bottom-bar marquee when no layout shell is set.
+    // Local preview: rigid-boxes demos the bottom-bar carousel when no layout shell is set.
     if (line.slug === 'rigid-boxes') return 'bottomBar';
     return 'stack';
 }

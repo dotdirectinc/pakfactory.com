@@ -17,7 +17,7 @@
  * ──────────────────────────────────────────────────────────────────────────────
  * The shape of the query:
  *
- *   parent solution  AND  kind == "inspiration"  AND  (
+ *   parent solution  AND  KIND_INSPIRATION  AND  (
  *         line matches  OR  style matches  OR  keyword matches
  *   )  AND NOT excluded
  *
@@ -26,14 +26,13 @@
  * and Display-Ready Cartons styles, which sit under a different line. An AND
  * would return nothing.
  *
- * ⚠️ The parent solution and `kind == "inspiration"` are NOT stored on the
- * document. The parent reference already carries the first, and the second
- * follows from it: only inspiration products carry `product.solutions` (58 of 58
- * inspiration, 0 of 252 standard), so a solution-scoped query is
- * inspiration-scoped by construction. Storing either would be one rule copied
- * onto every document. If standard products are ever tagged to solutions, `kind`
- * becomes a real choice and earns a field — until then it belongs here.
+ * ⚠️ The parent solution and inspiration kind are NOT stored on the document.
+ * The parent reference already carries the first; kind uses
+ * {@link KIND_INSPIRATION} so solution surfaces stay inspiration-only even if a
+ * standard product is ever tagged to a solution.
  */
+
+import {KIND_INSPIRATION} from './product-kind';
 
 /** The filter object as authored on a `solutionStyle` document. */
 export type SolutionStyleFilter = {
@@ -131,7 +130,7 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
 
   return [
     '_type == "product"',
-    'kind == "inspiration"',
+    KIND_INSPIRATION,
     '$solutionId in solutions[]._ref',
     // Hidden in Notion → customerFacing false → no listing anywhere, collections included.
     'customerFacing != false',

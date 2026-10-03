@@ -4,6 +4,7 @@
  * Field names mirror `solution` / `solutionStyle` / `product` Studio schemas.
  */
 
+import {KIND_INSPIRATION} from '../product-kind';
 import type {SolutionStyleFilter} from '../solution-style-filter';
 import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, CUSTOMER_FACING, LISTED_STATUS} from './catalog';
 import {
@@ -179,12 +180,14 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Active products tagged to a solution and belonging to a product line.
- * Used for `/solutions/[slug]/[lineSlug]`.
+ * Active inspiration products tagged to a solution and belonging to a product
+ * line. Used for `/solutions/[slug]/[lineSlug]`.
+ * Kind gate: {@link KIND_INSPIRATION} (solution surfaces are inspiration-only).
  */
 export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
+  ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
   ${CUSTOMER_FACING} &&
   (
@@ -197,12 +200,14 @@ export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Active products tagged to a solution (LP related-products fallback).
+ * Active inspiration products tagged to a solution (LP related-products fallback).
  * Caps at 12; curated `relatedProducts` on the solution doc takes precedence.
+ * Kind gate: {@link KIND_INSPIRATION}.
  */
 export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
+  ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
   ${CUSTOMER_FACING} &&
   (
@@ -214,13 +219,15 @@ export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
 }`;
 
 /**
- * Industry LP hero tiles — products whose Solutions categorization includes
- * this solution. Full catalog fields for preview customizations; cap 16.
+ * Industry LP hero tiles — inspiration products whose Solutions categorization
+ * includes this solution. Full catalog fields for preview customizations; cap 16.
  * Media prefers `featuredImage` (card/representative) then gallery `media`.
+ * Kind gate: {@link KIND_INSPIRATION}.
  */
 export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
+  ${KIND_INSPIRATION} &&
   ${LISTED_STATUS} &&
   ${CUSTOMER_FACING} &&
   (

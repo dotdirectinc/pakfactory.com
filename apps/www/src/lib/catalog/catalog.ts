@@ -47,6 +47,10 @@ import {
     mapSanityProductLine,
 } from '@/lib/catalog/map-sanity';
 import {
+    PRODUCT_LINE_PRODUCT_KIND,
+    productsOfKind,
+} from '@/lib/catalog/product-kind';
+import {
     filterCuratedRelatedProducts,
     pickRelatedProducts,
 } from '@/lib/catalog/related-products';
@@ -445,7 +449,8 @@ export async function listProductLibrary(): Promise<ProductLibraryResult> {
 
 /**
  * Product library scoped to one line + style for `/products/[line]/[style]`.
- * Omits the Product Line facet (the page already is that line).
+ * Standard products only (product-line surfaces). Omits the Product Line facet
+ * (the page already is that line).
  */
 export async function listProductStyleLibrary(
     lineSlug: string,
@@ -454,11 +459,12 @@ export async function listProductStyleLibrary(
     const library = await listProductLibrary();
     const lineKey = normalizeSlug(lineSlug);
     const styleKey = normalizeSlug(styleSlug);
-    const items = library.items.filter(
+    const scoped = library.items.filter(
         (item) =>
             item.productLine.slug === lineKey &&
             item.productStyle.slug === styleKey,
     );
+    const items = productsOfKind(scoped, PRODUCT_LINE_PRODUCT_KIND);
     const lineMetas = Object.values(library.linesBySlug).filter(
         (meta) => meta.slug === lineKey,
     );

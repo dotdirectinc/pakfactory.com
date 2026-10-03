@@ -57,6 +57,20 @@ TS mirrors for chrome / mapping: [`@pakfactory/sanity/catalog-visibility`](../..
 
 Also applied to: the option → product-lines facet, the three solution product lists, the Solution Style filter, the Algolia product index and the case-studies Products filter (#694). Behaviour tests: [`line-style-visibility.test.ts`](../../../packages/sanity/src/queries/line-style-visibility.test.ts).
 
+### Product kind by surface
+
+`product.kind` is `standard` | `inspiration`. Surfaces gate which kind they show:
+
+| Surface | Kind |
+| --- | --- |
+| Product line LP, styles row, `/products/[line]/[style]` library, line hero media | **standard** only |
+| Solution LP / line / style collections / hero product tiles | **inspiration** only |
+| Global `/products` hub | Both (product-type facet) |
+
+www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts). GROQ fragments: [`@pakfactory/sanity/product-kind`](../../../packages/sanity/src/product-kind.ts) (`KIND_STANDARD` / `KIND_INSPIRATION`).
+
+**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx) (same dialog as solution hero).
+
 ### Sanity field map
 
 | App | Sanity |
