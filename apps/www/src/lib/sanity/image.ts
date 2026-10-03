@@ -79,6 +79,31 @@ export const sanitySquareImageLoader: ImageLoader = ({ src, width, quality }) =>
   }
 };
 
+/**
+ * Portrait 3:4 crop loader for Industry LP hero tiles: asks Sanity for a
+ * `width` × `round(width * 4/3)` centre crop (`fit=crop`) so the fetched image
+ * already fills the portrait card. Same blur failure mode as the square loader
+ * when landscape sources are width-resized then CSS `object-cover`’d taller.
+ */
+export const sanityPortraitImageLoader: ImageLoader = ({
+  src,
+  width,
+  quality,
+}) => {
+  try {
+    const url = new URL(src);
+    const height = Math.round(width * (4 / 3));
+    url.searchParams.set("w", String(width));
+    url.searchParams.set("h", String(height));
+    url.searchParams.set("q", String(quality ?? DEFAULT_LOADER_QUALITY));
+    url.searchParams.set("auto", "format");
+    url.searchParams.set("fit", "crop");
+    return url.toString();
+  } catch {
+    return src;
+  }
+};
+
 /** True when `src` is a Sanity CDN URL we can resize via {@link sanityImageLoader}. */
 export function isSanityCdnUrl(src: string): boolean {
   try {

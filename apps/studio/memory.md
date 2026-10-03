@@ -108,6 +108,8 @@ Creates/updates **Default** + **Bottom bar** layouts with a `productStylesRow` (
 
 Humans may also create layouts in Studio, set **Hero layout**, optionally upload **Preview image**, publish, then set `template` on each customer-facing line. Re-running the seed with `--confirm` retitles existing docs to Default / Bottom bar when those ids are updated.
 
+**Inspiration by industry (CMS):** Solutions-tab section `inspirationIndustry`. On Product Line Page layouts (Default / Bottom bar), insert **Inspiration by industry** after the styles row (or where the band should sit). Leave **Industries** empty to show all industries that have inspiration products for the host line; optionally curate and reorder. Heading tokens (`%title%`, etc.) resolve on www. Agents do not patch layout documents — editors add/publish in Studio.
+
 ## Product Detail Page layouts
 
 PDP **order + chrome** live on listable layout documents. Band **content** stays on the product **Sections** tab (matched by `_key`).

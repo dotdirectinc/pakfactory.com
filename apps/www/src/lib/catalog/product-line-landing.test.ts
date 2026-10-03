@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 import {
     assembleHeroMediaCards,
+    assembleInspirationIndustries,
     assembleProductLineLanding,
+    filterInspirationProductsByIndustry,
     PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
+    resolveInspirationIndustries,
     resolveStyleCardImage,
     RIGID_BOXES_MOCK_FEATURE,
     RIGID_BOXES_MOCK_FEATURED_VIDEO,
@@ -770,18 +773,9 @@ describe('assembleProductLineLanding', () => {
         assert.equal(cards[1]?.id, 'box-c');
         assert.equal(cards[1]?.title, 'Box C');
         assert.equal(cards[1]?.settleIndex, 1);
-        assert.equal(cards[1]?.customizations?.[0]?.title, 'Foil stamp');
-        assert.equal(
-            cards[1]?.customizations?.[0]?.imageSrc,
-            'https://cdn.example/foil-featured.jpg',
-        );
-        assert.equal(cards[1]?.customizations?.[0]?.imageAlt, 'Foil stamp');
-        assert.equal(
-            cards[1]?.customizations?.[0]?.learnMoreHref,
-            '/customizations/finishing/hot-foil-stamping',
-        );
-        // Preselected-only: non-preselected Embossing is omitted
-        assert.equal(cards[1]?.customizations?.length, 1);
+        assert.deepEqual(cards[1]?.properties, [
+            {label: 'Style', value: 'Drawer'},
+        ]);
         // No product video — line video must not stamp onto product cards
         assert.equal(cards[1]?.videoUrl, undefined);
     });
@@ -885,5 +879,183 @@ describe('assembleProductLineLanding', () => {
         assert.equal(cards[0]?.alt, 'Blank Box');
         assert.equal(cards[0]?.detailHref, '/products/blank-box');
         assert.equal(cards[0]?.title, 'Blank Box');
+    });
+
+    it('includes description, style, and properties on standard hero cards', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            products: [
+                product({
+                    title: 'Spec Box',
+                    slug: 'spec-box',
+                    kind: 'standard',
+                    description: 'A rigid box with details.',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    properties: [
+                        {label: 'Closure', value: 'Magnetic'},
+                        {label: 'Style', value: 'Should ignore'},
+                    ],
+                    media: [
+                        {
+                            src: 'https://cdn.example/spec.jpg',
+                            alt: 'Spec',
+                        },
+                    ],
+                }),
+            ],
+        });
+
+        assert.equal(cards[0]?.description, 'A rigid box with details.');
+        assert.deepEqual(cards[0]?.properties, [
+            {label: 'Style', value: 'Hinged Lid'},
+            {label: 'Closure', value: 'Magnetic'},
+        ]);
+    });
+
+    it('caps hero media cards at 10; featured pins take priority slots', () => {
+        const featuredProducts = Array.from({length: 3}, (_, index) =>
+            product({
+                title: `Pinned ${index + 1}`,
+                slug: `pinned-${index + 1}`,
+                kind: 'standard',
+                productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                media: [
+                    {
+                        src: `https://cdn.example/pinned-${index + 1}.jpg`,
+                        alt: `Pinned ${index + 1}`,
+                    },
+                ],
+            }),
+        );
+        const products = Array.from({length: 12}, (_, index) =>
+            product({
+                title: `Box ${index + 1}`,
+                slug: `box-${index + 1}`,
+                kind: 'standard',
+                productStyle: {slug: 'drawer', title: 'Drawer'},
+                media: [
+                    {
+                        src: `https://cdn.example/box-${index + 1}.jpg`,
+                        alt: `Box ${index + 1}`,
+                    },
+                ],
+            }),
+        );
+
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            featuredProducts,
+            products,
+        });
+
+        assert.equal(cards.length, 10);
+        assert.deepEqual(
+            cards.map((card) => card.id),
+            [
+                'pinned-1',
+                'pinned-2',
+                'pinned-3',
+                'box-1',
+                'box-2',
+                'box-3',
+                'box-4',
+                'box-5',
+                'box-6',
+                'box-7',
+            ],
+        );
+    });
+});
+
+describe('assembleInspirationIndustries / filterInspirationProductsByIndustry', () => {
+    const apparelBox = product({
+        title: 'Apparel Rigid Box',
+        slug: 'apparel-box',
+        kind: 'inspiration',
+        productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+        industries: [
+            {slug: 'apparel', title: 'Apparel'},
+            {slug: 'beauty', title: 'Beauty'},
+        ],
+    });
+    const beautyBox = product({
+        title: 'Beauty Rigid Box',
+        slug: 'beauty-box',
+        kind: 'inspiration',
+        productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+        industries: [{slug: 'beauty', title: 'Beauty'}],
+    });
+    const crumbOnly = product({
+        title: 'Food Box',
+        slug: 'food-box',
+        kind: 'inspiration',
+        productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+        breadcrumbParent: {slug: 'food-beverage', title: 'Food & Beverage'},
+    });
+
+    it('lists unique industries sorted by title', () => {
+        const industries = assembleInspirationIndustries([
+            apparelBox,
+            beautyBox,
+            crumbOnly,
+        ]);
+        assert.deepEqual(
+            industries.map((row) => row.slug),
+            ['apparel', 'beauty', 'food-beverage'],
+        );
+    });
+
+    it('filters products by industry including multi-tagged', () => {
+        const apparel = filterInspirationProductsByIndustry(
+            [apparelBox, beautyBox, crumbOnly],
+            'apparel',
+        );
+        assert.deepEqual(
+            apparel.map((row) => row.slug),
+            ['apparel-box'],
+        );
+
+        const beauty = filterInspirationProductsByIndustry(
+            [apparelBox, beautyBox, crumbOnly],
+            'beauty',
+        );
+        assert.deepEqual(
+            beauty.map((row) => row.slug),
+            ['apparel-box', 'beauty-box'],
+        );
+    });
+
+    it('resolveInspirationIndustries falls back to all when curated is empty', () => {
+        const products = [apparelBox, beautyBox, crumbOnly];
+        assert.deepEqual(
+            resolveInspirationIndustries(products, []),
+            assembleInspirationIndustries(products),
+        );
+        assert.deepEqual(
+            resolveInspirationIndustries(products, null),
+            assembleInspirationIndustries(products),
+        );
+    });
+
+    it('resolveInspirationIndustries keeps Studio order and drops empty', () => {
+        const resolved = resolveInspirationIndustries(
+            [apparelBox, beautyBox, crumbOnly],
+            [
+                {slug: 'beauty', title: 'Beauty'},
+                {slug: 'missing', title: 'Missing'},
+                {slug: 'apparel', title: 'Apparel'},
+                {slug: 'beauty', title: 'Beauty again'},
+            ],
+        );
+        assert.deepEqual(
+            resolved.map((row) => row.slug),
+            ['beauty', 'apparel'],
+        );
     });
 });

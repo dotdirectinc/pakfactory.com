@@ -64,12 +64,15 @@ Also applied to: the option → product-lines facet, the three solution product 
 | Surface | Kind |
 | --- | --- |
 | Product line LP, styles row, `/products/[line]/[style]` library, line hero media | **standard** only |
+| Product line Inspiration band (`inspirationProducts`) | **inspiration** only (industry rail) |
 | Solution LP / line / style collections / hero product tiles | **inspiration** only |
 | Global `/products` hub | Both (product-type facet) |
 
 www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts). GROQ fragments: [`@pakfactory/sanity/product-kind`](../../../packages/sanity/src/product-kind.ts) (`KIND_STANDARD` treats unset as standard; `KIND_INSPIRATION`).
 
-**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx) (same dialog as solution hero). Products without media use [`PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER`](../src/lib/catalog/product-line-landing.ts) (`/products/hero-feature-placeholder.svg`).
+**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`StandardProductPreview`](../src/components/product/standard-product-preview.tsx) (unlabeled long description + Specs list). Solution / inspiration closer-look uses [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx). Both compose props-only [`ProductPreviewShell`](../src/components/ui/product-preview-shell.tsx). Products without media use [`PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER`](../src/lib/catalog/product-line-landing.ts) (`/products/hero-feature-placeholder.svg`).
+
+**Line Inspiration band:** CMS section **`inspirationIndustry`** (Studio Solutions tab — Inspiration by industry) on the Product Line Page template / line `sections`. www host-overrides it with [`ProductLineInspirationSection`](../src/components/product/product-line-inspiration-section.tsx): left rail is curated industries (or all industries with products when empty); cards are `inspirationProducts` for the line filtered by the selected industry. Human: insert the section on the Product Line Page layout in Studio and publish (agents do not seed documents).
 
 ### Sanity field map
 
@@ -100,6 +103,8 @@ Folder: `src/components/product/`
 | `product-line-facet-group.tsx` | `ProductLineFacetGroup` | Product Line accordion + nested style checkboxes |
 | `product-catalog-list.tsx` | `ProductCatalogList` | Equal-height 4-col grid of `ProductCard` (+ optional line entry) |
 | `catalog-entry-card.tsx` | `CatalogEntryCard` | Solid entry tile → `/products/[line]` |
+| `product-line-inspiration-section.tsx` | `ProductLineInspirationSection` | CMS `inspirationIndustry` host UI (industry rail + cards) |
+| `standard-product-preview.tsx` | `StandardProductPreview` | Standard hero quick view (long description + Specs list) |
 | `ui/catalog-facet-group.tsx` | `CatalogFacetGroup` | Shared checkbox facet accordion |
 
 ## Catalog entry card (first spot)

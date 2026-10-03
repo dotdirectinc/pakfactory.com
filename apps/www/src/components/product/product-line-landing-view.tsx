@@ -1,18 +1,28 @@
+import type {ComponentType} from 'react';
+
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {ProductLineHero} from '@/components/product/product-line-hero';
-import {SectionRenderer} from '@/components/sections/section-renderer';
+import {ProductLineInspirationSection} from '@/components/product/product-line-inspiration-section';
+import {
+    SectionRenderer,
+    type SectionComponentOverrides,
+} from '@/components/sections/section-renderer';
+import type {PageSection} from '@/components/sections/registry';
 import {assembleProductLineLanding} from '@/lib/catalog/product-line-landing';
-import type {ProductLine} from '@/lib/catalog/types';
+import type {Product, ProductLine} from '@/lib/catalog/types';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import type {PageSectionInspirationIndustryDoc} from '@pakfactory/sanity/queries';
 
 /**
  * Product-line landing page composition (PROD-1914).
- * Route-owned: breadcrumb + hero only. All body bands come from the merged
- * Product Line Page template × line sections (SectionRenderer).
+ * Route-owned: breadcrumb + hero only. Body bands come from the merged
+ * Product Line Page template × line sections (SectionRenderer), including
+ * CMS `inspirationIndustry` via a host override.
  */
 export function ProductLineLanding({line}: {line: ProductLine}) {
     const model = assembleProductLineLanding(line);
     const isBottomBar = model.heroLayout === 'bottomBar';
+    const inspirationProducts = line.inspirationProducts ?? [];
 
     const breadcrumb = (
         <PageBreadcrumbSection
@@ -43,6 +53,11 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
         />
     );
 
+    const sectionComponents = inspirationIndustryHostComponents(
+        line.title,
+        inspirationProducts,
+    );
+
     return (
         <>
             {isBottomBar ? (
@@ -60,8 +75,46 @@ export function ProductLineLanding({line}: {line: ProductLine}) {
             )}
 
             {model.pageSections.length > 0 ? (
-                <SectionRenderer sections={model.pageSections} />
+                <SectionRenderer
+                    sections={model.pageSections}
+                    components={sectionComponents}
+                />
             ) : null}
         </>
     );
+}
+
+function inspirationIndustryHostComponents(
+    lineTitle: string,
+    products: Product[],
+): SectionComponentOverrides {
+    const InspirationIndustryFromHost: ComponentType<PageSection> = (
+        section,
+    ) => {
+        if (products.length === 0) return null;
+        const doc = section as PageSectionInspirationIndustryDoc;
+        const curated = (doc.industries ?? [])
+            .map((row) => {
+                const slug = row?.slug?.trim();
+                const title = row?.title?.trim();
+                if (!slug || !title) return null;
+                return {slug, title};
+            })
+            .filter((row): row is {slug: string; title: string} => row != null);
+
+        return (
+            <ProductLineInspirationSection
+                lineTitle={lineTitle}
+                products={products}
+                eyebrow={doc.eyebrow?.trim() || undefined}
+                heading={doc.heading?.trim() || undefined}
+                description={doc.intro?.trim() || undefined}
+                curatedIndustries={curated.length > 0 ? curated : null}
+                borderTop={doc.showTopBorder === true}
+                borderBottom={doc.showBottomBorder !== false}
+            />
+        );
+    };
+
+    return {inspirationIndustry: InspirationIndustryFromHost};
 }

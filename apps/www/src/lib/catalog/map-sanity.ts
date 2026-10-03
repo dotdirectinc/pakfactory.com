@@ -594,6 +594,16 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
                   },
               }
             : {}),
+        ...(() => {
+            const industries: {title: string; slug: string}[] = [];
+            for (const row of doc.industries ?? []) {
+                const industrySlug = row?.slug?.trim();
+                const industryTitle = row?.title?.trim();
+                if (!industrySlug || !industryTitle) continue;
+                industries.push({slug: industrySlug, title: industryTitle});
+            }
+            return industries.length > 0 ? {industries} : {};
+        })(),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
         ...(dimensionInput ? {dimensionInput} : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
@@ -791,6 +801,10 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         .map(mapSanityProduct)
         .filter((item): item is Product => item != null);
 
+    const inspirationProducts = (doc.inspirationProducts ?? [])
+        .map(mapSanityProduct)
+        .filter((item): item is Product => item != null);
+
     const relatedLines: ProductLineRelatedRef[] = [];
     for (const row of doc.relatedLines ?? []) {
         if (!row) continue;
@@ -847,6 +861,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         ...(expertise.length > 0 ? {expertise} : {}),
         ...(featuredStudies.length > 0 ? {featuredStudies} : {}),
         ...(featuredProducts.length > 0 ? {featuredProducts} : {}),
+        ...(inspirationProducts.length > 0 ? {inspirationProducts} : {}),
         ...(relatedLines.length > 0 ? {relatedLines} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(sections.length > 0 ? {sections} : {}),

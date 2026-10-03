@@ -3,6 +3,7 @@
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
     type CSSProperties,
@@ -10,6 +11,7 @@ import {
     type PointerEvent,
 } from 'react';
 import Image from 'next/image';
+import Autoplay from 'embla-carousel-autoplay';
 import {
     Carousel,
     CarouselContent,
@@ -20,9 +22,9 @@ import {PakFactoryMarkIcon} from '@pakfactory/ui/icons/pakfactory-mark-icon';
 import {cn} from '@pakfactory/ui/lib/utils';
 
 import {
-    SolutionProductPreview,
-    type SolutionHeroPreviewProduct,
-} from '@/components/solution/solution-product-preview';
+    StandardProductPreview,
+    type StandardProductPreviewProduct,
+} from '@/components/product/standard-product-preview';
 import {CarouselNavButtons} from '@/components/ui/carousel-nav-buttons';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineHeroMediaCard} from '@/lib/catalog/product-line-landing';
@@ -36,6 +38,15 @@ import {
 
 /** Movement before a gesture counts as a drag (not a click) — same as Finder cards. */
 const DRAG_CLICK_PX = 8;
+
+/** Same dwell as section carousels. */
+const AUTOPLAY_DELAY_MS = 4000;
+
+/**
+ * Embla scroll duration (physics units, not ms). Higher = slower ease-in/out.
+ * Default ~25 feels snappy; stay within Embla’s recommended 20–60.
+ */
+const SCROLL_DURATION = 50;
 
 /** Embla slide: card sizes itself; gutter matches section rails. */
 const HERO_MEDIA_ITEM_CLASS =
@@ -170,8 +181,12 @@ function HeroMediaCard({
         [card, onSelect],
     );
 
+    // Catalog PNGs ship with generous padding; zoom inside the overflow-hidden tile.
+    const mediaZoomClass = 'scale-[1.35]';
+
     const stillClassName = cn(
         'object-contain',
+        mediaZoomClass,
         mediaDissolveTransitionClass,
         hasVideo && playing && 'opacity-0',
     );
@@ -181,7 +196,7 @@ function HeroMediaCard({
             src={card.src}
             alt={card.alt}
             fill
-            sizes="(max-width: 639px) 40vw, 28rem"
+            sizes="(max-width: 639px) 80vw, 56rem"
             className={stillClassName}
             priority={priority}
         />
@@ -190,7 +205,7 @@ function HeroMediaCard({
             src={card.src}
             alt={card.alt}
             fill
-            sizes="(max-width: 639px) 40vw, 28rem"
+            sizes="(max-width: 639px) 80vw, 56rem"
             className={stillClassName}
             priority={priority}
             unoptimized
@@ -237,6 +252,7 @@ function HeroMediaCard({
                     aria-hidden
                     className={cn(
                         'absolute inset-0 size-full object-contain',
+                        mediaZoomClass,
                         mediaDissolveTransitionClass,
                         playing ? 'opacity-100' : 'opacity-0',
                     )}
@@ -280,8 +296,8 @@ function HeroMediaCard({
 }
 
 /**
- * Bottom-bar hero media strip — full-bleed Embla carousel with shared
- * CarouselNavButtons; click opens SolutionProductPreview (same as solution hero).
+ * Bottom-bar hero media strip — full-bleed Embla carousel with autoplay,
+ * CarouselNavButtons, and click-to-open StandardProductPreview.
  */
 export function ProductLineHeroMediaMarquee({
     cards,
@@ -294,13 +310,26 @@ export function ProductLineHeroMediaMarquee({
     const [api, setApi] = useState<CarouselApi>();
     const [canPrev, setCanPrev] = useState(false);
     const [canNext, setCanNext] = useState(false);
-    const [selected, setSelected] = useState<SolutionHeroPreviewProduct | null>(
-        null,
-    );
+    const [selected, setSelected] =
+        useState<StandardProductPreviewProduct | null>(null);
     const [open, setOpen] = useState(false);
 
     const loop = cards.length > 1;
     const showNav = !reducedMotion && cards.length > 1;
+    const enableAutoplay = !reducedMotion && cards.length > 1;
+
+    const plugins = useMemo(() => {
+        if (!enableAutoplay) return undefined;
+        return [
+            Autoplay({
+                delay: AUTOPLAY_DELAY_MS,
+                // Keep autoplay after arrow/drag; hover + focus pause for WCAG 2.2.2.
+                stopOnInteraction: false,
+                stopOnMouseEnter: true,
+                stopOnFocusIn: true,
+            }),
+        ];
+    }, [enableAutoplay]);
 
     const onSelect = useCallback((carouselApi: CarouselApi) => {
         if (!carouselApi) return;
@@ -330,7 +359,12 @@ export function ProductLineHeroMediaMarquee({
             detailHref: card.detailHref,
             image: {src: card.src, alt: card.alt},
             modelSrc: productModelSrc(slug),
-            customizations: card.customizations ?? [],
+            ...(card.description?.trim()
+                ? {description: card.description.trim()}
+                : {}),
+            ...(card.properties?.length
+                ? {specs: card.properties}
+                : {}),
         });
         setOpen(true);
     };
@@ -359,7 +393,10 @@ export function ProductLineHeroMediaMarquee({
                         align: 'start',
                         slidesToScroll: 1,
                         loop,
+                        // Slower attraction ease so autoplay / arrows feel fluid.
+                        duration: SCROLL_DURATION,
                     }}
+                    plugins={plugins}
                     className="w-full"
                 >
                     <CarouselContent className="-ml-6 items-center pl-(--layout-gutter-outer) pr-(--layout-gutter-outer)">
@@ -393,7 +430,7 @@ export function ProductLineHeroMediaMarquee({
                 </div>
             ) : null}
 
-            <SolutionProductPreview
+            <StandardProductPreview
                 product={selected}
                 open={open}
                 onOpenChange={setOpen}
