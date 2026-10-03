@@ -444,6 +444,13 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
     ${SECTION_CHROME},
     "cards": cards[]${INSPIRATIONS_CARD}
   },
+  _type == "inspirationIndustry" => {
+    ${SECTION_CHROME},
+    "industries": industries[]->{
+      title,
+      "slug": slug.current
+    }
+  },
   _type == "videoCaseStudiesRow" => {
     ${SECTION_CHROME},
     "cards": cards[]${VIDEO_CASE_STUDY_CARD}
@@ -683,6 +690,16 @@ export type PageSectionInspirationsGridDoc = PageSectionChromeFields & {
     _type: 'inspirationsGrid';
     _key: string;
     cards?: PageSectionInspirationsCardDoc[] | null;
+};
+
+/** Product-line Inspiration browser — optional curated industry pills. */
+export type PageSectionInspirationIndustryDoc = PageSectionChromeFields & {
+    _type: 'inspirationIndustry';
+    _key: string;
+    industries?: {
+        title?: string | null;
+        slug?: string | null;
+    }[] | null;
 };
 
 /** Same chrome + cards shape as inspirationsGrid; product-line Styles band. */
@@ -1036,6 +1053,7 @@ export type PageSectionDoc =
     | PageSectionExpertiseSequenceDoc
     | PageSectionCaseStudiesRowDoc
     | PageSectionInspirationsGridDoc
+    | PageSectionInspirationIndustryDoc
     | PageSectionProductStylesRowDoc
     | PageSectionVideoCaseStudiesRowDoc
     | PageSectionTestimonialsRowDoc

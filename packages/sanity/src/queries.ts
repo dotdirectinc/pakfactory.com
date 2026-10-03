@@ -220,6 +220,7 @@ export {
     type PageSectionHeroSpotlightDoc,
     type PageSectionHeroSpotlightSlideDoc,
     type PageSectionInspirationsCardDoc,
+    type PageSectionInspirationIndustryDoc,
     type PageSectionInspirationsGridDoc,
     type PageSectionProductStylesRowDoc,
     type PageSectionLinkDoc,

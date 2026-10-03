@@ -7,6 +7,7 @@ import { rowSections } from './row-sections'
 import { conversionSections } from './conversion-sections'
 import { customizationsCatalog } from './customizations-catalog'
 import { inspirationsGrid } from './inspirations-grid'
+import { inspirationIndustry } from './inspiration-industry'
 import { benefits } from './benefits'
 import { productStylesRow } from './product-styles-row'
 import { signatureSystem } from './signature-system'
@@ -48,6 +49,7 @@ export const websiteSections = [
   ...contentSections,
   ...rowSections,
   inspirationsGrid,
+  inspirationIndustry,
   productStylesRow,
   videoCaseStudiesRow,
   testimonialsRow,
@@ -61,7 +63,7 @@ export const websiteSections = [
 const FAMILY = {
   // Home-only page heroes (PROD-2666). One `_type` per layout — D35.
   hero: ['heroSpotlight', 'heroSpotlightFullBleed', 'heroFinder', 'heroFinderFullscreen'],
-  solution: ['solutionsRow', 'inspirationsGrid'],
+  solution: ['solutionsRow', 'inspirationsGrid', 'inspirationIndustry'],
   caseStudy: ['caseStudiesRow', 'videoCaseStudiesRow'],
   product: [
     'productLinesRow',
@@ -161,6 +163,8 @@ export const SECTION_ALLOW = {
     ...FAMILY.client,
     ...FAMILY.layout,
     'generalCta',
+    // Solutions-tab band for product-line Inspiration browser (not full FAMILY.solution).
+    'inspirationIndustry',
   ],
   marketPage: [
     ...FAMILY.solution,

@@ -6,6 +6,7 @@ import {
     assembleProductLineLanding,
     filterInspirationProductsByIndustry,
     PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
+    resolveInspirationIndustries,
     resolveStyleCardImage,
     RIGID_BOXES_MOCK_FEATURE,
     RIGID_BOXES_MOCK_FEATURED_VIDEO,
@@ -913,6 +914,63 @@ describe('assembleProductLineLanding', () => {
             {label: 'Closure', value: 'Magnetic'},
         ]);
     });
+
+    it('caps hero media cards at 10; featured pins take priority slots', () => {
+        const featuredProducts = Array.from({length: 3}, (_, index) =>
+            product({
+                title: `Pinned ${index + 1}`,
+                slug: `pinned-${index + 1}`,
+                kind: 'standard',
+                productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                media: [
+                    {
+                        src: `https://cdn.example/pinned-${index + 1}.jpg`,
+                        alt: `Pinned ${index + 1}`,
+                    },
+                ],
+            }),
+        );
+        const products = Array.from({length: 12}, (_, index) =>
+            product({
+                title: `Box ${index + 1}`,
+                slug: `box-${index + 1}`,
+                kind: 'standard',
+                productStyle: {slug: 'drawer', title: 'Drawer'},
+                media: [
+                    {
+                        src: `https://cdn.example/box-${index + 1}.jpg`,
+                        alt: `Box ${index + 1}`,
+                    },
+                ],
+            }),
+        );
+
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            featuredProducts,
+            products,
+        });
+
+        assert.equal(cards.length, 10);
+        assert.deepEqual(
+            cards.map((card) => card.id),
+            [
+                'pinned-1',
+                'pinned-2',
+                'pinned-3',
+                'box-1',
+                'box-2',
+                'box-3',
+                'box-4',
+                'box-5',
+                'box-6',
+                'box-7',
+            ],
+        );
+    });
 });
 
 describe('assembleInspirationIndustries / filterInspirationProductsByIndustry', () => {
@@ -970,6 +1028,34 @@ describe('assembleInspirationIndustries / filterInspirationProductsByIndustry', 
         assert.deepEqual(
             beauty.map((row) => row.slug),
             ['apparel-box', 'beauty-box'],
+        );
+    });
+
+    it('resolveInspirationIndustries falls back to all when curated is empty', () => {
+        const products = [apparelBox, beautyBox, crumbOnly];
+        assert.deepEqual(
+            resolveInspirationIndustries(products, []),
+            assembleInspirationIndustries(products),
+        );
+        assert.deepEqual(
+            resolveInspirationIndustries(products, null),
+            assembleInspirationIndustries(products),
+        );
+    });
+
+    it('resolveInspirationIndustries keeps Studio order and drops empty', () => {
+        const resolved = resolveInspirationIndustries(
+            [apparelBox, beautyBox, crumbOnly],
+            [
+                {slug: 'beauty', title: 'Beauty'},
+                {slug: 'missing', title: 'Missing'},
+                {slug: 'apparel', title: 'Apparel'},
+                {slug: 'beauty', title: 'Beauty again'},
+            ],
+        );
+        assert.deepEqual(
+            resolved.map((row) => row.slug),
+            ['beauty', 'apparel'],
         );
     });
 });

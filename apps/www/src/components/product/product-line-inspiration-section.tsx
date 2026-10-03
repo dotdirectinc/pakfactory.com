@@ -14,8 +14,9 @@ import {
 import {CustomizationCatalogCard} from '@/components/ui/customization-catalog-card';
 import {SectionHeading} from '@/components/ui/section-heading';
 import {
-    assembleInspirationIndustries,
     filterInspirationProductsByIndustry,
+    resolveInspirationIndustries,
+    type ProductLineInspirationIndustry,
 } from '@/lib/catalog/product-line-landing';
 import {productModelSrc} from '@/lib/catalog/product-3d-models';
 import type {Product} from '@/lib/catalog/types';
@@ -30,11 +31,17 @@ import {
 /** Initial / batch size — 2 rows × 4 cols at lg. */
 const PAGE_SIZE = 8;
 
-type ProductLineInspirationSectionProps = {
+export type ProductLineInspirationSectionProps = {
     lineTitle: string;
     products: Product[];
+    /** CMS eyebrow; default Inspiration. */
+    eyebrow?: string;
     heading?: string;
     description?: string;
+    /** CMS curated industries (Studio order). Empty → all with products. */
+    curatedIndustries?: ProductLineInspirationIndustry[] | null;
+    borderTop?: boolean;
+    borderBottom?: boolean;
     className?: string;
 };
 
@@ -92,18 +99,22 @@ function toPreviewProduct(product: Product): SolutionHeroPreviewProduct {
 
 /**
  * Product-line Inspiration band — industry left rail + inspiration product cards
- * for the current line (same shell UX as PDP Customization).
+ * for the current line (CMS `inspirationIndustry` via host override).
  */
 export function ProductLineInspirationSection({
     lineTitle,
     products,
+    eyebrow = 'Inspiration',
     heading,
     description = 'Browse inspiration products by industry for this line. Open a card for a closer look, or visit the product page for full details.',
+    curatedIndustries,
+    borderTop = false,
+    borderBottom = true,
     className,
 }: ProductLineInspirationSectionProps) {
     const industries = useMemo(
-        () => assembleInspirationIndustries(products),
-        [products],
+        () => resolveInspirationIndustries(products, curatedIndustries),
+        [products, curatedIndustries],
     );
 
     const [activeIndustry, setActiveIndustry] = useState<string | null>(null);
@@ -128,16 +139,20 @@ export function ProductLineInspirationSection({
 
     if (products.length === 0 || industries.length === 0) return null;
 
-    const title = heading ?? `Inspiration for ${lineTitle}`;
+    const title = heading?.trim() || `Inspiration for ${lineTitle}`;
 
     return (
         <section
             id="product-line-inspiration"
             className={cn('scroll-mt-20', className)}
         >
-            <PageDielineSection innerClassName="border-b border-dashed border-border py-16 sm:py-20">
+            <PageDielineSection
+                borderTop={borderTop}
+                borderBottom={borderBottom}
+                innerClassName="py-16 sm:py-20"
+            >
                 <SectionHeading
-                    eyebrow="Inspiration"
+                    eyebrow={eyebrow}
                     title={title}
                     description={description}
                 />
@@ -188,9 +203,7 @@ export function ProductLineInspirationSection({
                                             {revealedItems.map((item) => {
                                                 const media = item.media?.find(
                                                     (m) =>
-                                                        Boolean(
-                                                            m.src?.trim(),
-                                                        ),
+                                                        Boolean(m.src?.trim()),
                                                 );
                                                 return (
                                                     <li key={item.slug}>

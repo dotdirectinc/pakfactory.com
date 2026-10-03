@@ -72,7 +72,7 @@ www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts)
 
 **Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`StandardProductPreview`](../src/components/product/standard-product-preview.tsx) (unlabeled long description + Specs list). Solution / inspiration closer-look uses [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx). Both compose props-only [`ProductPreviewShell`](../src/components/ui/product-preview-shell.tsx). Products without media use [`PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER`](../src/lib/catalog/product-line-landing.ts) (`/products/hero-feature-placeholder.svg`).
 
-**Line Inspiration band:** code-owned [`ProductLineInspirationSection`](../src/components/product/product-line-inspiration-section.tsx) after the hero — left rail is industries tagged on `inspirationProducts` for the line; cards filter by selected industry. Omitted when the line has no inspiration products.
+**Line Inspiration band:** CMS section **`inspirationIndustry`** (Studio Solutions tab — Inspiration by industry) on the Product Line Page template / line `sections`. www host-overrides it with [`ProductLineInspirationSection`](../src/components/product/product-line-inspiration-section.tsx): left rail is curated industries (or all industries with products when empty); cards are `inspirationProducts` for the line filtered by the selected industry. Human: insert the section on the Product Line Page layout in Studio and publish (agents do not seed documents).
 
 ### Sanity field map
 
@@ -103,7 +103,7 @@ Folder: `src/components/product/`
 | `product-line-facet-group.tsx` | `ProductLineFacetGroup` | Product Line accordion + nested style checkboxes |
 | `product-catalog-list.tsx` | `ProductCatalogList` | Equal-height 4-col grid of `ProductCard` (+ optional line entry) |
 | `catalog-entry-card.tsx` | `CatalogEntryCard` | Solid entry tile → `/products/[line]` |
-| `product-line-inspiration-section.tsx` | `ProductLineInspirationSection` | Industry rail + inspiration cards on line LP |
+| `product-line-inspiration-section.tsx` | `ProductLineInspirationSection` | CMS `inspirationIndustry` host UI (industry rail + cards) |
 | `standard-product-preview.tsx` | `StandardProductPreview` | Standard hero quick view (long description + Specs list) |
 | `ui/catalog-facet-group.tsx` | `CatalogFacetGroup` | Shared checkbox facet accordion |
 

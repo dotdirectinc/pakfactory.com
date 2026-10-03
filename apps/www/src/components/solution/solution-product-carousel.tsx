@@ -10,6 +10,8 @@ import {cn} from '@pakfactory/ui/lib/utils';
 
 import {SolutionProductPreview} from '@/components/solution/solution-product-preview';
 import type {SolutionHeroPreviewProduct} from '@/components/solution/solution-product-preview';
+import {SanityImage} from '@/components/ui/sanity-image';
+import {isSanityCdnUrl} from '@/lib/sanity/image';
 import type {SolutionHeroTile} from '@/lib/solutions/types';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -186,6 +188,16 @@ function TileButton({
     const image = tile.image;
     const hasImage = Boolean(image?.src);
     const [imageLoaded, setImageLoaded] = useState(false);
+    // Mobile cards are square; tablet/desktop are 3:4 portrait.
+    const isSquareCard = height > 0 && Math.abs(height / width - 1) < 0.05;
+    const imageClassName = cn(
+        'object-cover transition-opacity duration-[var(--motion-slow)] ease-in-out',
+        imageLoaded ? 'opacity-100' : 'opacity-0',
+        'motion-reduce:transition-none',
+        'motion-reduce:opacity-100',
+    );
+    const imageSizes =
+        '(max-width: 639px) 50vw, (max-width: 1023px) 40vw, 30vw';
 
     useEffect(() => {
         setImageLoaded(false);
@@ -204,19 +216,27 @@ function TileButton({
             aria-label={tile.label ? `View ${tile.label}` : 'View product'}
         >
             {hasImage && image ? (
-                <Image
-                    src={image.src}
-                    alt={image.alt || tile.label || ''}
-                    fill
-                    sizes="(max-width: 639px) 100vw, (max-width: 1023px) 33vw, 20vw"
-                    className={cn(
-                        'object-cover transition-opacity duration-[var(--motion-slow)] ease-in-out',
-                        imageLoaded ? 'opacity-100' : 'opacity-0',
-                        'motion-reduce:transition-none',
-                        'motion-reduce:opacity-100',
-                    )}
-                    onLoad={() => setImageLoaded(true)}
-                />
+                isSanityCdnUrl(image.src) ? (
+                    <SanityImage
+                        src={image.src}
+                        alt={image.alt || tile.label || ''}
+                        fill
+                        square={isSquareCard}
+                        portrait={!isSquareCard}
+                        sizes={imageSizes}
+                        className={imageClassName}
+                        onLoad={() => setImageLoaded(true)}
+                    />
+                ) : (
+                    <Image
+                        src={image.src}
+                        alt={image.alt || tile.label || ''}
+                        fill
+                        sizes={imageSizes}
+                        className={imageClassName}
+                        onLoad={() => setImageLoaded(true)}
+                    />
+                )
             ) : null}
             <span
                 aria-hidden

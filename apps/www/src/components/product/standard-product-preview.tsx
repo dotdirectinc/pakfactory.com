@@ -143,7 +143,7 @@ export function StandardProductPreview({
             {product ? (
                 <>
                     {description ? (
-                        <p className="text-sm leading-6 text-foreground">
+                        <p className="text-base leading-7 text-foreground">
                             {description}
                         </p>
                     ) : null}

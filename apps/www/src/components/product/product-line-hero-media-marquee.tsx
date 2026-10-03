@@ -181,8 +181,12 @@ function HeroMediaCard({
         [card, onSelect],
     );
 
+    // Catalog PNGs ship with generous padding; zoom inside the overflow-hidden tile.
+    const mediaZoomClass = 'scale-[1.35]';
+
     const stillClassName = cn(
         'object-contain',
+        mediaZoomClass,
         mediaDissolveTransitionClass,
         hasVideo && playing && 'opacity-0',
     );
@@ -248,6 +252,7 @@ function HeroMediaCard({
                     aria-hidden
                     className={cn(
                         'absolute inset-0 size-full object-contain',
+                        mediaZoomClass,
                         mediaDissolveTransitionClass,
                         playing ? 'opacity-100' : 'opacity-0',
                     )}

@@ -125,6 +125,32 @@ export function assembleInspirationIndustries(
 }
 
 /**
+ * Resolve left-rail industries for the Inspiration band.
+ * - Empty / missing CMS list → all industries with products (title sort).
+ * - Curated list → Studio order, only industries that still have products.
+ */
+export function resolveInspirationIndustries(
+    products: readonly Product[],
+    curated?: readonly {slug?: string | null; title?: string | null}[] | null,
+): ProductLineInspirationIndustry[] {
+    const available = assembleInspirationIndustries(products);
+    if (!curated?.length) return available;
+
+    const bySlug = new Map(available.map((row) => [row.slug, row]));
+    const resolved: ProductLineInspirationIndustry[] = [];
+    const seen = new Set<string>();
+    for (const row of curated) {
+        const slug = row.slug?.trim();
+        if (!slug || seen.has(slug)) continue;
+        const match = bySlug.get(slug);
+        if (!match) continue;
+        seen.add(slug);
+        resolved.push(match);
+    }
+    return resolved;
+}
+
+/**
  * Inspiration products tagged with the given industry slug (multi-tag OK).
  */
 export function filterInspirationProductsByIndustry(
@@ -141,12 +167,16 @@ export function filterInspirationProductsByIndustry(
     });
 }
 
+/** Hard cap for bottomBar hero carousel — keeps image/video payload bounded. */
+const HERO_MEDIA_CARD_LIMIT = 10;
+
 /**
  * Build bottomBar hero carousel cards (unique, no density copies).
  * Featured Products first (Studio order), then line `standard` products fill
- * remaining slots — duplicates skipped. Products without media use
- * {@link PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER}. Fall back to line featured
- * image + frames only when there are no standard products at all.
+ * remaining slots — duplicates skipped. Caps at {@link HERO_MEDIA_CARD_LIMIT}.
+ * Products without media use {@link PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER}.
+ * Fall back to line featured image + frames only when there are no standard
+ * products at all.
  */
 export function assembleHeroMediaCards(input: {
     featuredImageUrl: string | null;
@@ -162,6 +192,7 @@ export function assembleHeroMediaCards(input: {
     const seenSlugs = new Set<string>();
 
     const pushProduct = (product: Product) => {
+        if (cards.length >= HERO_MEDIA_CARD_LIMIT) return;
         if (seenSlugs.has(product.slug)) return;
         seenSlugs.add(product.slug);
         const media = product.media?.find((m) => Boolean(m.src?.trim()));
@@ -228,6 +259,7 @@ export function assembleHeroMediaCards(input: {
             alt: string,
             id: string,
         ) => {
+            if (cards.length >= HERO_MEDIA_CARD_LIMIT) return;
             const url = src?.trim();
             if (!url || seen.has(url)) return;
             seen.add(url);
