@@ -19,12 +19,7 @@ import {
     applySectionTokens,
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
-import type {SolutionHeroCustomization} from '@/lib/solutions/types';
-import {
-    customizationCategoryHref,
-    productHref,
-    WWW_ROUTES,
-} from '@/lib/www-routes';
+import {productHref} from '@/lib/www-routes';
 
 /** Storyboard H1 for rigid-boxes when Sanity `h1` is empty (PROD-1914). */
 export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
@@ -94,7 +89,6 @@ export type ProductLineHeroMediaCard = {
     description?: string;
     /** Spec rows for StandardProductPreview (label + value text). */
     properties?: {label: string; value: string}[];
-    customizations?: SolutionHeroCustomization[];
 };
 
 /** Industry pill for the product-line Inspiration section. */
@@ -147,39 +141,6 @@ export function filterInspirationProductsByIndustry(
     });
 }
 
-function mapHeroCustomizations(
-    product: Product,
-): SolutionHeroCustomization[] {
-    const all = product.availableCustomizations ?? [];
-    const preselected = all.filter((opt) => opt.preselected);
-    const options = (preselected.length > 0 ? preselected : all).slice(0, 4);
-    return options.map((opt) => {
-        const category = opt.category?.trim();
-        const slug = opt.slug?.trim();
-        const learnMoreHref =
-            category && slug
-                ? customizationCategoryHref(category, slug)
-                : WWW_ROUTES.customizations;
-        const imageSrc = opt.imageUrl?.trim() || null;
-        return {
-            id: opt.id || opt.slug || opt.label,
-            category: (
-                opt.categoryTitle ||
-                opt.category ||
-                'CUSTOMIZATION'
-            ).toUpperCase(),
-            title: opt.label,
-            description:
-                opt.shortDescription?.trim() ||
-                'Available on this product.',
-            learnMoreHref,
-            ...(imageSrc
-                ? {imageSrc, imageAlt: opt.label}
-                : {imageSrc: null}),
-        };
-    });
-}
-
 /**
  * Build bottomBar hero carousel cards (unique, no density copies).
  * Featured Products first (Studio order), then line `standard` products fill
@@ -211,6 +172,14 @@ export function assembleHeroMediaCards(input: {
             : product.title || 'Product image placeholder';
         const productVideo = product.featuredVideoUrl?.trim() || '';
         const description = product.description?.trim() || '';
+        // Match PDP Specs exclusions (buildProductSpecRows) — plain label/value list.
+        const excludedSpecLabels = new Set([
+            'Dimensions',
+            'Minimum order',
+            'MOQ',
+            'Lead time',
+            'Pricing',
+        ]);
         const properties: {label: string; value: string}[] = [];
         const styleTitle = product.productStyle?.title?.trim();
         if (styleTitle) {
@@ -218,7 +187,7 @@ export function assembleHeroMediaCards(input: {
         }
         for (const row of product.properties ?? []) {
             const label = row.label.trim();
-            if (!label) continue;
+            if (!label || excludedSpecLabels.has(label)) continue;
             if (styleTitle && label.toLowerCase() === 'style') continue;
             properties.push({
                 label,
@@ -232,7 +201,6 @@ export function assembleHeroMediaCards(input: {
             settleIndex: cards.length,
             title: product.title,
             detailHref: productHref(product.slug),
-            customizations: mapHeroCustomizations(product),
             ...(description ? {description} : {}),
             ...(properties.length > 0 ? {properties} : {}),
             ...(productVideo ? {videoUrl: productVideo} : {}),

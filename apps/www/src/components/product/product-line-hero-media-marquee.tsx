@@ -3,6 +3,7 @@
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
     type CSSProperties,
@@ -10,6 +11,7 @@ import {
     type PointerEvent,
 } from 'react';
 import Image from 'next/image';
+import Autoplay from 'embla-carousel-autoplay';
 import {
     Carousel,
     CarouselContent,
@@ -36,6 +38,15 @@ import {
 
 /** Movement before a gesture counts as a drag (not a click) — same as Finder cards. */
 const DRAG_CLICK_PX = 8;
+
+/** Same dwell as section carousels. */
+const AUTOPLAY_DELAY_MS = 4000;
+
+/**
+ * Embla scroll duration (physics units, not ms). Higher = slower ease-in/out.
+ * Default ~25 feels snappy; stay within Embla’s recommended 20–60.
+ */
+const SCROLL_DURATION = 50;
 
 /** Embla slide: card sizes itself; gutter matches section rails. */
 const HERO_MEDIA_ITEM_CLASS =
@@ -280,8 +291,8 @@ function HeroMediaCard({
 }
 
 /**
- * Bottom-bar hero media strip — full-bleed Embla carousel with shared
- * CarouselNavButtons; click opens StandardProductPreview.
+ * Bottom-bar hero media strip — full-bleed Embla carousel with autoplay,
+ * CarouselNavButtons, and click-to-open StandardProductPreview.
  */
 export function ProductLineHeroMediaMarquee({
     cards,
@@ -300,6 +311,20 @@ export function ProductLineHeroMediaMarquee({
 
     const loop = cards.length > 1;
     const showNav = !reducedMotion && cards.length > 1;
+    const enableAutoplay = !reducedMotion && cards.length > 1;
+
+    const plugins = useMemo(() => {
+        if (!enableAutoplay) return undefined;
+        return [
+            Autoplay({
+                delay: AUTOPLAY_DELAY_MS,
+                // Keep autoplay after arrow/drag; hover + focus pause for WCAG 2.2.2.
+                stopOnInteraction: false,
+                stopOnMouseEnter: true,
+                stopOnFocusIn: true,
+            }),
+        ];
+    }, [enableAutoplay]);
 
     const onSelect = useCallback((carouselApi: CarouselApi) => {
         if (!carouselApi) return;
@@ -329,7 +354,6 @@ export function ProductLineHeroMediaMarquee({
             detailHref: card.detailHref,
             image: {src: card.src, alt: card.alt},
             modelSrc: productModelSrc(slug),
-            customizations: card.customizations ?? [],
             ...(card.description?.trim()
                 ? {description: card.description.trim()}
                 : {}),
@@ -364,7 +388,10 @@ export function ProductLineHeroMediaMarquee({
                         align: 'start',
                         slidesToScroll: 1,
                         loop,
+                        // Slower attraction ease so autoplay / arrows feel fluid.
+                        duration: SCROLL_DURATION,
                     }}
+                    plugins={plugins}
                     className="w-full"
                 >
                     <CarouselContent className="-ml-6 items-center pl-(--layout-gutter-outer) pr-(--layout-gutter-outer)">

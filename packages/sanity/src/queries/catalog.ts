@@ -319,18 +319,15 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
 `;
 
 /**
- * Product-line hero / standard preview dialog — card fields plus specs + a
- * small customizations slice (not full PDP extras).
+ * Product-line hero / standard preview dialog — card fields plus specs.
+ * Description prefers long PT text (PDP order), not shortDescription-first cards.
  */
 export const CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS = /* groq */ `
   ${CATALOG_PRODUCT_CARD_FIELDS},
+  "description": coalesce(pt::text(description), shortDescription),
   "properties": properties[defined(property)]{
     "label": property->title,
     "values": values[]->title
-  },
-  "availableCustomizations": availableCustomizations[defined(customization)]{
-    preselected,
-    "customization": customization->${OPTION_PROJ}
   }
 `;
 

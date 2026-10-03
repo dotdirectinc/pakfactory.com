@@ -70,7 +70,7 @@ Also applied to: the option → product-lines facet, the three solution product 
 
 www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts). GROQ fragments: [`@pakfactory/sanity/product-kind`](../../../packages/sanity/src/product-kind.ts) (`KIND_STANDARD` treats unset as standard; `KIND_INSPIRATION`).
 
-**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`StandardProductPreview`](../src/components/product/standard-product-preview.tsx) (Description / Specs / Customizations). Solution / inspiration closer-look uses [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx). Both compose props-only [`ProductPreviewShell`](../src/components/ui/product-preview-shell.tsx). Products without media use [`PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER`](../src/lib/catalog/product-line-landing.ts) (`/products/hero-feature-placeholder.svg`).
+**Line bottom-bar hero:** Embla carousel + shared [`CarouselNavButtons`](../src/components/ui/carousel-nav-buttons.tsx); card click opens [`StandardProductPreview`](../src/components/product/standard-product-preview.tsx) (unlabeled long description + Specs list). Solution / inspiration closer-look uses [`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx). Both compose props-only [`ProductPreviewShell`](../src/components/ui/product-preview-shell.tsx). Products without media use [`PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER`](../src/lib/catalog/product-line-landing.ts) (`/products/hero-feature-placeholder.svg`).
 
 **Line Inspiration band:** code-owned [`ProductLineInspirationSection`](../src/components/product/product-line-inspiration-section.tsx) after the hero — left rail is industries tagged on `inspirationProducts` for the line; cards filter by selected industry. Omitted when the line has no inspiration products.
 
@@ -104,7 +104,7 @@ Folder: `src/components/product/`
 | `product-catalog-list.tsx` | `ProductCatalogList` | Equal-height 4-col grid of `ProductCard` (+ optional line entry) |
 | `catalog-entry-card.tsx` | `CatalogEntryCard` | Solid entry tile → `/products/[line]` |
 | `product-line-inspiration-section.tsx` | `ProductLineInspirationSection` | Industry rail + inspiration cards on line LP |
-| `standard-product-preview.tsx` | `StandardProductPreview` | Standard hero quick view (Description / Specs / Customizations) |
+| `standard-product-preview.tsx` | `StandardProductPreview` | Standard hero quick view (long description + Specs list) |
 | `ui/catalog-facet-group.tsx` | `CatalogFacetGroup` | Shared checkbox facet accordion |
 
 ## Catalog entry card (first spot)

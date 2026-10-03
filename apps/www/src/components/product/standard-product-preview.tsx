@@ -5,12 +5,10 @@ import Link from 'next/link';
 import {ImageIcon, Package, Rotate3d} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
 
-import {ProductPreviewCustomizationList} from '@/components/ui/product-preview-customization-list';
 import {ProductPreviewShell} from '@/components/ui/product-preview-shell';
 import {Icon} from '@/components/ui/icon';
 import {ModelViewer} from '@/components/ui/model-viewer';
 import {SanityImage} from '@/components/ui/sanity-image';
-import type {SolutionHeroCustomization} from '@/lib/solutions/types';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
 
 export type StandardProductPreviewSpec = {
@@ -25,9 +23,9 @@ export type StandardProductPreviewProduct = {
     image?: {src: string; alt: string} | null;
     /** Optional GLB — adds a "View in 3D" toggle over the photo (PoC). */
     modelSrc?: string;
+    /** Long description (Studio Description → pt::text). */
     description?: string;
     specs?: StandardProductPreviewSpec[];
-    customizations: SolutionHeroCustomization[];
 };
 
 /** Clip name inside the PoC GLB; drives the open/close control. */
@@ -40,7 +38,7 @@ type StandardProductPreviewProps = {
 };
 
 /**
- * Standard product-line hero preview — Description, Specs, Customizations.
+ * Standard product-line hero preview — unlabeled description + Specs list.
  * Composes {@link ProductPreviewShell}; does not serve inspiration/solution kinds.
  */
 export function StandardProductPreview({
@@ -145,14 +143,9 @@ export function StandardProductPreview({
             {product ? (
                 <>
                     {description ? (
-                        <section className="flex flex-col gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                Description
-                            </p>
-                            <p className="text-sm leading-6 text-foreground">
-                                {description}
-                            </p>
-                        </section>
+                        <p className="text-sm leading-6 text-foreground">
+                            {description}
+                        </p>
                     ) : null}
 
                     {specs.length > 0 ? (
@@ -160,32 +153,23 @@ export function StandardProductPreview({
                             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 Specs
                             </p>
-                            <dl className="flex flex-col gap-2">
+                            <ul className="flex list-none flex-col gap-2">
                                 {specs.map((row) => (
-                                    <div
+                                    <li
                                         key={row.label}
                                         className="flex flex-col gap-1 sm:flex-row sm:gap-4"
                                     >
-                                        <dt className="shrink-0 text-sm font-medium text-foreground sm:w-36">
+                                        <span className="shrink-0 text-sm font-medium text-foreground sm:w-36">
                                             {row.label}
-                                        </dt>
-                                        <dd className="text-sm text-muted-foreground">
+                                        </span>
+                                        <span className="text-sm text-muted-foreground">
                                             {row.value}
-                                        </dd>
-                                    </div>
+                                        </span>
+                                    </li>
                                 ))}
-                            </dl>
+                            </ul>
                         </section>
                     ) : null}
-
-                    <section className="flex flex-col gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Customizations
-                        </p>
-                        <ProductPreviewCustomizationList
-                            items={product.customizations}
-                        />
-                    </section>
                 </>
             ) : null}
         </ProductPreviewShell>
