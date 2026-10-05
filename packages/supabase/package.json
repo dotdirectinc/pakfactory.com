@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./account-display": "./src/account-display.ts",
     "./client": "./src/client.ts",
     "./server": "./src/server.ts",
     "./session": "./src/session.ts"

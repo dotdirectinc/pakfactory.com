@@ -66,6 +66,20 @@ Same cache tags cover products, product lines, solutions, and chrome (e.g. `webs
 - **Webhook:** `/api/revalidate` busts the case-study tag for every case-study-set type, and the home tag on **every** call (Home dereferences most content types). A body-less call (the staging `{"sweep": true}` webhook) still sweeps everything.
 - **Draft mode:** stays uncached, via `readThrough`.
 
+## Page caching (PROD-2754)
+
+- **The `(site)` layout must not read the session** (no `cookies()`, no `getUser()`).
+  - Any dynamic API in that layout makes every marketing page dynamic. Before this change, nothing was CDN-cached and every `export const revalidate` was ignored.
+  - Today `(site)` routes build as `○`/`●` (static or ISR) and return `Cache-Control: s-maxage=…`. Check with `next build` before merging layout changes.
+- **The header account is resolved in the browser.**
+  - `useNavAccount` (`src/lib/auth/use-nav-account.ts`) reads the session cookie for display only.
+  - Authorization still happens server-side: `(account)` / `(request)` call `getUser()` and stay dynamic.
+- **Pre-paint flag:** `NAV_SESSION_FLAG_SCRIPT` (`src/lib/auth/nav-session-flag.ts`) runs inline before first paint.
+  - With an `sb-*-auth-token` cookie, it marks `#pf-nav-session`, so CSS (`globals.css`) shows an avatar placeholder instead of "Sign in".
+  - Signed-out visitors see the unchanged header.
+  - UI approval for the placeholder: Richard Chang.
+- **Moved helpers:** `accountDisplayName` / `accountAvatarUrl` now live in `@pakfactory/supabase/account-display` (client-safe) and are re-exported from `/session`.
+
 ## First paint (PROD-2756)
 
 - **CSS is inlined** (`experimental.inlineCss` in `next.config.ts`, production builds only).
