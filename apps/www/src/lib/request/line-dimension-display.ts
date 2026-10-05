@@ -23,7 +23,7 @@ export function lineDimensionDisplay(
     if (!('dimensions' in answer)) return undefined;
 
     const axisIds = line.dimensionInput?.trim()
-        ? resolveProductDims(line.dimensionInput).axes
+        ? resolveProductDims(line.dimensionInput, line.dimensionRange).axes
         : undefined;
     const summary = formatDimensionsSummary(
         answer.dimensions,
