@@ -230,21 +230,20 @@ const FAQ_ITEM_PROJ = /* groq */ `{
   }`;
 
 /**
- * A product's FAQs, inherited down the catalog: product → its style → its line (Richard,
- * 2026-09-28). The nearest level with ANY FAQ wins outright — one curated FAQ on a product
- * replaces everything above it, nothing merges. A preset reads its style and line through
- * `basedOn`, as the card fields do. The style is the product's first (`productStyle[0]`), the
- * one its card shows; the line is the product's own, falling back to that style's line.
+ * A product's FAQs. The nearest source with ANY FAQ wins outright — nothing merges.
+ *
+ * - Inspiration: its own FAQs, else its FIRST solution's (`solutions[0]`, the one that names
+ *   the breadcrumb parent). Nothing further — an inspiration never falls back to the catalog
+ *   (Richard, 2026-10-05).
+ * - Standard: inherited down the catalog — product → its style → its line (Richard,
+ *   2026-09-28). The style is the product's first (`productStyle[0]`), the one its card
+ *   shows; the line is the product's own, falling back to that style's line.
  */
 const PRODUCT_FAQS_INHERITED = /* groq */ `"faqs": select(
     count(faqs) > 0 => faqs[]->${FAQ_ITEM_PROJ},
-    count(coalesce(productStyle[0], basedOn->productStyle[0])->faqs) > 0 =>
-      coalesce(productStyle[0], basedOn->productStyle[0])->faqs[]->${FAQ_ITEM_PROJ},
-    coalesce(
-      productLine,
-      basedOn->productLine,
-      coalesce(productStyle[0], basedOn->productStyle[0])->productLine
-    )->faqs[]->${FAQ_ITEM_PROJ}
+    kind == "inspiration" => solutions[0]->faqs[]->${FAQ_ITEM_PROJ},
+    count(productStyle[0]->faqs) > 0 => productStyle[0]->faqs[]->${FAQ_ITEM_PROJ},
+    coalesce(productLine, productStyle[0]->productLine)->faqs[]->${FAQ_ITEM_PROJ}
   )`;
 
 /** Shared product projection used by by-slug and list queries. */
