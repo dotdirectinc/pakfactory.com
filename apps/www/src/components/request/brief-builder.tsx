@@ -75,6 +75,7 @@ export function BriefBuilder({
         removeLine,
         ensureBuilder,
         discardDraft,
+        consumeSubmittedLines,
     } = useRequest();
 
     const entryKind = resolveEntryKind(mode);
@@ -252,6 +253,9 @@ export function BriefBuilder({
             ref,
             submittedAt: new Date().toISOString(),
         });
+        // Drop quoted products from the Quote Request pool so /request and the
+        // nav badge do not keep showing them. Unselected pool lines stay.
+        consumeSubmittedLines();
         setShowSubmitSuccess(true);
     }
 
