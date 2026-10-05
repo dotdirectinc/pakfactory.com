@@ -62,7 +62,7 @@ async function accessToken(): Promise<string | null> {
 
 async function call<T>(
   path: string,
-  init?: { method?: string },
+  init?: { method?: string; body?: unknown },
 ): Promise<{ ok: true; data: T } | { ok: false; status: number; error: string; code?: string }> {
   const token = await accessToken();
   let res: Response;
@@ -73,6 +73,7 @@ async function call<T>(
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         "Content-Type": "application/json",
       },
+      ...(init?.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
       // Never cached: a reviewer deciding a frame must see the state as it is now,
       // and a stale "draft" would offer an approve button for something already done.
       cache: "no-store",
@@ -133,4 +134,42 @@ export async function decideChangeset(id: string, decision: "approve" | "discard
     `/api/v1/changesets/${encodeURIComponent(id)}/${decision}`,
     { method: "POST" },
   );
+}
+
+// ── Catalog sync (PROD-2751) ─────────────────────────────────────────────────
+
+export type SyncRunState = "requested" | "running" | "done" | "failed";
+
+/** A frame the run loaded as a draft — it now waits in the list above. */
+export type SyncRunLoaded = { id: string; frame: string; items: number };
+
+export type SyncRun = {
+  id: string;
+  kind: "sanity";
+  dataset: string;
+  state: SyncRunState;
+  requested_by: string;
+  requested_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
+  result: {
+    documents?: number;
+    proposed?: { frame: string; items: number }[];
+    loaded?: SyncRunLoaded[];
+    report?: { unresolved?: unknown[]; unknownStatus?: unknown[]; reportOnly?: Record<string, number> };
+  } | null;
+};
+
+/** The last 20 runs, newest first. */
+export async function listSyncRuns() {
+  return call<SyncRun[]>("/api/v1/sync-runs");
+}
+
+/**
+ * Ask the backend to sync a Sanity dataset. The run is queued and the worker takes it within
+ * seconds; what it finds arrives as draft frames, never as live changes.
+ */
+export async function requestSyncRun(dataset: string) {
+  return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body: { kind: "sanity", dataset } });
 }

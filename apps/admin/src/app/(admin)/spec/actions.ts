@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { decideChangeset } from "@/lib/spec/registry-api";
+import { decideChangeset, requestSyncRun } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -27,5 +27,16 @@ export async function decideFrameAction(
   // Both the list and this frame change: an approved frame leaves the pending list.
   revalidatePath("/spec");
   revalidatePath(`/spec/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Request a Sync Sanity run (PROD-2751), as the signed-in person. The backend checks
+ * `catalog.sync` against their grant and refuses while another run is open.
+ */
+export async function requestSyncAction(dataset: string): Promise<DecisionResult> {
+  const res = await requestSyncRun(dataset);
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath("/spec");
   return { ok: true };
 }
