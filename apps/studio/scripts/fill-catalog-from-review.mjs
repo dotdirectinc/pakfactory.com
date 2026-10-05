@@ -115,7 +115,9 @@ const client = createClient({
 // solutionStyle after solution / productLine / productStyle: it references all three (PROD-2605).
 // customizationCategory first: the fill patches it only for its registry identity (entityId /
 // entityCode, PROD-2628) and it references nothing in the set.
-const TYPE_ORDER = ['customizationCategory', 'property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'customizationOption', 'product']
+// Write order: a document is written before anything that references it. Glossary terms come
+// before options because an option's `glossaryTerm` points at one (the glossary seed set).
+const TYPE_ORDER = ['customizationCategory', 'property', 'propertyValue', 'customizationType', 'productLine', 'productStyle', 'solution', 'solutionStyle', 'glossaryTerm', 'customizationOption', 'product']
 const BATCH = 50
 
 function fail(msg) {
@@ -139,6 +141,15 @@ function loadReviewSet() {
   }
   if (mismatched.length) {
     fail(`The review set does not match its manifest:\n  ${mismatched.join('\n  ')}\nRe-run generate and review again.`)
+  }
+  // A document file for a type this script does not know would be skipped without a word, and its
+  // documents never written. Refuse instead: the set and the uploader must agree on every type.
+  const unknownTypes = Object.keys(manifest.files)
+    .filter((rel) => rel.startsWith('documents/'))
+    .map((rel) => rel.slice('documents/'.length).replace(/\.json$/, ''))
+    .filter((type) => !TYPE_ORDER.includes(type))
+  if (unknownTypes.length) {
+    fail(`The review set has documents of a type this uploader does not write: ${unknownTypes.join(', ')}.\nAdd the type to TYPE_ORDER (in reference order) before uploading.`)
   }
   const docs = TYPE_ORDER.flatMap((type) => {
     const rel = `documents/${type}.json`
