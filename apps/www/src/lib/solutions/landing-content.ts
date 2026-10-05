@@ -6,9 +6,9 @@ import type {
     SolutionPage,
     PageSection,
 } from '@/lib/solutions/types';
+import {customizationOptionHref} from '@/lib/catalog/customization-option-href';
 import type {CustomizationOption, Product} from '@/lib/catalog/types';
 import {
-    customizationCategoryHref,
     productHref,
     WWW_ROUTES,
 } from '@/lib/www-routes';
@@ -28,12 +28,8 @@ function mapCustomizations(
     product: Product,
 ): SolutionHeroCustomization[] {
     return heroCustomizationOptions(product).map((opt) => {
-        const category = opt.category?.trim();
-        const slug = opt.slug?.trim();
         const learnMoreHref =
-            category && slug
-                ? customizationCategoryHref(category, slug)
-                : WWW_ROUTES.customizations;
+            customizationOptionHref(opt) ?? WWW_ROUTES.customizations;
         const imageSrc = opt.imageUrl?.trim() || null;
         return {
             id: opt.id || opt.slug || opt.label,

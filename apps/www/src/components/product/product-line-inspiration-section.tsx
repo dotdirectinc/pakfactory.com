@@ -18,14 +18,11 @@ import {
     resolveInspirationIndustries,
     type ProductLineInspirationIndustry,
 } from '@/lib/catalog/product-line-landing';
+import {customizationOptionHref} from '@/lib/catalog/customization-option-href';
 import type {Product} from '@/lib/catalog/types';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
 import type {SolutionHeroCustomization} from '@/lib/solutions/types';
-import {
-    customizationCategoryHref,
-    productHref,
-    WWW_ROUTES,
-} from '@/lib/www-routes';
+import {productHref, WWW_ROUTES} from '@/lib/www-routes';
 
 /** Initial / batch size — 2 rows × 4 cols at lg. */
 const PAGE_SIZE = 8;
@@ -51,12 +48,8 @@ function mapPreviewCustomizations(
     const preselected = all.filter((opt) => opt.preselected);
     const options = (preselected.length > 0 ? preselected : all).slice(0, 4);
     return options.map((opt) => {
-        const category = opt.category?.trim();
-        const slug = opt.slug?.trim();
         const learnMoreHref =
-            category && slug
-                ? customizationCategoryHref(category, slug)
-                : WWW_ROUTES.customizations;
+            customizationOptionHref(opt) ?? WWW_ROUTES.customizations;
         const imageSrc = opt.imageUrl?.trim() || null;
         return {
             id: opt.id || opt.slug || opt.label,
