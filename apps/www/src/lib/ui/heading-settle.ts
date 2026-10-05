@@ -4,7 +4,9 @@ import type {CSSProperties} from 'react';
 export const HEADING_SETTLE_STAGGER_MS = 100;
 
 /**
- * Apple Mac–style settle classes (opacity + 30px rise over `--motion-reveal`).
+ * Apple Mac–style settle classes (30px rise over `--motion-reveal`; fades in
+ * from `md` up only — below 768px the text is readable from the first frame,
+ * see globals.css / PROD-2756).
  * Pair with {@link headingSettleStyle} for stagger. Skipped under
  * `prefers-reduced-motion` via CSS + `motion-reduce:animate-none`.
  */
