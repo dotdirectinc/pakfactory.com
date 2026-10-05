@@ -539,6 +539,26 @@ export function clearAllRequestLines(): void {
     });
 }
 
+/**
+ * After a successful submit: drop pool lines that were in the builder scope.
+ * Unselected pool lines stay. Express (`builderLineIds: []`) removes nothing.
+ * Clears `builderLineIds` so scope is not stale; leaves `submittedAt` / `ref`.
+ */
+export function consumeSubmittedRequestLines(): void {
+    const current = getRequestStateSnapshot();
+    const submitted = linesForBuilder(current.lines, current.draft);
+    const removeIds = new Set(submitted.map((line) => line.id));
+    const lines = current.lines.filter((line) => !removeIds.has(line.id));
+    persist({
+        lines,
+        draft: {
+            ...current.draft,
+            builderLineIds: null,
+            productsExpanded: lines.length > 0,
+        },
+    });
+}
+
 export type UpdateLinePatch = Partial<
     Pick<
         RequestLine,

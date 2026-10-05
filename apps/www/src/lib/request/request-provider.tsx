@@ -15,6 +15,7 @@ import type {AccountIdentity} from '@pakfactory/supabase/session';
 import {
     addRequestLine,
     clearAllRequestLines,
+    consumeSubmittedRequestLines,
     discardRequestDraft,
     ensureBuilderDraft,
     expandRequestProducts,
@@ -44,6 +45,8 @@ type RequestContextValue = {
     addLine: (input: AddLineInput) => RequestLine;
     removeLine: (lineId: string) => void;
     clearAllLines: () => void;
+    /** Drop builder-scoped lines from the pool after a successful submit. */
+    consumeSubmittedLines: () => void;
     updateLine: (lineId: string, patch: UpdateLinePatch) => void;
     updateDraft: (patch: Partial<RequestDraft>) => void;
     expandProducts: () => void;
@@ -90,6 +93,9 @@ export function RequestProvider({
     }, []);
     const clearAllLines = useCallback(() => {
         clearAllRequestLines();
+    }, []);
+    const consumeSubmittedLines = useCallback(() => {
+        consumeSubmittedRequestLines();
     }, []);
     const updateLine = useCallback((lineId: string, patch: UpdateLinePatch) => {
         updateRequestLine(lineId, patch);
@@ -185,6 +191,7 @@ export function RequestProvider({
             addLine,
             removeLine,
             clearAllLines,
+            consumeSubmittedLines,
             updateLine,
             updateDraft,
             expandProducts,
@@ -201,6 +208,7 @@ export function RequestProvider({
             addLine,
             removeLine,
             clearAllLines,
+            consumeSubmittedLines,
             updateLine,
             updateDraft,
             expandProducts,
