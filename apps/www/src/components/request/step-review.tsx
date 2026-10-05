@@ -5,6 +5,7 @@ import {ChevronUp} from 'lucide-react';
 import {
     RequestReviewPaper,
     RequestReviewSheetHeader,
+    type RequestReviewPaperProps,
 } from '@pakfactory/brief-builder-ui/request-review-paper';
 import {Button} from '@pakfactory/ui/components/button';
 import {
@@ -99,7 +100,9 @@ export function StepReview({
             setSummaryOpen(false);
             onEditSection(key);
         },
-    };
+        // `satisfies` types the callback params (e.g. `line`) from the paper's props;
+        // without it they are implicit `any` and `next build` fails type checking.
+    } satisfies Partial<RequestReviewPaperProps>;
 
     useEffect(() => {
         let raf = 0;
