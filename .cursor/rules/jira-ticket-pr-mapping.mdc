@@ -1,0 +1,58 @@
+---
+description: One PR per subtask-less Jira ticket per repo; split into subtasks for phases, separately-shipped repos or oversized work; merging a PROD-keyed PR into staging/www-new-release/dev moves the ticket to BA Acceptance
+alwaysApply: true
+---
+
+# Jira ticket ↔ pull request mapping
+
+> Cursor mirror of the canonical user-level rule `~/.claude/rules/jira-ticket-pr-mapping.md`.
+> Edit the canonical file first, then this mirror.
+
+A PROD automation moves a ticket to BA Acceptance when a pull request whose branch
+or title contains its key is **merged into a trunk** — `staging`, `www-new-release`, or `dev`
+(pakfactory.com-server) — unless
+the ticket is already in BA Acceptance. So **merging a keyed PR into a trunk is
+a forward transition** — it summons a reviewer — and falls under
+`jira-transition-gate.md`. Opening a PR is free: open early, review on the PR.
+Promotion merges into `main` do not trigger it.
+
+Applies to every repo whose branches or PR titles carry a PROD key.
+
+## Rules
+
+1. **A ticket without subtasks ships as one PR per repo.** Fixes found while
+   reviewing go on the same PR before merge — no follow-up PRs against an
+   unmerged ticket.
+2. **Split into subtasks up front when** the work has phases/milestones, spans
+   repos that merge or deploy at different times, or would not be reviewable in
+   one sitting (~600 changed lines, excluding generated/lock files). Each subtask
+   has its own key, one PR, and its own acceptance criteria. Subtasks reach BA
+   Acceptance too — each subtask merge summons the reviewer, by design.
+3. **Cross-repo work landing together** (both PRs merged in the same session)
+   stays one ticket.
+4. **Subtask PRs never stack.** Base each on its repo's trunk (`staging`,
+   `www-new-release` for the www rebuild, `dev` for pakfactory.com-server) after its predecessor merges.
+5. **Follow-ups after merge:**
+   - Ticket still in BA Acceptance → same ticket, new PR; its merge does not
+     move or re-notify (the automation skips tickets already there).
+   - Ticket bounced back by the reviewer → same ticket, new PR; its merge returns
+     it to BA Acceptance, which is the intended hand-back.
+   - Ticket Done → new bug ticket linked to the original. Do not reopen.
+6. **An agent never merges a keyed PR** without the `jira-transition-gate.md`
+   confirmation block and an explicit yes.
+7. **PRs that carry several keys** (e.g. the `www-new-release` → `staging` launch
+   PR) move every keyed ticket on merge. Keep keys out of their titles, or confirm
+   each ticket before merging — one confirmation per ticket, never a batch.
+
+## Why
+
+PROD-2628: 7 pakfactory.com-server PRs + 1 pakfactory.com PR each moved the
+ticket to BA Acceptance on open and were reverted by hand; every early PR
+summoned a reviewer to unfinished work. On 2026-10-01 the trigger was switched
+from PR opened to PR merged (into `staging`, `www-new-release` or `dev`) with the
+condition status ≠ BA Acceptance.
+
+## Related
+
+- `jira-transition-gate.md` — the confirmation block; transition IDs by issue type
+- `jira-account.md` — verify the Jira account before any Jira call
