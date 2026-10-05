@@ -66,6 +66,15 @@ Same cache tags cover products, product lines, solutions, and chrome (e.g. `webs
 - **Webhook:** `/api/revalidate` busts the case-study tag for every case-study-set type, and the home tag on **every** call (Home dereferences most content types). A body-less call (the staging `{"sweep": true}` webhook) still sweeps everything.
 - **Draft mode:** stays uncached, via `readThrough`.
 
+## First paint (PROD-2756)
+
+- **CSS is inlined** (`experimental.inlineCss` in `next.config.ts`, production builds only).
+  - As a separate file, the stylesheet downloaded alongside ~20 async JS chunks. On a throttled mobile link it finished about 1.5 s late, and nothing paints before the CSS. Throttled first paint went ~0.9 s → ~0.37 s.
+  - **Trade-off:** the CSS (~175 KB raw) is embedded in each full-page HTML response, roughly three times: once in `<style>`, plus copies in the flight data. That is about +85 KB gzipped per full load. Client-side navigations carry none.
+  - Re-measure before removing this flag.
+- **No library in the shared layout may be imported eagerly unless it is needed for first paint.** `FooterWordmark` dynamic-imports `gsap` on mount; a static import put ~43 KB gz of gsap on every page.
+- **Hero heading "settle" animation:** `animate-heading-settle` fades from `opacity: 0` over 700 ms. Where the heading or subtitle is the LCP element (`/customizations`, product-line pages), LCP waits for it, adding ~0.4–0.6 s on throttled mobile.
+
 ## Components
 
 Import via `@/components/<folder>/…`. Prefer **kebab-case file ≈ export**. Shared card chrome lives in `ui/` (ADR-013): **do not** import one feature’s controller into another — extract a props-only core to `ui/` / `lib/` instead.
