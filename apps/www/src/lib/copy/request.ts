@@ -67,10 +67,14 @@ export const REQUEST_COPY = {
     preparedFor: 'Prepared for',
     shippedToAddress: 'Shipped to Address',
     paperEdit: 'Edit',
+    paperServices: 'Additional Services',
     paperBrief: 'Brief',
     paperQty: 'Qty',
     paperItem: 'Item',
-    paperConfiguration: 'Configuration',
+    paperConfiguration: 'Customization',
+    paperProductPrefix: 'Product:',
+    paperDetailPrefix: 'Detail:',
+    paperDimensionsLabel: 'Dimensions',
     noProductsAdded: 'No products added.',
     regionToConfirm: 'Region — to confirm',
     notSet: 'Not set',
@@ -239,6 +243,14 @@ export const SERVICE_OPTIONS = [
     {id: 'sourcing', label: 'Sourcing'},
     {id: 'fulfilment', label: 'Fulfilment'},
 ] as const;
+
+/**
+ * Labels for pre-Studio RFQ drafts that stored coarse service ids.
+ * Live Brief Builder options come from Sanity expertise stages.
+ */
+export const LEGACY_SERVICE_LABELS: Record<string, string> = Object.fromEntries(
+    SERVICE_OPTIONS.map((option) => [option.id, option.label]),
+);
 
 export const INDUSTRY_OPTIONS = [
     'Food & Beverage',

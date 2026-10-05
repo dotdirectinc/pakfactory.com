@@ -79,6 +79,8 @@ export type WireSubmission = {
         addedAt: string;
     }[];
     services: string[];
+    /** Human titles aligned with `services` (Studio stage titles when known). */
+    serviceTitles?: string[];
     attachments: WireAttachment[];
     metadata: {
         source: 'Request Builder';
@@ -235,7 +237,17 @@ export function toWireSubmission(
     draft: RequestDraft,
     lines: RequestLine[],
     submissionId: string,
+    opts?: {serviceTitles?: string[]},
 ): WireSubmission {
+    const services = [...draft.services];
+    const titles = (opts?.serviceTitles ?? [])
+        .map((title) => title.trim())
+        .filter(Boolean);
+    const serviceTitles =
+        services.length > 0 && titles.length === services.length
+            ? titles
+            : undefined;
+
     return {
         draftId: draft.id,
         // Per submit CLICK, not per draft (ADR-0012 D10): a transport retry
@@ -294,7 +306,8 @@ export function toWireSubmission(
             attachments: toWireAttachments(line.referenceImages),
             addedAt: line.addedAt,
         })),
-        services: [...draft.services],
+        services,
+        ...(serviceTitles ? {serviceTitles} : {}),
         // 🔴 This was `[]` with a comment claiming the builder had no
         // request-level picker. It has one — the requirements-step dropzone,
         // which the express lane depends on entirely. It was missed because it

@@ -7,7 +7,7 @@ import {externalLinkAttributes} from '@pakfactory/utilities/external-link';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {CustomizationComparison} from '@/components/customization/customization-comparison';
 import {CustomizationConfigPanel} from '@/components/customization/customization-config-panel';
-import {CustomizationOptionGallery} from '@/components/customization/customization-option-gallery';
+import {ProductGallery} from '@/components/product/product-gallery';
 import {
     CustomizationReferenceOverview,
     CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
@@ -92,7 +92,7 @@ export function CustomizationDetailView({
     if (showOverview) {
         navItems.push({
             id: CUSTOMIZATION_REFERENCE_OVERVIEW_ID,
-            label: 'Overview',
+            label: 'Benefits',
         });
     }
     if (showSpecs) {
@@ -131,9 +131,9 @@ export function CustomizationDetailView({
                     id="customization-overview"
                     className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
                 >
-                    <CustomizationOptionGallery
+                    <ProductGallery
                         media={detail.media}
-                        title={detail.title}
+                        productTitle={detail.title}
                         featuredVideoUrl={detail.featuredVideoUrl}
                     />
                     <div>
