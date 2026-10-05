@@ -158,3 +158,31 @@ export const CustomizationOptionUsedByView = createReferencedByView({
   ],
   empty: 'Nothing references this option yet.',
 })
+
+// ── Glossary Term → the options that ARE this term ───────────────────────────
+/**
+ * An option names its term in its own `glossaryTerm` field ("the industry term this option
+ * is an instance of") — the one stored link, and the one the site reads. The term cannot
+ * see it from its side, so this tab looks it up.
+ *
+ * Deliberately NOT a second stored field mirrored onto the term: two copies of one link
+ * drift (drafts, deletions, an option picked by two terms). Unlink an option and it leaves
+ * this list; link one and it appears — nothing to keep in sync.
+ *
+ * `relatedCustomizations` on the term's form is a different thing: a hand-picked "see also"
+ * list, which can point at whole categories.
+ */
+export const GlossaryTermOptionsView = createReferencedByView({
+  tag: 'glossary-term-options',
+  note: 'Customization options whose "Glossary term" is this term. Link or unlink one from the option itself. The hand-picked "Related customizations" on the Edit tab are a separate list.',
+  sections: [
+    {
+      title: 'Customization options',
+      type: 'customizationOption',
+      filter: 'glossaryTerm._ref == $id',
+      subtitle: 'type->title',
+      badge: 'status',
+    },
+  ],
+  empty: 'No customization option links to this term yet. Link one from the option\'s "Glossary term" field.',
+})
