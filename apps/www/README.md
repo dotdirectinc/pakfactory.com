@@ -73,7 +73,10 @@ Same cache tags cover products, product lines, solutions, and chrome (e.g. `webs
   - **Trade-off:** the CSS (~175 KB raw) is embedded in each full-page HTML response, roughly three times: once in `<style>`, plus copies in the flight data. That is about +85 KB gzipped per full load. Client-side navigations carry none.
   - Re-measure before removing this flag.
 - **No library in the shared layout may be imported eagerly unless it is needed for first paint.** `FooterWordmark` dynamic-imports `gsap` on mount; a static import put ~43 KB gz of gsap on every page.
-- **Hero heading "settle" animation:** `animate-heading-settle` fades from `opacity: 0` over 700 ms. Where the heading or subtitle is the LCP element (`/customizations`, product-line pages), LCP waits for it, adding ~0.4–0.6 s on throttled mobile.
+- **Mobile-only no-fade on entrance animations.** Below `md` (768px), `animate-page-enter` and `animate-heading-settle` rise without fading; tablet and desktop keep the fade.
+  - **Why:** text that starts at `opacity: 0` does not count as painted for LCP until the fade completes. On throttled mobile that cost ~0.5–1 s of LCP on heading-led pages.
+  - **Approved by:** Richard Chang (2026-10-05), mobile-only.
+  - **Don't reintroduce an opacity start state below `md` on above-the-fold content.**
 
 ## Components
 
