@@ -266,3 +266,23 @@ export const ADMIN_SPEC_SOLUTIONS_COPY = {
   },
   editInStudio: "Edit in Studio",
 };
+
+/** Sync Sanity (PROD-2751): propose registry changes from what Studio holds. */
+export const ADMIN_SPEC_SYNC_COPY = {
+  title: "Sync Sanity",
+  lead:
+    "Compare a Sanity dataset with the registry. Differences arrive as frames in the list below — nothing changes until a frame is approved.",
+  datasetLabel: "Dataset",
+  datasets: [
+    { value: "development", label: "Development", enabled: true },
+    { value: "production", label: "Production (after its catalog rebuild)", enabled: false },
+  ],
+  button: "Sync Sanity",
+  requesting: "Requesting…",
+  open: "A sync is in progress. This page updates when it finishes.",
+  noPermission: "Starting a sync needs the approver role.",
+  recent: "Recent syncs",
+  none: "No syncs yet.",
+  states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
+  nothingFound: "No differences — nothing to approve.",
+} as const;
