@@ -269,15 +269,17 @@ export const ADMIN_SPEC_SOLUTIONS_COPY = {
 
 /** Sync Sanity (PROD-2751): propose registry changes from what Studio holds. */
 export const ADMIN_SPEC_SYNC_COPY = {
-  title: "Sync Sanity",
+  title: "Sync",
   lead:
-    "Compare a Sanity dataset with the registry. Differences arrive as frames in the list below — nothing changes until a frame is approved.",
+    "Sync Sanity compares a dataset with the registry. Sync from Notion compares Notion's content with the dataset. Differences arrive as frames in the list below — nothing changes until a frame is approved.",
   datasetLabel: "Dataset",
   datasets: [
     { value: "development", label: "Development", enabled: true },
     { value: "production", label: "Production (after its catalog rebuild)", enabled: false },
   ],
   button: "Sync Sanity",
+  notionButton: "Sync from Notion",
+  kinds: { sanity: "Sanity → registry", notion: "Notion → Sanity" },
   requesting: "Requesting…",
   open: "A sync is in progress. This page updates when it finishes.",
   noPermission: "Starting a sync needs the approver role.",
@@ -285,4 +287,17 @@ export const ADMIN_SPEC_SYNC_COPY = {
   none: "No syncs yet.",
   states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
   nothingFound: "No differences — nothing to approve.",
+} as const;
+
+/** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */
+export const ADMIN_SPEC_SANITY_ITEM_COPY = {
+  compare: "Compare",
+  before: "Sanity now",
+  after: "Notion",
+  states: {
+    pending: "Writing to Sanity…",
+    applied: "Written to Sanity",
+    stale: "Not written — changed in Sanity since",
+    failed: "Not written — failed",
+  },
 } as const;

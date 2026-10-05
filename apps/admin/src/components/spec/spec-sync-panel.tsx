@@ -21,8 +21,8 @@ const when = (iso: string) =>
   new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
 
 /**
- * Sync Sanity (PROD-2751). The button queues a run; the backend worker compares the dataset with
- * the registry and loads what differs as draft frames. While a run is open the page refreshes
+ * Sync Sanity and Sync from Notion (PROD-2751). A button queues a run; the backend worker compares
+ * the two sides and loads what differs as draft frames. While a run is open the page refreshes
  * itself, so the new frames appear without a reload.
  */
 export function SpecSyncPanel({ runs, canSync }: Props) {
@@ -38,10 +38,10 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
     return () => clearInterval(t);
   }, [open, router]);
 
-  function request() {
+  function request(kind: "sanity" | "notion") {
     setError(null);
     startTransition(async () => {
-      const res = await requestSyncAction(dataset);
+      const res = await requestSyncAction(kind, dataset);
       if (!res.ok) setError(res.error);
       router.refresh();
     });
@@ -71,8 +71,11 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
               ))}
             </select>
           </label>
-          <Button size="sm" disabled={pending || open} onClick={request}>
+          <Button size="sm" disabled={pending || open} onClick={() => request("sanity")}>
             {pending ? COPY.requesting : COPY.button}
+          </Button>
+          <Button size="sm" variant="outline" disabled={pending || open} onClick={() => request("notion")}>
+            {pending ? COPY.requesting : COPY.notionButton}
           </Button>
           {open ? <span className="text-sm text-muted-foreground">{COPY.open}</span> : null}
         </div>
@@ -91,7 +94,8 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
               <li key={r.id} className="flex flex-col gap-1 py-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={r.state === "failed" ? "destructive" : "secondary"}>{COPY.states[r.state]}</Badge>
-                  <span className="text-foreground">{r.dataset}</span>
+                  <span className="text-foreground">{COPY.kinds[r.kind] ?? r.kind}</span>
+                  <span className="text-muted-foreground">· {r.dataset}</span>
                   <span className="text-muted-foreground">{when(r.requested_at)}</span>
                   {r.result?.documents !== undefined ? (
                     <span className="text-muted-foreground">· {r.result.documents} documents read</span>
