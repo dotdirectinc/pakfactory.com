@@ -18,7 +18,6 @@ import {
     resolveInspirationIndustries,
     type ProductLineInspirationIndustry,
 } from '@/lib/catalog/product-line-landing';
-import {productModelSrc} from '@/lib/catalog/product-3d-models';
 import type {Product} from '@/lib/catalog/types';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
 import type {SolutionHeroCustomization} from '@/lib/solutions/types';
@@ -80,6 +79,8 @@ function mapPreviewCustomizations(
 
 function toPreviewProduct(product: Product): SolutionHeroPreviewProduct {
     const media = product.media?.find((m) => Boolean(m.src?.trim()));
+    const modelSrc = product.model3dUrl?.trim() || '';
+    const modelAnimationName = product.model3dAnimationName?.trim() || '';
     return {
         id: product.slug,
         title: product.title,
@@ -92,7 +93,8 @@ function toPreviewProduct(product: Product): SolutionHeroPreviewProduct {
                   },
               }
             : {}),
-        modelSrc: productModelSrc(product.slug),
+        ...(modelSrc ? {modelSrc} : {}),
+        ...(modelAnimationName ? {modelAnimationName} : {}),
         customizations: mapPreviewCustomizations(product),
     };
 }

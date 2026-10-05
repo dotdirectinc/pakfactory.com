@@ -21,13 +21,12 @@ export type SolutionHeroPreviewProduct = {
     title: string;
     detailHref: string;
     image?: SolutionMedia | null;
-    /** Optional GLB — adds a "View in 3D" toggle over the photo (PoC, PROD-2777). */
+    /** Optional GLB URL — adds a "View in 3D" toggle over the photo. */
     modelSrc?: string;
+    /** Optional glTF clip name — drives the open/close control when set. */
+    modelAnimationName?: string;
     customizations: SolutionHeroCustomization[];
 };
-
-/** Clip name inside the PoC GLB; drives the open/close control. */
-const MODEL_ANIMATION_NAME = 'Box animation';
 
 type SolutionProductPreviewProps = {
     product: SolutionHeroPreviewProduct | null;
@@ -73,7 +72,10 @@ export function SolutionProductPreview({
                                 src={product.modelSrc}
                                 alt={`3D model of ${product.title}`}
                                 poster={imageSrc || undefined}
-                                animationName={MODEL_ANIMATION_NAME}
+                                animationName={
+                                    product.modelAnimationName?.trim() ||
+                                    undefined
+                                }
                                 onError={() => setModelFailed(true)}
                             />
                         ) : imageSrc ? (

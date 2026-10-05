@@ -579,6 +579,12 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
             : {}),
+        ...(doc.model3dUrl?.trim()
+            ? {model3dUrl: doc.model3dUrl.trim()}
+            : {}),
+        ...(doc.model3dAnimationName?.trim()
+            ? {model3dAnimationName: doc.model3dAnimationName.trim()}
+            : {}),
         productLine,
         productStyle,
         availableCustomizations,

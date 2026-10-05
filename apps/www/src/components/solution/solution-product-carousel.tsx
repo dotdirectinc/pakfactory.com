@@ -373,6 +373,12 @@ export function SolutionProductCarousel({
             title: tile.title,
             detailHref: tile.detailHref,
             image: tile.image ?? null,
+            ...(tile.modelSrc?.trim()
+                ? {modelSrc: tile.modelSrc.trim()}
+                : {}),
+            ...(tile.modelAnimationName?.trim()
+                ? {modelAnimationName: tile.modelAnimationName.trim()}
+                : {}),
             customizations: tile.customizations ?? [],
         });
         setOpen(true);

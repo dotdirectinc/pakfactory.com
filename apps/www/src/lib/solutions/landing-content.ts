@@ -67,6 +67,8 @@ export function productsToHeroTiles(products: Product[]): SolutionHeroTile[] {
                       alt: media.alt?.trim() || product.title,
                   }
                 : null;
+        const modelSrc = product.model3dUrl?.trim() || '';
+        const modelAnimationName = product.model3dAnimationName?.trim() || '';
         return {
             id: product.slug,
             label: product.title,
@@ -74,6 +76,8 @@ export function productsToHeroTiles(products: Product[]): SolutionHeroTile[] {
             detailHref: productHref(product.slug),
             width: TILE_WIDTHS[index % TILE_WIDTHS.length],
             ...(image ? {image} : {}),
+            ...(modelSrc ? {modelSrc} : {}),
+            ...(modelAnimationName ? {modelAnimationName} : {}),
             customizations: mapCustomizations(product),
         };
     });
