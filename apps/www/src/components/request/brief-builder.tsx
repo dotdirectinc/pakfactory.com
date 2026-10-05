@@ -44,6 +44,7 @@ import {
     showServicesSection,
 } from '@/lib/request/validation';
 import {WWW_ROUTES} from '@/lib/www-routes';
+import type {RequestServiceOption} from '@/lib/request/service-option';
 
 type BriefBuilderProps = {
     mode?: 'builder' | 'express' | 'products' | 'services';
@@ -53,6 +54,8 @@ type BriefBuilderProps = {
      * otherwise observe the pre-entry draft.
      */
     deferStart?: boolean;
+    /** Sanity expertise stages for the Services step (slug + title). */
+    serviceOptions?: RequestServiceOption[];
 };
 
 function resolveEntryKind(mode: BriefBuilderProps['mode']): RequestEntryKind {
@@ -64,6 +67,7 @@ function resolveEntryKind(mode: BriefBuilderProps['mode']): RequestEntryKind {
 export function BriefBuilder({
     mode = 'builder',
     deferStart = false,
+    serviceOptions = [],
 }: BriefBuilderProps) {
     const router = useRouter();
     const {
@@ -387,6 +391,7 @@ export function BriefBuilder({
                     <StepServices
                         services={draft.services}
                         servicesEnabled={draft.servicesEnabled}
+                        options={serviceOptions}
                         onToggleEnabled={(servicesEnabled) =>
                             updateDraft({
                                 servicesEnabled,
@@ -403,6 +408,7 @@ export function BriefBuilder({
             <StepServices
                 services={draft.services}
                 servicesEnabled={draft.servicesEnabled}
+                options={serviceOptions}
                 onToggleEnabled={(servicesEnabled) =>
                     updateDraft({
                         servicesEnabled,
@@ -555,6 +561,7 @@ export function BriefBuilder({
                     onSubmitted={onSubmitted}
                     onEditSection={scrollToSection}
                     sectionRef={reviewRef}
+                    serviceOptions={serviceOptions}
                 />
             </RequestWizardChrome>
             </div>

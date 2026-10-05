@@ -1,13 +1,16 @@
 'use client';
 
 import {cn} from '@pakfactory/ui/lib/utils';
-import {REQUEST_COPY, SERVICE_OPTIONS} from '@/lib/copy/request';
+import {REQUEST_COPY} from '@/lib/copy/request';
+import type {RequestServiceOption} from '@/lib/request/service-option';
 
 type StepServicesProps = {
     services: string[];
     servicesEnabled: boolean;
     onToggleEnabled: (enabled: boolean) => void;
     onToggleService: (id: string) => void;
+    /** Sanity expertise stages (slug + title). Empty → no checkboxes. */
+    options: RequestServiceOption[];
     sectionRef?: React.Ref<HTMLElement>;
     /**
      * When false, the enable control is owned elsewhere (e.g. ServicesUpsellToggle
@@ -21,6 +24,7 @@ export function StepServices({
     servicesEnabled,
     onToggleEnabled,
     onToggleService,
+    options,
     sectionRef,
     showEnableToggle = true,
 }: StepServicesProps) {
@@ -62,13 +66,13 @@ export function StepServices({
 
             {servicesEnabled ? (
                 <div className="grid gap-2 sm:grid-cols-2">
-                    {SERVICE_OPTIONS.map((svc) => {
+                    {options.map((svc) => {
                         const on = services.includes(svc.id);
                         return (
                             <label
                                 key={svc.id}
                                 className={cn(
-                                    'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border p-4 text-sm font-medium',
+                                    'flex min-h-11 cursor-pointer items-start gap-2 rounded-md border p-4 text-sm font-medium',
                                     on
                                         ? 'border-foreground bg-muted/40'
                                         : 'border-border bg-background hover:bg-muted/30',
@@ -76,11 +80,18 @@ export function StepServices({
                             >
                                 <input
                                     type="checkbox"
-                                    className="size-5 accent-foreground"
+                                    className="mt-0.5 size-5 shrink-0 accent-foreground"
                                     checked={on}
                                     onChange={() => onToggleService(svc.id)}
                                 />
-                                {svc.label}
+                                <span className="flex min-w-0 flex-col gap-1">
+                                    <span>{svc.label}</span>
+                                    {svc.description ? (
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            {svc.description}
+                                        </span>
+                                    ) : null}
+                                </span>
                             </label>
                         );
                     })}

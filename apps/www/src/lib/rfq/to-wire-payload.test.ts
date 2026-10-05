@@ -138,3 +138,34 @@ describe('an older request line keeps every pick when it is edited (G4)', () => 
         assert.deepEqual(toRequestCustomizations(seeded, 'x').map((c) => c.id), ['o.cmyk', 'o.soy']);
     });
 });
+
+describe('toWireSubmission — services', () => {
+    it('sends stage slugs and aligned titles when provided', () => {
+        const withServices = {
+            ...draft,
+            services: ['packaging-design', 'fulfillment'],
+            servicesEnabled: true,
+        } as RequestDraft;
+        const wire = toWireSubmission(withServices, [], 'sub-svc', {
+            serviceTitles: ['Packaging Design', 'Fulfillment'],
+        });
+        assert.deepEqual(wire.services, ['packaging-design', 'fulfillment']);
+        assert.deepEqual(wire.serviceTitles, [
+            'Packaging Design',
+            'Fulfillment',
+        ]);
+    });
+
+    it('omits serviceTitles when the list length does not match', () => {
+        const withServices = {
+            ...draft,
+            services: ['packaging-design'],
+            servicesEnabled: true,
+        } as RequestDraft;
+        const wire = toWireSubmission(withServices, [], 'sub-svc-mismatch', {
+            serviceTitles: ['Packaging Design', 'Extra'],
+        });
+        assert.deepEqual(wire.services, ['packaging-design']);
+        assert.equal(wire.serviceTitles, undefined);
+    });
+});
