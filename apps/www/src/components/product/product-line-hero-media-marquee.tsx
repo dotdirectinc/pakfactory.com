@@ -28,7 +28,6 @@ import {
 import {CarouselNavButtons} from '@/components/ui/carousel-nav-buttons';
 import {SanityImage} from '@/components/ui/sanity-image';
 import type {ProductLineHeroMediaCard} from '@/lib/catalog/product-line-landing';
-import {productModelSrc} from '@/lib/catalog/product-3d-models';
 import {isSanityCdnUrl} from '@/lib/sanity/image';
 import {headingSettleProps} from '@/lib/ui/heading-settle';
 import {
@@ -358,7 +357,12 @@ export function ProductLineHeroMediaMarquee({
             title: card.title,
             detailHref: card.detailHref,
             image: {src: card.src, alt: card.alt},
-            modelSrc: productModelSrc(slug),
+            ...(card.modelSrc?.trim()
+                ? {modelSrc: card.modelSrc.trim()}
+                : {}),
+            ...(card.modelAnimationName?.trim()
+                ? {modelAnimationName: card.modelAnimationName.trim()}
+                : {}),
             ...(card.description?.trim()
                 ? {description: card.description.trim()}
                 : {}),

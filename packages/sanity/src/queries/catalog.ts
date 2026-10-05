@@ -11,8 +11,10 @@ import {
   FEATURED_VIDEO_URL_FIELD,
   type PageSectionDoc,
 } from './sections';
+import {MODEL_3D_FIELDS} from './product-model-3d';
 
 export {KIND_INSPIRATION, KIND_STANDARD} from '../product-kind';
+export {MODEL_3D_FIELDS, MODEL_3D_URL_FIELD} from './product-model-3d';
 
 const IMAGE_ALT = /* groq */ `coalesce(alt, asset->altText)`;
 
@@ -218,6 +220,7 @@ const STYLE_LIBRARY_REF_PROJ = /* groq */ `{
 
 /** Hover-play / hero video URL from product `featuredVideo`; empty when unset / YouTube-only. */
 const PRODUCT_FEATURED_VIDEO = FEATURED_VIDEO_URL_FIELD;
+const PRODUCT_MODEL_3D = MODEL_3D_FIELDS;
 
 /** One FAQ as the catalog pages render it. Blocks for UI; plain for JSON-LD. */
 const FAQ_ITEM_PROJ = /* groq */ `{
@@ -268,6 +271,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
     }
   ),
   ${PRODUCT_FEATURED_VIDEO},
+  ${PRODUCT_MODEL_3D},
   media[]{
     ...,
     "alt": ${IMAGE_ALT}
@@ -305,6 +309,7 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
     }
   ),
   ${PRODUCT_FEATURED_VIDEO},
+  ${PRODUCT_MODEL_3D},
   // Featured image for www productGallerySlides when gallery media is empty.
   featuredImage{
     ...,
@@ -1197,6 +1202,10 @@ export type CatalogProductDoc = {
   customerFacing?: boolean | null;
   /** Hover-play video URL from `featuredVideo` (upload/URL); empty for YouTube-only. */
   featuredVideoUrl?: string | null;
+  /** Direct public GLB URL from `model3d.url`; null when unset. */
+  model3dUrl?: string | null;
+  /** Optional glTF clip name for open/close control. */
+  model3dAnimationName?: string | null;
   /** Card + PDP — gallery slides use media first, then featuredImage. */
   featuredImage?: unknown | null;
   media?: unknown[] | null;

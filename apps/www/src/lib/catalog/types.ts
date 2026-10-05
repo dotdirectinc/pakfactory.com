@@ -194,6 +194,13 @@ export type Product = {
      * Hover-play video URL from Sanity `featuredVideo` (product-line hero marquee).
      */
     featuredVideoUrl?: string | null;
+    /**
+     * Public GLB URL from Sanity `model3d.url`. Plain URL contract for preview
+     * modals — PakStudio may supply this later without the CMS field.
+     */
+    model3dUrl?: string | null;
+    /** Optional glTF animation clip name for Open/Close in the 3D viewer. */
+    model3dAnimationName?: string | null;
     description: string;
     productLine: ProductLineRef;
     productStyle: ProductStyleRef;

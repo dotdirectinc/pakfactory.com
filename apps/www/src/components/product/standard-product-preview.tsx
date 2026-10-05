@@ -21,15 +21,14 @@ export type StandardProductPreviewProduct = {
     title: string;
     detailHref: string;
     image?: {src: string; alt: string} | null;
-    /** Optional GLB — adds a "View in 3D" toggle over the photo (PoC). */
+    /** Optional GLB URL — adds a "View in 3D" toggle over the photo. */
     modelSrc?: string;
+    /** Optional glTF clip name — drives the open/close control when set. */
+    modelAnimationName?: string;
     /** Long description (Studio Description → pt::text). */
     description?: string;
     specs?: StandardProductPreviewSpec[];
 };
-
-/** Clip name inside the PoC GLB; drives the open/close control. */
-const MODEL_ANIMATION_NAME = 'Box animation';
 
 type StandardProductPreviewProps = {
     product: StandardProductPreviewProduct | null;
@@ -76,7 +75,10 @@ export function StandardProductPreview({
                                 src={product.modelSrc}
                                 alt={`3D model of ${product.title}`}
                                 poster={imageSrc || undefined}
-                                animationName={MODEL_ANIMATION_NAME}
+                                animationName={
+                                    product.modelAnimationName?.trim() ||
+                                    undefined
+                                }
                                 onError={() => setModelFailed(true)}
                             />
                         ) : imageSrc ? (

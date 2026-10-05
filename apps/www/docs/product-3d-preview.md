@@ -1,54 +1,68 @@
-# Product preview — "View in 3D" (PoC, PROD-2777)
+# Product preview — "View in 3D" (PROD-2777 graduation)
 
-**Status:** proof of concept for **one product** on staging. Not a general feature yet: no Studio field, no prod asset.
+**Status:** CMS-configurable bridge on **Product** (Standard and Inspiration). Front-end consumes a plain GLB URL. Long-term asset ownership and interactive customize belong to **PakStudio** — this Sanity field may retire once previews resolve models from PakStudio/product identity.
 
 ## What it does
 
-In the product preview dialog ([`SolutionProductPreview`](../src/components/solution/solution-product-preview.tsx)), a product that has a 3D model gets a **View in 3D** pill in the top-right of the photo (modelled on Brilliant Earth's gallery pill). Toggling it swaps the photo for an interactive model:
+In product preview dialogs (`StandardProductPreview`, `SolutionProductPreview`), a product with a 3D model URL gets a **View in 3D** pill over the photo. Toggling swaps the photo for an interactive model:
 
 - drag to rotate, scroll / pinch to zoom, slow auto-rotate (off under `prefers-reduced-motion`)
-- **Close box / Open box** plays the GLB's `Box animation` clip forward / backward
+- when **Animation clip name** is set, **Close box / Open box** plays that glTF clip forward / backward
 - the photo is the poster while the model downloads; if loading fails the dialog falls back to the photo and hides the pill
 
 Products without a model render exactly as before.
+
+## Studio field (`product.model3d`)
+
+Shared object type [`productModel3d`](../../studio/schemas/productModel3d.ts):
+
+| Field | Purpose |
+| --- | --- |
+| **Model URL** | Optional public GLB URL (Supabase site-assets, S3, or any CDN) |
+| **Animation clip name** | Optional glTF clip (e.g. `Box animation`); empty = static model |
+
+Sanity **Upload is not supported** — `cdn.sanity.io/files` rejects browser CORS from www origins.
+
+Field helper: [`apps/studio/lib/product-model-3d-field.ts`](../../studio/lib/product-model-3d-field.ts). Visible on both Product types (`kind`: standard | inspiration). No inheritance from `basedOn`.
 
 ## How it's built
 
 | Piece | Where |
 | --- | --- |
 | Viewer (props-only, `@google/model-viewer`, imported on mount) | [`components/ui/model-viewer.tsx`](../src/components/ui/model-viewer.tsx) |
-| Slug → model URL (hard-coded PoC map) | [`lib/catalog/product-3d-models.ts`](../src/lib/catalog/product-3d-models.ts) |
-| Toggle + wiring into the dialog | [`solution-product-preview.tsx`](../src/components/solution/solution-product-preview.tsx) (`modelSrc` on the preview product) |
-| Who sets `modelSrc` | [`product-line-hero-media-marquee.tsx`](../src/components/product/product-line-hero-media-marquee.tsx) — `/products/<line>` bottom-bar hero carousel (click → `SolutionProductPreview`) |
+| GROQ | [`packages/sanity/src/queries/product-model-3d.ts`](../../../packages/sanity/src/queries/product-model-3d.ts) → `model3dUrl` / `model3dAnimationName` |
+| www adapter | [`map-sanity.ts`](../src/lib/catalog/map-sanity.ts) → `Product.model3dUrl` |
+| Preview dialogs | `modelSrc` + `modelAnimationName` props only |
 
-The model URL is `${NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/<path>`, so it follows whichever Supabase project the deploy points at. Only **staging** (`gqyq…`) has the `site-assets` bucket and the file today.
-
-## The asset
-
-- Source `box-animation-materials.glb` was 35 MB (4K PNG textures). Optimized with:
-
-  ```bash
-  npx @gltf-transform/cli optimize in.glb box-3d.glb \
-    --compress quantize --texture-compress webp --texture-size 1024 --simplify false
-  ```
-
-  → 3.94 MB, animation intact.
-- **Don't use `--compress meshopt` (or draco).** model-viewer needs an external decoder script for those (`ModelViewerElement.meshoptDecoderLocation`), and without it the load fails with `setMeshoptDecoder must be called before loading compressed files`. Quantize needs no decoder.
-- `Box animation` is authored as a **closing** sequence: frame 0 / rest pose = open (matches the product photo), last frame = closed. Hence the button reads "Close box" first.
-
-## Hosting
-
-Public Supabase Storage bucket `site-assets` (migration `20261002191226_site_assets_public_bucket.sql` in `pakfactory.com-backend`): public read, 10 MB, `model/gltf-binary` only, no `storage.objects` policies (service-role writes only). **Not** the RFQ S3 bucket — that one is private customer uploads behind 5-minute signed URLs.
-
-Upload with an explicit content type (the bucket rejects anything else):
-
-```bash
-curl -X POST "$SUPABASE_URL/storage/v1/object/site-assets/3d/box-3d.glb" \
-  -H "Authorization: Bearer $SERVICE_ROLE_KEY" -H "apikey: $SERVICE_ROLE_KEY" \
-  -H "Content-Type: model/gltf-binary" --data-binary @box-3d.glb
+```text
+product.model3d.url → Product.model3dUrl → preview modelSrc → ModelViewer
 ```
 
-## Known gaps (PoC)
+## Asset guidance
 
-- When closed, the camera keeps the open-box framing, so the box sits low / off-centre.
-- One product only, keyed by slug `test-custom-angled-cuff-ring-boxes`. Graduating = a model field on the product document instead of growing the map, plus a prod bucket + upload.
+Optimize with `gltf-transform` (quantize + WebP textures; keep animation if needed). Target under ~5 MB; public `site-assets` bucket caps at 10 MB and `model/gltf-binary` only.
+
+```bash
+npx @gltf-transform/cli optimize in.glb box-3d.glb \
+  --compress quantize --texture-compress webp --texture-size 1024 --simplify false
+```
+
+**Don't use `--compress meshopt` (or draco).** model-viewer needs an external decoder for those.
+
+Staging example (already uploaded):
+
+`https://gqyqizmycunqxocorfzd.supabase.co/storage/v1/object/public/site-assets/3d/box-3d.glb`
+
+## Human handoff — PoC product
+
+Agents do **not** write Sanity documents. After schema reload, set **3D model** on `test-custom-angled-cuff-ring-boxes`:
+
+1. **Model URL** = `https://gqyqizmycunqxocorfzd.supabase.co/storage/v1/object/public/site-assets/3d/box-3d.glb`
+2. **Animation clip name** = `Box animation`
+
+Clear any legacy `source` / `path` / upload values left from earlier PoC shapes.
+
+## Known gaps
+
+- When closed, the camera may keep open-box framing on the PoC asset.
+- Interactive customize, AR, and retiring this CMS field are out of scope for this bridge.

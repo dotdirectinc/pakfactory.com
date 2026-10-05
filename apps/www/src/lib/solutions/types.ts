@@ -130,6 +130,10 @@ export type SolutionHeroTile = {
     /** Preview dialog payload (CMS product). */
     title?: string;
     detailHref?: string;
+    /** Resolved GLB URL for “View in 3D” in the preview dialog. */
+    modelSrc?: string;
+    /** Optional glTF clip name for Open/Close in the 3D viewer. */
+    modelAnimationName?: string;
     customizations?: SolutionHeroCustomization[];
 };
 

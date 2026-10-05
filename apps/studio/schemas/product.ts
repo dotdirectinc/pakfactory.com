@@ -8,6 +8,7 @@ import { groupsFor, GROUPS } from '../lib/field-groups'
 import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
+import { productModel3dField } from '../lib/product-model-3d-field'
 import { AvailableCustomizationsInput } from '../components/AvailableCustomizationsInput'
 import {
   AVAILABILITY_CATALOG_QUERY,
@@ -215,6 +216,14 @@ export const product = defineType({
       group: GROUPS.content,
       description:
         'Optional hover-play video for catalog / product-line hero tiles. Prefer VP9 WebM with alpha (transparent) or H.264 MP4; YouTube is stored but tiles keep Featured image. Mobile and reduced-motion keep Featured image.',
+    }),
+    // Marketing “View in 3D” bridge (PROD-2777 graduation). Available on both
+    // Product types (standard + inspiration). www uses the public GLB URL as-is;
+    // PakStudio will own assets + customize later.
+    productModel3dField({
+      group: GROUPS.content,
+      description:
+        'Optional GLB for “View in 3D” in product preview modals (standard and inspiration). Paste a public URL (Supabase site-assets, S3, or CDN). Optimize under ~5 MB (quantize + WebP; no meshopt/draco). Interactive customize and long-term asset ownership move to PakStudio — this field is for marketing preview until then.',
     }),
     defineField({
       name: 'media',

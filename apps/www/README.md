@@ -98,7 +98,7 @@ Detail for products wiring: [`docs/products-catalog.md`](./docs/products-catalog
 | [`docs/products-catalog.md`](./docs/products-catalog.md) | Products library how-built (fetch → map → client filter; disjunctive facet counts) |
 | [`docs/customizations-catalog.md`](./docs/customizations-catalog.md) | Customizations library how-built (fetch → map → client filter; disjunctive facet counts) + **card media business rules** (Featured image / video / Media hover) |
 | [`docs/customization-filter-taxonomy.md`](./docs/customization-filter-taxonomy.md) | Filter facet operators, product-line vocabulary, and except-self count rule |
-| [`docs/product-3d-preview.md`](./docs/product-3d-preview.md) | "View in 3D" product-preview PoC — viewer, GLB optimization, `site-assets` hosting |
+| [`docs/product-3d-preview.md`](./docs/product-3d-preview.md) | "View in 3D" product preview — CMS `model3d` bridge, viewer, PakStudio north star |
 | [`docs/auth-emails/README.md`](./docs/auth-emails/README.md) | Supabase auth email templates |
 | [`DESIGN.md`](../../DESIGN.md) | Design system / tokens |
 | [`ENGINEERING.md`](../../ENGINEERING.md) | RSC, state, placement practice |

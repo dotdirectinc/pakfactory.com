@@ -81,6 +81,10 @@ export type ProductLineHeroMediaCard = {
     alt: string;
     /** Hover-play MP4 on the featured card when set. */
     videoUrl?: string;
+    /** Resolved GLB URL for “View in 3D” in the preview dialog. */
+    modelSrc?: string;
+    /** Optional glTF clip name for Open/Close in the 3D viewer. */
+    modelAnimationName?: string;
     /** 0-based index within the unique set — L→R settle stagger. */
     settleIndex: number;
     /** Preview dialog — set when card is backed by a catalog product. */
@@ -202,6 +206,8 @@ export function assembleHeroMediaCards(input: {
             ? media.alt?.trim() || product.title
             : product.title || 'Product image placeholder';
         const productVideo = product.featuredVideoUrl?.trim() || '';
+        const modelSrc = product.model3dUrl?.trim() || '';
+        const modelAnimationName = product.model3dAnimationName?.trim() || '';
         const description = product.description?.trim() || '';
         // Match PDP Specs exclusions (buildProductSpecRows) — plain label/value list.
         const excludedSpecLabels = new Set([
@@ -235,6 +241,8 @@ export function assembleHeroMediaCards(input: {
             ...(description ? {description} : {}),
             ...(properties.length > 0 ? {properties} : {}),
             ...(productVideo ? {videoUrl: productVideo} : {}),
+            ...(modelSrc ? {modelSrc} : {}),
+            ...(modelAnimationName ? {modelAnimationName} : {}),
         });
     };
 
