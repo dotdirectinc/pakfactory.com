@@ -414,7 +414,14 @@ export const product = defineType({
       description: 'Curated override. Empty falls back to a derived list.',
       of: [{ type: 'reference', to: [{ type: 'product' }] }],
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Curated FAQs for this product — reference shared FAQ documents. Leave empty to inherit: a standard product shows its first style’s FAQs, else its line’s; an inspiration product shows its first solution’s. Anything here replaces the inherited list entirely — nothing merges.',
+    }),
 
     // ─── SPECS (source-owned facts — editable for now, decision b) ────────────
     defineField({

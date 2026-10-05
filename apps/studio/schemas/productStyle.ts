@@ -202,7 +202,14 @@ export const productStyle = defineType({
       description: 'Curated override. Empty falls back to the line’s studies.',
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Curated FAQs for this style — reference shared FAQ documents. Shown on the style page and on standard products whose first style this is and that have none of their own. Leave empty to use the line’s. Anything here replaces the line’s list entirely.',
+    }),
     defineField({
       name: 'productOrder',
       title: 'Product order',

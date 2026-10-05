@@ -418,7 +418,14 @@ export const productLine = defineType({
       ],
       validation: (Rule) => Rule.unique(),
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Curated FAQs for this line — reference shared FAQ documents. Shown on the line page, and on its styles and standard products that have no FAQs of their own.',
+    }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
     defineField({
