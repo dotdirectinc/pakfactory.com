@@ -1,7 +1,6 @@
 import 'server-only';
 
 import {cache} from 'react';
-import {unstable_cache} from 'next/cache';
 import {
     CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
     CATALOG_CUSTOMIZATION_DETAIL_QUERY,
@@ -83,6 +82,7 @@ import {
     WWW_SOLUTIONS_CACHE_TAG,
     wwwProductTag,
 } from '@/lib/www-cache';
+import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -98,10 +98,7 @@ async function fetchSanityProducts(): Promise<Product[]> {
             .map(mapSanityProduct)
             .filter((item): item is Product => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity products fetch failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[catalog] Sanity products fetch failed:', err);
     }
 }
 
@@ -118,10 +115,7 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
                 (line) => line.products.length > 0 || line.styles.length > 0,
             );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product lines fetch failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[catalog] Sanity product lines fetch failed:', err);
     }
 }
 
@@ -141,10 +135,7 @@ async function fetchSanityLineBySlug(slug: string): Promise<ProductLine | null> 
         }
         return line;
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product line by slug failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[catalog] Sanity product line by slug failed:', err);
     }
 }
 
@@ -157,10 +148,7 @@ async function fetchSanityLineExists(slug: string): Promise<boolean> {
         );
         return Boolean(id);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product line exists failed:', err);
-        }
-        return false;
+        throw sanityReadFailed('[catalog] Sanity product line exists failed:', err);
     }
 }
 
@@ -175,14 +163,11 @@ async function fetchCustomizationRules(): Promise<CatalogCustomizationRulesDoc |
             CATALOG_CUSTOMIZATION_RULES_QUERY,
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity customization rules fetch failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[catalog] Sanity customization rules fetch failed:', err);
     }
 }
 
-const getCachedCustomizationRules = unstable_cache(
+const getCachedCustomizationRules = sanityCache(
     fetchCustomizationRules,
     [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}:rules`],
     {
@@ -269,10 +254,7 @@ async function fetchSanityProduct(slug: string): Promise<Product | null> {
         // is resolved in ProductDetailView for productsRow inherit (PROD-2763).
         return resolveProductOffer(product, doc);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product by slug failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[catalog] Sanity product by slug failed:', err);
     }
 }
 
@@ -304,10 +286,7 @@ async function fetchSanityCustomizationLibrary(): Promise<
             .filter((item): item is CustomizationLibraryItem => item != null);
         return buildCustomizationLibraryResult(items);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity customization library failed:', err);
-        }
-        return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
+        throw sanityReadFailed('[catalog] Sanity customization library failed:', err);
     }
 }
 
@@ -346,14 +325,11 @@ async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
             valueTitles,
         });
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product library failed:', err);
-        }
-        return EMPTY_PRODUCT_LIBRARY;
+        throw sanityReadFailed('[catalog] Sanity product library failed:', err);
     }
 }
 
-const getCachedProducts = unstable_cache(
+const getCachedProducts = sanityCache(
     fetchSanityProducts,
     // v2: card projection includes breadcrumbParent for Related Products (PROD-2780).
     [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}:v2-breadcrumb`],
@@ -363,7 +339,7 @@ const getCachedProducts = unstable_cache(
     },
 );
 
-const getCachedLines = unstable_cache(
+const getCachedLines = sanityCache(
     fetchSanityLines,
     [WWW_CATALOG_LINES_CACHE_TAG],
     {
@@ -372,7 +348,7 @@ const getCachedLines = unstable_cache(
     },
 );
 
-const getCachedCustomizationLibrary = unstable_cache(
+const getCachedCustomizationLibrary = sanityCache(
     fetchSanityCustomizationLibrary,
     [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
     {
@@ -381,7 +357,7 @@ const getCachedCustomizationLibrary = unstable_cache(
     },
 );
 
-const getCachedProductLibrary = unstable_cache(
+const getCachedProductLibrary = sanityCache(
     fetchSanityProductLibrary,
     [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-library`],
     {
@@ -392,7 +368,7 @@ const getCachedProductLibrary = unstable_cache(
 
 function getCachedProductBySlug(slug: string) {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return sanityCache(
         () => fetchSanityProduct(key),
         [wwwProductTag(key)],
         {
@@ -404,7 +380,7 @@ function getCachedProductBySlug(slug: string) {
 
 function getCachedLineBySlug(slug: string) {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return sanityCache(
         () => fetchSanityLineBySlug(key),
         [`www-product-line:${key}`],
         {
@@ -416,7 +392,7 @@ function getCachedLineBySlug(slug: string) {
 
 function getCachedLineExists(slug: string) {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return sanityCache(
         () => fetchSanityLineExists(key),
         [`www-product-line-exists:${key}`],
         {
@@ -480,12 +456,12 @@ async function fetchProductCatalogPage(): Promise<CatalogIndexPageDoc | null> {
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
             PRODUCT_CATALOG_PAGE_QUERY,
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchProductCatalogPage failed:', err);
     }
 }
 
-const getCachedProductCatalogPage = unstable_cache(
+const getCachedProductCatalogPage = sanityCache(
     fetchProductCatalogPage,
     [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-page`],
     {
@@ -509,8 +485,8 @@ async function fetchProductStylePage(
             PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
             {lineSlug, styleSlug},
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchProductStylePage failed:', err);
     }
 }
 
@@ -522,7 +498,7 @@ export async function getProductStylePage(
     const lineKey = normalizeSlug(lineSlug);
     const styleKey = normalizeSlug(styleSlug);
     const fetchUncached = () => fetchProductStylePage(lineKey, styleKey);
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-style-page`, lineKey, styleKey],
         {
@@ -539,12 +515,12 @@ async function fetchCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | nu
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
             CUSTOMIZATION_CATALOG_PAGE_QUERY,
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchCustomizationCatalogPage failed:', err);
     }
 }
 
-const getCachedCustomizationCatalogPage = unstable_cache(
+const getCachedCustomizationCatalogPage = sanityCache(
     fetchCustomizationCatalogPage,
     [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-page`],
     {
@@ -571,8 +547,8 @@ async function fetchCustomizationDetailPage(
             CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
             {category, handle},
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchCustomizationDetailPage failed:', err);
     }
 }
 
@@ -585,7 +561,7 @@ export async function getCustomizationDetailPage(
     const handleKey = normalizeSlug(handle);
     const fetchUncached = () =>
         fetchCustomizationDetailPage(categoryKey, handleKey);
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [
             `${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`,
@@ -610,8 +586,8 @@ async function fetchSolutionStylePage(
             SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
             {solutionSlug, styleSlug},
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchSolutionStylePage failed:', err);
     }
 }
 
@@ -623,7 +599,7 @@ export async function getSolutionStylePage(
     const solutionKey = normalizeSlug(solutionSlug);
     const styleKey = normalizeSlug(styleSlug);
     const fetchUncached = () => fetchSolutionStylePage(solutionKey, styleKey);
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`${WWW_SOLUTIONS_CACHE_TAG}-style-page`, solutionKey, styleKey],
         {
@@ -665,17 +641,11 @@ export async function getCustomizationCategory(
             });
             return doc ? mapSanityLibraryOption(doc) : null;
         } catch (err) {
-            if (process.env.NODE_ENV === 'development') {
-                console.error(
-                    '[catalog] Sanity customization by handle failed:',
-                    err,
-                );
-            }
-            return null;
+            throw sanityReadFailed('[catalog] Sanity customization by handle failed:', err);
         }
     };
 
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`www-customization:${categoryKey}:${handleKey}`],
         {
@@ -719,17 +689,11 @@ export const getCustomizationDetail = cache(
                         );
                     return {detail: mapped, peers};
                 } catch (err) {
-                    if (process.env.NODE_ENV === 'development') {
-                        console.error(
-                            '[catalog] Sanity customization detail failed:',
-                            err,
-                        );
-                    }
-                    return null;
+                    throw sanityReadFailed('[catalog] Sanity customization detail failed:', err);
                 }
             };
 
-        const getCached = unstable_cache(
+        const getCached = sanityCache(
             fetchUncached,
             [`www-customization-detail:${categoryKey}:${handleKey}`],
             {
@@ -758,17 +722,11 @@ export async function getCustomizationOption(
             >(CATALOG_OPTION_BY_ID_QUERY, {id});
             return doc ? mapSanityCustomizationDetail(doc) : null;
         } catch (err) {
-            if (process.env.NODE_ENV === 'development') {
-                console.error(
-                    '[catalog] Sanity customization option by id failed:',
-                    err,
-                );
-            }
-            return null;
+            throw sanityReadFailed('[catalog] Sanity customization option by id failed:', err);
         }
     };
 
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`www-customization-option:${id}`],
         {

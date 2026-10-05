@@ -1,7 +1,6 @@
 import 'server-only';
 
 import {cache} from 'react';
-import {unstable_cache} from 'next/cache';
 import {
     CATALOG_PRODUCT_LIBRARY_FIELDS,
     SOLUTION_BY_SLUG_QUERY,
@@ -77,6 +76,7 @@ import {
     WWW_SOLUTIONS_CACHE_TAG,
     wwwSolutionTag,
 } from '@/lib/www-cache';
+import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -95,13 +95,7 @@ async function fetchTaggedProducts(
             .filter((item): item is Product => item != null)
             .filter(isCompleteProduct);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity tagged products failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity tagged products failed:', err);
     }
 }
 
@@ -122,13 +116,7 @@ async function fetchHeroTaggedProducts(
             .filter((item): item is Product => item != null)
             .filter(isCompleteProduct);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity hero tagged products failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity hero tagged products failed:', err);
     }
 }
 
@@ -208,10 +196,7 @@ async function fetchSolutionBySlug(
             heroProducts,
         };
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[solutions] Sanity solution by slug failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[solutions] Sanity solution by slug failed:', err);
     }
 }
 
@@ -228,13 +213,7 @@ async function fetchSolutionLineProducts(
             .map(mapSanityProduct)
             .filter((item): item is Product => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity solution line products failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity solution line products failed:', err);
     }
 }
 
@@ -247,10 +226,7 @@ async function fetchSolutionPageSlugs(): Promise<SolutionPageSlugDoc[]> {
             )) ?? []
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[solutions] Sanity page slugs failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity page slugs failed:', err);
     }
 }
 
@@ -264,10 +240,7 @@ async function fetchSolutionsWithPages(): Promise<SolutionCard[]> {
             .map(mapSanitySolutionCard)
             .filter((item): item is SolutionCard => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[solutions] Sanity solutions with pages failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity solutions with pages failed:', err);
     }
 }
 
@@ -284,7 +257,7 @@ async function getSolutionBySlugResult(
     const key = normalizeSlug(slug);
     return readThrough(
         () => fetchSolutionBySlug(key),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionBySlug(key),
             [wwwSolutionTag(key), 'v9-hero-featured-image'],
             {
@@ -333,7 +306,7 @@ export async function getSolutionLineCatalog(
 
     const products = await readThrough(
         () => fetchSolutionLineProducts(solutionKey, lineKey),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionLineProducts(solutionKey, lineKey),
             [`${wwwSolutionTag(solutionKey)}:line:${lineKey}`],
             {
@@ -368,13 +341,7 @@ async function fetchSolutionStylesForSolution(
             .map(mapSanitySolutionStyleCard)
             .filter((item): item is SolutionStyleCard => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity styles for solution failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity styles for solution failed:', err);
     }
 }
 
@@ -391,13 +358,7 @@ async function fetchSolutionStylePageParams(): Promise<
             )) ?? []
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity style page params failed:',
-                err,
-            );
-        }
-        return [];
+        throw sanityReadFailed('[solutions] Sanity style page params failed:', err);
     }
 }
 
@@ -442,13 +403,7 @@ async function fetchStyleProductLibrary(
             valueTitles,
         });
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity style product library failed:',
-                err,
-            );
-        }
-        return emptyProductLibrary();
+        throw sanityReadFailed('[solutions] Sanity style product library failed:', err);
     }
 }
 
@@ -490,13 +445,7 @@ async function fetchSolutionStyleCatalog(
             ...(pageSections.length > 0 ? {pageSections} : {}),
         };
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error(
-                '[solutions] Sanity style catalog failed:',
-                err,
-            );
-        }
-        return null;
+        throw sanityReadFailed('[solutions] Sanity style catalog failed:', err);
     }
 }
 
@@ -509,7 +458,7 @@ export async function getSolutionStyleCatalog(
 
     return readThrough(
         () => fetchSolutionStyleCatalog(solutionKey, styleKey),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionStyleCatalog(solutionKey, styleKey),
             [`${wwwSolutionTag(solutionKey)}:style:${styleKey}`],
             {
@@ -526,7 +475,7 @@ export async function listSolutionStylesForSolution(
     const key = normalizeSlug(solutionSlug);
     return readThrough(
         () => fetchSolutionStylesForSolution(key),
-        unstable_cache(
+        sanityCache(
             () => fetchSolutionStylesForSolution(key),
             [`${wwwSolutionTag(key)}:styles`],
             {
@@ -540,7 +489,7 @@ export async function listSolutionStylesForSolution(
 export async function listSolutionsWithPages(): Promise<SolutionCard[]> {
     return readThrough(
         fetchSolutionsWithPages,
-        unstable_cache(
+        sanityCache(
             fetchSolutionsWithPages,
             [WWW_SOLUTIONS_CACHE_TAG, 'with-pages'],
             {
@@ -556,7 +505,7 @@ export async function listSolutionPageSlugs(): Promise<
 > {
     const docs = await readThrough(
         fetchSolutionPageSlugs,
-        unstable_cache(
+        sanityCache(
             fetchSolutionPageSlugs,
             [WWW_SOLUTIONS_CACHE_TAG, 'page-slugs'],
             {
@@ -585,7 +534,7 @@ export async function listSolutionStylePageParams(): Promise<
 > {
     const docs = await readThrough(
         fetchSolutionStylePageParams,
-        unstable_cache(
+        sanityCache(
             fetchSolutionStylePageParams,
             [WWW_SOLUTIONS_CACHE_TAG, 'style-page-params'],
             {
