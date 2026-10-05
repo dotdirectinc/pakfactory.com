@@ -11,7 +11,6 @@ const product = {
     slug: 'cookie-box',
     kind: 'inspiration',
     status: 'active',
-    customerFacing: true,
     productLine: {_id: 'line.box', title: 'Boxes', slug: 'boxes'},
     productStyle: {_id: 'style.tuck', title: 'Tuck', slug: 'tuck'},
     productLineId: 'line.box',

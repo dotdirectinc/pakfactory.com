@@ -1,6 +1,8 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
+import { ON_OFF_STATUS_LIST } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 
 /** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
  *  reference reads as a requirement of one, which is what it meant. */
@@ -71,6 +73,33 @@ export const customizationType = defineType({
       options: { source: 'title' },
       description: 'URL-safe identifier, generated from the title. Nothing links to it, so changing it is safe.',
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: 'content',
+      description:
+        'Is this type offered? Not active removes it from the customization library and ' +
+        'takes its Options out of the configurator. Use it instead of deleting the document, ' +
+        'so the compatibility rules that name those options keep working.',
+      options: { list: ON_OFF_STATUS_LIST, layout: 'radio' },
+      // Starts ON — structure, not a page to earn. See customizationCategory.
+      initialValue: 'active',
+      // Before PROD-2845 this type had NO off switch at all.
+      validation: (Rule) =>
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "customizationOption" &&
+              type._ref == $id &&
+              status == "active"
+            ]{ title }`,
+            describe: (names) =>
+              `This also takes every Option beneath it out of the configurator and the library, ` +
+              `including ${names}.`,
+          }),
+        ).warning(),
     }),
     defineField({
       name: 'category',

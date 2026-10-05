@@ -61,8 +61,14 @@ export const ALGOLIA_CONTENT_BACKFILL_PROJECTION = /* groq */ `{
   role
 }`;
 
+/**
+ * Indexed products are the ones with a PAGE, which is wider than the ones that are
+ * listed: a coming-soon product and a discontinued one both keep a URL worth finding.
+ * Mirrors HAS_PAGE_STATUS (packages/sanity/src/queries/catalog.ts) — a whitelist, so
+ * `not-active` and `active-internal` fall out without being named (PROD-2845).
+ */
 export const CONTENT_PRODUCTS_FILTER =
-  '_type == "product" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false && customerFacing != false';
+  '_type == "product" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false && (!defined(status) || status in ["active", "coming-soon", "discontinued"])';
 
 export const CONTENT_CUSTOMIZATIONS_FILTER =
   '_type == "customizationOption" && defined(slug.current) && !(_id in path("drafts.**")) && allowIndex != false && role != "configurable" && defined(type->category->slug.current)';

@@ -8,6 +8,12 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
+import {
+  STATUS_TITLES,
+  TAXONOMY_STATUS_LIST,
+  hasSolutionPage,
+} from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 /**
@@ -15,7 +21,12 @@ import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-li
  * channels, focus areas and use cases (Entities/Solution.md). Same template,
  * same fields; only the grouping label differs. Terms and pages are two lists —
  * a term exists so clients, case studies and products can be tagged; a page is
- * what a term has earned (`hasPage`, authored, never derived).
+ * what a term has earned, authored and never derived.
+ *
+ * PROD-2845 replaced `hasPage` with `status` (Active / Coming soon / Not active),
+ * the one vocabulary every catalog type now uses. The earning rule is unchanged —
+ * `status` starts at Not active — but a term that is not launched can now also say
+ * it is COMING, which a boolean could not express.
  *
  * Both renames from §4.3 are COMPLETE (2026-09-01, Eric's removal plan):
  *   internalTitle → title — `migrate:solution-titles` copied all 30 values and
@@ -123,13 +134,37 @@ export const solution = defineType({
       validation: (Rule) => Rule.required().custom(uniqueSlugAcross(['solution'])),
     }),
     defineField({
-      name: 'hasPage',
-      title: 'Has a page',
-      type: 'boolean',
+      name: 'status',
+      title: 'Status',
+      type: 'string',
       group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing — and its Solution Styles go too. Off by default: a solution can exist for tagging without earning a page. An editorial judgement — business focus, profitability, demand, search value.',
-      initialValue: false,
+        'Is this solution offered, and how? Active = a page, a nav entry and a filter. ' +
+        'Coming soon = a nav entry that does not link anywhere, for building anticipation. ' +
+        'Not active = nothing anywhere, and its Solution Styles go too. ' +
+        'An editorial judgement — business focus, profitability, demand, search value.',
+      options: { list: TAXONOMY_STATUS_LIST, layout: 'radio' },
+      // Starts OFF, which is what `hasPage: false` meant before this field replaced
+      // it (PROD-2845): a solution exists to be tagged against, and a page is what a
+      // term EARNS. Creating one should never publish an empty landing page.
+      //
+      // There is no Discontinued, deliberately. Telling a customer we no longer
+      // serve an industry is a worse message than silence — the same argument that
+      // took coming-soon and discontinued off Customization Option in PROD-2733.
+      initialValue: 'not-active',
+      validation: (Rule) =>
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "solutionStyle" &&
+              solution._ref == $id &&
+              (!defined(status) || status == "active")
+            ]{ title }`,
+            describe: (names) =>
+              `This also hides every Solution Style beneath it, including ${names}. ` +
+              `Products tagged to this solution keep their own pages — they only lose this chip.`,
+          }),
+        ).warning(),
     }),
     // Renamed from `subheadline` (PROD-2454), matching Line, Style, Product
     // and the existing `blogCategory` pair. (`page.subheadline` is a different
@@ -195,13 +230,15 @@ export const solution = defineType({
         'Pick a Solution Industry Page layout version — section order and default headings. ' +
         'Manage layouts under Main Website → Solution Pages → Solution Industry Pages. ' +
         'Band content stays on the Sections tab, matched by key.',
-      hidden: ({document}) => document?.hasPage !== true,
+      // A solution has a page only when Active — Coming soon is a nav signpost, and
+      // there is no Discontinued state keeping a URL alive for search.
+      hidden: ({document}) => !hasSolutionPage(document?.status),
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
           const doc = ctx.document as
-            | {hasPage?: boolean; solutionType?: string}
+            | {status?: string; solutionType?: string}
             | undefined
-          if (!doc?.hasPage || doc.solutionType !== 'industry') return true
+          if (!hasSolutionPage(doc?.status) || doc?.solutionType !== 'industry') return true
           return value
             ? true
             : 'Industry solutions with a landing page must select a Solution Industry Page layout'
@@ -378,14 +415,17 @@ export const solution = defineType({
     select: {
       title: 'title',
       solutionType: 'solutionType',
-      hasPage: 'hasPage',
+      status: 'status',
       media: 'featuredImage',
     },
-    prepare({ title, solutionType, hasPage, media }) {
+    prepare({ title, solutionType, status, media }) {
       const axis = SOLUTION_TYPE_TITLES[solutionType] ?? 'No type set'
+      // Status in the subtitle so a hidden solution is obvious in a list without
+      // opening it — the lists are where an editor decides what to work on.
+      const state = STATUS_TITLES[status as keyof typeof STATUS_TITLES] ?? 'No status set'
       return {
         title: title || 'Untitled solution',
-        subtitle: [axis, hasPage ? 'Has page' : 'Term only'].join(' · '),
+        subtitle: [axis, state].join(' · '),
         media,
       }
     },

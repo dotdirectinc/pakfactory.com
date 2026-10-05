@@ -165,7 +165,6 @@ const CATALOG_ROW_ITEM = /* groq */ `{
   _id,
   _type,
   status,
-  customerFacing,
   hasPage,
   "title": coalesce(shortName, title),
   "slug": slug.current,
@@ -237,7 +236,6 @@ const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
     "kind": _type,
     "docType": _type,
     status,
-    customerFacing,
     hasPage,
     "slug": slug.current,
     _type == "caseStudy" => ${HERO_CASE_STUDY},
@@ -257,7 +255,6 @@ const HERO_FINDER_LINE = /* groq */ `{
   _id,
   _type,
   status,
-  customerFacing,
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
@@ -265,7 +262,10 @@ const HERO_FINDER_LINE = /* groq */ `{
   "imageAlt": coalesce(featuredImage.alt, featuredImage.asset->altText, title),
   "videoSrc": ${FEATURED_VIDEO_URL_GROQ},
   "studies": *[_type == "caseStudy" && references(^._id)] | order(publishedAt desc)[0...4]${HERO_CASE_STUDY},
-  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status == "active") && customerFacing != false] | order(title asc)[0...3]{
+  // Inlined, not imported: catalog.ts already imports PAGE_SECTIONS_PROJECTION from
+  // this file, and importing back the other way is a cycle that breaks module init.
+  // Mirrors LINE_STYLE_LISTED (./catalog) — active-internal stays listed (PROD-2845).
+  "styles": *[_type == "productStyle" && references(^._id) && (!defined(status) || status in ["active", "active-internal"])] | order(title asc)[0...3]{
     _id,
     "title": coalesce(shortName, title),
     "slug": slug.current,
@@ -321,7 +321,6 @@ const HERO_FINDER_RAIL_ITEM = /* groq */ `{
   "statBody": highlights[0].description,
   "lineIds": products[]._ref,
   status,
-  customerFacing,
   hasPage
 }`;
 
@@ -850,7 +849,6 @@ export type PageSectionCatalogRowItemDoc = {
     _id?: string | null;
     _type?: string | null;
     status?: string | null;
-    customerFacing?: boolean | null;
     hasPage?: boolean | null;
     title?: string | null;
     slug?: string | null;
@@ -943,7 +941,6 @@ export type PageSectionHeroSpotlightSlideDoc = PageSectionHeroCaseStudyDoc & {
         | null;
     docType?: string | null;
     status?: string | null;
-    customerFacing?: boolean | null;
     hasPage?: boolean | null;
     description?: string | null;
     lineSlug?: string | null;
@@ -961,7 +958,6 @@ export type PageSectionHeroFinderLineDoc = {
     _id?: string | null;
     _type?: string | null;
     status?: string | null;
-    customerFacing?: boolean | null;
     title?: string | null;
     slug?: string | null;
     description?: string | null;
@@ -1012,7 +1008,6 @@ export type PageSectionHeroFinderRailItemDoc = {
     statBody?: string | null;
     lineIds?: string[] | null;
     status?: string | null;
-    customerFacing?: boolean | null;
     hasPage?: boolean | null;
 };
 

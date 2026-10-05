@@ -1,4 +1,4 @@
-import {LINE_STYLE_VISIBLE} from './catalog';
+import {LINE_STYLE_LISTED} from './catalog';
 
 /**
  * Case Studies GROQ — field names mirror the `caseStudy` schema (PROD-1893).
@@ -213,7 +213,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
   "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(h1, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   // Only lines that have a page (PROD-2620): hidden or discontinued lines are not filter options.
-  "products": *[_type == "productLine" && ${LINE_STYLE_VISIBLE}] | order(title asc) ${TAXONOMY_ITEM},
+  "products": *[_type == "productLine" && ${LINE_STYLE_LISTED}] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
 }`;
 

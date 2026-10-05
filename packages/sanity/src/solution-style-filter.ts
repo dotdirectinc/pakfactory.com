@@ -33,6 +33,7 @@
  */
 
 import {KIND_INSPIRATION} from './product-kind';
+import { isListedCatalogStatus } from './catalog-visibility'
 
 /** The filter object as authored on a `solutionStyle` document. */
 export type SolutionStyleFilter = {
@@ -132,9 +133,9 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
     '_type == "product"',
     KIND_INSPIRATION,
     '$solutionId in solutions[]._ref',
-    // Hidden in Notion → customerFacing false → no listing anywhere, collections included.
-    'customerFacing != false',
-    // Listed: active and coming soon (badged); a discontinued product keeps its page, off lists.
+    // Listed: active and coming soon (badged). A discontinued product keeps its page but
+    // leaves the lists, and not-active / active-internal are off the site entirely —
+    // all three fall out of this whitelist without being named (PROD-2845).
     '(!defined(status) || status in ["active", "coming-soon"])',
     `(${any.join(' || ')})`,
     '!(_id in $excludedIds)',
@@ -169,7 +170,6 @@ export type SolutionStyleMatchProduct = {
   solutionIds: string[]
   lineId: string | null
   styleIds: string[]
-  customerFacing?: boolean | null
   status?: string | null
 }
 
@@ -206,14 +206,8 @@ export function productMatchesSolutionStyleFilter(
   if (!hasAnyCondition(params)) return false
   if (product.kind !== 'inspiration') return false
   if (!product.solutionIds.includes(params.solutionId)) return false
-  if (product.customerFacing === false) return false
-  if (
-    product.status != null &&
-    product.status !== 'active' &&
-    product.status !== 'coming-soon'
-  ) {
-    return false
-  }
+  // The shared mirror, not a local re-statement of the same matrix.
+  if (!isListedCatalogStatus(product.status)) return false
   if (params.excludedIds.includes(product.id)) return false
 
   const lineMatch =

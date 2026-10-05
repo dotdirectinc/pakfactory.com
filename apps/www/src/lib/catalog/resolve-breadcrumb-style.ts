@@ -28,7 +28,6 @@ export function pickBreadcrumbSolutionStyle(
         styleIds: (doc.productStyleIds ?? []).filter(
             (id): id is string => Boolean(id),
         ),
-        customerFacing: doc.customerFacing,
         status: doc.status ?? null,
     };
 

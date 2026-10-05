@@ -229,8 +229,8 @@ export const websiteLocations: DocumentLocationResolvers = {
 //     /customizations                listing
 //     /customizations/{cat}          customizationCategory
 //     /customizations/{cat}/{handle} customizationOption, gated
-//     /solutions/{slug}              solution, gated by hasPage
-//     /solutions/{slug}/{styleSlug}  solutionStyle, gated by parent hasPage
+//     /solutions/{slug}              solution, gated by status == "active"
+//     /solutions/{slug}/{styleSlug}  solutionStyle, gated by the parent's status
 //     /case-studies[/{slug}]         caseStudy
 //
 // This branch's `apps/www` does **not** contain those routes (it still has
@@ -424,11 +424,11 @@ export const siteLocations: DocumentLocationResolvers = {
   }),
 
   solution: defineLocations({
-    select: { title: 'title', slug: 'slug.current', hasPage: 'hasPage' },
+    select: { title: 'title', slug: 'slug.current', status: 'status' },
     resolve: (doc) => {
-      if (!doc?.hasPage) {
+      if (doc?.status !== 'active') {
         return notOnSite(
-          'This solution has no page — turn on "Has page" to publish one.',
+          'This solution has no page — set Status to Active to publish one.',
         )
       }
       return doc.slug
@@ -441,7 +441,7 @@ export const siteLocations: DocumentLocationResolvers = {
     },
   }),
   // Solution Style catalogue at `/solutions/{solution}/{style}` (PROD-2520 FE).
-  // Parent `hasPage` is enforced on the site; Presentation still shows the URL
+  // The parent's Active status is enforced on the site; Presentation still shows the URL
   // so editors can open the intended path while drafting.
   solutionStyle: defineLocations({
     select: {

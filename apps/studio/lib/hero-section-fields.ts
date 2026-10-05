@@ -222,7 +222,9 @@ export function heroFinderGeneralRailFields() {
       description:
         'Up to 3 product lines for Packaging Solution × All. Shown first in the media rail.',
       to: [{type: 'productLine'}],
-      filter: '(!defined(status) || status == "active") && customerFacing != false',
+      // Mirrors LINE_STYLE_ACTIVE (packages/sanity/src/queries/catalog.ts) — a hero slide
+      // is a LINK, so the target needs a page as well as a listing.
+      filter: '(!defined(status) || status == "active")',
     }),
     heroFinderGeneralBucketField({
       name: 'generalIndustries',
@@ -230,7 +232,8 @@ export function heroFinderGeneralRailFields() {
       kindLabel: 'Industry',
       description: 'Up to 3 industries (solutions with a page) for the default rail.',
       to: [{type: 'solution'}],
-      filter: 'hasPage == true',
+      // Mirrors SOLUTION_ACTIVE — Active only, and no unset arm (PROD-2845).
+      filter: 'status == "active"',
     }),
     heroFinderGeneralBucketField({
       name: 'generalCustomizations',

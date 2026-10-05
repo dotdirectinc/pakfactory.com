@@ -236,7 +236,6 @@ function isVisible(slide: PageSectionHeroSpotlightSlideDoc): boolean {
     return isCatalogTargetVisible({
         _type: clean(slide.docType),
         status: clean(slide.status) ?? null,
-        customerFacing: slide.customerFacing,
         hasPage: slide.hasPage,
     });
 }
@@ -396,7 +395,6 @@ export function mapHeroFinder(
             !isCatalogTargetVisible({
                 _type: 'productLine',
                 status: clean(line.status) ?? null,
-                customerFacing: line.customerFacing,
             })
         ) {
             continue;
@@ -526,7 +524,6 @@ function mapGeneralEntry(
         !isCatalogTargetVisible({
             _type: clean(item._type),
             status: clean(item.status) ?? null,
-            customerFacing: item.customerFacing,
             hasPage: item.hasPage,
         })
     ) {

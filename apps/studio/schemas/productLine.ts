@@ -9,6 +9,12 @@ import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { entityFields } from '../lib/entity-id-field'
+import {
+  FULL_STATUS_LIST,
+  STATUS_DESCRIPTION_TAIL,
+  hasLineStylePage,
+} from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 /**
@@ -188,25 +194,28 @@ export const productLine = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — Active, Coming soon or Discontinued.',
-      options: {
-        list: [
-          { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'active',
-    }),
-    defineField({
-      name: 'customerFacing',
-      title: 'Customer facing',
-      type: 'boolean',
-      group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing, no nav link; the document exists only to be referenced. On by default. Not the same as Status — this one decides whether a page exists at all.',
-      initialValue: true,
+        'Is this line offered, and how? Coming soon keeps a nav entry but no page. ' +
+        'Discontinued keeps the page for search and drops the listing. ' +
+        STATUS_DESCRIPTION_TAIL,
+      options: { list: FULL_STATUS_LIST, layout: 'radio' },
+      initialValue: 'active',
+      validation: (Rule) =>
+        Rule.custom(
+          restrictingChildrenWarning({
+            // Styles under this line that would go dark with it. Products are not
+            // queried: a product's reachability runs through its style, so naming
+            // the styles names the branch without listing hundreds of leaves.
+            query: `*[
+              _type == "productStyle" &&
+              productLine._ref == $id &&
+              (!defined(status) || status in ["active", "active-internal"])
+            ]{ title }`,
+            describe: (names) =>
+              `This status also hides every style beneath this line, including ${names}. ` +
+              `Use Active (Internal) instead to hide the line but keep its styles and products reachable.`,
+          }),
+        ).warning(),
     }),
 
     // ─── TEMPLATE (layout version) ────────────────────────────────────────────
@@ -221,14 +230,16 @@ export const productLine = defineType({
         'Pick a Product Line Page layout version — hero shell plus section order and ' +
         'default headings. Manage layouts under Main Website → Product Pages → ' +
         'Product Line Pages. Band content stays on the Sections tab, matched by key.',
-      hidden: ({document}) => document?.customerFacing !== true,
+      // A line needs a layout exactly when it has a page — Active, or Discontinued
+      // keeping its URL alive for search. The other three states have no page to lay out.
+      hidden: ({document}) => !hasLineStylePage(document?.status),
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
-          const doc = ctx.document as {customerFacing?: boolean} | undefined
-          if (doc?.customerFacing !== true) return true
+          const doc = ctx.document as {status?: string} | undefined
+          if (!hasLineStylePage(doc?.status)) return true
           return value
             ? true
-            : 'Customer-facing product lines must select a Product Line Page layout'
+            : 'A product line with a page must select a Product Line Page layout'
         }),
     }),
 

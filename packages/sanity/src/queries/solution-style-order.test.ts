@@ -23,7 +23,7 @@ const solution = (extra: Record<string, unknown> = {}) => ({
   _type: "solution",
   title: "Beauty & Cosmetics",
   slug: { current: "beauty" },
-  hasPage: true,
+  status: "active",
   solutionType: "industry",
   ...extra,
 });
@@ -113,10 +113,12 @@ test("a solution with no styles returns an empty band, not a throw", async () =>
   assert.deepEqual(await band([solution({ styleOrder: [ref("GONE", "k1")] })]), []);
 });
 
-// The band query roots on the solution now, so the hasPage gate it always had has
+// The band query roots on the solution now, so the parent gate it always had has
 // to keep working from its new position.
-test("the collection band still respects hasPage", async () => {
-  const dataset = [solution({ hasPage: false }), ...STYLES];
+test("the collection band still respects the parent's status", async () => {
+  // `status` replaced `hasPage` in PROD-2845. Not active is the successor of
+  // `hasPage: false`, and it must hide the band exactly as the boolean did.
+  const dataset = [solution({ status: "not-active" }), ...STYLES];
   assert.deepEqual(await band(dataset), []);
 });
 

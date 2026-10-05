@@ -89,7 +89,9 @@ function finderSharedFields() {
           to: [{ type: 'productLine' }],
           options: {
             disableNew: true,
-            filter: '(!defined(status) || status == "active") && customerFacing != false',
+            // Mirrors LINE_STYLE_ACTIVE (packages/sanity/src/queries/catalog.ts) — a
+            // picker offering a line with no page would author a dead link.
+            filter: '(!defined(status) || status == "active")',
           },
         }),
       ],
@@ -106,7 +108,8 @@ function finderSharedFields() {
         defineArrayMember({
           type: 'reference',
           to: [{ type: 'solution' }],
-          options: { disableNew: true, filter: 'hasPage == true' },
+          // Mirrors SOLUTION_ACTIVE — Active only, and no unset arm (PROD-2845).
+          options: { disableNew: true, filter: 'status == "active"' },
         }),
       ],
       validation: (Rule) => Rule.required().min(2).max(8).unique(),
