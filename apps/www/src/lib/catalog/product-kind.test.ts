@@ -28,9 +28,9 @@ describe('product-kind', () => {
 
     it('productsOfKind filters arrays', () => {
         const items = [
-            {id: 'a', kind: PRODUCT_KIND.standard as const},
-            {id: 'b', kind: PRODUCT_KIND.inspiration as const},
-            {id: 'c', kind: PRODUCT_KIND.standard as const},
+            {id: 'a', kind: PRODUCT_KIND.standard},
+            {id: 'b', kind: PRODUCT_KIND.inspiration},
+            {id: 'c', kind: PRODUCT_KIND.standard},
         ];
         assert.deepEqual(productsOfKind(items, PRODUCT_LINE_PRODUCT_KIND), [
             items[0],
