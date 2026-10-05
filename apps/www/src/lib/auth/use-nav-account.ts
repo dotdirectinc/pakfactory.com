@@ -6,7 +6,8 @@ import {
     accountAvatarUrl,
     accountDisplayName,
 } from '@pakfactory/supabase/account-display';
-import {createClient} from '@pakfactory/supabase/client';
+
+import {hasAuthCookie} from '@/lib/auth/nav-session-flag';
 
 /**
  * Header account state resolved in the browser (PROD-2754).
@@ -19,6 +20,12 @@ import {createClient} from '@pakfactory/supabase/client';
  * Display only: this uses the session cookie as-is (getSession). Anything that
  * authorizes — account pages, request submission — still checks getUser() on
  * the server.
+ *
+ * The Supabase client (~60 KB gzipped) is imported only when an auth cookie is
+ * present: without one the visitor is signed out, and anonymous visitors — most
+ * of the traffic — skip the download entirely. Signing in happens on the
+ * `(auth)` routes, so returning to a `(site)` page remounts this hook with the
+ * new cookie.
  */
 
 export type NavAccount = {
@@ -54,28 +61,32 @@ export function useNavAccount(): NavAccountState {
             );
         };
 
-        // The header must never take the page down: a missing or misconfigured
-        // Supabase env throws here, and that degrades to signed-out (as the old
-        // server-side try/catch did) instead of crashing the route.
-        let supabase: ReturnType<typeof createClient>;
-        try {
-            supabase = createClient();
-        } catch {
+        if (!hasAuthCookie()) {
             apply(null);
             return;
         }
 
-        supabase.auth
-            .getSession()
-            .then(({data}) => apply(data.session?.user))
+        let unsubscribe: (() => void) | undefined;
+        // The header must never take the page down: a failed chunk load or a
+        // missing / misconfigured Supabase env degrades to signed-out (as the old
+        // server-side try/catch did) instead of crashing the route.
+        import('@pakfactory/supabase/client')
+            .then(({createClient}) => {
+                if (!active) return;
+                const supabase = createClient();
+                const {data} = supabase.auth.onAuthStateChange(
+                    (_event, session) => apply(session?.user),
+                );
+                unsubscribe = () => data.subscription.unsubscribe();
+                return supabase.auth
+                    .getSession()
+                    .then(({data: session}) => apply(session.session?.user));
+            })
             .catch(() => apply(null));
-        const {data} = supabase.auth.onAuthStateChange((_event, session) =>
-            apply(session?.user),
-        );
 
         return () => {
             active = false;
-            data.subscription.unsubscribe();
+            unsubscribe?.();
         };
     }, []);
 
