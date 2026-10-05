@@ -63,7 +63,7 @@ async function accessToken(): Promise<string | null> {
 async function call<T>(
   path: string,
   init?: { method?: string; body?: unknown },
-): Promise<{ ok: true; data: T } | { ok: false; status: number; error: string; code?: string }> {
+): Promise<{ ok: true; data: T; page?: { has_more: boolean } } | { ok: false; status: number; error: string; code?: string }> {
   const token = await accessToken();
   let res: Response;
   try {
@@ -85,7 +85,7 @@ async function call<T>(
   }
 
   const body = (await res.json().catch(() => null)) as
-    | { data?: T; error?: string; code?: string }
+    | { data?: T; page?: { has_more: boolean }; error?: string; code?: string }
     | null;
 
   if (!res.ok) {
@@ -96,7 +96,7 @@ async function call<T>(
       code: body?.code,
     };
   }
-  return { ok: true, data: (body?.data ?? body) as T };
+  return { ok: true, data: (body?.data ?? body) as T, page: body?.page };
 }
 
 /** Who the backend thinks this person is, and what their grant allows. */
@@ -109,8 +109,25 @@ export const fetchSpecMe = cache(async (): Promise<SpecMe | null> => {
   return res.ok ? res.data : null;
 });
 
+/**
+ * Every page of a v1 list. The API pages by `limit` (max 200) and `offset` and says `has_more`;
+ * one request returns at most a page, and the default is 50 — a single call silently drops the
+ * rest. (It did: `page_size` is not a parameter, so these lists stopped at 50.)
+ */
+async function callAll<T>(path: string) {
+  const PAGE = 200;
+  const out: T[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const sep = path.includes("?") ? "&" : "?";
+    const res = await call<T[]>(`${path}${sep}limit=${PAGE}&offset=${offset}`);
+    if (!res.ok) return res;
+    out.push(...res.data);
+    if (!res.page?.has_more || res.data.length === 0) return { ok: true as const, data: out };
+  }
+}
+
 export async function listDraftChangesets() {
-  return call<ChangesetSummary[]>("/api/v1/changesets?state=draft&page_size=100");
+  return callAll<ChangesetSummary>("/api/v1/changesets?state=draft");
 }
 
 /**
@@ -122,7 +139,7 @@ export async function listDraftChangesets() {
  * disappears from the list at the exact moment it stops being a problem.
  */
 export async function listAllChangesets() {
-  return call<ChangesetSummary[]>("/api/v1/changesets?page_size=200");
+  return callAll<ChangesetSummary>("/api/v1/changesets");
 }
 
 export async function getChangesetDetail(id: string) {
