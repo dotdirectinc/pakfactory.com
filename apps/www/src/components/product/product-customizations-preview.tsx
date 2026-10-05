@@ -150,7 +150,7 @@ export function ProductCustomizationsPreview({
                                     <>
                                         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                             {revealedItems.map((item) => (
-                                                <li key={item.href}>
+                                                <li key={item.id}>
                                                     <CustomizationCatalogCard
                                                         href={item.href}
                                                         title={item.label}

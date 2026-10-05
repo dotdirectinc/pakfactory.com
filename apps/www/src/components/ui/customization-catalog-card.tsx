@@ -10,7 +10,8 @@ import {MediaCardFrame} from '@/components/ui/media-card-frame';
 import {SanityImage} from '@/components/ui/sanity-image';
 
 export type CustomizationCatalogCardProps = {
-    href: string;
+    /** Detail page; omit when the option has none — the title renders as plain text (PROD-2758). */
+    href?: string;
     title: string;
     description?: string;
     eyebrow?: string;
@@ -58,6 +59,11 @@ export function CustomizationCatalogCard({
     surface = 'default',
 }: CustomizationCatalogCardProps) {
     const closerLookLabel = `Take a closer look at ${title}`;
+    const heading = (
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
+            {title}
+        </h3>
+    );
 
     const media = (
         <div className="pointer-events-none absolute inset-0">
@@ -143,14 +149,16 @@ export function CustomizationCatalogCard({
                                 {eyebrow}
                             </p>
                         ) : null}
-                        <Link
-                            href={href}
-                            className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground">
-                                {title}
-                            </h3>
-                        </Link>
+                        {href ? (
+                            <Link
+                                href={href}
+                                className="block min-w-0 rounded outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                {heading}
+                            </Link>
+                        ) : (
+                            heading
+                        )}
                         {description ? (
                             <p className="line-clamp-3 text-xs leading-4 text-muted-foreground">
                                 {description}
