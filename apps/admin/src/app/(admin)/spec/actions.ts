@@ -31,11 +31,11 @@ export async function decideFrameAction(
 }
 
 /**
- * Request a Sync Sanity run (PROD-2751), as the signed-in person. The backend checks
- * `catalog.sync` against their grant and refuses while another run is open.
+ * Request a sync run (PROD-2751) — Sync Sanity or Sync from Notion — as the signed-in person. The
+ * backend checks `catalog.sync` against their grant and refuses while another run is open.
  */
-export async function requestSyncAction(dataset: string): Promise<DecisionResult> {
-  const res = await requestSyncRun(dataset);
+export async function requestSyncAction(kind: "sanity" | "notion", dataset: string): Promise<DecisionResult> {
+  const res = await requestSyncRun(kind, dataset);
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath("/spec");
   return { ok: true };

@@ -41,6 +41,10 @@ export type ChangesetItem = {
   deterministic_key: string;
   /** The row as a sentence, in the board's words — what a reviewer actually checks. */
   describe?: string;
+  /** Sanity-bound items (PROD-2751): the document, and how the approved write went. */
+  target_ref?: string | null;
+  apply_state?: "pending" | "applied" | "stale" | "failed" | null;
+  apply_error?: string | null;
 };
 
 export type ChangesetDetail = ChangesetSummary & { items: ChangesetItem[] };
@@ -160,9 +164,11 @@ export type SyncRunState = "requested" | "running" | "done" | "failed";
 /** A frame the run loaded as a draft — it now waits in the list above. */
 export type SyncRunLoaded = { id: string; frame: string; items: number };
 
+export type SyncKind = "sanity" | "notion";
+
 export type SyncRun = {
   id: string;
-  kind: "sanity";
+  kind: SyncKind;
   dataset: string;
   state: SyncRunState;
   requested_by: string;
@@ -184,9 +190,9 @@ export async function listSyncRuns() {
 }
 
 /**
- * Ask the backend to sync a Sanity dataset. The run is queued and the worker takes it within
- * seconds; what it finds arrives as draft frames, never as live changes.
+ * Ask the backend to sync — Sanity → registry, or Notion → Sanity. The run is queued and the worker
+ * takes it within seconds; what it finds arrives as draft frames, never as live changes.
  */
-export async function requestSyncRun(dataset: string) {
-  return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body: { kind: "sanity", dataset } });
+export async function requestSyncRun(kind: SyncKind, dataset: string) {
+  return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body: { kind, dataset } });
 }
