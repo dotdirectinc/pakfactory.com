@@ -1,12 +1,12 @@
 ---
-description: Confirm (with an acceptance-criteria ledger) before any Jira transition that moves a ticket forward — BA Acceptance, Request For Approval, Done
+description: Confirm (with an acceptance-criteria ledger) before any Jira transition that moves a ticket forward — BA Acceptance, Request For Approval, Done, or merging a PROD-keyed PR; resolve transition IDs by name
 alwaysApply: true
 ---
 
 # Jira transitions — confirm before moving a ticket forward
 
-> Cursor mirror of the canonical rule `internalPortal-dataEngine/.claude/rules/jira-transition-gate.md`.
-> Edit the canonical file first, then update this mirror and the copy in
+> Cursor mirror of the canonical user-level rule `~/.claude/rules/jira-transition-gate.md`.
+> Edit the canonical file first, then this mirror and the committed copy
 > `pakfactory.com/.cursor/rules/jira-transition-gate.mdc`.
 
 Moving a ticket forward **summons a human**. BA Acceptance and Request For Approval
@@ -21,12 +21,29 @@ not an edge case.
 
 | Direction | Examples | Gate |
 |---|---|---|
-| **Forward — into review or closure** | BA Acceptance (`4`), Request For Approval (`51`), Done, Deployed, Ready for Release | **CONFIRM FIRST — always** |
+| **Forward — into review or closure** | BA Acceptance, Request For Approval, Done, Deployed, Ready for Release | **CONFIRM FIRST — always** |
+| **Forward — by automation** | Merging a PR whose branch or title carries a PROD key into `staging` / `www-new-release` / `dev` → BA Acceptance | **CONFIRM FIRST** — see `jira-ticket-pr-mapping.md` |
 | Backward / lateral | To Do, Backlog, reopening | Confirm — it undoes someone's review |
-| **Into work** | In Progress (`61`), In Development | **No gate.** A statement of intent, reversible, summons nobody |
+| **Into work** | In Progress, In Development | **No gate.** A statement of intent, reversible, summons nobody |
 
 The point is not friction on every Jira call. It is that a forward move is a claim
 **to another person** that the work is ready, and only the user can make that claim.
+
+## Transition IDs vary by issue type — resolve by name
+
+PROD uses a different workflow per issue type, and the same ID means different
+statuses (verified 2026-10-01 with `getTransitionsForJiraIssue`):
+
+| Issue type | BA Acceptance | Request For Approval | In Progress |
+|---|---|---|---|
+| Story / Bug | `4` | `41` | `51` |
+| Task | `15` | `7` | `4` |
+| Sub-task | `11` | — (no RFA) | `2` |
+
+`4` is BA Acceptance on a Story but **In Progress** on a Task. **Never hardcode an
+ID.** Call `getTransitionsForJiraIssue` on the ticket and pick the transition by
+`name` immediately before `transitionJiraIssue`. All PROD transitions are global
+(reachable from any status), including a status to itself.
 
 ## Mandatory gate
 
@@ -66,7 +83,7 @@ Three states that are **NOT** finished, and each has looked finished before:
 ⚠️ Jira transition — needs your confirmation
 
 Ticket:  PROD-#### — <summary>
-Move:    <current status> → <target status> (transition id <id>)
+Move:    <current status> → <target status> (transition id <id>, resolved by name)
 
 Acceptance criteria:
   ✅ <criterion> — <evidence>
@@ -102,9 +119,18 @@ allowlist or auto-run list, in either tool.
 These carry the gate in their own steps; keep them in step with this rule:
 `finisher` (BA Acceptance), `blog-jira-delivery` (Request For Approval),
 `deploy-www-release` (Request For Approval), `wayfinder` (Done).
+Each must resolve the transition ID by name — see the table above.
 
-## Mirrors
+## Where this rule lives
 
-Cursor: `internalPortal-dataEngine/.cursor/rules/jira-transition-gate.mdc` (symlinked into
-`pakFactory/.cursor/rules/`) and the committed copy `pakfactory.com/.cursor/rules/jira-transition-gate.mdc`.
-Keep all three in step when this rule changes.
+User-level: `~/.claude/rules/jira-transition-gate.md` — loads in every repo on this
+machine (moved here 2026-10-01 alongside `jira-account.md` and
+`jira-ticket-pr-mapping.md`). Do not add project-level copies or symlinks; they
+would load twice.
+
+Cursor has no user-level rule files, so its mirror stays per-repo:
+`internalPortal-dataEngine/.cursor/rules/jira-transition-gate.mdc` (symlinked into
+`Documents/.cursor/rules/` and `pakFactory/.cursor/rules/`), plus the committed copy
+`pakfactory.com/.cursor/rules/jira-transition-gate.mdc` (on `staging`/`main`). Keep
+them in step when this rule changes. Repos worked on by others or in the cloud need
+their own committed copy — this file only exists on this machine.
