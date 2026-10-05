@@ -1,6 +1,5 @@
 import 'server-only';
 
-import {unstable_cache} from 'next/cache';
 import {
     CASE_STUDIES_LISTING_QUERY,
     CASE_STUDIES_PAGE_QUERY,
@@ -15,6 +14,7 @@ import {
     WWW_CASE_STUDIES_CACHE_TAG,
     WWW_CONTENT_REVALIDATE_SECONDS,
 } from '@/lib/www-cache';
+import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
 
 /**
  * Case-study reads (PROD-2755). One tag for all of them: a detail page shows
@@ -26,12 +26,6 @@ const CACHE_OPTIONS = {
     tags: [WWW_CASE_STUDIES_CACHE_TAG],
 };
 
-function logFailure(what: string, err: unknown) {
-    if (process.env.NODE_ENV === 'development') {
-        console.error(`[case-studies] Sanity ${what} failed:`, err);
-    }
-}
-
 async function fetchCaseStudyBySlug(
     slug: string,
 ): Promise<CaseStudyDetail | null> {
@@ -41,8 +35,7 @@ async function fetchCaseStudyBySlug(
             await draftAwareClient()
         ).fetch<CaseStudyDetail | null>(CASE_STUDY_BY_SLUG_QUERY, {slug});
     } catch (err) {
-        logFailure('case study by slug', err);
-        return null;
+        throw sanityReadFailed('[case-studies] Sanity case study by slug failed:', err);
     }
 }
 
@@ -53,8 +46,7 @@ async function fetchCaseStudiesPage(): Promise<CaseStudiesPageData | null> {
             await draftAwareClient()
         ).fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY);
     } catch (err) {
-        logFailure('case studies page', err);
-        return null;
+        throw sanityReadFailed('[case-studies] Sanity case studies page failed:', err);
     }
 }
 
@@ -67,8 +59,7 @@ async function fetchCaseStudyCards(): Promise<CaseStudyCard[]> {
             ).fetch<CaseStudyCard[]>(CASE_STUDIES_LISTING_QUERY)) ?? []
         );
     } catch (err) {
-        logFailure('case study cards', err);
-        return [];
+        throw sanityReadFailed('[case-studies] Sanity case study cards failed:', err);
     }
 }
 
@@ -77,13 +68,13 @@ async function fetchCaseStudyCards(): Promise<CaseStudyCard[]> {
  * always resolves to the published client: the cached entries are published.
  */
 const getCachedCaseStudy = (slug: string) =>
-    unstable_cache(
+    sanityCache(
         () => fetchCaseStudyBySlug(slug),
         ['www-case-study', slug],
         CACHE_OPTIONS,
     )();
 
-const getCachedCaseStudiesPage = unstable_cache(
+const getCachedCaseStudiesPage = sanityCache(
     () => fetchCaseStudiesPage(),
     ['www-case-studies-page'],
     CACHE_OPTIONS,
@@ -127,7 +118,7 @@ export function getPublishedCaseStudiesPage(): Promise<CaseStudiesPageData | nul
 export async function listCaseStudyCards(): Promise<CaseStudyCard[]> {
     return readThrough(
         () => fetchCaseStudyCards(),
-        unstable_cache(
+        sanityCache(
             () => fetchCaseStudyCards(),
             ['www-case-study-cards'],
             CACHE_OPTIONS,

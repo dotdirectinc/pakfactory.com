@@ -80,6 +80,16 @@ Same cache tags cover products, product lines, solutions, and chrome (e.g. `webs
   - UI approval for the placeholder: Richard Chang.
 - **Moved helpers:** `accountDisplayName` / `accountAvatarUrl` now live in `@pakfactory/supabase/account-display` (client-safe) and are re-exported from `/session`.
 
+## Sanity read failures (PROD-2754 follow-up)
+
+Cached Sanity reads use `sanityCache` (`src/lib/sanity/sanity-cache.ts`) instead of raw `unstable_cache`. **Never return an empty fallback from a cached read:** pages are static/ISR, so an empty result gets baked into the page and the CDN.
+
+- **Retries:** a failing read is retried twice (300 ms, then 1 s), then **rethrown** and logged in every environment via `sanityReadFailed`.
+- **Build:** the deploy fails instead of publishing empty pages.
+- **Time-based refresh (60 s / 5 min):** a failed refresh keeps serving the **last good page**. Verified with a simulated 6-minute outage.
+- **Webhook refresh during an outage:** the page was hard-expired, so it returns an error until Sanity recovers. This is not cached. In practice a publish implies Sanity is up.
+- **Exceptions:** "Sanity not configured" still returns empty. The optional solution-style breadcrumb on the product page still degrades gracefully.
+
 ## First paint (PROD-2756)
 
 - **CSS is inlined** (`experimental.inlineCss` in `next.config.ts`, production builds only).
