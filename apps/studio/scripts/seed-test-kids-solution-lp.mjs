@@ -544,7 +544,6 @@ async function main() {
       slug: { _type: 'slug', current: spec.slug },
       kind: 'inspiration',
       status: 'active',
-      customerFacing: true,
       sku: spec.sku,
       shortDescription: `Test fixture inspiration product for ${spec.styleKey}.`,
       basedOn: { _type: 'reference', _ref: basedOn._id },

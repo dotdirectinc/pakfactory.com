@@ -17,6 +17,7 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
   "collectionSlug": primaryCollection->slug.current,
   "pageSlug": primaryLandingPage->slug.current,
   status,
+  // Expertise Service still uses hasPage (PROD-2845 out of scope).
   hasPage,
   appearsIn,
   orderRank
@@ -26,6 +27,7 @@ const LINKABLE_DOC_PROJECTION = /* groq */ `{
 const PATH_TARGET_PROJECTION = /* groq */ `{
   _type,
   status,
+  // Expertise Service still uses hasPage (PROD-2845 out of scope).
   hasPage,
   appearsIn,
   orderRank

@@ -6,7 +6,7 @@ import {
 } from './www-nav-link-visibility';
 
 describe('isWwwNavInternalLinkVisible', () => {
-    it('keeps product lines that are active or unset and customer-facing', () => {
+    it('keeps product lines that are active or unset', () => {
         for (const status of [undefined, null, 'active', '']) {
             assert.equal(
                 isWwwNavInternalLinkVisible({
@@ -19,7 +19,7 @@ describe('isWwwNavInternalLinkVisible', () => {
         }
     });
 
-    it('hides coming-soon, discontinued, or non-customer-facing lines and styles', () => {
+    it('hides coming-soon, discontinued, or off-status lines and styles', () => {
         assert.equal(
             isWwwNavInternalLinkVisible({
                 _type: 'productLine',

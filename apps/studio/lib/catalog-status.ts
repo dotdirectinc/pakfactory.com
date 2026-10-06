@@ -120,7 +120,7 @@ export const hasLineStylePage = (value: unknown): boolean =>
  * state to keep a URL alive for, so Active is the whole set.
  */
 export const hasSolutionPage = (value: unknown): boolean =>
-  value == null || value === CATALOG_STATUS.active
+  value === CATALOG_STATUS.active
 
 /** Shared tail for every `status` field description, so the five values read the same everywhere. */
 export const STATUS_DESCRIPTION_TAIL =

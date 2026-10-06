@@ -64,7 +64,7 @@ const client = createClient({
 
 const HOME_ID = 'homePage'
 const PUBLISHED = '!(_id in path("drafts.**"))'
-const LINE_VISIBLE = '(!defined(status) || status == "active") && customerFacing != false'
+const LINE_VISIBLE = '(!defined(status) || status == "active")'
 
 const CANDIDATES_QUERY = /* groq */ `{
   "caseStudies": *[_type == "caseStudy" && ${PUBLISHED} && defined(slug.current)
@@ -73,7 +73,7 @@ const CANDIDATES_QUERY = /* groq */ `{
   "lines": *[_type == "productLine" && ${PUBLISHED} && defined(slug.current) && ${LINE_VISIBLE}]{
       _id, title, "hasImage": defined(featuredImage.asset)
     } | order(hasImage desc, title asc)[0...4],
-  "industries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && hasPage == true]{
+  "industries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && status == "active"]{
       _id, title, "studies": count(relatedCaseStudies)
     } | order(studies desc, title asc)[0...4],
   "stages": *[_type == "expertiseStage" && ${PUBLISHED} && defined(slug.current)
