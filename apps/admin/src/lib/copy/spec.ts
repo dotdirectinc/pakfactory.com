@@ -20,6 +20,11 @@ export const ADMIN_SPEC_COPY = {
   readOnlyNote:
     "You can review this frame but not decide it — that needs the approver role.",
   decidedNote: "This frame has already been decided.",
+  resync: "Re-sync",
+  resyncing: "Re-syncing…",
+  resyncStarted: "Sync started — the newest changes replace this frame when it finishes.",
+  resyncHint:
+    "Reruns the sync that made this frame. Its pending frames are replaced with the newest values; undecided changes come back.",
   supersededNote:
     "A newer sync replaced this frame. Its undecided changes — at their newest values — are in the frame that replaced it.",
   newSinceLastSync: "New since last sync",

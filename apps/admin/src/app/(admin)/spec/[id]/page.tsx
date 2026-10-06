@@ -5,6 +5,7 @@ import { getChangesetDetail, listAllChangesets } from "@/lib/spec/registry-api";
 import { blockedBy } from "@/lib/spec/prerequisites";
 import { canApprove, requireRegistryGrant } from "@/lib/spec/require-grant";
 import { SpecDecisionBar } from "@/components/spec/spec-decision-bar";
+import { SpecResyncButton } from "@/components/spec/spec-resync-button";
 import { SpecItemList } from "@/components/spec/spec-item-list";
 import { ADMIN_SPEC_COPY } from "@/lib/copy/spec";
 
@@ -44,6 +45,12 @@ export default async function SpecChangesetPage({
   // backend refuses, which is the guard that actually matters.
   const all = await listAllChangesets();
   const blocked = all.ok ? blockedBy(cs, all.data) : [];
+  // Re-sync (2026-10-06): a pending sync frame, offered only to someone who may run that sync.
+  const resyncKind =
+    cs.state === "draft" && cs.source === "sanity-sync" && me.capabilities.includes("catalog.sync") ? ("sanity" as const)
+    : cs.state === "draft" && cs.source === "notion-sync" && me.capabilities.includes("catalog.sync.notion") ? ("notion" as const)
+    : null;
+  const resyncDataset = typeof cs.summary?.dataset === "string" ? cs.summary.dataset : "development";
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
@@ -79,13 +86,16 @@ export default async function SpecChangesetPage({
       </section>
 
       {cs.state === "draft" ? (
-        <SpecDecisionBar
-          changesetId={cs.id}
-          itemCount={items.length}
-          excludedCount={items.filter((i) => i.excluded_at).length}
-          canDecide={canApprove(me)}
-          blockedBy={blocked}
-        />
+        <>
+          {resyncKind ? <SpecResyncButton kind={resyncKind} dataset={resyncDataset} /> : null}
+          <SpecDecisionBar
+            changesetId={cs.id}
+            itemCount={items.length}
+            excludedCount={items.filter((i) => i.excluded_at).length}
+            canDecide={canApprove(me)}
+            blockedBy={blocked}
+          />
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">
           {cs.state === "superseded" ? ADMIN_SPEC_COPY.supersededNote : ADMIN_SPEC_COPY.decidedNote}
