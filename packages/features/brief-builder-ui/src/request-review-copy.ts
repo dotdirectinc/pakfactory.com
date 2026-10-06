@@ -6,10 +6,17 @@ export type RequestReviewCopy = {
   preparedFor: string;
   shippedToAddress: string;
   paperEdit: string;
+  paperServices: string;
   paperBrief: string;
   paperQty: string;
   paperItem: string;
   paperConfiguration: string;
+  /** Prefix for packaging contents under Item (e.g. "Product:"). */
+  paperProductPrefix: string;
+  /** Prefix for line notes under Item (e.g. "Detail:"). */
+  paperDetailPrefix: string;
+  /** Heading for size under Customization (e.g. "Dimensions"). */
+  paperDimensionsLabel: string;
   noProductsAdded: string;
   regionToConfirm: string;
   notSet: string;
@@ -30,10 +37,14 @@ export const DEFAULT_REQUEST_REVIEW_COPY: RequestReviewCopy = {
   preparedFor: "Prepared for",
   shippedToAddress: "Shipped to Address",
   paperEdit: "Edit",
+  paperServices: "Additional Services",
   paperBrief: "Brief",
   paperQty: "Qty",
   paperItem: "Item",
-  paperConfiguration: "Configuration",
+  paperConfiguration: "Customization",
+  paperProductPrefix: "Product:",
+  paperDetailPrefix: "Detail:",
+  paperDimensionsLabel: "Dimensions",
   noProductsAdded: "No products added.",
   regionToConfirm: "Region — to confirm",
   notSet: "Not set",

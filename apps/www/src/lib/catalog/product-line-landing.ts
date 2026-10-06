@@ -1,5 +1,10 @@
 import type {PageSectionDoc, PageSectionInspirationsCardDoc} from '@pakfactory/sanity/queries';
 
+import {
+    isStandardProduct,
+    PRODUCT_LINE_PRODUCT_KIND,
+    productsOfKind,
+} from '@/lib/catalog/product-kind';
 import type {
     Product,
     ProductLine,
@@ -14,8 +19,7 @@ import {
     applySectionTokens,
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
-import type {SolutionHeroCustomization} from '@/lib/solutions/types';
-import {productHref, WWW_ROUTES} from '@/lib/www-routes';
+import {productHref} from '@/lib/www-routes';
 
 /** Storyboard H1 for rigid-boxes when Sanity `h1` is empty (PROD-1914). */
 export const RIGID_BOXES_MOCK_H1 = 'Made to be kept.';
@@ -44,7 +48,7 @@ export const RIGID_BOXES_MOCK_FEATURED_ICON: ProductLineFrame = {
 
 /**
  * Local hero MP4 until Studio `featuredVideo` is authored on rigid-boxes.
- * Used by bottomBar marquee hover-play (not stack).
+ * Used by bottomBar hero carousel hover-play (not stack).
  */
 export const RIGID_BOXES_MOCK_FEATURED_VIDEO =
     '/products/rigid-boxes/hero-scrub.mp4';
@@ -63,65 +67,120 @@ export type ProductLineLandingStyleCard = {
 
 export type ProductLineHeroLayout = 'stack' | 'bottomBar';
 
-/** Card for the bottomBar hero media marquee. */
+/**
+ * Shared stack + bottom-bar hero placeholder when a product (or line featured
+ * image) has no authored media.
+ */
+export const PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER =
+    '/products/hero-feature-placeholder.svg';
+
+/** Card for the bottomBar hero media carousel. */
 export type ProductLineHeroMediaCard = {
     id: string;
     src: string;
     alt: string;
     /** Hover-play MP4 on the featured card when set. */
     videoUrl?: string;
+    /** Resolved GLB URL for “View in 3D” in the preview dialog. */
+    modelSrc?: string;
+    /** Optional glTF clip name for Open/Close in the 3D viewer. */
+    modelAnimationName?: string;
     /** 0-based index within the unique set — L→R settle stagger. */
     settleIndex: number;
     /** Preview dialog — set when card is backed by a catalog product. */
     title?: string;
     detailHref?: string;
-    customizations?: SolutionHeroCustomization[];
+    description?: string;
+    /** Spec rows for StandardProductPreview (label + value text). */
+    properties?: {label: string; value: string}[];
+};
+
+/** Industry pill for the product-line Inspiration section. */
+export type ProductLineInspirationIndustry = {
+    slug: string;
+    title: string;
 };
 
 /**
- * Temporary marquee density so a short catalog still scrolls.
- * Remove or gate when authored product counts are enough.
+ * Unique industries present on inspiration products for a line (title sort).
+ * Industries with zero products are never returned.
  */
-const HERO_MEDIA_CARD_DUPLICATE = 6;
-
-function mapHeroCustomizations(
-    product: Product,
-): SolutionHeroCustomization[] {
-    return (product.availableCustomizations ?? []).slice(0, 4).map((opt) => ({
-        id: opt.id || opt.slug || opt.label,
-        category: (
-            opt.categoryTitle ||
-            opt.category ||
-            'CUSTOMIZATION'
-        ).toUpperCase(),
-        title: opt.label,
-        description:
-            opt.shortDescription?.trim() ||
-            'Available on this product.',
-        learnMoreHref: WWW_ROUTES.customizations,
-    }));
-}
-
-function duplicateHeroCards(
-    unique: ProductLineHeroMediaCard[],
-): ProductLineHeroMediaCard[] {
-    if (unique.length === 0) return [];
-    const cards: ProductLineHeroMediaCard[] = [];
-    for (let copy = 0; copy < HERO_MEDIA_CARD_DUPLICATE; copy += 1) {
-        for (const card of unique) {
-            cards.push({
-                ...card,
-                id: `${card.id}-${copy}`,
-            });
+export function assembleInspirationIndustries(
+    products: readonly Product[],
+): ProductLineInspirationIndustry[] {
+    const bySlug = new Map<string, string>();
+    for (const product of products) {
+        for (const industry of product.industries ?? []) {
+            const slug = industry.slug?.trim();
+            const title = industry.title?.trim();
+            if (!slug || !title || bySlug.has(slug)) continue;
+            bySlug.set(slug, title);
+        }
+        // Fallback: the card's `industry` when industries[] was not projected.
+        if ((product.industries?.length ?? 0) === 0) {
+            const slug = product.industry?.slug?.trim();
+            const title = product.industry?.title?.trim();
+            if (slug && title && !bySlug.has(slug)) bySlug.set(slug, title);
         }
     }
-    return cards;
+    return [...bySlug.entries()]
+        .map(([slug, title]) => ({slug, title}))
+        .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 /**
- * Build bottomBar marquee cards.
- * Prefer `standard` products on the line (with media); fall back to featured
- * image + frames. Duplicates the unique list for scroll density.
+ * Resolve left-rail industries for the Inspiration band.
+ * - Empty / missing CMS list → all industries with products (title sort).
+ * - Curated list → Studio order, only industries that still have products.
+ */
+export function resolveInspirationIndustries(
+    products: readonly Product[],
+    curated?: readonly {slug?: string | null; title?: string | null}[] | null,
+): ProductLineInspirationIndustry[] {
+    const available = assembleInspirationIndustries(products);
+    if (!curated?.length) return available;
+
+    const bySlug = new Map(available.map((row) => [row.slug, row]));
+    const resolved: ProductLineInspirationIndustry[] = [];
+    const seen = new Set<string>();
+    for (const row of curated) {
+        const slug = row.slug?.trim();
+        if (!slug || seen.has(slug)) continue;
+        const match = bySlug.get(slug);
+        if (!match) continue;
+        seen.add(slug);
+        resolved.push(match);
+    }
+    return resolved;
+}
+
+/**
+ * Inspiration products tagged with the given industry slug (multi-tag OK).
+ */
+export function filterInspirationProductsByIndustry(
+    products: readonly Product[],
+    industrySlug: string,
+): Product[] {
+    const slug = industrySlug.trim();
+    if (!slug) return [];
+    return products.filter((product) => {
+        if (product.industries?.some((industry) => industry.slug === slug)) {
+            return true;
+        }
+        return product.industry?.slug === slug;
+    });
+}
+
+/** Hard cap for bottomBar hero carousel — keeps image/video payload bounded. */
+const HERO_MEDIA_CARD_LIMIT = 10;
+
+/**
+ * Build bottomBar hero carousel cards (unique, no density copies).
+ * Featured Products first (Studio order), then line `standard` products fill
+ * remaining slots — duplicates skipped. Caps at {@link HERO_MEDIA_CARD_LIMIT}.
+ * Products without media use {@link PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER}.
+ * Fall back to line featured image + frames only when there are no standard
+ * products at all.
  */
 export function assembleHeroMediaCards(input: {
     featuredImageUrl: string | null;
@@ -129,49 +188,94 @@ export function assembleHeroMediaCards(input: {
     featuredVideoUrl: string | null;
     frames: ProductLineFrame[];
     products?: Product[];
+    /** Pinned hero products (Categorization Featured Products). */
+    featuredProducts?: Product[];
 }): ProductLineHeroMediaCard[] {
     const videoUrl = input.featuredVideoUrl?.trim() || '';
-    const unique: ProductLineHeroMediaCard[] = [];
+    const cards: ProductLineHeroMediaCard[] = [];
+    const seenSlugs = new Set<string>();
 
-    const fromProducts = (input.products ?? []).filter(
-        (product) =>
-            product.kind === 'standard' &&
-            Boolean(
-                product.media?.some((m) => Boolean(m.src?.trim())),
-            ),
-    );
-
-    for (const product of fromProducts) {
-        const media = product.media.find((m) => Boolean(m.src?.trim()));
-        if (!media?.src?.trim()) continue;
+    const pushProduct = (product: Product) => {
+        if (cards.length >= HERO_MEDIA_CARD_LIMIT) return;
+        if (seenSlugs.has(product.slug)) return;
+        seenSlugs.add(product.slug);
+        const media = product.media?.find((m) => Boolean(m.src?.trim()));
+        const src =
+            media?.src?.trim() || PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER;
+        const alt = media?.src?.trim()
+            ? media.alt?.trim() || product.title
+            : product.title || 'Product image placeholder';
         const productVideo = product.featuredVideoUrl?.trim() || '';
-        unique.push({
+        const modelSrc = product.model3dUrl?.trim() || '';
+        const modelAnimationName = product.model3dAnimationName?.trim() || '';
+        const description = product.description?.trim() || '';
+        // Match PDP Specs exclusions (buildProductSpecRows) — plain label/value list.
+        const excludedSpecLabels = new Set([
+            'Dimensions',
+            'Minimum order',
+            'MOQ',
+            'Lead time',
+            'Pricing',
+        ]);
+        const properties: {label: string; value: string}[] = [];
+        const styleTitle = product.productStyle?.title?.trim();
+        if (styleTitle) {
+            properties.push({label: 'Style', value: styleTitle});
+        }
+        for (const row of product.properties ?? []) {
+            const label = row.label.trim();
+            if (!label || excludedSpecLabels.has(label)) continue;
+            if (styleTitle && label.toLowerCase() === 'style') continue;
+            properties.push({
+                label,
+                value: row.value.trim() || 'N/A',
+            });
+        }
+        cards.push({
             id: product.slug,
-            src: media.src.trim(),
-            alt: media.alt?.trim() || product.title,
-            settleIndex: unique.length,
+            src,
+            alt,
+            settleIndex: cards.length,
             title: product.title,
             detailHref: productHref(product.slug),
-            customizations: mapHeroCustomizations(product),
+            ...(description ? {description} : {}),
+            ...(properties.length > 0 ? {properties} : {}),
             ...(productVideo ? {videoUrl: productVideo} : {}),
+            ...(modelSrc ? {modelSrc} : {}),
+            ...(modelAnimationName ? {modelAnimationName} : {}),
         });
+    };
+
+    for (const product of productsOfKind(
+        input.featuredProducts ?? [],
+        PRODUCT_LINE_PRODUCT_KIND,
+    )) {
+        pushProduct(product);
     }
 
-    if (unique.length === 0) {
+    for (const product of productsOfKind(
+        input.products ?? [],
+        PRODUCT_LINE_PRODUCT_KIND,
+    )) {
+        pushProduct(product);
+    }
+
+    if (cards.length === 0) {
         const seen = new Set<string>();
         const push = (
             src: string | null | undefined,
             alt: string,
             id: string,
         ) => {
+            if (cards.length >= HERO_MEDIA_CARD_LIMIT) return;
             const url = src?.trim();
             if (!url || seen.has(url)) return;
             seen.add(url);
-            unique.push({
+            cards.push({
                 id,
                 src: url,
                 alt: alt.trim() || 'Product media',
-                settleIndex: unique.length,
+                settleIndex: cards.length,
             });
         };
 
@@ -184,14 +288,12 @@ export function assembleHeroMediaCards(input: {
         });
 
         // Frames path: line-level featured video on the first card only.
-        if (videoUrl && unique[0]) {
-            unique[0] = {...unique[0], videoUrl};
+        if (videoUrl && cards[0]) {
+            cards[0] = {...cards[0], videoUrl};
         }
     }
 
-    if (unique.length === 0) return [];
-
-    return duplicateHeroCards(unique);
+    return cards;
 }
 
 export type ProductLineLandingModel = {
@@ -213,7 +315,7 @@ export type ProductLineLandingModel = {
     featuredImageUrl: string | null;
     featuredImageAlt: string;
     /**
-     * Hero MP4 for bottomBar marquee hover-play on the featured card.
+     * Hero MP4 for bottomBar carousel hover-play on the featured card.
      * Stack ignores this (static featured still). Sanity wins; rigid-boxes
      * mock fills when empty.
      */
@@ -243,12 +345,21 @@ const LINE_MOCKS: Record<string, RigidBoxesMock> = {
     },
 };
 
+function productBelongsToStyle(product: Product, styleSlug: string): boolean {
+    if (product.productStyles?.some((style) => style.slug === styleSlug)) {
+        return true;
+    }
+    return product.productStyle.slug === styleSlug;
+}
+
 function firstProductImageInStyle(
     products: Product[],
     styleSlug: string,
 ): {src: string; alt: string} | null {
     for (const product of products) {
-        if (product.productStyle.slug !== styleSlug) continue;
+        if (!isStandardProduct(product)) continue;
+        // Union membership — secondary styles count (PROD-2843).
+        if (!productBelongsToStyle(product, styleSlug)) continue;
         for (const media of product.media) {
             if (media.src) {
                 return {src: media.src, alt: media.alt || product.title};
@@ -259,7 +370,7 @@ function firstProductImageInStyle(
 }
 
 /**
- * Style card image: style image → first product image in that style.
+ * Style card image: style image → first standard product image in that style.
  * Does not fall back to the line featured / hero image.
  */
 export function resolveStyleCardImage(
@@ -384,7 +495,7 @@ function resolveHeroLayout(line: ProductLine): ProductLineHeroLayout {
     if (line.heroLayout === 'bottomBar' || line.heroLayout === 'stack') {
         return line.heroLayout;
     }
-    // Local preview: rigid-boxes demos the bottom-bar marquee when no layout shell is set.
+    // Local preview: rigid-boxes demos the bottom-bar carousel when no layout shell is set.
     if (line.slug === 'rigid-boxes') return 'bottomBar';
     return 'stack';
 }
@@ -443,6 +554,7 @@ export function assembleProductLineLanding(
     const documentFaqs = faqs?.map((faq) => ({
         question: faq.question,
         answerPlain: faq.answerPlain,
+        ...(faq.answer?.length ? {answer: faq.answer} : {}),
     }));
     const documentVideoStudies = featuredStudies
         ?.filter((study) => study.imageUrl?.trim())
@@ -451,7 +563,8 @@ export function assembleProductLineLanding(
             title: study.title,
             brand: study.title,
             slug: study.slug,
-            imageSrc: study.imageUrl,
+            // Flat URL stub — no Studio hotspot on this inherit path.
+            image: {url: study.imageUrl},
             imageAlt: study.imageAlt ?? study.title,
         }));
     const mergedSections =

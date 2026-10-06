@@ -1,4 +1,3 @@
-import {unstable_cache} from 'next/cache';
 import {
   WEBSITE_NAVIGATION_QUERY,
   type WebsiteNavigationDoc,
@@ -9,6 +8,7 @@ import {
   WWW_CONTENT_REVALIDATE_SECONDS,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
 } from '@/lib/www-cache';
+import { sanityCache, sanityReadFailed } from "@/lib/sanity/sanity-cache";
 
 async function loadWebsiteNavigation(): Promise<WebsiteNavigationDoc> {
   if (!isSanityConfigured()) {
@@ -19,12 +19,12 @@ async function loadWebsiteNavigation(): Promise<WebsiteNavigationDoc> {
     return await getPublishedSanityClient().fetch<WebsiteNavigationDoc>(
       WEBSITE_NAVIGATION_QUERY,
     );
-  } catch {
-    return null;
+  } catch (err) {
+    throw sanityReadFailed("[navigation] Sanity loadWebsiteNavigation failed:", err);
   }
 }
 
-const getCachedWebsiteNavigation = unstable_cache(
+const getCachedWebsiteNavigation = sanityCache(
   loadWebsiteNavigation,
   [WWW_WEBSITE_NAVIGATION_CACHE_TAG],
   {

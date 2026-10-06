@@ -5,6 +5,7 @@ import {ChevronUp} from 'lucide-react';
 import {
     RequestReviewPaper,
     RequestReviewSheetHeader,
+    type RequestReviewPaperProps,
 } from '@pakfactory/brief-builder-ui/request-review-paper';
 import {Button} from '@pakfactory/ui/components/button';
 import {
@@ -18,6 +19,10 @@ import {LogoMark} from '@/components/layout/logo-mark';
 import {REQUEST_COPY} from '@/lib/copy/request';
 import {getRequestReviewCopy} from '@/lib/request/request-review-copy';
 import type {RequestDraft, RequestLine} from '@/lib/request/request.storage';
+import {lineCustomizationGroups as buildLineCustomizationGroups} from '@/lib/request/line-customization-groups';
+import {lineDimensionDisplay} from '@/lib/request/line-dimension-display';
+import {resolveServiceLabel, serviceTitlesForIds} from '@/lib/request/service-label';
+import type {RequestServiceOption} from '@/lib/request/service-option';
 import {RFQ_REF_PATTERN} from '@/lib/request/contract.rules';
 import {canSubmitRequest} from '@/lib/request/validation';
 import {MessageDialog} from '@/components/ui/message-dialog';
@@ -30,6 +35,8 @@ type StepReviewProps = {
     onSubmitted: (ref: string) => void;
     onEditSection: (key: string) => void;
     sectionRef?: React.Ref<HTMLElement>;
+    /** Sanity expertise stages for paper labels + wire titles. */
+    serviceOptions?: RequestServiceOption[];
 };
 
 function productsStatusLabel(count: number): string {
@@ -45,6 +52,7 @@ export function StepReview({
     onSubmitted,
     onEditSection,
     sectionRef,
+    serviceOptions = [],
 }: StepReviewProps) {
     const [error, setError] = useState('');
     const [pending, startTransition] = useTransition();
@@ -82,11 +90,19 @@ export function StepReview({
             const fromLine = lines.find((line) => line.productSlug === slug);
             return fromLine?.productTitle ?? slug;
         },
+        serviceLabel: (id: string) =>
+            resolveServiceLabel(id, serviceOptions),
+        lineCustomizationGroups: (line) =>
+            buildLineCustomizationGroups(line as RequestLine),
+        lineDimension: (line) =>
+            lineDimensionDisplay(line as RequestLine),
         onEditSection: (key: string) => {
             setSummaryOpen(false);
             onEditSection(key);
         },
-    };
+        // `satisfies` types the callback params (e.g. `line`) from the paper's props;
+        // without it they are implicit `any` and `next build` fails type checking.
+    } satisfies Partial<RequestReviewPaperProps>;
 
     useEffect(() => {
         let raf = 0;
@@ -175,7 +191,14 @@ export function StepReview({
         setError('');
         startTransition(async () => {
             try {
-                const result = await submitRequest({draft, lines});
+                const result = await submitRequest({
+                    draft,
+                    lines,
+                    serviceTitles: serviceTitlesForIds(
+                        draft.services,
+                        serviceOptions,
+                    ),
+                });
                 if (!result.ok) {
                     setError(result.error);
                     return;

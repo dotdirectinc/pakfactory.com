@@ -17,7 +17,7 @@
  * ──────────────────────────────────────────────────────────────────────────────
  * The shape of the query:
  *
- *   parent solution  AND  kind == "inspiration"  AND  (
+ *   parent solution  AND  KIND_INSPIRATION  AND  (
  *         line matches  OR  style matches  OR  keyword matches
  *   )  AND NOT excluded
  *
@@ -26,14 +26,14 @@
  * and Display-Ready Cartons styles, which sit under a different line. An AND
  * would return nothing.
  *
- * ⚠️ The parent solution and `kind == "inspiration"` are NOT stored on the
- * document. The parent reference already carries the first, and the second
- * follows from it: only inspiration products carry `product.solutions` (58 of 58
- * inspiration, 0 of 252 standard), so a solution-scoped query is
- * inspiration-scoped by construction. Storing either would be one rule copied
- * onto every document. If standard products are ever tagged to solutions, `kind`
- * becomes a real choice and earns a field — until then it belongs here.
+ * ⚠️ The parent solution and inspiration kind are NOT stored on the document.
+ * The parent reference already carries the first; kind uses
+ * {@link KIND_INSPIRATION} so solution surfaces stay inspiration-only even if a
+ * standard product is ever tagged to a solution.
  */
+
+import {KIND_INSPIRATION} from './product-kind';
+import { isListedCatalogStatus } from './catalog-visibility'
 
 /** The filter object as authored on a `solutionStyle` document. */
 export type SolutionStyleFilter = {
@@ -131,12 +131,18 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
 
   return [
     '_type == "product"',
-    'kind == "inspiration"',
+    KIND_INSPIRATION,
     '$solutionId in solutions[]._ref',
-    // Hidden in Notion → customerFacing false → no listing anywhere, collections included.
-    'customerFacing != false',
-    // Listed: active and coming soon (badged); a discontinued product keeps its page, off lists.
+    // Listed: active and coming soon (badged). A discontinued product keeps its page but
+    // leaves the lists, and not-active / active-internal are off the site entirely —
+    // all three fall out of this whitelist without being named (PROD-2845).
     '(!defined(status) || status in ["active", "coming-soon"])',
+    // Rule 1 (2026-10-06): an inspiration product whose every solution is off is hidden.
+    // Mirrors PRODUCT_HAS_PARENT_ON's inspiration arm in queries/catalog.ts.
+    'count(solutions[@->status == "active"]) > 0',
+    // A preset follows its base product: hidden when the base, or the base's line, is off.
+    // Mirrors INSPIRATION_BASE_OPEN in queries/status-gates.ts.
+    'defined(basedOn->_id) && (!defined(basedOn->status) || basedOn->status in ["active", "active-internal"]) && (!defined(basedOn->productLine->status) || basedOn->productLine->status in ["active", "active-internal"])',
     `(${any.join(' || ')})`,
     '!(_id in $excludedIds)',
   ].join(' && ')
@@ -157,4 +163,69 @@ export function solutionStyleQueryParams(
     params[`kw${i}`] = pattern
   })
   return params
+}
+
+/**
+ * Product fields needed to evaluate membership against a Solution Style filter
+ * without running GROQ (e.g. inspiration PDP breadcrumb — PROD-2763).
+ */
+export type SolutionStyleMatchProduct = {
+  id: string
+  kind: string
+  title: string
+  solutionIds: string[]
+  lineId: string | null
+  styleIds: string[]
+  status?: string | null
+}
+
+/**
+ * Whether a title matches a `keywordPattern()` string (e.g. `Bakery Bag*`).
+ * Mirrors GROQ `match` as a token set: every pattern token must appear in the
+ * title; the last token may be a prefix when it ends with `*`.
+ */
+export function titleMatchesKeywordPattern(
+  title: string,
+  pattern: string,
+): boolean {
+  const titleTokens = title.toLowerCase().split(/\s+/).filter(Boolean)
+  const patternTokens = pattern.trim().split(/\s+/).filter(Boolean)
+  if (titleTokens.length === 0 || patternTokens.length === 0) return false
+
+  return patternTokens.every((raw, index) => {
+    const isLast = index === patternTokens.length - 1
+    const prefix = isLast && raw.endsWith('*')
+    const token = (prefix ? raw.slice(0, -1) : raw).toLowerCase()
+    if (!token) return false
+    return titleTokens.some((t) => (prefix ? t.startsWith(token) : t === token))
+  })
+}
+
+/**
+ * Same membership rules as {@link solutionStyleProductFilter}, for one product.
+ * Returns false when the filter has no conditions (empty filter must not match).
+ */
+export function productMatchesSolutionStyleFilter(
+  product: SolutionStyleMatchProduct,
+  params: SolutionStyleFilterParams,
+): boolean {
+  if (!hasAnyCondition(params)) return false
+  if (product.kind !== 'inspiration') return false
+  if (!product.solutionIds.includes(params.solutionId)) return false
+  // The shared mirror, not a local re-statement of the same matrix.
+  if (!isListedCatalogStatus(product.status)) return false
+  if (params.excludedIds.includes(product.id)) return false
+
+  const lineMatch =
+    params.lineIds.length > 0 &&
+    product.lineId != null &&
+    params.lineIds.includes(product.lineId)
+  const styleMatch =
+    params.styleIds.length > 0 &&
+    product.styleIds.some((id) => params.styleIds.includes(id))
+  const keywordMatch =
+    params.keywords.length > 0 &&
+    params.keywords.some((kw) => titleMatchesKeywordPattern(product.title, kw))
+
+  return lineMatch || styleMatch || keywordMatch
 }

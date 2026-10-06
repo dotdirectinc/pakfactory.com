@@ -1,121 +1,65 @@
-import {Suspense} from 'react';
-
-import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
-import {Skeleton} from '@pakfactory/ui/components/skeleton';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
 import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
-import {ProductGallery} from '@/components/product/product-gallery';
-import {ProductRequestRail} from '@/components/product/product-request-rail';
-import {LifecycleBadge, LifecycleNotice} from '@/components/ui/lifecycle-badge';
+import {ProductPdpShell} from '@/components/product/product-pdp-shell';
 import {
     AnchorNav,
     type AnchorNavItem,
 } from '@/components/product/anchor-nav';
 import {ProductSpecs} from '@/components/product/product-specs';
-import {FaqSection} from '@/components/sections/faq-section';
-import {
-    ProductsRow,
-    type ProductsRowItem,
-} from '@/components/sections/products-row';
 import {SectionRenderer} from '@/components/sections/section-renderer';
-import {TestimonialsRow} from '@/components/sections/testimonials-row';
 import {listRelatedProductSiblings} from '@/lib/catalog/catalog';
 import {displayProductSku} from '@/lib/catalog/display-sku';
-import {MOCK_PRODUCT_TESTIMONIALS, MOCK_TESTIMONIALS_AGGREGATE} from '@/lib/catalog/mock-testimonials';
+import {
+    buildProductDetailBreadcrumbs,
+    buildProductDetailJsonLd,
+} from '@/lib/catalog/product-jsonld';
 import type {Product} from '@/lib/catalog/types';
 import {mergeSolutionSections} from '@/lib/sections/merge-solution-sections';
 import {
     applySectionTokens,
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
-import {
-    productHref,
-    productStyleHref,
-    WWW_ROUTES,
-} from '@/lib/www-routes';
+import type {PageSectionProductsRowItemDoc} from '@pakfactory/sanity/queries';
 
 type ProductDetailViewProps = {
     product: Product;
 };
 
-function toProductsRowItem(product: Product): ProductsRowItem {
+function toProductsRowInheritItem(
+    product: Product,
+): PageSectionProductsRowItemDoc {
     const hero = product.media.find((item) => item.src);
     return {
         title: product.title,
-        href: productHref(product.slug),
+        slug: product.slug,
         sku: product.sku,
         imageSrc: hero?.src ?? null,
         imageAlt: hero?.alt ?? product.title,
     };
 }
 
-function RelatedProductsSkeleton() {
-    return (
-        <section
-            id="pdp-related"
-            aria-busy="true"
-            aria-live="polite"
-            className="scroll-mt-32 bg-muted"
-        >
-            <PageDielineSection borderBottom innerClassName="py-16 sm:py-20">
-                <span className="sr-only">Loading related products</span>
-                <div className="flex flex-col gap-6">
-                    <div className="space-y-2">
-                        <Skeleton className="h-3 w-28" />
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-full max-w-xl" />
-                    </div>
-                    <div className="flex gap-4 overflow-hidden">
-                        {Array.from({length: 4}, (_, index) => (
-                            <Skeleton
-                                key={index}
-                                className="aspect-square w-56 shrink-0 rounded-2xl"
-                            />
-                        ))}
-                    </div>
-                </div>
-            </PageDielineSection>
-        </section>
-    );
-}
-
-async function RelatedProductsFromLine({product}: {product: Product}) {
-    const siblings = await listRelatedProductSiblings(product);
-    if (siblings.length === 0) return null;
-    return (
-        <ProductsRow
-            theme="muted"
-            products={siblings.map(toProductsRowItem)}
-        />
-    );
-}
-
-export function ProductDetailView({product}: ProductDetailViewProps) {
-    const {productLine: line, productStyle: style} = product;
+export async function ProductDetailView({product}: ProductDetailViewProps) {
+    const {productStyle: style} = product;
     const displaySku = displayProductSku(product.sku, product.slug);
     const specRows = buildProductSpecRows(product);
     const customizationItems = mapCustomizationPreviewItems(
         product.availableCustomizations,
     );
-    const curatedRelated = product.relatedProducts ?? [];
-    const relatedCards = curatedRelated.map(toProductsRowItem);
-    const hasCuratedRelated = relatedCards.length > 0;
-    const hasCmsTestimonials = Boolean(product.testimonials?.length);
-    const testimonials = hasCmsTestimonials
-        ? product.testimonials!
-        : MOCK_PRODUCT_TESTIMONIALS;
-    const testimonialsAggregate = hasCmsTestimonials
-        ? undefined
-        : MOCK_TESTIMONIALS_AGGREGATE;
     const faqs = product.faqs ?? [];
+
+    // Related strip inherit: curated on product, else same-line siblings (PROD-1913).
+    const relatedForInherit = (
+        await listRelatedProductSiblings(product)
+    ).map(toProductsRowInheritItem);
 
     const contentSections = product.sections ?? [];
     const templateSections = product.templateSections ?? [];
     const documentFaqs = faqs.map((faq) => ({
         question: faq.question,
         answerPlain: faq.answerPlain,
+        ...(faq.answer?.length ? {answer: faq.answer} : {}),
     }));
     const mergedSections =
         templateSections.length > 0
@@ -124,6 +68,9 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
                   contentSections,
                   undefined,
                   documentFaqs,
+                  undefined,
+                  undefined,
+                  relatedForInherit,
               )
             : contentSections;
     const pageSections = applySectionTokens(
@@ -145,97 +92,65 @@ export function ProductDetailView({product}: ProductDetailViewProps) {
         ...(customizationItems.length > 0
             ? [{id: 'pdp-customizations', label: 'Customization'}]
             : []),
-        // Sibling fallback may still populate related when curated is empty.
-        ...(hasCuratedRelated || Boolean(line.slug)
-            ? [{id: 'pdp-related', label: 'Related Products'}]
-            : []),
-        ...(testimonials.length > 0
-            ? [{id: 'pdp-testimonials', label: 'Reviews'}]
-            : []),
-        ...(faqs.length > 0 ? [{id: 'pdp-faqs', label: 'FAQs'}] : []),
+        ...pageSections.flatMap((section): AnchorNavItem[] => {
+            if (section._type === 'productsRow') {
+                const items =
+                    'items' in section ? (section.items ?? []) : [];
+                if (items.length === 0) return [];
+                return [
+                    {
+                        id: `section-products-${section._key}`,
+                        label: 'Related Products',
+                    },
+                ];
+            }
+            if (section._type === 'testimonialsRow') {
+                return [
+                    {
+                        id: `section-reviews-${section._key}`,
+                        label: 'Reviews',
+                    },
+                ];
+            }
+            if (section._type === 'faqSection') {
+                const sectionFaqs =
+                    'faqs' in section ? (section.faqs ?? []) : [];
+                if (sectionFaqs.length === 0) return [];
+                return [
+                    {
+                        id: `section-faqs-${section._key}`,
+                        label: 'FAQs',
+                    },
+                ];
+            }
+            return [];
+        }),
     ];
 
-return (
-        <>
-            <PageBreadcrumbSection
-                items={[
-                    {label: 'Home', href: WWW_ROUTES.home},
-                    {label: 'Products', href: WWW_ROUTES.products},
-                    {label: line.title, href: productHref(line.slug)},
-                    {
-                        label: style.title,
-                        href: productStyleHref(line.slug, style.slug),
-                    },
-                    {label: product.title},
-                ]}
-            />
-            <PageDielineSection paddingBlock="sm">
-                <article
-                    id="pdp-overview"
-                    className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
-                >
-                    <ProductGallery
-                        media={product.media}
-                        productTitle={product.title}
-                        badgeLabel={
-                            product.kind === 'inspiration'
-                                ? 'Inspiration'
-                                : undefined
-                        }
-                    />
-                    <div>
-                        <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                            {displaySku}
-                        </p>
-                        <LifecycleBadge status={product.status} className="mt-2" />
-                        <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
-                            {product.title}
-                        </h1>
-                        {product.description ? (
-                            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                                {product.description}
-                            </p>
-                        ) : null}
-                        {/* Coming soon / discontinued: shown, never orderable (PROD-2605). */}
-                        {product.status && product.status !== 'active' ? (
-                            <LifecycleNotice
-                                status={product.status}
-                                contactHref={WWW_ROUTES.contact}
-                            />
-                        ) : (
-                            <ProductRequestRail product={product} />
-                        )}
-                    </div>
-                </article>
-            </PageDielineSection>
+    const breadcrumbItems = buildProductDetailBreadcrumbs(product);
 
-            <div className="relative">
-                <AnchorNav items={navItems} />
-                <ProductSpecs rows={specRows} />
-                <ProductCustomizationsPreview
-                    styleTitle={style.title}
-                    items={customizationItems}
-                />
-                {hasCuratedRelated ? (
-                    <ProductsRow theme="muted" products={relatedCards} />
-                ) : (
-                    <Suspense fallback={<RelatedProductsSkeleton />}>
-                        <RelatedProductsFromLine product={product} />
-                    </Suspense>
-                )}
-                <TestimonialsRow
-                    items={testimonials}
-                    aggregate={testimonialsAggregate}
-                />
-                <FaqSection
-                    items={faqs}
-                    footerHref={WWW_ROUTES.contact}
-                    footerLabel="Let's chat"
-                />
-                {pageSections.length > 0 ? (
-                    <SectionRenderer sections={pageSections} />
-                ) : null}
-            </div>
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: buildProductDetailJsonLd(product),
+                }}
+            />
+            <PageBreadcrumbSection items={breadcrumbItems} />
+            <ProductPdpShell product={product} displaySku={displaySku}>
+                <div className="relative">
+                    <AnchorNav items={navItems} />
+                    <ProductSpecs rows={specRows} />
+                    <ProductCustomizationsPreview
+                        styleTitle={style.title}
+                        items={customizationItems}
+                    />
+                    {pageSections.length > 0 ? (
+                        <SectionRenderer sections={pageSections} />
+                    ) : null}
+                </div>
+            </ProductPdpShell>
         </>
     );
 }

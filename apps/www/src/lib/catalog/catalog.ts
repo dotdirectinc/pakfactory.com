@@ -1,7 +1,6 @@
 import 'server-only';
 
 import {cache} from 'react';
-import {unstable_cache} from 'next/cache';
 import {
     CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
     CATALOG_CUSTOMIZATION_DETAIL_QUERY,
@@ -13,12 +12,14 @@ import {
     CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
+    CATALOG_PRODUCT_STYLE_PAGE_QUERY,
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
     CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
     PRODUCT_CATALOG_PAGE_QUERY,
     PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
     SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
+    SOLUTION_STYLES_FOR_BREADCRUMB_QUERY,
     type CatalogCustomizationDetailDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogIndexPageDoc,
@@ -27,6 +28,8 @@ import {
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
+    type CatalogStyleRefDoc,
+    type SolutionStylesForBreadcrumbDoc,
 } from '@pakfactory/sanity/queries';
 import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
 import {buildProductLibraryResult} from '@/lib/catalog/build-product-library';
@@ -43,7 +46,17 @@ import {
     mapSanityProductLibraryItem,
     mapSanityProductLibraryLineMeta,
     mapSanityProductLine,
+    mapStyleRef,
 } from '@/lib/catalog/map-sanity';
+import {
+    PRODUCT_LINE_PRODUCT_KIND,
+    productsOfKind,
+} from '@/lib/catalog/product-kind';
+import {
+    filterCuratedRelatedProducts,
+    pickRelatedProducts,
+} from '@/lib/catalog/related-products';
+import {breadcrumbStyleFromBundle} from '@/lib/catalog/resolve-breadcrumb-style';
 import type {
     CustomizationDetail,
     CustomizationDetailResult,
@@ -59,6 +72,7 @@ import type {
     ProductsSegmentResult,
 } from '@/lib/catalog/types';
 import {PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID} from '@/lib/catalog/types';
+import {membershipStyles} from '@/lib/catalog/types';
 import {
     draftAwareClient,
     readThrough,
@@ -72,6 +86,7 @@ import {
     WWW_SOLUTIONS_CACHE_TAG,
     wwwProductTag,
 } from '@/lib/www-cache';
+import {sanityCache, sanityReadFailed} from '@/lib/sanity/sanity-cache';
 
 function normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
@@ -87,10 +102,7 @@ async function fetchSanityProducts(): Promise<Product[]> {
             .map(mapSanityProduct)
             .filter((item): item is Product => item != null);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity products fetch failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[catalog] Sanity products fetch failed:', err);
     }
 }
 
@@ -107,10 +119,7 @@ async function fetchSanityLines(): Promise<ProductLine[]> {
                 (line) => line.products.length > 0 || line.styles.length > 0,
             );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product lines fetch failed:', err);
-        }
-        return [];
+        throw sanityReadFailed('[catalog] Sanity product lines fetch failed:', err);
     }
 }
 
@@ -130,10 +139,7 @@ async function fetchSanityLineBySlug(slug: string): Promise<ProductLine | null> 
         }
         return line;
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product line by slug failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[catalog] Sanity product line by slug failed:', err);
     }
 }
 
@@ -146,10 +152,7 @@ async function fetchSanityLineExists(slug: string): Promise<boolean> {
         );
         return Boolean(id);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product line exists failed:', err);
-        }
-        return false;
+        throw sanityReadFailed('[catalog] Sanity product line exists failed:', err);
     }
 }
 
@@ -164,14 +167,11 @@ async function fetchCustomizationRules(): Promise<CatalogCustomizationRulesDoc |
             CATALOG_CUSTOMIZATION_RULES_QUERY,
         );
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity customization rules fetch failed:', err);
-        }
-        return null;
+        throw sanityReadFailed('[catalog] Sanity customization rules fetch failed:', err);
     }
 }
 
-const getCachedCustomizationRules = unstable_cache(
+const getCachedCustomizationRules = sanityCache(
     fetchCustomizationRules,
     [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}:rules`],
     {
@@ -220,44 +220,59 @@ async function resolveProductOffer(
 async function fetchSanityProduct(slug: string): Promise<Product | null> {
     if (!isSanityConfigured()) return null;
     try {
-        const doc = await (await draftAwareClient()).fetch<CatalogProductDoc | null>(
+        const client = await draftAwareClient();
+        const doc = await client.fetch<CatalogProductDoc | null>(
             CATALOG_PRODUCT_BY_SLUG_QUERY,
             {slug: normalizeSlug(slug)},
         );
         if (!doc) return null;
         const mapped = mapSanityProduct(doc);
         if (!mapped) return null;
-        // Curated relatedProducts stay on the blocking path; sibling fallback
-        // loads under Suspense in ProductDetailView (see listRelatedProductSiblings).
-        return resolveProductOffer(mapped, doc);
-    } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product by slug failed:', err);
+
+        let product = mapped;
+        if (
+            mapped.kind === 'inspiration' &&
+            mapped.breadcrumbParent?.slug
+        ) {
+            try {
+                const bundle = await client.fetch<
+                    SolutionStylesForBreadcrumbDoc | null
+                >(SOLUTION_STYLES_FOR_BREADCRUMB_QUERY, {
+                    solutionSlug: mapped.breadcrumbParent.slug,
+                });
+                const breadcrumbStyle = breadcrumbStyleFromBundle(doc, bundle);
+                if (breadcrumbStyle) {
+                    product = {...mapped, breadcrumbStyle};
+                }
+            } catch (err) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.error(
+                        '[catalog] Solution style breadcrumb resolve failed:',
+                        err,
+                    );
+                }
+            }
         }
-        return null;
+
+        // Curated relatedProducts stay on the blocking path; sibling fallback
+        // is resolved in ProductDetailView for productsRow inherit (PROD-2763).
+        return resolveProductOffer(product, doc);
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity product by slug failed:', err);
     }
 }
 
-const RELATED_PRODUCTS_CAP = 6;
-
 /**
- * Same-line siblings when the product has no curated relatedProducts (PROD-1913).
- * Loaded under Suspense so the PDP hero is not blocked by listProducts().
+ * Curated relatedProducts when set; else style→industry sibling fallback
+ * (PROD-1913 / PROD-2780). Used as productsRow inherit on the PDP (PROD-2763).
  */
 export async function listRelatedProductSiblings(
     product: Product,
 ): Promise<Product[]> {
     if (product.relatedProducts && product.relatedProducts.length > 0) {
-        return product.relatedProducts;
+        return filterCuratedRelatedProducts(product, product.relatedProducts);
     }
-    const lineSlug = product.productLine.slug;
-    return (await listProducts())
-        .filter(
-            (item) =>
-                item.slug !== product.slug &&
-                item.productLine.slug === lineSlug,
-        )
-        .slice(0, RELATED_PRODUCTS_CAP);
+    return pickRelatedProducts(product, await listProducts());
 }
 
 async function fetchSanityCustomizationLibrary(): Promise<
@@ -275,10 +290,7 @@ async function fetchSanityCustomizationLibrary(): Promise<
             .filter((item): item is CustomizationLibraryItem => item != null);
         return buildCustomizationLibraryResult(items);
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity customization library failed:', err);
-        }
-        return {items: [], tabs: [], facetCatalog: {shared: [], byCategory: {}}};
+        throw sanityReadFailed('[catalog] Sanity customization library failed:', err);
     }
 }
 
@@ -317,23 +329,21 @@ async function fetchSanityProductLibrary(): Promise<ProductLibraryResult> {
             valueTitles,
         });
     } catch (err) {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[catalog] Sanity product library failed:', err);
-        }
-        return EMPTY_PRODUCT_LIBRARY;
+        throw sanityReadFailed('[catalog] Sanity product library failed:', err);
     }
 }
 
-const getCachedProducts = unstable_cache(
+const getCachedProducts = sanityCache(
     fetchSanityProducts,
-    [WWW_CATALOG_PRODUCTS_CACHE_TAG],
+    // v2: card projection includes breadcrumbParent for Related Products (PROD-2780).
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}:v2-breadcrumb`],
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
     },
 );
 
-const getCachedLines = unstable_cache(
+const getCachedLines = sanityCache(
     fetchSanityLines,
     [WWW_CATALOG_LINES_CACHE_TAG],
     {
@@ -342,7 +352,7 @@ const getCachedLines = unstable_cache(
     },
 );
 
-const getCachedCustomizationLibrary = unstable_cache(
+const getCachedCustomizationLibrary = sanityCache(
     fetchSanityCustomizationLibrary,
     [WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG],
     {
@@ -351,9 +361,10 @@ const getCachedCustomizationLibrary = unstable_cache(
     },
 );
 
-const getCachedProductLibrary = unstable_cache(
+const getCachedProductLibrary = sanityCache(
     fetchSanityProductLibrary,
-    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-library`],
+    // v2: productStyles[] membership for multi-style catalog (PROD-2843).
+    [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-library-v2-styles`],
     {
         revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
         tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG],
@@ -362,7 +373,7 @@ const getCachedProductLibrary = unstable_cache(
 
 function getCachedProductBySlug(slug: string) {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return sanityCache(
         () => fetchSanityProduct(key),
         [wwwProductTag(key)],
         {
@@ -374,7 +385,7 @@ function getCachedProductBySlug(slug: string) {
 
 function getCachedLineBySlug(slug: string) {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return sanityCache(
         () => fetchSanityLineBySlug(key),
         [`www-product-line:${key}`],
         {
@@ -386,7 +397,7 @@ function getCachedLineBySlug(slug: string) {
 
 function getCachedLineExists(slug: string) {
     const key = normalizeSlug(slug);
-    return unstable_cache(
+    return sanityCache(
         () => fetchSanityLineExists(key),
         [`www-product-line-exists:${key}`],
         {
@@ -419,7 +430,8 @@ export async function listProductLibrary(): Promise<ProductLibraryResult> {
 
 /**
  * Product library scoped to one line + style for `/products/[line]/[style]`.
- * Omits the Product Line facet (the page already is that line).
+ * Standard products only (product-line surfaces). Omits the Product Line facet
+ * (the page already is that line).
  */
 export async function listProductStyleLibrary(
     lineSlug: string,
@@ -428,11 +440,12 @@ export async function listProductStyleLibrary(
     const library = await listProductLibrary();
     const lineKey = normalizeSlug(lineSlug);
     const styleKey = normalizeSlug(styleSlug);
-    const items = library.items.filter(
+    const scoped = library.items.filter(
         (item) =>
             item.productLine.slug === lineKey &&
-            item.productStyle.slug === styleKey,
+            membershipStyles(item).some((style) => style.slug === styleKey),
     );
+    const items = productsOfKind(scoped, PRODUCT_LINE_PRODUCT_KIND);
     const lineMetas = Object.values(library.linesBySlug).filter(
         (meta) => meta.slug === lineKey,
     );
@@ -448,12 +461,12 @@ async function fetchProductCatalogPage(): Promise<CatalogIndexPageDoc | null> {
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
             PRODUCT_CATALOG_PAGE_QUERY,
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchProductCatalogPage failed:', err);
     }
 }
 
-const getCachedProductCatalogPage = unstable_cache(
+const getCachedProductCatalogPage = sanityCache(
     fetchProductCatalogPage,
     [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-page`],
     {
@@ -477,8 +490,8 @@ async function fetchProductStylePage(
             PRODUCT_STYLE_PAGE_FOR_STYLE_QUERY,
             {lineSlug, styleSlug},
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchProductStylePage failed:', err);
     }
 }
 
@@ -490,7 +503,7 @@ export async function getProductStylePage(
     const lineKey = normalizeSlug(lineSlug);
     const styleKey = normalizeSlug(styleSlug);
     const fetchUncached = () => fetchProductStylePage(lineKey, styleKey);
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`${WWW_CATALOG_PRODUCTS_CACHE_TAG}-style-page`, lineKey, styleKey],
         {
@@ -507,12 +520,12 @@ async function fetchCustomizationCatalogPage(): Promise<CatalogIndexPageDoc | nu
         return await (await draftAwareClient()).fetch<CatalogIndexPageDoc | null>(
             CUSTOMIZATION_CATALOG_PAGE_QUERY,
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchCustomizationCatalogPage failed:', err);
     }
 }
 
-const getCachedCustomizationCatalogPage = unstable_cache(
+const getCachedCustomizationCatalogPage = sanityCache(
     fetchCustomizationCatalogPage,
     [`${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-page`],
     {
@@ -539,8 +552,8 @@ async function fetchCustomizationDetailPage(
             CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
             {category, handle},
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchCustomizationDetailPage failed:', err);
     }
 }
 
@@ -553,7 +566,7 @@ export async function getCustomizationDetailPage(
     const handleKey = normalizeSlug(handle);
     const fetchUncached = () =>
         fetchCustomizationDetailPage(categoryKey, handleKey);
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [
             `${WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG}-detail-page`,
@@ -578,8 +591,8 @@ async function fetchSolutionStylePage(
             SOLUTION_STYLE_PAGE_FOR_STYLE_QUERY,
             {solutionSlug, styleSlug},
         );
-    } catch {
-        return null;
+    } catch (err) {
+        throw sanityReadFailed('[catalog] Sanity fetchSolutionStylePage failed:', err);
     }
 }
 
@@ -591,7 +604,7 @@ export async function getSolutionStylePage(
     const solutionKey = normalizeSlug(solutionSlug);
     const styleKey = normalizeSlug(styleSlug);
     const fetchUncached = () => fetchSolutionStylePage(solutionKey, styleKey);
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`${WWW_SOLUTIONS_CACHE_TAG}-style-page`, solutionKey, styleKey],
         {
@@ -633,17 +646,11 @@ export async function getCustomizationCategory(
             });
             return doc ? mapSanityLibraryOption(doc) : null;
         } catch (err) {
-            if (process.env.NODE_ENV === 'development') {
-                console.error(
-                    '[catalog] Sanity customization by handle failed:',
-                    err,
-                );
-            }
-            return null;
+            throw sanityReadFailed('[catalog] Sanity customization by handle failed:', err);
         }
     };
 
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`www-customization:${categoryKey}:${handleKey}`],
         {
@@ -687,17 +694,11 @@ export const getCustomizationDetail = cache(
                         );
                     return {detail: mapped, peers};
                 } catch (err) {
-                    if (process.env.NODE_ENV === 'development') {
-                        console.error(
-                            '[catalog] Sanity customization detail failed:',
-                            err,
-                        );
-                    }
-                    return null;
+                    throw sanityReadFailed('[catalog] Sanity customization detail failed:', err);
                 }
             };
 
-        const getCached = unstable_cache(
+        const getCached = sanityCache(
             fetchUncached,
             [`www-customization-detail:${categoryKey}:${handleKey}`],
             {
@@ -726,17 +727,11 @@ export async function getCustomizationOption(
             >(CATALOG_OPTION_BY_ID_QUERY, {id});
             return doc ? mapSanityCustomizationDetail(doc) : null;
         } catch (err) {
-            if (process.env.NODE_ENV === 'development') {
-                console.error(
-                    '[catalog] Sanity customization option by id failed:',
-                    err,
-                );
-            }
-            return null;
+            throw sanityReadFailed('[catalog] Sanity customization option by id failed:', err);
         }
     };
 
-    const getCached = unstable_cache(
+    const getCached = sanityCache(
         fetchUncached,
         [`www-customization-option:${id}`],
         {
@@ -796,9 +791,38 @@ export async function getStyle(
 ): Promise<{line: ProductLine; style: ProductStyleRef} | null> {
     const result = await getByProductsSegment(lineSlug);
     if (result?.type !== 'line') return null;
-    const style = result.line.styles.find(
-        (item) => item.slug === normalizeSlug(styleSlug),
+    const key = normalizeSlug(styleSlug);
+    const listed = result.line.styles.find((item) => item.slug === key);
+    if (listed) return {line: result.line, style: listed};
+    // Not in the grid: a Discontinued style keeps its page (for search) but is never
+    // listed, so look it up directly. Everything else not listed has no page at all.
+    const unlisted = await getUnlistedStylePage(result.line.slug, key);
+    return unlisted ? {line: result.line, style: unlisted} : null;
+}
+
+async function getUnlistedStylePage(
+    lineSlug: string,
+    styleSlug: string,
+): Promise<ProductStyleRef | null> {
+    if (!isSanityConfigured()) return null;
+    const fetchUncached = async (): Promise<ProductStyleRef | null> => {
+        try {
+            const doc = await (await draftAwareClient()).fetch<CatalogStyleRefDoc | null>(
+                CATALOG_PRODUCT_STYLE_PAGE_QUERY,
+                {lineSlug, styleSlug},
+            );
+            return doc ? mapStyleRef(doc) : null;
+        } catch (err) {
+            throw sanityReadFailed('[catalog] Sanity style page failed:', err);
+        }
+    };
+    const getCached = sanityCache(
+        fetchUncached,
+        [`www-style-page:${lineSlug}:${styleSlug}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG, WWW_CATALOG_LINES_CACHE_TAG],
+        },
     );
-    if (!style) return null;
-    return {line: result.line, style};
+    return readThrough(fetchUncached, getCached);
 }

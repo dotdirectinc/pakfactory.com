@@ -95,6 +95,7 @@ export const productsRow = rowSection({
   name: 'productsRow', title: 'Product row', icon: PackageIcon,
   sourceTo: [{ type: 'productLine' }, { type: 'productStyle' }, { type: 'solution' }],
   curatedTo: [{ type: 'product' }], itemNoun: 'products',
+  pageListChip: { label: 'Related products' },
 })
 export const bundlesRow = rowSection({
   name: 'bundlesRow', title: 'Bundle row', icon: CubeIcon,

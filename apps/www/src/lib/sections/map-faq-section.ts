@@ -1,4 +1,5 @@
 import type {PageSectionFaqSectionDoc} from '@pakfactory/sanity/queries';
+import type {PortableTextBlock} from '@portabletext/types';
 
 import type {ProductFaq} from '@/lib/catalog/types';
 import {mapSectionChrome} from '@/lib/sections/map-section-chrome';
@@ -23,7 +24,14 @@ export function mapFaqSection(section: PageSectionFaqSectionDoc): {
         const question = row?.question?.trim();
         const answerPlain = row?.answerPlain?.trim();
         if (!question || !answerPlain) continue;
-        items.push({question, answerPlain});
+        const answerBlocks = Array.isArray(row?.answer)
+            ? (row.answer as PortableTextBlock[])
+            : undefined;
+        items.push({
+            question,
+            answerPlain,
+            ...(answerBlocks?.length ? {answer: answerBlocks} : {}),
+        });
     }
 
     const chrome = mapSectionChrome(section);

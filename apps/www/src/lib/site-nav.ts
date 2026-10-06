@@ -12,6 +12,7 @@ import type {
 } from '@pakfactory/sanity/queries';
 import {resolveWwwNavHref} from '@/lib/resolve-www-nav-href';
 import {sanityImageBaseUrl} from '@/lib/sanity/image';
+import {isWwwNavLinkVisible} from '@/lib/www-nav-link-visibility';
 import {WWW_ROUTES} from '@/lib/www-routes';
 
 export type WwwSiteNavModel = {
@@ -47,6 +48,7 @@ function mapNavLink(
   link: WebsiteNavLinkDoc | null | undefined,
 ): SiteNavPanelLink | null {
   if (!link?.label?.trim()) return null;
+  if (!isWwwNavLinkVisible(link)) return null;
   const resolved = resolveWwwNavHref(link);
   if (!resolved?.href) return null;
   return {
@@ -54,6 +56,63 @@ function mapNavLink(
     href: resolved.href,
     ...(resolved.external ? {external: true} : {}),
   };
+}
+
+/** LexoRank from path/internal productLine target, if present. */
+function linkOrderRank(link: WebsiteNavLinkDoc): string | null {
+  const rank =
+    link.pathTarget?.orderRank?.trim() ||
+    link.internalLink?.orderRank?.trim() ||
+    '';
+  return rank || null;
+}
+
+/**
+ * Stable-sort mapped nav links by Studio `orderRank` (productLine drag order).
+ * Ranked links come first (lexicographic); unranked keep document order.
+ */
+export function sortNavLinksByOrderRank(
+  entries: {
+    mapped: SiteNavPanelLink;
+    orderRank: string | null;
+    index: number;
+  }[],
+): SiteNavPanelLink[] {
+  return [...entries]
+    .sort((a, b) => {
+      if (a.orderRank && b.orderRank) {
+        if (a.orderRank < b.orderRank) return -1;
+        if (a.orderRank > b.orderRank) return 1;
+        return a.index - b.index;
+      }
+      if (a.orderRank) return -1;
+      if (b.orderRank) return 1;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.mapped);
+}
+
+function mapGroupLinks(
+  groupItems: (WebsiteNavLinkDoc | null | undefined)[] | null | undefined,
+): SiteNavPanelLink[] {
+  const entries: {
+    mapped: SiteNavPanelLink;
+    orderRank: string | null;
+    index: number;
+  }[] = [];
+
+  for (const [index, link] of (groupItems ?? []).entries()) {
+    if (!link) continue;
+    const mapped = mapNavLink(link);
+    if (!mapped) continue;
+    entries.push({
+      mapped,
+      orderRank: linkOrderRank(link),
+      index,
+    });
+  }
+
+  return sortNavLinksByOrderRank(entries);
 }
 
 function mapPromo(
@@ -99,11 +158,7 @@ function mapChromeItems(chrome: WebsiteNavigationDoc): SiteNavItem[] | null {
     const groups: SiteNavPanelGroup[] = [];
     for (const [groupIndex, group] of (item.groups ?? []).entries()) {
       if (!group) continue;
-      const links: SiteNavPanelLink[] = [];
-      for (const link of group.items ?? []) {
-        const mapped = mapNavLink(link);
-        if (mapped) links.push(mapped);
-      }
+      const links = mapGroupLinks(group.items);
       if (links.length === 0) continue;
       const groupLabel = group.label?.trim() || label;
       groups.push({
@@ -144,6 +199,7 @@ function mapChromeItems(chrome: WebsiteNavigationDoc): SiteNavItem[] | null {
       for (const group of item.groups ?? []) {
         if (href) break;
         for (const link of group?.items ?? []) {
+          if (!isWwwNavLinkVisible(link)) continue;
           const resolved = resolveWwwNavHref(link);
           if (resolved?.href) {
             href = resolved.href;
@@ -178,6 +234,7 @@ function resolveChromeCta(chrome: WebsiteNavigationDoc): SiteNavCta | null {
   if (!chrome?._id || !chrome.cta) return null;
   const label = chrome.cta.label?.trim();
   if (!label) return null;
+  if (!isWwwNavLinkVisible(chrome.cta)) return null;
   const resolved = resolveWwwNavHref(chrome.cta);
   if (!resolved?.href) return null;
   return {label, href: resolved.href};

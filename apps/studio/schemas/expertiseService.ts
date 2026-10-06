@@ -113,7 +113,7 @@ export const expertiseService = defineType({
       title: 'Has a page',
       type: 'boolean',
       group: GROUPS.content,
-      description: 'An editorial judgement — turn it on only when this service earns its own page.',
+      description: 'Off = no page, no route, no listing. An editorial judgement — turn it on only when this service earns its own page.',
       initialValue: false,
     }),
     defineField({

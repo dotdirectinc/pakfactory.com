@@ -1,3 +1,5 @@
+import {PAGE_SECTIONS_PROJECTION as HOME_PAGE_SECTIONS_PROJECTION} from './queries/sections';
+
 export const POSTS_QUERY = /* groq */ `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){
   _id,
   title,
@@ -117,6 +119,7 @@ export {
     CATALOG_PRODUCT_LINES_QUERY,
     CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
+    CATALOG_PRODUCT_STYLE_PAGE_QUERY,
     CATALOG_CUSTOMIZATION_LIBRARY_QUERY,
     CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY,
     CATALOG_CUSTOMIZATION_DETAIL_QUERY,
@@ -125,6 +128,7 @@ export {
     type CatalogAvailableCustomizationDoc,
     type CatalogCategoryDoc,
     type CatalogCustomizationDetailDoc,
+    type CatalogShowcaseImageDoc,
     type CatalogCustomizationRulesDoc,
     type CatalogRulesOptionDoc,
     type CatalogRulesProductDoc,
@@ -133,6 +137,7 @@ export {
     type CatalogLibraryOptionDoc,
     type CatalogLineRefDoc,
     type CatalogOptionDoc,
+    type CatalogAchievedByDoc,
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
@@ -164,17 +169,20 @@ export {
     SOLUTION_STYLES_FILTER_QUERY,
     SOLUTION_STYLE_BY_SLUGS_QUERY,
     SOLUTION_STYLES_FOR_SOLUTION_QUERY,
+    SOLUTION_STYLES_FOR_BREADCRUMB_QUERY,
     SOLUTION_STYLE_PAGE_PARAMS_QUERY,
     type SolutionBySlugDoc,
     type SolutionFormatRefDoc,
     type SolutionPageSlugDoc,
     type SolutionRelatedRefDoc,
+    type SolutionStyleBreadcrumbDoc,
     type SolutionStyleBySlugsDoc,
     type SolutionStyleCardDoc,
     type SolutionStyleFilterDoc,
     type SolutionStylePageParamDoc,
     type SolutionStyleParentDoc,
     type SolutionStyleRefDoc,
+    type SolutionStylesForBreadcrumbDoc,
     type SolutionTemplateDoc,
     type SolutionWithPageDoc,
 } from './queries/solutions';
@@ -192,8 +200,28 @@ export {
     type PageSectionExpertiseSequenceDoc,
     type PageSectionExpertiseStageDoc,
     type PageSectionFaqDoc,
+    type PageSectionCatalogRowItemDoc,
     type PageSectionFaqSectionDoc,
+    type PageSectionProductLinesRowDoc,
+    type PageSectionProductsRowDoc,
+    type PageSectionProductsRowItemDoc,
+    type PageSectionSolutionsRowDoc,
+    type PageSectionStatDoc,
+    type PageSectionStatsDoc,
+    type PageSectionHeroCaseStudyDoc,
+    type PageSectionHeroCopyFields,
+    type PageSectionHeroCtaDoc,
+    type PageSectionHeroFinderDoc,
+    type PageSectionHeroFinderGeneralEntryDoc,
+    type PageSectionHeroFinderIndustryDoc,
+    type PageSectionHeroFinderLineDoc,
+    type PageSectionHeroFinderRailEntryDoc,
+    type PageSectionHeroFinderRailItemDoc,
+    type PageSectionHeroFinderStyleDoc,
+    type PageSectionHeroSpotlightDoc,
+    type PageSectionHeroSpotlightSlideDoc,
     type PageSectionInspirationsCardDoc,
+    type PageSectionInspirationIndustryDoc,
     type PageSectionInspirationsGridDoc,
     type PageSectionProductStylesRowDoc,
     type PageSectionLinkDoc,
@@ -209,6 +237,7 @@ export {
     type PageSectionTestimonialsRowDoc,
     type PageSectionVideoCaseStudiesRowDoc,
     type PageSectionVideoCaseStudyCardDoc,
+    type PageSectionVideoCaseStudyImageDoc,
     type PageSectionVideoCaseStudyMetricDoc,
 } from './queries/sections';
 
@@ -228,6 +257,7 @@ export {
     WEBSITE_NAVIGATION_QUERY,
     type WebsiteNavigationDoc,
     type WebsiteNavLinkDoc,
+    type WebsiteNavLinkTarget,
 } from './queries/website-navigation';
 
 export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
@@ -240,9 +270,9 @@ export const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
 export const HOME_PAGE_QUERY = /* groq */ `*[_type == "homePage"] | order(_updatedAt desc)[0]{
   _id,
   title,
-  heroHeadline,
-  body,
-  seo
+  metaTitle,
+  metaDescription,
+  "sections": sections[]${HOME_PAGE_SECTIONS_PROJECTION}
 }`;
 
 /**
@@ -536,3 +566,11 @@ export const ALL_PRODUCT_PAGES_WITH_PRODUCTS_QUERY = /* groq */ `*[_type == "pro
     "thumbAlt": coalesce(media[0].alt, title)
   }
 }`;
+
+/** Status gates (PROD-2845 + 2026-10-06 visibility rules) for consumers outside www — e.g. admin search. */
+export {
+    HAS_DETAIL_PAGE,
+    OPTION_ACTIVE,
+    PRODUCT_HAS_PAGE,
+    PRODUCT_LISTED,
+} from './queries/status-gates';

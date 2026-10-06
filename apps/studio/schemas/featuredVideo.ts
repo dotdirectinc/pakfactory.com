@@ -5,8 +5,9 @@ import {defineField, defineType} from 'sanity'
  * featuredVideo — shared multi-source video object (upload | S3/CDN URL | YouTube).
  *
  * Used on Product, Product Line, and Expertise Stage so editors learn one field.
- * Ambient / hover playback (`<video>`) resolves from upload or a direct file URL only;
- * YouTube is stored for editorial completeness but front-ends keep the still image.
+ * Ambient / hover playback (`<video>`) resolves from upload or a direct file URL only
+ * (H.264 MP4, VP9 WebM including alpha, or a web-encoded MOV). YouTube is stored for
+ * editorial completeness but front-ends keep the still image.
  */
 export const featuredVideo = defineType({
   name: 'featuredVideo',
@@ -33,8 +34,9 @@ export const featuredVideo = defineType({
       name: 'file',
       title: 'Video file',
       type: 'file',
-      options: {accept: 'video/mp4,video/quicktime'},
-      description: 'MP4 or MOV (H.264 MP4 preferred for widest browser support).',
+      options: {accept: 'video/mp4,video/webm,video/quicktime'},
+      description:
+        'Prefer VP9 WebM with alpha for transparent hover loops (Chrome/Firefox), or H.264 MP4 for widest support without alpha. ProRes / editing MOV files will not play in browsers.',
       hidden: ({parent}) => parent?.source !== 'upload',
       validation: (Rule) =>
         Rule.custom((value, context) => {
@@ -50,7 +52,7 @@ export const featuredVideo = defineType({
       title: 'Video URL',
       type: 'url',
       description:
-        'Direct link to an MP4 or MOV on a public S3 or CDN. Not a webpage.',
+        'Direct link to an MP4 or WebM on a public S3 or CDN (MOV only if already web-encoded). Not a webpage.',
       hidden: ({parent}) => parent?.source !== 'url',
       validation: (Rule) =>
         Rule.custom((value, context) => {

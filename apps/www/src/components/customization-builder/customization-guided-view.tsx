@@ -7,11 +7,15 @@ import type {PropertySelectionMap} from '@/components/customization/option-prope
 import type {ProductDimensionRange} from '@/lib/catalog/types';
 import {
     getAnswer,
-    isAnswerReady,
+    isPrintedSideComplete,
+    isPrintingCategoryStep,
+    isStepReady,
+    wantsAnyPrint,
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PrintSideValue,
     type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
@@ -41,6 +45,11 @@ type CustomizationGuidedViewProps = {
         selections: PropertySelectionMap,
         summaries: PropertySelectionSummaryItem[],
     ) => void;
+    onPrintedSideChange: (patch: {
+        printOutside?: PrintSideValue;
+        printInside?: PrintSideValue;
+    }) => void;
+    onPrintingConsultation: () => void;
     onBack: () => void;
     onNext: () => void;
     onSkip: () => void;
@@ -66,6 +75,8 @@ export function CustomizationGuidedView({
     onClearCategory,
     onEntryNoteChange,
     onPropertySelectionsChange,
+    onPrintedSideChange,
+    onPrintingConsultation,
     onBack,
     onNext,
     onSkip,
@@ -78,10 +89,17 @@ export function CustomizationGuidedView({
     const isFirst = stepIndex <= 0;
     const isLast = stepIndex >= steps.length - 1;
     const step = steps[stepIndex];
-    const canAdvance =
-        step?.kind === 'dimensions'
-            ? isAnswerReady(getAnswer(state, activeKey), dimensionAxisIds)
-            : isAnswerReady(getAnswer(state, activeKey));
+    const canAdvance = step
+        ? isStepReady(state, step, dimensionAxisIds)
+        : false;
+    // Footer Skip → specialist for methods. Gate link owns specialist before methods;
+    // both No uses Next (None).
+    const canSkip =
+        !step ||
+        !isPrintingCategoryStep(step) ||
+        (isPrintedSideComplete(state) &&
+            wantsAnyPrint(state) &&
+            getAnswer(state, step.key).status !== 'not-sure');
 
     function handleSelectStep(key: BuilderStepKey) {
         const index = steps.findIndex((step) => step.key === key);
@@ -110,6 +128,8 @@ export function CustomizationGuidedView({
             onClearCategory={onClearCategory}
             onEntryNoteChange={onEntryNoteChange}
             onPropertySelectionsChange={onPropertySelectionsChange}
+            onPrintedSideChange={onPrintedSideChange}
+            onPrintingConsultation={onPrintingConsultation}
             footer={
                 <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-3">
                     <Button
@@ -126,6 +146,7 @@ export function CustomizationGuidedView({
                             type="button"
                             variant="link"
                             className="px-0"
+                            disabled={!canSkip}
                             onClick={onSkip}
                         >
                             {CUSTOMIZATION_BUILDER_COPY.skip}

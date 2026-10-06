@@ -12,11 +12,13 @@ import {
 } from "@/lib/sanity/env";
 import { absoluteUrl } from "@/lib/site";
 import {
+  WWW_CASE_STUDIES_CACHE_TAG,
   WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG,
   WWW_CATALOG_LINES_CACHE_TAG,
   WWW_CATALOG_PRODUCTS_CACHE_TAG,
   WWW_EXPERTISE_CACHE_TAG,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
+  WWW_HOME_PAGE_CACHE_TAG,
   WWW_SOLUTIONS_CACHE_TAG,
   WWW_WEBSITE_NAVIGATION_CACHE_TAG,
   wwwExpertiseTag,
@@ -87,6 +89,16 @@ const CATALOG_CUSTOMIZATION_TYPES = new Set([
   "customizationType",
 ]);
 
+/** Documents that can change what `/` renders (homePage + hero spotlight targets). */
+const HOME_PAGE_SOURCE_TYPES = new Set([
+  "homePage",
+  "caseStudy",
+  "client",
+  "productLine",
+  "productStyle",
+  "solution",
+]);
+
 export async function POST(request: Request) {
   const secret = process.env.SANITY_REVALIDATE_SECRET?.trim();
   if (!secret) {
@@ -140,6 +152,8 @@ export async function POST(request: Request) {
 
   const touchesCaseStudies = !type || CASE_STUDY_TYPES.has(type);
   if (touchesCaseStudies) {
+    // One tag for listing + every detail: details show related studies (PROD-2755).
+    tags.add(WWW_CASE_STUDIES_CACHE_TAG);
     // The listing always reflects any of these changes (cards, filters, page SEO).
     revalidatePath("/case-studies");
     revalidated.push("/case-studies");
@@ -154,9 +168,12 @@ export async function POST(request: Request) {
   }
 
   // productLinePage / productDetailPage edits reorder every LP/PDP that references the template.
+  // A solution's status decides whether an inspiration product is visible at all
+  // (rule 1) and whether its breadcrumb links, so solution edits reach products too.
   const touchesProducts =
     !type ||
     CATALOG_PRODUCT_TYPES.has(type) ||
+    type === "solution" ||
     type === "customizationOption" ||
     type === FAQ_TYPE ||
     type === "productCatalogPage" ||
@@ -255,7 +272,27 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!type || type === "websiteNavigation") {
+  // PROD-2666 — Home is the homePage sections plus whatever its heroes point at
+  // (case studies, product lines/styles, solutions, clients).
+  if (!type || HOME_PAGE_SOURCE_TYPES.has(type)) {
+    revalidatePath("/");
+    revalidated.push("/");
+  }
+  // PROD-2755 — the cached Home read dereferences far more than the types above
+  // (Finder buckets: customizations, expertise, industries…). It is one small
+  // query, so bust it on every webhook rather than risk a stale Home.
+  tags.add(WWW_HOME_PAGE_CACHE_TAG);
+
+  // Nav links are gated on their targets' status and parents (isCatalogTargetVisible),
+  // so a catalog edit can add or drop a nav entry — not only a websiteNavigation edit.
+  if (
+    !type ||
+    type === "websiteNavigation" ||
+    CATALOG_PRODUCT_TYPES.has(type) ||
+    CATALOG_CUSTOMIZATION_TYPES.has(type) ||
+    type === "solution" ||
+    type === "solutionStyle"
+  ) {
     tags.add(WWW_WEBSITE_NAVIGATION_CACHE_TAG);
   }
 
@@ -263,8 +300,12 @@ export async function POST(request: Request) {
     tags.add(WWW_GLOBAL_SETTINGS_CACHE_TAG);
   }
 
-  // Next 16: revalidateTag takes (tag, profile). "max" requests a full revalidate.
-  for (const tag of tags) revalidateTag(tag, "max");
+  // Next 16: revalidateTag takes (tag, profile). `{ expire: 0 }` expires the entry now, so the
+  // next request after a publish fetches fresh content. "max" (what this was) is
+  // stale-while-revalidate: the next visitor still got the pre-publish version while the
+  // refresh ran in the background — an option set to coming-soon stayed selectable for one
+  // more page load, and one set back to active stayed missing.
+  for (const tag of tags) revalidateTag(tag, { expire: 0 });
 
   // PROD-2172 — ping IndexNow on case-study publish/update/unpublish. Covers
   // unpublish too: Sanity's delete webhook payload still carries the doc's last
@@ -321,7 +362,8 @@ export async function POST(request: Request) {
     type === "expertiseService" ||
     type === FAQ_TYPE ||
     type === "websiteNavigation" ||
-    type === "settings";
+    type === "settings" ||
+    type === "homePage";
 
   return NextResponse.json({
     revalidated: true,

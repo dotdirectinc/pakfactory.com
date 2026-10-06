@@ -26,7 +26,8 @@ export type UiKind =
   | "specTable"
   | "cardGrid"
   | "linkOut"
-  | "chip";
+  | "chip"
+  | "achieves";
 
 export type ToggleItem = {
   label: string;
@@ -38,8 +39,8 @@ export type SwatchItem = {
   label: string;
   color?: string;
   imageUrl?: string;
-  /** Empty dotted circle (e.g. Need consultation); no fill/image. */
-  appearance?: "swatch" | "consultation";
+  /** Empty dotted circle (e.g. Need consultation); no fill/image. Color wheel for custom. */
+  appearance?: "swatch" | "consultation" | "customColor";
 };
 
 export type SpecSegment = {
@@ -61,6 +62,17 @@ export type LinkItem = {
 export type ChipItem = {
   id: string;
   label: string;
+  /** Empty dotted treatment (e.g. Need consultation); matches swatch consultation. */
+  appearance?: "chip" | "consultation";
+};
+
+/** Technical option that can deliver a customer-facing finish (ADR-017). */
+export type AchievesTechnique = {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  learnMoreHref?: string;
 };
 
 export type ValuesPerItem = "one" | "many";
@@ -90,7 +102,8 @@ export type PropertyControllerValue =
   | {kind: "swatch"; value: string}
   | {kind: "specTable"; value: string}
   | {kind: "cardGrid"; value: string}
-  | {kind: "chip"; value: string[]};
+  | {kind: "chip"; value: string[]}
+  | {kind: "achieves"; value: string};
 
 export type UiDescriptor =
   | {kind: "readonly"; value: string}
@@ -138,4 +151,14 @@ export type UiDescriptor =
       chips: ChipItem[];
       valuesPerItem?: ValuesPerItem;
       values?: string[];
+    }
+  | {
+      kind: "achieves";
+      /** Technique cards that can deliver this option. */
+      techniques: AchievesTechnique[];
+      consultationId: string;
+      consultationLabel: string;
+      learnMoreLabel?: string;
+      /** Selected technique id or consultationId. */
+      value?: string;
     };

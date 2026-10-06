@@ -1,4 +1,8 @@
 import {
+    orderableDocumentListDeskItem,
+    type OrderableListConfig,
+} from '@sanity/orderable-document-list'
+import {
     ArrowRightIcon,
     CogIcon,
     ComponentIcon,
@@ -706,12 +710,51 @@ function propertyGlobalItems(S: StructureBuilder): ListItemBuilder[] {
     ];
 }
 
-export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+
+/**
+ * `orderableDocumentListDeskItem` takes ONE `title` and uses it for the SIDEBAR item.
+ * The pane heading is not set at all, so it falls back to the schema type's own title
+ * — which is singular ("Product Line", "Customization Category").
+ *
+ * Before the plugin both were set explicitly, so a plain list could read "Product
+ * Lines" in both places. Collapsing them into one title left the panes reading
+ * "Product Line" and "Customization Category" — cosmetic, but the pane heading is
+ * the one an editor reads after clicking.
+ *
+ * This sets both. `paneTitle` exists because the two ARE separable and that is what
+ * the plugin hides; no caller needs it today, since all three lists want the pair to
+ * match.
+ */
+function orderableList(
+    config: Omit<OrderableListConfig, 'title'> & { navTitle: string; paneTitle?: string },
+): ReturnType<typeof orderableDocumentListDeskItem> {
+    const { navTitle, paneTitle, ...rest } = config
+    const item = orderableDocumentListDeskItem({ ...rest, title: navTitle })
+    return {
+        ...item,
+        title: navTitle,
+        // `child` is the serialised pane object here, but its declared type is a union
+        // that also allows a function or observable — hence the trip through `unknown`.
+        child: { ...(item.child as unknown as Record<string, unknown>), title: paneTitle ?? navTitle },
+    } as ReturnType<typeof orderableDocumentListDeskItem>
+}
+
+export function productsItems(
+    S: StructureBuilder,
+    context: StructureResolverContext,
+): (ListItemBuilder | DividerBuilder)[] {
     return [
-        S.listItem()
-            .title('Product Lines')
-            .schemaType('productLine')
-            .child(S.documentTypeList('productLine').title('Product Lines')),
+        // Drag-to-order, not a plain document list (PROD-2744). The plugin owns the
+        // pane, so `defaultOrdering` does not apply here — the drag order IS the
+        // order, and the sort menu's "Ordered" entry comes from `orderRankOrdering`
+        // on `productLine`. www Products mega-menu sorts by `orderRank`; catalog
+        // listing queries still use `order(title asc)`.
+        orderableList({
+            type: 'productLine',
+            navTitle: 'Product Lines',
+            S,
+            context,
+        }),
         S.listItem()
             .title('Product Styles')
             .schemaType('productStyle')
@@ -766,14 +809,23 @@ export function productsItems(S: StructureBuilder): (ListItemBuilder | DividerBu
     ];
 }
 
-export function customizationItems(S: StructureBuilder): (ListItemBuilder | DividerBuilder)[] {
+export function customizationItems(
+    S: StructureBuilder,
+    context: StructureResolverContext,
+): (ListItemBuilder | DividerBuilder)[] {
     return [
+        // Drag-to-order (PROD-2749). Restores the category position removed with
+        // `order` in September; the list had gone alphabetical, putting Additional
+        // Customization ahead of Materials. Studio only — the front end still runs
+        // its own hard-coded order.
+        orderableList({
+            type: 'customizationCategory',
+            navTitle: 'Customization Categories',
+            S,
+            context,
+        }),
         S.listItem()
-            .title('Categories')
-            .schemaType('customizationCategory')
-            .child(S.documentTypeList('customizationCategory').title('Customization Categories')),
-        S.listItem()
-            .title('Types')
+            .title('Customization Types')
             .schemaType('customizationType')
             // Title, not Last Edited (PROD-2545) — same reasoning as Options below.
             // Grouping by Category is the sort editors want, but a reference path cannot
@@ -784,7 +836,7 @@ export function customizationItems(S: StructureBuilder): (ListItemBuilder | Divi
                     .defaultOrdering([{field: 'title', direction: 'asc'}]),
             ),
         S.listItem()
-            .title('Options')
+            .title('Customization Options')
             .schemaType('customizationOption')
             // Title, not Last Edited (PROD-2544). Last Edited is the Studio's own default
             // and it reshuffles underfoot: editing any option throws it to the top while
@@ -825,20 +877,20 @@ const sitePreviewHint = (S: StructureBuilder) =>
 
 export const productsStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Products')
-        .items([...sitePreviewHint(S), ...productsItems(S)]);
+        .items([...sitePreviewHint(S), ...productsItems(S, context)]);
 
 /** Customization — Category · Type · Option · Option Group (+ Global Property picks) */
 export const customizationStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Customization')
-        .items([...sitePreviewHint(S), ...customizationItems(S)]);
+        .items([...sitePreviewHint(S), ...customizationItems(S, context)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D1 workspaces (PROD-2329 / D39) — Case Studies · Global (+ Solutions ·
@@ -921,21 +973,24 @@ export const globalStructure = (
  *  Resources and Main Website stay unbuilt (unbuilt types / Questions for Dev #1). */
 export const solutionsWorkspaceStructure = (
     S: StructureBuilder,
-    _context: StructureResolverContext,
+    context: StructureResolverContext,
 ) =>
     S.list()
         .title('Solutions')
         .items([
             ...sitePreviewHint(S),
-            S.listItem()
-                .title('Solutions')
-                .icon(BulbOutlineIcon)
-                .schemaType('solution')
-                .child(
-                    S.documentTypeList('solution')
-                        .title('Solutions')
-                        .defaultOrdering([{field: 'title', direction: 'asc'}]),
-                ),
+            // Drag-to-order, not a plain document list (PROD-2745), same as Product
+            // Lines. The plugin owns the pane, so the `defaultOrdering` this item
+            // used to carry is gone on purpose — the drag order IS the order. The
+            // sort menu still offers Title, from `orderings` on `solution`.
+            // Studio only; no site query reads `orderRank`.
+            orderableList({
+                type: 'solution',
+                navTitle: 'Solutions',
+                icon: BulbOutlineIcon,
+                S,
+                context,
+            }),
             // Second level. Flat rather than nested under each solution: a
             // collection is edited far more often than the solution above it,
             // and one list is fewer clicks than 36 folders.
@@ -1125,6 +1180,16 @@ export const mainWebsiteStructure = (
                                 .child(
                                     S.documentTypeList('solutionStylePage').title(
                                         'Solution Style Pages',
+                                    ),
+                                ),
+                            // Inspiration PDP layouts — each inspiration product selects one.
+                            S.listItem()
+                                .title('Solution Product Detail Pages')
+                                .icon(PackageIcon)
+                                .schemaType('solutionProductDetailPage')
+                                .child(
+                                    S.documentTypeList('solutionProductDetailPage').title(
+                                        'Solution Product Detail Pages',
                                     ),
                                 ),
                         ]),

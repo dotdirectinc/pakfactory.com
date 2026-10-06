@@ -18,6 +18,8 @@ import {getUser} from '@pakfactory/supabase/session';
 export type SubmitRequestInput = {
     draft: RequestDraft;
     lines: RequestLine[];
+    /** Studio titles aligned with `draft.services` (same order). */
+    serviceTitles?: string[];
 };
 
 export type SubmitRequestResult =
@@ -71,7 +73,7 @@ const GENERIC_ERROR =
 export async function submitRequest(
     input: SubmitRequestInput,
 ): Promise<SubmitRequestResult> {
-    const {draft, lines} = input;
+    const {draft, lines, serviceTitles} = input;
 
     // Client-side gate first, so an incomplete draft never becomes a network
     // round trip. These messages name the specific field; the server's 422s are
@@ -127,7 +129,9 @@ export async function submitRequest(
         console.error('[submitRequest] session lookup failed; submitting as guest', err);
     }
 
-    const wire = toWireSubmission(draft, lines, submissionId);
+    const wire = toWireSubmission(draft, lines, submissionId, {
+        ...(serviceTitles?.length ? {serviceTitles} : {}),
+    });
     const body = JSON.stringify(
         customerId ? {...wire, customerId} : wire,
     );

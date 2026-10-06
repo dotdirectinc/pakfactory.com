@@ -46,6 +46,7 @@ import {
   CustomizationOptionUsedByView,
   CustomizationTypeOptionsView,
   PropertyValueUsedByView,
+  GlossaryTermOptionsView,
   PropertyValuesView,
 } from './components/customizationViews'
 
@@ -261,6 +262,14 @@ const defaultDocumentNode = (S: any, { schemaType }: { schemaType: string }) => 
     return S.document().views([
       S.view.form().title('Edit'),
       S.view.component(PropertyValuesView).title('Values'),
+    ])
+  }
+  // An option names its glossary term on its own side; this tab shows that link from the
+  // term (one stored link, read from both sides — never a mirrored second field).
+  if (schemaType === 'glossaryTerm') {
+    return S.document().views([
+      S.view.form().title('Edit'),
+      S.view.component(GlossaryTermOptionsView).title('Linked customization options'),
     ])
   }
   if (schemaType === 'propertyValue') {

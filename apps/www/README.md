@@ -56,9 +56,51 @@ Catalog pages **do not re-query Sanity on every filter click**.
 | **Fetch** | Server helpers in [`src/lib/catalog/catalog.ts`](./src/lib/catalog/catalog.ts): `listCustomizations()`, `listProducts()`, `listLines()`, etc. |
 | **Cache** | Wrapped in Next `unstable_cache` with tags/TTLs from [`src/lib/www-cache.ts`](./src/lib/www-cache.ts) (`WWW_CATALOG_*`, ~**60s** catalog ISR floor, **300s** content safety-net). |
 | **Bust** | Sanity webhook → `/api/revalidate` must call `revalidateTag(tag, "max")`. **Path-only** revalidation does **not** invalidate `unstable_cache`. |
-| **Products + customizations filters** | One library payload on the server; **client-side** filter/search/facets over that list (no per-filter GROQ). Facet option counts are **disjunctive (except-self)** — selecting one Product Line does not zero sibling lines. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md), [`docs/customizations-catalog.md`](./docs/customizations-catalog.md). |
+| **Products + customizations filters** | One library payload on the server; **client-side** filter/search/facets over that list (no per-filter GROQ). Facet option counts are **disjunctive (except-self)** — selecting one Product Line does not zero sibling lines. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md), [`docs/customizations-catalog.md`](./docs/customizations-catalog.md). **Customization cards:** Featured image (else first Media) at rest; hover plays Featured video when both exist, else second Media image; single Media = static — [`docs/customizations-catalog.md`](./docs/customizations-catalog.md#business-rules--customization-card-media). |
 
 Same cache tags cover products, product lines, solutions, and chrome (e.g. `websiteNavigation`) — see the constants in `www-cache.ts`.
+
+**Home and case studies (PROD-2755)** read through the same pattern:
+- **Home:** `getHomePage()` in [`src/lib/home-page.ts`](./src/lib/home-page.ts) is cached under `WWW_HOME_PAGE_CACHE_TAG`.
+- **Case studies:** `getCaseStudy()`, `getCaseStudiesPage()` and `listCaseStudyCards()` in [`src/lib/case-studies/case-studies.ts`](./src/lib/case-studies/case-studies.ts) are cached under `WWW_CASE_STUDIES_CACHE_TAG`. `generateMetadata` uses the `getPublished*` variants, so draft-mode stega never reaches `<title>`.
+- **Webhook:** `/api/revalidate` busts the case-study tag for every case-study-set type, and the home tag on **every** call (Home dereferences most content types). A body-less call (the staging `{"sweep": true}` webhook) still sweeps everything.
+- **Draft mode:** stays uncached, via `readThrough`.
+
+## Page caching (PROD-2754)
+
+- **The `(site)` layout must not read the session** (no `cookies()`, no `getUser()`).
+  - Any dynamic API in that layout makes every marketing page dynamic. Before this change, nothing was CDN-cached and every `export const revalidate` was ignored.
+  - Today `(site)` routes build as `○`/`●` (static or ISR) and return `Cache-Control: s-maxage=…`. Check with `next build` before merging layout changes.
+- **The header account is resolved in the browser.**
+  - `useNavAccount` (`src/lib/auth/use-nav-account.ts`) reads the session cookie for display only.
+  - Authorization still happens server-side: `(account)` / `(request)` call `getUser()` and stay dynamic.
+- **Pre-paint flag:** `NAV_SESSION_FLAG_SCRIPT` (`src/lib/auth/nav-session-flag.ts`) runs inline before first paint.
+  - With an `sb-*-auth-token` cookie, it marks `#pf-nav-session`, so CSS (`globals.css`) shows an avatar placeholder instead of "Sign in".
+  - Signed-out visitors see the unchanged header.
+  - UI approval for the placeholder: Richard Chang.
+- **Moved helpers:** `accountDisplayName` / `accountAvatarUrl` now live in `@pakfactory/supabase/account-display` (client-safe) and are re-exported from `/session`.
+
+## Sanity read failures (PROD-2754 follow-up)
+
+Cached Sanity reads use `sanityCache` (`src/lib/sanity/sanity-cache.ts`) instead of raw `unstable_cache`. **Never return an empty fallback from a cached read:** pages are static/ISR, so an empty result gets baked into the page and the CDN.
+
+- **Retries:** a failing read is retried twice (300 ms, then 1 s), then **rethrown** and logged in every environment via `sanityReadFailed`.
+- **Build:** the deploy fails instead of publishing empty pages.
+- **Time-based refresh (60 s / 5 min):** a failed refresh keeps serving the **last good page**. Verified with a simulated 6-minute outage.
+- **Webhook refresh during an outage:** the page was hard-expired, so it returns an error until Sanity recovers. This is not cached. In practice a publish implies Sanity is up.
+- **Exceptions:** "Sanity not configured" still returns empty. The optional solution-style breadcrumb on the product page still degrades gracefully.
+
+## First paint (PROD-2756)
+
+- **CSS is inlined** (`experimental.inlineCss` in `next.config.ts`, production builds only).
+  - As a separate file, the stylesheet downloaded alongside ~20 async JS chunks. On a throttled mobile link it finished about 1.5 s late, and nothing paints before the CSS. Throttled first paint went ~0.9 s → ~0.37 s.
+  - **Trade-off:** the CSS (~175 KB raw) is embedded in each full-page HTML response, roughly three times: once in `<style>`, plus copies in the flight data. That is about +85 KB gzipped per full load. Client-side navigations carry none.
+  - Re-measure before removing this flag.
+- **No library in the shared layout may be imported eagerly unless it is needed for first paint.** `FooterWordmark` dynamic-imports `gsap` on mount; a static import put ~43 KB gz of gsap on every page.
+- **Mobile-only no-fade on entrance animations.** Below `md` (768px), `animate-page-enter` and `animate-heading-settle` rise without fading; tablet and desktop keep the fade.
+  - **Why:** text that starts at `opacity: 0` does not count as painted for LCP until the fade completes. On throttled mobile that cost ~0.5–1 s of LCP on heading-led pages.
+  - **Approved by:** Richard Chang (2026-10-05), mobile-only.
+  - **Don't reintroduce an opacity start state below `md` on above-the-fold content.**
 
 ## Components
 
@@ -90,8 +132,9 @@ Detail for products wiring: [`docs/products-catalog.md`](./docs/products-catalog
 | [`CLAUDE.md`](./CLAUDE.md) | Routes, auth, SEO, composition rules (agents + humans) |
 | [`memory.md`](./memory.md) | Vercel, staging, env troubleshooting |
 | [`docs/products-catalog.md`](./docs/products-catalog.md) | Products library how-built (fetch → map → client filter; disjunctive facet counts) |
-| [`docs/customizations-catalog.md`](./docs/customizations-catalog.md) | Customizations library how-built (fetch → map → client filter; disjunctive facet counts) |
+| [`docs/customizations-catalog.md`](./docs/customizations-catalog.md) | Customizations library how-built (fetch → map → client filter; disjunctive facet counts) + **card media business rules** (Featured image / video / Media hover) |
 | [`docs/customization-filter-taxonomy.md`](./docs/customization-filter-taxonomy.md) | Filter facet operators, product-line vocabulary, and except-self count rule |
+| [`docs/product-3d-preview.md`](./docs/product-3d-preview.md) | "View in 3D" product preview — CMS `model3d` bridge, viewer, PakStudio north star |
 | [`docs/auth-emails/README.md`](./docs/auth-emails/README.md) | Supabase auth email templates |
 | [`DESIGN.md`](../../DESIGN.md) | Design system / tokens |
 | [`ENGINEERING.md`](../../ENGINEERING.md) | RSC, state, placement practice |

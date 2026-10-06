@@ -127,7 +127,7 @@ async function seed() {
       fetchLayout(STACK_ID),
       fetchLayout(BOTTOM_BAR_ID),
       client.fetch(
-        `*[_type == "productLine" && customerFacing == true && !defined(template)]{
+        `*[_type == "productLine" && (!defined(status) || status in ["active", "discontinued"]) && !defined(template)]{
           _id,
           title,
           "slug": slug.current

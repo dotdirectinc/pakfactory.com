@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
-import { getPublishedSanityClient, getSanityClient } from "@/lib/sanity/client";
-import { isSanityConfigured } from "@/lib/sanity/env";
 import {
-  CASE_STUDIES_LISTING_QUERY,
-  CASE_STUDIES_PAGE_QUERY,
   type CaseStudyCard as CaseStudyCardData,
   type CaseStudiesPageData,
 } from "@pakfactory/sanity/queries";
+import {
+  getCaseStudiesPage,
+  getPublishedCaseStudiesPage,
+  listCaseStudyCards,
+} from "@/lib/case-studies/case-studies";
 import {
   breadcrumbList,
   collectionPage,
@@ -46,19 +47,9 @@ type ListingData = {
 };
 
 export async function fetchCaseStudiesListing(): Promise<ListingData> {
-  const client = isSanityConfigured() ? await getSanityClient() : null;
-
   const [studies, pageData] = await Promise.all([
-    client
-      ? client
-          .fetch<CaseStudyCardData[]>(CASE_STUDIES_LISTING_QUERY)
-          .catch(() => [] as CaseStudyCardData[])
-      : Promise.resolve([] as CaseStudyCardData[]),
-    client
-      ? client
-          .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
-          .catch(() => null)
-      : Promise.resolve(null),
+    listCaseStudyCards(),
+    getCaseStudiesPage(),
   ]);
 
   return { studies, pageData };
@@ -68,11 +59,7 @@ export async function buildCaseStudiesListingMetadata(
   pageNumber = 1,
 ): Promise<Metadata> {
   const [pageData, defaultOgImageUrl] = await Promise.all([
-    isSanityConfigured()
-      ? getPublishedSanityClient()
-          .fetch<CaseStudiesPageData | null>(CASE_STUDIES_PAGE_QUERY)
-          .catch(() => null)
-      : Promise.resolve(null),
+    getPublishedCaseStudiesPage(),
     fetchDefaultOgImageUrl(),
   ]);
 

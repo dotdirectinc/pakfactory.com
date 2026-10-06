@@ -2,6 +2,7 @@ import type {CSSProperties, ReactNode} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {ChevronDown} from 'lucide-react';
+import {ImagePlaceholder} from '@pakfactory/ui/components/image-placeholder';
 import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {Button} from '@pakfactory/ui/components/button';
 import {cn} from '@pakfactory/ui/lib/utils';
@@ -399,8 +400,12 @@ type PageHeadingWithMediaProps = PageHeadingSectionProps & {
 };
 
 /**
- * Catalogue heading with optional featured media — keeps {@link PageHeadingSection}
+ * Catalogue heading with featured media column — keeps {@link PageHeadingSection}
  * free of layout changes for plain title/description pages (`/products`).
+ *
+ * Always keeps a media column (lg+: text ~55% / media ~45%). Real image when
+ * `media.src` is set; otherwise {@link ImagePlaceholder}. Image bleeds and crops
+ * against the top, bottom, and right of the heading band.
  */
 export function PageHeadingWithMedia({
     media,
@@ -410,37 +415,37 @@ export function PageHeadingWithMedia({
     variant = 'default',
     ...contentProps
 }: PageHeadingWithMediaProps) {
-    const hasMedia = Boolean(media?.src);
+    const mediaSrc = media?.src?.trim() || '';
+    const hasSrc = Boolean(mediaSrc);
 
     return (
         <PageDielineSection
             borderBottom={borderBottom}
-            paddingBlock="lg"
+            paddingBlock="none"
             className={className}
             innerClassName={innerClassName}
         >
-            <div
-                className={cn(
-                    'flex flex-col gap-8',
-                    hasMedia && 'lg:flex-row lg:items-start lg:justify-between lg:gap-12',
-                )}
-            >
-                <div className={cn(hasMedia && 'min-w-0 flex-1')}>
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:gap-0">
+                <div className="min-w-0 py-20 sm:py-24 lg:w-[55%] lg:shrink-0 lg:py-28 lg:pr-12">
                     <PageHeadingContent variant={variant} {...contentProps} />
                 </div>
-                {hasMedia && media ? (
-                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-lg bg-muted lg:max-w-md lg:flex-1">
+                <div className="relative aspect-4/3 w-full overflow-hidden rounded-lg lg:aspect-auto lg:min-h-72 lg:w-[45%] lg:rounded-none lg:-mr-layout-gutter-inner">
+                    {hasSrc ? (
                         <Image
-                            src={media.src}
-                            alt={media.alt}
-                            width={media.width ?? 640}
-                            height={media.height ?? 480}
-                            className="size-full object-cover"
-                            sizes="(max-width: 1024px) 100vw, 448px"
+                            src={mediaSrc}
+                            alt={media?.alt ?? ''}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 1024px) 100vw, 45vw"
                             priority
                         />
-                    </div>
-                ) : null}
+                    ) : (
+                        <ImagePlaceholder
+                            className="absolute inset-0"
+                            iconClassName="size-16 lg:size-20"
+                        />
+                    )}
+                </div>
             </div>
         </PageDielineSection>
     );

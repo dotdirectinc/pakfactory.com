@@ -60,19 +60,40 @@ export function deprecateField(reason: string): { deprecated: { reason: string }
  * unique, since a curated list repeating an item is always a mistake.
  *
  * @param max  the hard ceiling (e.g. 4 for "max 4 featured", 6 for "3–6 FAQs")
- * @param min  optional floor (e.g. 3 for "3–6 FAQs"); omit for "up to N"
+ * @param min  optional floor (e.g. 3 for "3–6 FAQs"); omit for "up to N". A WARNING, not
+ *             an error: an empty list passes, and 1..min-1 warns but still publishes. FAQ
+ *             fields fall back when empty and a short curated list replaces the fallback
+ *             outright, so a hard floor would block a legitimate one-FAQ override.
  *
- * @example  validation: maxCurated(6, 3)   // 3–6, unique
+ * @example  validation: maxCurated(6, 3)   // up to 6, unique; warns below 3
  * @example  validation: maxCurated(4)      // up to 4, unique
  */
 export function maxCurated(max: number, min?: number) {
   // Generic over the concrete rule (ArrayRule, etc.) so the returned builder is
   // assignable to a field's `validation` — a plain `(Rule) => Rule` returns the
   // base type and TypeScript rejects it against `ValidationBuilder<ArrayRule>`.
-  return <R extends { max(n: number): R; min(n: number): R; unique(): R }>(rule: R): R => {
-    let out = rule.max(max).unique()
-    if (typeof min === 'number') out = out.min(min)
-    return out
+  return <
+    R extends {
+      max(n: number): R
+      unique(): R
+      custom(fn: (value: unknown) => true | string): R
+      warning(): R
+    },
+  >(
+    rule: R,
+  ): R[] => {
+    const rules = [rule.max(max).unique()]
+    if (typeof min === 'number') {
+      rules.push(
+        rule
+          .custom((value) => {
+            const n = Array.isArray(value) ? value.length : 0
+            return n === 0 || n >= min ? true : `Aim for at least ${min} — ${n} still publishes.`
+          })
+          .warning(),
+      )
+    }
+    return rules
   }
 }
 

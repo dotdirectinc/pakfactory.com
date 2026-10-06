@@ -10,6 +10,7 @@
     "./globals.css": "./src/globals.css",
     "./tailwind-sources.css": "./src/tailwind-sources.css",
     "./lib/utils": "./src/lib/utils.ts",
+    "./lib/can-hover-peek": "./src/lib/can-hover-peek.ts",
     "./lib/pagination/*": "./src/lib/pagination/*.ts",
     "./lib/watermark/*": "./src/lib/watermark/*.ts",
     "./components/*": "./src/components/*.tsx",

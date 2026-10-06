@@ -2,6 +2,14 @@ export const REQUEST_COPY = {
     addToRequest: 'Add to request',
     addedToYourRequest: 'Added to quote request',
     viewYourRequest: 'View quote request',
+    /** Sticky PDP configuration bar */
+    yourConfiguration: 'YOUR CONFIGURATION',
+    clear: 'Clear',
+    done: 'Done',
+    contentsChip: 'What you’re putting in the packaging',
+    quantityFillHelp: 'Choose at least one quantity to add this to your request.',
+    customizationCountOne: '1 customization',
+    customizationCountMany: '{n} customizations',
     contentsLabel: 'What are you putting in the packaging?',
     contentsHelp: 'The product that goes inside — bottles, jars, kits…',
     contentsPlaceholder: 'e.g. 750ml spirit bottles, skincare jars…',
@@ -67,10 +75,14 @@ export const REQUEST_COPY = {
     preparedFor: 'Prepared for',
     shippedToAddress: 'Shipped to Address',
     paperEdit: 'Edit',
+    paperServices: 'Additional Services',
     paperBrief: 'Brief',
     paperQty: 'Qty',
     paperItem: 'Item',
-    paperConfiguration: 'Configuration',
+    paperConfiguration: 'Customization',
+    paperProductPrefix: 'Product:',
+    paperDetailPrefix: 'Detail:',
+    paperDimensionsLabel: 'Dimensions',
     noProductsAdded: 'No products added.',
     regionToConfirm: 'Region — to confirm',
     notSet: 'Not set',
@@ -239,6 +251,14 @@ export const SERVICE_OPTIONS = [
     {id: 'sourcing', label: 'Sourcing'},
     {id: 'fulfilment', label: 'Fulfilment'},
 ] as const;
+
+/**
+ * Labels for pre-Studio RFQ drafts that stored coarse service ids.
+ * Live Brief Builder options come from Sanity expertise stages.
+ */
+export const LEGACY_SERVICE_LABELS: Record<string, string> = Object.fromEntries(
+    SERVICE_OPTIONS.map((option) => [option.id, option.label]),
+);
 
 export const INDUSTRY_OPTIONS = [
     'Food & Beverage',

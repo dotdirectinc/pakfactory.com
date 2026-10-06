@@ -1,4 +1,10 @@
-import {LINE_STYLE_VISIBLE} from './catalog';
+import {
+  HAS_DETAIL_PAGE,
+  LINE_STYLE_ACTIVE,
+  LINE_STYLE_LISTED,
+  OPTION_ACTIVE,
+  SOLUTION_ACTIVE,
+} from './status-gates';
 
 /**
  * Case Studies GROQ — field names mirror the `caseStudy` schema (PROD-1893).
@@ -10,6 +16,35 @@ import {LINE_STYLE_VISIBLE} from './catalog';
 // ─── Shared sub-projections ───────────────────────────────────────────────────
 
 const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
+
+/** Detail meta chips — slug + excerpt + image for SneakPeek (PROD-2737). */
+const PRODUCT_LINE_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  title,
+  // A chip stays as a label either way; it LINKS only when the page exists.
+  "linkable": ${LINE_STYLE_ACTIVE},
+  "slug": slug.current,
+  "excerpt": shortDescription,
+  "imageUrl": featuredImage.asset->url
+}`;
+
+const EXPERTISE_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  title,
+  "slug": slug.current,
+  "excerpt": description,
+  "imageUrl": heroImage.asset->url
+}`;
+
+const CUSTOMIZATION_TAXONOMY_ITEM = /* groq */ `{
+  _id,
+  title,
+  "linkable": ${OPTION_ACTIVE} && ${HAS_DETAIL_PAGE},
+  "slug": slug.current,
+  "categorySlug": type->category->slug.current,
+  "excerpt": shortDescription,
+  "imageUrl": featuredImage.asset->url
+}`;
 
 /**
  * ⚠️ This resolves the label from the solution's H1, which is marketing copy —
@@ -25,8 +60,11 @@ const TAXONOMY_ITEM = /* groq */ `{ _id, title, "slug": slug.current }`;
 const SOLUTION_TAXONOMY_ITEM = /* groq */ `{
   _id,
   "title": coalesce(h1, title),
+  "linkable": ${SOLUTION_ACTIVE},
   "slug": slug.current,
-  solutionType
+  solutionType,
+  "excerpt": shortDescription,
+  "imageUrl": featuredImage.asset->url
 }`;
 
 const CLIENT_INDUSTRY_ITEM = /* groq */ `industry->${SOLUTION_TAXONOMY_ITEM}`;
@@ -95,9 +133,9 @@ const CASE_STUDY_DETAIL_FIELDS = /* groq */ `{
     "videoThumbnailUrl": videoThumbnail.asset->url,
     "videoThumbnailHotspot": videoThumbnail.hotspot
   },
-  "products": products[]->${TAXONOMY_ITEM},
-  "expertiseAreas": expertiseAreas[]->${TAXONOMY_ITEM},
-  "customizations": capabilities[]->${TAXONOMY_ITEM},
+  "products": products[]->${PRODUCT_LINE_TAXONOMY_ITEM},
+  "expertiseAreas": expertiseAreas[]->${EXPERTISE_TAXONOMY_ITEM},
+  "customizations": capabilities[]->${CUSTOMIZATION_TAXONOMY_ITEM},
   "highlights": highlights[]{ _key, title, description },
   "challenge": challenge${CASE_STUDY_STORY_BODY},
   "solution": solution${CASE_STUDY_STORY_BODY},
@@ -185,7 +223,7 @@ export const CASE_STUDIES_PAGE_QUERY = /* groq */ `*[_id == "caseStudiesPage"][0
 export const CASE_STUDY_FILTER_OPTIONS_QUERY = /* groq */ `{
   "solutions": *[_type == "solution" && solutionType == "industry" && defined(slug.current)] | order(coalesce(h1, title) asc) ${SOLUTION_TAXONOMY_ITEM},
   // Only lines that have a page (PROD-2620): hidden or discontinued lines are not filter options.
-  "products": *[_type == "productLine" && ${LINE_STYLE_VISIBLE}] | order(title asc) ${TAXONOMY_ITEM},
+  "products": *[_type == "productLine" && ${LINE_STYLE_LISTED}] | order(title asc) ${TAXONOMY_ITEM},
   "expertiseAreas": *[_type == "expertiseStage" && status != "discontinued"] | order(title asc) ${TAXONOMY_ITEM}
 }`;
 
@@ -196,6 +234,12 @@ export type CaseStudyTaxonomyItem = {
   title: string;
   slug: string;
   solutionType?: string;
+  /** Present on detail meta chips for SneakPeek / links (PROD-2737). */
+  categorySlug?: string | null;
+  excerpt?: string | null;
+  imageUrl?: string | null;
+  /** False when the chip's target has no page (status / R1) — render it as a label only. */
+  linkable?: boolean | null;
 };
 
 export type CaseStudyHighlight = {

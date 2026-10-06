@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import {describe, it} from 'node:test';
 import {
     assembleHeroMediaCards,
+    assembleInspirationIndustries,
     assembleProductLineLanding,
+    filterInspirationProductsByIndustry,
+    PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER,
+    resolveInspirationIndustries,
     resolveStyleCardImage,
     RIGID_BOXES_MOCK_FEATURE,
     RIGID_BOXES_MOCK_FEATURED_VIDEO,
@@ -138,6 +142,50 @@ describe('resolveStyleCardImage', () => {
         );
         assert.equal(resolved.imageUrl, null);
         assert.equal(resolved.imageAlt, 'Hinged Lid');
+    });
+
+    it('skips inspiration products when falling back to product media', () => {
+        const resolved = resolveStyleCardImage(
+            style({slug: 'hinged-lid', title: 'Hinged Lid'}),
+            line({
+                slug: 'rigid-boxes',
+                title: 'Rigid Boxes',
+                products: [
+                    product({
+                        title: 'Client Box',
+                        slug: 'client-box',
+                        kind: 'inspiration',
+                        productStyle: {
+                            slug: 'hinged-lid',
+                            title: 'Hinged Lid',
+                        },
+                        media: [
+                            {
+                                src: 'https://cdn.example/inspiration.jpg',
+                                alt: 'Inspiration',
+                            },
+                        ],
+                    }),
+                    product({
+                        title: 'Blank Box',
+                        slug: 'blank-box',
+                        kind: 'standard',
+                        productStyle: {
+                            slug: 'hinged-lid',
+                            title: 'Hinged Lid',
+                        },
+                        media: [
+                            {
+                                src: 'https://cdn.example/standard.jpg',
+                                alt: 'Standard',
+                            },
+                        ],
+                    }),
+                ],
+            }),
+        );
+        assert.equal(resolved.imageUrl, 'https://cdn.example/standard.jpg');
+        assert.equal(resolved.imageAlt, 'Standard');
     });
 });
 
@@ -635,7 +683,7 @@ describe('assembleProductLineLanding', () => {
         assert.equal(model.styles?.[2]?.imageUrl, null);
     });
 
-    it('assembles hero media cards with featured video and 6× density', () => {
+    it('assembles unique hero media cards with featured video on the first', () => {
         const cards = assembleHeroMediaCards({
             featuredImageUrl: 'https://cdn.example/hero.jpg',
             featuredImageAlt: 'Hero',
@@ -646,16 +694,15 @@ describe('assembleProductLineLanding', () => {
             ],
         });
 
-        assert.equal(cards.length, 12);
+        assert.equal(cards.length, 2);
+        assert.equal(cards[0]?.id, 'featured');
         assert.equal(cards[0]?.src, 'https://cdn.example/hero.jpg');
         assert.equal(cards[0]?.videoUrl, 'https://cdn.example/hero.mp4');
         assert.equal(cards[0]?.settleIndex, 0);
+        assert.equal(cards[1]?.id, 'frame-1');
         assert.equal(cards[1]?.src, 'https://cdn.example/frame-2.jpg');
         assert.equal(cards[1]?.videoUrl, undefined);
         assert.equal(cards[1]?.settleIndex, 1);
-        assert.equal(cards[2]?.id, 'featured-1');
-        assert.equal(cards[2]?.settleIndex, 0);
-        assert.equal(cards[2]?.videoUrl, 'https://cdn.example/hero.mp4');
     });
 
     it('prefers standard products over frames for hero media cards', () => {
@@ -696,29 +743,110 @@ describe('assembleProductLineLanding', () => {
                             label: 'Foil stamp',
                             category: 'finishing',
                             categoryTitle: 'Finishing',
+                            slug: 'hot-foil-stamping',
                             shortDescription: 'Metallic foil.',
+                            imageUrl: 'https://cdn.example/foil-featured.jpg',
+                            preselected: true,
+                        },
+                        {
+                            id: 'emboss',
+                            label: 'Embossing',
+                            category: 'finishing',
+                            categoryTitle: 'Finishing',
+                            slug: 'embossing',
+                            shortDescription: 'Raised relief.',
+                            imageUrl: 'https://cdn.example/emboss.jpg',
+                            preselected: false,
                         },
                     ],
                 }),
             ],
         });
 
-        // 2 standard products × 6 copies
-        assert.equal(cards.length, 12);
-        assert.equal(cards[0]?.id, 'box-a-0');
+        // 2 standard products (inspiration skipped; no density copies)
+        assert.equal(cards.length, 2);
+        assert.equal(cards[0]?.id, 'box-a');
         assert.equal(cards[0]?.title, 'Box A');
         assert.equal(cards[0]?.detailHref, '/products/box-a');
         assert.equal(cards[0]?.settleIndex, 0);
         assert.equal(cards[0]?.videoUrl, 'https://cdn.example/box-a.mp4');
-        assert.equal(cards[1]?.id, 'box-c-0');
+        assert.equal(cards[1]?.id, 'box-c');
         assert.equal(cards[1]?.title, 'Box C');
         assert.equal(cards[1]?.settleIndex, 1);
-        assert.equal(cards[1]?.customizations?.[0]?.title, 'Foil stamp');
+        assert.deepEqual(cards[1]?.properties, [
+            {label: 'Style', value: 'Drawer'},
+        ]);
         // No product video — line video must not stamp onto product cards
         assert.equal(cards[1]?.videoUrl, undefined);
     });
 
-    it('returns empty hero media cards when there is no media', () => {
+    it('skips inspiration featured pins; fills with standard auto candidates', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            featuredProducts: [
+                product({
+                    title: 'Pinned Inspiration',
+                    slug: 'pinned',
+                    kind: 'inspiration',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {src: 'https://cdn.example/pinned.jpg', alt: 'Pinned'},
+                    ],
+                }),
+                product({
+                    title: 'Pinned Standard',
+                    slug: 'pinned-std',
+                    kind: 'standard',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {
+                            src: 'https://cdn.example/pinned-std.jpg',
+                            alt: 'Pinned std',
+                        },
+                    ],
+                }),
+            ],
+            products: [
+                product({
+                    title: 'Pinned Inspiration',
+                    slug: 'pinned',
+                    kind: 'inspiration',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [
+                        {src: 'https://cdn.example/pinned.jpg', alt: 'Pinned'},
+                    ],
+                }),
+                product({
+                    title: 'Auto A',
+                    slug: 'auto-a',
+                    productStyle: {slug: 'drawer', title: 'Drawer'},
+                    media: [
+                        {src: 'https://cdn.example/auto-a.jpg', alt: 'Auto A'},
+                    ],
+                }),
+                product({
+                    title: 'Auto B',
+                    slug: 'auto-b',
+                    productStyle: {slug: 'drawer', title: 'Drawer'},
+                    media: [
+                        {src: 'https://cdn.example/auto-b.jpg', alt: 'Auto B'},
+                    ],
+                }),
+            ],
+        });
+
+        // pinned standard + 2 auto standards (inspiration pin skipped)
+        assert.equal(cards.length, 3);
+        assert.equal(cards[0]?.id, 'pinned-std');
+        assert.equal(cards[0]?.title, 'Pinned Standard');
+        assert.equal(cards[1]?.id, 'auto-a');
+        assert.equal(cards[2]?.id, 'auto-b');
+    });
+
+    it('returns empty hero media cards when there are no products or line media', () => {
         const cards = assembleHeroMediaCards({
             featuredImageUrl: null,
             featuredImageAlt: '',
@@ -726,5 +854,208 @@ describe('assembleProductLineLanding', () => {
             frames: [],
         });
         assert.deepEqual(cards, []);
+    });
+
+    it('uses the hero placeholder when a standard product has no media', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: 'https://cdn.example/line.jpg',
+            featuredImageAlt: 'Line',
+            featuredVideoUrl: null,
+            frames: [],
+            products: [
+                product({
+                    title: 'Blank Box',
+                    slug: 'blank-box',
+                    kind: 'standard',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    media: [],
+                }),
+            ],
+        });
+
+        assert.equal(cards.length, 1);
+        assert.equal(cards[0]?.id, 'blank-box');
+        assert.equal(cards[0]?.src, PRODUCT_LINE_HERO_FEATURE_PLACEHOLDER);
+        assert.equal(cards[0]?.alt, 'Blank Box');
+        assert.equal(cards[0]?.detailHref, '/products/blank-box');
+        assert.equal(cards[0]?.title, 'Blank Box');
+    });
+
+    it('includes description, style, and properties on standard hero cards', () => {
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            products: [
+                product({
+                    title: 'Spec Box',
+                    slug: 'spec-box',
+                    kind: 'standard',
+                    description: 'A rigid box with details.',
+                    productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                    properties: [
+                        {label: 'Closure', value: 'Magnetic'},
+                        {label: 'Style', value: 'Should ignore'},
+                    ],
+                    media: [
+                        {
+                            src: 'https://cdn.example/spec.jpg',
+                            alt: 'Spec',
+                        },
+                    ],
+                }),
+            ],
+        });
+
+        assert.equal(cards[0]?.description, 'A rigid box with details.');
+        assert.deepEqual(cards[0]?.properties, [
+            {label: 'Style', value: 'Hinged Lid'},
+            {label: 'Closure', value: 'Magnetic'},
+        ]);
+    });
+
+    it('caps hero media cards at 10; featured pins take priority slots', () => {
+        const featuredProducts = Array.from({length: 3}, (_, index) =>
+            product({
+                title: `Pinned ${index + 1}`,
+                slug: `pinned-${index + 1}`,
+                kind: 'standard',
+                productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+                media: [
+                    {
+                        src: `https://cdn.example/pinned-${index + 1}.jpg`,
+                        alt: `Pinned ${index + 1}`,
+                    },
+                ],
+            }),
+        );
+        const products = Array.from({length: 12}, (_, index) =>
+            product({
+                title: `Box ${index + 1}`,
+                slug: `box-${index + 1}`,
+                kind: 'standard',
+                productStyle: {slug: 'drawer', title: 'Drawer'},
+                media: [
+                    {
+                        src: `https://cdn.example/box-${index + 1}.jpg`,
+                        alt: `Box ${index + 1}`,
+                    },
+                ],
+            }),
+        );
+
+        const cards = assembleHeroMediaCards({
+            featuredImageUrl: null,
+            featuredImageAlt: '',
+            featuredVideoUrl: null,
+            frames: [],
+            featuredProducts,
+            products,
+        });
+
+        assert.equal(cards.length, 10);
+        assert.deepEqual(
+            cards.map((card) => card.id),
+            [
+                'pinned-1',
+                'pinned-2',
+                'pinned-3',
+                'box-1',
+                'box-2',
+                'box-3',
+                'box-4',
+                'box-5',
+                'box-6',
+                'box-7',
+            ],
+        );
+    });
+});
+
+describe('assembleInspirationIndustries / filterInspirationProductsByIndustry', () => {
+    const apparelBox = product({
+        title: 'Apparel Rigid Box',
+        slug: 'apparel-box',
+        kind: 'inspiration',
+        productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+        industries: [
+            {slug: 'apparel', title: 'Apparel'},
+            {slug: 'beauty', title: 'Beauty'},
+        ],
+    });
+    const beautyBox = product({
+        title: 'Beauty Rigid Box',
+        slug: 'beauty-box',
+        kind: 'inspiration',
+        productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+        industries: [{slug: 'beauty', title: 'Beauty'}],
+    });
+    const crumbOnly = product({
+        title: 'Food Box',
+        slug: 'food-box',
+        kind: 'inspiration',
+        productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
+        industry: {slug: 'food-beverage', title: 'Food & Beverage'},
+    });
+
+    it('lists unique industries sorted by title', () => {
+        const industries = assembleInspirationIndustries([
+            apparelBox,
+            beautyBox,
+            crumbOnly,
+        ]);
+        assert.deepEqual(
+            industries.map((row) => row.slug),
+            ['apparel', 'beauty', 'food-beverage'],
+        );
+    });
+
+    it('filters products by industry including multi-tagged', () => {
+        const apparel = filterInspirationProductsByIndustry(
+            [apparelBox, beautyBox, crumbOnly],
+            'apparel',
+        );
+        assert.deepEqual(
+            apparel.map((row) => row.slug),
+            ['apparel-box'],
+        );
+
+        const beauty = filterInspirationProductsByIndustry(
+            [apparelBox, beautyBox, crumbOnly],
+            'beauty',
+        );
+        assert.deepEqual(
+            beauty.map((row) => row.slug),
+            ['apparel-box', 'beauty-box'],
+        );
+    });
+
+    it('resolveInspirationIndustries falls back to all when curated is empty', () => {
+        const products = [apparelBox, beautyBox, crumbOnly];
+        assert.deepEqual(
+            resolveInspirationIndustries(products, []),
+            assembleInspirationIndustries(products),
+        );
+        assert.deepEqual(
+            resolveInspirationIndustries(products, null),
+            assembleInspirationIndustries(products),
+        );
+    });
+
+    it('resolveInspirationIndustries keeps Studio order and drops empty', () => {
+        const resolved = resolveInspirationIndustries(
+            [apparelBox, beautyBox, crumbOnly],
+            [
+                {slug: 'beauty', title: 'Beauty'},
+                {slug: 'missing', title: 'Missing'},
+                {slug: 'apparel', title: 'Apparel'},
+                {slug: 'beauty', title: 'Beauty again'},
+            ],
+        );
+        assert.deepEqual(
+            resolved.map((row) => row.slug),
+            ['beauty', 'apparel'],
+        );
     });
 });

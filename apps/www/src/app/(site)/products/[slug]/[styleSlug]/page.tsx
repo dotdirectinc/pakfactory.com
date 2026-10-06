@@ -82,7 +82,7 @@ export default async function ProductStylePage({params}: PageProps) {
     return (
         <>
             <ProductStyleChrome line={match.line} style={match.style} />
-            <Suspense fallback={<ProductCatalogPanelLoading />}>
+            <Suspense fallback={<ProductCatalogPanelLoading hideCatalogBorderTop />}>
                 <ProductStyleCatalogBody
                     line={match.line}
                     style={match.style}

@@ -8,6 +8,14 @@ import { pageSectionsField, SECTION_ALLOW } from './sections'
 import { faqsField } from '../lib/faq-field'
 import { featuredVideoField } from '../lib/featured-video-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { entityFields } from '../lib/entity-id-field'
+import {
+  FULL_STATUS_LIST,
+  STATUS_DESCRIPTION_TAIL,
+  hasLineStylePage,
+} from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
+import { orderRankField, orderRankOrdering } from '@sanity/orderable-document-list'
 
 /**
  * Product Line — the top level of the product tree (Rigid, Folding Carton,
@@ -25,18 +33,28 @@ import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
  * `productLine` reference (97/97 in production), so membership is a query and the
  * Line never gates it.
  *
- * ⚠️ Ordering that grid is an OPEN REQUIREMENT with no mechanism (PROD-2509).
- * `styles` — an ordered reference array that set the display order — was removed
- * unpopulated (0/15) because a strong reference held purely for presentation made
- * every listed Style undeletable, and the "unlisted styles append alphabetically"
- * fallback it promised was never built. Until a replacement lands, the grid sorts
- * alphabetically, which is NOT the intent: a landing-page grid is a merchandising
- * surface and should lead with the styles that convert. Do not read the current
- * sort as a decision.
+ * Ordering that grid is `styleOrder` (PROD-2739) — the replacement for `styles`,
+ * which was removed unpopulated (0/15) in PROD-2509. Two things changed, and both
+ * are the reasons that one failed:
+ *
+ *   - the references are WEAK, so pinning a style no longer makes it undeletable;
+ *   - the "unlisted styles append alphabetically" fallback is actually BUILT, in
+ *     `LINE_STYLES` in `packages/sanity/src/queries/catalog.ts`, with the empty
+ *     and dangling-reference cases covered in `line-style-order.test.ts`.
+ *
+ * It stays ORDER ONLY and never a gate: membership remains the query above, so an
+ * unlisted style still renders — it lands in the alphabetical tail. A partial list
+ * is the normal state, which is what lets the field be useful while empty on most
+ * lines.
  *
  * Deferred: `sections` (page-builder) until the shared section inventory exists
  * (PROD-2292); `featuredTestimonials` until the Testimonial type is extracted
- * (PROD-2293). `order` lives on the navigation singleton (PROD-2292), not here.
+ * (PROD-2293).
+ *
+ * `orderRank` (PROD-2744) is the Studio LIST order from drag-to-reorder. The
+ * www Products mega-menu sorts Product Line path links by this field. Catalog
+ * listing queries (`CATALOG_PRODUCT_LINES_QUERY`, case-study filter chips) are
+ * still `order(title asc)` until a follow-on change.
  */
 export const productLine = defineType({
   name: 'productLine',
@@ -133,7 +151,7 @@ export const productLine = defineType({
     featuredVideoField({
       group: GROUPS.content,
       description:
-        'Optional desktop scroll-scrub video. Upload or a direct S3/CDN MP4/MOV; YouTube is stored but the landing keeps Featured image. Mobile and reduced-motion keep Featured image.',
+        'Optional desktop scroll-scrub video. Prefer H.264 MP4 or VP9 WebM; YouTube is stored but the landing keeps Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     // Featured icon on the product-line landing. Stack: above the H1.
     // Bottom bar: brand-signal slot bottom-left. Distinct from Featured image.
@@ -176,25 +194,45 @@ export const productLine = defineType({
       title: 'Status',
       type: 'string',
       group: GROUPS.content,
-      description: 'Lifecycle — Active, Coming soon or Discontinued.',
-      options: {
-        list: [
-          { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
-        ],
-        layout: 'radio',
-      },
-      initialValue: 'active',
-    }),
-    defineField({
-      name: 'customerFacing',
-      title: 'Customer facing',
-      type: 'boolean',
-      group: GROUPS.content,
       description:
-        'Off = no page, no route, no listing; the document exists only to be referenced. Not the same as Status — this one decides whether a page exists at all.',
-      initialValue: true,
+        'Is this line offered, and how? Coming soon keeps a nav entry but no page. ' +
+        'Discontinued keeps the page for search and drops the listing. ' +
+        STATUS_DESCRIPTION_TAIL,
+      options: { list: FULL_STATUS_LIST, layout: 'radio' },
+      initialValue: 'active',
+      validation: (Rule) => [
+        Rule.custom(
+          restrictingChildrenWarning({
+            // Styles under this line that would go dark with it. Products are not
+            // queried: a product's reachability runs through its style, so naming
+            // the styles names the branch without listing hundreds of leaves.
+            query: `*[
+              _type == "productStyle" &&
+              productLine._ref == $id &&
+              (!defined(status) || status in ["active", "active-internal"])
+            ]{ title }`,
+            describe: (names) =>
+              `This status also hides every style beneath this line, including ${names}. ` +
+              `Use Active (Internal) instead to hide the line but keep its styles and products reachable.`,
+          }),
+        ).warning(),
+        // Presets follow their base product (Richard + Eric, 2026-10-06): an inspiration
+        // product whose base sits on this line is hidden too — Discontinued included, which
+        // keeps the standard products' own pages but takes their presets down.
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "product" &&
+              kind == "inspiration" &&
+              basedOn->productLine._ref == $id &&
+              (!defined(status) || status in ["active", "coming-soon"])
+            ]{ title }`,
+            describe: (names) =>
+              `Inspiration products based on this line's products are hidden too, including ${names}. ` +
+              `Use Active (Internal) to hide the line but keep them live.`,
+          }),
+        ).warning(),
+      ],
     }),
 
     // ─── TEMPLATE (layout version) ────────────────────────────────────────────
@@ -209,14 +247,16 @@ export const productLine = defineType({
         'Pick a Product Line Page layout version — hero shell plus section order and ' +
         'default headings. Manage layouts under Main Website → Product Pages → ' +
         'Product Line Pages. Band content stays on the Sections tab, matched by key.',
-      hidden: ({document}) => document?.customerFacing !== true,
+      // A line needs a layout exactly when it has a page — Active, or Discontinued
+      // keeping its URL alive for search. The other three states have no page to lay out.
+      hidden: ({document}) => !hasLineStylePage(document?.status),
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
-          const doc = ctx.document as {customerFacing?: boolean} | undefined
-          if (doc?.customerFacing !== true) return true
+          const doc = ctx.document as {status?: string} | undefined
+          if (!hasLineStylePage(doc?.status)) return true
           return value
             ? true
-            : 'Customer-facing product lines must select a Product Line Page layout'
+            : 'A product line with a page must select a Product Line Page layout'
         }),
     }),
 
@@ -315,6 +355,41 @@ export const productLine = defineType({
       of: [{ type: 'reference', to: [{ type: 'caseStudy' }] }],
     }),
     defineField({
+      name: 'featuredProducts',
+      title: 'Featured Products',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Pinned products for the line landing hero (bottom-bar marquee). Shown first ' +
+        '(this order); remaining slots fill from standard products on this line. ' +
+        'Empty = auto-only (unchanged).',
+      of: [
+        {
+          type: 'reference',
+          to: [{ type: 'product' }],
+          options: {
+            disableNew: true,
+            filter: ({
+              document,
+            }: {
+              document: { _id: string; featuredProducts?: { _ref?: string }[] }
+            }) => {
+              const chosen = (document.featuredProducts ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              const lineId = document._id.replace(/^drafts\./, '')
+              return {
+                filter:
+                  '!(_id in $chosen) && (productLine._ref == $line || basedOn->productLine._ref == $line)',
+                params: { chosen, line: lineId },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.max(16).unique(),
+    }),
+    defineField({
       name: 'relatedLines',
       title: 'Related lines',
       type: 'array',
@@ -322,7 +397,63 @@ export const productLine = defineType({
       description: 'Sibling lines to suggest as alternatives.',
       of: [{ type: 'reference', to: [{ type: 'productLine' }] }],
     }),
-    faqsField({ group: GROUPS.categorization, mode: 'reference', max: 6, min: 3 }),
+    defineField({
+      name: 'styleOrder',
+      title: 'Product style order',
+      type: 'array',
+      group: GROUPS.categorization,
+      description:
+        'Drag to set the order styles appear in on this line. Listing a few is fine — anything ' +
+        'not listed follows alphabetically. Never a gate: every style still appears.',
+      of: [
+        {
+          type: 'reference',
+          // 🔴 WEAK ON PURPOSE, and the only weak reference in this Studio.
+          //
+          // This field is PROD-2739, the replacement for `styles` — removed in
+          // PROD-2509 precisely because it was strong. Sanity blocks deletion of a
+          // referenced document, so listing a style here for presentation made that
+          // style undeletable, with nothing in the Studio connecting the two. Weak
+          // inverts that: the delete succeeds and leaves a dangling entry, which the
+          // grid query drops via `defined(_id)` so it never reaches the site.
+          //
+          // Do not "tidy" this to a strong reference. The whole field goes back to
+          // being a content-operations trap if you do.
+          weak: true,
+          to: [{ type: 'productStyle' }],
+          options: {
+            disableNew: true,
+            // Two narrowings, and both are UX rather than safety — `Rule.unique()`
+            // below and the grid query are what actually hold the line.
+            //
+            // 1. Styles belong to exactly one line, so offering another line's
+            //    styles would let an editor pin something the grid never renders.
+            // 2. Styles already in this list are dropped. Without this the picker
+            //    keeps offering what you just added, and the duplicate only
+            //    announces itself as a validation error that blocks publish —
+            //    found in review, after exactly that happened.
+            filter: ({ document }: { document: { _id: string; styleOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.styleOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'productLine._ref == $line && !(_id in $chosen)',
+                params: { line: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
+    }),
+    faqsField({
+      group: GROUPS.categorization,
+      mode: 'reference',
+      max: 6,
+      min: 3,
+      description:
+        'Curated FAQs for this line — reference shared FAQ documents. Shown on the line page, and on its styles and standard products that have no FAQs of their own (when a product’s first style has none or is switched off, the line’s show).',
+    }),
 
     // ─── SEO / SOCIAL ─────────────────────────────────────────────────────────
     defineField({
@@ -345,6 +476,30 @@ export const productLine = defineType({
     pageSectionsField(SECTION_ALLOW.productPage),
     ...seoFields({ group: GROUPS.seo, meta: false, canonical: true, indexDefault: true }),
     ...socialFields({ group: GROUPS.social, channel: MEDIA_TAG.product }),
+    ...entityFields({ prefix: 'lin', codeKinds: ['LIN'], group: GROUPS.content }),
+    // ─── STUDIO LIST ORDER ────────────────────────────────────────────────────
+    /**
+     * Drag-to-order position for the Product Lines list (PROD-2744).
+     *
+     * Written by `@sanity/orderable-document-list` when an editor drags a row.
+     * `hidden` and `readOnly` come from the plugin — it never appears on the Edit
+     * form, and the drag handle in the list pane is the only way to set it.
+     *
+     * New lines rank themselves: the plugin's `initialValue` reads the current
+     * last rank and places a newly created line after it, so "Reset Order" is a
+     * one-time action, not a chore on every create.
+     *
+     * ⚠️ ORDER field. www Products mega-menu sorts path links by `orderRank`.
+     * Catalog listing queries still use `order(title asc)` — see the type docblock.
+     */
+    orderRankField({ type: 'productLine' }),
+  ],
+  // Adds an "Ordered" entry to the list's sort menu, matching the drag order.
+  // Title is restated because declaring `orderings` REPLACES the one Sanity
+  // generates — PROD-2744 shipped with only `ordered` and silently dropped it.
+  orderings: [
+    orderRankOrdering,
+    { title: 'Title', name: 'title', by: [{ field: 'title', direction: 'asc' }] },
   ],
   preview: {
     select: { title: 'title', display: 'shortName', media: 'featuredImage' },

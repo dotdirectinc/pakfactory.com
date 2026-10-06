@@ -29,12 +29,13 @@ import {
     CUSTOMIZATION_CATALOG_ALL_CATEGORY,
     matchesCustomizationItem,
 } from '@/lib/catalog/customization-catalog-filter';
+import {
+    unpackCustomizationLibrary,
+    type PackedCustomizationLibrary,
+} from '@/lib/catalog/library-wire';
 import {useCatalogQueryState} from '@/lib/catalog/use-catalog-query-state';
 import {useProgressiveReveal} from '@/lib/catalog/use-progressive-reveal';
-import type {
-    CustomizationFacetDef,
-    CustomizationLibraryResult,
-} from '@/lib/catalog/types';
+import type {CustomizationFacetDef} from '@/lib/catalog/types';
 
 const PAGE_SIZE = 12;
 const ALL_CATEGORY = CUSTOMIZATION_CATALOG_ALL_CATEGORY;
@@ -46,7 +47,8 @@ export type CustomizationCatalogTab = {
 };
 
 type CustomizationCatalogPanelProps = {
-    library: CustomizationLibraryResult;
+    /** Compact wire form from `CustomizationCatalogView` (PROD-2757); unpacked once here. */
+    packedLibrary: PackedCustomizationLibrary;
     /** When true, sync filters to the URL. Section embeds should pass false. */
     urlSync?: boolean;
     /** Optional initial category slug from Studio section embeds. */
@@ -56,11 +58,15 @@ type CustomizationCatalogPanelProps = {
 };
 
 export function CustomizationCatalogPanel({
-    library,
+    packedLibrary,
     urlSync = true,
     initialCategory = null,
     hideCatalogBorderTop = false,
 }: CustomizationCatalogPanelProps) {
+    const library = useMemo(
+        () => unpackCustomizationLibrary(packedLibrary),
+        [packedLibrary],
+    );
     const tabs: CustomizationCatalogTab[] = useMemo(
         () => [{label: 'All', value: ALL_CATEGORY}, ...library.tabs],
         [library.tabs],
@@ -105,6 +111,7 @@ export function CustomizationCatalogPanel({
         setSelections,
         toggleFacet,
         reset,
+        urlSyncListener,
     } = useCatalogQueryState({
         urlSync,
         facetIds: allFacetIds,
@@ -295,7 +302,8 @@ export function CustomizationCatalogPanel({
             paddingBlock="none"
             innerClassName="pb-24 flex flex-col gap-8"
         >
-            <SectionReveal className="flex flex-col gap-8">
+            {urlSyncListener}
+            <SectionReveal enabled={false} className="flex flex-col gap-8">
             {/* Mobile: sticky search + filters + category chips */}
             <div className="-mx-layout-gutter-inner border-b border-dashed border-border bg-background px-layout-gutter-inner lg:hidden sticky top-0 z-30">
                 <div className="flex items-center gap-2 py-3">
@@ -443,7 +451,7 @@ export function CustomizationCatalogPanel({
                 showCategoryHint={category === ALL_CATEGORY}
             />
 
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-4">
                 <CustomizationCatalogFilters
                     resultCount={filtered.length}
                     totalCount={library.items.length}

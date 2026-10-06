@@ -1,5 +1,8 @@
 import { defineField, defineType } from 'sanity'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
+import { entityFields } from '../lib/entity-id-field'
+import { ON_OFF_STATUS_LIST } from '../lib/catalog-status'
+import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 
 /** `dependsOn` → each requirement's refs (published ids). Tolerates the old flat shape: a bare
  *  reference reads as a requirement of one, which is what it meant. */
@@ -70,6 +73,33 @@ export const customizationType = defineType({
       options: { source: 'title' },
       description: 'URL-safe identifier, generated from the title. Nothing links to it, so changing it is safe.',
       validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      group: 'content',
+      description:
+        'Is this type offered? Not active removes it from the customization library and ' +
+        'takes its Options out of the configurator. Use it instead of deleting the document, ' +
+        'so the compatibility rules that name those options keep working.',
+      options: { list: ON_OFF_STATUS_LIST, layout: 'radio' },
+      // Starts ON — structure, not a page to earn. See customizationCategory.
+      initialValue: 'active',
+      // Before PROD-2845 this type had NO off switch at all.
+      validation: (Rule) =>
+        Rule.custom(
+          restrictingChildrenWarning({
+            query: `*[
+              _type == "customizationOption" &&
+              type._ref == $id &&
+              status == "active"
+            ]{ title }`,
+            describe: (names) =>
+              `This also takes every Option beneath it out of the configurator and the library, ` +
+              `including ${names}.`,
+          }),
+        ).warning(),
     }),
     defineField({
       name: 'category',
@@ -308,7 +338,7 @@ export const customizationType = defineType({
             }>(
               `{
                 "types": *[_type == "customizationType" && !(_id in path("drafts.**"))]{ _id, "categoryId": category._ref },
-                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && configuratorRole == "configurable"]{
+                "options": *[_type == "customizationOption" && !(_id in path("drafts.**")) && type._ref == $self && appearsIn in ["configurable-with-page", "configurable-no-page"]]{
                   title,
                   "partnerTypes": array::unique(
                     *[_type == "customizationOption" && !(_id in path("drafts.**")) && (_id in ^.compatibleCustomizations[]._ref || ^._id in compatibleCustomizations[]._ref)].type._ref
@@ -458,6 +488,60 @@ export const customizationType = defineType({
     // never had. Only Options get pages, and only when `role` is `reference`; the
     // Type has no URL by design, not by omission. All three were unpopulated on all
     // 36 published Types, and nothing read them.
+    ...entityFields({ prefix: 'typ', codeKinds: ['TYP'], group: 'content' }),
+    // ─── OPTION ORDER ─────────────────────────────────────────────────────────
+    /**
+     * Pins a few options to the top of this type (PROD-2748); the rest follow
+     * alphabetically. ORDER ONLY and never a gate: membership stays the query on
+     * `customizationOption.type`, which is required, so an unpinned option always
+     * appears. A partial list is the normal state.
+     *
+     * The twin of `customizationCategory.typeOrder` (PROD-2740) one level up, and
+     * the same two-tier shape as `productLine.styleOrder` and
+     * `productStyle.productOrder`.
+     *
+     * 🔴 NO `Rule.max()` here, and that is deliberate rather than an oversight.
+     * `productStyle.productOrder` caps at 12 because a style can hold 75 products
+     * and D31's ceiling genuinely bites. A type holds 22 at most (Pouch Layer), so
+     * it is already "bounded and small by nature" — the case D31 says an ordered
+     * array is FOR. Capping here would stop an editor legitimately ordering all of
+     * a 16-option type.
+     *
+     * ⚠️ References are WEAK: pinning an option must never make it undeletable.
+     * `orderOptionsInType` drops entries whose option has gone.
+     */
+    defineField({
+      name: 'optionOrder',
+      title: 'Customization option order',
+      type: 'array',
+      group: 'content',
+      description:
+        'Drag to set the order options appear in on this type. Listing a few is fine — anything ' +
+        'not listed follows alphabetically. Never a gate: every option still appears.',
+      of: [
+        {
+          type: 'reference',
+          weak: true,
+          to: [{ type: 'customizationOption' }],
+          options: {
+            disableNew: true,
+            // Only this type's own options, and never one already chosen — without
+            // the second clause the picker keeps offering what you just added and
+            // the duplicate only surfaces as a publish-blocking validation error.
+            filter: ({ document }: { document: { _id: string; optionOrder?: { _ref?: string }[] } }) => {
+              const chosen = (document.optionOrder ?? [])
+                .map((item) => item?._ref)
+                .filter((ref): ref is string => typeof ref === 'string')
+              return {
+                filter: 'type._ref == $type && !(_id in $chosen)',
+                params: { type: document._id.replace(/^drafts\./, ''), chosen },
+              }
+            },
+          },
+        },
+      ],
+      validation: (Rule) => Rule.unique(),
+    }),
   ],
   preview: {
     select: { title: 'title', category: 'category.title' },

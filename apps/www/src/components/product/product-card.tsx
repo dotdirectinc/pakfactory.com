@@ -1,6 +1,6 @@
 'use client';
 
-import {LifecycleBadge} from '@/components/ui/lifecycle-badge';
+import {StatusBadge} from '@/components/ui/status-badge';
 import type {CatalogLifecycle} from '@/lib/catalog/types';
 import {useState, type MouseEvent} from 'react';
 import Link from 'next/link';
@@ -41,6 +41,10 @@ export type ProductCardData = {
 
 type ProductCardProps = {
     data: ProductCardData;
+    /** Above-fold catalog tiles — LCP candidates. */
+    priority?: boolean;
+    /** Catalog grid passes false; detail/related rails keep watermark. */
+    applyWatermark?: boolean;
 };
 
 function resolveGallery(data: ProductCardData): ProductCardImage[] {
@@ -68,7 +72,11 @@ const compareAction = {
  * focus, or pointerdown) opts into full route prefetch so a click is more
  * likely to hit a warm payload without prefetching every PDP.
  */
-export function ProductCard({data}: ProductCardProps) {
+export function ProductCard({
+    data,
+    priority = false,
+    applyWatermark = true,
+}: ProductCardProps) {
     // Missing SKU shows "-" — never fall back to slug or style/line title.
     const slugFromHref =
         data.href.split('/').filter(Boolean).pop() ?? '';
@@ -96,24 +104,21 @@ export function ProductCard({data}: ProductCardProps) {
     );
 
     const hero = gallery[0];
-    const badge = data.status && data.status !== 'active' ? (
-        <LifecycleBadge status={data.status} className="absolute left-3 top-3 z-10" />
-    ) : null;
     const media = hero ? (
         <div className="pointer-events-none absolute inset-0">
-            {badge}
             <SanityImage
                 src={hero.src}
                 alt={hero.alt ?? data.title}
-                applyWatermark
+                applyWatermark={applyWatermark}
                 fill
+                priority={priority}
+                square
                 sizes="(max-width: 640px) 96px, (max-width: 1280px) 50vw, 25vw"
                 className="object-cover"
             />
         </div>
     ) : (
         <div className="pointer-events-none absolute inset-0">
-            {badge}
             {placeholder}
         </div>
     );
@@ -135,6 +140,11 @@ export function ProductCard({data}: ProductCardProps) {
             bookmarkPressed={saved}
             media={media}
             mediaOverlay={mediaOverlay}
+            statusBadge={
+                data.status && data.status !== 'active' ? (
+                    <StatusBadge status={data.status} />
+                ) : undefined
+            }
             bookmark={
                 <BookmarkIconButton
                     pressed={saved}

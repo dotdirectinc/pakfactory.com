@@ -397,6 +397,118 @@ export const MIGRATIONS = [
     // Asserts the OLD shape is gone: no product/line still has a bare file (asset without source).
     probe: `count(*[_type in ["product","productLine"] && defined(featuredVideo.asset) && !defined(featuredVideo.source)]) == 0`,
   },
+  {
+    id: '20260930-appears-in',
+    ticket: 'PROD-2732',
+    title: 'Merge customizationOption.configuratorRole + hasPage into appearsIn',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:appears-in',
+    script: 'apps/studio/scripts/migrate-appears-in.mjs',
+    args: 'flags',
+    // Asserts the NEW shape is present on every option that MUST carry it, rather
+    // than that the old keys are gone: both fields leave the SCHEMA in this PR but
+    // their DATA is deliberately left in place as the rollback path, so an "old key
+    // is gone" probe would read false forever.
+    //
+    // ⚠️ Scoped to ACTIVE, PUBLISHED options, and both halves are load-bearing.
+    // `appearsIn` is required only while an option is active, because the three
+    // values describe where a CUSTOMER meets it and a retired technical material
+    // has no honest answer. 39 options on development are deliberately empty — all
+    // of them coming-soon or discontinued. A bare `!defined(appearsIn)` probe counts
+    // those as failures and can never go true. Drafts are excluded so an editor
+    // mid-edit cannot flip a recorded migration back to pending.
+    //
+    // Survives the eventual sweep of configuratorRole/hasPage, which touches neither
+    // appearsIn nor status.
+    probe: `count(*[_type == "customizationOption" && !(_id in path("drafts.**")) &&
+      status == "active" && !defined(appearsIn)]) == 0`,
+  },
+  {
+    id: '20260930-customization-status',
+    ticket: 'PROD-2733',
+    title: 'customizationOption.status to Active / Not active (coming-soon → active, discontinued → not-active)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:customization-status',
+    script: 'apps/studio/scripts/migrate-customization-status.mjs',
+    args: 'flags',
+    after: ['20260930-appears-in'],
+    // Asserts the OLD values are gone, which is the shape that stays true forever.
+    // ⚠️ It can go false again without a migration being un-run: the catalog fill
+    // writes over the API, where `options.list` does not apply, so a generator still
+    // emitting the removed values re-introduces them. That is the point of probing
+    // rather than trusting the ledger — see the script header.
+    probe: `count(*[_type == "customizationOption" &&
+      status in ["coming-soon", "discontinued"]]) == 0`,
+  },
+  {
+    id: '20260930-finder-fs-default-rail',
+    ticket: 'PROD-2666',
+    title:
+      'Finder fullscreen defaultRail: fixed seats object → flexible item array',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:finder-fs-default-rail',
+    script: 'apps/studio/scripts/migrate-finder-fullscreen-default-rail.mjs',
+    args: 'flags',
+    // Asserts the OLD seat object is gone (product.fillMode only existed on the
+    // legacy shape). homePage (not page) hosts the Home sections; already-array
+    // rails do not define defaultRail.product.fillMode.
+    probe: `count(*[defined(sections) && count(sections[
+      _type == "heroFinderFullscreen" && defined(defaultRail.product.fillMode)
+    ]) > 0]) == 0`,
+  },  {
+    id: '20261002-preset-unset-inherited-customizations',
+    ticket: 'PROD-2778',
+    title: 'Inspiration presets: remove availableCustomizations entries that are not pre-selected (copies of the base list)',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:preset-unset-inherited-customizations',
+    script: 'apps/studio/scripts/migrate-preset-unset-inherited-customizations.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: no preset stores an entry that is not pre-selected.
+    // ⚠️ It can go false again without a migration being un-run: the catalog fill wrote
+    // these entries and re-introduces them if it still copies the base list — see the
+    // script header.
+    probe: `count(*[_type == "product" && kind == "inspiration" &&
+      count(availableCustomizations[preselected != true]) > 0]) == 0`,
+  },  {
+    id: '20261002-spot-coating-pairs',
+    ticket: 'PROD-2783',
+    title: 'Spot Coating ↔ Surface Finish / Surface Finish (non-paper) / Lamination pairs follow the board frame',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:spot-coating-pairs',
+    script: 'apps/studio/scripts/migrate-spot-coating-pairs.mjs',
+    args: 'flags',
+    // Asserts the OLD shape is gone: the fill paired every spot coating with every finish, so
+    // Glitter / Pearlescent / Textured — which the frame sends to "No Spot Coating" — carried
+    // spot coatings. Read from both ends, since the fill wrote both. ⚠️ It goes false again if
+    // the relationship fill re-runs before its PROD-2783 fix lands — see the script header.
+    probe: `count(*[_type == "customizationOption" && !(_id in path("drafts.**")) &&
+      type->title == "Surface Finish" && title in ["Glitter", "Pearlescent", "Textured"] &&
+      (count(compatibleCustomizations[@->type->title == "Spot Coating"]) > 0 ||
+       count(*[_type == "customizationOption" && type->title == "Spot Coating" &&
+         ^._id in compatibleCustomizations[]._ref]) > 0)]) == 0`,
+  },
+  {
+    id: '20261005-status-unification',
+    ticket: 'PROD-2845',
+    title: 'One status replaces customerFacing and hasPage across the catalog',
+    pkg: '@pakfactory/studio',
+    task: 'migrate:status-unification',
+    script: 'apps/studio/scripts/migrate-status-unification.mjs',
+    args: 'flags',
+    after: ['20260930-customization-status'],
+    // Asserts the retired KEYS are gone, which is the shape that stays true forever —
+    // the status values themselves keep changing as editors work, so probing those
+    // would read an ordinary edit as an un-run migration.
+    //
+    // 🔴 This migration must land in the SAME deploy as the schema change. The old
+    // `customerFacing` read unset-as-visible while every new gate is a whitelist, so a
+    // release between the two makes hidden documents public. The probe cannot catch
+    // that window — it only tells you the data has caught up, not that it did so in time.
+    //
+    // Drafts included: a stale draft carrying `customerFacing` republishes the key.
+    probe: `count(*[_type in ["product", "productLine", "productStyle", "solution"] &&
+      (defined(customerFacing) || (_type == "solution" && defined(hasPage)))]) == 0`,
+  },
 ]
 
 /**
@@ -428,7 +540,7 @@ export const HISTORIC = [
   'migrate-product-to-single-refs',
   'migrate-remove-404-promobanner',
   'migrate-rename-commercial-types',
-  'migrate-solution-haspage',
+  'migrate-solution-haspage', // script deleted 2026-10-06 (PROD-2898): its field, solution.hasPage, was replaced by status (PROD-2845). Kept here for provenance.
   'migrate-solution-remove-usecase-leftovers',
   'migrate-solution-titles',
   'migrate-unset-legacy-applies',
@@ -453,6 +565,8 @@ export const TASKS = [
   // rebuilt successors, from the purge map. Idempotent — anything already in place is skipped.
   { task: 'repoint:catalog-refs', pkg: '@pakfactory/studio', why: 'repair references after a catalog rebuild' },
   { task: 'populate:faqs', pkg: '@pakfactory/studio', why: 'replace every FAQ with the Notion FAQ table (repeatable)' },
+  { task: 'seed:home-page', pkg: '@pakfactory/studio', why: 'idempotent Home layout seed (PROD-2666); stable seed-hero-*/seed-home-* keys, picks real docs' },
+  { task: 'seed:finder-general', pkg: '@pakfactory/studio', why: 'surgical General-rail buckets on existing heroFinder; preserves section order' },
   { task: 'seed:help-categories', pkg: '@pakfactory/studio', why: 'create the Help Center categories (create-if-missing)' },
   { task: 'check:redirects-parity', pkg: '@pakfactory/studio', why: 'read-only check' },
   { task: 'check:structure-types', pkg: '@pakfactory/studio', why: 'read-only check' },

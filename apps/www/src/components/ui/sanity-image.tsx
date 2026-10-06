@@ -9,15 +9,26 @@ import {
   useWatermarkConfig,
   type WatermarkConfig,
 } from "@pakfactory/ui/components/watermark-context";
-import { sanityImageLoader, sanitySquareImageLoader } from "@/lib/sanity/image";
+import {
+  sanityImageLoader,
+  sanityPortraitImageLoader,
+  sanitySquareImageLoader,
+} from "@/lib/sanity/image";
 
 export type SanityImageProps = Omit<ImageProps, "loader"> & {
   /**
    * Request a square centre crop from Sanity (`fit=crop`, `h=w`). Use for
    * `aspect-square` containers so a landscape source isn't upscaled to fill
    * the square (which looks blurry with the default `fit=max` loader).
+   * Wins over {@link portrait} when both are set.
    */
   square?: boolean;
+  /**
+   * Request a 3:4 portrait centre crop from Sanity (`fit=crop`, `h = w * 4/3`).
+   * Use for portrait cards (e.g. Industry LP hero tiles). Ignored when
+   * {@link square} is true. Does not enable watermark 16:9 `cover`.
+   */
+  portrait?: boolean;
   /**
    * Opt-in watermark. Pass `true` for detail body/gallery images when Global Settings
    * watermark is enabled. Omit or pass `false` elsewhere (blocks, cards, products).
@@ -58,6 +69,7 @@ function makeServeLoader(
  */
 export function SanityImage({
   square,
+  portrait,
   applyWatermark,
   watermarkVariant = null,
   fill,
@@ -68,9 +80,14 @@ export function SanityImage({
   const config = useWatermarkConfig();
   const showWatermark = shouldApplyWatermark(config, applyWatermark);
   const serveMode = showWatermark && isServeWatermarkMode(config);
-  const cover = Boolean(fill) && !square;
+  // Watermark `cover` is 16:9 — only for fill + default fit; square/portrait use crop loaders.
+  const cover = Boolean(fill) && !square && !portrait;
 
-  const defaultLoader = square ? sanitySquareImageLoader : sanityImageLoader;
+  const defaultLoader = square
+    ? sanitySquareImageLoader
+    : portrait
+      ? sanityPortraitImageLoader
+      : sanityImageLoader;
 
   const image = (
     <Image

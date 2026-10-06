@@ -23,6 +23,10 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     selectOption: 'Select an option',
     navLabel: 'Customization categories',
     typeListLabel: 'Category types',
+    /** Middle-panel option filter (selection steps). */
+    searchPlaceholder: 'Search {category}…',
+    searchNoMatches: 'No matches for this search.',
+    searchLabel: 'Search options',
     detailLabel: 'Detail',
     external: 'External',
     internal: 'Internal',
@@ -37,4 +41,21 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     additionalNotePlaceholder:
         'Specific {category} details for your specialist…',
     skip: 'Skip, need consultation',
+    /** PROD-2629 / ADR-017 — reverse of Sanity `achieves` (candidates, not a recipe). */
+    achievedByHelper:
+        'This finish can be achieved by these techniques, learn more about them:',
+    achievedBySelected: 'Technique',
+    achievedByLearnMore: 'Learn more',
+    /** Printing-step Printed Side gate (before Method / Color). */
+    printOutside: 'Print Outside',
+    printInside: 'Print Inside',
+    printedSideYes: 'Yes',
+    printedSideNo: 'No',
+    /** Pantone Spot / Hybrid option detail controllers. */
+    pantoneCountLabel: 'How many Pantone colors?',
+    pantoneCountDecrease: 'Fewer Pantone colors',
+    pantoneCountIncrease: 'More Pantone colors',
+    pantonePmsLabel: 'Pantone (PMS) codes',
+    pantonePmsPlaceholder: 'e.g. PMS 185 C',
+    pantonePmsRemove: 'Remove Pantone code',
 } as const;

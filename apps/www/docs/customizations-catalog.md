@@ -35,7 +35,14 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 | Detail | `getCustomizationCategory(category, handle)` |
 | Cache tag | `WWW_CATALOG_CUSTOMIZATIONS_CACHE_TAG` |
 
-Library options: `customizationOption` with `hasPage == true` and `status == "active"` (D55 / PROD-2482). Configurator pickability is `configuratorRole` and is orthogonal — do not gate the library on deprecated `role == "reference"` (ADR-017 §3 before the split).
+Library options: `customizationOption` with a page-bearing `appearsIn` (`configurable-with-page` or `not-configurable-with-page`) and `status == "active"` (PROD-2732 / PROD-2733). Configurator pickability is the configurable `appearsIn` values (`configurable-with-page`, `configurable-no-page`) — orthogonal to having a library page.
+
+| Status | Display (`appearsIn`) | Configurator | Library list | Own page |
+| --- | --- | --- | --- | --- |
+| Active | Configurable + page | show | show | show |
+| Active | Not configurable + page | never | show | show |
+| Active | Configurable + no page | show | — | — |
+| Not active | any | — | — | — |
 
 ### Product availability — shared rules (PROD-2556)
 
@@ -65,13 +72,34 @@ Builder rail + catalog tabs share `compareCategorySlugs()`: Dimensions → mater
 | --- | --- |
 | Category tabs / `categoryValue` | `type->category` (`customizationCategory.slug` / `title`) |
 | Card title / slug / media | option fields |
+| Option Featured image | `featuredImage` — library cards, detail poster, social fallback ([ADR-023](../../../docs/adr/0023-featured-image-and-featured-video.md)) |
+| Option Featured video | `featuredVideo` (upload / CDN URL); gallery keeps Featured image as poster (PROD-2737). YouTube is stored but ambient playback keeps the still. |
+| Option Media gallery | `media[]` — additional detail frames only; not the card source |
 | Product Line facet | Reverse: products with this option in `availableCustomizations` → `productLine` (PROD-2529; retired `availableOnProducts`) |
 | Sustainability + other facets | `properties[]` → `propertyValue` + parent `property` |
 | Category-specific facet groups | Non-sustainability properties present on items in that category |
-| Configurator pickability | `configuratorRole` (fallback deprecated `role`) |
+| Configurator / library / own page | `appearsIn` (PROD-2732; replaces `hasPage` + `configuratorRole`) |
 | Type pick count | `customerSelects` (fallback deprecated `cardinality`) |
 
 Facet URL keys use `property.slug` (and `product-line` for Product Line). Shared rail: Product Line + Sustainability (when values exist). Other properties appear when a category tab ≠ All is selected.
+
+## Business rules — customization card media
+
+Binding product rules for the library tile (`CustomizationCard`). Field roles: [ADR-023](../../../docs/adr/0023-featured-image-and-featured-video.md). Implementers: [`customization-card.tsx`](../src/components/customization/customization-card.tsx) + [`mapSanityLibraryOption`](../src/lib/catalog/map-sanity.ts).
+
+| State | Rest | Hover (desktop `sm+`; skip mobile / `prefers-reduced-motion`) |
+| --- | --- | --- |
+| Featured image set + Featured video URL | Featured image | Muted loop video over poster |
+| Featured image set, no video, `media.length >= 2` | Featured image | `media[1]` (second Media image) |
+| Featured image set, no video, `media.length < 2` | Featured image | No change |
+| No Featured image, `media.length >= 2` | `media[0]` | `media[1]` |
+| No Featured image, `media.length === 1` | `media[0]` | No change |
+| No images | Package placeholder | No change |
+
+- Rest thumb is **never** “whatever is first in a flattened Featured+Media list” — Media stays a separate array so hover can target `media[1]`.
+- Featured video hover requires **both** a Featured image and a playable `featuredVideoUrl` (upload/CDN; YouTube → null).
+- Mobile and reduced-motion: keep the rest still (no video, no image swap).
+- Rest↔hover dissolve uses the shared media dissolve utility ([`media-dissolve.ts`](../src/lib/ui/media-dissolve.ts) — `--motion-slow` opacity crossfade).
 
 ## Component naming
 
@@ -92,9 +120,14 @@ Buyer copy: **customization**, never “capability”.
 ## Filter / URL responsibility
 
 - **Server:** one library fetch + facet catalog in `CustomizationLibraryResult`; page sections via cached `getCustomizationCatalogPage()`. The route does **not** read `searchParams` — the client owns `category`.
-- **Client:** local state is the source of truth; `history.replaceState` mirrors `category`, `q`, and facet params (no `router.replace`, no RSC round trip on filter clicks — PROD-2599). Back/forward re-seeds from `useSearchParams`.
+- **Client:** local state is the source of truth; `history.replaceState` mirrors `category`, `q`, and facet params (no `router.replace`, no RSC round trip on filter clicks — PROD-2599). State starts at the default (unfiltered) view, so the grid is **server-rendered** on the static page — first page of cards in the HTML (PROD-2799). URL params are applied right after hydration by `SearchParamsListener` ([`search-params-listener.tsx`](../src/lib/catalog/search-params-listener.tsx)), which isolates `useSearchParams` in its own `<Suspense fallback={null}>` so only that empty listener skips server rendering. It also re-applies the URL on back/forward and same-page navigation. A deep link with filters briefly shows the default view before filtering.
 - **Filter:** in memory via the shared facet engine; facet option counts are **disjunctive (except-self)**; header **“N of M”** stays based on the fully filtered result set; category tab counts use the same search + facet selections as the grid; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; no artificial append delay)
 - **Route:** `urlSync` (default true) — `category`, `q`, plus facet ids as comma-separated query params (load-more depth is session-only, not in the URL)
+- **Wire format (PROD-2757):** `CustomizationCatalogView` passes `packCustomizationLibrary(library)`, and the panel unpacks it once.
+  - Per-item `propertyTitles` maps are merged into one shared map.
+  - `productLines` become indexes into a line table.
+  - `valueTitles` are **not sent**: unpacked items get `{}`. They only feed facet labels, which the server already resolved into `facetCatalog`.
+  - Staging: RSC payload 442 → 276 KB, HTML 689 → 500 KB. See `lib/catalog/library-wire.ts`.
 
 - **Section:** `urlSync={false}` — local React state only; optional `initialCategory` from Studio
 - **Facet combine:** across facet groups = **AND**; within Sustainability and Performance = **AND**; within Product Line and other properties = **OR** (see [`customization-filter-taxonomy.md`](./customization-filter-taxonomy.md))

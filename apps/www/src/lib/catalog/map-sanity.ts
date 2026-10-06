@@ -8,6 +8,7 @@ import {
     type CatalogPropertyValueDetailDoc,
     type PageSectionDoc,
 } from '@pakfactory/sanity/queries';
+import type {PortableTextBlock} from '@portabletext/types';
 import {
     resolveImageAlt,
     sanityImageBaseUrl,
@@ -20,11 +21,13 @@ import type {
     CustomizationOption,
     CustomizationPropertyFact,
     CustomizationPropertyValue,
+    CustomizationShowcaseTile,
     Product,
     ProductFaq,
     ProductKind,
     ProductLibraryItem,
     ProductLibraryLineMeta,
+    ProductLibraryStyleRef,
     ProductLine,
     ProductLineCaseStudyRef,
     ProductLineExpertiseRef,
@@ -34,7 +37,8 @@ import type {
     ProductProperty,
     ProductStyleRef,
 } from '@/lib/catalog/types';
-import {toLifecycle} from '@/lib/catalog/types';
+import {hasDetailPage, isConfigurable, toLifecycle} from '@/lib/catalog/types';
+import {solutionHref, WWW_ROUTES} from '@/lib/www-routes';
 
 function mediaFromSanity(
     media: unknown[] | null | undefined,
@@ -48,6 +52,168 @@ function mediaFromSanity(
         const alt = resolveImageAlt(item, titleFallback);
         return src ? {src, alt} : {alt};
     });
+}
+
+/** Single Sanity image → CatalogMedia when it has a URL. */
+function catalogMediaFromImage(
+    image: unknown | null | undefined,
+    titleFallback: string,
+): CatalogMedia | null {
+    if (!image) return null;
+    const src = sanityImageBaseUrl(image);
+    if (!src) return null;
+    return {src, alt: resolveImageAlt(image, titleFallback)};
+}
+
+/**
+ * Detail / compare gallery: Featured image first, then Media extras (ADR-023).
+ * Dedupe by src when Featured was also left in Media. Empty → placeholder alt.
+ */
+function customizationGallerySlides(
+    featuredImage: unknown | null | undefined,
+    media: unknown[] | null | undefined,
+    titleFallback: string,
+): CatalogMedia[] {
+    const slides: CatalogMedia[] = [];
+    const seen = new Set<string>();
+
+    const featured = catalogMediaFromImage(featuredImage, titleFallback);
+    if (featured?.src) {
+        slides.push(featured);
+        seen.add(featured.src);
+    }
+
+    if (Array.isArray(media)) {
+        for (const item of media) {
+            const slide = catalogMediaFromImage(item, titleFallback);
+            if (!slide?.src || seen.has(slide.src)) continue;
+            seen.add(slide.src);
+            slides.push(slide);
+        }
+    }
+
+    return slides.length > 0 ? slides : [{alt: titleFallback}];
+}
+
+const SHOWCASE_SOLUTION_CAP = 3;
+const SHOWCASE_CASE_STUDY_CAP = 5;
+
+type ShowcaseLists = {
+    showcaseSolutions: CustomizationShowcaseTile[];
+    showcaseCaseStudies: CustomizationShowcaseTile[];
+};
+
+/**
+ * “See it in use”: solutions (large) + case studies (small) kept separate.
+ * Option media fills large slots only when both reverse joins are empty.
+ */
+function customizationShowcaseLists(
+    doc: CatalogCustomizationDetailDoc,
+    optionMedia: CatalogMedia[],
+    titleFallback: string,
+): ShowcaseLists {
+    const showcaseSolutions: CustomizationShowcaseTile[] = [];
+    const showcaseCaseStudies: CustomizationShowcaseTile[] = [];
+    const seenSolutionIds = new Set<string>();
+    const seenSrc = new Set<string>();
+
+    for (const row of doc.showcaseFromSolutions ?? []) {
+        if (!row || showcaseSolutions.length >= SHOWCASE_SOLUTION_CAP) continue;
+        const src = row.src?.trim();
+        if (!src || seenSrc.has(src)) continue;
+        const id = row._id?.trim();
+        if (id) {
+            if (seenSolutionIds.has(id)) continue;
+            seenSolutionIds.add(id);
+        }
+        const title = row.title?.trim() || titleFallback;
+        const slug = row.slug?.trim();
+        const description = row.shortDescription?.trim() || undefined;
+        seenSrc.add(src);
+        showcaseSolutions.push({
+            kind: 'solution',
+            src,
+            alt: row.alt?.trim() || title,
+            title,
+            ...(description ? {description} : {}),
+            ...(slug
+                ? {
+                      href: solutionHref(slug),
+                      linkLabel: `See ${title} packaging`,
+                  }
+                : {}),
+        });
+    }
+
+    for (const row of doc.showcaseFromCaseStudies ?? []) {
+        if (!row || showcaseCaseStudies.length >= SHOWCASE_CASE_STUDY_CAP) continue;
+        const src = row.src?.trim();
+        if (!src || seenSrc.has(src)) continue;
+        const title = row.title?.trim() || titleFallback;
+        const slug = row.slug?.trim();
+        const description = row.cardSummary?.trim() || undefined;
+        seenSrc.add(src);
+        showcaseCaseStudies.push({
+            kind: 'caseStudy',
+            src,
+            alt: row.alt?.trim() || title,
+            title,
+            ...(description ? {description} : {}),
+            ...(slug
+                ? {
+                      href: `${WWW_ROUTES.caseStudies}/${slug}`,
+                      linkLabel: 'Read case study',
+                  }
+                : {}),
+        });
+    }
+
+    if (showcaseSolutions.length === 0 && showcaseCaseStudies.length === 0) {
+        for (const item of optionMedia) {
+            if (showcaseSolutions.length >= SHOWCASE_SOLUTION_CAP) break;
+            const src = item.src?.trim();
+            if (!src || seenSrc.has(src)) continue;
+            seenSrc.add(src);
+            showcaseSolutions.push({
+                kind: 'media',
+                src,
+                alt: item.alt?.trim() || titleFallback,
+                title: titleFallback,
+            });
+        }
+    }
+
+    return {showcaseSolutions, showcaseCaseStudies};
+}
+
+/**
+ * Product PDP gallery: Media extras first, Featured image last.
+ * Dedupe by src when Featured was also left in Media. Empty → placeholder alt.
+ * (Customization detail stays featured-first per ADR-023.)
+ */
+export function productGallerySlides(
+    featuredImage: unknown | null | undefined,
+    media: unknown[] | null | undefined,
+    titleFallback: string,
+): CatalogMedia[] {
+    const slides: CatalogMedia[] = [];
+    const seen = new Set<string>();
+
+    if (Array.isArray(media)) {
+        for (const item of media) {
+            const slide = catalogMediaFromImage(item, titleFallback);
+            if (!slide?.src || seen.has(slide.src)) continue;
+            seen.add(slide.src);
+            slides.push(slide);
+        }
+    }
+
+    const featured = catalogMediaFromImage(featuredImage, titleFallback);
+    if (featured?.src && !seen.has(featured.src)) {
+        slides.push(featured);
+    }
+
+    return slides.length > 0 ? slides : [{alt: titleFallback}];
 }
 
 /** First non-empty trimmed string — used for option detail copy fallbacks. */
@@ -74,26 +240,45 @@ function cardImageFromSanity(
 
 /** FAQ rows → `ProductFaq[]`, dropping any without both a question and an answer. */
 function mapFaqs(
-    rows: ({question?: string | null; answerPlain?: string | null} | null)[] | null | undefined,
+    rows:
+        | ({
+              question?: string | null;
+              answerPlain?: string | null;
+              answer?: unknown[] | null;
+          } | null)[]
+        | null
+        | undefined,
 ): ProductFaq[] {
     const faqs: ProductFaq[] = [];
     for (const row of rows ?? []) {
         const question = row?.question?.trim();
         const answerPlain = row?.answerPlain?.trim();
         if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
+        const answerBlocks = Array.isArray(row?.answer)
+            ? (row.answer as PortableTextBlock[])
+            : undefined;
+        faqs.push({
+            question,
+            answerPlain,
+            ...(answerBlocks?.length ? {answer: answerBlocks} : {}),
+        });
     }
     return faqs;
 }
 
-function mapStyleRef(
+export function mapStyleRef(
     style: {
         slug: string | null;
         title: string;
+        hasPage?: boolean | null;
         description?: string | null;
         shortDescription?: string | null;
         cardImage?: unknown | null;
-        faqs?: ({question?: string | null; answerPlain?: string | null} | null)[] | null;
+        faqs?: ({
+            question?: string | null;
+            answerPlain?: string | null;
+            answer?: unknown[] | null;
+        } | null)[] | null;
     },
 ): ProductStyleRef | null {
     const styleSlug = style.slug?.trim();
@@ -113,6 +298,7 @@ function mapStyleRef(
         ...(shortDescription ? {shortDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
         ...(faqs.length ? {faqs} : {}),
+        ...(style.hasPage === false ? {hasPage: false as const} : {}),
     };
 }
 
@@ -147,36 +333,91 @@ function mapAvailableCustomization(
     if (!option?._id || !option.title) return null;
     if (option.status && option.status !== 'active') return null;
 
-    const configuratorRole =
-        option.configuratorRole === 'reference' ||
-        option.configuratorRole === 'configurable'
-            ? option.configuratorRole
-            : option.role === 'reference' || option.role === 'configurable'
-              ? option.role
-              : 'configurable';
-    // Configurator only surfaces configurable options (D55 / PROD-2529).
-    if (configuratorRole === 'reference') return null;
+    // 🔴 KEEP-WHEN-CONFIGURABLE, never drop-when-not (PROD-2732).
+    //
+    // These read the same for every value that exists, and the OPPOSITE way for a
+    // MISSING one. `appearsIn` is undefined on any option the backfill has not
+    // reached, and a `!== 'not-configurable-with-page'` test would let those
+    // through — putting Matte Lamination, Gloss Lamination, Soft Touch Lamination,
+    // Varnish, Aqueous and UV Coating into the configurator as things a customer
+    // can order. An unset value must mean "not offered", so the test is `===`.
+    //
+    // Same trap as `showOnDetailPage` (PROD-2610) and `customerFacing` (PROD-2620),
+    // inverted: there the safe test is `!= false`, here it is `==`.
+    if (!isConfigurable(option.appearsIn)) return null;
 
     const type = option.type;
     const category = type?.category;
     const categorySlug = category?.slug?.trim();
     if (!categorySlug) return null;
 
-    const firstImage = Array.isArray(option.media) ? option.media[0] : null;
-
-    // No shortDescription on customizationOption yet — fall back through
-    // meta / glossary / benefits / type description for the detail panel.
+    // PROD-2762 — prefer authored short description for cards / builder; fall
+    // back through glossary / benefits / type. Meta description is SEO-only and
+    // must not drive the customization boxes.
+    const shortDescription = option.shortDescription?.trim() || '';
     const description = firstNonEmpty(
-        option.metaDescription,
+        shortDescription,
         option.glossaryPlain,
         option.benefitsPlain,
         type?.description,
     );
 
+    // PROD-2774 / ADR-023 — featured image first; media[0] until backfill.
+    const featuredUrl = option.featuredImage
+        ? sanityImageBaseUrl(option.featuredImage)
+        : null;
+    const firstMedia = Array.isArray(option.media) ? option.media[0] : null;
+    const mediaUrl = firstMedia ? sanityImageBaseUrl(firstMedia) : null;
+    const imageUrl = featuredUrl || mediaUrl || null;
+
     const customerSelects =
         type?.customerSelects === 'many' || type?.cardinality === 'many'
             ? 'many'
             : 'one';
+
+    const achievedBy = (option.achievedBy ?? [])
+        .filter(
+            (item): item is NonNullable<(typeof option.achievedBy)>[number] =>
+                Boolean(item?._id && item.title),
+        )
+        .map((item) => {
+            const techniqueFeatured = item.featuredImage
+                ? sanityImageBaseUrl(item.featuredImage)
+                : null;
+            const techniqueMedia = Array.isArray(item.media)
+                ? item.media[0]
+                : null;
+            const techniqueMediaUrl = techniqueMedia
+                ? sanityImageBaseUrl(techniqueMedia)
+                : null;
+            // Customer-facing — never metaDescription.
+            const techniqueDescription = firstNonEmpty(
+                item.shortDescription,
+                item.glossaryPlain,
+                item.benefitsPlain,
+            );
+            return {
+                id: item._id,
+                title: item.title,
+                ...(item.slug ? {slug: item.slug} : {}),
+                ...(item.typeTitle ? {typeTitle: item.typeTitle} : {}),
+                ...(item.categorySlug
+                    ? {categorySlug: item.categorySlug}
+                    : {}),
+                ...(techniqueDescription
+                    ? {description: techniqueDescription}
+                    : {}),
+                imageUrl: techniqueFeatured || techniqueMediaUrl || null,
+                ...(hasDetailPage(item.appearsIn) ? {hasPage: true} : {}),
+            };
+        });
+
+    const typeOrder = (category?.typeOrder ?? []).filter(
+        (id): id is string => typeof id === 'string' && id.length > 0,
+    );
+    const optionOrder = (type?.optionOrder ?? []).filter(
+        (id): id is string => typeof id === 'string' && id.length > 0,
+    );
 
     return {
         id: option._id,
@@ -185,19 +426,21 @@ function mapAvailableCustomization(
         category: categorySlug,
         categoryTitle: category?.title ?? undefined,
         categoryDescription: category?.description ?? undefined,
+        ...(typeOrder.length > 0 ? {categoryTypeOrder: typeOrder} : {}),
+        ...(optionOrder.length > 0 ? {typeOptionOrder: optionOrder} : {}),
         typeId: type?._id ?? undefined,
         typeSlug: type?.slug ?? undefined,
         typeTitle: type?.title ?? undefined,
         typeDescription: type?.description ?? undefined,
         customerSelects,
         cardinality: customerSelects,
-        imageUrl: firstImage ? (sanityImageBaseUrl(firstImage) ?? null) : null,
-        shortDescription: '',
+        imageUrl,
+        shortDescription,
         description,
         preselected: Boolean(row.preselected),
-        configuratorRole,
-        role: configuratorRole,
+        ...(option.appearsIn ? {appearsIn: option.appearsIn} : {}),
         status: option.status ?? undefined,
+        ...(achievedBy.length > 0 ? {achievedBy} : {}),
     };
 }
 
@@ -210,6 +453,25 @@ export function mapSanityOptionDoc(
     return mapAvailableCustomization({preselected, customization: option});
 }
 
+/** Listed style refs for membership (PROD-2843) — slug + title, order preserved. */
+function mapLibraryStyleRefs(
+    rows:
+        | ({title?: string | null; slug?: string | null} | null)[]
+        | null
+        | undefined,
+): ProductLibraryStyleRef[] {
+    const out: ProductLibraryStyleRef[] = [];
+    const seen = new Set<string>();
+    for (const row of rows ?? []) {
+        const styleSlug = row?.slug?.trim();
+        const title = row?.title?.trim();
+        if (!styleSlug || !title || seen.has(styleSlug)) continue;
+        seen.add(styleSlug);
+        out.push({slug: styleSlug, title});
+    }
+    return out;
+}
+
 export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     const slug = doc.slug?.trim();
     if (!slug || !doc.title) return null;
@@ -218,8 +480,13 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
     const lineTitle = doc.productLine?.title?.trim();
     if (!lineSlug || !lineTitle) return null;
 
-    const styleSlug = doc.productStyle?.slug?.trim();
-    const styleTitle = doc.productStyle?.title?.trim();
+    // Membership styles first so a restricted primary still keeps the product
+    // when a secondary style is listed (PROD-2843).
+    const membershipStyles = mapLibraryStyleRefs(doc.productStyles);
+    const styleSlug =
+        doc.productStyle?.slug?.trim() || membershipStyles[0]?.slug;
+    const styleTitle =
+        doc.productStyle?.title?.trim() || membershipStyles[0]?.title;
     if (!styleSlug || !styleTitle) return null;
 
     const kind: ProductKind =
@@ -232,11 +499,25 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         description: doc.productStyle?.description,
         shortDescription: doc.productStyle?.shortDescription,
         cardImage: doc.productStyle?.cardImage,
+        hasPage: doc.productStyle?.hasPage,
     });
     if (!productStyle) return null;
 
+    const productStyles =
+        membershipStyles.length > 0
+            ? membershipStyles
+            : [{slug: productStyle.slug, title: productStyle.title}];
+
+    // PROD-2530 / PROD-2773 — when rules are absent, an inspiration's own
+    // availableCustomizations list is its preset set (full offer comes from
+    // basedOn once rules resolve). Treat every listed option as preselected so
+    // the request rail can seed even if the Studio boolean was left unset.
     const availableCustomizations = (doc.availableCustomizations ?? [])
-        .map(mapAvailableCustomization)
+        .map((row) =>
+            mapAvailableCustomization(
+                kind === 'inspiration' ? {...row, preselected: true} : row,
+            ),
+        )
         .filter((item): item is CustomizationOption => item != null);
 
     const dim = doc.dimensionRange;
@@ -303,13 +584,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         properties.push({label, value: value || 'N/A'});
     }
 
-    const faqs: ProductFaq[] = [];
-    for (const row of doc.faqs ?? []) {
-        const question = row?.question?.trim();
-        const answerPlain = row?.answerPlain?.trim();
-        if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
-    }
+    const faqs = mapFaqs(doc.faqs);
 
     const relatedProducts = (doc.relatedProducts ?? [])
         .map(mapSanityProduct)
@@ -333,16 +608,56 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         status: toLifecycle(doc.status),
         description:
             typeof doc.description === 'string' ? doc.description.trim() : '',
-        media: mediaFromSanity(doc.media, doc.title),
+        media: productGallerySlides(doc.featuredImage, doc.media, doc.title),
         ...(doc.featuredVideoUrl?.trim()
             ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
             : {}),
+        ...(doc.model3dUrl?.trim()
+            ? {model3dUrl: doc.model3dUrl.trim()}
+            : {}),
+        ...(doc.model3dAnimationName?.trim()
+            ? {model3dAnimationName: doc.model3dAnimationName.trim()}
+            : {}),
         productLine,
         productStyle,
+        ...(doc.productStyles != null ? {productStyles} : {}),
         availableCustomizations,
-        ...(doc.primarySolution
-            ? {primarySolution: doc.primarySolution}
+        ...(doc.breadcrumbLinks
+            ? {
+                  breadcrumbLinks: {
+                      line: doc.breadcrumbLinks.line !== false,
+                      style: doc.breadcrumbLinks.style !== false,
+                      parent: doc.breadcrumbLinks.parent !== false,
+                  },
+              }
             : {}),
+        ...(doc.industry?.title?.trim() && doc.industry?.slug?.trim()
+            ? {
+                  industry: {
+                      title: doc.industry.title.trim(),
+                      slug: doc.industry.slug.trim(),
+                  },
+              }
+            : {}),
+        ...(doc.breadcrumbParent?.title?.trim() &&
+        doc.breadcrumbParent?.slug?.trim()
+            ? {
+                  breadcrumbParent: {
+                      title: doc.breadcrumbParent.title.trim(),
+                      slug: doc.breadcrumbParent.slug.trim(),
+                  },
+              }
+            : {}),
+        ...(() => {
+            const industries: {title: string; slug: string}[] = [];
+            for (const row of doc.industries ?? []) {
+                const industrySlug = row?.slug?.trim();
+                const industryTitle = row?.title?.trim();
+                if (!industrySlug || !industryTitle) continue;
+                industries.push({slug: industrySlug, title: industryTitle});
+            }
+            return industries.length > 0 ? {industries} : {};
+        })(),
         ...(typeof doc.moq === 'number' ? {moq: doc.moq} : {}),
         ...(dimensionInput ? {dimensionInput} : {}),
         ...(dimensionRange && Object.keys(dimensionRange).length
@@ -405,6 +720,17 @@ export function mapSanityProductLibraryItem(
         industries.push({slug, title});
     }
 
+    const membershipStyles = mapLibraryStyleRefs(doc.productStyles);
+    const productStyles =
+        membershipStyles.length > 0
+            ? membershipStyles
+            : [
+                  {
+                      slug: product.productStyle.slug,
+                      title: product.productStyle.title,
+                  },
+              ];
+
     return {
         item: {
             _id: doc._id,
@@ -413,11 +739,12 @@ export function mapSanityProductLibraryItem(
             sku: product.sku,
             kind: product.kind,
             productLine: product.productLine,
-            // Library payload: slug + title only (PROD-2599).
+            // Primary for display; productStyles for membership (PROD-2843).
             productStyle: {
                 slug: product.productStyle.slug,
                 title: product.productStyle.title,
             },
+            productStyles,
             imageUrl: first?.src ?? null,
             imageAlt: first?.alt ?? product.title,
             ...(product.status && product.status !== 'active' ? {status: product.status} : {}),
@@ -536,6 +863,14 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         });
     }
 
+    const featuredProducts = (doc.featuredProducts ?? [])
+        .map(mapSanityProduct)
+        .filter((item): item is Product => item != null);
+
+    const inspirationProducts = (doc.inspirationProducts ?? [])
+        .map(mapSanityProduct)
+        .filter((item): item is Product => item != null);
+
     const relatedLines: ProductLineRelatedRef[] = [];
     for (const row of doc.relatedLines ?? []) {
         if (!row) continue;
@@ -556,13 +891,7 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         });
     }
 
-    const faqs: ProductFaq[] = [];
-    for (const row of doc.faqs ?? []) {
-        const question = row?.question?.trim();
-        const answerPlain = row?.answerPlain?.trim();
-        if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
-    }
+    const faqs = mapFaqs(doc.faqs);
 
     const h1 = doc.h1?.trim();
     const shortName = doc.shortName?.trim();
@@ -597,11 +926,16 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         ...(frames.length > 0 ? {frames} : {}),
         ...(expertise.length > 0 ? {expertise} : {}),
         ...(featuredStudies.length > 0 ? {featuredStudies} : {}),
+        ...(featuredProducts.length > 0 ? {featuredProducts} : {}),
+        ...(inspirationProducts.length > 0 ? {inspirationProducts} : {}),
         ...(relatedLines.length > 0 ? {relatedLines} : {}),
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(sections.length > 0 ? {sections} : {}),
         ...(templateSections.length > 0 ? {templateSections} : {}),
-        styles: [...stylesBySlug.values()],
+        // Only styles with a page: this list feeds the line's style grid, the style route
+        // and its static params, and finder slides — all of them link. An Active (Internal)
+        // style still works as a catalog FILTER through the products' own styles.
+        styles: [...stylesBySlug.values()].filter((style) => style.hasPage !== false),
         products,
     };
 }
@@ -613,18 +947,26 @@ export function mapSanityLibraryOption(
     const categorySlug = doc.category?.slug?.trim();
     if (!slug || !doc.title || !categorySlug) return null;
 
-    const mediaItems = Array.isArray(doc.media) ? doc.media : [];
-    const images = mediaItems
-        .map((item) => {
-            const src = sanityImageBaseUrl(item);
-            if (!src) return null;
-            return {
-                src,
-                alt: resolveImageAlt(item, doc.title),
-            };
-        })
-        .filter((item): item is {src: string; alt: string} => item !== null);
-    const first = images[0];
+    const featured = catalogMediaFromImage(doc.featuredImage, doc.title);
+    const mediaImages: {src: string; alt: string}[] = [];
+    for (const item of Array.isArray(doc.media) ? doc.media : []) {
+        const slide = catalogMediaFromImage(item, doc.title);
+        if (!slide?.src) continue;
+        mediaImages.push({src: slide.src, alt: slide.alt});
+    }
+
+    const thumbSrc = featured?.src ?? mediaImages[0]?.src ?? null;
+    const thumbAlt =
+        featured?.alt ?? mediaImages[0]?.alt ?? doc.title;
+    const featuredVideoUrl = doc.featuredVideoUrl?.trim() || null;
+
+    // Legacy `images` / cardImage coalesce — rest thumb only for older callers.
+    const {imageUrl: cardUrl, imageAlt: cardAlt} = cardImageFromSanity(
+        doc.cardImage,
+        doc.title,
+    );
+    const imageUrl = thumbSrc ?? cardUrl;
+    const imageAlt = thumbSrc ? thumbAlt : cardAlt;
 
     const productLines: ProductLineRef[] = [];
     const seenLines = new Set<string>();
@@ -659,9 +1001,19 @@ export function mapSanityLibraryOption(
         categoryValue: categorySlug,
         categoryLabel: doc.category?.title ?? categorySlug,
         ...(toLifecycle(doc.status) !== 'active' ? {status: toLifecycle(doc.status)} : {}),
-        imageUrl: first?.src ?? null,
-        imageAlt: first?.alt ?? doc.title,
-        images: images.length > 0 ? images : undefined,
+        imageUrl,
+        imageAlt,
+        ...(featured?.src
+            ? {
+                  featuredImageUrl: featured.src,
+                  featuredImageAlt: featured.alt,
+              }
+            : {}),
+        ...(mediaImages.length > 0 ? {mediaImages} : {}),
+        ...(featuredVideoUrl ? {featuredVideoUrl} : {}),
+        ...(imageUrl
+            ? {images: [{src: imageUrl, alt: imageAlt}]}
+            : {}),
         productLines,
         attrs,
         propertyTitles,
@@ -751,6 +1103,9 @@ export function mapSanityCustomizationDetail(
         const valuesPerItem = row.property?.valuesPerItem;
         declaredProperties.push({
             usage,
+            ...(usage === 'stated' && row.showOnDetailPage === false
+                ? {showOnDetailPage: false as const}
+                : {}),
             ...(row.property?._id ? {propertyId: row.property._id} : {}),
             ...(propSlug ? {propertySlug: propSlug} : {}),
             ...(propTitle ? {propertyTitle: propTitle} : {}),
@@ -760,22 +1115,30 @@ export function mapSanityCustomizationDetail(
         });
     }
 
-    const description = firstNonEmpty(
-        doc.metaDescription,
-        doc.glossaryPlain,
-        doc.benefitsPlain,
-    );
+    // CDP hero — glossary Definition only (PROD-2779). No shortDescription /
+    // benefitsPlain fallback so missing glossary links show as empty in QA.
+    const glossaryDefinition = Array.isArray(doc.glossaryDefinition)
+        ? (doc.glossaryDefinition as PortableTextBlock[])
+        : undefined;
+    const description = doc.glossaryPlain?.trim() || undefined;
+    const metaDescription = doc.metaDescription?.trim() || undefined;
+    const benefitsTitle = doc.benefitsTitle?.trim() || undefined;
+    const benefitsBody = Array.isArray(doc.benefitsBody)
+        ? (doc.benefitsBody as PortableTextBlock[])
+        : undefined;
 
     const typeTitle = doc.type?.title?.trim();
     const typeSlug = doc.type?.slug?.trim();
 
-    const faqs: ProductFaq[] = [];
-    for (const row of doc.faqs ?? []) {
-        const question = row?.question?.trim();
-        const answerPlain = row?.answerPlain?.trim();
-        if (!question || !answerPlain) continue;
-        faqs.push({question, answerPlain});
-    }
+    const faqs = mapFaqs(doc.faqs);
+
+    const media = customizationGallerySlides(doc.featuredImage, doc.media, title);
+    const {showcaseSolutions, showcaseCaseStudies} = customizationShowcaseLists(
+        doc,
+        media,
+        title,
+    );
+    const specSheetUrl = doc.specSheetUrl?.trim() || null;
 
     return {
         status: toLifecycle(doc.status),
@@ -787,7 +1150,17 @@ export function mapSanityCustomizationDetail(
         ...(typeTitle ? {typeTitle} : {}),
         ...(typeSlug ? {typeSlug} : {}),
         ...(description ? {description} : {}),
-        media: mediaFromSanity(doc.media, title),
+        ...(glossaryDefinition?.length ? {glossaryDefinition} : {}),
+        ...(metaDescription ? {metaDescription} : {}),
+        ...(benefitsTitle ? {benefitsTitle} : {}),
+        ...(benefitsBody?.length ? {benefitsBody} : {}),
+        media,
+        ...(doc.featuredVideoUrl?.trim()
+            ? {featuredVideoUrl: doc.featuredVideoUrl.trim()}
+            : {}),
+        ...(specSheetUrl ? {specSheetUrl} : {}),
+        showcaseSolutions,
+        showcaseCaseStudies,
         properties,
         declaredProperties,
         productLines,

@@ -1,17 +1,18 @@
 'use client';
 
 import {useState} from 'react';
-import {Check, Pencil} from 'lucide-react';
+import {Check, ChevronDownIcon, Pencil} from 'lucide-react';
 import {Button} from '@pakfactory/ui/components/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@pakfactory/ui/components/dropdown-menu';
 import {Input} from '@pakfactory/ui/components/input';
 import {Label} from '@pakfactory/ui/components/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@pakfactory/ui/components/select';
+import {cn} from '@pakfactory/ui/lib/utils';
 import {AnnualSpendField} from '@/components/request/annual-spend-field';
 import {AddressPickerBlock} from '@/components/request/address-picker-block';
 import {INDUSTRY_OPTIONS, REQUEST_COPY} from '@/lib/copy/request';
@@ -20,6 +21,10 @@ import type {RequestDraft} from '@/lib/request/request.storage';
 import {isContactReady} from '@/lib/request/validation';
 
 const FIELD_CLASS = 'h-11 rounded-sm bg-background text-sm';
+const INDUSTRY_TRIGGER_CLASS =
+    'flex h-11 w-full items-center justify-between rounded-sm border border-input bg-background px-3 text-sm';
+const INDUSTRY_MENU_CLASS =
+    'overscroll-contain w-[var(--radix-dropdown-menu-trigger-width)] min-w-[var(--radix-dropdown-menu-trigger-width)]';
 
 type StepYourInformationProps = {
     draft: RequestDraft;
@@ -235,23 +240,49 @@ export function StepYourInformation({
                                 {REQUEST_COPY.optional}
                             </span>
                         </Label>
-                        <Select
-                            value={draft.contactIndustry || undefined}
-                            onValueChange={(v) =>
-                                onPatch({contactIndustry: v})
-                            }
-                        >
-                            <SelectTrigger className="h-11 w-full rounded-sm bg-background text-sm data-[size=default]:h-11">
-                                <SelectValue placeholder="Select an industry" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {INDUSTRY_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt} value={opt}>
-                                        {opt}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {/*
+                         * Non-modal DropdownMenu — Radix Select RemoveScroll
+                         * breaks the Brief Builder sticky shell (same fix as
+                         * country/region pickers).
+                         */}
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    type="button"
+                                    className={cn(
+                                        INDUSTRY_TRIGGER_CLASS,
+                                        !draft.contactIndustry &&
+                                            'text-muted-foreground',
+                                    )}
+                                >
+                                    <span className="truncate">
+                                        {draft.contactIndustry ||
+                                            'Select an industry'}
+                                    </span>
+                                    <ChevronDownIcon className="size-4 shrink-0 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="start"
+                                className={INDUSTRY_MENU_CLASS}
+                            >
+                                <DropdownMenuRadioGroup
+                                    value={draft.contactIndustry || undefined}
+                                    onValueChange={(v) =>
+                                        onPatch({contactIndustry: v})
+                                    }
+                                >
+                                    {INDUSTRY_OPTIONS.map((opt) => (
+                                        <DropdownMenuRadioItem
+                                            key={opt}
+                                            value={opt}
+                                        >
+                                            {opt}
+                                        </DropdownMenuRadioItem>
+                                    ))}
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 

@@ -66,11 +66,7 @@ export function CustomizationReferenceSpecs({
             </div>
 
             <div className="mt-8">
-                <Button
-                    asChild
-                    variant="outline"
-                    className="h-auto gap-2 rounded-full px-6 py-3 text-base shadow-none"
-                >
+                <Button asChild variant="link" className="h-auto gap-2 px-0 has-[>svg]:px-0">
                     <Link href={compareHref}>
                         {compareLabel}
                         <Icon icon={ChevronDown} size="sm" />

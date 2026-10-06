@@ -8,6 +8,7 @@ import {
     PRODUCT_CATALOG_PRODUCT_LINE_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID,
     PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID,
+    membershipStyles,
 } from '@/lib/catalog/types';
 import {withinOpForFacet} from '@/lib/catalog/customization-filter-taxonomy';
 
@@ -26,7 +27,10 @@ function matchesFacet(
         return selected.includes(item.productLine.slug);
     }
     if (facetId === PRODUCT_CATALOG_PRODUCT_STYLE_FACET_ID) {
-        return selected.includes(item.productStyle.slug);
+        // Union membership — any linked style (PROD-2843), not primary only.
+        return selected.some((slug) =>
+            membershipStyles(item).some((style) => style.slug === slug),
+        );
     }
     if (facetId === PRODUCT_CATALOG_PRODUCT_TYPE_FACET_ID) {
         return selected.includes(item.kind);
@@ -52,6 +56,7 @@ function createProductFacetEngine(propertyTitles: Record<string, string>) {
                 item.sku,
                 item.productLine.title,
                 item.productStyle.title,
+                ...membershipStyles(item).map((style) => style.title),
             ].join(' '),
         matchesFacet: (item, facetId, selected) =>
             matchesFacet(item, facetId, selected, propertyTitles),

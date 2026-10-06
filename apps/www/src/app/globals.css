@@ -159,8 +159,14 @@ html:has(body[data-scroll-locked]) {
 }
 
 /*
-  (site)/template.tsx remount enter — opacity + 8px settle.
+  (site)/template.tsx remount enter — 8px settle; fades in from `md` up.
   Keep www-only; do not promote to @pakfactory/ui until another app needs it.
+
+  Mobile-only no-fade (PROD-2756, approved by Richard Chang 2026-10-05):
+  text starting at `opacity: 0` is not counted as painted for LCP until the
+  fade completes, which cost ~0.5–1 s of mobile LCP on every page. Below
+  `md` (48rem / 768px) the content only rises; tablet and desktop keep the
+  original fade + rise.
 */
 @keyframes page-enter {
   from {
@@ -173,15 +179,33 @@ html:has(body[data-scroll-locked]) {
   }
 }
 
+@keyframes page-enter-rise {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 @utility animate-page-enter {
-  animation: page-enter var(--motion-slow) ease-out;
+  animation: page-enter-rise var(--motion-slow) ease-out;
+
+  @media (width >= 48rem) {
+    animation-name: page-enter;
+  }
 }
 
 /*
-  Hero / PageHeading settle — Apple Mac–style build-in (opacity + 30px rise).
-  Opt-in via `animate-heading-settle`; stagger with `--settle-delay` (see
-  `headingSettleProps` in lib/ui/heading-settle.ts). Keyframes define only
-  `from` so the element’s own styles are the end state. Keep www-only.
+  Hero / PageHeading settle — Apple Mac–style build-in (30px rise; fades in
+  from `md` up). Opt-in via `animate-heading-settle`; stagger with
+  `--settle-delay` (see `headingSettleProps` in lib/ui/heading-settle.ts).
+  Keyframes define only `from` so the element’s own styles are the end state.
+  Keep www-only.
+
+  Mobile-only no-fade (PROD-2756): same reason as `page-enter` above —
+  below `md` the heading and intro only rise, so they count for LCP from
+  the first frame; tablet and desktop keep the fade.
 */
 @keyframes heading-settle {
   from {
@@ -190,10 +214,20 @@ html:has(body[data-scroll-locked]) {
   }
 }
 
+@keyframes heading-settle-rise {
+  from {
+    transform: translateY(30px);
+  }
+}
+
 @utility animate-heading-settle {
-  animation: heading-settle var(--motion-reveal) cubic-bezier(0.45, 0, 0.55, 1)
-    both;
+  animation: heading-settle-rise var(--motion-reveal)
+    cubic-bezier(0.45, 0, 0.55, 1) both;
   animation-delay: var(--settle-delay, 0ms);
+
+  @media (width >= 48rem) {
+    animation-name: heading-settle;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -278,4 +312,22 @@ html:has(body[data-scroll-locked]) {
 */
 [data-section-theme="inverse"] {
   --border: rgb(255 255 255 / 0.15);
+}
+
+/*
+  (site) header account slot before the session resolves (PROD-2754).
+  The layout's inline flag script sets `data-session` on #pf-nav-session
+  before first paint when a Supabase auth cookie exists; see
+  lib/auth/nav-session-flag.ts and SiteNavRequestSlot.
+*/
+.nav-session-only {
+  display: none;
+}
+
+#pf-nav-session[data-session] .nav-session-only {
+  display: flex;
+}
+
+#pf-nav-session[data-session] .nav-anon-only {
+  display: none;
 }

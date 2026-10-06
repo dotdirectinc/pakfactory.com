@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import type { FaviconAsset } from "@pakfactory/sanity/favicon";
 import { BLOG_GLOBAL_SETTINGS_QUERY } from "@pakfactory/sanity/queries";
 import { getPublishedSanityClient } from "@/lib/sanity/client";
@@ -7,10 +6,13 @@ import {
   WWW_CONTENT_REVALIDATE_SECONDS,
   WWW_GLOBAL_SETTINGS_CACHE_TAG,
 } from "@/lib/www-cache";
+import { sanityCache, sanityReadFailed } from "@/lib/sanity/sanity-cache";
 
 export type WwwGlobalSettings = {
   /** GTM container ID (e.g. GTM-XXXXXXX) from Global Settings → Integrations. */
   gtmId?: string | null;
+  /** Global OG image fallback for case studies and other www pages. */
+  defaultOgImageUrl?: string | null;
   /** Editor-managed favicon (PROD-2200) — falls back to `public/favicon.ico`. */
   favicon?: FaviconAsset;
   /** Render-time image watermark (PROD-2206). */
@@ -28,12 +30,12 @@ async function loadWwwGlobalSettings(): Promise<WwwGlobalSettings | null> {
     return await getPublishedSanityClient().fetch<WwwGlobalSettings | null>(
       BLOG_GLOBAL_SETTINGS_QUERY,
     );
-  } catch {
-    return null;
+  } catch (err) {
+    throw sanityReadFailed("[global-settings] Sanity loadWwwGlobalSettings failed:", err);
   }
 }
 
-const getCachedWwwGlobalSettings = unstable_cache(
+const getCachedWwwGlobalSettings = sanityCache(
   loadWwwGlobalSettings,
   [WWW_GLOBAL_SETTINGS_CACHE_TAG],
   {

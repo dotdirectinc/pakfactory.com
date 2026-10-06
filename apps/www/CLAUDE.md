@@ -59,7 +59,7 @@ Do **not** collapse these layers:
 | **Sections** | Editor page body | Studio `schemas/sections/` + `pageSectionsField(SECTION_ALLOW.*)`; React under `components/sections/`; presentation-free (D35); allowlisted per page type |
 | **Design system** | Tokens / primitives | [`DESIGN.md`](../../DESIGN.md) + ADR-006; do not edit existing `packages/ui` primitives for features. Figma section handoff: ask stock primitive vs new component ([DESIGN.md § Designer / Figma handoff](../../DESIGN.md#designer--figma-handoff)) |
 
-**Customizations catalog (PROD-1288):** route `/customizations` + Studio section `customizationsCatalog` share `listCustomizations()` and `CustomizationCatalog*` components. Distinct from `customizationsRow` (catalogue strip). How-built: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md).
+**Customizations catalog (PROD-1288):** route `/customizations` + Studio section `customizationsCatalog` share `listCustomizations()` and `CustomizationCatalog*` components. Distinct from `customizationsRow` (catalogue strip). How-built + **card media business rules**: [`docs/customizations-catalog.md`](./docs/customizations-catalog.md) (§ Business rules — customization card media).
 
 **Products catalog (PROD-1845):** route `/products` uses `listProductLibrary()` and `ProductCatalog*` components — same filter/search/load-more pattern as customizations **without** category tabs. How-built: [`docs/products-catalog.md`](./docs/products-catalog.md). Line/style drill-down routes unchanged.
 

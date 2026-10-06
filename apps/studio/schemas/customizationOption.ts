@@ -4,6 +4,35 @@ import { seoFields } from '../lib/seo-fields'
 import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { CompatibleCustomizationsInput } from '../components/CompatibleCustomizationsInput'
+import { entityFields } from '../lib/entity-id-field'
+import { featuredVideoField } from '../lib/featured-video-field'
+
+/**
+ * `appearsIn` values (PROD-2732). Exported so nothing has to re-spell them.
+ *
+ * 🔴 Both predicates below test for what they WANT, never for what they exclude.
+ * An option whose `appearsIn` is unset — an import that has not run the backfill,
+ * a document created over the API — must read as "no page, not pickable", so a
+ * missing value hides it rather than leaking it. `appearsIn !== 'not-configurable-with-page'`
+ * is the same expression for every value that exists today and the OPPOSITE one
+ * for a missing value, which would put the six reference options into the
+ * configurator as things a customer can order. Same trap as `showOnDetailPage`
+ * (PROD-2610) and `customerFacing` (PROD-2620), inverted: here the safe test is `==`.
+ */
+export const APPEARS_IN = {
+  configurableWithPage: 'configurable-with-page',
+  notConfigurableWithPage: 'not-configurable-with-page',
+  configurableNoPage: 'configurable-no-page',
+} as const
+
+/** Does this option have a detail page in the customization library? */
+export const hasDetailPage = (appearsIn: unknown): boolean =>
+  appearsIn === APPEARS_IN.configurableWithPage ||
+  appearsIn === APPEARS_IN.notConfigurableWithPage
+
+/** Does a customer pick this option in the configurator? */
+export const isConfigurable = (appearsIn: unknown): boolean =>
+  appearsIn === APPEARS_IN.configurableWithPage || appearsIn === APPEARS_IN.configurableNoPage
 
 export const customizationOption = defineType({
   name: 'customizationOption',
@@ -148,86 +177,132 @@ export const customizationOption = defineType({
       title: 'Status',
       type: 'string',
       group: 'content',
-      description: 'Lifecycle — Active (offered now), Coming soon or Discontinued.',
+      description:
+        'Is this option offered? Not active removes it from the configurator, the library and its ' +
+        'own page — everywhere a customer could meet it. Use it instead of deleting the document, ' +
+        'so the compatibility rules that name this option keep working. There is no coming-soon or ' +
+        'discontinued state on purpose: we do not tell customers that something is on its way or ' +
+        'no longer available.',
       options: {
         layout: 'radio',
         list: [
           { title: 'Active', value: 'active' },
-          { title: 'Coming soon', value: 'coming-soon' },
-          { title: 'Discontinued', value: 'discontinued' },
+          { title: 'Not active', value: 'not-active' },
         ],
       },
+      // ─── PROD-2733: two of three lifecycle values removed ────────────────────
+      // A discontinued PRODUCT is one box we stopped making, and saying so is fine
+      // — product/productLine/productStyle keep all three values, their badges and
+      // their notices, and so do solutions. A discontinued CUSTOMIZATION reads as a
+      // capability we no longer have, which is the opposite of what we sell. Same
+      // for coming-soon. So on customizations there is no public "not available"
+      // state at all: an option is either offered, or it is internal.
+      //
+      // `not-active` is the off switch the model had no way to express.
+      // `compatibleCustomizations` and `achieves` are STRONG references, so Sanity
+      // refuses to unpublish or delete an option another option points at, and
+      // `discontinued` deliberately kept the page LIVE rather than hiding it. There
+      // was no way to take an option off the site at all.
+      //
+      // ⚠️ NO www CHANGE IS NEEDED, and that is checked rather than assumed. Every
+      // query returning an option already gates on status, and every gate is a
+      // WHITELIST that cannot contain `not-active` — LISTED_STATUS, HAS_PAGE_STATUS,
+      // and three spellings of `status == "active"`. ❌ Do not "fix" this by adding
+      // `not-active` to those two constants: they belong to the product and solution
+      // family, which keeps all three values.
+      //
+      // 🔴 THE CATALOG FILL MUST STOP EMITTING THE REMOVED VALUES. Its review sets
+      // come from pakfactory.com-backend, and the fill writes over the API where
+      // `options.list` does not apply — so a generator still emitting `coming-soon`
+      // would SUCCEED, and those options would vanish from the site while showing an
+      // error in Studio. Nothing fails loudly. See PROD-2733.
       initialValue: 'active',
       validation: (Rule) => Rule.required(),
     }),
-    // ─── D55 (PROD-2482): `role` SPLIT INTO TWO FIELDS ────────────────────────
-    // `role` answered two independent questions with one value: `configurable`
-    // meant "a customer picks this" AND "this has no URL"; `reference` meant the
-    // inverse of both. Across the 33 mock Options that held, so the assumption
-    // went unexamined. The Notion Demo import falsified it — `Detail Page` is
-    // checked on 102 of 113 rows, because the content team gives detail pages to
-    // things customers also pick (Magnetic Closure, Hot Foil Stamping, Spot UV,
-    // SBS). "Pickable AND has a page" is the MAJORITY of the catalogue and had no
-    // way to be recorded at all. D54 flagged that and left it open; D55 closes it.
+    // ─── PROD-2732: `configuratorRole` + `hasPage` MERGED INTO ONE FIELD ──────
+    // Two booleans answered one question between them — where a customer meets
+    // this option — and an editor had to hold both in their head to know what
+    // they got. The grid they spanned, on published production:
     //
-    // This is the same defect D47 fixed on `appliesTo`, which held two grids in
-    // one array: one field cannot carry two questions when their answers vary
-    // independently. Same shape, same fix.
-
+    //                    hasPage: true   hasPage: false
+    //   configurable          102              18
+    //   reference               6               0
+    //
+    // Three occupied cells, three values. The fourth — a technical option with no
+    // page — has no occupants among ACTIVE options; where it does occur it is on
+    // retired materials, which is why `appearsIn` is required only while active and
+    // why those documents are `status: not-active` (PROD-2733).
+    //
+    // ⚠️ THIS IS NOT A RETURN TO `role` (PROD-2482 / D55). That field could not
+    // express "pickable AND has a page", which is 102 of 126 — the majority of the
+    // catalogue had nowhere to be recorded. Every occupied cell is representable
+    // here. The defect was one field carrying two questions whose answers vary
+    // independently; this enumerates the combinations that actually occur.
     defineField({
-      name: 'configuratorRole',
-      title: 'Configurator role',
+      name: 'appearsIn',
+      title: 'Where this appears',
       type: 'string',
       group: 'content',
       description:
-        
-          'Does a customer pick this in the configurator? E.g. Matte is Configurable. Matte ' +
-          'Lamination is Reference — a real process a customer never picks directly, reached ' +
-          'through the simplified option it achieves.',
+        'Which customer-facing surfaces this option appears on. Configurable means a customer ' +
+        'picks it in the configurator — Matte, Magnetic Closure. Detail Page means it has its own ' +
+        'page in the customization library, with its own photos and explanation; that is an ' +
+        'editorial judgement about demand, search value and whether there is enough to say. Most ' +
+        'options are both. Pick Not Configurable + Detail Page for a real production process a ' +
+        'customer never picks directly, like Matte Lamination, which customers reach through the ' +
+        'simplified option it achieves.',
       options: {
         layout: 'radio',
         list: [
-          { title: 'Configurable — a customer picks this in the configurator', value: 'configurable' },
-          { title: 'Reference — technical; never reaches the configurator', value: 'reference' },
+          { title: 'Configurable + Detail Page', value: 'configurable-with-page' },
+          { title: 'Not Configurable + Detail Page', value: 'not-configurable-with-page' },
+          { title: 'Configurable + No Detail Page', value: 'configurable-no-page' },
         ],
       },
-      // Named `configuratorRole`, not `role`. There is a PROPERTY DOCUMENT titled
-      // "Role" (ag-role-r2304, "Layer role in multi-layer flexible structures":
-      // Barrier Layer / Outer Layer / Sealant Layer). Once Pouch Layer is built, a
-      // single Option would show a field labelled "Role" = Reference beside a
-      // Properties list containing "Barrier Layer" — a value of the Property named
-      // Role. Two unrelated meanings on one screen. The original naming note
-      // (HANDOFF-D47) checked `kindOf` for a clash but not the Property list.
-      // Dormant today: 0 Options use those values, which is why it is cheap now.
+      // The labels are formulas on purpose. They are PARALLEL, so the three choices
+      // are comparable at a glance and a reader can see which dimension changed.
+      // Three sentence-shaped labels destroy that — you have to read all three and
+      // reconstruct the pattern. The explanation lives in the description above,
+      // which the Studio renders directly over the radio list.
       //
-      // Fails loud, unchanged from `role`: a forgotten `reference` Option produces a
-      // warning nobody needed, which is visible. A forgotten `configurable` Option
-      // would go silent and hide a customer-facing choice.
-      initialValue: 'configurable',
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: 'hasPage',
-      title: 'Has a page',
-      type: 'boolean',
-      group: 'content',
-      description:
-        'Does this option have a library page of its own? An editorial judgement — demand, search value, ' +
-        'whether there is enough to say. Authored, never derived. An option can be offered in the ' +
-        'configurator without earning a page, and can earn a page while also being pickable.',
-      // Named `hasPage` to match `solution.hasPage` and `expertiseService.hasPage`,
-      // which answer this exact question in the same words. One name per concept —
-      // `hasDetailPage` would be a second name for a settled one.
+      // The stored values mirror the labels so an editor's choice and a GROQ filter
+      // name the same thing, and both page values contain `with-page`, which keeps
+      // `appearsIn in [...]` readable as "has a detail page".
       //
-      // Backfilled from the Notion `Detail Page` column for the 113 imported
-      // Options (the committed export, 102 true / 11 false), and from
-      // `role == 'reference'` for the 13 with no Notion counterpart. So this is
-      // authored data recovered, not a value invented at migration time.
+      // Stays EDITABLE when status is not active. Not active is now the only
+      // pre-launch state there is, so an option is set up while it is off, and this
+      // is the setting that says what happens when it comes back on. (`template`
+      // below is different and is correctly hidden: with no page there is genuinely
+      // nothing to lay out.)
+      initialValue: 'configurable-with-page',
+      // ─── REQUIRED ONLY WHILE THE OPTION IS ACTIVE ────────────────────────────
+      // The three values describe where a CUSTOMER meets this option. On an option
+      // no customer can reach, the question does not arise, and forcing an answer
+      // would mean writing something untrue.
       //
-      // ⚠️ NOTHING READS THIS YET. Routing for capability pages is still open —
-      // see the TODO(capability) in `presentation/locations.ts`. D55 records the
-      // fact; wiring it to a URL is a separate piece of work.
-      initialValue: false,
+      // That is not hypothetical. Retiring a technical material — a pouch film, a
+      // board — leaves an option that a customer never picked and that never had a
+      // page. Neither remaining value fits: one claims a page it does not have, the
+      // other claims a customer can pick it. 38 such options exist on development.
+      //
+      // ❌ DO NOT "fix" this by adding a fourth value for them. Checked, not
+      // assumed: ZERO of those options are active. The combination only occurs on
+      // things being retired, and a value that can only ever describe documents
+      // nobody can reach earns nothing. Leaving the field empty says the same thing
+      // and says it honestly.
+      //
+      // Safe because every reader tests for the value it WANTS — `isConfigurable`,
+      // `hasDetailPage`, `HAS_DETAIL_PAGE` — so an empty `appearsIn` reads as "not
+      // pickable, no page" everywhere rather than leaking.
+      validation: (Rule) =>
+        Rule.custom((value, ctx) => {
+          const status = (ctx.document as { status?: string } | undefined)?.status
+          if (status !== 'active') return true
+          return value
+            ? true
+            : 'An active option needs to say where it appears. If this one is retired or ' +
+                'internal-only, set Status to Not active instead and leave this empty.'
+        }),
     }),
     defineField({
       name: 'template',
@@ -240,22 +315,49 @@ export const customizationOption = defineType({
         'Pick a Customization Detail Page layout version — shared bands below the detail chrome. ' +
         'Manage layouts under Main Website → Customization Pages → Customization Detail Pages. ' +
         'Empty → seeded Default layout (`customizationDetailPage`).',
-      hidden: ({document}) => document?.hasPage !== true,
+      hidden: ({document}) => !hasDetailPage(document?.appearsIn),
       validation: (Rule) =>
         Rule.custom((value, ctx) => {
-          const doc = ctx.document as {hasPage?: boolean} | undefined
-          if (doc?.hasPage !== true) return true
+          const doc = ctx.document as {appearsIn?: string} | undefined
+          if (!hasDetailPage(doc?.appearsIn)) return true
           return value
             ? true
             : 'Options with a page should select a Customization Detail Page layout'
         }).warning(),
+    }),
+    // One representative image, one gallery — same pair as Product / Product Line
+    // (ADR-023). `featuredImage` replaces the positional rule where media[0]
+    // silently doubled as the card.
+    defineField(taggedImageField({
+      name: 'featuredImage',
+      title: 'Featured image',
+      type: 'image',
+      group: 'content',
+      mediaTags: [MEDIA_TAG.customization],
+      options: { hotspot: true },
+      description:
+        'The one image that represents this option — library cards, detail poster, and the social fallback.',
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alt text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
+    })),
+    featuredVideoField({
+      group: 'content',
+      description:
+        'Optional ambient video for the option detail gallery. Prefer VP9 WebM with alpha or H.264 MP4; YouTube is stored but the gallery keeps Featured image. Mobile and reduced-motion keep Featured image.',
     }),
     defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
       group: 'content',
-      description: 'Add images in render order — first image = hero.',
+      description:
+        'Additional images for the option detail gallery. Order is presentation only — the card and social images come from Featured image.',
       of: [taggedImageType([MEDIA_TAG.customization], { hotspot: true })],
     }),
 
@@ -381,20 +483,23 @@ export const customizationOption = defineType({
           }
         }),
         // ── WARNING ────────────────────────────────────────────────────────
-        // A reference-role option is a library page, never something a customer
-        // picks, so an entry naming one is inert rather than wrong. It is not
-        // reachable through the picker at all — only a script, or flipping an
-        // option to `reference` AFTER this was authored. Never auto-cleared: a
-        // field switch that silently edits data is worse than one that says
-        // something.
+        // A page-only option is a library page, never something a customer picks,
+        // so an entry naming one is inert rather than wrong. It is not reachable
+        // through the picker at all — only a script, or changing an option's
+        // `appearsIn` AFTER this was authored. Never auto-cleared: a field switch
+        // that silently edits data is worse than one that says something.
         Rule.custom(async (value, context) => {
           const refs = (value as { _ref?: string }[] | undefined) ?? []
           const ids = refs.map((r) => r._ref?.replace(/^drafts\./, '')).filter(Boolean) as string[]
           if (ids.length === 0) return true
           try {
             const client = context.getClient({ apiVersion: '2024-01-01' })
+            // Names the one value that is not pickable rather than listing the two
+            // that are: an option with `appearsIn` unset is then NOT flagged, which
+            // is the right way round for a warning — it cannot accuse a document of
+            // something the backfill simply has not reached yet.
             const rows = await client.fetch<{ _id: string; title: string | null }[]>(
-              `*[_id in $ids && configuratorRole != "configurable"]{ _id, title }`,
+              `*[_id in $ids && appearsIn == "not-configurable-with-page"]{ _id, title }`,
               { ids },
             )
             if (rows.length === 0) return true
@@ -423,17 +528,18 @@ export const customizationOption = defineType({
       type: 'array',
       group: 'categorization',
       description:
-        
-          'Reference options only: which customer-facing option this one can deliver. E.g. ' +
-          'Matte Lamination achieves Matte. Listing it here does not claim this one is enough ' +
-          'on its own — the actual combination is decided at quoting.',
+        'Not Configurable options only: which customer-facing option this one can deliver. E.g. ' +
+        'Matte Lamination achieves Matte. Listing it here does not claim this one is enough ' +
+        'on its own — the actual combination is decided at quoting.',
       of: [{ type: 'reference', to: [{ type: 'customizationOption' }] }],
       validation: (Rule) =>
         Rule.custom((value, context) => {
           const list = Array.isArray(value) ? value : []
           if (list.length === 0) return true
-          const role = (context.document as { configuratorRole?: string } | undefined)?.configuratorRole
-          if (role === 'configurable') {
+          const appearsIn = (context.document as { appearsIn?: string } | undefined)?.appearsIn
+          // Tests for the two Configurable values rather than "not the page-only
+          // one", so an option whose `appearsIn` is unset is not warned about.
+          if (isConfigurable(appearsIn)) {
             return 'Achieves is for technical options — it names the simplified option this one delivers. A configurable option is already the simplified end of that relationship, so it should be the target, not the source.'
           }
           return true
@@ -557,6 +663,15 @@ export const customizationOption = defineType({
         }).warning(),
       ],
     }),
+    defineField({
+      name: 'specSheet',
+      title: 'Spec sheet',
+      type: 'file',
+      group: 'specs',
+      options: {accept: '.pdf,application/pdf'},
+      description:
+        'Optional PDF. When set, the customization detail page shows Download spec sheet.',
+    }),
 
     // The five per-topic property fields — `materialSource`, `physicalProperties`,
     // `aesthetic`, `colors`, `sustainability` — were REMOVED here (Rename Map step 5).
@@ -675,11 +790,12 @@ export const customizationOption = defineType({
       group: 'social',
       mediaTags: ogMediaTags(MEDIA_TAG.customization),
       options: { hotspot: true },
-      description: 'Shown when this option is shared. 1200×630. Falls back to the first media image.',
+      description: 'Shown when this option is shared. 1200×630. Falls back to Featured image.',
       fields: [
         defineField({ name: 'alt', title: 'Alt text', type: 'string', description: 'Describes the image for screen readers and SEO.' }),
       ],
     })),
+    ...entityFields({ prefix: 'opt', codeKinds: ['OPT'], group: 'content' }),
   ],
 
   // PROD-2462. This block read three fields deleted in PROD-2250 — `category`,
@@ -699,11 +815,10 @@ export const customizationOption = defineType({
       shortName: 'shortName',
       status: 'status',
       type: 'type.title',
-      media: 'media.0',
-      configuratorRole: 'configuratorRole',
-      hasPage: 'hasPage',
+      media: 'featuredImage',
+      appearsIn: 'appearsIn',
     },
-    prepare({ title, shortName, status, type, media, configuratorRole, hasPage }) {
+    prepare({ title, shortName, status, type, media, appearsIn }) {
       // This used to summarise availability from `availableOnProducts` — "3
       // targets", or "⚠ offered nowhere" when empty. That field is retired
       // (PROD-2529): a Product now states which options it offers, so this
@@ -715,10 +830,13 @@ export const customizationOption = defineType({
       // against 124 of 126 options forever, from a field nobody can write. That
       // is PROD-2462 exactly, and PROD-2528 after it. The Used-by tab answers
       // the question instead, where the reverse lookup is possible.
+      // Says what an option IS, in the same words as the field's own labels, so a
+      // row in this list and the radio on the form read the same. An unset
+      // `appearsIn` prints neither part rather than guessing at one.
       const parts = [
         type,
-        configuratorRole === 'reference' ? 'reference' : null,
-        hasPage ? 'has page' : null,
+        appearsIn && !isConfigurable(appearsIn) ? 'not configurable' : null,
+        appearsIn && !hasDetailPage(appearsIn) ? 'no page' : null,
       ].filter(Boolean)
       const subtitle = parts.join(' · ')
 
