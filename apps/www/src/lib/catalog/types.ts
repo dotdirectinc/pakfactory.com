@@ -210,7 +210,6 @@ export type Product = {
      * narrow on as the customer chooses. Absent when the dataset has no rules yet.
      */
     customizationRules?: CustomizationRulesSnapshot;
-    primarySolution?: string;
     /**
      * Inspiration PDP breadcrumb parent — first industry solution, else solutions[0].
      */

@@ -588,9 +588,6 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         productLine,
         productStyle,
         availableCustomizations,
-        ...(doc.primarySolution
-            ? {primarySolution: doc.primarySolution}
-            : {}),
         ...(doc.breadcrumbParent?.title?.trim() &&
         doc.breadcrumbParent?.slug?.trim()
             ? {
