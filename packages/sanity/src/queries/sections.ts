@@ -5,6 +5,13 @@
  */
 
 import {
+  LINE_STYLE_ACTIVE,
+  LINE_STYLE_HAS_PAGE,
+  PRODUCT_LISTED,
+  SOLUTION_ACTIVE,
+  SOLUTION_STYLE_ACTIVE,
+} from './status-gates';
+import {
     FEATURED_VIDEO_URL_FIELD,
     FEATURED_VIDEO_URL_GROQ,
 } from './featured-video';
@@ -56,6 +63,24 @@ const SECTION_CHROME = /* groq */ `
   curatedSource,
   link ${LINK_OBJECT}
 `;
+
+/**
+ * A curated card or row item that points at a catalogue document is shown only while
+ * that document has a page to link to — the same gates the automatic lists use. An
+ * editor's pick never outranks the target's status (or a product's parents, rule 1 +
+ * R1 — PRODUCT_LISTED carries both). Typed cards always pass.
+ */
+const CURATED_REF_VISIBLE = /* groq */ `(
+  !defined(_ref) ||
+  select(
+    @->_type == "product" => @->{"ok": ${PRODUCT_LISTED}}.ok,
+    @->_type == "productStyle" => @->{"ok": ${LINE_STYLE_ACTIVE} && (!defined(productLine->status) || productLine->status in ["active", "discontinued"])}.ok,
+    @->_type == "solutionStyle" => @->{"ok": ${SOLUTION_STYLE_ACTIVE} && solution->status == "active"}.ok,
+    @->_type == "productLine" => @->{"ok": ${LINE_STYLE_HAS_PAGE}}.ok,
+    @->_type == "solution" => @->{"ok": ${SOLUTION_ACTIVE}}.ok,
+    true
+  ) == true
+)`;
 
 /**
  * Mixed inspirations cards — typed `inspirationsCard` or catalogue ref
@@ -448,7 +473,7 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   },
   _type == "inspirationsGrid" => {
     ${SECTION_CHROME},
-    "cards": cards[]${INSPIRATIONS_CARD}
+    "cards": cards[${CURATED_REF_VISIBLE}]${INSPIRATIONS_CARD}
   },
   _type == "inspirationIndustry" => {
     ${SECTION_CHROME},
@@ -467,11 +492,11 @@ export const PAGE_SECTIONS_PROJECTION = /* groq */ `{
   },
   _type == "productStylesRow" => {
     ${SECTION_CHROME},
-    "cards": cards[]${INSPIRATIONS_CARD}
+    "cards": cards[${CURATED_REF_VISIBLE}]${INSPIRATIONS_CARD}
   },
   _type == "productsRow" => {
     ${SECTION_CHROME},
-    "items": curatedItems[]->{
+    "items": curatedItems[${CURATED_REF_VISIBLE}]->{
       _id,
       title,
       "slug": slug.current,
