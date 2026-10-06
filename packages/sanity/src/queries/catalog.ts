@@ -12,6 +12,30 @@ import {
   type PageSectionDoc,
 } from './sections';
 import {MODEL_3D_FIELDS} from './product-model-3d';
+import {
+  LISTED_STATUS,
+  HAS_PAGE_STATUS,
+  ORDERABLE_STATUS,
+  HAS_DETAIL_PAGE,
+  LINE_STYLE_LISTED,
+  LINE_STYLE_ACTIVE,
+  LINE_STYLE_HAS_PAGE,
+  SOLUTION_ACTIVE,
+  CUSTOMIZATION_TAXONOMY_ACTIVE,
+  PARENT_STYLE_ON,
+  PARENT_SOLUTION_ON,
+  PRIMARY_STYLE_ON,
+  PRIMARY_SOLUTION_ON,
+  PRODUCT_HAS_PARENT_ON,
+  PRODUCT_LINE_OPEN,
+  PRODUCT_LINE_HAS_PAGE,
+  PRODUCT_EFFECTIVE_STATUS,
+  PRODUCT_LISTED,
+  PRODUCT_HAS_PAGE,
+  PRODUCT_ORDERABLE,
+  SOLUTION_STYLE_ACTIVE,
+} from './status-gates';
+export * from './status-gates';
 
 export {KIND_INSPIRATION, KIND_STANDARD} from '../product-kind';
 export {MODEL_3D_FIELDS, MODEL_3D_URL_FIELD} from './product-model-3d';
@@ -138,155 +162,6 @@ const OPTION_FIELDS = /* groq */ `
   ${ACHIEVED_BY_PROJ}
 `;
 
-/**
- * ONE status vocabulary for the whole catalog (PROD-2845):
- *
- *   active            normal — page, listed, orderable
- *   coming-soon       a marketing state; what it shows differs by type, see below
- *   discontinued      page stays (indexable, "no longer available"), NOT listed, not orderable
- *   not-active        nothing anywhere; the document exists only to be referenced
- *   active-internal   nothing anywhere EITHER, but still works as structure — its
- *                     children keep their own status, it still answers as a catalog
- *                     filter, it is still a valid `basedOn` target
- *
- * This replaced `customerFacing` (product / line / style) and `hasPage` (solution).
- * `customerFacing` is GONE — do not reintroduce it, and do not add a second boolean
- * beside `status`: the whole point is that one field answers "is this offered, and how?".
- *
- * 🔴 EVERY GATE BELOW IS A WHITELIST. It names the states that ARE visible, never the
- * ones that are not. That is what let `not-active` and `active-internal` join the
- * vocabulary without touching the product gates at all — a value nobody whitelisted is
- * hidden by construction. Write `status != "not-active"` instead and the next value
- * added leaks to customers the day it is added.
- *
- * ⚠️ An UNSET status preserves each type's pre-PROD-2845 meaning, which is not the same
- * answer everywhere:
- *   product / line / style  unset reads as ACTIVE — it always has, and 13 production
- *                           lines still carry no status.
- *   solution                unset reads as NO PAGE — its predecessor `hasPage` defaulted
- *                           to false, so a term had to earn its page. See SOLUTION_ACTIVE.
- *   category / type         unset reads as ACTIVE — these had no gate at all before, so
- *                           an un-migrated document behaves exactly as it does today.
- */
-export const LISTED_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon"])`;
-export const HAS_PAGE_STATUS = /* groq */ `(!defined(status) || status in ["active", "coming-soon", "discontinued"])`;
-
-/** A product can be ordered only while Active — coming-soon lists with a badge but cannot be bought. */
-export const ORDERABLE_STATUS = /* groq */ `(!defined(status) || status == "active")`;
-
-/**
- * A customization option with its own detail page in the library (PROD-2732).
- * Replaces `hasPage == true`, which merged into `appearsIn`.
- *
- * 🔴 Names the two values that DO have a page rather than excluding the one that
- * does not. An option whose `appearsIn` is unset — an import that has not run the
- * backfill, an API write — must read as "no page", and `appearsIn != "…-no-page"`
- * is the opposite expression for a missing value.
- *
- * ⚠️ Customization options no longer use LISTED_STATUS or HAS_PAGE_STATUS above.
- * Their status is Active / Not active only (PROD-2733), so they test
- * `status == "active"` directly. Those two constants belong to the product,
- * line, style and solution family, which keeps all three lifecycle values.
- */
-export const HAS_DETAIL_PAGE = /* groq */ `appearsIn in ["configurable-with-page", "not-configurable-with-page"]`;
-
-/**
- * Product LINES and STYLES are grouping pages, not products — so "listed" and "has a
- * page" come apart on them in BOTH directions, and PROD-2845 had to split the single
- * `LINE_STYLE_VISIBLE` that used to serve both:
- *
- *   active-internal   LISTED (it still answers as a catalog filter) but NO page.
- *                     This is how a specialty line like "Food Containers & Utensils"
- *                     keeps its products reachable while having no page of its own —
- *                     and it is why its children are NOT restricted (R4).
- *   discontinued      has a PAGE (kept indexable for search) but is NOT listed.
- *   coming-soon       neither. It appears in the nav as an unlinked signpost, which is
- *                     a chrome decision made in `catalog-visibility.ts`, not here.
- *
- * Picking the wrong one of these two is the easiest mistake to make in this file:
- * a route gated on LISTED 404s a discontinued line that should still rank, and a
- * listing gated on HAS_PAGE advertises a line nobody can browse into.
- */
-export const LINE_STYLE_LISTED = /* groq */ `(!defined(status) || status in ["active", "active-internal"])`;
-
-/** Both at once — listed AND has a page. The right gate for a LINK out to a line. */
-export const LINE_STYLE_ACTIVE = /* groq */ `(!defined(status) || status == "active")`;
-export const LINE_STYLE_HAS_PAGE = /* groq */ `(!defined(status) || status in ["active", "discontinued"])`;
-
-/**
- * Solution / Solution Style — Active is the whole visible set.
- *
- * No `!defined(status)` arm, deliberately, and this is the one gate in the file that
- * omits it. `status` replaced `hasPage`, which defaulted to FALSE: a solution existed to
- * be tagged against and a page was what a term EARNED. An un-migrated solution must
- * therefore read as having no page, exactly as it did before.
- */
-export const SOLUTION_ACTIVE = /* groq */ `status == "active"`;
-
-/**
- * Customization Category / Type — these had NO off switch before PROD-2845, so an
- * un-migrated document keeps behaving as it does today rather than vanishing.
- */
-export const CUSTOMIZATION_TAXONOMY_ACTIVE = /* groq */ `(!defined(status) || status == "active")`;
-
-/**
- * A product's PARENTS — its styles (standard) or its solutions (inspiration) — and when
- * one counts as switched off. Richard + Eric, 2026-10-06, refining the sheet's R2:
- *
- *   1. Every parent off → the product is HIDDEN (no page, no listing). One parent is
- *      just the smallest case of "every". Extends R2's tail rule to standard products.
- *   2. The primary (`productStyle[0]` / `solutions[0]`) is FIXED. No fallback to the
- *      next parent — it also drives the registry's offer set, so substituting would
- *      make the page disagree with pricing.
- *   3. An off primary passes NO FAQs down (see PRODUCT_FAQS_INHERITED).
- *
- * "Off" is Coming soon or Not active. Discontinued keeps its page, so it stays on, and
- * Active (Internal) passes through (R4). For a solution only Active is on — it has no
- * Discontinued or Active (Internal), and unset means "never earned a page"
- * (SOLUTION_ACTIVE). Whitelists, per R6. Written against `@` so they slot into a
- * reference-array filter.
- */
-export const PARENT_STYLE_ON = /* groq */ `(!defined(@->status) || @->status in ["active", "active-internal", "discontinued"])`;
-export const PARENT_SOLUTION_ON = /* groq */ `@->status == "active"`;
-
-/** The PRIMARY parent (fixed, `[0]`) is on — gates FAQ inheritance (rule 3). */
-const PRIMARY_STYLE_ON = /* groq */ `(!defined(productStyle[0]->status) || productStyle[0]->status in ["active", "active-internal", "discontinued"])`;
-const PRIMARY_SOLUTION_ON = /* groq */ `solutions[0]->status == "active"`;
-
-/** Rule 1: at least one parent is on. Inspiration products are anchored by solutions, standard by styles. */
-export const PRODUCT_HAS_PARENT_ON = /* groq */ `select(
-    kind == "inspiration" => count(solutions[${PARENT_SOLUTION_ON}]) > 0,
-    count(productStyle[${PARENT_STYLE_ON}]) > 0
-  )`;
-
-/**
- * R1 for products (exclusive parent): a STANDARD product is never more visible than its
- * one Product Line. Per the visibility sheet:
- *   Coming soon / Not active line → its products are hidden (no page, no listing).
- *   Discontinued line             → its products are at most Discontinued: the page
- *                                   stays, nothing lists, nothing is orderable.
- *   Active (Internal) line        → passes through (R4) — the point of the value.
- * Inspiration products are exempt: their line is borrowed through `basedOn` and their
- * anchor is their solutions (rule 1), so the line does not gate them here.
- */
-const PRODUCT_LINE_OPEN = /* groq */ `(kind == "inspiration" || !defined(productLine->status) || productLine->status in ["active", "active-internal"])`;
-const PRODUCT_LINE_HAS_PAGE = /* groq */ `(kind == "inspiration" || !defined(productLine->status) || productLine->status in ["active", "active-internal", "discontinued"])`;
-
-/**
- * The status a customer sees: an Active or Coming-soon standard product under a
- * Discontinued line reads as Discontinued (R1), so the PDP shows the notice and the
- * request rail stays shut without the front end knowing about lines.
- */
-const PRODUCT_EFFECTIVE_STATUS = /* groq */ `"status": select(
-    kind != "inspiration" && productLine->status == "discontinued" &&
-      (!defined(status) || status in ["active", "coming-soon"]) => "discontinued",
-    status
-  )`;
-
-/** Product gates = own status AND rule 1 AND R1. Use these, not the bare status gates, on products. */
-export const PRODUCT_LISTED = /* groq */ `(${LISTED_STATUS} && ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_OPEN})`;
-export const PRODUCT_HAS_PAGE = /* groq */ `(${HAS_PAGE_STATUS} && ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_HAS_PAGE})`;
-export const PRODUCT_ORDERABLE = /* groq */ `(${ORDERABLE_STATUS} && ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_OPEN})`;
 
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
@@ -539,7 +414,7 @@ export const CATALOG_PRODUCT_PDP_FIELDS = /* groq */ `
     "values": values[]->title
   },
   ${PRODUCT_FAQS_INHERITED},
-  "relatedProducts": relatedProducts[]->{
+  "relatedProducts": relatedProducts[@->{"ok": ${PRODUCT_LISTED}}.ok == true]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
   "sections": sections[]${PAGE_SECTIONS_PROJECTION},
@@ -760,7 +635,7 @@ export const CATALOG_PRODUCT_LINE_FIELDS = /* groq */ `
     "cardImageUrl": cardImage.asset->url,
     "cardImageAlt": coalesce(cardImageAlt, cardImage.asset->altText)
   },
-  "featuredProducts": featuredProducts[]->{
+  "featuredProducts": featuredProducts[@->{"ok": ${PRODUCT_LISTED}}.ok == true]->{
     ${CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS}
   },
   "relatedLines": relatedLines[]->{
@@ -1055,7 +930,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
     _type == "product" &&
     ${PRODUCT_ORDERABLE} &&
     ^._id in availableCustomizations[].customization._ref
-  ].solutions[]->{
+  ].solutions[@->status == "active"]->{
     _id,
     title,
     "slug": slug.current,

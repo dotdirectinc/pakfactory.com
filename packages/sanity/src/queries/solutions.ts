@@ -6,7 +6,7 @@
 
 import {KIND_INSPIRATION} from '../product-kind';
 import type {SolutionStyleFilter} from '../solution-style-filter';
-import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, PRODUCT_LISTED, SOLUTION_ACTIVE} from './catalog';
+import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, PRODUCT_LISTED, SOLUTION_ACTIVE, SOLUTION_STYLE_ACTIVE} from './catalog';
 import {
     PAGE_SECTIONS_PROJECTION,
     type PageSectionDoc,
@@ -73,6 +73,7 @@ const SOLUTION_STYLE_INSPIRATION_CARD = /* groq */ `{
 /** Style docs with authored filter — for hero product membership queries. */
 export const SOLUTION_STYLES_FILTER_QUERY = /* groq */ `*[
   _type == "solutionStyle" &&
+  ${SOLUTION_STYLE_ACTIVE} &&
   solution._ref == $solutionId &&
   !(_id in path("drafts.**"))
 ] | order(title asc) {
@@ -140,10 +141,10 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
     "alt": ${IMAGE_ALT}
   },
   "packagingFormats": packagingFormats[]->${FORMAT_REF},
-  "relatedProducts": relatedProducts[]->{
+  "relatedProducts": relatedProducts[@->{"ok": ${PRODUCT_LISTED}}.ok == true]->{
     ${CATALOG_PRODUCT_CARD_FIELDS}
   },
-  "featuredProducts": featuredProducts[]->${SOLUTION_HERO_PRODUCT_PROJ},
+  "featuredProducts": featuredProducts[@->{"ok": ${PRODUCT_LISTED}}.ok == true]->${SOLUTION_HERO_PRODUCT_PROJ},
   "relatedCaseStudies": relatedCaseStudies[]{
     _key,
     ...@->${RELATED_CASE_STUDY_CARD}
@@ -161,11 +162,12 @@ export const SOLUTION_BY_SLUG_QUERY = /* groq */ `*[
   // Curated order first, then the rest alphabetically — see SOLUTION_STYLES note.
   "relatedSolutionStyles": (
     coalesce(
-      (styleOrder[]->)[defined(_id) && !(_id in path("drafts.**"))]${SOLUTION_STYLE_INSPIRATION_CARD},
+      (styleOrder[]->)[defined(_id) && ${SOLUTION_STYLE_ACTIVE} && !(_id in path("drafts.**"))]${SOLUTION_STYLE_INSPIRATION_CARD},
       []
     )
     + *[
       _type == "solutionStyle" &&
+  ${SOLUTION_STYLE_ACTIVE} &&
       solution._ref == ^._id &&
       !(_id in path("drafts.**")) &&
       !(_id in coalesce(^.styleOrder, [])[]._ref)
@@ -347,6 +349,7 @@ const SOLUTION_STYLE_FILTER_FIELDS = /* groq */ `
  */
 export const SOLUTION_STYLE_BY_SLUGS_QUERY = /* groq */ `*[
   _type == "solutionStyle" &&
+  ${SOLUTION_STYLE_ACTIVE} &&
   slug.current == $styleSlug &&
   solution->slug.current == $solutionSlug &&
   solution->status == "active"
@@ -423,11 +426,12 @@ export const SOLUTION_STYLES_FOR_SOLUTION_QUERY = /* groq */ `*[
 ][0]{
   "styles": (
     coalesce(
-      (styleOrder[]->)[defined(_id) && defined(slug.current)]${SOLUTION_STYLE_CARD},
+      (styleOrder[]->)[defined(_id) && ${SOLUTION_STYLE_ACTIVE} && defined(slug.current)]${SOLUTION_STYLE_CARD},
       []
     )
     + *[
       _type == "solutionStyle" &&
+  ${SOLUTION_STYLE_ACTIVE} &&
       defined(slug.current) &&
       solution._ref == ^._id &&
       !(_id in coalesce(^.styleOrder, [])[]._ref)
@@ -456,11 +460,12 @@ export const SOLUTION_STYLES_FOR_BREADCRUMB_QUERY = /* groq */ `*[
   _id,
   "styles": (
     coalesce(
-      (styleOrder[]->)[defined(_id) && defined(slug.current)]${SOLUTION_STYLE_BREADCRUMB_PROJ},
+      (styleOrder[]->)[defined(_id) && ${SOLUTION_STYLE_ACTIVE} && defined(slug.current)]${SOLUTION_STYLE_BREADCRUMB_PROJ},
       []
     )
     + *[
       _type == "solutionStyle" &&
+  ${SOLUTION_STYLE_ACTIVE} &&
       defined(slug.current) &&
       solution._ref == ^._id &&
       !(_id in coalesce(^.styleOrder, [])[]._ref)
@@ -471,6 +476,7 @@ export const SOLUTION_STYLES_FOR_BREADCRUMB_QUERY = /* groq */ `*[
 /** Static params for `/solutions/[slug]/[styleSlug]`. */
 export const SOLUTION_STYLE_PAGE_PARAMS_QUERY = /* groq */ `*[
   _type == "solutionStyle" &&
+  ${SOLUTION_STYLE_ACTIVE} &&
   defined(slug.current) &&
   defined(solution->slug.current) &&
   solution->status == "active"

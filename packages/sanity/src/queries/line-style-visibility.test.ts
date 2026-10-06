@@ -160,8 +160,7 @@ test("product library: productStyles is the listed union; primary stays productS
     ["s-active"],
   );
 
-  // Coming-soon primary is not listed — productStyles stays empty (no secondaries).
-  const bad = rows.find((row) => row.slug === "p-bad-style");
-  assert.equal(bad?.productStyle, null);
-  assert.deepEqual(bad?.productStyles ?? [], []);
+  // Its only style is Coming soon, so every parent is off and the product is hidden
+  // (rule 1, #788) — it never reaches the library to have a primary or secondaries.
+  assert.equal(rows.find((row) => row.slug === "p-bad-style"), undefined);
 });

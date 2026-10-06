@@ -3,6 +3,8 @@ import { test } from "node:test";
 import { evaluate, parse } from "groq-js";
 import {
   SOLUTION_BY_SLUG_QUERY,
+  SOLUTION_STYLE_BY_SLUGS_QUERY,
+  SOLUTION_STYLE_PAGE_PARAMS_QUERY,
   SOLUTION_STYLES_FOR_SOLUTION_QUERY,
 } from "./solutions.ts";
 
@@ -30,6 +32,7 @@ const solution = (extra: Record<string, unknown> = {}) => ({
 const style = (id: string, title: string, extra: Record<string, unknown> = {}) => ({
   _id: id,
   _type: "solutionStyle",
+  status: "active",
   title,
   slug: { current: id },
   solution: { _ref: "S" },
@@ -126,7 +129,27 @@ test("a style with no slug is left out of the band, pinned or not", async () => 
   const dataset = [
     solution({ styleOrder: [ref("d", "k1"), ref("a", "k2")] }),
     ...STYLES,
-    { _id: "d", _type: "solutionStyle", title: "Draft Style", solution: { _ref: "S" } },
+    { _id: "d", _type: "solutionStyle", status: "active", title: "Draft Style", solution: { _ref: "S" } },
   ];
   assert.deepEqual(await band(dataset), ["Box Inserts", "Gift Bags", "Labels"]);
+});
+
+// A Solution Style's OWN status gates it (it starts Not active). Before, only the
+// parent solution was checked, so every new style under an Active solution was live.
+test("a style that is not Active is out of both bands, its page and static params — pinned or not", async () => {
+  const dataset = [
+    solution({ styleOrder: [ref("off", "k1")] }),
+    ...STYLES,
+    style("off", "Aaa Hidden", { status: "not-active" }),
+    style("soon", "Aab Soon", { status: "coming-soon" }),
+    style("unset", "Aac Unset", { status: undefined }),
+  ];
+  assert.deepEqual(await band(dataset), ["Box Inserts", "Gift Bags", "Labels"]);
+  assert.deepEqual(await landing(dataset), ["Box Inserts", "Gift Bags", "Labels"]);
+  for (const styleSlug of ["off", "soon", "unset"]) {
+    assert.equal(await run(SOLUTION_STYLE_BY_SLUGS_QUERY, dataset, { solutionSlug: "beauty", styleSlug }), null);
+  }
+  assert.notEqual(await run(SOLUTION_STYLE_BY_SLUGS_QUERY, dataset, { solutionSlug: "beauty", styleSlug: "a" }), null);
+  const params = (await run(SOLUTION_STYLE_PAGE_PARAMS_QUERY, dataset, {})) as { styleSlug: string }[];
+  assert.deepEqual(params.map((p) => p.styleSlug).sort(), ["a", "b", "c"]);
 });
