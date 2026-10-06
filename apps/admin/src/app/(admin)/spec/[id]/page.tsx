@@ -87,7 +87,9 @@ export default async function SpecChangesetPage({
           blockedBy={blocked}
         />
       ) : (
-        <p className="text-sm text-muted-foreground">{ADMIN_SPEC_COPY.decidedNote}</p>
+        <p className="text-sm text-muted-foreground">
+          {cs.state === "superseded" ? ADMIN_SPEC_COPY.supersededNote : ADMIN_SPEC_COPY.decidedNote}
+        </p>
       )}
     </div>
   );
