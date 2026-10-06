@@ -996,7 +996,7 @@ describe('assembleInspirationIndustries / filterInspirationProductsByIndustry', 
         slug: 'food-box',
         kind: 'inspiration',
         productStyle: {slug: 'hinged-lid', title: 'Hinged Lid'},
-        breadcrumbParent: {slug: 'food-beverage', title: 'Food & Beverage'},
+        industry: {slug: 'food-beverage', title: 'Food & Beverage'},
     });
 
     it('lists unique industries sorted by title', () => {

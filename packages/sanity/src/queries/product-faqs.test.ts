@@ -56,6 +56,9 @@ const base = standard("base");
 const styles = (...ids: string[]) => ids.map((_ref) => ({ _ref }));
 
 async function pdp(slug: string, docs: Record<string, unknown>[]) {
+  return pdpQuery(slug, docs);
+}
+async function pdpQuery(slug: string, docs: Record<string, unknown>[]) {
   const tree = parse(CATALOG_PRODUCT_BY_SLUG_QUERY);
   return (await evaluate(tree, { dataset: [...dataset, ...docs], params: { slug } })).get();
 }
@@ -162,4 +165,17 @@ test("breadcrumb links follow the primary's own page, never a substitute", async
   const insp = await pdp("i", [base, inspiration("i", { solutions: styles("sol-off", "sol1") })]);
   assert.equal(insp.breadcrumbParent.slug, "sol-off", "the primary is fixed");
   assert.equal(insp.breadcrumbLinks.parent, false);
+});
+
+test("breadcrumb follows the primary solution; industry stays the first industry solution", async () => {
+  const docs = [
+    base,
+    solution("use", { status: "active", solutionType: "useCase" }),
+    solution("ind", { status: "active", solutionType: "industry" }),
+    inspiration("i", { solutions: styles("use", "ind") }),
+  ];
+  const pdp = await pdpQuery("i", docs);
+  assert.equal(pdp.breadcrumbParent.slug, "use", "solutions[0], even when it is not an industry");
+  assert.equal(pdp.industry.slug, "ind");
+  assert.equal(pdp.breadcrumbLinks.parent, true);
 });
