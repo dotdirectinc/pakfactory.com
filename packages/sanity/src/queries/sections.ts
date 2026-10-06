@@ -165,7 +165,6 @@ const CATALOG_ROW_ITEM = /* groq */ `{
   _id,
   _type,
   status,
-  hasPage,
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
@@ -236,7 +235,6 @@ const HERO_SPOTLIGHT_SLIDE = /* groq */ `{
     "kind": _type,
     "docType": _type,
     status,
-    hasPage,
     "slug": slug.current,
     _type == "caseStudy" => ${HERO_CASE_STUDY},
     _type != "caseStudy" => {
@@ -281,7 +279,7 @@ const HERO_FINDER_LINE = /* groq */ `{
 const HERO_FINDER_INDUSTRY = /* groq */ `{
   _id,
   _type,
-  hasPage,
+  status,
   "title": coalesce(shortName, title),
   "slug": slug.current,
   "description": shortDescription,
@@ -849,7 +847,6 @@ export type PageSectionCatalogRowItemDoc = {
     _id?: string | null;
     _type?: string | null;
     status?: string | null;
-    hasPage?: boolean | null;
     title?: string | null;
     slug?: string | null;
     description?: string | null;
@@ -941,7 +938,6 @@ export type PageSectionHeroSpotlightSlideDoc = PageSectionHeroCaseStudyDoc & {
         | null;
     docType?: string | null;
     status?: string | null;
-    hasPage?: boolean | null;
     description?: string | null;
     lineSlug?: string | null;
     link?: PageSectionLinkDoc | null;
@@ -983,7 +979,7 @@ export type PageSectionHeroFinderStyleDoc = {
 export type PageSectionHeroFinderIndustryDoc = {
     _id?: string | null;
     _type?: string | null;
-    hasPage?: boolean | null;
+    status?: string | null;
     title?: string | null;
     slug?: string | null;
     description?: string | null;

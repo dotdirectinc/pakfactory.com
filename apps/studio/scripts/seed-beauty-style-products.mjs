@@ -291,7 +291,6 @@ async function main() {
       slug: { _type: 'slug', current: spec.slug },
       kind: 'inspiration',
       status: 'active',
-      customerFacing: true,
       sku: spec.sku,
       shortDescription:
         'Fixture inspiration product for Beauty Pouches solutionStyle catalog.',

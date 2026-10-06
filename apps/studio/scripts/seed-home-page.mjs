@@ -103,7 +103,7 @@ const KEYS = {
 const SEED_KEYS = new Set(Object.values(KEYS))
 
 const PUBLISHED = '!(_id in path("drafts.**"))'
-const LINE_VISIBLE = '(!defined(status) || status == "active") && customerFacing != false'
+const LINE_VISIBLE = '(!defined(status) || status == "active")'
 
 const CANDIDATES_QUERY = /* groq */ `{
   "caseStudies": *[_type == "caseStudy" && ${PUBLISHED} && defined(slug.current)
@@ -124,13 +124,13 @@ const CANDIDATES_QUERY = /* groq */ `{
     "draftsOnly": count(*[_type == "productLine" && _id in path("drafts.**")
       && !(string::split(_id, "drafts.")[1] in *[_type == "productLine" && ${PUBLISHED}]._id)])
   },
-  "industries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && hasPage == true]{
+  "industries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && status == "active"]{
       _id, title, "hasImage": defined(featuredImage.asset), "studies": count(relatedCaseStudies)
     } | order(studies desc, title asc)[0...4],
   "rowLines": *[_type == "productLine" && ${PUBLISHED} && defined(slug.current) && ${LINE_VISIBLE}]{
       _id, title, "hasImage": defined(featuredImage.asset)
     } | order(hasImage desc, title asc)[0...6],
-  "rowIndustries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && hasPage == true]{
+  "rowIndustries": *[_type == "solution" && ${PUBLISHED} && defined(slug.current) && status == "active"]{
       _id, title, "hasImage": defined(featuredImage.asset)
     } | order(hasImage desc, title asc)[0...6],
   "rowCaseStudies": *[_type == "caseStudy" && ${PUBLISHED} && defined(slug.current) && defined(cardImage.asset)]

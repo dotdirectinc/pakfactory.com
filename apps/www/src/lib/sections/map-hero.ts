@@ -236,7 +236,6 @@ function isVisible(slide: PageSectionHeroSpotlightSlideDoc): boolean {
     return isCatalogTargetVisible({
         _type: clean(slide.docType),
         status: clean(slide.status) ?? null,
-        hasPage: slide.hasPage,
     });
 }
 
@@ -449,7 +448,14 @@ export function mapHeroFinder(
         const title = trimmed(industry?.title);
         const slug = trimmed(industry?.slug);
         if (!industry || !id || !title || !slug) continue;
-        if (industry.hasPage !== true) continue;
+        if (
+            !isCatalogTargetVisible({
+                _type: 'solution',
+                status: clean(industry.status) ?? null,
+            })
+        ) {
+            continue;
+        }
         const imageSrc = trimmed(industry.imageSrc);
         const description = trimmed(industry.description);
         industries.push({

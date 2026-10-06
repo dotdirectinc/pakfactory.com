@@ -223,8 +223,10 @@ export function heroFinderGeneralRailFields() {
         'Up to 3 product lines for Packaging Solution × All. Shown first in the media rail.',
       to: [{type: 'productLine'}],
       // Mirrors LINE_STYLE_ACTIVE (packages/sanity/src/queries/catalog.ts) — a hero slide
-      // is a LINK, so the target needs a page as well as a listing.
-      filter: '(!defined(status) || status == "active")',
+      // is a LINK, so the target needs a page as well as a listing. Unset is omitted:
+      // a picker that offers a line with no authored status would author a dead link
+      // after the development dataset migration.
+      filter: 'status == "active"',
     }),
     heroFinderGeneralBucketField({
       name: 'generalIndustries',

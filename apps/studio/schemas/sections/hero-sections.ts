@@ -91,7 +91,7 @@ function finderSharedFields() {
             disableNew: true,
             // Mirrors LINE_STYLE_ACTIVE (packages/sanity/src/queries/catalog.ts) — a
             // picker offering a line with no page would author a dead link.
-            filter: '(!defined(status) || status == "active")',
+            filter: 'status == "active"',
           },
         }),
       ],

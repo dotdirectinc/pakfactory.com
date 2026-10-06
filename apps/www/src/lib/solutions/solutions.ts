@@ -272,7 +272,7 @@ async function getSolutionBySlugResult(
 /**
  * Industry Solution LP payload for `/solutions/[slug]`.
  * Hero from Sanity page fields; body from merged template × content sections.
- * Requires a hasPage solution in Sanity (no local fixture fallback).
+ * Requires an Active solution in Sanity (no local fixture fallback).
  * `cache()` dedupes metadata + page within one request.
  */
 export const getSolutionLandingContent = cache(

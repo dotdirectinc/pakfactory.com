@@ -10,6 +10,8 @@ import {
   isListedCatalogStatus,
   isOrderableStatus,
   isSolutionActive,
+  isHasPageStatus,
+  isLineStyleHasPage,
   lineStyleHasPage,
 } from './catalog-visibility.ts';
 
@@ -71,7 +73,9 @@ describe('lines and styles: listed and page-bearing come apart', () => {
   it('treats unset as active, which 13 production lines still rely on', () => {
     assert.equal(isLineStyleListed(undefined), true);
     assert.equal(lineStyleHasPage(undefined), true);
+    assert.equal(isLineStyleHasPage(undefined), true);
     assert.equal(isLineStyleActive(undefined), true);
+    assert.equal(isHasPageStatus('discontinued'), true);
   });
 });
 

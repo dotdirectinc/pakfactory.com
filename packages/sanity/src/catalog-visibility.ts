@@ -61,6 +61,9 @@ export function hasCatalogPageStatus(status: string | null | undefined): boolean
   return unsetOr(status, 'active', 'coming-soon', 'discontinued');
 }
 
+/** Alias matching the GROQ constant name. */
+export const isHasPageStatus = hasCatalogPageStatus;
+
 /** Mirror GROQ `ORDERABLE_STATUS` — Active only. Coming soon lists but cannot be bought. */
 export function isOrderableStatus(status: string | null | undefined): boolean {
   return unsetOr(status, 'active');
@@ -82,6 +85,9 @@ export function isLineStyleListed(status: string | null | undefined): boolean {
 export function lineStyleHasPage(status: string | null | undefined): boolean {
   return unsetOr(status, 'active', 'discontinued');
 }
+
+/** Alias matching the GROQ constant name. */
+export const isLineStyleHasPage = lineStyleHasPage;
 
 /** Mirror GROQ `LINE_STYLE_ACTIVE` — listed AND page-bearing. The gate for a LINK. */
 export function isLineStyleActive(status: string | null | undefined): boolean {

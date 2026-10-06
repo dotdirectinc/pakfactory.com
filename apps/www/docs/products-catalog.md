@@ -34,28 +34,29 @@ Do **not** add a `modules/` catalog (www has no `components/modules/`). Use the 
 
 Active products only (`status == "active"` or unset), ordered by title.
 
-### What is shown (PROD-2620)
+### What is shown (PROD-2845)
 
-Two fields decide whether a catalog document gets a page and appears in listings. Both rules live as shared constants in [`catalog.ts`](../../../packages/sanity/src/queries/catalog.ts); use them instead of re-writing the conditions.
+One `status` field decides whether a catalog document gets a page, a listing, and a nav link. Shared GROQ constants live in [`catalog.ts`](../../../packages/sanity/src/queries/catalog.ts); TS mirrors for chrome / mapping live in [`@pakfactory/sanity/catalog-visibility`](../../../packages/sanity/src/catalog-visibility.ts) (`isCatalogTargetVisible`). Do not re-write the whitelist in www.
 
 | Rule | Condition | Meaning |
 | --- | --- | --- |
-| `CUSTOMER_FACING` | `customerFacing != false` | Notion "Hidden" sets `customerFacing: false`: no page (404), no route, no listing. **Unset counts as visible**, so never write `== true`. |
-| `LISTED_STATUS` | unset, `active`, `coming-soon` | **Products** (and customization options): `coming-soon` still lists with a badge; `discontinued` keeps its page ("no longer available") but is not listed. |
-| `LINE_STYLE_ACTIVE` | unset or `active` | Product **lines and styles** only — `coming-soon` is hidden (no page / route / listing / nav), unlike products. |
-| `LINE_STYLE_VISIBLE` | `LINE_STYLE_ACTIVE && CUSTOMER_FACING` | Lines/styles: `coming-soon` and `discontinued` are both treated as hidden. A style's page exists only while its line lists it (`getStyle`), so the line's `styles` list is also the style route gate. Product library projections use the same gate so **facets cannot surface hidden lines/styles**. |
+| `LISTED_STATUS` | unset, `active`, `coming-soon` | **Products** (and bundles / expertise stages): `coming-soon` still lists with a badge; `discontinued` keeps its page ("no longer available") but is not listed. `not-active` and `active-internal` fall out of the whitelist. |
+| `HAS_PAGE_STATUS` | unset, `active`, `coming-soon`, `discontinued` | Product **detail** routes. |
+| `LINE_STYLE_LISTED` | unset, `active`, `active-internal` | Lines/styles as **filters**. `active-internal` has no page but still labels products (R4). |
+| `LINE_STYLE_HAS_PAGE` | unset, `active`, `discontinued` | Line/style **routes**. Discontinued keeps the URL for search. |
+| `LINE_STYLE_ACTIVE` | unset or `active` | A **link** to a line (hero, facet). |
+| `SOLUTION_ACTIVE` | `status == "active"` | Solution pages, Finder industries, catalog CTAs. Unset is hidden (replaced `hasPage`, which defaulted to false). |
 
-TS mirrors for chrome / mapping: [`@pakfactory/sanity/catalog-visibility`](../../../packages/sanity/src/catalog-visibility.ts) (`isCatalogTargetVisible`).
-
-| `_type` | List / nav rule |
+| `_type` | Chrome (`isCatalogTargetVisible`) |
 | --- | --- |
-| `productLine`, `productStyle` | `LINE_STYLE_VISIBLE` (hide coming-soon) |
-| `product`, `bundle` | `LISTED_STATUS` + customerFacing |
-| `customizationOption`, `expertiseService` | `hasPage` + listed |
-| `expertiseStage` | listed (coming-soon stays; discontinued hidden) |
-| `solution` | `hasPage` only |
+| `productLine`, `productStyle` | `LINE_STYLE_ACTIVE` |
+| `product`, `bundle` | `LISTED_STATUS` |
+| `customizationOption` | page-bearing `appearsIn` + `active` |
+| `expertiseService` | `hasPage` + listed (still its own boolean) |
+| `expertiseStage` | listed |
+| `solution` | `SOLUTION_ACTIVE` |
 
-Also applied to: the option → product-lines facet, the three solution product lists, the Solution Style filter, the Algolia product index and the case-studies Products filter (#694). Behaviour tests: [`line-style-visibility.test.ts`](../../../packages/sanity/src/queries/line-style-visibility.test.ts).
+Also applied to: the option → product-lines facet, the three solution product lists, the Solution Style filter, the Algolia product index and the case-studies Products filter. Behaviour tests: [`line-style-visibility.test.ts`](../../../packages/sanity/src/queries/line-style-visibility.test.ts).
 
 ### Product kind by surface
 
