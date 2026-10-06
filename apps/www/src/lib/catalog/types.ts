@@ -114,6 +114,11 @@ export type ProductStyleRef = {
     imageAlt?: string;
     /** The style's own FAQs. Empty → the style page uses its line's (see `resolveStyleFaqs`). */
     faqs?: ProductFaq[];
+    /**
+     * False when the style has no page (Coming soon, Not active, Active (Internal)) —
+     * never link to it. Absent means it has one.
+     */
+    hasPage?: false;
 };
 
 /**
