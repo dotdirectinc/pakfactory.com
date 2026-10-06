@@ -59,9 +59,14 @@ const nameList = (names: string[]): string => {
  *     ).warning(),
  */
 export const restrictingChildrenWarning =
-  (opts: { query: string; describe: (names: string) => string }) =>
+  (opts: {
+    query: string
+    describe: (names: string) => string
+    /** Narrower trigger than "any restricting status" — e.g. only the values that switch a parent off. */
+    when?: (value: unknown) => boolean
+  }) =>
   async (value: unknown, context: ValidationContext): Promise<true | string> => {
-    if (!isRestrictingStatus(value)) return true
+    if (!(opts.when ?? isRestrictingStatus)(value)) return true
 
     const id = publishedId(context.document?._id as string | undefined)
     if (!id) return true

@@ -129,6 +129,7 @@ test("product library: a restricted parent nulls out, but an active-internal one
   // R4 — the whole point of the value: the line is hidden, its products are not.
   assert.equal(bySlug["p-internal"]?.productLine?.slug, "internal");
 
-  assert.equal(bySlug["p-bad-style"]?.productLine?.slug, "active");
-  assert.equal(bySlug["p-bad-style"]?.productStyle, null);
+  // Its only style is Coming soon, so every parent is off and the product itself is
+  // hidden (rule 1, Richard + Eric 2026-10-06) — it used to list with a null style.
+  assert.equal(bySlug["p-bad-style"], undefined);
 });

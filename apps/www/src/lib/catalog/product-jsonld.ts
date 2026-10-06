@@ -18,13 +18,20 @@ type Crumb = {label: string; href?: string};
  */
 export function buildProductDetailBreadcrumbs(product: Product): Crumb[] {
     const {productLine: line, productStyle: style} = product;
+    // The primary parent is fixed — no fallback (2026-10-06). When it has no page it
+    // still names itself, as plain text rather than a link that 404s.
+    const links = product.breadcrumbLinks ?? {line: true, style: true, parent: true};
 
     if (product.kind === 'inspiration' && product.breadcrumbParent) {
         const parent = product.breadcrumbParent;
         const crumbs: Crumb[] = [
-            {label: parent.title, href: solutionHref(parent.slug)},
+            {
+                label: parent.title,
+                ...(links.parent ? {href: solutionHref(parent.slug)} : {}),
+            },
         ];
-        if (product.breadcrumbStyle) {
+        // A Solution Style lives under its solution (R1): no parent page, no style page.
+        if (product.breadcrumbStyle && links.parent) {
             crumbs.push({
                 label: product.breadcrumbStyle.title,
                 href: solutionStyleHref(
@@ -39,10 +46,13 @@ export function buildProductDetailBreadcrumbs(product: Product): Crumb[] {
 
     return [
         {label: 'Products', href: WWW_ROUTES.products},
-        {label: line.title, href: productHref(line.slug)},
+        {
+            label: line.title,
+            ...(links.line ? {href: productHref(line.slug)} : {}),
+        },
         {
             label: style.title,
-            href: productStyleHref(line.slug, style.slug),
+            ...(links.style ? {href: productStyleHref(line.slug, style.slug)} : {}),
         },
         {label: product.title},
     ];
@@ -54,13 +64,15 @@ export function buildProductDetailBreadcrumbs(product: Product): Crumb[] {
 export function buildProductDetailJsonLd(product: Product): string {
     const pageUrl = absoluteUrl(productHref(product.slug));
     const crumbs = buildProductDetailBreadcrumbs(product);
-    const items = crumbs.map((crumb, index) => {
-        const isLast = index === crumbs.length - 1;
+    // A text-only crumb has no URL to give a ListItem, so it stays out of the markup.
+    const linked = crumbs.filter(
+        (crumb, index) => crumb.href || index === crumbs.length - 1,
+    );
+    const items = linked.map((crumb, index) => {
+        const isLast = index === linked.length - 1;
         return {
             name: crumb.label,
-            url: isLast
-                ? pageUrl
-                : absoluteUrl(crumb.href ?? productHref(product.slug)),
+            url: isLast ? pageUrl : absoluteUrl(crumb.href ?? pageUrl),
         };
     });
     return serializeJsonLd(jsonLdGraph([breadcrumbList(items)]));

@@ -104,6 +104,34 @@ export function isSolutionActive(status: string | null | undefined): boolean {
   return status === 'active';
 }
 
+/**
+ * Mirror GROQ `PARENT_STYLE_ON` — a style still anchors its products unless it is
+ * Coming soon or Not active. Discontinued keeps its page; Active (Internal) passes
+ * through (R4). Richard + Eric, 2026-10-06.
+ */
+export function isStyleParentOn(status: string | null | undefined): boolean {
+  return unsetOr(status, 'active', 'active-internal', 'discontinued');
+}
+
+/** Mirror GROQ `PARENT_SOLUTION_ON` — Active only, same as {@link isSolutionActive}. */
+export function isSolutionParentOn(status: string | null | undefined): boolean {
+  return isSolutionActive(status);
+}
+
+/**
+ * Mirror GROQ `PRODUCT_HAS_PARENT_ON` — rule 1: a product whose every parent is off is
+ * hidden. Inspiration products are anchored by their solutions, standard ones by styles.
+ */
+export function productHasParentOn(product: {
+  kind?: string | null;
+  styleStatuses?: (string | null | undefined)[] | null;
+  solutionStatuses?: (string | null | undefined)[] | null;
+}): boolean {
+  return product.kind === 'inspiration'
+    ? (product.solutionStatuses ?? []).some(isSolutionParentOn)
+    : (product.styleStatuses ?? []).some(isStyleParentOn);
+}
+
 /** Mirror GROQ `CUSTOMIZATION_TAXONOMY_ACTIVE` — no off switch existed before, so unset stays visible. */
 export function isCustomizationTaxonomyActive(
   status: string | null | undefined,

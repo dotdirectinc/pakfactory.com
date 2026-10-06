@@ -6,7 +6,7 @@
 
 import {KIND_INSPIRATION} from '../product-kind';
 import type {SolutionStyleFilter} from '../solution-style-filter';
-import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, LISTED_STATUS, SOLUTION_ACTIVE} from './catalog';
+import {CATALOG_PRODUCT_CARD_FIELDS, CATALOG_PRODUCT_FIELDS, PRODUCT_LISTED, SOLUTION_ACTIVE} from './catalog';
 import {
     PAGE_SECTIONS_PROJECTION,
     type PageSectionDoc,
@@ -194,7 +194,7 @@ export const SOLUTION_LINE_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
-  ${LISTED_STATUS} &&
+  ${PRODUCT_LISTED} &&
   $solutionSlug in solutions[]->slug.current &&
   coalesce(productLine, basedOn->productLine)->slug.current == $lineSlug
 ] | order(title asc) {
@@ -210,7 +210,7 @@ export const SOLUTION_TAGGED_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
-  ${LISTED_STATUS} &&
+  ${PRODUCT_LISTED} &&
   $solutionSlug in solutions[]->slug.current
 ] | order(title asc) [0...12] {
   ${CATALOG_PRODUCT_CARD_FIELDS}
@@ -226,7 +226,7 @@ export const SOLUTION_HERO_PRODUCTS_QUERY = /* groq */ `*[
   _type == "product" &&
   defined(slug.current) &&
   ${KIND_INSPIRATION} &&
-  ${LISTED_STATUS} &&
+  ${PRODUCT_LISTED} &&
   $solutionSlug in solutions[]->slug.current
 ] | order(title asc) [0...16] ${SOLUTION_HERO_PRODUCT_PROJ}`;
 

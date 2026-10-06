@@ -137,6 +137,9 @@ export function solutionStyleProductFilter(p: SolutionStyleFilterParams): string
     // leaves the lists, and not-active / active-internal are off the site entirely —
     // all three fall out of this whitelist without being named (PROD-2845).
     '(!defined(status) || status in ["active", "coming-soon"])',
+    // Rule 1 (2026-10-06): an inspiration product whose every solution is off is hidden.
+    // Mirrors PRODUCT_HAS_PARENT_ON's inspiration arm in queries/catalog.ts.
+    'count(solutions[@->status == "active"]) > 0',
     `(${any.join(' || ')})`,
     '!(_id in $excludedIds)',
   ].join(' && ')

@@ -224,6 +224,11 @@ export type Product = {
      * Absent when no style filter matches.
      */
     breadcrumbStyle?: {title: string; slug: string};
+    /**
+     * Which PDP crumbs link. The primary parent is fixed (2026-10-06), so an off or
+     * page-less one still shows as text instead of a 404 link. Absent = all link.
+     */
+    breadcrumbLinks?: {line: boolean; style: boolean; parent: boolean};
     moq?: number;
     /** Sanity dimensionInput shape key (rectangular, cylinder, …). */
     dimensionInput?: string;

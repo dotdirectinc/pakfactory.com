@@ -8,7 +8,7 @@ import { faqsField } from '../lib/faq-field'
 import { uniqueTaxonomyTitle } from '../lib/taxonomy-rules'
 import { uniqueSlugAcross } from '../lib/slug-rules'
 import { entityFields } from '../lib/entity-id-field'
-import { FULL_STATUS_LIST, STATUS_DESCRIPTION_TAIL } from '../lib/catalog-status'
+import { FULL_STATUS_LIST, isParentOffStatus, STATUS_DESCRIPTION_TAIL } from '../lib/catalog-status'
 import { restrictingChildrenWarning } from '../lib/status-cascade-warning'
 
 /**
@@ -171,25 +171,49 @@ export const productStyle = defineType({
         'the listing. ' + STATUS_DESCRIPTION_TAIL,
       options: { list: FULL_STATUS_LIST, layout: 'radio' },
       initialValue: 'active',
-      // A style does NOT take its products down with it — a product names several
-      // styles but exactly one line, and the line is what keeps it reachable (R2).
-      // So this warns about the one thing restricting a style really does break:
-      // the products whose PRIMARY style this is. `productStyle[0]` supplies the
-      // style on their cards, their breadcrumb, and the FAQs they inherit.
-      validation: (Rule) =>
+      // A style does not take its products down with it while they have another
+      // style that is on (R2). Two things it does break, so two warnings: the products
+      // whose PRIMARY style this is (`productStyle[0]` is fixed — no fallback — and
+      // supplies their card style, breadcrumb and inherited FAQs), and the products
+      // for which this is the last style still on, which are hidden (rule 1,
+      // Richard + Eric 2026-10-06).
+      validation: (Rule) => [
         Rule.custom(
           restrictingChildrenWarning({
+            when: isParentOffStatus,
             query: `*[
               _type == "product" &&
               productStyle[0]._ref == $id &&
               (!defined(status) || status in ["active", "coming-soon", "active-internal"])
             ]{ title }`,
+            // The primary is fixed — nothing falls back to the next style (2026-10-06).
             describe: (names) =>
-              `This is the primary style of ${names}. Those products stay visible, but the ` +
-              `style shown on their cards and breadcrumbs, and the FAQs they inherit, all come ` +
-              `from here. Reorder their styles first if another should lead.`,
+              `This is the primary style of ${names}. They keep it as their primary: their ` +
+              `breadcrumb shows it without a link, and they inherit no FAQs (not from the line ` +
+              `either) until it is active again. Reorder their styles first if another should lead.`,
           }),
         ).warning(),
+        // Rule 1 (2026-10-06): a product whose every style is off is hidden.
+        Rule.custom(
+          restrictingChildrenWarning({
+            when: isParentOffStatus,
+            query: `*[
+              _type == "product" &&
+              kind == "standard" &&
+              $id in productStyle[]._ref &&
+              (!defined(status) || status in ["active", "coming-soon"]) &&
+              count(productStyle[
+                _ref != $id &&
+                (!defined(@->status) || @->status in ["active", "active-internal", "discontinued"])
+              ]) == 0
+            ]{ title }`,
+            describe: (names) =>
+              `${names} ${names.includes(' and ') || names.includes(',') ? 'have' : 'has'} no other ` +
+              `active style, so ${names.includes(' and ') || names.includes(',') ? 'they' : 'it'} ` +
+              `will be hidden from the site.`,
+          }),
+        ).warning(),
+      ],
     }),
     // `order` was REMOVED here on 2026-09-01. It set the display order of the style
     // cards within a Product Line's styles grid, and nothing has ever read it — no
