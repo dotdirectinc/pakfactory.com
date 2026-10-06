@@ -236,6 +236,7 @@ function isVisible(slide: PageSectionHeroSpotlightSlideDoc): boolean {
     return isCatalogTargetVisible({
         _type: clean(slide.docType),
         status: clean(slide.status) ?? null,
+        parentsOn: slide.parentsOn,
     });
 }
 
@@ -531,6 +532,8 @@ function mapGeneralEntry(
             _type: clean(item._type),
             status: clean(item.status) ?? null,
             hasPage: item.hasPage,
+            appearsIn: clean(item.appearsIn ?? undefined) ?? null,
+            parentsOn: item.parentsOn,
         })
     ) {
         return null;

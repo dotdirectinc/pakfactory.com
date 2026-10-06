@@ -163,3 +163,37 @@ export const PRODUCT_ORDERABLE = /* groq */ `(${ORDERABLE_STATUS} && ${PRODUCT_H
  * only the parent solution was checked, so every new style had a live page.
  */
 export const SOLUTION_STYLE_ACTIVE = /* groq */ `status == "active"`;
+
+/**
+ * R1 for customizations (exclusive parent): an option is never more visible than its
+ * Type, and a Type never more visible than its Category. A Type or Category set to Not
+ * active takes every option beneath it off the site — library, detail page and
+ * configurator — whatever the options' own status says. A read rule; nothing is written
+ * into the option. Mirrors CUSTOMIZATION_TAXONOMY_ACTIVE (unset stays visible: these
+ * types had no off switch before PROD-2845).
+ */
+export const OPTION_TAXONOMY_ON = /* groq */ `((!defined(type->status) || type->status == "active") && (!defined(type->category->status) || type->category->status == "active"))`;
+
+/** An option a customer can meet: its own status AND its Type and Category (R1). */
+export const OPTION_ACTIVE = /* groq */ `(status == "active" && ${OPTION_TAXONOMY_ON})`;
+
+/**
+ * May www LINK to this document, as far as its PARENTS go? Projected as `parentsOn`
+ * beside `status` wherever chrome links a curated document (nav, hero slides, finder
+ * rail, catalog rows), and read by `isCatalogTargetVisible` — the document's own status
+ * is checked there; this adds what the document alone cannot know:
+ *   product          rule 1 (some parent on) + R1 (its line is open)
+ *   productStyle     R1 — its line has a page, or the style page has no route
+ *   solutionStyle    R1 — its solution is Active
+ *   customizationType   R1 — its category is open
+ *   customizationOption R1 — its type and category are open
+ * Anything else is `true`. Evaluated in the document's own scope.
+ */
+export const LINK_PARENTS_ON = /* groq */ `select(
+    _type == "product" => ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_OPEN},
+    _type == "productStyle" => !defined(productLine->status) || productLine->status in ["active", "discontinued"],
+    _type == "solutionStyle" => solution->status == "active",
+    _type == "customizationType" => !defined(category->status) || category->status == "active",
+    _type == "customizationOption" => ${OPTION_TAXONOMY_ON},
+    true
+  )`;

@@ -13,6 +13,8 @@ import {
 } from './sections';
 import {MODEL_3D_FIELDS} from './product-model-3d';
 import {
+  OPTION_ACTIVE,
+  OPTION_TAXONOMY_ON,
   LISTED_STATUS,
   HAS_PAGE_STATUS,
   ORDERABLE_STATUS,
@@ -93,19 +95,6 @@ const TYPE_PROJ = /* groq */ `{
   "category": category->${CATEGORY_PROJ}
 }`;
 
-/**
- * R1 for customizations (exclusive parent): an option is never more visible than its
- * Type, and a Type never more visible than its Category. A Type or Category set to Not
- * active takes every option beneath it off the site — library, detail page and
- * configurator — whatever the options' own status says. A read rule; nothing is written
- * into the option. Mirrors CUSTOMIZATION_TAXONOMY_ACTIVE (unset stays visible: these
- * types had no off switch before PROD-2845). Defined up here because the option
- * projections below interpolate it.
- */
-const OPTION_TAXONOMY_ON = /* groq */ `((!defined(type->status) || type->status == "active") && (!defined(type->category->status) || type->category->status == "active"))`;
-
-/** An option a customer can meet: its own status AND its Type and Category (R1). */
-export const OPTION_ACTIVE = /* groq */ `(status == "active" && ${OPTION_TAXONOMY_ON})`;
 
 /**
  * Reverse of `customizationOption.achieves` (PROD-2629 / ADR-017).

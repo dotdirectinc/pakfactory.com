@@ -144,7 +144,8 @@ function toChipItem(
   return {
     id: item._id,
     title: item.title,
-    href: hrefFor(item),
+    // A Not active line, solution or option keeps its chip as a label — no 404 link.
+    href: item.linkable === false ? undefined : hrefFor(item),
     excerpt: item.excerpt,
     imageUrl: item.imageUrl,
   };
