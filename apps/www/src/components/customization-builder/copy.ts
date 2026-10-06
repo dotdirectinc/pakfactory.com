@@ -42,4 +42,16 @@ export const CUSTOMIZATION_BUILDER_COPY = {
         'This finish can be achieved by these techniques, learn more about them:',
     achievedBySelected: 'Technique',
     achievedByLearnMore: 'Learn more',
+    /** Printing-step Printed Side gate (before Method / Color). */
+    printOutside: 'Print Outside',
+    printInside: 'Print Inside',
+    printedSideYes: 'Yes',
+    printedSideNo: 'No',
+    /** Pantone Spot / Hybrid option detail controllers. */
+    pantoneCountLabel: 'How many Pantone colors?',
+    pantoneCountDecrease: 'Fewer Pantone colors',
+    pantoneCountIncrease: 'More Pantone colors',
+    pantonePmsLabel: 'Pantone (PMS) codes',
+    pantonePmsPlaceholder: 'e.g. PMS 185 C',
+    pantonePmsRemove: 'Remove Pantone code',
 } as const;

@@ -1,4 +1,9 @@
-import {visiblePropertySummaries} from '@/lib/customization-builder';
+import {
+    PRINTING_CATEGORY_SLUG,
+    formatPrintedSideSummary,
+    isPrintedSideComplete,
+    visiblePropertySummaries,
+} from '@/lib/customization-builder';
 import type {RequestLine} from '@/lib/request/request.storage';
 
 export type LineCustomizationPick = {
@@ -45,11 +50,24 @@ function propertiesForOption(
  * Selection categories for the review paper Customization column.
  * No selected picks → empty list so the cell shows a single specialist line.
  * With picks → every available category (empty ones → specialist under heading).
+ * Printing Outside/Inside (builder state) surfaces even when methods are None.
  */
 export function lineCustomizationGroups(
     line: RequestLine,
 ): LineCustomizationGroup[] {
-    if (line.customizations.length === 0) return [];
+    const builder = line.customizationBuilder;
+    const printedSideReady = builder
+        ? isPrintedSideComplete(builder)
+        : false;
+    const printingConsultation =
+        builder?.answers?.[PRINTING_CATEGORY_SLUG]?.status === 'not-sure';
+    const printedSideLabel = printedSideReady
+        ? formatPrintedSideSummary(builder!)
+        : printingConsultation
+          ? 'Specialist to advise'
+          : null;
+
+    if (line.customizations.length === 0 && !printedSideLabel) return [];
 
     const order: string[] = [];
     const byCategory = new Map<string, LineCustomizationPick[]>();
@@ -66,14 +84,37 @@ export function lineCustomizationGroups(
         ensureCategory(key);
     }
 
+    if (printedSideLabel) {
+        ensureCategory(PRINTING_CATEGORY_SLUG);
+    }
+
     for (const customization of line.customizations) {
         const key = customization.category?.trim() || 'other';
         ensureCategory(key);
+        // Side / gate-consultation summary is owned by builder state.
+        if (
+            customization.id === `${PRINTING_CATEGORY_SLUG}-side` ||
+            (customization.id === `${PRINTING_CATEGORY_SLUG}-not-sure` &&
+                !printedSideReady) ||
+            (key === PRINTING_CATEGORY_SLUG &&
+                printedSideLabel &&
+                customization.label === printedSideLabel)
+        ) {
+            continue;
+        }
         const properties = propertiesForOption(customization.id, line);
         byCategory.get(key)!.push({
             label: customization.label,
             ...(properties ? {properties} : {}),
         });
+    }
+
+    if (printedSideLabel) {
+        const picks = byCategory.get(PRINTING_CATEGORY_SLUG) ?? [];
+        byCategory.set(PRINTING_CATEGORY_SLUG, [
+            {label: printedSideLabel},
+            ...picks,
+        ]);
     }
 
     return order.map((key) => ({

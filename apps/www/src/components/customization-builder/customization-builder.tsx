@@ -23,18 +23,24 @@ import {
     createEmptyBuilderState,
     fillUnsetWithConsultation,
     getAnswer,
+    isPrintingCategoryStep,
     markGuidedComplete,
     patchAnswer,
     patchEntryNote,
+    patchPrintedSide,
     patchPropertySelections,
+    PRINTING_CATEGORY_SLUG,
     removeSelections,
+    selectPrintingConsultation,
     shouldEnterGuided,
     toggleSelection,
+    wantsAnyPrint,
     type BuilderMode,
     type BuilderOption,
     type BuilderStep,
     type BuilderStepKey,
     type CustomizationBuilderState,
+    type PrintSideValue,
     type PropertySelectionSummaryItem,
     type StepAnswer,
 } from '@/lib/customization-builder';
@@ -265,6 +271,27 @@ export function CustomizationBuilder({
         );
     }
 
+    const printingStepKey =
+        steps.find(isPrintingCategoryStep)?.key ?? PRINTING_CATEGORY_SLUG;
+
+    function handlePrintedSideChange(patch: {
+        printOutside?: PrintSideValue;
+        printInside?: PrintSideValue;
+    }) {
+        const next = patchPrintedSide(value, patch, printingStepKey);
+        if (!wantsAnyPrint(next)) {
+            setActiveOptionId(null);
+            setActiveTypeId(null);
+        }
+        onChange(next);
+    }
+
+    function handlePrintingConsultation() {
+        setActiveOptionId(null);
+        setActiveTypeId(null);
+        onChange(selectPrintingConsultation(value, printingStepKey));
+    }
+
     function goBack() {
         const index = steps.findIndex((step) => step.key === activeKey);
         const prev = index > 0 ? steps[index - 1] : undefined;
@@ -370,6 +397,8 @@ export function CustomizationBuilder({
                             onPropertySelectionsChange={
                                 handlePropertySelectionsChange
                             }
+                            onPrintedSideChange={handlePrintedSideChange}
+                            onPrintingConsultation={handlePrintingConsultation}
                             onBack={goBack}
                             onNext={goNext}
                             onSkip={handleSkip}
@@ -396,6 +425,8 @@ export function CustomizationBuilder({
                             onPropertySelectionsChange={
                                 handlePropertySelectionsChange
                             }
+                            onPrintedSideChange={handlePrintedSideChange}
+                            onPrintingConsultation={handlePrintingConsultation}
                         />
                     )}
                 </div>

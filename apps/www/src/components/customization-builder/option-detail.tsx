@@ -10,6 +10,13 @@ import {
 import {AdditionalNoteField} from '@/components/customization-builder/ui/additional-note-field';
 import {OptionDetailHeader} from '@/components/customization-builder/ui/option-detail-header';
 import {CUSTOMIZATION_BUILDER_COPY} from '@/components/customization-builder/copy';
+import {PantonePropertyControllers} from '@/components/customization-builder/pantone-property-controllers';
+import {
+    defaultPantoneSelection,
+    hasPantoneSelection,
+    optionNeedsPantoneControllers,
+    summariesForPantoneSelection,
+} from '@/components/customization-builder/pantone-property';
 import type {PropertyFieldDescriptor} from '@/lib/catalog/map-detail-to-property-fields';
 import {loadOptionPropertyFields} from '@/lib/catalog/load-option-property-fields';
 import type {
@@ -47,14 +54,13 @@ function emitSelections(
         summaries: PropertySelectionSummaryItem[],
     ) => void,
 ) {
-    onPropertySelectionsChange?.(
+    const catalog = summariesForPropertySelection(
+        fields,
         selections,
-        summariesForPropertySelection(
-            fields,
-            selections,
-            CUSTOMIZATION_BUILDER_COPY.skipNotSure,
-        ),
+        CUSTOMIZATION_BUILDER_COPY.skipNotSure,
     );
+    const pantone = summariesForPantoneSelection(selections);
+    onPropertySelectionsChange?.(selections, [...catalog, ...pantone]);
 }
 
 export function OptionDetail({
@@ -76,22 +82,34 @@ export function OptionDetail({
         }
         let cancelled = false;
         setLoadingFields(true);
+        const needsPantone = optionNeedsPantoneControllers(option);
         void loadOptionPropertyFields(option.id).then((next) => {
             if (cancelled) return;
             setFields(next);
             setLoadingFields(false);
-            if (
-                next.length > 0 &&
-                onPropertySelectionsChange &&
-                (!propertySelections ||
-                    Object.keys(propertySelections).length === 0)
-            ) {
-                emitSelections(
-                    next,
-                    initialConsultationPropertySelection(next),
-                    onPropertySelectionsChange,
-                );
+            if (!onPropertySelectionsChange) return;
+
+            const empty =
+                !propertySelections ||
+                Object.keys(propertySelections).length === 0;
+            const missingPantone =
+                needsPantone && !hasPantoneSelection(propertySelections);
+
+            if (!empty && !missingPantone) return;
+
+            let selections: PropertySelectionMap = {
+                ...(propertySelections ?? {}),
+            };
+            if (empty && next.length > 0) {
+                selections = {
+                    ...initialConsultationPropertySelection(next),
+                };
             }
+            if (needsPantone && !hasPantoneSelection(selections)) {
+                selections = {...selections, ...defaultPantoneSelection()};
+            }
+            if (Object.keys(selections).length === 0) return;
+            emitSelections(next, selections, onPropertySelectionsChange);
         });
         return () => {
             cancelled = true;
@@ -136,6 +154,7 @@ export function OptionDetail({
     }
 
     const selection = propertySelections ?? {};
+    const showPantone = optionNeedsPantoneControllers(option);
 
     return (
         <DetailFade key={contentKey}>
@@ -156,27 +175,49 @@ export function OptionDetail({
                     <p className="mt-8 text-sm text-muted-foreground">
                         Loading…
                     </p>
-                ) : fields.length > 0 ? (
-                    <div className="mt-8">
-                        <OptionPropertyControllers
-                            fields={fields}
-                            value={selection}
-                            variant="ghost"
-                            consultationDefault
-                            consultationLabel={
-                                CUSTOMIZATION_BUILDER_COPY.skipNotSure
-                            }
-                            onChange={(propertyKey, ids) => {
-                                emitSelections(
-                                    fields,
-                                    {
-                                        ...selection,
-                                        [propertyKey]: ids,
-                                    },
-                                    onPropertySelectionsChange,
-                                );
-                            }}
-                        />
+                ) : fields.length > 0 || showPantone ? (
+                    <div className="mt-8 flex flex-col gap-4">
+                        {fields.length > 0 ? (
+                            <OptionPropertyControllers
+                                fields={fields}
+                                value={selection}
+                                variant="ghost"
+                                consultationDefault
+                                consultationLabel={
+                                    CUSTOMIZATION_BUILDER_COPY.skipNotSure
+                                }
+                                onChange={(propertyKey, ids) => {
+                                    emitSelections(
+                                        fields,
+                                        {
+                                            ...selection,
+                                            [propertyKey]: ids,
+                                        },
+                                        onPropertySelectionsChange,
+                                    );
+                                }}
+                            />
+                        ) : null}
+                        {showPantone ? (
+                            <PantonePropertyControllers
+                                value={
+                                    hasPantoneSelection(selection)
+                                        ? selection
+                                        : {
+                                              ...selection,
+                                              ...defaultPantoneSelection(),
+                                          }
+                                }
+                                variant="ghost"
+                                onChange={(next) => {
+                                    emitSelections(
+                                        fields,
+                                        next,
+                                        onPropertySelectionsChange,
+                                    );
+                                }}
+                            />
+                        ) : null}
                     </div>
                 ) : null}
 
