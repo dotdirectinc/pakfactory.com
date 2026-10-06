@@ -1,11 +1,8 @@
-import {PageDielineSection} from '@pakfactory/ui/components/page-dieline-section';
 import {PageBreadcrumbSection} from '@/components/common/page-breadcrumb-section';
 import {buildProductSpecRows} from '@/components/product/build-product-spec-rows';
 import {mapCustomizationPreviewItems} from '@/components/product/map-customization-preview-items';
 import {ProductCustomizationsPreview} from '@/components/product/product-customizations-preview';
-import {ProductGallery} from '@/components/product/product-gallery';
-import {ProductRequestRail} from '@/components/product/product-request-rail';
-import {StatusBadge, StatusNotice} from '@/components/ui/status-badge';
+import {ProductPdpShell} from '@/components/product/product-pdp-shell';
 import {
     AnchorNav,
     type AnchorNavItem,
@@ -24,7 +21,6 @@ import {
     applySectionTokens,
     sectionTokenContextFromHost,
 } from '@/lib/sections/resolve-section-tokens';
-import {WWW_ROUTES} from '@/lib/www-routes';
 import type {PageSectionProductsRowItemDoc} from '@pakfactory/sanity/queries';
 
 type ProductDetailViewProps = {
@@ -142,59 +138,19 @@ export async function ProductDetailView({product}: ProductDetailViewProps) {
                 }}
             />
             <PageBreadcrumbSection items={breadcrumbItems} />
-            <PageDielineSection paddingBlock="sm">
-                <article
-                    id="pdp-overview"
-                    className="scroll-mt-32 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
-                >
-                    <ProductGallery
-                        media={product.media}
-                        productTitle={product.title}
-                        badgeLabel={
-                            product.kind === 'inspiration'
-                                ? 'Inspiration'
-                                : undefined
-                        }
+            <ProductPdpShell product={product} displaySku={displaySku}>
+                <div className="relative">
+                    <AnchorNav items={navItems} />
+                    <ProductSpecs rows={specRows} />
+                    <ProductCustomizationsPreview
+                        styleTitle={style.title}
+                        items={customizationItems}
                     />
-                    <div>
-                        <div className="flex items-center justify-between gap-4">
-                            <p className="min-w-0 flex-1 truncate text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                                {displaySku}
-                            </p>
-                            <StatusBadge status={product.status} className="shrink-0" />
-                        </div>
-                        <h1 className="mt-1 text-4xl font-semibold text-brand-blue">
-                            {product.title}
-                        </h1>
-                        {product.description ? (
-                            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                                {product.description}
-                            </p>
-                        ) : null}
-                        {/* Coming soon / discontinued: shown, never orderable (PROD-2605). */}
-                        {product.status && product.status !== 'active' ? (
-                            <StatusNotice
-                                status={product.status}
-                                contactHref={WWW_ROUTES.contact}
-                            />
-                        ) : (
-                            <ProductRequestRail product={product} />
-                        )}
-                    </div>
-                </article>
-            </PageDielineSection>
-
-            <div className="relative">
-                <AnchorNav items={navItems} />
-                <ProductSpecs rows={specRows} />
-                <ProductCustomizationsPreview
-                    styleTitle={style.title}
-                    items={customizationItems}
-                />
-                {pageSections.length > 0 ? (
-                    <SectionRenderer sections={pageSections} />
-                ) : null}
-            </div>
+                    {pageSections.length > 0 ? (
+                        <SectionRenderer sections={pageSections} />
+                    ) : null}
+                </div>
+            </ProductPdpShell>
         </>
     );
 }
