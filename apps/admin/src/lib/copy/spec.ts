@@ -294,6 +294,9 @@ export const ADMIN_SPEC_SANITY_ITEM_COPY = {
   compare: "Compare",
   before: "Sanity now",
   after: "Notion",
+  formattingOnly: "Same words — only the formatting changes.",
+  listToParagraphs: "Same words — only the formatting changes: bulleted list → paragraphs.",
+  paragraphsToList: "Same words — only the formatting changes: paragraphs → bulleted list.",
   states: {
     pending: "Writing to Sanity…",
     applied: "Written to Sanity",
