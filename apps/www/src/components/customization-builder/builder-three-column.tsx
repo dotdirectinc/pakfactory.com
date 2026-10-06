@@ -169,6 +169,7 @@ export function BuilderThreeColumn({
                     ) : null}
                     {!printingStep || showPrintingOptions ? (
                         <CategoryTypeList
+                            key={step.key}
                             kind={step.kind}
                             types={step.types}
                             options={step.options}
@@ -180,6 +181,7 @@ export function BuilderThreeColumn({
                             onSelectConsultation={onSelectConsultation}
                             onSelectType={onSelectType}
                             onSelectOption={onSelectOption}
+                            categoryLabel={step.label}
                             className={
                                 printingStep
                                     ? 'border-0 border-r-0 md:border-r-0'
