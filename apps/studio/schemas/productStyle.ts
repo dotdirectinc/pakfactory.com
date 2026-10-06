@@ -189,8 +189,8 @@ export const productStyle = defineType({
             // The primary is fixed — nothing falls back to the next style (2026-10-06).
             describe: (names) =>
               `This is the primary style of ${names}. They keep it as their primary: their ` +
-              `breadcrumb shows it without a link, and they inherit no FAQs (not from the line ` +
-              `either) until it is active again. Reorder their styles first if another should lead.`,
+              `breadcrumb shows it without a link, and they skip this style's FAQs and show their ` +
+              `line's instead until it is active again. Reorder their styles first if another should lead.`,
           }),
         ).warning(),
         // Rule 1 (2026-10-06): a product whose every style is off is hidden.

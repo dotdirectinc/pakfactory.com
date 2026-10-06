@@ -224,19 +224,19 @@ const FAQ_ITEM_PROJ = /* groq */ `{
  * - Own FAQs always win.
  * - Inspiration: else its primary solution's (`solutions[0]`) — only while that solution
  *   is Active. Nothing further (Richard, 2026-10-05).
- * - Standard: else its primary style's (`productStyle[0]`), else its line's (2026-09-28)
- *   — only while the primary style is on.
- * - An OFF primary passes nothing down, and nothing takes its place: no second parent,
- *   and for a standard product no line either (Richard + Eric, 2026-10-06 — rule 3 in
- *   the PARENT_* note above). The FAQ section is empty until the primary is fixed.
+ * - Standard: else its primary style's (`productStyle[0]`) — only while that style is on —
+ *   else its line's, else nothing. An OFF primary style is skipped, never replaced by a
+ *   second style; the line still answers, because the line is still on: a line that is
+ *   Coming soon or Not active has already hidden the product (R1), and a product whose
+ *   every style is off is hidden too (rule 1). Richard, 2026-10-06, on Eric's review —
+ *   a style set to Coming soon before a launch must not empty its products' FAQs.
  */
 const PRODUCT_FAQS_INHERITED = /* groq */ `"faqs": select(
     count(faqs) > 0 => faqs[]->${FAQ_ITEM_PROJ},
     kind == "inspiration" => select(
       ${PRIMARY_SOLUTION_ON} => solutions[0]->faqs[]->${FAQ_ITEM_PROJ}
     ),
-    !${PRIMARY_STYLE_ON} => null,
-    count(productStyle[0]->faqs) > 0 => productStyle[0]->faqs[]->${FAQ_ITEM_PROJ},
+    ${PRIMARY_STYLE_ON} && count(productStyle[0]->faqs) > 0 => productStyle[0]->faqs[]->${FAQ_ITEM_PROJ},
     coalesce(productLine, productStyle[0]->productLine)->faqs[]->${FAQ_ITEM_PROJ}
   )`;
 
