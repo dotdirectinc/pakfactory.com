@@ -6,15 +6,26 @@ import { Badge } from "@pakfactory/ui/components/badge";
 import type { ChangesetItem } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SANITY_ITEM_COPY as SANITY } from "@/lib/copy/spec";
 
-/** A Sanity field value as plain text — rich text flattened — so a reviewer can read both sides. */
-function plain(v: unknown): string {
+type Block = { _type?: string; listItem?: string; children?: { text?: string }[] };
+const isBlock = (b: unknown): b is Block => Boolean(b) && typeof b === "object" && Array.isArray((b as Block).children);
+
+/**
+ * A Sanity field value as readable text — rich text flattened, lists kept as "• " / "1. ", so a
+ * reviewer can read both sides. `marks: false` drops the list markers, to tell a wording change from
+ * a formatting-only one.
+ */
+function plain(v: unknown, marks = true): string {
   if (v === null || v === undefined) return "";
   if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
   if (Array.isArray(v)) {
+    let n = 0;
     return v
       .map((b) => {
-        const children = (b as { children?: { text?: string }[] })?.children;
-        return Array.isArray(children) ? children.map((c) => c.text ?? "").join("") : plain(b);
+        if (!isBlock(b)) return plain(b, marks);
+        const text = (b.children ?? []).map((c) => c.text ?? "").join("");
+        if (!marks || !b.listItem) { n = 0; return text; }
+        n = b.listItem === "number" ? n + 1 : 0;
+        return `${b.listItem === "number" ? `${n}.` : "•"} ${text}`;
       })
       .filter(Boolean)
       .join("\n");
@@ -22,11 +33,31 @@ function plain(v: unknown): string {
   if (typeof v === "object") {
     return Object.entries(v as Record<string, unknown>)
       .filter(([k]) => !k.startsWith("_"))
-      .map(([, x]) => plain(x))
+      .map(([, x]) => plain(x, marks))
       .filter(Boolean)
       .join("\n");
   }
   return "";
+}
+
+/** Whether a value holds list blocks anywhere (benefits nest them under `body`). */
+function hasList(v: unknown): boolean {
+  if (Array.isArray(v)) return v.some((b) => (isBlock(b) && Boolean(b.listItem)) || hasList(b));
+  if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).some(hasList);
+  return false;
+}
+
+/**
+ * When the words are identical, say the change is formatting only — otherwise a reviewer reads two
+ * identical columns and cannot tell what approving would do (the first Notion frame, 2026-10-06:
+ * same benefits text, bullets on one side only).
+ */
+function formattingOnly(before: unknown, after: unknown): string | null {
+  if (plain(before, false) !== plain(after, false)) return null;
+  const a = hasList(before);
+  const b = hasList(after);
+  if (a === b) return SANITY.formattingOnly;
+  return a ? SANITY.listToParagraphs : SANITY.paragraphsToList;
 }
 
 /** Before → Notion, field by field, for a Sanity-bound item. */
@@ -40,6 +71,9 @@ function SanityCompare({ item }: { item: ChangesetItem }) {
         {Object.keys(set).map((f) => (
           <div key={f} className="flex flex-col gap-1">
             <span className="text-xs font-medium text-foreground">{f}</span>
+            {formattingOnly(before[f], set[f]) ? (
+              <span className="text-xs text-muted-foreground">{formattingOnly(before[f], set[f])}</span>
+            ) : null}
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs uppercase tracking-wide text-muted-foreground">{SANITY.before}</span>
