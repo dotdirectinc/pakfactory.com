@@ -70,6 +70,20 @@ const TYPE_PROJ = /* groq */ `{
 }`;
 
 /**
+ * R1 for customizations (exclusive parent): an option is never more visible than its
+ * Type, and a Type never more visible than its Category. A Type or Category set to Not
+ * active takes every option beneath it off the site — library, detail page and
+ * configurator — whatever the options' own status says. A read rule; nothing is written
+ * into the option. Mirrors CUSTOMIZATION_TAXONOMY_ACTIVE (unset stays visible: these
+ * types had no off switch before PROD-2845). Defined up here because the option
+ * projections below interpolate it.
+ */
+const OPTION_TAXONOMY_ON = /* groq */ `((!defined(type->status) || type->status == "active") && (!defined(type->category->status) || type->category->status == "active"))`;
+
+/** An option a customer can meet: its own status AND its Type and Category (R1). */
+export const OPTION_ACTIVE = /* groq */ `(status == "active" && ${OPTION_TAXONOMY_ON})`;
+
+/**
  * Reverse of `customizationOption.achieves` (PROD-2629 / ADR-017).
  * Technical options (Lamination, Surface Coating, …) that can deliver this
  * customer-facing option — candidates, not a recipe.
@@ -77,7 +91,7 @@ const TYPE_PROJ = /* groq */ `{
 const ACHIEVED_BY_PROJ = /* groq */ `"achievedBy": *[
   _type == "customizationOption" &&
   !(_id in path("drafts.**")) &&
-  status == "active" &&
+  ${OPTION_ACTIVE} &&
   ^._id in achieves[]._ref
 ] | order(title asc) {
   _id,
@@ -103,7 +117,10 @@ const OPTION_FIELDS = /* groq */ `
   _id,
   title,
   "slug": slug.current,
-  status,
+  // Effective status: a Not active Type or Category reads through as not-active (R1),
+  // so every consumer that already drops non-active options (the PDP configurator's
+  // \`mapAvailableCustomization\`) drops these too without knowing about the parents.
+  "status": select(${OPTION_TAXONOMY_ON} => status, "not-active"),
   appearsIn,
   shortDescription,
   metaDescription,
@@ -242,10 +259,34 @@ export const PRODUCT_HAS_PARENT_ON = /* groq */ `select(
     count(productStyle[${PARENT_STYLE_ON}]) > 0
   )`;
 
-/** Product gates = own status AND rule 1. Use these, not the bare status gates, on products. */
-export const PRODUCT_LISTED = /* groq */ `(${LISTED_STATUS} && ${PRODUCT_HAS_PARENT_ON})`;
-export const PRODUCT_HAS_PAGE = /* groq */ `(${HAS_PAGE_STATUS} && ${PRODUCT_HAS_PARENT_ON})`;
-export const PRODUCT_ORDERABLE = /* groq */ `(${ORDERABLE_STATUS} && ${PRODUCT_HAS_PARENT_ON})`;
+/**
+ * R1 for products (exclusive parent): a STANDARD product is never more visible than its
+ * one Product Line. Per the visibility sheet:
+ *   Coming soon / Not active line → its products are hidden (no page, no listing).
+ *   Discontinued line             → its products are at most Discontinued: the page
+ *                                   stays, nothing lists, nothing is orderable.
+ *   Active (Internal) line        → passes through (R4) — the point of the value.
+ * Inspiration products are exempt: their line is borrowed through `basedOn` and their
+ * anchor is their solutions (rule 1), so the line does not gate them here.
+ */
+const PRODUCT_LINE_OPEN = /* groq */ `(kind == "inspiration" || !defined(productLine->status) || productLine->status in ["active", "active-internal"])`;
+const PRODUCT_LINE_HAS_PAGE = /* groq */ `(kind == "inspiration" || !defined(productLine->status) || productLine->status in ["active", "active-internal", "discontinued"])`;
+
+/**
+ * The status a customer sees: an Active or Coming-soon standard product under a
+ * Discontinued line reads as Discontinued (R1), so the PDP shows the notice and the
+ * request rail stays shut without the front end knowing about lines.
+ */
+const PRODUCT_EFFECTIVE_STATUS = /* groq */ `"status": select(
+    kind != "inspiration" && productLine->status == "discontinued" &&
+      (!defined(status) || status in ["active", "coming-soon"]) => "discontinued",
+    status
+  )`;
+
+/** Product gates = own status AND rule 1 AND R1. Use these, not the bare status gates, on products. */
+export const PRODUCT_LISTED = /* groq */ `(${LISTED_STATUS} && ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_OPEN})`;
+export const PRODUCT_HAS_PAGE = /* groq */ `(${HAS_PAGE_STATUS} && ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_HAS_PAGE})`;
+export const PRODUCT_ORDERABLE = /* groq */ `(${ORDERABLE_STATUS} && ${PRODUCT_HAS_PARENT_ON} && ${PRODUCT_LINE_OPEN})`;
 
 const OPTION_PROJ = /* groq */ `{${OPTION_FIELDS}}`;
 
@@ -339,7 +380,7 @@ export const CATALOG_PRODUCT_FIELDS = /* groq */ `
   "slug": slug.current,
   sku,
   kind,
-  status,
+  ${PRODUCT_EFFECTIVE_STATUS},
   "description": coalesce(pt::text(description), shortDescription),
   moq,
   dimensionInput,
@@ -389,7 +430,7 @@ export const CATALOG_PRODUCT_CARD_FIELDS = /* groq */ `
   "slug": slug.current,
   sku,
   kind,
-  status,
+  ${PRODUCT_EFFECTIVE_STATUS},
   "description": coalesce(shortDescription, pt::text(description)),
   moq,
   // Industry for Related Products style→industry fill (PROD-2780).
@@ -532,7 +573,7 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
   "slug": slug.current,
   sku,
   kind,
-  status,
+  ${PRODUCT_EFFECTIVE_STATUS},
   moq,
   media[0...1]{
     ...,
@@ -797,7 +838,7 @@ const PROPERTY_VALUE_DETAIL_PROJ = /* groq */ `{
 export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   ${HAS_DETAIL_PAGE} &&
-  status == "active" &&
+  ${OPTION_ACTIVE} &&
   defined(slug.current)
 ] | order(title asc) {
   _id,
@@ -833,7 +874,7 @@ export const CATALOG_CUSTOMIZATION_LIBRARY_QUERY = /* groq */ `*[
 export const CATALOG_CUSTOMIZATION_BY_CATEGORY_HANDLE_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   ${HAS_DETAIL_PAGE} &&
-  status == "active" &&
+  ${OPTION_ACTIVE} &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
@@ -910,7 +951,7 @@ const CUSTOMIZATION_COMPARE_PEER_PROJ = /* groq */ `{
 export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   ${HAS_DETAIL_PAGE} &&
-  status == "active" &&
+  ${OPTION_ACTIVE} &&
   slug.current == $handle &&
   type->category->slug.current == $category
 ][0]{
@@ -994,7 +1035,7 @@ export const CATALOG_CUSTOMIZATION_DETAIL_QUERY = /* groq */ `*[
   "peers": *[
     _type == "customizationOption" &&
     ${HAS_DETAIL_PAGE} &&
-    status == "active" &&
+    ${OPTION_ACTIVE} &&
     defined(slug.current) &&
     slug.current != $handle &&
     type->category->slug.current == $category
@@ -1024,7 +1065,7 @@ export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
   "options": *[
     _type == "customizationOption" &&
     !(_id in path("drafts.**")) &&
-    status == "active"
+    ${OPTION_ACTIVE}
   ]{
     ${OPTION_FIELDS},
     "typeId": type._ref,
@@ -1039,7 +1080,7 @@ export const CATALOG_CUSTOMIZATION_RULES_QUERY = /* groq */ `{
 export const CATALOG_OPTION_BY_ID_QUERY = /* groq */ `*[
   _type == "customizationOption" &&
   _id == $id &&
-  status == "active"
+  ${OPTION_ACTIVE}
 ][0]{
   _id,
   title,
