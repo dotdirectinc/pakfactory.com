@@ -271,22 +271,24 @@ export const ADMIN_SPEC_SOLUTIONS_COPY = {
 export const ADMIN_SPEC_SYNC_COPY = {
   title: "Sync",
   lead:
-    "Sync Sanity compares a dataset with the registry. Sync from Notion compares Notion's content with the dataset. Differences arrive as frames in the list below — nothing changes until a frame is approved.",
+    "Compare the website's catalog with the spec registry. Differences arrive as frames in the list below — nothing changes until a frame is approved.",
   datasetLabel: "Dataset",
   datasets: [
     { value: "development", label: "Development", enabled: true },
     { value: "production", label: "Production (after its catalog rebuild)", enabled: false },
   ],
-  button: "Sync Sanity",
-  notionButton: "Sync from Notion",
-  kinds: { sanity: "Sanity → registry", notion: "Notion → Sanity" },
+  button: "Sync Changes",
   requesting: "Requesting…",
   open: "A sync is in progress. This page updates when it finishes.",
   noPermission: "Starting a sync needs the approver role.",
   recent: "Recent syncs",
   none: "No syncs yet.",
+  // A content sync is an admin's tool (account menu); its runs still show here, named neutrally.
+  kinds: { sanity: "Changes", notion: "Content" },
   states: { requested: "Queued", running: "Running", done: "Done", failed: "Failed" },
   nothingFound: "No differences — nothing to approve.",
+  dismiss: "Dismiss",
+  dismissing: "Dismissing…",
 } as const;
 
 /** Sanity-bound items in a frame (PROD-2751): before → Notion, and how the approved write went. */

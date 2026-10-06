@@ -176,6 +176,8 @@ export type SyncRun = {
   started_at: string | null;
   finished_at: string | null;
   error: string | null;
+  /** Hidden from the panel by a person; the run itself is kept (2026-10-06). */
+  dismissed_at?: string | null;
   result: {
     documents?: number;
     proposed?: { frame: string; items: number }[];
@@ -195,4 +197,9 @@ export async function listSyncRuns() {
  */
 export async function requestSyncRun(kind: SyncKind, dataset: string) {
   return call<SyncRun>("/api/v1/sync-runs", { method: "POST", body: { kind, dataset } });
+}
+
+/** Hide a finished run from the panel. The backend keeps the row. */
+export async function dismissSyncRun(id: string) {
+  return call<SyncRun>(`/api/v1/sync-runs/${encodeURIComponent(id)}/dismiss`, { method: "POST" });
 }
