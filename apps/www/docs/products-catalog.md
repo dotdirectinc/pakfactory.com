@@ -84,12 +84,14 @@ www helpers: [`lib/catalog/product-kind.ts`](../src/lib/catalog/product-kind.ts)
 | Product type facet | `kind` (`standard` \| `inspiration`) |
 | Industries facet | `solutions[]` where `solutionType == "industry"` |
 | Sustainability facet | `properties[]` → property + values (when property is sustainability) |
-| Product Style (nested) | `productStyle` slug + title only on library items |
-| Search | title, SKU, line title, style title |
+| Product Style (nested) | `productStyles[]` membership (union); `productStyle` is primary for card display (PROD-2843) |
+| Search | title, SKU, line title, all linked style titles |
 
 Facet URL keys use `product-line`, `product-style`, `product-type`, `industry`, and `property.slug`. Shared rail: Product type (when kinds exist) + Product Line + Industries (when tagged) + Sustainability (when values exist).
 
 **Product Style** is not a top-level accordion. When **exactly one** Product Line is checked, that line’s styles appear as indented checkboxes under the line row (desktop rail + mobile drawer). Styles combine with OR within the group; they AND with the line and every other facet. Unchecking the line, checking a second line, or Reset clears `product-style`. Styles from the wrong line in the URL are ignored.
+
+A product may link to **more than one** Product Style (`product.productStyle[]`). Catalog membership is the **union** of every listed style (PROD-2843): the product appears under each style in the nested filter, on each style page, and in facet counts. `productStyle` (primary = `[0]`) still drives the card label, PDP breadcrumb, and inherited FAQs.
 
 ## Component naming
 
@@ -127,11 +129,12 @@ When zero or multiple Product Lines are selected, the entry card is omitted.
 - **Filter:** in memory via the shared facet engine; facet option counts are **disjunctive (except-self)**; header **“N of M”** stays based on the fully filtered result set; Load more pagination (auto-reveal two `PAGE_SIZE` batches via IntersectionObserver, then manual button; no artificial append delay)
 - **Route:** `urlSync` (default true) — `q` plus facet ids as comma-separated query params (no `category`; load-more depth is session-only)
 - **Section deep links:** Prefer Site path `/products` + freeform `link.query` (e.g. `industry=%slug%` on a Solution LP) — see [ADR-020](../../../docs/adr/0020-component-to-section-playbook.md) § Section link → catalog query
-- **Payload:** library `productStyle` is `{slug, title}` only; `propertyTitles` are hoisted onto `ProductLibraryResult`
+- **Payload:** library `productStyle` (primary) and `productStyles[]` (membership) are `{slug, title}` only; `propertyTitles` are hoisted onto `ProductLibraryResult`
 - **Wire format (PROD-2757):** `ProductCatalogView` (server) passes `packProductLibrary(library)` to the panel, and `ProductCatalogPanel` calls `unpackProductLibrary` once. Code past that point sees normal `ProductLibraryItem`s. The packed form:
   - Products are positional tuples.
   - Lines, styles and industries are index tables.
   - `imageAlt` is dropped when it equals the title.
+  - Multi-style membership packs a trailing `styleIndexes` array when it differs from the primary alone (PROD-2843).
   - Staging (1,236 products): RSC payload 679 → 342 KB, HTML 971 → 571 KB.
   - See `lib/catalog/library-wire.ts`, plus its round-trip test. **Add new item fields to the pack/unpack pair**, or they will not reach the client.
 

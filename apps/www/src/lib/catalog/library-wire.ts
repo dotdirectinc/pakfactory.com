@@ -7,6 +7,7 @@ import type {
     ProductLibraryResult,
     ProductLineRef,
 } from '@/lib/catalog/types';
+import {membershipStyles} from '@/lib/catalog/types';
 
 /**
  * Compact wire format for the catalog libraries passed from the server views
@@ -30,6 +31,8 @@ const PRODUCT_KINDS: ProductKind[] = ['standard', 'inspiration'];
  * are trimmed. `imageUrl` restores as `null` when absent (map-sanity always
  * sets it; cards read `imageUrl ?? null`). `imageAlt`: `null` = same as
  * title (1231/1236 on staging), `0` = absent, otherwise the string.
+ * `styleIndexes` (PROD-2843): membership style table indexes; null/omitted
+ * means membership is just the primary `style` index.
  */
 type PackedProductItem = [
     id: string,
@@ -46,6 +49,7 @@ type PackedProductItem = [
     industries?: number[] | null,
     attrs?: Record<string, string[]> | null,
     images?: {src: string; alt?: string}[] | null,
+    styleIndexes?: number[] | null,
 ];
 
 export type PackedProductLibrary = Omit<ProductLibraryResult, 'items'> & {
@@ -102,6 +106,15 @@ export function packProductLibrary(
     const industries = refTable();
 
     const items = library.items.map((item): PackedProductItem => {
+        const primaryStyle = styles.indexOf(item.productStyle);
+        const membership = membershipStyles(item).map((ref) =>
+            styles.indexOf(ref),
+        );
+        // Compact: single primary-only membership omits the trailing array.
+        const styleIndexes =
+            membership.length === 1 && membership[0] === primaryStyle
+                ? null
+                : membership;
         const row: PackedProductItem = [
             item._id,
             item.title,
@@ -109,7 +122,7 @@ export function packProductLibrary(
             item.sku,
             Math.max(0, PRODUCT_KINDS.indexOf(item.kind)),
             lines.indexOf(item.productLine),
-            styles.indexOf(item.productStyle),
+            primaryStyle,
             item.imageUrl ?? null,
             item.imageAlt === item.title
                 ? null
@@ -123,6 +136,7 @@ export function packProductLibrary(
                 : null,
             isEmptyRecord(item.attrs) ? null : item.attrs,
             item.images?.length ? item.images : null,
+            styleIndexes,
         ];
         while (row.length > 7 && row[row.length - 1] === null) row.pop();
         return row;
@@ -160,7 +174,12 @@ export function unpackProductLibrary(
                 industryIndexes = null,
                 attrs = null,
                 images = null,
+                styleIndexes = null,
             ] = row;
+            const productStyle = toRef(styles[style]!);
+            const productStyles = (styleIndexes ?? [style]).map((index) =>
+                toRef(styles[index]!),
+            );
             return {
                 _id,
                 title,
@@ -168,7 +187,8 @@ export function unpackProductLibrary(
                 sku,
                 kind: PRODUCT_KINDS[kind] ?? 'standard',
                 productLine: toRef(lines[line]!),
-                productStyle: toRef(styles[style]!),
+                productStyle,
+                productStyles,
                 imageUrl,
                 ...(imageAlt === 0
                     ? {}

@@ -81,15 +81,15 @@ export function CatalogEntryCard({
                 </span>
             </div>
 
-            <div className="relative min-h-0 min-w-0 flex-1">
+            <div className="relative z-0 min-h-0 min-w-0 flex-1 overflow-hidden">
                 {imageUrl ? (
-                    <div className="absolute bottom-0 -right-8 -top-2 left-0 md:inset-x-[-3.5rem] md:bottom-0 md:top-[0.5rem]">
+                    <div className="absolute -bottom-10 -right-8 top-0 left-0 md:-bottom-14 md:-right-10 md:top-2 md:left-2">
                         <SanityImage
                             src={imageUrl}
                             alt={imageAlt ?? title}
                             fill
                             sizes="(max-width: 768px) 60vw, (max-width: 1280px) 30vw, 15vw"
-                            className="object-contain object-right-bottom"
+                            className="origin-bottom-right scale-[1.15] object-contain object-right-bottom md:scale-[1.32]"
                         />
                     </div>
                 ) : (

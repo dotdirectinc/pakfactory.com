@@ -469,7 +469,21 @@ export const CATALOG_PRODUCT_STANDARD_PREVIEW_FIELDS = /* groq */ `
   "properties": properties[defined(property)]{
     "label": property->title,
     "values": values[]->title
-  }
+  },
+  // Line style-card image fallback matches any linked style (PROD-2843).
+  "productStyles": coalesce(
+    productStyle[]->{
+      title,
+      "slug": slug.current,
+      status
+    },
+    basedOn->productStyle[]->{
+      title,
+      "slug": slug.current,
+      status
+    },
+    []
+  )[defined(slug) && ${LINE_STYLE_LISTED}]{title, slug}
 `;
 
 /**
@@ -590,10 +604,27 @@ export const CATALOG_PRODUCT_LIBRARY_FIELDS = /* groq */ `
     "description": coalesce(cardSummary, pt::text(intro)),
     ${LINE_CARD_IMAGE}
   },
+  // Primary (canonical) — card display. Membership uses productStyles (PROD-2843).
   "productStyle": *[
     _id == coalesce(^.productStyle[0]._ref, ^.basedOn->productStyle[0]._ref) &&
     ${LINE_STYLE_LISTED}
   ][0]${STYLE_LIBRARY_REF_PROJ},
+  // Every listed style in Sanity order — catalog facet / style-page membership.
+  // Project then filter: filter-on-deref (arr[]->[pred]) drops rows to null in
+  // groq-js; filtering the projected array keeps order and drops restricted statuses.
+  "productStyles": coalesce(
+    productStyle[]->{
+      title,
+      "slug": slug.current,
+      status
+    },
+    basedOn->productStyle[]->{
+      title,
+      "slug": slug.current,
+      status
+    },
+    []
+  )[defined(slug) && ${LINE_STYLE_LISTED}]{title, slug},
   "industries": solutions[@->solutionType == "industry"]->{
     title,
     "slug": slug.current
@@ -1278,6 +1309,12 @@ export type CatalogProductLibraryIndustryDoc = {
   slug?: string | null;
 };
 
+/** Slug + title only — library / preview membership (PROD-2843). */
+export type CatalogProductLibraryStyleDoc = {
+  title?: string | null;
+  slug?: string | null;
+};
+
 export type CatalogProductLibraryDoc = CatalogProductDoc & {
   libraryProperties?: CatalogProductLibraryPropertyDoc[] | null;
   industries?: (CatalogProductLibraryIndustryDoc | null)[] | null;
@@ -1345,6 +1382,12 @@ export type CatalogProductDoc = {
   media?: unknown[] | null;
   productLine: CatalogLineRefDoc | null;
   productStyle: CatalogStyleRefDoc | null;
+  /**
+   * Listed styles in Sanity order (library + line standard preview).
+   * Membership for catalog facets / style pages / style-card image fallback (PROD-2843).
+   * Display / breadcrumb / FAQs still use `productStyle` (primary).
+   */
+  productStyles?: (CatalogProductLibraryStyleDoc | null)[] | null;
   availableCustomizations?: CatalogAvailableCustomizationDoc[] | null;
   /** PDP by-slug only (PROD-2556): the rules inputs, and the product's own pre-selections. */
   rulesProduct?: CatalogRulesProductDoc | null;

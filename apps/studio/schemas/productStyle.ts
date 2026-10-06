@@ -261,14 +261,10 @@ export const productStyle = defineType({
           options: {
             disableNew: true,
             // Primary style only. `product.productStyle` is an array where `[0]` is
-            // the primary (settled 2026-08-27), and the style page renders only
-            // products whose primary style is this one. Offering the others would
-            // let an editor drag something that cannot move — a silent no-op, which
-            // is how `productLine.styles` rotted (PROD-2509).
-            //
-            // 🔴 192 products reference a style in position 1 or 2 and so never
-            // appear on that style's page at all. Whether that is a bug is Richard's
-            // call (PROD-2747); if the page widens, widen this filter with it.
+            // the primary (settled 2026-08-27). Style-page membership is the full
+            // listed array (PROD-2843), but this picker stays primary-only so an
+            // editor cannot pin a secondary-only product that `productOrder`
+            // would still accept — widening the picker is a separate decision.
             filter: ({ document }: { document: { _id: string; productOrder?: { _ref?: string }[] } }) => {
               const chosen = (document.productOrder ?? [])
                 .map((item) => item?._ref)
