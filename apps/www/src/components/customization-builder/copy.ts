@@ -49,8 +49,8 @@ export const CUSTOMIZATION_BUILDER_COPY = {
     printedSideNo: 'No',
     /** Pantone Spot / Hybrid option detail controllers. */
     pantoneCountLabel: 'How many Pantone colors?',
-    pantoneCountUnit: 'spot colors',
-    pantoneCountAtMax: 'at the max of 3',
+    pantoneCountDecrease: 'Fewer Pantone colors',
+    pantoneCountIncrease: 'More Pantone colors',
     pantonePmsLabel: 'Pantone (PMS) codes',
     pantonePmsPlaceholder: 'e.g. PMS 185 C',
     pantonePmsRemove: 'Remove Pantone code',

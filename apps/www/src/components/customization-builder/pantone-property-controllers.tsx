@@ -1,6 +1,5 @@
 'use client';
 
-import {StepperField} from '@pakfactory/ui/components/customization/property-controller/stepper-field';
 import {PropertyFieldPanel} from '@pakfactory/ui/components/customization/property-controller/property-field-panel';
 import {Button} from '@pakfactory/ui/components/button';
 import {Input} from '@pakfactory/ui/components/input';
@@ -30,10 +29,6 @@ export function PantonePropertyControllers({
     variant = 'ghost',
 }: PantonePropertyControllersProps) {
     const {count, codes} = readPantoneSelection(value);
-    const unitLabel =
-        count >= PANTONE_MAX_COUNT
-            ? CUSTOMIZATION_BUILDER_COPY.pantoneCountAtMax
-            : CUSTOMIZATION_BUILDER_COPY.pantoneCountUnit;
 
     function apply(countNext: number, codesNext: string[]) {
         onChange({
@@ -67,12 +62,40 @@ export function PantonePropertyControllers({
                 titleValue={String(count)}
                 variant={variant}
             >
-                <StepperField
-                    value={count}
-                    max={PANTONE_MAX_COUNT}
-                    unitLabel={unitLabel}
-                    onChange={setCount}
-                />
+                <div
+                    className="inline-flex h-9 w-fit items-center gap-1 rounded-lg bg-muted p-[3px]"
+                    role="group"
+                    aria-label={CUSTOMIZATION_BUILDER_COPY.pantoneCountLabel}
+                >
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 shrink-0 p-0 text-foreground/60 hover:bg-transparent hover:text-foreground disabled:opacity-40"
+                        disabled={count <= 1}
+                        aria-label={CUSTOMIZATION_BUILDER_COPY.pantoneCountDecrease}
+                        onClick={() => setCount(count - 1)}
+                    >
+                        –
+                    </Button>
+                    <span
+                        className="inline-flex h-[calc(100%-2px)] min-w-10 shrink-0 items-center justify-center rounded-md bg-background px-3 text-sm font-medium text-foreground shadow-sm tabular-nums"
+                        aria-live="polite"
+                    >
+                        {count}
+                    </span>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 shrink-0 p-0 text-foreground/60 hover:bg-transparent hover:text-foreground disabled:opacity-40"
+                        disabled={count >= PANTONE_MAX_COUNT}
+                        aria-label={CUSTOMIZATION_BUILDER_COPY.pantoneCountIncrease}
+                        onClick={() => setCount(count + 1)}
+                    >
+                        +
+                    </Button>
+                </div>
             </PropertyFieldPanel>
 
             <PropertyFieldPanel
