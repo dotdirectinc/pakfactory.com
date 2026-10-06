@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { isAdminDevBypassEnabled } from "@/lib/auth/dev-bypass";
 import { requireInternalUser } from "@/lib/auth/require-internal-user";
 import { hasRegistryGrant } from "@/lib/spec/require-grant";
+import { fetchSpecMe } from "@/lib/spec/registry-api";
 
 export default async function AdminShellLayout({
   children,
@@ -15,6 +16,8 @@ export default async function AdminShellLayout({
 }) {
   const { user } = await requireInternalUser("/requests");
   const specAccess = await hasRegistryGrant();
+  // Memoised per request with hasRegistryGrant's own call — no second round trip.
+  const me = specAccess ? await fetchSpecMe() : null;
 
   return (
     <AdminShell
@@ -24,6 +27,7 @@ export default async function AdminShellLayout({
         displayName: accountDisplayName(user),
         email: user.email ?? "",
         avatarUrl: accountAvatarUrl(user),
+        canSyncNotion: Boolean(me?.capabilities.includes("catalog.sync.notion")),
       }}
     >
       {children}

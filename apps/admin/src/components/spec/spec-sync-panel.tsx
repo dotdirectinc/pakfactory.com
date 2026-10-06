@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@pakfactory/ui/components/badge";
 import { Button } from "@pakfactory/ui/components/button";
-import { requestSyncAction } from "@/app/(admin)/spec/actions";
+import { dismissSyncAction, requestSyncAction } from "@/app/(admin)/spec/actions";
 import type { SyncRun } from "@/lib/spec/registry-api";
 import { ADMIN_SPEC_SYNC_COPY as COPY } from "@/lib/copy/spec";
 
@@ -16,6 +16,16 @@ type Props = {
 };
 
 const POLL_MS = 3000;
+
+/**
+ * What the panel lists (2026-10-06: failed syncs should not stay): dismissed runs never; a failure
+ * only until a later run of the same kind succeeds. The rows themselves are kept by the backend.
+ */
+function visibleRuns(runs: SyncRun[]): SyncRun[] {
+  const lastDone = new Map<string, string>();
+  for (const r of runs) if (r.state === "done" && r.requested_at > (lastDone.get(r.kind) ?? "")) lastDone.set(r.kind, r.requested_at);
+  return runs.filter((r) => !r.dismissed_at && !(r.state === "failed" && r.requested_at < (lastDone.get(r.kind) ?? "")));
+}
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
@@ -31,6 +41,7 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const open = runs.some((r) => r.state === "requested" || r.state === "running");
+  const shown = visibleRuns(runs);
 
   useEffect(() => {
     if (!open) return;
@@ -38,10 +49,19 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
     return () => clearInterval(t);
   }, [open, router]);
 
-  function request(kind: "sanity" | "notion") {
+  function request() {
     setError(null);
     startTransition(async () => {
-      const res = await requestSyncAction(kind, dataset);
+      const res = await requestSyncAction("sanity", dataset);
+      if (!res.ok) setError(res.error);
+      router.refresh();
+    });
+  }
+
+  function dismiss(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const res = await dismissSyncAction(id);
       if (!res.ok) setError(res.error);
       router.refresh();
     });
@@ -71,11 +91,8 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
               ))}
             </select>
           </label>
-          <Button size="sm" disabled={pending || open} onClick={() => request("sanity")}>
+          <Button size="sm" disabled={pending || open} onClick={request}>
             {pending ? COPY.requesting : COPY.button}
-          </Button>
-          <Button size="sm" variant="outline" disabled={pending || open} onClick={() => request("notion")}>
-            {pending ? COPY.requesting : COPY.notionButton}
           </Button>
           {open ? <span className="text-sm text-muted-foreground">{COPY.open}</span> : null}
         </div>
@@ -86,11 +103,11 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
 
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-medium text-foreground">{COPY.recent}</h3>
-        {runs.length === 0 ? (
+        {shown.length === 0 ? (
           <p className="text-sm text-muted-foreground">{COPY.none}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border text-sm">
-            {runs.slice(0, 5).map((r) => (
+            {shown.slice(0, 5).map((r) => (
               <li key={r.id} className="flex flex-col gap-1 py-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={r.state === "failed" ? "destructive" : "secondary"}>{COPY.states[r.state]}</Badge>
@@ -101,7 +118,16 @@ export function SpecSyncPanel({ runs, canSync }: Props) {
                     <span className="text-muted-foreground">· {r.result.documents} documents read</span>
                   ) : null}
                 </div>
-                {r.state === "failed" && r.error ? <p className="text-destructive">{r.error}</p> : null}
+                {r.state === "failed" && r.error ? (
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="min-w-0 flex-1 break-words text-destructive">{r.error}</p>
+                    {canSync ? (
+                      <Button size="sm" variant="ghost" disabled={pending} onClick={() => dismiss(r.id)}>
+                        {pending ? COPY.dismissing : COPY.dismiss}
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
                 {r.state === "done" && r.result?.loaded?.length === 0 ? (
                   <p className="text-muted-foreground">{COPY.nothingFound}</p>
                 ) : null}

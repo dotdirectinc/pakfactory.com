@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { decideChangeset, requestSyncRun } from "@/lib/spec/registry-api";
+import { decideChangeset, dismissSyncRun, requestSyncRun } from "@/lib/spec/registry-api";
 
 export type DecisionResult = { ok: true } | { ok: false; error: string };
 
@@ -36,6 +36,14 @@ export async function decideFrameAction(
  */
 export async function requestSyncAction(kind: "sanity" | "notion", dataset: string): Promise<DecisionResult> {
   const res = await requestSyncRun(kind, dataset);
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath("/spec");
+  return { ok: true };
+}
+
+/** Dismiss a finished sync run from the panel (2026-10-06: failed syncs should not stay). */
+export async function dismissSyncAction(id: string): Promise<DecisionResult> {
+  const res = await dismissSyncRun(id);
   if (!res.ok) return { ok: false, error: res.error };
   revalidatePath("/spec");
   return { ok: true };

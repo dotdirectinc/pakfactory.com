@@ -14,13 +14,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@pakfactory/ui/components/dropdown-menu";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { signOutInternal } from "@/lib/auth/actions";
+import { requestSyncAction } from "@/app/(admin)/spec/actions";
 import { ADMIN_ACCOUNT_COPY } from "@/lib/copy/account";
 
 export type AdminAccountMenuProps = {
   displayName: string;
   email: string;
   avatarUrl?: string;
+  /** Holds `catalog.sync.notion` (admin only) — offers "Sync Notion" here, out of the main panel. */
+  canSyncNotion?: boolean;
 };
 
 type AdminAccountMenuLayout = {
@@ -36,9 +42,26 @@ export function AdminAccountMenu({
   displayName,
   email,
   avatarUrl,
+  canSyncNotion = false,
   size = "default",
 }: AdminAccountMenuProps & AdminAccountMenuLayout) {
   const initials = initialsOf(displayName || email);
+  const [syncing, startSync] = useTransition();
+  const router = useRouter();
+
+  // The backend re-checks the capability: hiding the item is convenience, not the guard.
+  function syncNotion() {
+    startSync(async () => {
+      const res = await requestSyncAction("notion", "development");
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(ADMIN_ACCOUNT_COPY.syncNotionStarted);
+      router.push("/spec");
+      router.refresh();
+    });
+  }
 
   return (
     <DropdownMenu>
@@ -64,6 +87,14 @@ export function AdminAccountMenu({
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {canSyncNotion ? (
+          <>
+            <DropdownMenuItem disabled={syncing} onSelect={syncNotion}>
+              {ADMIN_ACCOUNT_COPY.syncNotion}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         <form action={signOutInternal}>
           {/*
             🔴 onSelect must preventDefault, or sign-out silently does nothing.
