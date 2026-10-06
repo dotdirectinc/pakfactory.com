@@ -9,6 +9,7 @@ import {
   isLineStyleListed,
   isListedCatalogStatus,
   isOrderableStatus,
+  isInspirationBaseOpen,
   isSolutionActive,
   isSolutionParentOn,
   isStyleParentOn,
@@ -268,5 +269,17 @@ describe('product parents (Richard + Eric, 2026-10-06)', () => {
       productHasParentOn({kind: 'inspiration', styleStatuses: ['active'], solutionStatuses: ['not-active']}),
       false,
     );
+  });
+});
+
+describe('presets follow their base product (Richard + Eric, 2026-10-06)', () => {
+  it('base and base line must be Active or Active (Internal)', () => {
+    assert.equal(isInspirationBaseOpen('active', 'active'), true);
+    assert.equal(isInspirationBaseOpen('active-internal', 'active-internal'), true);
+    assert.equal(isInspirationBaseOpen(undefined, undefined), true);
+    for (const off of ['not-active', 'coming-soon', 'discontinued']) {
+      assert.equal(isInspirationBaseOpen(off, 'active'), false, `base ${off}`);
+      assert.equal(isInspirationBaseOpen('active', off), false, `line ${off}`);
+    }
   });
 });

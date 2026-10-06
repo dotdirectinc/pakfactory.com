@@ -32,7 +32,25 @@ const catalog = [
   product("p-active", "l-active"), product("p-unset", "l-unset"), product("p-soon", "l-soon"),
   product("p-off", "l-off"), product("p-gone", "l-gone"), product("p-internal", "l-internal"),
   // Inspiration products borrow their line through basedOn; their anchor is solutions.
-  product("i-off-line", "l-off", { kind: "inspiration", solutions: [{ _ref: "sol" }] }),
+  // Presets follow their BASE product and the base's line (Richard + Eric, 2026-10-06).
+  ...[
+    ["i-ok", "p-active"],
+    ["i-base-internal", "p-base-internal"],
+    ["i-base-off", "p-base-off"],
+    ["i-base-soon", "p-base-soon"],
+    ["i-base-gone", "p-base-gone"],
+    ["i-base-line-off", "p-off"],
+    ["i-base-line-gone", "p-gone"],
+    ["i-base-line-internal", "p-internal"],
+  ].map(([slug, base]) => ({
+    _id: slug, _type: "product", kind: "inspiration", title: slug, slug: { current: slug },
+    basedOn: { _ref: base }, solutions: [{ _ref: "sol" }],
+  })),
+  { _id: "i-no-base", _type: "product", kind: "inspiration", title: "i-no-base", slug: { current: "i-no-base" }, solutions: [{ _ref: "sol" }] },
+  product("p-base-internal", "l-active", { status: "active-internal" }),
+  product("p-base-off", "l-active", { status: "not-active" }),
+  product("p-base-soon", "l-active", { status: "coming-soon" }),
+  product("p-base-gone", "l-active", { status: "discontinued" }),
 ];
 
 async function run(query: string, dataset: unknown[], params: Record<string, unknown> = {}) {
@@ -54,12 +72,20 @@ test("R1 product → line: Discontinued line keeps the page but reads Discontinu
 test("R1 product → line: listings admit only open lines; Active (Internal) passes (R4)", async () => {
   const rows = (await run(CATALOG_PRODUCT_LIBRARY_QUERY, catalog)) as { slug: string; status?: string }[];
   const slugs = rows.map((r) => r.slug).sort();
-  assert.deepEqual(slugs, ["i-off-line", "p-active", "p-internal", "p-unset"]);
+  assert.deepEqual(slugs, [
+    "i-base-internal", "i-base-line-internal", "i-ok", "p-active", "p-base-soon", "p-internal", "p-unset",
+  ]);
 });
 
-test("R1 product → line: inspiration products are not gated by their line", async () => {
-  const pdp = await run(CATALOG_PRODUCT_BY_SLUG_QUERY, catalog, { slug: "i-off-line" });
-  assert.notEqual(pdp, null);
+test("presets follow their base product: hidden when the base, or the base's line, is off", async () => {
+  const visible = async (slug: string) => (await run(CATALOG_PRODUCT_BY_SLUG_QUERY, catalog, { slug })) != null;
+  // Active and Active (Internal) bases keep the preset live (R4 — that is what Internal is for).
+  for (const slug of ["i-ok", "i-base-internal", "i-base-line-internal"]) assert.equal(await visible(slug), true, slug);
+  // Not active, Coming soon or Discontinued — on the base or on the base's line — hides it.
+  for (const slug of ["i-base-off", "i-base-soon", "i-base-gone", "i-base-line-off", "i-base-line-gone"]) {
+    assert.equal(await visible(slug), false, slug);
+  }
+  assert.equal(await visible("i-no-base"), false, "no base → hidden (R6)");
 });
 
 // ─── Customization: option → type → category ───────────────────────────────

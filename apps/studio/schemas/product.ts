@@ -218,8 +218,8 @@ export const product = defineType({
             ]{ title }`,
             describe: (names) =>
               `${names} ${names.includes(' and ') || names.includes(',') ? 'are' : 'is'} based on ` +
-              `this product and would be left offering customizations it no longer sells. ` +
-              `Use Active (Internal) to take this off the site while keeping it as their basis.`,
+              `this product and will be hidden from the site with it. ` +
+              `Use Active (Internal) to take this off the site while keeping them live.`,
           }),
         ).warning(),
       ],
