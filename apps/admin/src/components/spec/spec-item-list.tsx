@@ -17,14 +17,18 @@ const isBlock = (b: unknown): b is Block => Boolean(b) && typeof b === "object" 
  * reviewer can read both sides. `marks: false` drops the list markers, to tell a wording change from
  * a formatting-only one.
  */
-function plain(v: unknown, marks = true): string {
+function plain(v: unknown, marks = true, labels: Record<string, string> = {}): string {
   if (v === null || v === undefined) return "";
+  // A reference (a product's line, an option's type, one of its solutions): its name, from the
+  // labels the sync stored with the row — otherwise the reviewer would see nothing at all.
+  const ref = typeof v === "object" ? (v as { _ref?: unknown })._ref : undefined;
+  if (typeof ref === "string") return labels[ref.replace(/^drafts\./, "")] ?? ref;
   if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
   if (Array.isArray(v)) {
     let n = 0;
     return v
       .map((b) => {
-        if (!isBlock(b)) return plain(b, marks);
+        if (!isBlock(b)) return plain(b, marks, labels);
         const text = (b.children ?? []).map((c) => c.text ?? "").join("");
         if (!marks || !b.listItem) { n = 0; return text; }
         n = b.listItem === "number" ? n + 1 : 0;
@@ -36,7 +40,7 @@ function plain(v: unknown, marks = true): string {
   if (typeof v === "object") {
     return Object.entries(v as Record<string, unknown>)
       .filter(([k]) => !k.startsWith("_"))
-      .map(([, x]) => plain(x, marks))
+      .map(([, x]) => plain(x, marks, labels))
       .filter(Boolean)
       .join("\n");
   }
@@ -67,6 +71,7 @@ function formattingOnly(before: unknown, after: unknown): string | null {
 function SanityCompare({ item }: { item: ChangesetItem }) {
   const set = (item.payload.set ?? {}) as Record<string, unknown>;
   const before = (item.payload.before ?? {}) as Record<string, unknown>;
+  const labels = (item.payload.labels ?? {}) as Record<string, string>;
   return (
     <details className="mt-1 w-full">
       <summary className="cursor-pointer text-xs text-muted-foreground">{SANITY.compare}</summary>
@@ -80,11 +85,11 @@ function SanityCompare({ item }: { item: ChangesetItem }) {
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <span className="text-xs uppercase tracking-wide text-muted-foreground">{SANITY.before}</span>
-                <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm text-foreground">{plain(before[f]) || "—"}</p>
+                <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm text-foreground">{plain(before[f], true, labels) || "—"}</p>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs uppercase tracking-wide text-muted-foreground">{SANITY.after}</span>
-                <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm text-foreground">{plain(set[f]) || "—"}</p>
+                <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm text-foreground">{plain(set[f], true, labels) || "—"}</p>
               </div>
             </div>
           </div>
