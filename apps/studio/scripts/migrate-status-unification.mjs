@@ -108,8 +108,31 @@ const client = createClient({
   perspective: 'raw',
 })
 
+/**
+ * 🔴 A GROQ projection returns NULL for an attribute a document does not have — not
+ * `undefined`. So `p.customerFacing !== undefined` is true for every row, including
+ * the types that never had the field. Both the unset list and the verify pass test
+ * for a value that is actually present.
+ */
+const present = (v) => v !== undefined && v !== null
+
 /** Types whose off switch was `customerFacing`. */
 const CUSTOMER_FACING_TYPES = ['product', 'productLine', 'productStyle']
+/**
+ * The values each type is allowed to hold, mirroring `apps/studio/lib/catalog-status.ts`.
+ * Duplicated rather than imported because this is a .mjs script and that is a .ts module;
+ * if the two ever disagree, the schema wins and this list is the stale one.
+ */
+const ALLOWED_STATUS = {
+  product: ['active', 'coming-soon', 'discontinued', 'not-active', 'active-internal'],
+  productLine: ['active', 'coming-soon', 'discontinued', 'not-active', 'active-internal'],
+  productStyle: ['active', 'coming-soon', 'discontinued', 'not-active', 'active-internal'],
+  solution: ['active', 'coming-soon', 'not-active'],
+  solutionStyle: ['active', 'coming-soon', 'not-active'],
+  customizationCategory: ['active', 'not-active'],
+  customizationType: ['active', 'not-active'],
+}
+
 /** Types gaining `status` where none existed. */
 const NEW_STATUS_TYPES = ['solutionStyle', 'customizationCategory', 'customizationType']
 const ALL_TYPES = [...CUSTOMER_FACING_TYPES, 'solution', ...NEW_STATUS_TYPES]
@@ -126,7 +149,15 @@ function targetStatus(d) {
     // An inspiration product cannot be Active (Internal) — the schema rejects it.
     return d._type === 'product' && d.kind === 'inspiration' ? 'not-active' : 'active-internal'
   }
-  if (d._type === 'solution') return d.hasPage === true ? 'active' : 'not-active'
+  if (d._type === 'solution') {
+    // 🔴 IDEMPOTENCY. This decision is derived from `hasPage` — which this very
+    // migration deletes. Once it is gone there is nothing left to derive from, and the
+    // status standing in the document IS the answer. Without this guard a second
+    // --confirm run reads every migrated solution as `hasPage !== true` and sets the
+    // whole lot to Not active, destroying the Active state it just created.
+    if (!present(d.hasPage)) return null
+    return d.hasPage === true ? 'active' : 'not-active'
+  }
   // New field: only fill it in where it is missing, never overwrite an editor's choice.
   if (NEW_STATUS_TYPES.includes(d._type)) return d.status ? null : 'active'
   return null
@@ -155,19 +186,37 @@ async function main() {
   const plan = docs.map((d) => ({ ...d, next: targetStatus(d) }))
 
   if (verify) {
-    const unmigrated = plan.filter((p) => p.next !== null)
+    // 🔴 Checks the INVARIANT, not the mapping. `targetStatus` reads `customerFacing`
+    // and `hasPage` to decide where a document should land — and this migration deletes
+    // both. Re-deriving the mapping afterwards would ask "what would hasPage say?" of a
+    // document that no longer has one, and every correctly-migrated solution would read
+    // as wrong. What stays true forever is: the old keys are gone, and every document
+    // holds a status its own type allows.
     const leftovers = plan.filter(
-      (p) => p.customerFacing !== undefined || p.hasPage !== undefined,
+      (p) => present(p.customerFacing) || (p._type === 'solution' && present(p.hasPage)),
     )
+    const statusless = plan.filter((p) => !present(p.status))
+    const badValue = plan.filter(
+      (p) => present(p.status) && !(ALLOWED_STATUS[p._type] ?? []).includes(p.status),
+    )
+    // The one cross-field rule the schema enforces as an ERROR (PROD-2845 §1).
+    const internalPresets = plan.filter(
+      (p) => p._type === 'product' && p.kind === 'inspiration' && p.status === 'active-internal',
+    )
+
     console.log(`Checked ${plan.length} document(s).`)
-    if (!unmigrated.length && !leftovers.length) {
-      console.log('✅  Every document carries the right status, and the old keys are gone.\n')
+    if (!leftovers.length && !statusless.length && !badValue.length && !internalPresets.length) {
+      console.log('✅  Old keys gone; every document holds a status its type allows.\n')
       return
     }
-    unmigrated.forEach((p) =>
-      console.error(`     ${p._type} ${label(p)}: status=${JSON.stringify(p.status)} (want ${JSON.stringify(p.next)})`),
-    )
     leftovers.forEach((p) => console.error(`     ${p._type} ${label(p)}: still carries a retired key`))
+    statusless.forEach((p) => console.error(`     ${p._type} ${label(p)}: no status set`))
+    badValue.forEach((p) =>
+      console.error(`     ${p._type} ${label(p)}: status=${JSON.stringify(p.status)} is not offered on this type`),
+    )
+    internalPresets.forEach((p) =>
+      console.error(`     ${p._type} ${label(p)}: Active (Internal) is not valid on an inspiration product`),
+    )
     process.exit(1)
   }
 
@@ -204,8 +253,8 @@ async function main() {
   let writes = 0
   for (const p of plan) {
     const unsets = []
-    if (p.customerFacing !== undefined) unsets.push('customerFacing')
-    if (p._type === 'solution' && p.hasPage !== undefined) unsets.push('hasPage')
+    if (present(p.customerFacing)) unsets.push('customerFacing')
+    if (p._type === 'solution' && present(p.hasPage)) unsets.push('hasPage')
     if (p.next === null && unsets.length === 0) continue
     tx.patch(p._id, (patch) => {
       const next = p.next === null ? patch : patch.set({ status: p.next })
