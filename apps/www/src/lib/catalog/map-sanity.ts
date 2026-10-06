@@ -266,10 +266,11 @@ function mapFaqs(
     return faqs;
 }
 
-function mapStyleRef(
+export function mapStyleRef(
     style: {
         slug: string | null;
         title: string;
+        hasPage?: boolean | null;
         description?: string | null;
         shortDescription?: string | null;
         cardImage?: unknown | null;
@@ -297,6 +298,7 @@ function mapStyleRef(
         ...(shortDescription ? {shortDescription} : {}),
         ...(imageUrl ? {imageUrl, imageAlt} : {}),
         ...(faqs.length ? {faqs} : {}),
+        ...(style.hasPage === false ? {hasPage: false as const} : {}),
     };
 }
 
@@ -497,6 +499,7 @@ export function mapSanityProduct(doc: CatalogProductDoc): Product | null {
         description: doc.productStyle?.description,
         shortDescription: doc.productStyle?.shortDescription,
         cardImage: doc.productStyle?.cardImage,
+        hasPage: doc.productStyle?.hasPage,
     });
     if (!productStyle) return null;
 
@@ -929,7 +932,10 @@ export function mapSanityProductLine(doc: CatalogProductLineDoc): ProductLine | 
         ...(faqs.length > 0 ? {faqs} : {}),
         ...(sections.length > 0 ? {sections} : {}),
         ...(templateSections.length > 0 ? {templateSections} : {}),
-        styles: [...stylesBySlug.values()],
+        // Only styles with a page: this list feeds the line's style grid, the style route
+        // and its static params, and finder slides — all of them link. An Active (Internal)
+        // style still works as a catalog FILTER through the products' own styles.
+        styles: [...stylesBySlug.values()].filter((style) => style.hasPage !== false),
         products,
     };
 }

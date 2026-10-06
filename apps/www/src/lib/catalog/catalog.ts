@@ -12,6 +12,7 @@ import {
     CATALOG_PRODUCT_LINE_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY,
     CATALOG_PRODUCT_LINES_QUERY,
+    CATALOG_PRODUCT_STYLE_PAGE_QUERY,
     CATALOG_PRODUCTS_QUERY,
     CUSTOMIZATION_CATALOG_PAGE_QUERY,
     CUSTOMIZATION_DETAIL_PAGE_FOR_OPTION_QUERY,
@@ -27,6 +28,7 @@ import {
     type CatalogProductDoc,
     type CatalogProductLibraryDoc,
     type CatalogProductLineDoc,
+    type CatalogStyleRefDoc,
     type SolutionStylesForBreadcrumbDoc,
 } from '@pakfactory/sanity/queries';
 import {buildCustomizationLibraryResult} from '@/lib/catalog/build-customization-library';
@@ -44,6 +46,7 @@ import {
     mapSanityProductLibraryItem,
     mapSanityProductLibraryLineMeta,
     mapSanityProductLine,
+    mapStyleRef,
 } from '@/lib/catalog/map-sanity';
 import {
     PRODUCT_LINE_PRODUCT_KIND,
@@ -788,9 +791,38 @@ export async function getStyle(
 ): Promise<{line: ProductLine; style: ProductStyleRef} | null> {
     const result = await getByProductsSegment(lineSlug);
     if (result?.type !== 'line') return null;
-    const style = result.line.styles.find(
-        (item) => item.slug === normalizeSlug(styleSlug),
+    const key = normalizeSlug(styleSlug);
+    const listed = result.line.styles.find((item) => item.slug === key);
+    if (listed) return {line: result.line, style: listed};
+    // Not in the grid: a Discontinued style keeps its page (for search) but is never
+    // listed, so look it up directly. Everything else not listed has no page at all.
+    const unlisted = await getUnlistedStylePage(result.line.slug, key);
+    return unlisted ? {line: result.line, style: unlisted} : null;
+}
+
+async function getUnlistedStylePage(
+    lineSlug: string,
+    styleSlug: string,
+): Promise<ProductStyleRef | null> {
+    if (!isSanityConfigured()) return null;
+    const fetchUncached = async (): Promise<ProductStyleRef | null> => {
+        try {
+            const doc = await (await draftAwareClient()).fetch<CatalogStyleRefDoc | null>(
+                CATALOG_PRODUCT_STYLE_PAGE_QUERY,
+                {lineSlug, styleSlug},
+            );
+            return doc ? mapStyleRef(doc) : null;
+        } catch (err) {
+            throw sanityReadFailed('[catalog] Sanity style page failed:', err);
+        }
+    };
+    const getCached = sanityCache(
+        fetchUncached,
+        [`www-style-page:${lineSlug}:${styleSlug}`],
+        {
+            revalidate: WWW_CONTENT_REVALIDATE_SECONDS,
+            tags: [WWW_CATALOG_PRODUCTS_CACHE_TAG, WWW_CATALOG_LINES_CACHE_TAG],
+        },
     );
-    if (!style) return null;
-    return {line: result.line, style};
+    return readThrough(fetchUncached, getCached);
 }

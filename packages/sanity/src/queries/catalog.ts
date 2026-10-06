@@ -195,7 +195,10 @@ const STYLE_REF_PROJ = /* groq */ `{
   "slug": slug.current,
   shortDescription,
   "description": coalesce(pt::text(description), shortDescription),
-  ${STYLE_CARD_IMAGE}
+  ${STYLE_CARD_IMAGE},
+  // Does /products/{line}/{style} exist? Active and Discontinued only — Coming soon,
+  // Not active and Active (Internal) have no page, so nothing may link to one.
+  "hasPage": ${LINE_STYLE_HAS_PAGE}
 }`;
 
 /** Library grid only needs slug + title (PROD-2599 payload trim). */
@@ -558,6 +561,7 @@ const LINE_STYLE_CARD_PROJ = /* groq */ `{
   shortDescription,
   "description": coalesce(pt::text(description), shortDescription),
   ${STYLE_CARD_IMAGE},
+  "hasPage": ${LINE_STYLE_HAS_PAGE},
   // The style's own FAQs; the style page falls back to the line's when empty.
   "faqs": faqs[]->${FAQ_ITEM_PROJ}
 }`;
@@ -689,6 +693,19 @@ export const CATALOG_PRODUCT_LINE_BY_SLUG_QUERY = /* groq */ `*[
  * Existence probe for `/products/[slug]` segment resolution.
  * Product clicks wait on this (not the full line landing document).
  */
+/**
+ * One style's page, for a style the line's grid does not list — a DISCONTINUED style
+ * keeps its page for search (the sheet) but drops out of every listing, so it is never
+ * in `line.styles`. Gated on the style having a page and its line having one.
+ */
+export const CATALOG_PRODUCT_STYLE_PAGE_QUERY = /* groq */ `*[
+  _type == "productStyle" &&
+  slug.current == $styleSlug &&
+  productLine->slug.current == $lineSlug &&
+  ${LINE_STYLE_HAS_PAGE} &&
+  (!defined(productLine->status) || productLine->status in ["active", "discontinued"])
+][0]${LINE_STYLE_CARD_PROJ}`;
+
 export const CATALOG_PRODUCT_LINE_EXISTS_BY_SLUG_QUERY = /* groq */ `*[
   _type == "productLine" &&
   slug.current == $slug &&
@@ -1156,6 +1173,8 @@ export type CatalogStyleRefDoc = {
   _id: string;
   title: string;
   slug: string | null;
+  /** The style page exists (LINE_STYLE_HAS_PAGE). */
+  hasPage?: boolean | null;
   shortDescription?: string | null;
   description?: string | null;
   cardImage?: unknown | null;
