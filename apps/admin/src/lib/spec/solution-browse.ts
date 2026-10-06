@@ -17,8 +17,10 @@ import { studioEditUrl } from "./studio-link";
 
 const READ_TOKEN = () => process.env.ADMIN_SANITY_READ_TOKEN?.trim() || "";
 
+// A solution has a page when its status is Active (PROD-2845 replaced `hasPage` with `status`; the same
+// rule as www's SOLUTION_ACTIVE, which has no unset arm — an un-migrated solution reads as page-less).
 export const SOLUTIONS_QUERY = /* groq */ `{
-  "solutions": *[_type == "solution"]{ _id, title, solutionType, hasPage, entityId, entityCode },
+  "solutions": *[_type == "solution"]{ _id, title, solutionType, "hasPage": status == "active", entityId, entityCode },
   "styles": *[_type == "solutionStyle"]{ _id, title, entityId, entityCode, "solutionId": solution._ref },
   "inspirations": *[_type == "product" && kind == "inspiration"]{
     _id, title, status, entityId, entityCode,
